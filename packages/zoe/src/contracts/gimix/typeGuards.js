@@ -21,14 +21,17 @@ export const OracleInvitationProposalShape = M.splitRecord({
   exit: { onDemand: null },
 });
 
-export const makeWorkAgreementProposalShape = (oracleBrand, issueURL) =>
+export const makeStampAmount = (oracleBrand, issueURL) =>
+  harden({
+    brand: oracleBrand,
+    value: makeCopyBag([[`Fixed ${issueURL}`, 1n]]),
+  });
+
+export const makeWorkAgreementProposalShape = stampAmount =>
   M.splitRecord({
     give: { Acceptance: AmountShape },
     want: {
-      Stamp: {
-        brand: oracleBrand,
-        value: makeCopyBag([[`Fixed ${issueURL}`, 1n]]),
-      },
+      Stamp: stampAmount,
     },
     exit: {
       afterDeadline: {

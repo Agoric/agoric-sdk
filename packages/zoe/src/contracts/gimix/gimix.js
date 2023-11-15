@@ -6,6 +6,7 @@ import {
   provide,
   provideDurableMapStore,
 } from '@agoric/vat-data';
+import { AmountMath, AmountShape } from '@agoric/ertp';
 import { OfferHandlerI } from '../../typeGuards';
 import {
   DeliverProposalShape,
@@ -15,9 +16,10 @@ import {
   ReportShape,
   JobsReportContinuingIKit,
   GimixContractFacetsIKit,
+  makeStampAmount,
 } from './typeGuards.js';
 
-const { Fail, quote: q } = assert;
+const { details: X, Fail, quote: q } = assert;
 
 /**
  * @typedef {object} GiMiXTerms
@@ -39,6 +41,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
       valueShape: {
         issueURL: M.string(),
         requestorSeat: M.remotable('requestorSeat'),
+        acceptanceAmount: AmountShape,
       },
     }),
   );
@@ -47,31 +50,67 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     baggage,
     'DeliverHandler',
     OfferHandlerI,
-    (requestorSeat, report) => ({
+    (requestorSeat, acceptanceAmount, report) => ({
       requestorSeat,
+      acceptanceAmount,
       report,
     }),
     {
       handle(responderSeat) {
         const {
-          state: { requestorSeat, report },
+          state: { requestorSeat, acceptanceAmount, report },
         } = this;
-        const { jobID } = report;
+        const { jobID, issueURL } = report;
+
+        const {
+          want: { Acceptance: wantedAmount },
+        } = responderSeat.getProposal();
+
+        if (!AmountMath.isGTE(acceptanceAmount, wantedAmount)) {
+          const reason = assert.error(
+            X`Amount wanted ${q(
+              wantedAmount,
+            )} must be within amount offered ${q(acceptanceAmount)}`,
+          );
+          responderSeat.fail(reason);
+          throw reason;
+        }
 
         workByJob.delete(jobID);
         if (requestorSeat.hasExited()) {
           // TODO check that the deadline actually has expired.
           // Otherwise, report mysterious failure.
-          const reason = RangeError(`Offer deadline expired`);
+          const reason = assert.error(X`Offer deadline expired`);
           responderSeat.fail(reason);
           throw reason;
         }
-        // TODO Where all the action happens
+        const stampAmounts = harden({
+          // eslint-disable-next-line no-use-before-define
+          Stamp: makeStampAmount(oracleBrand, issueURL),
+        });
+        // eslint-disable-next-line no-use-before-define
+        const stampSeat = gimixOracleMint.mintGains(stampAmounts);
+        zcf.atomicRearrange(
+          harden([
+            [stampSeat, requestorSeat, stampAmounts],
+            [
+              requestorSeat,
+              responderSeat,
+              {
+                Acceptance: acceptanceAmount,
+              },
+            ],
+          ]),
+        );
+        stampSeat.exit('done');
+        responderSeat.exit('paid');
+        requestorSeat.exit('mission accomplished');
       },
     },
     harden({
       stateShape: {
         requestorSeat: M.remotable('ZCFSeat'),
+        acceptanceAmount: AmountShape,
         report: ReportShape,
       },
     }),
@@ -91,16 +130,22 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
 
         const depositFacetP = E(namesByAddress).lookup(deliverDepositAddr);
         workByJob.has(jobID) || Fail`Gimix job ${q(jobID)} not found`;
-        const { issueURL: expectedIssueURL, requestorSeat } =
-          workByJob.get(jobID);
+        const {
+          issueURL: expectedIssueURL,
+          requestorSeat,
+          acceptanceAmount,
+        } = workByJob.get(jobID);
         expectedIssueURL === issueURL ||
           Fail`Gimix job ${q(jobID)} expected issue ${q(
             expectedIssueURL,
           )} not ${q(issueURL)}`;
         const deliverInvitation = zcf.makeInvitation(
-          makeDeliverHandler(requestorSeat, report),
+          makeDeliverHandler(requestorSeat, acceptanceAmount, report),
           'gimix delivery',
-          report,
+          {
+            acceptanceAmount,
+            report,
+          },
           DeliverProposalShape,
         );
         return E(depositFacetP).receive(deliverInvitation);
@@ -176,6 +221,9 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
         const {
           state: { issueURL },
         } = this;
+        const {
+          give: { Acceptance: acceptanceAmount },
+        } = requestorSeat.getProposal();
 
         const jobID = getNextJobID();
         workByJob.init(
@@ -183,6 +231,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
           harden({
             issueURL,
             requestorSeat,
+            acceptanceAmount,
           }),
         );
         return jobID;
@@ -213,14 +262,15 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
       },
       publicFacet: {
         makeWorkAgreementInvitation(issueURL) {
+          // eslint-disable-next-line no-use-before-define
+          const stampAmount = makeStampAmount(oracleBrand, issueURL);
           return zcf.makeInvitation(
             makeWorkAgreementHandler(issueURL),
             'gimix work agreement',
             harden({
               issueURL,
             }),
-            // eslint-disable-next-line no-use-before-define
-            makeWorkAgreementProposalShape(oracleBrand, issueURL),
+            makeWorkAgreementProposalShape(stampAmount),
           );
         },
       },
