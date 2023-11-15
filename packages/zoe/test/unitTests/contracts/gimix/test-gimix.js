@@ -11,14 +11,16 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 // import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeNameHubKit } from '@agoric/vats';
+import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { TimeMath } from '@agoric/time';
 import { deeplyFulfilledObject } from '@agoric/internal';
 
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
-import { startGiMiX } from '../../../../src/contracts/gimix/start-gimix.js/index.js';
+import { startGiMiX } from '../../../../src/contracts/gimix/start-gimix.js';
 import { mintStablePayment } from './mintStable.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -59,8 +61,27 @@ const makeTestContext = async t => {
   );
 
   const bootstrap = async () => {
-    const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest();
+    const { zoeService, feeMintAccess } = makeZoeKitForTest();
 
+    // mock installBundleID
+    const installBundleID = bid => {
+      assert.equal(bid, `b1-${bundle.endoZipBase64Sha512}`);
+      return zoeService.install(bundle);
+    };
+
+    const zoe = Far('ZoeService', {
+      getFeeIssuer: () => zoeService.getFeeIssuer(),
+      getInvitationIssuer: () => zoeService.getInvitationIssuer(),
+      installBundleID,
+      // @ts-expect-error mock / spread
+      startInstance: (...args) => zoeService.startInstance(...args),
+      // @ts-expect-error mock / spread
+      getTerms: (...args) => zoeService.getTerms(...args),
+      // @ts-expect-error mock / spread
+      getPublicFacet: (...args) => zoeService.getPublicFacet(...args),
+      // @ts-expect-error mock / spread
+      offer: (...args) => zoeService.offer(...args),
+    });
     const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
       makeNameHubKit();
 
@@ -69,44 +90,54 @@ const makeTestContext = async t => {
 
     const istIssuer = await E(zoe).getFeeIssuer();
     const istBrand = await E(istIssuer).getBrand();
-    const centralSupply = await E(zoe).install(centralSupplyBundle);
+    const centralSupply = await E(zoeService).install(centralSupplyBundle);
 
     /** @type {import('@agoric/time/src/types').TimerService} */
     const chainTimerService = manualTimer;
     const timerBrand = await E(chainTimerService).getTimerBrand();
 
-    // really a namehub...
-    const agoricNames = {
-      issuer: { IST: istIssuer, Invitation: invitationIssuer },
-      brand: { timerBrand, IST: istBrand, Invitation: invitationBrand },
-      installation: { centralSupply },
-      instance: {},
-    };
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+      makeNameHubKit();
+    const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log, [
+      'issuer',
+      'brand',
+      'installation',
+      'instance',
+    ]);
+    spaces.issuer.produce.IST.resolve(istIssuer);
+    spaces.issuer.produce.Invitation.resolve(invitationIssuer);
+    spaces.brand.produce.IST.resolve(istBrand);
+    spaces.brand.produce.Invitation.resolve(invitationBrand);
+    spaces.brand.produce.timer.resolve(timerBrand);
+    spaces.installation.produce.centralSupply.resolve(centralSupply);
 
-    const board = new Map(); // sort of
+    const board = makeFakeBoard();
 
-    return {
-      agoricNames,
-      board,
-      chainTimerService,
-      feeMintAccess,
-      namesByAddress,
-      namesByAddressAdmin,
-      zoe,
-    };
+    const { produce, consume } = makePromiseSpace();
+    produce.agoricNames.resolve(agoricNames);
+    produce.board.resolve(board);
+    produce.chainTimerService.resolve(chainTimerService);
+    produce.feeMintAccess.resolve(feeMintAccess);
+    produce.namesByAddress.resolve(namesByAddress);
+    produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
+    produce.zoe.resolve(zoe);
+
+    /**
+     * @type {BootstrapPowers}}
+     */
+    // @ts-expect-error mock
+    const powers = { produce, consume, ...spaces };
+    return powers;
   };
 
   const powers = await bootstrap();
 
-  const {
-    agoricNames: { installation },
-  } = powers;
   /** @param {bigint} value */
   const faucet = async value =>
     mintStablePayment(value, {
-      centralSupply: installation.centralSupply,
-      feeMintAccess: powers.feeMintAccess,
-      zoe: powers.zoe,
+      centralSupply: powers.installation.consume.centralSupply,
+      feeMintAccess: powers.consume.feeMintAccess,
+      zoe: powers.consume.zoe,
     });
 
   return { bundle, faucet, manualTimer, powers };
@@ -213,85 +244,70 @@ const makeGitHub = _log => {
 };
 
 test('execute work agreement', async t => {
-  /**
-   * @param {Promise<DepositFacet>} oracleDepositP
-   * @param {PromiseKit<unknown>} oracleInvitedPK
-   */
-  const coreEval = async (oracleDepositP, oracleInvitedPK) => {
-    const { powers, bundle } = t.context;
-    const { agoricNames, board, chainTimerService, namesByAddress, zoe } =
-      powers;
-
-    // const id = await E(board).getId(chainTimerService);
-    board.set('board123', chainTimerService);
-
-    /** @type {Installation<import('../../../../src/contracts/gimix/gimix').prepare>} */
-    const installation = await E(zoe).install(bundle);
-
-    const { creatorFacet, instance: gimixInstance } = await E(
-      zoe,
-    ).startInstance(
-      installation,
-      { Stable: agoricNames.issuer.IST },
-      { namesByAddress, timer: chainTimerService },
-    );
-    const { brands, issuers } = await E(zoe).getTerms(gimixInstance);
-
-    const oracleInvitation = await E(creatorFacet).makeOracleInvitation();
-    void E(oracleDepositP)
-      .receive(oracleInvitation)
-      .then(amt => {
-        return oracleInvitedPK.resolve(amt);
-      });
-
-    // really a namehub...
-    const withGiMix = {
-      ...agoricNames,
-      brand: { ...agoricNames.brand, GimixOracle: brands.GimixOracle },
-      issuer: { ...agoricNames.issuer, GimixOracle: issuers.GimixOracle },
-      installation: { ...agoricNames.installation, gimix: installation },
-      instance: { ...agoricNames.instance, gimix: gimixInstance },
-    };
-    return { agoricNames: withGiMix, board };
-  };
-
   const sync = {
     /** @type {PromiseKit<{jobID: string, issue: string}>} */
     assignIssue: makePromiseKit(),
-    /** @type {PromiseKit<DepositFacet>} */
-    oracleDeposit: makePromiseKit(),
-    /** @type {PromiseKit<Amount>} */
+    /** @type {PromiseKit<void>} */
     oracleInvited: makePromiseKit(),
     /** @type {PromiseKit<string>} */
     deliverInvitationSent: makePromiseKit(),
   };
-  const { agoricNames, board } = await coreEval(
-    sync.oracleDeposit.promise,
-    sync.oracleInvited,
-  );
+
+  const { agoricNames, board } = t.context.powers.consume;
+  const {
+    instance: { consume: wkInstance },
+    brand: { consume: wkBrand },
+    issuer: { consume: wkIssuer },
+  } = t.context.powers;
 
   /**
    * @param {ERef<GitHub>} gitHub
    * @param {SmartWallet} wallet
    * @param {PromiseKit<{jobID: string, issue: string}>} assignIssuePK
-   * @param {bigint} dur
    * @param {string} timerBoardId
+   * @param {bigint} dur
    * @param {bigint} bounty
    */
   const alice = async (
     gitHub,
     wallet,
     assignIssuePK,
+    timerBoardId,
     dur = 21n,
-    timerBoardId = 'board123',
     bounty = 12n,
   ) => {
+    t.log('alice starts');
     const { make } = AmountMath;
-    const { brand: wkBrand, instance, issuer: wkIssuer } = agoricNames;
-    const timer = board.get(timerBoardId);
 
-    // eslint-disable-next-line no-use-before-define
-    const gpf = await E(zoe).getPublicFacet(instance.gimix);
+    /**
+     * @type {{
+     *   brand: Record<string, Brand>,
+     *   issuer: Record<string, Issuer>,
+     *   instance: Record<string, Instance>,
+     *   timer: import('@agoric/time/src/types').TimerService,
+     * }}
+     */
+    // @ts-expect-error BootstrapPowers type is wrong?
+    const pub = await deeplyFulfilledObject(
+      harden({
+        brand: {
+          timer: wkBrand.timer,
+          IST: wkBrand.IST,
+          // @ts-expect-error gimix not in static WellKnownName
+          GimixOracle: wkBrand.GimixOracle,
+        },
+        issuer: {
+          IST: wkIssuer.IST,
+          // @ts-expect-error gimix not in static WellKnownName
+          GimixOracle: wkIssuer.GimixOracle,
+        },
+        instance: {
+          // @ts-expect-error gimix not in static WellKnownName
+          gimix: wkInstance.GiMiX,
+        },
+        timer: E(board).getValue(timerBoardId),
+      }),
+    );
 
     const issue = await E(gitHub).openIssue({
       owner: 'alice',
@@ -299,26 +315,33 @@ test('execute work agreement', async t => {
     });
 
     const give = {
-      Acceptance: make(wkBrand.IST, bounty * UNIT6),
+      Acceptance: make(pub.brand.IST, bounty * UNIT6),
     };
     t.log('alice offers to give', give);
     const want = {
-      Stamp: make(wkBrand.GimixOracle, makeCopyBag([[`Fixed ${issue}`, 1n]])),
+      Stamp: make(pub.brand.GimixOracle, makeCopyBag([[`Fixed ${issue}`, 1n]])),
     };
+    t.log('alice wants', want);
 
-    const t0 = await E(timer).getCurrentTimestamp();
+    const t0 = await E(pub.timer).getCurrentTimestamp();
     const deadline = TimeMath.addAbsRel(
       t0,
       TimeMath.relValue(
+        // @ts-expect-error Brand vs. TimerBrand
         harden({
-          timerBrand: t0.timerBrand,
+          timerBrand: pub.brand.timer,
           relValue: dur,
         }),
       ),
     );
-    const exit = { afterDeadline: { deadline, timer } };
+    const exit = { afterDeadline: { deadline, timer: pub.timer } };
+    t.log('alice exit', exit);
 
+    const gpf = await E(wallet.offers.peekZoe()).getPublicFacet(
+      pub.instance.gimix,
+    );
     const toMakeAgreement = await E(gpf).makeWorkAgreementInvitation(issue);
+    t.log('alice invitation', toMakeAgreement);
     const { seat, result: jobID } = await wallet.offers.executeOffer(
       toMakeAgreement,
       { give, want, exit },
@@ -336,8 +359,8 @@ test('execute work agreement', async t => {
     await E(gitHub).mergePR(pr);
 
     const issuers = {
-      Stamp: wkIssuer.GimixOracle,
-      Acceptance: wkIssuer.IST,
+      Stamp: pub.issuer.GimixOracle,
+      Acceptance: pub.issuer.IST,
     };
     const payouts = await E(seat).getPayouts();
     const amts = {};
@@ -347,11 +370,14 @@ test('execute work agreement', async t => {
       t.log('alice payout', kw, amt);
       amts[kw] = amt;
     }
-    t.deepEqual(amts, { Acceptance: make(wkBrand.IST, 0n), Stamp: want.Stamp });
+    t.deepEqual(amts, {
+      Acceptance: make(pub.brand.IST, 0n),
+      Stamp: want.Stamp,
+    });
   };
 
   /**
-   * @param {import('@agoric/vats').NameAdmin} namesByAddressAdmin
+   * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
    * @param {ERef<ZoeService>} zoe
    * @typedef {string} Address
    *
@@ -362,6 +388,7 @@ test('execute work agreement', async t => {
    *   depositFacet: DepositFacet,
    *   offers: {
    *     getPurseForBrand: (brand: Brand) => Promise<Purse>,
+   *     peekZoe: () => ERef<ZoeService>,
    *     executeOffer: (invitation: Invitation, proposal: Proposal, offerArgs?: any) => Promise<{seat: UserSeat, result: any}>
    *   }
    * }} SmartWallet
@@ -374,15 +401,19 @@ test('execute work agreement', async t => {
      * @param {Address} address
      * @param {(amt: Amount) => void} [onDeposit]
      */
-    const provideWallet = (address, onDeposit = () => {}) => {
+    const provideWallet = async (address, onDeposit = () => {}) => {
       const purses = new Map();
       const getPurseForBrand = async brand => {
         if (purses.has(brand)) {
           return purses.get(brand);
         }
-        for (const [name, candidate] of entries(agoricNames.brand)) {
+        for (const [name, candidate] of await E(
+          E(agoricNames).lookup('brand'),
+        ).entries()) {
           if (candidate === brand) {
-            const purse = E(agoricNames.issuer[name]).makeEmptyPurse();
+            const purse = E(
+              E(agoricNames).lookup('issuer', name),
+            ).makeEmptyPurse();
             purses.set(brand, purse);
             return purse;
           }
@@ -403,6 +434,9 @@ test('execute work agreement', async t => {
       });
 
       const offers = Far('offers', {
+        peekZoe() {
+          return zoe;
+        },
         getPurseForBrand,
         /**
          * @param {Invitation} invitation
@@ -432,7 +466,7 @@ test('execute work agreement', async t => {
 
       const my = makeNameHubKit();
       my.nameAdmin.update('depositFacet', depositFacet);
-      namesByAddressAdmin.update(address, my.nameHub);
+      await E(namesByAddressAdmin).update(address, my.nameHub);
       /** @type {SmartWallet} */
       const sw = { id, depositFacet, offers };
       return sw;
@@ -444,13 +478,14 @@ test('execute work agreement', async t => {
   /**
    * @param {SmartWallet} wallet
    * @param {ERef<GitHub>} gitHub
-   * @param {Promise<Amount>} oracleInvited
+   * @param {Promise<void>} oracleInvited
    * @param {PromiseKit<string>} reported
    * @typedef {{
    *   deliver: (pr: string, jobID: string, deliverDepositAddr: string) => Promise<boolean>,
    * }} Oracle
    */
   const githubOracle = async (wallet, gitHub, oracleInvited, reported) => {
+    t.log('githubOracle starts');
     const offerResults = new Map();
 
     const acceptId = 'oracleAccept1';
@@ -480,11 +515,14 @@ test('execute work agreement', async t => {
     };
 
     // oracle operator does this
-    const setup = async amt => {
-      t.log('oracle received invation', amt);
+    const setup = async () => {
       /** @type {Promise<Purse<'set'>>} */
       // @ts-expect-error assetkind
-      const invitationPurse = wallet.offers.getPurseForBrand(amt.brand);
+      const invitationPurse = wallet.offers.getPurseForBrand(
+        await wkBrand.Invitation,
+      );
+      const amt = await E(invitationPurse).getCurrentAmount();
+      t.log('oracle received invation', amt);
       const invitation = await E(invitationPurse).withdraw(amt);
       const { result: reporter } = await wallet.offers.executeOffer(
         invitation,
@@ -520,8 +558,8 @@ test('execute work agreement', async t => {
       },
     });
 
-    return oracleInvited.then(async amt => {
-      await setup(amt);
+    return oracleInvited.then(async () => {
+      await setup();
       return it;
     });
   };
@@ -534,6 +572,7 @@ test('execute work agreement', async t => {
    * @param {ERef<Oracle>} oracle
    */
   const bob = async (gitHub, wallet, assignIssueP, reportedP, oracle) => {
+    t.log('bob starts');
     const { issue, jobID } = await assignIssueP;
     const deliverDepositAddr = wallet.id.getAddress();
     const pr = await E(gitHub).openPR({
@@ -550,23 +589,21 @@ test('execute work agreement', async t => {
     /** @type {Purse<'set'>} */
     // @ts-expect-error assetkind
     const invitationPurse = await E(wallet.offers).getPurseForBrand(
-      agoricNames.brand.Invitation,
+      await E(agoricNames).lookup('brand', 'Invitation'),
     );
     const invitationsAmt = await E(invitationPurse).getCurrentAmount();
     t.log('bob invitation balance', invitationsAmt);
 
     const ipmt = await E(invitationPurse).withdraw(invitationsAmt);
     const { make } = AmountMath;
-    const { brand } = agoricNames;
-    const want = { Acceptance: make(brand.IST, 12n * UNIT6) };
+    const want = { Acceptance: make(await wkBrand.IST, 12n * UNIT6) };
     const { seat, result } = await E(wallet.offers).executeOffer(ipmt, {
       give: {},
       want,
     });
     t.log('bob accepts deliver invitation', seat, result);
 
-    const { issuer: wkIssuer } = agoricNames;
-    const issuers = { Acceptance: wkIssuer.IST };
+    const issuers = { Acceptance: await wkIssuer.IST };
     const payouts = await E(seat).getPayouts();
     const amts = {};
     for await (const [kw, pmtP] of Object.entries(payouts)) {
@@ -583,16 +620,28 @@ test('execute work agreement', async t => {
   const gitHub = Promise.resolve(makeGitHub(t.log));
   const {
     faucet,
-    powers: { zoe, namesByAddressAdmin },
+    powers: {
+      consume: { zoe, namesByAddressAdmin, chainTimerService },
+    },
   } = t.context;
   const wf = makeWalletFactory(namesByAddressAdmin, zoe);
 
   const wallet = {
-    alice: wf.provideWallet('agoric1alice'),
-    oracle: wf.provideWallet('agoric1oracle'),
-    bob: wf.provideWallet('agoric1bob'),
+    alice: await wf.provideWallet('agoric1alice'),
+    oracle: await wf.provideWallet('agoric1oracle'),
+    bob: await wf.provideWallet('agoric1bob'),
   };
-  sync.oracleDeposit.resolve(wallet.oracle.depositFacet);
+
+  await startGiMiX(t.context.powers, {
+    options: {
+      GiMiX: {
+        bundleID: `b1-${t.context.bundle.endoZipBase64Sha512}`,
+        oracleAddress: 'agoric1oracle',
+      },
+    },
+  });
+  sync.oracleInvited.resolve();
+
   wallet.alice.depositFacet.receive(await faucet(25n * UNIT6));
   const oracleSvc = githubOracle(
     wallet.oracle,
@@ -600,8 +649,10 @@ test('execute work agreement', async t => {
     sync.oracleInvited.promise,
     sync.deliverInvitationSent,
   );
+  const timer = await chainTimerService;
+  const timerBoardId = await E(board).getId(timer);
   await Promise.all([
-    alice(gitHub, wallet.alice, sync.assignIssue),
+    alice(gitHub, wallet.alice, sync.assignIssue, timerBoardId),
     bob(
       gitHub,
       wallet.bob,
