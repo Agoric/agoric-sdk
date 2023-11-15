@@ -7,7 +7,7 @@ import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 import url from 'url';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeCopyBag } from '@endo/patterns';
@@ -17,6 +17,7 @@ import buildManualTimer from '../../../../tools/manualTimer.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 
 import { mintStablePayment } from './mintStable.js';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
@@ -29,29 +30,10 @@ const asset = ref => url.fileURLToPath(new URL(ref, import.meta.url));
 const makeTestContext = async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
-  const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest();
-
   const bundle = await bundleCache.load(
     asset('../../../../src/contracts/gimix/gimix.js'),
     'gimix',
   );
-
-  const istIssuer = await E(zoe).getFeeIssuer();
-  const istBrand = await E(istIssuer).getBrand();
-  const centralSupply = await E(zoe).install(centralSupplyBundle);
-
-  /** @param {bigint} value */
-  const faucet = async value => {
-    const pmt = await mintStablePayment(value, {
-      centralSupply,
-      feeMintAccess,
-      zoe,
-    });
-
-    const purse = await E(istIssuer).makeEmptyPurse();
-    await E(purse).deposit(pmt);
-    return purse;
-  };
 
   const eventLoopIteration = () => new Promise(setImmediate);
 
@@ -63,39 +45,89 @@ const makeTestContext = async t => {
       eventLoopIteration,
     },
   );
-  /** @type {import('@agoric/time/src/types').TimerService} */
-  const chainTimerService = manualTimer;
-  const timerBrand = await E(chainTimerService).getTimerBrand();
 
-  // really a namehub...
-  const agoricNames = {
-    issuer: { IST: istIssuer },
-    brand: { timerBrand, IST: istBrand },
-    installation: { centralSupply },
-    instance: {},
+  const bootstrap = async () => {
+    const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest();
+
+    const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
+      makeNameHubKit();
+
+    const istIssuer = await E(zoe).getFeeIssuer();
+    const istBrand = await E(istIssuer).getBrand();
+    const centralSupply = await E(zoe).install(centralSupplyBundle);
+
+    /** @type {import('@agoric/time/src/types').TimerService} */
+    const chainTimerService = manualTimer;
+    const timerBrand = await E(chainTimerService).getTimerBrand();
+
+    // really a namehub...
+    const agoricNames = {
+      issuer: { IST: istIssuer },
+      brand: { timerBrand, IST: istBrand },
+      installation: { centralSupply },
+      instance: {},
+    };
+
+    const board = new Map(); // sort of
+
+    return {
+      agoricNames,
+      board,
+      chainTimerService,
+      feeMintAccess,
+      namesByAddress,
+      namesByAddressAdmin,
+      zoe,
+    };
   };
 
-  const powers = { zoe, chainTimerService, agoricNames };
+  const powers = await bootstrap();
+
+  const {
+    agoricNames: { installation, issuer },
+  } = powers;
+  /** @param {bigint} value */
+  const faucet = async value => {
+    const pmt = await mintStablePayment(value, {
+      centralSupply: installation.centralSupply,
+      feeMintAccess: powers.feeMintAccess,
+      zoe: powers.zoe,
+    });
+
+    const purse = await E(issuer.IST).makeEmptyPurse();
+    await E(purse).deposit(pmt);
+    return purse;
+  };
+
   return { bundle, faucet, manualTimer, powers };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test('start contract; make work agreement', async t => {
-  const coreEval = async () => {
+  const coreEval = async oracleDepositP => {
     const { powers, bundle } = t.context;
-    const { chainTimerService, zoe, agoricNames } = powers;
+    const {
+      agoricNames,
+      board,
+      chainTimerService,
+      namesByAddress,
+      namesByAddressAdmin,
+      zoe,
+    } = powers;
 
-    const board = new Map(); // sort of
+    // const id = await E(board).getId(chainTimerService);
     board.set('board123', chainTimerService);
 
     // TODO: add bob's address
-    const { nameHub: namesByAddress } = makeNameHubKit();
+    namesByAddressAdmin.update('agoric1oracle', oracleDepositP);
 
     /** @type {Installation<import('../../../../src/contracts/gimix/gimix').prepare>} */
     const installation = await E(zoe).install(bundle);
 
-    const { instance: gimixInstance } = await E(zoe).startInstance(
+    const { creatorFacet, instance: gimixInstance } = await E(
+      zoe,
+    ).startInstance(
       installation,
       { Stable: agoricNames.issuer.IST },
       { namesByAddress, timer: chainTimerService },
@@ -103,6 +135,9 @@ test('start contract; make work agreement', async t => {
     const {
       brands: { GimixOracle },
     } = await E(zoe).getTerms(gimixInstance);
+
+    const oracleInvitation = await E(creatorFacet).makeOracleInvitation();
+    void E(oracleDepositP).receive(oracleInvitation);
 
     // really a namehub...
     const withGiMix = {
@@ -113,10 +148,14 @@ test('start contract; make work agreement', async t => {
     };
     return { agoricNames: withGiMix, board };
   };
-  const { agoricNames, board } = await coreEval();
+
+  const sync = {
+    oracleDeposit: makePromiseKit(),
+  };
+  const { agoricNames, board } = await coreEval(sync.oracleDeposit.promise);
 
   /**
-   * @param {ZoeService} zoe
+   * @param {ERef<ZoeService>} zoe
    * @param {ERef<Purse>} purseP
    * @param {string} issue
    * @param {bigint} when
@@ -162,13 +201,57 @@ test('start contract; make work agreement', async t => {
     t.deepEqual(typeof result, 'string');
   };
 
+  /**
+   * @param {ERef<ZoeService>} zoe
+   * @param {import('@endo/promise-kit').PromiseKit<DepositFacet>} depositPK
+   */
+  const githubOracle = async (zoe, depositPK) => {
+    const invitationIssuer = E(zoe).getInvitationIssuer();
+    const invitationPurse = E(invitationIssuer).makeEmptyPurse();
+
+    const offerResults = new Map();
+
+    const acceptId = 'oracleAccept1';
+
+    // oracle operator does this
+    const setup = async amt => {
+      t.log('oracle invation amount', amt);
+      const invitation = await E(invitationPurse).withdraw(amt);
+      const seat = await E(zoe).offer(invitation, {
+        give: {},
+        want: {},
+        exit: { onDemand: undefined },
+      });
+      const reporter = await E(seat).getOfferResult();
+      t.log('oracle reporter', reporter);
+      offerResults.set(acceptId, reporter);
+    };
+
+    /** @type {DepositFacet} */
+    // @ts-expect-error callWhen
+    const depositFacet = Far('deposit', {
+      receive: async pmt => {
+        // XXX find purse by allegedBrand?
+        // @ts-expect-error callWhen
+        const amt = await E(invitationPurse).deposit(pmt);
+        void setup(amt);
+        return amt;
+      },
+    });
+    depositPK.resolve(depositFacet);
+  };
+
   const { rootNode, data } = makeFakeStorageKit('X');
 
   const {
     faucet,
     powers: { zoe },
   } = t.context;
-  await Promise.all([alice(zoe, faucet(25n * UNIT6))]);
+  await Promise.all([
+    alice(zoe, faucet(25n * UNIT6)),
+    githubOracle(zoe, sync.oracleDeposit),
+  ]);
+  t.log('done');
   t.pass();
 });
 
