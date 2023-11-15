@@ -1,9 +1,23 @@
-/* eslint-disable no-unused-vars */
-import { prepareExoClass, prepareExoClassKit } from '@agoric/vat-data';
-import { M, makeCopyBag } from '@endo/patterns';
-import { AmountShape } from '@agoric/ertp';
-import { TimestampShape } from '@agoric/time';
-import { OfferHandlerI, TimerShape } from '../../typeGuards';
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import {
+  prepareExoClass,
+  prepareExoClassKit,
+  provide,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
+import { OfferHandlerI } from '../../typeGuards';
+import {
+  DeliverProposalShape,
+  JobReportProposalShape,
+  OracleInvitationProposalShape,
+  makeWorkAgreementProposalShape,
+  ReportShape,
+  JobsReportContinuingIKit,
+  GimixContractFacetsIKit,
+} from './typeGuards.js';
+
+const { Fail, quote: q } = assert;
 
 /**
  * @typedef {object} GiMiXTerms
@@ -11,51 +25,92 @@ import { OfferHandlerI, TimerShape } from '../../typeGuards';
  * @property {import('@agoric/time/src/types').TimerService} timer
  */
 
-const JobReportProposalShape = M.splitRecord({
-  give: {},
-  want: {},
-  exit: { onDemand: undefined },
-});
-
-const OracleInvitationProposalShape = M.splitRecord({
-  give: {},
-  want: {},
-  exit: { onDemand: undefined },
-});
-
-const JobsReportContinuingIKit = {
-  invitationMakers: M.interface('JobReportInvitationMaker', {
-    JobReport: M.call().returns(M.any()),
-  }),
-  kitMustHaveMultipleFacets: M.interface('Stub', {}),
-};
-
-const GimixContractFacetsIKit = harden({
-  creatorFacet: M.interface('GimixCreatorFacetKit', {
-    makeOracleInvitation: M.call().returns(M.any()),
-  }),
-  publicFacet: M.interface('GimixPublicFacet', {
-    makeWorkAgreementInvitation: M.call().returns(M.any()),
-  }),
-});
-
 /**
  * @param {ZCF<GiMiXTerms>} zcf
  */
 export const prepare = async (zcf, _privateArgs, baggage) => {
   const { namesByAddress } = zcf.getTerms();
 
+  const workByJob = provideDurableMapStore(
+    baggage,
+    'JobWork',
+    harden({
+      keyShape: M.nat(),
+      valueShape: {
+        issueURL: M.string(),
+        requestorSeat: M.remotable('requestorSeat'),
+      },
+    }),
+  );
+
+  const makeDeliverHandler = prepareExoClass(
+    baggage,
+    'DeliverHandler',
+    OfferHandlerI,
+    (requestorSeat, report) => ({
+      requestorSeat,
+      report,
+    }),
+    {
+      handle(responderSeat) {
+        const {
+          state: { requestorSeat, report },
+        } = this;
+        const { jobID } = report;
+
+        workByJob.delete(jobID);
+        if (requestorSeat.hasExited()) {
+          // TODO check that the deadline actually has expired.
+          // Otherwise, report mysterious failure.
+          const reason = RangeError(`Offer deadline expired`);
+          responderSeat.fail(reason);
+          throw reason;
+        }
+        // TODO Where all the action happens
+      },
+    },
+    harden({
+      stateShape: {
+        requestorSeat: M.remotable('ZCFSeat'),
+        report: ReportShape,
+      },
+    }),
+  );
+
   const makeJobReportHandler = prepareExoClass(
     baggage,
     'JobReportHandler',
     OfferHandlerI,
-    () => ({}),
+    report => ({ report }),
     {
-      handle(seat) {
-        const { self, state } = this;
-        return 'something';
+      handle(_seat) {
+        const {
+          state: { report },
+        } = this;
+        const { deliverDepositAddr, jobID, issueURL } = report;
+
+        const depositFacetP = E(namesByAddress).lookup(deliverDepositAddr);
+        workByJob.has(jobID) || Fail`Gimix job ${q(jobID)} not found`;
+        const { issueURL: expectedIssueURL, requestorSeat } =
+          workByJob.get(jobID);
+        expectedIssueURL === issueURL ||
+          Fail`Gimix job ${q(jobID)} expected issue ${q(
+            expectedIssueURL,
+          )} not ${q(issueURL)}`;
+        const deliverInvitation = zcf.makeInvitation(
+          makeDeliverHandler(requestorSeat, report),
+          'gimix delivery',
+          report,
+          DeliverProposalShape,
+        );
+        return E(depositFacetP).receive(deliverInvitation);
       },
     },
+    harden({
+      stateShape: {
+        report: ReportShape,
+      },
+    }),
   );
 
   const makeJobReportContinuing = prepareExoClassKit(
@@ -65,14 +120,20 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     () => ({}),
     {
       invitationMakers: {
-        JobReport() {
-          const { facets, state } = this;
-          // eslint-disable-next-line no-use-before-define
-          return makeJobReportInvitation();
+        JobReport(report) {
+          return zcf.makeInvitation(
+            makeJobReportHandler(report),
+            'gimix job report',
+            report,
+            JobReportProposalShape,
+          );
         },
       },
       kitMustHaveMultipleFacets: {},
     },
+    harden({
+      stateShape: {},
+    }),
   );
 
   const makeOracleInvitationHandler = prepareExoClass(
@@ -81,14 +142,29 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     OfferHandlerI,
     () => ({}),
     {
-      handle(seat) {
-        const { self, state } = this;
-        // eslint-disable-next-line no-use-before-define
-        const jobReportContinuing = makeJobReportContinuing();
-        return jobReportContinuing;
+      handle(_seat) {
+        return makeJobReportContinuing();
       },
     },
+    harden({
+      stateShape: {},
+    }),
   );
+
+  const NEXT_JOB_ID_VAR = 'nextGimixJobID';
+  provide(baggage, NEXT_JOB_ID_VAR, () => 0n);
+
+  // Hazard: Sequential assignment leaks info about how many previous
+  // ones were allocated. This could both be a side channel and a covert
+  // channel, i.e., the source of the leakage may be inadvertantly or
+  // purposely leaking. However, this is a confidentiality-only leak,
+  // and our current assumption of a public transparent chain makes
+  // and the info at stake public anyway.
+  const getNextJobID = () => {
+    const nextGimixJobID = baggage.get(NEXT_JOB_ID_VAR);
+    baggage.set(NEXT_JOB_ID_VAR, nextGimixJobID + 1n);
+    return nextGimixJobID;
+  };
 
   const makeWorkAgreementHandler = prepareExoClass(
     baggage,
@@ -96,15 +172,27 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     OfferHandlerI,
     issueURL => ({ issueURL }),
     {
-      handle(seat) {
+      handle(requestorSeat) {
         const {
-          self,
           state: { issueURL },
         } = this;
-        const jobId = 'placeholder42';
-        return jobId;
+
+        const jobID = getNextJobID();
+        workByJob.init(
+          jobID,
+          harden({
+            issueURL,
+            requestorSeat,
+          }),
+        );
+        return jobID;
       },
     },
+    harden({
+      stateShape: {
+        issueURL: M.string(),
+      },
+    }),
   );
 
   const makeGimixContractFacets = prepareExoClassKit(
@@ -115,19 +203,31 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     {
       creatorFacet: {
         makeOracleInvitation() {
-          const { facets, state } = this;
-          // eslint-disable-next-line no-use-before-define
-          return makeOracleInvitation();
+          return zcf.makeInvitation(
+            makeOracleInvitationHandler(),
+            'gimix oracle invitation',
+            undefined,
+            OracleInvitationProposalShape,
+          );
         },
       },
       publicFacet: {
         makeWorkAgreementInvitation(issueURL) {
-          const { facets, state } = this;
-          // eslint-disable-next-line no-use-before-define
-          return makeWorkAgreementInvitation(issueURL);
+          return zcf.makeInvitation(
+            makeWorkAgreementHandler(issueURL),
+            'gimix work agreement',
+            harden({
+              issueURL,
+            }),
+            // eslint-disable-next-line no-use-before-define
+            makeWorkAgreementProposalShape(oracleBrand, issueURL),
+          );
         },
       },
     },
+    harden({
+      stateShape: {},
+    }),
   );
 
   // ///////////////////////////////////////////////////////////////////////////
@@ -158,68 +258,11 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
     'GimixOracle',
     'copyBag',
     undefined,
-    { elementShape: M.string() }, // The issueURL
+    { elementShape: M.string() }, // `Fixed ${issueURL}`
   );
 
-  const { brand: oracleBrand, issuer: oracleIssuer } =
-    gimixOracleMint.getIssuerRecord();
+  const { brand: oracleBrand } = gimixOracleMint.getIssuerRecord();
 
-  const makeJobReportInvitation = () => {
-    const jobReportHandler = makeJobReportHandler();
-
-    const jobReportInvitationP = zcf.makeInvitation(
-      jobReportHandler,
-      'gimix job report',
-      undefined,
-      JobReportProposalShape,
-    );
-    return jobReportInvitationP;
-  };
-
-  const makeOracleInvitation = () => {
-    const oracleInvitationHandler = makeOracleInvitationHandler();
-
-    const oracleInvitationP = zcf.makeInvitation(
-      oracleInvitationHandler,
-      'gimix oracle invitation',
-      undefined,
-      OracleInvitationProposalShape,
-    );
-    return oracleInvitationP;
-  };
-
-  const makeWorkAgreementInvitation = issueURL => {
-    const workAgreementHandler = makeWorkAgreementHandler(issueURL);
-
-    const WorkAgreementProposalShape = M.splitRecord({
-      give: { Acceptance: AmountShape },
-      want: {
-        Stamp: {
-          brand: oracleBrand,
-          value: makeCopyBag([[`Fixed ${issueURL}`, 1n]]),
-        },
-      },
-      exit: {
-        afterDeadline: {
-          timer: M.eref(TimerShape),
-          deadline: TimestampShape,
-        },
-      },
-    });
-
-    const workAgreementP = zcf.makeInvitation(
-      workAgreementHandler,
-      'gimix work agreement',
-      harden({
-        issueURL,
-      }),
-      WorkAgreementProposalShape,
-    );
-    return workAgreementP;
-  };
-
-  const gimixContractFacets = makeGimixContractFacets();
-
-  return gimixContractFacets;
+  return makeGimixContractFacets();
 };
 harden(prepare);
