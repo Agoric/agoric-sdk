@@ -166,7 +166,7 @@ const makeGitHub = log => {
       const st = NonNullish(status.get(url));
       assert(st.type === 'issue');
       status.set(url, { ...st, status: 'closed' });
-      log('closed', url);
+      // log('closed', url);
     },
 
     /**
@@ -297,7 +297,7 @@ test('execute work agreement', async t => {
     const give = {
       Acceptance: make(wkBrand.IST, bounty * UNIT6),
     };
-    t.log('bounty', give);
+    t.log('alice offers to give', give);
     const want = {
       Stamp: make(wkBrand.GimixOracle, makeCopyBag([[`Fixed ${issue}`, 1n]])),
     };
@@ -320,7 +320,7 @@ test('execute work agreement', async t => {
       { give, want, exit },
     );
 
-    t.log('resulting job id', jobID);
+    t.log('alice offer result job id', jobID);
     t.deepEqual(typeof jobID, 'bigint');
 
     const assignee = 'bob';
@@ -328,7 +328,7 @@ test('execute work agreement', async t => {
     assignIssuePK.resolve({ jobID, issue });
     t.log('alice assigns to', assignee, 'and waits for news on', issue, '...');
     const pr = await E(gitHub).getIssuePromise(issue);
-    t.log('alice decides to merge', pr);
+    t.log('alice merges', pr);
     await E(gitHub).mergePR(pr);
 
     const issuers = {
@@ -459,7 +459,7 @@ test('execute work agreement', async t => {
       prURL,
       deliverDepositAddr,
     }) => {
-      t.log('reportJobDone', { jobID, issueURL, deliverDepositAddr });
+      t.log('oralce makes JobReport', { jobID, issueURL, deliverDepositAddr });
       const reporter = NonNullish(offerResults.get(acceptId));
       const toReport = await E(reporter.invitationMakers).JobReport({
         deliverDepositAddr,
@@ -467,12 +467,11 @@ test('execute work agreement', async t => {
         jobID,
         prURL,
       });
-      const { seat, result } = await E(wallet.offers).executeOffer(
+      const { seat } = await E(wallet.offers).executeOffer(
         toReport,
         {},
         { issueURL, deliverDepositAddr },
       );
-      t.log('JobReport result', result, jobID);
       // get payouts?
       await E(seat).tryExit();
       reported.resolve(jobID);
@@ -480,7 +479,7 @@ test('execute work agreement', async t => {
 
     // oracle operator does this
     const setup = async amt => {
-      t.log('oracle invation amount', amt);
+      t.log('oracle received invation', amt);
       /** @type {Promise<Purse<'set'>>} */
       // @ts-expect-error assetkind
       const invitationPurse = wallet.offers.getPurseForBrand(amt.brand);
@@ -489,7 +488,7 @@ test('execute work agreement', async t => {
         invitation,
         { give: {}, want: {} },
       );
-      t.log('oracle reporter', reporter);
+      t.log('oracle offer result', reporter);
       offerResults.set(acceptId, reporter);
     };
 
@@ -502,7 +501,7 @@ test('execute work agreement', async t => {
        */
       deliver: async (prURL, jobID, deliverDepositAddr) => {
         const { pull, issue } = await E(gitHub).queryPR(prURL);
-        t.log('oracle claim', prURL, { pull, issue });
+        t.log('oracle evaluates delivery claim', jobID, { pull, issue });
         const ok =
           pull.author === issue.assignee &&
           pull.status === 'merged' &&
@@ -552,7 +551,7 @@ test('execute work agreement', async t => {
       agoricNames.brand.Invitation,
     );
     const invitationsAmt = await E(invitationPurse).getCurrentAmount();
-    t.log('bob has invitations', invitationsAmt);
+    t.log('bob invitation balance', invitationsAmt);
 
     const ipmt = await E(invitationPurse).withdraw(invitationsAmt);
     const { make } = AmountMath;
