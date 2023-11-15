@@ -7,7 +7,7 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { OfferHandlerI } from '../../typeGuards';
+import { OfferHandlerI } from '../../typeGuards.js';
 import {
   DeliverProposalShape,
   JobReportProposalShape,
