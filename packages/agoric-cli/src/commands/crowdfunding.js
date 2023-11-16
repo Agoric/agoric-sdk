@@ -23,8 +23,8 @@ export const makeCrowdfundingCommand = (_logger, io = {}) => {
       'after',
       `
     Example:
-    $ agoric run crowdfund provision --compensation 100 --compensation-brand-key "IST" > provision.json
-    $ agoric wallet send --from gov1 --keyring-backend=test --offer offer.json
+    $ bin/agops crowdfunding provision --compensation 100 --compensation-brand-key "IST" > provision.json
+    $ agoric wallet send --from gov1 --keyring-backend=test --offer provision.json
     $ agd query vstorage data published.crowdfunding.campaigns.1 --output json | jq ".value | fromjson .values "
     `,
     )
