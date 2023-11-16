@@ -83,12 +83,12 @@ test('basic flow', async t => {
 
   // verify the key was reserved
   t.deepEqual(chainStorage.keys(), [
-    `mockChainStorageRoot.crowdfund.bindings.1`,
+    `mockChainStorageRoot.crowdfund.campaigns.1`,
   ]);
   //   XXX getBody() assumes json
   //   t.deepEqual(
   //     chainStorage.getBody(
-  //       'mockChainStorageRoot.crowdfund.bindings.1',
+  //       'mockChainStorageRoot.crowdfund.campaigns.1',
   //       marshaller,
   //     ),
   //     {},

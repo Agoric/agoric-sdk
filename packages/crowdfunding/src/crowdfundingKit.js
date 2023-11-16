@@ -15,179 +15,241 @@ const CrowdfundingKitI = {
 
 /**
  * @typedef {{
- * bindingNode: StorageNode,
- * funderAmounts: MapStore<ZCFSeat, Amount<'nat'>>,
- * providerSeat: ZCFSeat,
- * threshold: Amount<'nat'>,
- * totalFunding: Amount<'nat'>,
- * }} Binding
+ *   campaignNode: StorageNode,
+ *   funderAmounts: MapStore<ZCFSeat, Amount<'nat'>>,
+ *   providerSeat: ZCFSeat,
+ *   threshold: Amount<'nat'>,
+ *   totalFunding: Amount<'nat'>,
+ * }} Campaign
  */
 
 /**
- * Generate the function comment for the given function.
+ * Initialize the crowdfunding contract environment. Configure the contract by setting
+ * up feeBrand storageNode (for vstorage access). The result is a CrowdfundingKit,
+ * from which the distinct creator and public facets are extracted and returned, ready for interaction.
  *
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {ZCF} zcf - the zcf parameter
  * @param {{
  *   feeBrand: Brand;
  *   storageNode: StorageNode;
- *   marshaller: Marshaller;
  * }} opts
  */
 export const prepareCrowdfundingKit = async (
   baggage,
   zcf,
-  { feeBrand, storageNode, marshaller },
+  { feeBrand, storageNode },
 ) => {
+  /**
+   * Initially, when the contract starts, retrieve stableAmountShape from feeBrand.
+   * Once retrieved, these values are stored in 'baggage'.
+   * In subsequent contract upgrades or initializations, instead of making remote calls again, `provideAll`
+   * efficiently fetches these values from the baggage. This process guarantees that the contract can be
+   * upgraded or re-initialized without needing to contact other vats (for feeBrand).
+   */
   const { stableAmountShape } = await provideAll(baggage, {
     stableAmountShape: () => E(feeBrand).getAmountShape(),
   });
 
+  /**
+   * @param {Campaign} campaign
+   * @param {ZCFSeat} newFunderSeat
+   */
+  const addToPool = (campaign, newFunderSeat) => {
+    const {
+      give: { Contribution: given },
+    } = newFunderSeat.getProposal();
+    console.log('addToPool', campaign, newFunderSeat, given);
+    given || Fail`newFunderSeat ${newFunderSeat} has invalid proposal`;
+    campaign.funderAmounts.init(newFunderSeat, given);
+
+    // return this campaign, be mindful of updating storage before it's read again
+    const totalFunding = AmountMath.add(campaign.totalFunding, given);
+    return { ...campaign, totalFunding };
+  };
+
+  /**
+   * @param {Campaign} campaign
+   */
+  function processFundingThresholdReached(campaign) {
+    // transfer the funds
+    // ??? is this data structure too large in RAM?
+    /** @type {TransferPart[]} */
+    const transfers = Array.from(campaign.funderAmounts.entries()).map(
+      // ??? what happens if we omit the AmountKeywordRecords
+      ([funderSeat, amt]) => [
+        funderSeat,
+        campaign.providerSeat,
+        { Contribution: amt },
+        { Compensation: amt },
+      ],
+    );
+    atomicRearrange(zcf, transfers);
+
+    // exit all the seats
+    campaign.providerSeat.exit();
+    for (const seat of campaign.funderAmounts.keys()) {
+      seat.exit();
+    }
+
+    // TODO remove seats that have been exited, removing them from totalFunding
+    // XXX maybe instead mutate the collection within this function
+  }
+
+  async function provisionOfferHandler(state, providerSeat) {
+    const { campaigns } = state;
+    const {
+      give: { Fee: given },
+      want: { Compensation },
+    } = providerSeat.getProposal();
+    console.info('makeProvisionInvitation', given);
+
+    const key = String(campaigns.getSize() + 1);
+    const campaignNode = await E(
+      E(storageNode).makeChildNode('campaigns'),
+    ).makeChildNode(key);
+    await E(campaignNode).setValue('RESERVED');
+    const funderAmounts = makeScalarBigMapStore('funderAmounts', {
+      durable: true,
+    });
+
+    campaigns.init(
+      key,
+      harden({
+        campaignNode,
+        funderAmounts,
+        providerSeat,
+        threshold: Compensation,
+        totalFunding: AmountMath.makeEmpty(feeBrand),
+      }),
+    );
+    // exit the seat when the campaign is fully funded
+    return harden({ key });
+  }
+
+  /**
+   *
+   * @param ReturnType<typeof prepareCrowdfundingKit>
+   */
+
+  function makeProvisionInvitationHelper(state) {
+    const offerHandler = async providerSeat =>
+      provisionOfferHandler(state, providerSeat);
+
+    return zcf.makeInvitation(
+      offerHandler,
+      'campaign',
+      undefined,
+      M.splitRecord({
+        // TODO charge a buck
+        //   give: { Fee: stableAmountShape },
+      }),
+    );
+  }
+
+  /**
+   * @param {object} opts
+   * @param {string} opts.key
+   * @param {object} state
+   * @param {ZCFSeat} fundingSeat
+   */
+  function fundingOfferHandler({ key }, state, fundingSeat) {
+    const { campaigns } = state;
+    const campaign = campaigns.get(key);
+    campaign || Fail`key ${key} not found`;
+
+    const {
+      give: { Contribution: given },
+    } = fundingSeat.getProposal();
+    console.info('makeFundingInvitation', given);
+    const updatedCampaign = addToPool(campaign, fundingSeat);
+
+    // check the threshold
+    if (AmountMath.isGTE(updatedCampaign.totalFunding, campaign.threshold)) {
+      console.info(`funding has been reached`);
+      processFundingThresholdReached(campaign);
+    }
+    campaigns.set(key, updatedCampaign);
+    // do not exit the seat until the threshold is met
+  }
+
+  /**
+   * Create an invitation that will be exposed through the `public` facet of the contract, allowing participants to join the campaign.
+   * The `key` acts as the address, directing participants to the correct campaign they wish to contribute to.
+   * `state` maintains the campaign's context, like a guest list, capturing who is participating and the nature of their contributions.
+   *
+   * Accepting this invitation places a participant in the `fundingSeat`, where they are ready to make their contribution.
+   * Here, `offerHandler` plays a crucial role in validating the participant's offer against the campaign's needs and guidelines,
+   * ensuring that each contribution aligns seamlessly with the campaign's objectives.
+   *
+   * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
+   * @param {object} opts
+   * @param {string} opts.key
+   * @param {object} state
+   */
+  function makeFundingInvitationHelper({ key }, state) {
+    const offerHandler = async seat =>
+      fundingOfferHandler({ key }, state, seat);
+
+    return zcf.makeInvitation(
+      offerHandler,
+      'funding',
+      undefined,
+      M.splitRecord({
+        give: { Contribution: stableAmountShape },
+      }),
+    );
+  }
+
+  /**
+   * initState function initializes the initial state of the contract. This state is then accessible
+   * within the facets through this.state, providing a shared and consistent data context for
+   * various functionalities of the contract.
+   */
   const initState = () => {
     return {
-      /** @type {MapStore<string, Binding>} */
-      bindings: makeScalarBigMapStore('bindings', { durable: true }),
+      /** @type {MapStore<string, Campaign>} */
+      campaigns: makeScalarBigMapStore('campaigns', { durable: true }),
     };
   };
 
   /**
-   *
-   * @param {Binding} binding
-   * @param {ZCFSeat} newFunderSeat
+   * Facets in Agoric smart contracts are similar to APIs. They provide specific interfaces
+   * through which users or other contracts can interact with the contract.
+   * Here facets implements interfaces defined in the CrowdfundingKitI interface.
    */
-  const addToPool = (binding, newFunderSeat) => {
-    const {
-      give: { Contribution: given },
-    } = newFunderSeat.getProposal();
-    console.log('addToPool', binding, newFunderSeat, given);
-    given || Fail`newFunderSeat ${newFunderSeat} has invalid proposal`;
-    binding.funderAmounts.init(newFunderSeat, given);
+  const facets = {
+    creator: {},
+    public: {
+      makeProvisionInvitation() {
+        return makeProvisionInvitationHelper(this.state);
+      },
 
-    // return this binding, be mindful of updating storage before it's read again
-    const totalFunding = AmountMath.add(binding.totalFunding, given);
-
-    // TODO remove seats that have been exited, removing them from totalFunding
-
-    // check the threshold
-    if (AmountMath.isGTE(totalFunding, binding.threshold)) {
-      // funding has been reached
-      console.info(`funding has been reached`);
-
-      // transfer the funds
-      // ??? is this data structure too large in RAM?
-      /** @type {TransferPart[]} */
-      const transfers = Array.from(binding.funderAmounts.entries()).map(
-        // ??? what happens if we omit the AmountKeywordRecords
-        ([funderSeat, amt]) => [
-          funderSeat,
-          binding.providerSeat,
-          { Contribution: amt },
-          { Compensation: amt },
-        ],
-      );
-      atomicRearrange(zcf, transfers);
-
-      // exit all the seats
-      binding.providerSeat.exit();
-      for (const seat of binding.funderAmounts.keys()) {
-        seat.exit();
-      }
-    }
-    // XXX maybe instead mutate the collection within this function
-    return { ...binding, totalFunding };
+      /**
+       * Generates a campaign invitation.
+       *
+       * @param {object} opts
+       * @param {string} opts.key
+       */
+      makeFundingInvitation({ key }) {
+        return makeFundingInvitationHelper({ key }, this.state);
+      },
+    },
   };
 
+  /**
+   * prepareExoClassKit initializes a class with multiple facets and state, suitable for
+   * complex smart contracts like CrowdfundingKit.
+   * CrowdfundingKitI outlines the structure and expected functionalities of the facets,
+   * and initState sets up the initial state required for these implementations to operate
+   * effectively within the contract.
+   */
   const makeCrowdfundingKit = prepareExoClassKit(
     baggage,
     'CrowdfundingKit',
     CrowdfundingKitI,
     initState,
-    {
-      creator: {},
-      public: {
-        /**
-         * Generates a binding invitation.
-         */
-        makeProvisionInvitation() {
-          const { bindings } = this.state;
-
-          const hook =
-            /** @param {ZCFSeat} providerSeat */
-            async providerSeat => {
-              const {
-                give: { Fee: given },
-                want: { Compensation },
-              } = providerSeat.getProposal();
-              console.info('makeProvisionInvitation', given);
-              const key = String(bindings.getSize() + 1);
-              const bindingNode = await E(
-                E(storageNode).makeChildNode('bindings'),
-              ).makeChildNode(key);
-              await E(bindingNode).setValue('RESERVED');
-              const funderAmounts = makeScalarBigMapStore('funderAmounts', {
-                durable: true,
-              });
-              bindings.init(
-                key,
-                harden({
-                  bindingNode,
-                  funderAmounts,
-                  providerSeat,
-                  threshold: Compensation,
-                  totalFunding: AmountMath.makeEmpty(feeBrand),
-                }),
-              );
-              // exit the seat when the binding is fully funded
-              return harden({
-                key,
-              });
-            };
-
-          return zcf.makeInvitation(
-            hook,
-            'binding',
-            undefined,
-            M.splitRecord({
-              // TODO charge a buck
-              //   give: { Fee: stableAmountShape },
-            }),
-          );
-        },
-        /**
-         * Generates a binding invitation.
-         *
-         * @param {object} opts
-         * @param {string} opts.key
-         */
-        makeFundingInvitation({ key }) {
-          const { bindings } = this.state;
-
-          const binding = bindings.get(key);
-          binding || Fail`key ${key} not found`;
-
-          const hook =
-            /** @param {ZCFSeat} seat */
-            async seat => {
-              const {
-                give: { Contribution: given },
-              } = seat.getProposal();
-              console.info('makeFundingInvitation', given);
-              const updatedBinding = addToPool(binding, seat);
-              bindings.set(key, updatedBinding);
-              // do not exit the seat until the threshold is met
-            };
-
-          return zcf.makeInvitation(
-            hook,
-            'funding',
-            undefined,
-            M.splitRecord({
-              give: { Contribution: stableAmountShape },
-            }),
-          );
-        },
-      },
-    },
+    facets,
   );
 
   return makeCrowdfundingKit;
