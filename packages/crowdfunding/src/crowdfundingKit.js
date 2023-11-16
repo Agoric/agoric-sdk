@@ -15,16 +15,16 @@ const CrowdfundingKitI = {
 
 /**
  * @typedef {{
- *   campaignNode: StorageNode,
+ *   poolNode: StorageNode,
  *   funderAmounts: MapStore<ZCFSeat, Amount<'nat'>>,
  *   providerSeat: ZCFSeat,
  *   threshold: Amount<'nat'>,
  *   totalFunding: Amount<'nat'>,
- * }} Campaign
+ * }} Pool
  */
 
 /**
- * @typedef {Pick<Campaign, 'threshold' | 'totalFunding'>} CampaignStatus
+ * @typedef {Pick<Pool, 'threshold' | 'totalFunding'>} PoolStatus
  */
 
 /**
@@ -57,51 +57,51 @@ export const prepareCrowdfundingKit = async (
   });
 
   /**
-   * @param {Campaign} campaign
+   * @param {Pool} pool
    */
-  const publishStatus = async ({ campaignNode, threshold, totalFunding }) => {
-    /** @type {CampaignStatus} */
+  const publishStatus = async ({ poolNode, threshold, totalFunding }) => {
+    /** @type {PoolStatus} */
     const status = {
       threshold,
       totalFunding,
     };
     const encoded = await E(marshaller).toCapData(status);
 
-    await E(campaignNode).setValue(
+    await E(poolNode).setValue(
       // TODO use RecorderKit to enforce shape ane provide a non-vstorage feed
       JSON.stringify(encoded),
     );
   };
 
   /**
-   * @param {Campaign} campaign
+   * @param {Pool} pool
    * @param {ZCFSeat} newFunderSeat
    */
-  const addToPool = (campaign, newFunderSeat) => {
+  const addToPool = (pool, newFunderSeat) => {
     const {
       give: { Contribution: given },
     } = newFunderSeat.getProposal();
-    console.log('addToPool', campaign, newFunderSeat, given);
+    console.log('addToPool', pool, newFunderSeat, given);
     given || Fail`newFunderSeat ${newFunderSeat} has invalid proposal`;
-    campaign.funderAmounts.init(newFunderSeat, given);
+    pool.funderAmounts.init(newFunderSeat, given);
 
-    // return this campaign, be mindful of updating storage before it's read again
-    const totalFunding = AmountMath.add(campaign.totalFunding, given);
-    return { ...campaign, totalFunding };
+    // return this pool, be mindful of updating storage before it's read again
+    const totalFunding = AmountMath.add(pool.totalFunding, given);
+    return { ...pool, totalFunding };
   };
 
   /**
-   * @param {Campaign} campaign
+   * @param {Pool} pool
    */
-  function processFundingThresholdReached(campaign) {
+  function processFundingThresholdReached(pool) {
     // transfer the funds
     // ??? is this data structure too large in RAM?
     /** @type {TransferPart[]} */
-    const transfers = Array.from(campaign.funderAmounts.entries()).map(
+    const transfers = Array.from(pool.funderAmounts.entries()).map(
       // ??? what happens if we omit the AmountKeywordRecords
       ([funderSeat, amt]) => [
         funderSeat,
-        campaign.providerSeat,
+        pool.providerSeat,
         { Contribution: amt },
         { Compensation: amt },
       ],
@@ -109,8 +109,8 @@ export const prepareCrowdfundingKit = async (
     atomicRearrange(zcf, transfers);
 
     // exit all the seats
-    campaign.providerSeat.exit();
-    for (const seat of campaign.funderAmounts.keys()) {
+    pool.providerSeat.exit();
+    for (const seat of pool.funderAmounts.keys()) {
       seat.exit();
     }
 
@@ -118,55 +118,55 @@ export const prepareCrowdfundingKit = async (
     // XXX maybe instead mutate the collection within this function
 
     // assume this succeeds
-    void publishStatus(campaign);
+    void publishStatus(pool);
   }
 
   /**
-   * @param {MapStore<string, Campaign>} campaigns
+   * @param {MapStore<string, Pool>} pools
    * @param {ZCFSeat} providerSeat
    */
-  async function provisionOfferHandler(campaigns, providerSeat) {
+  async function provisionOfferHandler(pools, providerSeat) {
     const {
       give: { Fee: given },
       want: { Compensation },
     } = providerSeat.getProposal();
     console.info('makeProvisionInvitation', given);
 
-    const key = String(campaigns.getSize() + 1);
-    const campaignNode = await E(
-      E(storageNode).makeChildNode('campaigns'),
+    const key = String(pools.getSize() + 1);
+    const poolNode = await E(
+      E(storageNode).makeChildNode('pools'),
     ).makeChildNode(key);
     const funderAmounts = makeScalarBigMapStore('funderAmounts', {
       durable: true,
     });
 
-    const campaign = harden({
-      campaignNode,
+    const pool = harden({
+      poolNode,
       funderAmounts,
       providerSeat,
       threshold: Compensation,
       totalFunding: AmountMath.makeEmpty(feeBrand),
     });
 
-    campaigns.init(key, campaign);
+    pools.init(key, pool);
 
     // assume this succeeds
-    void publishStatus(campaign);
+    void publishStatus(pool);
 
-    // exit the seat when the campaign is fully funded
+    // exit the seat when the pool is fully funded
     return harden({ key });
   }
 
   /**
-   * @param {MapStore<string, Campaign>} campaigns
+   * @param {MapStore<string, Pool>} pools
    */
-  function makeProvisionInvitationHelper(campaigns) {
+  function makeProvisionInvitationHelper(pools) {
     const offerHandler = async providerSeat =>
-      provisionOfferHandler(campaigns, providerSeat);
+      provisionOfferHandler(pools, providerSeat);
 
     return zcf.makeInvitation(
       offerHandler,
-      'campaign',
+      'pool',
       undefined,
       M.splitRecord({
         // TODO charge a buck
@@ -182,33 +182,33 @@ export const prepareCrowdfundingKit = async (
    * @param {ZCFSeat} fundingSeat
    */
   function fundingOfferHandler({ key }, state, fundingSeat) {
-    const { campaigns } = state;
-    const campaign = campaigns.get(key);
-    campaign || Fail`key ${key} not found`;
+    const { pools } = state;
+    const pool = pools.get(key);
+    pool || Fail`key ${key} not found`;
 
     const {
       give: { Contribution: given },
     } = fundingSeat.getProposal();
     console.info('makeFundingInvitation', given);
-    const updatedCampaign = addToPool(campaign, fundingSeat);
+    const updatedPool = addToPool(pool, fundingSeat);
 
     // check the threshold
-    if (AmountMath.isGTE(updatedCampaign.totalFunding, campaign.threshold)) {
+    if (AmountMath.isGTE(updatedPool.totalFunding, pool.threshold)) {
       console.info(`funding has been reached`);
-      processFundingThresholdReached(campaign);
+      processFundingThresholdReached(pool);
     }
-    campaigns.set(key, updatedCampaign);
+    pools.set(key, updatedPool);
     // do not exit the seat until the threshold is met
   }
 
   /**
-   * Create an invitation that will be exposed through the `public` facet of the contract, allowing participants to join the campaign.
-   * The `key` acts as the address, directing participants to the correct campaign they wish to contribute to.
-   * `state` maintains the campaign's context, like a guest list, capturing who is participating and the nature of their contributions.
+   * Create an invitation that will be exposed through the `public` facet of the contract, allowing participants to join the pool.
+   * The `key` acts as the address, directing participants to the correct pool they wish to contribute to.
+   * `state` maintains the pool's context, like a guest list, capturing who is participating and the nature of their contributions.
    *
    * Accepting this invitation places a participant in the `fundingSeat`, where they are ready to make their contribution.
-   * Here, `offerHandler` plays a crucial role in validating the participant's offer against the campaign's needs and guidelines,
-   * ensuring that each contribution aligns seamlessly with the campaign's objectives.
+   * Here, `offerHandler` plays a crucial role in validating the participant's offer against the pool's needs and guidelines,
+   * ensuring that each contribution aligns seamlessly with the pool's objectives.
    *
    * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
    * @param {object} opts
@@ -236,8 +236,8 @@ export const prepareCrowdfundingKit = async (
    */
   const initState = () => {
     return {
-      /** @type {MapStore<string, Campaign>} */
-      campaigns: makeScalarBigMapStore('campaigns', { durable: true }),
+      /** @type {MapStore<string, Pool>} */
+      pools: makeScalarBigMapStore('pools', { durable: true }),
     };
   };
 
@@ -258,11 +258,11 @@ export const prepareCrowdfundingKit = async (
       creator: {},
       public: {
         makeProvisionInvitation() {
-          return makeProvisionInvitationHelper(this.state.campaigns);
+          return makeProvisionInvitationHelper(this.state.pools);
         },
 
         /**
-         * Generates a campaign invitation.
+         * Generates a pool invitation.
          *
          * @param {object} opts
          * @param {string} opts.key
