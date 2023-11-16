@@ -15,6 +15,7 @@ import { Far } from '@endo/marshal';
  * @param {ZCF<{}>} zcf
  */
 const start = zcf => {
+  debugger;
   let offersCount = 0n;
 
   /** @type {OfferHandler} */
