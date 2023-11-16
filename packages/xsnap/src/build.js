@@ -4,8 +4,40 @@
 import * as childProcessTop from 'child_process';
 import fsTop from 'fs';
 import osTop from 'os';
+import { join } from 'path';
 
 const { freeze } = Object;
+
+// This package builds 'xsnap' program at install time. At runtime,
+// this package's API helps you launch an instance of that program and
+// then talk to it (over pipes).
+//
+// 'xsnap' is built from sources in `./xsnap-native/`, which link
+// against a library built from the sources in `./moddable/`.
+//
+// When built from a git clone of the agoric-sdk, these subdirectories
+// are populated as git submodules, so they will be clones of specific
+// commit IDs of repos from the "agoric-labs" organization. These
+// repos contain Agoric-specific forks of the upstream Moddable
+// code. We have two cases:
+//
+//   A: the subdirectories do not exist, which means we've cloned
+//      agoric-sdk but we have not yet run 'git submodule update
+//      --init'
+//   B: they do exist, and they have .git subdirectories
+//
+// When built from an NPM-registry -hosted tarball, these
+// subdirectories are filled with source code from the distribution
+// tarball (copied into the tarball by virtue of 'files' entries in
+// our package.json). This yields a third case:
+//
+//   C: they exist, but they lack a .git subdirectory
+//
+// In cases A and B, we want to run `git submodule update --init` on
+// each directory, to act upon any change in the desired commit ID
+// (e.g. if the developer switched git branches since the last
+// build). In case C, we shouldn't do anything (and in fact do not
+// need the 'git' executable at all).
 
 /** @param {string} path */
 const asset = path => new URL(path, import.meta.url).pathname;
@@ -84,7 +116,7 @@ function makeCLI(command, { spawn }) {
  * @param {string} repoUrl
  * @param {{ git: ReturnType<typeof makeCLI> }} io
  */
-const makeSubmodule = (path, repoUrl, { git }) => {
+const makeSubmodule = (path, repoUrl, { fs, git }) => {
   /** @param {string} text */
   const parseStatus = text =>
     text
@@ -109,11 +141,10 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 
   return freeze({
     path,
-    clone: async () => git.run(['clone', repoUrl, path]),
-    /** @param {string} commitHash */
-    checkout: async commitHash =>
-      git.run(['checkout', commitHash], { cwd: path }),
-    init: async () => git.run(['submodule', 'update', '--init', '--checkout']),
+    exists: () => fs.existsSync(path),
+    hasDotGit: () => fs.existsSync(join(path, '.git')),
+    init: async () => git.run(['submodule', 'update', '--init', '--checkout', path]),
+    update: async () => git.run(['submodule', 'update', '--init', '--checkout', path]),
     status: async () =>
       git.pipe(['submodule', 'status', path]).then(parseStatus),
     /** @param {string} leaf */
@@ -176,48 +207,49 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     },
   ];
 
-  if (args.includes('--show-env')) {
-    for (const submodule of submodules) {
-      const { path, envPrefix, commitHash } = submodule;
-      if (!commitHash) {
-        // We need to glean the commitHash and url from Git.
-        const sm = makeSubmodule(path, '?', { git });
-        // eslint-disable-next-line no-await-in-loop
-        const [[{ hash }], url] = await Promise.all([
-          sm.status(),
-          sm.config('url'),
-        ]);
-        submodule.commitHash = hash;
-        submodule.url = url;
-      }
-      stdout.write(`${envPrefix}URL=${submodule.url}\n`);
-      stdout.write(`${envPrefix}COMMIT_HASH=${submodule.commitHash}\n`);
-    }
-    return;
-  }
+  let usingGit = false; // we assume all subdirs are using git, or none are
+  const envRecordFile = 'build.env';
+  const envLines = [];
 
-  for (const { url, path, commitHash } of submodules) {
-    const submodule = makeSubmodule(path, url, { git });
+  for (const { url, path, commitHash, envPrefix } of submodules) {
+    const submodule = makeSubmodule(path, url, { fs, git });
 
-    // Allow overriding of the checked-out version of the submodule.
-    if (commitHash) {
-      // Do the moral equivalent of submodule update when explicitly overriding.
-      try {
-        fs.rmdirSync(submodule.path);
-      } catch (_e) {
-        // ignore
+    if (submodule.exists()) {
+      if (submodule.hasDotGit()) {
+        console.log(`case B: have submodule/.git`);
+        usingGit = true;
+        await submodule.update();
+      } else {
+        console.log(`case C: have submodule/ but not .git`);
+        // do nothing
       }
-      if (!fs.existsSync(submodule.path)) {
-        // eslint-disable-next-line no-await-in-loop
-        await submodule.clone();
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await submodule.checkout(commitHash);
     } else {
-      // eslint-disable-next-line no-await-in-loop
-      await submodule.init();
+      console.log(`case A: no submodule/ directory`);
+      usingGit = true;
+      await submodule.update();
+    }
+
+    if (usingGit) {
+      // record the submodule's source URL and git commit hash into
+      // build.env for later auditing
+
+      // We need to glean the commitHash and url from Git.
+      const sm = makeSubmodule(path, '?', { fs, git });
+      const [[{ hash }], url] = await Promise.all([
+        sm.status(),
+        sm.config('url'),
+      ]);
+      envLines.push(`${envPrefix}URL=${url}\n`);
+      envLines.push(`${envPrefix}COMMIT_HASH=${hash}\n`);
     }
   }
+  if (usingGit) {
+    fs.writeFileSync(envRecordFile, envLines.join(''));
+  }
+
+  //console.log(`-- returning instead of compiling`);
+  //return;
+  // now compile xsnap
 
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
@@ -254,6 +286,7 @@ main(process.argv.slice(2), {
     readFile: fsTop.promises.readFile,
     existsSync: fsTop.existsSync,
     rmdirSync: fsTop.rmdirSync,
+    writeFileSync: fsTop.writeFileSync,
   },
   os: {
     type: osTop.type,
