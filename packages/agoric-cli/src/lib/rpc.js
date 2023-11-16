@@ -79,9 +79,13 @@ export const makeVStorage = (powers, config = networkConfig) => {
           result: { response },
         } = data;
         if (response?.code !== 0) {
-          throw Error(
+          /** @type {any} */
+          const err = Error(
             `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
           );
+          err.code = response?.code;
+          err.codespace = response?.codespace;
+          throw err;
         }
         return data;
       });
@@ -143,7 +147,14 @@ export const makeVStorage = (powers, config = networkConfig) => {
           ));
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
-          if (err.message.match(/unknown request/)) {
+          if (
+            // CosmosSDK ErrNotFound; there is no data at the path
+            (err.codespace === 'sdk' && err.code === 38) ||
+            // CosmosSDK ErrUnknownRequest; misrepresentation of the same until
+            // https://github.com/Agoric/agoric-sdk/commit/dafc7c1708977aaa55e245dc09a73859cf1df192
+            // TODO remove after upgrade-12
+            err.message.match(/unknown request/)
+          ) {
             // console.error(err);
             break;
           }
