@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/order
 import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { E, Far } from '@endo/far';
 import { makeCopyBag } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -12,7 +12,6 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 // import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { TimeMath } from '@agoric/time';
@@ -39,7 +38,8 @@ const NonNullish = x => {
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const asset = ref => fileURLToPath(new URL(ref, import.meta.url));
+const myRequire = createRequire(import.meta.url);
+const asset = specifier => myRequire.resolve(specifier);
 
 const makeTestContext = async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
@@ -47,6 +47,10 @@ const makeTestContext = async t => {
   const bundle = await bundleCache.load(
     asset('../../../../src/contracts/gimix/gimix.js'),
     'gimix',
+  );
+  const centralSupplyBundle = await bundleCache.load(
+    asset('@agoric/vats/src/centralSupply.js'),
+    'centralSupply',
   );
 
   const eventLoopIteration = () => new Promise(setImmediate);
