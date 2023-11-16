@@ -94,6 +94,8 @@ export const prepareCrowdfundingKit = async (
 
     // TODO remove seats that have been exited, removing them from totalFunding
     // XXX maybe instead mutate the collection within this function
+
+    void E(campaign.campaignNode).setValue('FUNDED');
   }
 
   async function provisionOfferHandler(state, providerSeat) {
