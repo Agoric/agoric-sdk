@@ -26,6 +26,7 @@ import { makePerfCommand } from './commands/perf.js';
 import { makeInterCommand } from './commands/inter.js';
 import { makeAuctionCommand } from './commands/auction.js';
 import { makeTestCommand } from './commands/test-upgrade.js';
+import { makeCrowdfundingCommand } from './commands/crowdfunding.js';
 
 const logger = anylogger('agops');
 const progname = path.basename(process.argv[1]);
@@ -72,12 +73,14 @@ const procIO = {
   setTimeout,
 };
 
+// TODO define an agops command interface and auto-add every module in the directory
 program.addCommand(makeReserveCommand(logger, procIO));
 program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
 program.addCommand(makeInterCommand(procIO, { fetch }));
 program.addCommand(makeTestCommand(procIO, { fetch }));
+program.addCommand(makeCrowdfundingCommand(logger, procIO));
 
-E.when(program.parseAsync(process.argv), undefined, err => {
+await E.when(program.parseAsync(process.argv), undefined, err => {
   if (err instanceof CommanderError) {
     console.error(err.message);
   } else {
