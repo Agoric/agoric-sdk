@@ -72,8 +72,8 @@ export const startGiMiX = async (powers, config = {}) => {
     },
   } = powers;
   const {
-    bundleID = fail('GiMiX bundleID not provided'),
-    oracleAddress = fail('GiMiX oracleAddress not provided'),
+    bundleID = fail('no bundleID; try test-gimix-proposal.js?'),
+    oracleAddress = fail('no oracleAddress; try test-gimix-proposal.js?'),
   } = config.options?.GiMiX ?? {};
 
   const timerId = await E(board).getId(await chainTimerService);
