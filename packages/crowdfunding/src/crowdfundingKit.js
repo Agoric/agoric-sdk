@@ -24,6 +24,10 @@ const CrowdfundingKitI = {
  */
 
 /**
+ * @typedef {Pick<Campaign, 'threshold' | 'totalFunding'>} CampaignStatus
+ */
+
+/**
  * Initialize the crowdfunding contract environment. Configure the contract by setting
  * up feeBrand storageNode (for vstorage access). The result is a CrowdfundingKit,
  * from which the distinct creator and public facets are extracted and returned, ready for interaction.
@@ -32,13 +36,14 @@ const CrowdfundingKitI = {
  * @param {ZCF} zcf - the zcf parameter
  * @param {{
  *   feeBrand: Brand;
+ *   marshaller: Marshaller;
  *   storageNode: StorageNode;
  * }} opts
  */
 export const prepareCrowdfundingKit = async (
   baggage,
   zcf,
-  { feeBrand, storageNode },
+  { feeBrand, marshaller, storageNode },
 ) => {
   /**
    * Initially, when the contract starts, retrieve stableAmountShape from feeBrand.
@@ -50,6 +55,23 @@ export const prepareCrowdfundingKit = async (
   const { stableAmountShape } = await provideAll(baggage, {
     stableAmountShape: () => E(feeBrand).getAmountShape(),
   });
+
+  /**
+   * @param {Campaign} campaign
+   */
+  const publishStatus = async ({ campaignNode, threshold, totalFunding }) => {
+    /** @type {CampaignStatus} */
+    const status = {
+      threshold,
+      totalFunding,
+    };
+    const encoded = await E(marshaller).toCapData(status);
+
+    await E(campaignNode).setValue(
+      // TODO use RecorderKit to enforce shape ane provide a non-vstorage feed
+      JSON.stringify(encoded),
+    );
+  };
 
   /**
    * @param {Campaign} campaign
@@ -95,7 +117,8 @@ export const prepareCrowdfundingKit = async (
     // TODO remove seats that have been exited, removing them from totalFunding
     // XXX maybe instead mutate the collection within this function
 
-    void E(campaign.campaignNode).setValue('FUNDED');
+    // assume this succeeds
+    void publishStatus(campaign);
   }
 
   /**
@@ -113,21 +136,23 @@ export const prepareCrowdfundingKit = async (
     const campaignNode = await E(
       E(storageNode).makeChildNode('campaigns'),
     ).makeChildNode(key);
-    await E(campaignNode).setValue('RESERVED');
     const funderAmounts = makeScalarBigMapStore('funderAmounts', {
       durable: true,
     });
 
-    campaigns.init(
-      key,
-      harden({
-        campaignNode,
-        funderAmounts,
-        providerSeat,
-        threshold: Compensation,
-        totalFunding: AmountMath.makeEmpty(feeBrand),
-      }),
-    );
+    const campaign = harden({
+      campaignNode,
+      funderAmounts,
+      providerSeat,
+      threshold: Compensation,
+      totalFunding: AmountMath.makeEmpty(feeBrand),
+    });
+
+    campaigns.init(key, campaign);
+
+    // assume this succeeds
+    void publishStatus(campaign);
+
     // exit the seat when the campaign is fully funded
     return harden({ key });
   }
