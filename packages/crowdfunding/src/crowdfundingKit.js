@@ -98,8 +98,11 @@ export const prepareCrowdfundingKit = async (
     void E(campaign.campaignNode).setValue('FUNDED');
   }
 
-  async function provisionOfferHandler(state, providerSeat) {
-    const { campaigns } = state;
+  /**
+   * @param {MapStore<string, Campaign>} campaigns
+   * @param {ZCFSeat} providerSeat
+   */
+  async function provisionOfferHandler(campaigns, providerSeat) {
     const {
       give: { Fee: given },
       want: { Compensation },
@@ -130,13 +133,11 @@ export const prepareCrowdfundingKit = async (
   }
 
   /**
-   *
-   * @param ReturnType<typeof prepareCrowdfundingKit>
+   * @param {MapStore<string, Campaign>} campaigns
    */
-
-  function makeProvisionInvitationHelper(state) {
+  function makeProvisionInvitationHelper(campaigns) {
     const offerHandler = async providerSeat =>
-      provisionOfferHandler(state, providerSeat);
+      provisionOfferHandler(campaigns, providerSeat);
 
     return zcf.makeInvitation(
       offerHandler,
@@ -216,30 +217,6 @@ export const prepareCrowdfundingKit = async (
   };
 
   /**
-   * Facets in Agoric smart contracts are similar to APIs. They provide specific interfaces
-   * through which users or other contracts can interact with the contract.
-   * Here facets implements interfaces defined in the CrowdfundingKitI interface.
-   */
-  const facets = {
-    creator: {},
-    public: {
-      makeProvisionInvitation() {
-        return makeProvisionInvitationHelper(this.state);
-      },
-
-      /**
-       * Generates a campaign invitation.
-       *
-       * @param {object} opts
-       * @param {string} opts.key
-       */
-      makeFundingInvitation({ key }) {
-        return makeFundingInvitationHelper({ key }, this.state);
-      },
-    },
-  };
-
-  /**
    * prepareExoClassKit initializes a class with multiple facets and state, suitable for
    * complex smart contracts like CrowdfundingKit.
    * CrowdfundingKitI outlines the structure and expected functionalities of the facets,
@@ -251,7 +228,25 @@ export const prepareCrowdfundingKit = async (
     'CrowdfundingKit',
     CrowdfundingKitI,
     initState,
-    facets,
+    // define facets inline to infer the type for `this`
+    {
+      creator: {},
+      public: {
+        makeProvisionInvitation() {
+          return makeProvisionInvitationHelper(this.state.campaigns);
+        },
+
+        /**
+         * Generates a campaign invitation.
+         *
+         * @param {object} opts
+         * @param {string} opts.key
+         */
+        makeFundingInvitation({ key }) {
+          return makeFundingInvitationHelper({ key }, this.state);
+        },
+      },
+    },
   );
 
   return makeCrowdfundingKit;
