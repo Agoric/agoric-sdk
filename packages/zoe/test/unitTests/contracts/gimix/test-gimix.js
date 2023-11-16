@@ -466,7 +466,7 @@ test('execute work agreement', async t => {
 
       const my = makeNameHubKit();
       my.nameAdmin.update('depositFacet', depositFacet);
-      await E(namesByAddressAdmin).update(address, my.nameHub);
+      await E(namesByAddressAdmin).update(address, my.nameHub, my.nameAdmin);
       /** @type {SmartWallet} */
       const sw = { id, depositFacet, offers };
       return sw;
