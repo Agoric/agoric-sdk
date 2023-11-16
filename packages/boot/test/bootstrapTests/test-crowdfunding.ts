@@ -7,7 +7,6 @@ import { withAmountUtils } from '@agoric/zoe/src/contractSupport/testing.js';
 import type { TestFn } from 'ava';
 import { makeSwingsetTestKit } from './supports.ts';
 import { makeWalletFactoryDriver } from './drivers.ts';
-import { Offers } from '@agoric/crowdfunding/src/clientSupport.js';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -15,7 +14,7 @@ const makeDefaultTestContext = async t => {
     t.log,
     'bundles/crowdfunding',
     {
-      configSpecifier: '@agoric/vm-config/demo-crowdfunding-config.json',
+      configSpecifier: '@agoric/vm-config/decentral-crowdfunding-config.json',
     },
   );
 
