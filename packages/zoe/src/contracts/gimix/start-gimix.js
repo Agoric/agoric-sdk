@@ -11,6 +11,32 @@
 
 import { E, Far } from '@endo/far';
 
+// vstorage paths under published.*
+const BOARD_AUX = 'boardAux';
+
+/**
+ * Smallcaps marshalling for plain data (no caps/slots).
+ * Re-implemented to avoid linking @endo/marshal in
+ * in a core-eval script.
+ *
+ * Note unit test in test-gimix.js to confirm correctness.
+ *
+ * @param {*} data - PlainData
+ */
+const marshalPlainData = data =>
+  JSON.stringify({
+    body: `#${JSON.stringify(data)}`,
+    slots: [],
+  });
+
+export const oracleBrandAux = {
+  allegedName: 'GimixOracle',
+  /** @type {DisplayInfo} */
+  displayInfo: { assetKind: 'copyBag' },
+};
+
+export const oracleBrandAuxValue = marshalPlainData(oracleBrandAux);
+
 const trace = (...args) => console.log('start-gimix', ...args);
 
 const fail = msg => {
@@ -21,7 +47,6 @@ const fail = msg => {
  * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
  *
  * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- * @param namesByAddressAdminP
  */
 const fixHub = async namesByAddressAdmin => {
   /** @type {import('@agoric/vats').NameHub} */
@@ -43,6 +68,17 @@ const fixHub = async namesByAddressAdmin => {
 };
 
 /**
+ * Make a storage node for auxilliary data for a value on the board.
+ *
+ * @param {ERef<StorageNode>} chainStorage
+ * @param {string} boardId
+ */
+const makeBoardAuxNode = async (chainStorage, boardId) => {
+  const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
+  return E(boardAux).makeChildNode(boardId);
+};
+
+/**
  * @param {BootstrapPowers} powers
  * @param {{ options?: { GiMiX: {
  *   bundleID: string;
@@ -55,6 +91,7 @@ export const startGiMiX = async (powers, config = {}) => {
       agoricNames,
       board,
       chainTimerService,
+      chainStorage,
       namesByAddressAdmin,
       zoe,
     },
@@ -102,6 +139,13 @@ export const startGiMiX = async (powers, config = {}) => {
   produceIssuer.resolve(issuers.GimixOracle);
   produceBrand.resolve(brands.GimixOracle);
 
+  /** @type {ERef<StorageNode>} */
+  // @ts-expect-error only null in testing
+  const storage = chainStorage;
+  const boardId = await E(board).getId(brands.GimixOracle);
+  const node = await makeBoardAuxNode(storage, boardId);
+  await E(node).setValue(oracleBrandAuxValue);
+
   trace('gimix started!');
 };
 
@@ -110,6 +154,7 @@ export const manifest = /** @type {const} */ ({
     consume: {
       agoricNames: true,
       board: true,
+      chainStorage: true,
       chainTimerService: true,
       namesByAddress: true,
       namesByAddressAdmin: true,

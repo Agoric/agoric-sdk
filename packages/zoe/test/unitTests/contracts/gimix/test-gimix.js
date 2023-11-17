@@ -10,22 +10,27 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-// import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { TimeMath } from '@agoric/time';
 import { deeplyFulfilledObject } from '@agoric/internal';
 
-import buildManualTimer from '../../../../tools/manualTimer.js';
-import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
-import { startGiMiX } from '../../../../src/contracts/gimix/start-gimix.js';
+import { makeMarshal } from '@endo/marshal';
 import { mintStablePayment } from './mintStable.js';
+import {
+  oracleBrandAuxValue,
+  startGiMiX,
+} from '../../../../src/contracts/gimix/start-gimix.js';
+import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
 
 const { entries } = Object;
+const { Fail } = assert;
 
 /** @type {<T>(x: T | null | undefined) => T} */
 const NonNullish = x => {
@@ -116,11 +121,13 @@ const makeTestContext = async t => {
     spaces.installation.produce.centralSupply.resolve(centralSupply);
 
     const board = makeFakeBoard();
+    const { rootNode, data: _todo } = makeFakeStorageKit('published');
 
     const { produce, consume } = makePromiseSpace();
     produce.agoricNames.resolve(agoricNames);
     produce.board.resolve(board);
     produce.chainTimerService.resolve(chainTimerService);
+    produce.chainStorage.resolve(rootNode);
     produce.feeMintAccess.resolve(feeMintAccess);
     produce.namesByAddress.resolve(namesByAddress);
     produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
@@ -619,8 +626,6 @@ test('execute work agreement', async t => {
     t.deepEqual(amts, want);
   };
 
-  // const { rootNode, data } = makeFakeStorageKit('X');
-
   const gitHub = Promise.resolve(makeGitHub(t.log));
   const {
     faucet,
@@ -667,6 +672,22 @@ test('execute work agreement', async t => {
   ]);
   t.log('done');
   t.pass();
+});
+
+test('GimixOracle brandAux marshal re-implementation', t => {
+  const smallcaps = /** @type {const} */ ({
+    serializeBodyFormat: 'smallcaps',
+  });
+  const marshalData = makeMarshal(
+    _val => Fail`data only`,
+    undefined,
+    smallcaps,
+  );
+  const displayInfo = { assetKind: 'copyBag' };
+  const allegedName = 'GimixOracle';
+  const capData = marshalData.toCapData(harden({ displayInfo, allegedName }));
+
+  t.is(JSON.stringify(capData), oracleBrandAuxValue);
 });
 
 test.todo('make work agreement at wallet bridge / vstorage level');
