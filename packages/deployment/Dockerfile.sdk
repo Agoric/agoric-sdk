@@ -53,7 +53,7 @@ RUN \
   yarn build
 
 # Remove dev dependencies.
-RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
+RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/xsnap/build/tmp
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
 # RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
