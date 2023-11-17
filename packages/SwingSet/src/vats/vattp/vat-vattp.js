@@ -139,7 +139,6 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       // TODO: Stop silently creating mailboxes.
       // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
-      // @ts-expect-error bad typedef
       inbound.deliverMessages(newMessages);
     },
 
@@ -147,7 +146,6 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       // TODO: Stop silently creating mailboxes.
       // https://github.com/Agoric/agoric-sdk/issues/5824
       const { inbound } = provideMailbox(name);
-      // @ts-expect-error bad typedef
       inbound.deliverAck(ack);
     },
   };

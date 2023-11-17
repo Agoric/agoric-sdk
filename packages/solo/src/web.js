@@ -9,6 +9,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocket from 'ws';
 import anylogger from 'anylogger';
 import morgan from 'morgan';
+import { format as urlFormat } from 'url';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -148,21 +149,29 @@ export async function makeHTTPListener(
   const htmldir = path.join(basedir, 'html');
   log(`Serving static files from ${htmldir}`);
   app.use(express.static(htmldir));
-  app.use(express.static(new URL('../public', import.meta.url).pathname));
+  const soloHtmlDir = new URL('../public', import.meta.url).pathname;
+  app.use(express.static(soloHtmlDir));
 
   if (walletHtmlDir && !bridgeTarget) {
-    // Transition localStorage based bridge
+    // Guide all callers to /wallet/bridge.html
     if (existsSync(path.join(walletHtmlDir, 'bridge.html'))) {
-      console.log('redirecting wallet bridge');
+      console.log('redirecting /wallet-bridge.html to /wallet/bridge.html');
       app.get('/wallet-bridge.html', (req, res) =>
-        res.redirect('/wallet/bridge.html'),
+        res.redirect(
+          urlFormat({ pathname: '/wallet/bridge.html', query: req.query }),
+        ),
+      );
+    } else {
+      console.log('serving /wallet/bridge.html from solo wallet-bridge.html');
+      app.get('/wallet/bridge.html', (_, res) =>
+        res.sendFile(path.resolve(soloHtmlDir, 'wallet-bridge.html')),
       );
     }
 
     // Serve the wallet directory.
     app.use('/wallet', express.static(walletHtmlDir));
 
-    // Default GETs to /wallet/index.html for history routing.
+    // Default non-bridge GETs to /wallet/index.html for history routing.
     app.get('/wallet/*', (_, res) =>
       res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
     );
