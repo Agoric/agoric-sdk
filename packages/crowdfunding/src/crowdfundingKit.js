@@ -1,8 +1,8 @@
 import { Fail } from '@agoric/assert';
 // ??? is it okay for a contract to import @agoric/internal?
 import { allValues } from '@agoric/internal';
-import { AmountMath } from '@agoric/ertp';
-import { M } from '@agoric/store';
+import { AssetKind, AmountMath } from '@agoric/ertp';
+import { M, mustMatch, makeCopySet } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -11,6 +11,7 @@ import { E } from '@endo/eventual-send';
 const CrowdfundingKitI = {
   creator: M.interface('CrowdfundingKit creator facet', {}),
   public: M.interface('CrowdfundingKit public facet', {
+    getContributionTokenBrand: M.callWhen().returns(M.remotable('Brand')),
     makeProvisionInvitation: M.callWhen().returns(M.remotable('Invitation')),
     makeFundingInvitation: M.callWhen().returns(M.remotable('Invitation')),
   }),
@@ -18,12 +19,25 @@ const CrowdfundingKitI = {
 
 /**
  * @typedef {{
+ *   poolName?: string,
+ * }} PoolData
+ */
+
+/**
+ * @typedef {{
+ *   amount: Amount<'nat'>,
+ *   funderName?: string,
+ * }} FunderData
+ */
+
+/**
+ * @typedef {{
  *   poolNode: StorageNode,
- *   funderAmounts: MapStore<ZCFSeat, Amount<'nat'>>,
+ *   funderData: MapStore<ZCFSeat, FunderData>,
  *   providerSeat: ZCFSeat,
  *   threshold: Amount<'nat'>,
  *   totalFunding: Amount<'nat'>,
- * }} Pool
+ * } & PoolData} Pool
  */
 
 /**
@@ -79,14 +93,18 @@ export const prepareCrowdfundingKit = async (
   /**
    * @param {Pool} pool
    * @param {ZCFSeat} newFunderSeat
+   * @param {Partial<Exclude<FunderData, 'amount'>>} newFunderData
    */
-  const addToPool = (pool, newFunderSeat) => {
+  const addToPool = (pool, newFunderSeat, newFunderData) => {
     const {
       give: { Contribution: given },
     } = newFunderSeat.getProposal();
     console.log('addToPool', pool, newFunderSeat, given);
     given || Fail`newFunderSeat ${newFunderSeat} has invalid proposal`;
-    pool.funderAmounts.init(newFunderSeat, given);
+    pool.funderData.init(
+      newFunderSeat,
+      harden({ ...newFunderData, amount: given }),
+    );
 
     // return this pool, be mindful of updating storage before it's read again
     const totalFunding = AmountMath.add(pool.totalFunding, given);
@@ -95,25 +113,40 @@ export const prepareCrowdfundingKit = async (
 
   /**
    * @param {Pool} pool
+   * @param {{poolKey: string} & Pick<ReturnType<initState>, 'contributionTokenMintP'>} options
    */
-  function processFundingThresholdReached(pool) {
+  async function processFundingThresholdReached(
+    pool,
+    { poolKey, contributionTokenMintP },
+  ) {
+    const { poolName } = pool;
+    const mint = await contributionTokenMintP;
+    const { brand } = mint.getIssuerRecord();
     // transfer the funds
     // ??? is this data structure too large in RAM?
     /** @type {TransferPart[]} */
-    const transfers = Array.from(pool.funderAmounts.entries()).map(
+    const transfers = Array.from(pool.funderData.entries()).map(
       // ??? what happens if we omit the AmountKeywordRecords
-      ([funderSeat, amt]) => [
-        funderSeat,
-        pool.providerSeat,
-        { Contribution: amt },
-        { Compensation: amt },
-      ],
+      ([funderSeat, funderData]) => {
+        const { amount, funderName } = funderData;
+        const giftAmount = AmountMath.make(
+          brand,
+          makeCopySet([{ poolKey, poolName, funderName }]),
+        );
+        mint.mintGains({ ContributionToken: giftAmount }, funderSeat);
+        return [
+          funderSeat,
+          pool.providerSeat,
+          { Contribution: amount },
+          { Compensation: amount },
+        ];
+      },
     );
     atomicRearrange(zcf, transfers);
 
     // exit all the seats
     pool.providerSeat.exit();
-    for (const seat of pool.funderAmounts.keys()) {
+    for (const seat of pool.funderData.keys()) {
       seat.exit();
     }
 
@@ -124,26 +157,35 @@ export const prepareCrowdfundingKit = async (
   /**
    * @param {MapStore<string, Pool>} pools
    * @param {ZCFSeat} providerSeat
+   * @param {Partial<PoolData>} [offerArgs]
    */
-  async function provisionOfferHandler(pools, providerSeat) {
+  async function provisionOfferHandler(
+    pools,
+    providerSeat,
+    offerArgs = harden({}),
+  ) {
     const {
       give: { Fee: given },
       want: { Compensation },
     } = providerSeat.getProposal();
     console.info('makeProvisionInvitation', given);
 
+    mustMatch(offerArgs, M.splitRecord({}, { poolName: M.string() }));
+    const { poolName } = offerArgs;
+
     const poolKey = String(pools.getSize() + 1);
     const poolNodeP = E(E(storageNode).makeChildNode('pools')).makeChildNode(
       poolKey,
     );
-    const funderAmounts = makeScalarBigMapStore('funderAmounts', {
+    const funderData = makeScalarBigMapStore('funderData', {
       durable: true,
     });
 
     /** @type {Pool} */
     const pool = await allValues({
+      poolName,
       poolNode: poolNodeP,
-      funderAmounts,
+      funderData,
       providerSeat,
       threshold: Compensation,
       totalFunding: AmountMath.makeEmpty(feeBrand),
@@ -162,8 +204,8 @@ export const prepareCrowdfundingKit = async (
    * @param {MapStore<string, Pool>} pools
    */
   function makeProvisionInvitationHelper(pools) {
-    const offerHandler = async providerSeat =>
-      provisionOfferHandler(pools, providerSeat);
+    const offerHandler = async (providerSeat, offerArgs) =>
+      provisionOfferHandler(pools, providerSeat, offerArgs);
 
     return zcf.makeInvitation(
       offerHandler,
@@ -181,22 +223,35 @@ export const prepareCrowdfundingKit = async (
    * @param {string} opts.poolKey
    * @param {ReturnType<initState>} state
    * @param {ZCFSeat} funderSeat
+   * @param {Partial<Exclude<FunderData, 'amount'>>} [offerArgs]
    */
-  function fundingOfferHandler({ poolKey }, state, funderSeat) {
-    const { pools } = state;
+  async function fundingOfferHandler(
+    { poolKey },
+    state,
+    funderSeat,
+    offerArgs = harden({}),
+  ) {
+    const { pools, contributionTokenMintP } = state;
     const storedPool = pools.get(poolKey);
     storedPool || Fail`poolKey ${poolKey} not found`;
 
+    mustMatch(offerArgs, M.splitRecord({}, { funderName: M.string() }));
+    const { funderName } = offerArgs;
     const {
       give: { Contribution: given },
     } = funderSeat.getProposal();
     console.info('makeFundingInvitation', given);
-    const updatedPool = addToPool(storedPool, funderSeat);
+
+    await null;
+    const updatedPool = addToPool(storedPool, funderSeat, { funderName });
 
     // check the threshold
     if (AmountMath.isGTE(updatedPool.totalFunding, updatedPool.threshold)) {
       console.info(`funding has been reached`);
-      processFundingThresholdReached(updatedPool);
+      await processFundingThresholdReached(updatedPool, {
+        poolKey,
+        contributionTokenMintP,
+      });
     }
     pools.set(poolKey, updatedPool);
 
@@ -223,8 +278,8 @@ export const prepareCrowdfundingKit = async (
   function makeFundingInvitationHelper({ poolKey }, state) {
     state.pools.has(poolKey) || Fail`poolKey ${poolKey} not found`;
 
-    const offerHandler = async seat =>
-      fundingOfferHandler({ poolKey }, state, seat);
+    const offerHandler = async (seat, offerArgs) =>
+      fundingOfferHandler({ poolKey }, state, seat, offerArgs);
 
     return zcf.makeInvitation(
       offerHandler,
@@ -242,7 +297,13 @@ export const prepareCrowdfundingKit = async (
    * various functionalities of the contract.
    */
   const initState = () => {
+    // TODO makeZCFMint should harden its own result
+    const contributionTokenMintP = harden(
+      zcf.makeZCFMint('CrowdfundContributionToken', AssetKind.COPY_SET),
+    );
+
     return {
+      contributionTokenMintP,
       /** @type {MapStore<string, Pool>} */
       pools: makeScalarBigMapStore('pools', { durable: true }),
     };
@@ -264,6 +325,13 @@ export const prepareCrowdfundingKit = async (
     {
       creator: {},
       public: {
+        async getContributionTokenBrand() {
+          const issuerKit = await E(
+            this.state.contributionTokenMintP,
+          ).getIssuerRecord();
+          return issuerKit.brand;
+        },
+
         makeProvisionInvitation() {
           return makeProvisionInvitationHelper(this.state.pools);
         },

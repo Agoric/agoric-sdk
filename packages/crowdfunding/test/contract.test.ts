@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeCopySet } from '@agoric/store';
 import { withAmountUtils } from '@agoric/zoe/src/contractSupport/testing.js';
 import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -102,22 +103,36 @@ test('basic flow', async t => {
     'request for invitation with a bad poolKey is rejected',
   );
 
-  const funder1Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ poolKey }),
-    harden({
-      give: { Contribution: stable.units(99) },
-    }),
-    harden({ Contribution: stable.mint.mintPayment(stable.units(99)) }),
-  );
+  /**
+   * Makes a funding invitation and offer against it.
+   *
+   * @param {number} giveUnits
+   * @param {string} [funderName]
+   * @returns {Promise<UserSeat>}
+   */
+  const makeFunderSeat = async (giveUnits, funderName) =>
+    E(zoe).offer(
+      E(publicFacet).makeFundingInvitation({ poolKey }),
+      harden({
+        give: { Contribution: stable.units(giveUnits) },
+      }),
+      harden({
+        Contribution: stable.mint.mintPayment(stable.units(giveUnits)),
+      }),
+      funderName && harden({ funderName }),
+    );
+
+  const funder1Seat = await makeFunderSeat(99);
   t.false(await E(providerSeat).hasExited());
 
-  const funder2Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ poolKey }),
-    harden({
-      give: { Contribution: stable.units(1) },
-    }),
-    harden({ Contribution: stable.mint.mintPayment(stable.units(1)) }),
-  );
+  // await t.throwsAsync(
+  //   () => makeFunderSeat(1, { isString: false }),
+  //   { message: 'TODO' },
+  //   'offer with a bad funderName is rejected',
+  // );
+  t.false(await E(providerSeat).hasExited());
+
+  const funder2Seat = await makeFunderSeat(1, 'Gene');
   t.true(await E(providerSeat).hasExited());
 
   t.deepEqual(await E(providerSeat).getFinalAllocation(), {
@@ -125,11 +140,19 @@ test('basic flow', async t => {
     Compensation: stable.units(100),
     Fee: stable.units(1),
   });
-  // no money left in funding seats
+  // funding seats have tokens in place of their contributions
+  const brand = await E(publicFacet).getContributionTokenBrand();
+  const makeTokenAmount = (funderName = undefined) =>
+    AmountMath.make(
+      brand,
+      makeCopySet([{ poolKey, poolName: undefined, funderName }]),
+    );
   t.deepEqual(await E(funder1Seat).getFinalAllocation(), {
     Contribution: stable.makeEmpty(),
+    ContributionToken: makeTokenAmount(),
   });
   t.deepEqual(await E(funder2Seat).getFinalAllocation(), {
     Contribution: stable.makeEmpty(),
+    ContributionToken: makeTokenAmount('Gene'),
   });
 });
