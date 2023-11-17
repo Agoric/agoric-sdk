@@ -221,6 +221,8 @@ export const prepareCrowdfundingKit = async (
    * @param {ReturnType<initState>} state
    */
   function makeFundingInvitationHelper({ poolKey }, state) {
+    state.pools.has(poolKey) || Fail`poolKey ${poolKey} not found`;
+
     const offerHandler = async seat =>
       fundingOfferHandler({ poolKey }, state, seat);
 

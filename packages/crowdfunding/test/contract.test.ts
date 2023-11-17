@@ -96,6 +96,12 @@ test('basic flow', async t => {
   //     {},
   //   );
 
+  await t.throwsAsync(
+    () => E(publicFacet).makeFundingInvitation({ poolKey: `${poolKey}x` }),
+    { message: /poolKey .*?\bnot found/ },
+    'request for invitation with a bad poolKey is rejected',
+  );
+
   const funder1Seat = await E(zoe).offer(
     E(publicFacet).makeFundingInvitation({ poolKey }),
     harden({
