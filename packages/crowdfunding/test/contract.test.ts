@@ -2,8 +2,8 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/src/contractSupport/testing.js';
+import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -19,11 +19,11 @@ const crowdfundPath = `${dirname}/../src/crowdfunding.contract.js`;
 const makeTestContext = async () => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
   const crowdfundBundle = await bundleCache.load(crowdfundPath, 'crowdfund');
-  const { zoe } = await setUpZoeForTest();
+  const zoeP = E.get(setUpZoeForTest()).zoe;
 
-  const installs = {
-    crowdfund: await E(zoe).install(crowdfundBundle),
-  };
+  const installs = allValues({
+    crowdfund: E(zoeP).install(crowdfundBundle),
+  });
 
   const board = makeFakeBoard();
 
@@ -34,15 +34,15 @@ const makeTestContext = async () => {
 
   const stable = withAmountUtils(makeIssuerKit('FakeStable'));
 
-  return {
-    zoe: await zoe,
+  return allValues({
+    zoe: zoeP,
     chainStorage,
     storageNode,
     installs,
     board,
     marshaller,
     stable,
-  };
+  });
 };
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
@@ -79,38 +79,41 @@ test('basic flow', async t => {
     }),
     harden({ Fee: stable.mint.mintPayment(Fee) }),
   );
-  await eventLoopIteration();
+  const providerOfferResult = await E(providerSeat).getOfferResult();
+  t.assert(Reflect.getOwnPropertyDescriptor(providerOfferResult, 'poolKey'));
+  const { poolKey } = providerOfferResult;
 
   // verify the key was reserved
-  t.deepEqual(chainStorage.keys(), [`mockChainStorageRoot.crowdfund.pools.1`]);
+  t.deepEqual(chainStorage.keys(), [
+    `mockChainStorageRoot.crowdfund.pools.${poolKey}`,
+  ]);
   //   XXX getBody() assumes json
   //   t.deepEqual(
   //     chainStorage.getBody(
-  //       'mockChainStorageRoot.crowdfund.pools.1',
+  //       `mockChainStorageRoot.crowdfund.pools.${poolKey}`,
   //       marshaller,
   //     ),
   //     {},
   //   );
 
   const funder1Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ poolKey: '1' }),
+    E(publicFacet).makeFundingInvitation({ poolKey }),
     harden({
       give: { Contribution: stable.units(99) },
     }),
     harden({ Contribution: stable.mint.mintPayment(stable.units(99)) }),
   );
+  t.false(await E(providerSeat).hasExited());
 
   const funder2Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ poolKey: '1' }),
+    E(publicFacet).makeFundingInvitation({ poolKey }),
     harden({
       give: { Contribution: stable.units(1) },
     }),
     harden({ Contribution: stable.mint.mintPayment(stable.units(1)) }),
   );
+  t.true(await E(providerSeat).hasExited());
 
-  await eventLoopIteration();
-
-  t.deepEqual(await E(providerSeat).getOfferResult(), { poolKey: '1' });
   t.deepEqual(await E(providerSeat).getFinalAllocation(), {
     // note, they'll get whatever amount put it over the threshold
     Compensation: stable.units(100),
