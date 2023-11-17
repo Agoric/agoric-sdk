@@ -9,7 +9,9 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
 
 const CrowdfundingKitI = {
-  creator: M.interface('CrowdfundingKit creator facet', {}),
+  creator: M.interface('CrowdfundingKit creator facet', {
+    finish: M.callWhen().returns(),
+  }),
   public: M.interface('CrowdfundingKit public facet', {
     getContributionTokenBrand: M.callWhen().returns(M.remotable('Brand')),
     makeProvisionInvitation: M.callWhen().returns(M.remotable('Invitation')),
@@ -113,14 +115,12 @@ export const prepareCrowdfundingKit = async (
 
   /**
    * @param {Pool} pool
-   * @param {{poolKey: string} & Pick<ReturnType<initState>, 'contributionTokenMintP'>} options
+   * @param {string} poolKey
+   * @param {FinishedState} state
    */
-  async function processFundingThresholdReached(
-    pool,
-    { poolKey, contributionTokenMintP },
-  ) {
+  async function processFundingThresholdReached(pool, poolKey, state) {
     const { poolName } = pool;
-    const mint = await contributionTokenMintP;
+    const { contributionTokenMint: mint } = state;
     const { brand } = mint.getIssuerRecord();
     // transfer the funds
     // ??? is this data structure too large in RAM?
@@ -221,7 +221,7 @@ export const prepareCrowdfundingKit = async (
   /**
    * @param {object} opts
    * @param {string} opts.poolKey
-   * @param {ReturnType<initState>} state
+   * @param {FinishedState} state
    * @param {ZCFSeat} funderSeat
    * @param {Partial<Exclude<FunderData, 'amount'>>} [offerArgs]
    */
@@ -231,7 +231,7 @@ export const prepareCrowdfundingKit = async (
     funderSeat,
     offerArgs = harden({}),
   ) {
-    const { pools, contributionTokenMintP } = state;
+    const { pools } = state;
     const storedPool = pools.get(poolKey);
     storedPool || Fail`poolKey ${poolKey} not found`;
 
@@ -248,10 +248,7 @@ export const prepareCrowdfundingKit = async (
     // check the threshold
     if (AmountMath.isGTE(updatedPool.totalFunding, updatedPool.threshold)) {
       console.info(`funding has been reached`);
-      await processFundingThresholdReached(updatedPool, {
-        poolKey,
-        contributionTokenMintP,
-      });
+      await processFundingThresholdReached(updatedPool, poolKey, state);
     }
     pools.set(poolKey, updatedPool);
 
@@ -271,11 +268,10 @@ export const prepareCrowdfundingKit = async (
    * ensuring that each contribution aligns seamlessly with the pool's objectives.
    *
    * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
-   * @param {object} opts
-   * @param {string} opts.poolKey
-   * @param {ReturnType<initState>} state
+   * @param {string} poolKey
+   * @param {FinishedState} state
    */
-  function makeFundingInvitationHelper({ poolKey }, state) {
+  function makeFundingInvitationHelper(poolKey, state) {
     state.pools.has(poolKey) || Fail`poolKey ${poolKey} not found`;
 
     const offerHandler = async (seat, offerArgs) =>
@@ -297,16 +293,27 @@ export const prepareCrowdfundingKit = async (
    * various functionalities of the contract.
    */
   const initState = () => {
-    // TODO makeZCFMint should harden its own result
-    const contributionTokenMintP = harden(
-      zcf.makeZCFMint('CrowdfundContributionToken', AssetKind.COPY_SET),
-    );
-
     return {
-      contributionTokenMintP,
+      /** @type {unknown} */
+      contributionTokenMint: undefined,
       /** @type {MapStore<string, Pool>} */
       pools: makeScalarBigMapStore('pools', { durable: true }),
     };
+  };
+
+  /** @typedef {ReturnType<initState> & {contributionTokenMint: ZCFMint<'copySet'>}} FinishedState */
+
+  /**
+   * Assert that state initialization has been completed.
+   *
+   * @param {ReturnType<initState>} state
+   * @returns {asserts state is FinishedState}
+   */
+  const assertFinished = state => {
+    assert(
+      state.contributionTokenMint,
+      'finish() must be called before any other method',
+    );
   };
 
   /**
@@ -323,17 +330,39 @@ export const prepareCrowdfundingKit = async (
     initState,
     // define facets inline to infer the type for `this`
     {
-      creator: {},
+      creator: {
+        /**
+         * Performs the asynchronous part of initialization. Must be called before any other method.
+         *
+         * @returns {Promise<void>}
+         */
+        async finish() {
+          const { state } = this;
+          assert(
+            !state.contributionTokenMint,
+            'finish() must only be called once',
+          );
+          state.contributionTokenMint = await zcf.makeZCFMint(
+            'CrowdfundContributionToken',
+            AssetKind.COPY_SET,
+          );
+        },
+      },
+      // TODO figure out the TypeScript to guard all methods like `public: objectMap({...}, guardMethod)`
       public: {
         async getContributionTokenBrand() {
+          const { state } = this;
+          assertFinished(state);
           const issuerKit = await E(
-            this.state.contributionTokenMintP,
+            state.contributionTokenMint,
           ).getIssuerRecord();
           return issuerKit.brand;
         },
 
         makeProvisionInvitation() {
-          return makeProvisionInvitationHelper(this.state.pools);
+          const { state } = this;
+          assertFinished(state);
+          return makeProvisionInvitationHelper(state.pools);
         },
 
         /**
@@ -343,7 +372,9 @@ export const prepareCrowdfundingKit = async (
          * @param {string} opts.poolKey
          */
         makeFundingInvitation({ poolKey }) {
-          return makeFundingInvitationHelper({ poolKey }, this.state);
+          const { state } = this;
+          assertFinished(state);
+          return makeFundingInvitationHelper(poolKey, state);
         },
       },
     },

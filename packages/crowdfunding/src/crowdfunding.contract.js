@@ -21,6 +21,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     storageNode: privateArgs.storageNode,
     marshaller: privateArgs.marshaller,
   });
-  const lbKit = makeCrowdfundingKit();
-  return { creatorFacet: lbKit.creator, publicFacet: lbKit.public };
+  const { creator: creatorFacet, public: publicFacet } = makeCrowdfundingKit();
+  await creatorFacet.finish();
+  return { publicFacet };
 };
