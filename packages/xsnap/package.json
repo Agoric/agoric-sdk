@@ -12,11 +12,8 @@
   },
   "scripts": {
     "repl": "node src/xsrepl.js",
-    "build:bin": "if test -d ./test; then node src/build.js; else yarn build:from-env; fi",
-    "build:env": "test -d ./test && node src/build.js --show-env > build.env",
-    "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
-    "build": "yarn build:bin && yarn build:env",
-    "postinstall": "yarn build:from-env",
+    "build": "node src/build.js",
+    "postinstall": "yarn build",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'src/**/*.js' 'test/**/*.js' api.js",
@@ -48,8 +45,20 @@
   "files": [
     "LICENSE*",
     "api.js",
-    "build.env",
-    "src"
+    "build.json",
+    "src",
+    "moddable/licenses",
+    "moddable/readme.md",
+    "moddable/tools",
+    "moddable/xs",
+    "moddable/modules/data/text",
+    "moddable/modules/data/base64",
+    "xsnap-native/README.md",
+    "xsnap-native/xsnap/documentation",
+    "xsnap-native/xsnap/makefiles",
+    "xsnap-native/xsnap/readme.md",
+    "xsnap-native/xsnap/sources",
+    "xsnap-native/xsnap/xsbug-node"
   ],
   "publishConfig": {
     "access": "public"

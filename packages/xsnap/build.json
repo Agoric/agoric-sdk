@@ -1,0 +1,10 @@
+{
+  "moddable": {
+    "url": "https://github.com/agoric-labs/moddable.git",
+    "hash": "f6c5951fc055e4ca592b9166b9ae3cbb9cca6bf0"
+  },
+  "xsnap_native": {
+    "url": "https://github.com/agoric-labs/xsnap-pub",
+    "hash": "2d8ccb76b8508e490d9e03972bb4c64f402d5135"
+  }
+}

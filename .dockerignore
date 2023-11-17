@@ -17,7 +17,16 @@ packages/stat-logger
 **/swingset-kernel-state
 **/_agstate
 .vagrant
+
 # When changing/adding entries here, make sure to search the whole project for
 # `@@AGORIC_DOCKER_SUBMODULES@@`
+#
+# We avoid copying these into a docker build context, because we're
+# also not copying the .git directories. If someone runs "docker
+# build" from a non-clean agoric-sdk tree, the build context would
+# have moddable/ source files but no moddable/.git, and that would be
+# confused with an unpacked NPM tarball. See
+# packages/xsnap/src/build.js for details.
+
 packages/xsnap/moddable
 packages/xsnap/xsnap-native
