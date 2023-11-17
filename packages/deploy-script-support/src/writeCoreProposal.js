@@ -91,6 +91,8 @@ export const makeWriteCoreProposal = (
       return ns.default;
     };
 
+    const bundles = [];
+
     /**
      * Install an entrypoint.
      *
@@ -103,9 +105,14 @@ export const makeWriteCoreProposal = (
       const bundle = getBundle(entrypoint, bundlePath);
 
       // Serialise the installations.
-      mutex = E.when(mutex, () => {
+      mutex = E.when(mutex, async () => {
         // console.log('installing', { filePrefix, entrypoint, bundlePath });
-        return getBundleSpec(bundle, getBundler, opts);
+        const spec = await getBundleSpec(bundle, getBundler, opts);
+        bundles.push({
+          entrypoint,
+          ...spec,
+        });
+        return spec;
       });
       // @ts-expect-error xxx mutex type narrowing
       return mutex;
@@ -161,6 +168,18 @@ const overrideManifest = ${stringify(overrideManifest, true)};
     const proposalJsFile = `${filePrefix}.js`;
     log(`creating ${proposalJsFile}`);
     await writeFile(proposalJsFile, trimmed);
+
+    const plan = {
+      name: filePrefix,
+      script: proposalJsFile,
+      permit: proposalPermitJsonFile,
+      bundles,
+    };
+
+    await writeFile(
+      `${filePrefix}-plan.json`,
+      `${JSON.stringify(plan, null, 2)}\n`,
+    );
 
     log(`\
 You can now run a governance submission command like:
