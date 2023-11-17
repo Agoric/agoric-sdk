@@ -50,6 +50,9 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
  * @typedef {PromiseSpaceOf<{
+ *   crowdfundingKit: StartedInstanceKit<
+ *     (typeof import('@agoric/crowdfunding/src/crowdfunding.contract.js'))['start']
+ *   >;
  *   economicCommitteeKit: CommitteeStartResult;
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<

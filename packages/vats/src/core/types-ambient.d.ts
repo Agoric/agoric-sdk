@@ -184,6 +184,7 @@ type WellKnownName = {
     | 'econCommitteeCharter'
     | 'priceAggregator';
   instance:
+    | 'crowdfunding'
     | 'economicCommittee'
     | 'feeDistributor'
     | 'auctioneer'
@@ -236,6 +237,7 @@ type WellKnownSpaces = {
         centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
         committee: typeof import('@agoric/governance/src/committee.js').start;
         contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
+        crowdfunding: typeof import('@agoric/crowdfunding/src/crowdfunding.contract.js').start;
         econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
         feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
         mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
