@@ -183,10 +183,14 @@ export const makeCourierMaker =
       if (forward) {
         if (forward.transfer) {
           await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
-        } else {
+        } 
+        if (forward.call) {
           const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
           await handleCall(forward, payout, namesByAddress);
         }
+        // returning null ack will prevent WriteAcknowledgement from occurring for forwarded packet.
+        // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
+        return null;
       } else {
         const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
         E(depositFacet).receive(payout).catch(_ => {});
