@@ -70,10 +70,10 @@ export const addPegasusTransferPort = async (
       const { localAddr, actions } = connectionState;
       if (actions) {
         // We're open and ready for business.
-        pegasusConnectionsAdmin.update(localAddr, connectionState);
+        void E(pegasusConnectionsAdmin).update(localAddr, connectionState);
       } else {
         // We're closed.
-        pegasusConnectionsAdmin.delete(localAddr);
+        void E(pegasusConnectionsAdmin).delete(localAddr);
       }
     },
   });
