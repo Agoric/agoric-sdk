@@ -38,7 +38,9 @@ WORKDIR /usr/src/agoric-sdk
 COPY . .
 
 # add retry for qemu arm64 network fetching and mui issues with qemu
-RUN bash -c "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
+RUN \
+    XSNAP_IS_IN_DOCKER=1 \
+    bash -c "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
