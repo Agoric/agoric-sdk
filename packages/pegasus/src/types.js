@@ -50,7 +50,7 @@
 /**
  * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress, memo: string, sender: string) => Promise<void>} Sender
  * Successive transfers are not guaranteed to be processed in the order in which they were sent.
- * @typedef {(parts: PacketParts) => Promise<Bytes | null>} Receiver
+ * @typedef {(parts: PacketParts) => Promise<Bytes | void>} Receiver
  * @typedef {object} Courier
  * @property {Sender} send
  * @property {Receiver} receive
