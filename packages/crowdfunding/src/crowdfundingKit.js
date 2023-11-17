@@ -116,9 +116,6 @@ export const prepareCrowdfundingKit = async (
 
     // TODO remove seats that have been exited, removing them from totalFunding
     // XXX maybe instead mutate the collection within this function
-
-    // assume this succeeds
-    void publishStatus(pool);
   }
 
   /**
@@ -198,6 +195,10 @@ export const prepareCrowdfundingKit = async (
       processFundingThresholdReached(pool);
     }
     pools.set(poolKey, updatedPool);
+
+    // assume this succeeds
+    void publishStatus(updatedPool);
+
     // do not exit the seat until the threshold is met
   }
 
