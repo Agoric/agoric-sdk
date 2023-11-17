@@ -343,8 +343,8 @@ async function testRemotePeg(t) {
   };
   t.assert(await connP);
   const sendAckDataPPfmTransfer = await E(gaiaConnection).send(JSON.stringify(sendPacketPfmTransfer));
-  // Should return undefined because the ack will come from the final forward
-  t.deepEqual(sendAckDataPPfmTransfer, '', 'Gaia sent the atoms with PFM transfer memo');
+  // Should return empty ack because the ack will come from the final forward
+  t.deepEqual(sendAckDataPPfmTransfer, '', 'Agoric PFM forwarded the atoms with PFM transfer memo');
 
   // test sending with PFM memo forward contract call
   /** @type {Forward} */
@@ -365,7 +365,7 @@ async function testRemotePeg(t) {
   };
   t.assert(await connP);
   const sendAckDataPPFMCall = await E(gaiaConnection).send(JSON.stringify(sendPacketPFMCall));
-  t.deepEqual(JSON.parse(sendAckDataPPFMCall), {"result":"AQ=="}, 'Gaia sent the atoms with PFM contract call memo');
+  t.deepEqual(JSON.parse(sendAckDataPPFMCall), {"result":"AQ=="}, 'Gaia sent the atoms and then a contract was called with the PFM');
 
   await E(connP).close();
   await t.throwsAsync(() => remoteDenomAit.next(), {
