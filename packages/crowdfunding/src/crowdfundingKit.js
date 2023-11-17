@@ -170,7 +170,12 @@ export const prepareCrowdfundingKit = async (
     } = providerSeat.getProposal();
     console.info('makeProvisionInvitation', given);
 
-    mustMatch(offerArgs, M.splitRecord({}, { poolName: M.string() }));
+    try {
+      mustMatch(offerArgs, M.splitRecord({}, { poolName: M.string() }));
+    } catch (err) {
+      providerSeat.fail(err);
+      return;
+    }
     const { poolName } = offerArgs;
 
     const poolKey = String(pools.getSize() + 1);
@@ -235,7 +240,14 @@ export const prepareCrowdfundingKit = async (
     const storedPool = pools.get(poolKey);
     storedPool || Fail`poolKey ${poolKey} not found`;
 
-    mustMatch(offerArgs, M.splitRecord({}, { funderName: M.string() }));
+    try {
+      mustMatch(offerArgs, M.splitRecord({}, { funderName: M.string() }));
+    } catch (err) {
+      // TODO: `throw` was recommended but resulted in an unhandled rejection.
+      // cf. https://docs.agoric.com/reference/zoe-api/zcfseat.html#azcfseat-fail-msg
+      funderSeat.fail(err);
+      return;
+    }
     const { funderName } = offerArgs;
     const {
       give: { Contribution: given },

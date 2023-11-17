@@ -125,11 +125,13 @@ test('basic flow', async t => {
   const funder1Seat = await makeFunderSeat(99);
   t.false(await E(providerSeat).hasExited());
 
-  // await t.throwsAsync(
-  //   () => makeFunderSeat(1, { isString: false }),
-  //   { message: 'TODO' },
-  //   'offer with a bad funderName is rejected',
-  // );
+  const rejectedFunderSeat = await makeFunderSeat(1, { isString: false });
+  t.true(await E(rejectedFunderSeat).hasExited());
+  await t.throwsAsync(
+    E(E(rejectedFunderSeat).getExitSubscriber()).getUpdateSince(),
+    { message: /\bfunderName\b.*\bMust be a string\b/ },
+    'offer with a bad funderName is rejected',
+  );
   t.false(await E(providerSeat).hasExited());
 
   const funder2Seat = await makeFunderSeat(1, 'Gene');
