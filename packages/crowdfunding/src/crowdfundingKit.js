@@ -1,7 +1,7 @@
 import { Fail } from '@agoric/assert';
 // ??? is it okay for a contract to import @agoric/internal?
 import { allValues } from '@agoric/internal';
-import { AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { M, mustMatch, makeCopySet } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
@@ -9,9 +9,7 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
 
 const CrowdfundingKitI = {
-  creator: M.interface('CrowdfundingKit creator facet', {
-    finish: M.callWhen().returns(),
-  }),
+  creator: M.interface('CrowdfundingKit creator facet', {}),
   public: M.interface('CrowdfundingKit public facet', {
     getContributionTokenBrand: M.callWhen().returns(M.remotable('Brand')),
     makeProvisionInvitation: M.callWhen().returns(M.remotable('Invitation')),
@@ -54,6 +52,7 @@ const CrowdfundingKitI = {
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {ZCF} zcf - the zcf parameter
  * @param {{
+ *   contributionTokenMint: ZCFMint<'copySet'>;
  *   feeBrand: Brand;
  *   marshaller: Marshaller;
  *   storageNode: StorageNode;
@@ -62,7 +61,7 @@ const CrowdfundingKitI = {
 export const prepareCrowdfundingKit = async (
   baggage,
   zcf,
-  { feeBrand, marshaller, storageNode },
+  { contributionTokenMint: providedMint, feeBrand, marshaller, storageNode },
 ) => {
   /**
    * Initially, when the contract starts, retrieve stableAmountShape from feeBrand.
@@ -115,12 +114,13 @@ export const prepareCrowdfundingKit = async (
 
   /**
    * @param {Pool} pool
-   * @param {string} poolKey
-   * @param {FinishedState} state
+   * @param {{poolKey: string} & Pick<ReturnType<initState>, 'contributionTokenMint'>} options
    */
-  async function processFundingThresholdReached(pool, poolKey, state) {
+  async function processFundingThresholdReached(
+    pool,
+    { poolKey, contributionTokenMint: mint },
+  ) {
     const { poolName } = pool;
-    const { contributionTokenMint: mint } = state;
     const { brand } = mint.getIssuerRecord();
     // transfer the funds
     // ??? is this data structure too large in RAM?
@@ -221,7 +221,7 @@ export const prepareCrowdfundingKit = async (
   /**
    * @param {object} opts
    * @param {string} opts.poolKey
-   * @param {FinishedState} state
+   * @param {ReturnType<initState>} state
    * @param {ZCFSeat} funderSeat
    * @param {Partial<Exclude<FunderData, 'amount'>>} [offerArgs]
    */
@@ -231,7 +231,7 @@ export const prepareCrowdfundingKit = async (
     funderSeat,
     offerArgs = harden({}),
   ) {
-    const { pools } = state;
+    const { pools, contributionTokenMint } = state;
     const storedPool = pools.get(poolKey);
     storedPool || Fail`poolKey ${poolKey} not found`;
 
@@ -248,7 +248,10 @@ export const prepareCrowdfundingKit = async (
     // check the threshold
     if (AmountMath.isGTE(updatedPool.totalFunding, updatedPool.threshold)) {
       console.info(`funding has been reached`);
-      await processFundingThresholdReached(updatedPool, poolKey, state);
+      await processFundingThresholdReached(updatedPool, {
+        poolKey,
+        contributionTokenMint,
+      });
     }
     pools.set(poolKey, updatedPool);
 
@@ -269,7 +272,7 @@ export const prepareCrowdfundingKit = async (
    *
    * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
    * @param {string} poolKey
-   * @param {FinishedState} state
+   * @param {ReturnType<initState>} state
    */
   function makeFundingInvitationHelper(poolKey, state) {
     state.pools.has(poolKey) || Fail`poolKey ${poolKey} not found`;
@@ -294,26 +297,10 @@ export const prepareCrowdfundingKit = async (
    */
   const initState = () => {
     return {
-      /** @type {unknown} */
-      contributionTokenMint: undefined,
+      contributionTokenMint: providedMint,
       /** @type {MapStore<string, Pool>} */
       pools: makeScalarBigMapStore('pools', { durable: true }),
     };
-  };
-
-  /** @typedef {ReturnType<initState> & {contributionTokenMint: ZCFMint<'copySet'>}} FinishedState */
-
-  /**
-   * Assert that state initialization has been completed.
-   *
-   * @param {ReturnType<initState>} state
-   * @returns {asserts state is FinishedState}
-   */
-  const assertFinished = state => {
-    assert(
-      state.contributionTokenMint,
-      'finish() must be called before any other method',
-    );
   };
 
   /**
@@ -330,29 +317,10 @@ export const prepareCrowdfundingKit = async (
     initState,
     // define facets inline to infer the type for `this`
     {
-      creator: {
-        /**
-         * Performs the asynchronous part of initialization. Must be called before any other method.
-         *
-         * @returns {Promise<void>}
-         */
-        async finish() {
-          const { state } = this;
-          assert(
-            !state.contributionTokenMint,
-            'finish() must only be called once',
-          );
-          state.contributionTokenMint = await zcf.makeZCFMint(
-            'CrowdfundContributionToken',
-            AssetKind.COPY_SET,
-          );
-        },
-      },
-      // TODO figure out the TypeScript to guard all methods like `public: objectMap({...}, guardMethod)`
+      creator: {},
       public: {
         async getContributionTokenBrand() {
           const { state } = this;
-          assertFinished(state);
           const issuerKit = await E(
             state.contributionTokenMint,
           ).getIssuerRecord();
@@ -361,7 +329,6 @@ export const prepareCrowdfundingKit = async (
 
         makeProvisionInvitation() {
           const { state } = this;
-          assertFinished(state);
           return makeProvisionInvitationHelper(state.pools);
         },
 
@@ -373,7 +340,6 @@ export const prepareCrowdfundingKit = async (
          */
         makeFundingInvitation({ poolKey }) {
           const { state } = this;
-          assertFinished(state);
           return makeFundingInvitationHelper(poolKey, state);
         },
       },
