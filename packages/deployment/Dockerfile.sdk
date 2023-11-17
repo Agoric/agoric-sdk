@@ -34,13 +34,6 @@ RUN set -eux; \
 # The js build container
 FROM node:18-bullseye AS build-js
 
-# When changing/adding entries here, make sure to search the whole project for
-# `@@AGORIC_DOCKER_SUBMODULES@@`
-ARG MODDABLE_COMMIT_HASH
-ARG MODDABLE_URL
-ARG XSNAP_NATIVE_COMMIT_HASH
-ARG XSNAP_NATIVE_URL
-
 WORKDIR /usr/src/agoric-sdk
 COPY . .
 
@@ -51,14 +44,10 @@ RUN bash -c "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
 RUN cd golang/cosmos && yarn build:gyp
 
-# Check out the specified submodule versions.
-# When changing/adding entries here, make sure to search the whole project for
-# `@@AGORIC_DOCKER_SUBMODULES@@`
+# XSNAP_IS_IN_DOCKER tells xsnap that it needs to git-clone the
+# submodules. See packages/xsnap/src/build.js for details
 RUN \
-  MODDABLE_COMMIT_HASH="$MODDABLE_COMMIT_HASH" \
-  MODDABLE_URL="$MODDABLE_URL" \
-  XSNAP_NATIVE_COMMIT_HASH="$XSNAP_NATIVE_COMMIT_HASH" \
-  XSNAP_NATIVE_URL="$XSNAP_NATIVE_URL" \
+  XSNAP_IS_IN_DOCKER=1 \
   yarn build
 
 # Remove dev dependencies.

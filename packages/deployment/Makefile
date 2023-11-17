@@ -25,8 +25,7 @@ docker-build: docker-build-sdk docker-build-solo \
 	docker-build-setup docker-build-ssh-node
 
 docker-build-sdk:
-	bargs=`node ../xsnap/src/build.js --show-env | sed -e 's/^/ --build-arg=/'`; \
-	docker build $$bargs --build-arg=GIT_REVISION=$(GIT_REVISION) \
+	docker build --build-arg=GIT_REVISION=$(GIT_REVISION) \
 		-t $(REPOSITORY_SDK):$(TAG) --file=Dockerfile.sdk ../..
 	docker tag $(REPOSITORY_SDK):$(TAG) $(REPOSITORY_SDK):latest
 

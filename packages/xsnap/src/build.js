@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /* global process */
 /* eslint-disable @jessie.js/no-nested-await -- test/build code */
+/* eslint-disable no-await-in-loop -- test/build code */
+/* eslint-disable no-lonely-if -- makes the logic easier to read */
 import * as childProcessTop from 'child_process';
 import fsTop from 'fs';
 import osTop from 'os';
@@ -19,12 +21,14 @@ const { freeze } = Object;
 // are populated as git submodules, so they will be clones of specific
 // commit IDs of repos from the "agoric-labs" organization. These
 // repos contain Agoric-specific forks of the upstream Moddable
-// code. We have two cases:
+// code. We may observe two cases:
 //
 //   A: the subdirectories do not exist, which means we've cloned
 //      agoric-sdk but we have not yet run 'git submodule update
 //      --init'
-//   B: they do exist, and they have .git subdirectories
+
+//   B: they do exist, and they have .git subdirectories, which means
+//      we've initialized the submodules at least once
 //
 // When built from an NPM-registry -hosted tarball, these
 // subdirectories are filled with source code from the distribution
@@ -33,11 +37,38 @@ const { freeze } = Object;
 //
 //   C: they exist, but they lack a .git subdirectory
 //
+// When built in a docker build context, the subdirectories will
+// initially be missing (if they existed in the original checkout at
+// all, they were subsequently excluded by agoric-sdk/.dockerignore),
+// however we'll also be missing the top-level .git metadata which
+// would allow a "git submodule update --init" to work. This
+// environment is distinguished by $XSNAP_IS_IN_DOCKER=1 being set by
+// packages/deployment/Dockerfile.sdk, and indicates that we must read
+// the URLs and commit hashes from build.json, and then do a "git
+// clone", to get the same sources that we would normally get from the
+// submodules.
+//
+//   D: the subdirectories do not exist, and $XSNAP_IS_IN_DOCKER is true
+//
+// In a docker build context, on the second or subsequent times that
+// build.js is run, we'll see both $XSNAP_IS_IN_DOCKER=1 and the
+// subdirectories existing.
+//
+//   E: the subdirectories exist, and $XSNAP_IS_IN_DOCKER is true
+//
 // In cases A and B, we want to run `git submodule update --init` on
 // each directory, to act upon any change in the desired commit ID
 // (e.g. if the developer switched git branches since the last
 // build). In case C, we shouldn't do anything (and in fact do not
-// need the 'git' executable at all).
+// need the 'git' executable at all). In case D, we must read the URLs
+// from build.json and then do a "git clone". In case E, we should do
+// nothing, and leave the sources alone.
+//
+//  A: git submodule update --init
+//  B: git submodule update --init
+//  C: do nothing
+//  D: read build.json, then git clone/checkout for each subdirectory
+//  E: do nothing
 
 /** @param {string} path */
 const asset = path => new URL(path, import.meta.url).pathname;
@@ -113,10 +144,10 @@ function makeCLI(command, { spawn }) {
 
 /**
  * @param {string} path
- * @param {string} repoUrl
- * @param {{ git: ReturnType<typeof makeCLI> }} io
+ * @param {{ fs: { existsSync: typeof import('fs').existsSync },
+ *           git: ReturnType<typeof makeCLI> }} io
  */
-const makeSubmodule = (path, repoUrl, { fs, git }) => {
+const makeSubmodule = (path, { fs, git }) => {
   /** @param {string} text */
   const parseStatus = text =>
     text
@@ -141,10 +172,15 @@ const makeSubmodule = (path, repoUrl, { fs, git }) => {
 
   return freeze({
     path,
+    clone: async repoUrl => git.run(['clone', repoUrl, path]),
+    /** @param {string} hash */
+    checkout: async hash => git.run(['checkout', hash], { cwd: path }),
+    init: async () =>
+      git.run(['submodule', 'update', '--init', '--checkout', path]),
+    update: async () =>
+      git.run(['submodule', 'update', '--init', '--checkout', path]),
     exists: () => fs.existsSync(path),
     hasDotGit: () => fs.existsSync(join(path, '.git')),
-    init: async () => git.run(['submodule', 'update', '--init', '--checkout', path]),
-    update: async () => git.run(['submodule', 'update', '--init', '--checkout', path]),
     status: async () =>
       git.pipe(['submodule', 'status', path]).then(parseStatus),
     /** @param {string} leaf */
@@ -170,6 +206,16 @@ const makeSubmodule = (path, repoUrl, { fs, git }) => {
   });
 };
 
+const readBuildJSON = async (envRecordFile, { fs }) => {
+  const data = await fs.readFile(envRecordFile);
+  return JSON.parse(data);
+};
+
+const writeBuildJSON = async (envRecordFile, build, { fs }) => {
+  const data = JSON.stringify(build, undefined, 2) + '\n';
+  await fs.writeFile(envRecordFile, data);
+};
+
 /**
  * @param {string[]} args
  * @param {{
@@ -186,69 +232,75 @@ const makeSubmodule = (path, repoUrl, { fs, git }) => {
  *   }
  * }} io
  */
-async function main(args, { env, stdout, spawn, fs, os }) {
+async function main(args, { env, spawn, fs, os }) {
   const git = makeCLI('git', { spawn });
 
-  // When changing/adding entries here, make sure to search the whole project
-  // for `@@AGORIC_DOCKER_SUBMODULES@@`
+  const inDocker = env.XSNAP_IS_IN_DOCKER; // TODO: we assume it's "1"
+
   const submodules = [
     {
-      url: env.MODDABLE_URL || 'https://github.com/agoric-labs/moddable.git',
       path: ModdableSDK.MODDABLE,
-      commitHash: env.MODDABLE_COMMIT_HASH,
-      envPrefix: 'MODDABLE_',
+      key: 'moddable',
     },
     {
-      url:
-        env.XSNAP_NATIVE_URL || 'https://github.com/agoric-labs/xsnap-pub.git',
       path: asset('../xsnap-native'),
-      commitHash: env.XSNAP_NATIVE_COMMIT_HASH,
-      envPrefix: 'XSNAP_NATIVE_',
+      key: 'xsnap_native',
     },
   ];
 
-  let usingGit = false; // we assume all subdirs are using git, or none are
-  const envRecordFile = 'build.env';
-  const envLines = [];
+  // didGit is true if we consulted git and need to update build.json
+  // with the results. We assume all subdirs are using git, or none are.
+  let didGit = false;
+  const buildJSONFile = 'build.json';
+  let buildJSON = {};
 
-  for (const { url, path, commitHash, envPrefix } of submodules) {
-    const submodule = makeSubmodule(path, url, { fs, git });
+  for (const { path, key } of submodules) {
+    const submodule = makeSubmodule(path, { fs, git });
 
-    if (submodule.exists()) {
-      if (submodule.hasDotGit()) {
-        console.log(`case B: have submodule/.git`);
-        usingGit = true;
-        await submodule.update();
+    if (inDocker) {
+      if (submodule.exists()) {
+        console.log(`${key} case E: in docker, have submodule/ : do nothing`);
       } else {
-        console.log(`case C: have submodule/ but not .git`);
-        // do nothing
+        console.log(`${key} case D: in docker, missing submodule/ : do clone`);
+        buildJSON = await readBuildJSON(buildJSONFile, { fs }); // must exist
+        const data = buildJSON[key];
+        await submodule.clone(data.url); // requires git
+        await submodule.checkout(data.hash);
       }
     } else {
-      console.log(`case A: no submodule/ directory`);
-      usingGit = true;
-      await submodule.update();
+      // not inDocker
+      if (submodule.exists()) {
+        if (submodule.hasDotGit()) {
+          console.log(`${key} case B: have submodule/.git : do update`);
+          didGit = true;
+          await submodule.update(); // requires git
+        } else {
+          console.log(`${key} case C: have submodule/ but not .git : do nothing`);
+        }
+      } else {
+        console.log(`${key} case A: no submodule/ directory : do init`);
+        didGit = true;
+        await submodule.update(); // requires git
+      }
     }
 
-    if (usingGit) {
+    if (didGit) {
       // record the submodule's source URL and git commit hash into
-      // build.env for later auditing
+      // build.json for later auditing
 
       // We need to glean the commitHash and url from Git.
-      const sm = makeSubmodule(path, '?', { fs, git });
+      const sm = makeSubmodule(path, { fs, git });
       const [[{ hash }], url] = await Promise.all([
         sm.status(),
         sm.config('url'),
       ]);
-      envLines.push(`${envPrefix}URL=${url}\n`);
-      envLines.push(`${envPrefix}COMMIT_HASH=${hash}\n`);
+      buildJSON[key] = { url, hash };
     }
   }
-  if (usingGit) {
-    fs.writeFileSync(envRecordFile, envLines.join(''));
+  if (didGit) {
+    await writeBuildJSON(buildJSONFile, buildJSON, { fs });
   }
 
-  //console.log(`-- returning instead of compiling`);
-  //return;
   // now compile xsnap
 
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
@@ -284,9 +336,9 @@ main(process.argv.slice(2), {
   spawn: childProcessTop.spawn,
   fs: {
     readFile: fsTop.promises.readFile,
+    writeFile: fsTop.promises.writeFile,
     existsSync: fsTop.existsSync,
     rmdirSync: fsTop.rmdirSync,
-    writeFileSync: fsTop.writeFileSync,
   },
   os: {
     type: osTop.type,

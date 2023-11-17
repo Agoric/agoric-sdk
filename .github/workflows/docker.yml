@@ -53,9 +53,6 @@ jobs:
         run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - name: Save GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Save commit hash, url of submodules to environment
-        run: |
-          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -84,14 +81,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: '${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}'
-          # When changing/adding entries here, make sure to search the whole
-          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
           build-args: |
             GIT_COMMIT=${{env.GIT_COMMIT}}
-            MODDABLE_COMMIT_HASH=${{env.MODDABLE_COMMIT_HASH}}
-            MODDABLE_URL=${{env.MODDABLE_URL}}
-            XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
-            XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
       - name: Build and Push setup
         uses: docker/build-push-action@v4
