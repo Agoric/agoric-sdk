@@ -144,17 +144,19 @@ test('basic flow', async t => {
   });
   // funding seats have tokens in place of their contributions
   const brand = await E(publicFacet).getContributionTokenBrand();
-  const makeTokenAmount = (funderName = undefined) =>
-    AmountMath.make(
+  const makeTokenAmount = (giveUnits, funderName = undefined) => {
+    const amount = stable.units(giveUnits);
+    return AmountMath.make(
       brand,
-      makeCopySet([{ poolKey, poolName: undefined, funderName }]),
+      makeCopySet([{ poolKey, poolName: undefined, funderName, amount }]),
     );
+  };
   t.deepEqual(await E(funder1Seat).getFinalAllocation(), {
     Contribution: stable.makeEmpty(),
-    ContributionToken: makeTokenAmount(),
+    ContributionToken: makeTokenAmount(99),
   });
   t.deepEqual(await E(funder2Seat).getFinalAllocation(), {
     Contribution: stable.makeEmpty(),
-    ContributionToken: makeTokenAmount('Gene'),
+    ContributionToken: makeTokenAmount(1, 'Gene'),
   });
 });

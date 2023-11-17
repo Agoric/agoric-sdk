@@ -131,7 +131,7 @@ export const prepareCrowdfundingKit = async (
         const { amount, funderName } = funderData;
         const giftAmount = AmountMath.make(
           brand,
-          makeCopySet([{ poolKey, poolName, funderName }]),
+          makeCopySet([{ poolKey, poolName, funderName, amount }]),
         );
         mint.mintGains({ ContributionToken: giftAmount }, funderSeat);
         return [
