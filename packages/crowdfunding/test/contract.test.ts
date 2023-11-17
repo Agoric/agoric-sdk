@@ -93,7 +93,7 @@ test('basic flow', async t => {
   //   );
 
   const funder1Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ key: '1' }),
+    E(publicFacet).makeFundingInvitation({ poolKey: '1' }),
     harden({
       give: { Contribution: stable.units(99) },
     }),
@@ -101,7 +101,7 @@ test('basic flow', async t => {
   );
 
   const funder2Seat = await E(zoe).offer(
-    E(publicFacet).makeFundingInvitation({ key: '1' }),
+    E(publicFacet).makeFundingInvitation({ poolKey: '1' }),
     harden({
       give: { Contribution: stable.units(1) },
     }),
@@ -110,7 +110,7 @@ test('basic flow', async t => {
 
   await eventLoopIteration();
 
-  t.deepEqual(await E(providerSeat).getOfferResult(), { key: '1' });
+  t.deepEqual(await E(providerSeat).getOfferResult(), { poolKey: '1' });
   t.deepEqual(await E(providerSeat).getFinalAllocation(), {
     // note, they'll get whatever amount put it over the threshold
     Compensation: stable.units(100),

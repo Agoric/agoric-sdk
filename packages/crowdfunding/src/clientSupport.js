@@ -56,6 +56,7 @@ export const Offers = {
      *   offerId: string;
      *   compensationBrandKey: string;
      *   contribution: number;
+     *   poolKey: string,
      * }} opts
      * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
      */
@@ -72,12 +73,13 @@ export const Offers = {
         },
       };
 
+      const { poolKey } = opts;
       return {
         id: opts.offerId,
         invitationSpec: {
           source: 'agoricContract',
           instancePath: ['crowdfunding'],
-          callPipe: [['makeFundingInvitation', []]],
+          callPipe: [['makeFundingInvitation', [{ poolKey }]]],
         },
         proposal,
       };

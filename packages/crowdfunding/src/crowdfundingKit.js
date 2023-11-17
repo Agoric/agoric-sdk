@@ -132,10 +132,10 @@ export const prepareCrowdfundingKit = async (
     } = providerSeat.getProposal();
     console.info('makeProvisionInvitation', given);
 
-    const key = String(pools.getSize() + 1);
+    const poolKey = String(pools.getSize() + 1);
     const poolNode = await E(
       E(storageNode).makeChildNode('pools'),
-    ).makeChildNode(key);
+    ).makeChildNode(poolKey);
     const funderAmounts = makeScalarBigMapStore('funderAmounts', {
       durable: true,
     });
@@ -148,13 +148,13 @@ export const prepareCrowdfundingKit = async (
       totalFunding: AmountMath.makeEmpty(feeBrand),
     });
 
-    pools.init(key, pool);
+    pools.init(poolKey, pool);
 
     // assume this succeeds
     void publishStatus(pool);
 
     // exit the seat when the pool is fully funded
-    return harden({ key });
+    return harden({ poolKey });
   }
 
   /**
@@ -177,14 +177,14 @@ export const prepareCrowdfundingKit = async (
 
   /**
    * @param {object} opts
-   * @param {string} opts.key
+   * @param {string} opts.poolKey
    * @param {object} state
    * @param {ZCFSeat} fundingSeat
    */
-  function fundingOfferHandler({ key }, state, fundingSeat) {
+  function fundingOfferHandler({ poolKey }, state, fundingSeat) {
     const { pools } = state;
-    const pool = pools.get(key);
-    pool || Fail`key ${key} not found`;
+    const pool = pools.get(poolKey);
+    pool || Fail`poolKey ${poolKey} not found`;
 
     const {
       give: { Contribution: given },
@@ -197,13 +197,13 @@ export const prepareCrowdfundingKit = async (
       console.info(`funding has been reached`);
       processFundingThresholdReached(pool);
     }
-    pools.set(key, updatedPool);
+    pools.set(poolKey, updatedPool);
     // do not exit the seat until the threshold is met
   }
 
   /**
    * Create an invitation that will be exposed through the `public` facet of the contract, allowing participants to join the pool.
-   * The `key` acts as the address, directing participants to the correct pool they wish to contribute to.
+   * The `poolKey` acts as the address, directing participants to the correct pool they wish to contribute to.
    * `state` maintains the pool's context, like a guest list, capturing who is participating and the nature of their contributions.
    *
    * Accepting this invitation places a participant in the `fundingSeat`, where they are ready to make their contribution.
@@ -212,12 +212,12 @@ export const prepareCrowdfundingKit = async (
    *
    * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
    * @param {object} opts
-   * @param {string} opts.key
+   * @param {string} opts.poolKey
    * @param {object} state
    */
-  function makeFundingInvitationHelper({ key }, state) {
+  function makeFundingInvitationHelper({ poolKey }, state) {
     const offerHandler = async seat =>
-      fundingOfferHandler({ key }, state, seat);
+      fundingOfferHandler({ poolKey }, state, seat);
 
     return zcf.makeInvitation(
       offerHandler,
@@ -265,10 +265,10 @@ export const prepareCrowdfundingKit = async (
          * Generates a pool invitation.
          *
          * @param {object} opts
-         * @param {string} opts.key
+         * @param {string} opts.poolKey
          */
-        makeFundingInvitation({ key }) {
-          return makeFundingInvitationHelper({ key }, this.state);
+        makeFundingInvitation({ poolKey }) {
+          return makeFundingInvitationHelper({ poolKey }, this.state);
         },
       },
     },

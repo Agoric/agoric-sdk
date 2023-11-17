@@ -92,7 +92,7 @@ test('register and use a fund', async t => {
     );
     const result = await EV(seat).getOfferResult();
     t.deepEqual(result, {
-      key: '1',
+      poolKey: '1',
     });
   }
 
