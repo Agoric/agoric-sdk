@@ -13,6 +13,8 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import type { TestFn } from 'ava';
 import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+import { AuctionParams } from '@agoric/inter-protocol/src/auction/params.js';
+import { TimerBrand } from '@agoric/time';
 import { makeWalletFactoryDriver } from './drivers.ts';
 import { makeSwingsetTestKit } from './supports.ts';
 
@@ -308,12 +310,11 @@ test('propose change to auction governance param', async t => {
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const auctioneer = agoricNamesRemotes.instance.auctioneer;
-  const timerBrand = agoricNamesRemotes.brand.timer;
+  const timerBrand = agoricNamesRemotes.brand.timer as unknown as TimerBrand;
   assert(timerBrand);
 
   t.log('propose param change');
-  /* XXX @type {Partial<AuctionParams>} */
-  const params = {
+  const params: Partial<AuctionParams> = {
     StartFrequency: { timerBrand, relValue: 5n * 60n },
   };
 

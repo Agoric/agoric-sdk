@@ -93,7 +93,10 @@ export const makeRunUtils = (
     return result;
   };
 
-  const queueAndRun = async (deliveryThunk, voidResult = false) => {
+  const queueAndRun = async (
+    deliveryThunk: () => string | undefined,
+    voidResult = false,
+  ) => {
     log('queueAndRun at', cranksRun);
 
     const kpid = await runThunk(deliveryThunk);
@@ -162,14 +165,14 @@ export const makeRunUtils = (
 export type RunUtils = ReturnType<typeof makeRunUtils>;
 
 /**
- * @param {string} bundleDir
- * @param {string} specifier
- * @param {ManagerType} [defaultManagerType]
+ * @param bundleDir
+ * @param specifier
+ * @param [defaultManagerType]
  */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
-  defaultManagerType = 'local',
+  defaultManagerType = 'local' as ManagerType,
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
