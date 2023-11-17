@@ -1,6 +1,9 @@
 import { Fail } from '@agoric/assert';
+// ??? is it okay for a contract to import @agoric/internal?
+import { allValues } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
-import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
+import { M } from '@agoric/store';
+import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/eventual-send';
@@ -8,8 +11,8 @@ import { E } from '@endo/eventual-send';
 const CrowdfundingKitI = {
   creator: M.interface('CrowdfundingKit creator facet', {}),
   public: M.interface('CrowdfundingKit public facet', {
-    makeProvisionInvitation: M.call().returns(M.promise()),
-    makeFundingInvitation: M.call().returns(M.promise()),
+    makeProvisionInvitation: M.callWhen().returns(M.remotable('Invitation')),
+    makeFundingInvitation: M.callWhen().returns(M.remotable('Invitation')),
   }),
 };
 
@@ -68,7 +71,7 @@ export const prepareCrowdfundingKit = async (
     const encoded = await E(marshaller).toCapData(status);
 
     await E(poolNode).setValue(
-      // TODO use RecorderKit to enforce shape ane provide a non-vstorage feed
+      // TODO use RecorderKit to enforce shape and provide a non-vstorage feed
       JSON.stringify(encoded),
     );
   };
@@ -130,15 +133,16 @@ export const prepareCrowdfundingKit = async (
     console.info('makeProvisionInvitation', given);
 
     const poolKey = String(pools.getSize() + 1);
-    const poolNode = await E(
-      E(storageNode).makeChildNode('pools'),
-    ).makeChildNode(poolKey);
+    const poolNodeP = E(E(storageNode).makeChildNode('pools')).makeChildNode(
+      poolKey,
+    );
     const funderAmounts = makeScalarBigMapStore('funderAmounts', {
       durable: true,
     });
 
-    const pool = harden({
-      poolNode,
+    /** @type {Pool} */
+    const pool = await allValues({
+      poolNode: poolNodeP,
       funderAmounts,
       providerSeat,
       threshold: Compensation,
@@ -163,7 +167,7 @@ export const prepareCrowdfundingKit = async (
 
     return zcf.makeInvitation(
       offerHandler,
-      'pool',
+      'crowdfund pool',
       undefined,
       M.splitRecord({
         // TODO charge a buck
@@ -175,24 +179,24 @@ export const prepareCrowdfundingKit = async (
   /**
    * @param {object} opts
    * @param {string} opts.poolKey
-   * @param {object} state
-   * @param {ZCFSeat} fundingSeat
+   * @param {ReturnType<initState>} state
+   * @param {ZCFSeat} funderSeat
    */
-  function fundingOfferHandler({ poolKey }, state, fundingSeat) {
+  function fundingOfferHandler({ poolKey }, state, funderSeat) {
     const { pools } = state;
-    const pool = pools.get(poolKey);
-    pool || Fail`poolKey ${poolKey} not found`;
+    const storedPool = pools.get(poolKey);
+    storedPool || Fail`poolKey ${poolKey} not found`;
 
     const {
       give: { Contribution: given },
-    } = fundingSeat.getProposal();
+    } = funderSeat.getProposal();
     console.info('makeFundingInvitation', given);
-    const updatedPool = addToPool(pool, fundingSeat);
+    const updatedPool = addToPool(storedPool, funderSeat);
 
     // check the threshold
-    if (AmountMath.isGTE(updatedPool.totalFunding, pool.threshold)) {
+    if (AmountMath.isGTE(updatedPool.totalFunding, updatedPool.threshold)) {
       console.info(`funding has been reached`);
-      processFundingThresholdReached(pool);
+      processFundingThresholdReached(updatedPool);
     }
     pools.set(poolKey, updatedPool);
 
@@ -214,7 +218,7 @@ export const prepareCrowdfundingKit = async (
    * The invitation explicitly details the expected form of contribution, defined by `stableAmountShape`.
    * @param {object} opts
    * @param {string} opts.poolKey
-   * @param {object} state
+   * @param {ReturnType<initState>} state
    */
   function makeFundingInvitationHelper({ poolKey }, state) {
     const offerHandler = async seat =>
@@ -222,7 +226,7 @@ export const prepareCrowdfundingKit = async (
 
     return zcf.makeInvitation(
       offerHandler,
-      'funding',
+      'contribute to a crowdfund pool',
       undefined,
       M.splitRecord({
         give: { Contribution: stableAmountShape },
@@ -263,7 +267,7 @@ export const prepareCrowdfundingKit = async (
         },
 
         /**
-         * Generates a pool invitation.
+         * Generates an invitation to fund a pool.
          *
          * @param {object} opts
          * @param {string} opts.poolKey
