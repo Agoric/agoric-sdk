@@ -55,7 +55,7 @@ async function testRemotePeg(t) {
   const zoe = makeZoeForTest();
 
   // Pack and launch test contract for PFM
-  const contractBundlePFM = await bundleSource(`${dirname}/test-contract-pfm.js`);
+  const contractBundlePFM = await bundleSource(`${dirname}/contract-test-pfm.js`);
   const installationHandlePfmTest = await E(zoe).install(contractBundlePFM);
 
   const instancePfmTest = await E(zoe).startInstance(
