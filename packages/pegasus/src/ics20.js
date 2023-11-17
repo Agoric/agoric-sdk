@@ -17,9 +17,8 @@ import { assert, details as X, Fail } from '@agoric/assert';
 const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
 
 // ibc-go as late as v3 requires the `sender` to be nonempty, but doesn't
-// actually use it on the receiving side.  We don't need it on the sending side,
-// either, so we can just omit it.
-export const DUMMY_SENDER_ADDRESS = 'pegasus';
+// actually use it on the receiving side.
+export const DEFAULT_SENDER_ADDRESS = 'pegasus';
 
 /**
  * @param {string} s
@@ -51,7 +50,7 @@ const safeJSONParseObject = s => {
  */
 export const parseICS20TransferPacket = async packet => {
   const ics20Packet = safeJSONParseObject(packet);
-  const { amount, denom, receiver, memo, sender } = ics20Packet;
+  const { amount, denom, receiver, memo, opts } = ics20Packet;
 
   assert.typeof(denom, 'string', X`Denom ${denom} must be a string`);
   assert.typeof(receiver, 'string', X`Receiver ${receiver} must be a string`);
@@ -74,7 +73,7 @@ export const parseICS20TransferPacket = async packet => {
     remoteDenom: denom,
     value,
     memo,
-    sender
+    opts,
   });
 };
 
@@ -90,7 +89,7 @@ export const makeICS20TransferPacket = async ({
   remoteDenom,
   depositAddress,
   memo,
-  sender
+  opts: { sender = DEFAULT_SENDER_ADDRESS },
 }) => {
   // We're using Nat as a dynamic check for overflow.
   const stringValue = String(Nat(value));

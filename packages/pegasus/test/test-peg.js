@@ -109,31 +109,17 @@ async function testRemotePeg(t) {
           async onReceive(_c, packetBytes) {
             const packet = JSON.parse(packetBytes);
             if (packet.memo) {
-              if (packet.memo != "PFM Transfer") {
-                t.deepEqual(
-                  packet,
-                  {
-                    amount: '100000000000000000171',
-                    denom: 'portdef/chanabc/uatom',
-                    memo: 'I am a memo!',
-                    receiver: 'markaccount',
-                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                  },
-                  'expected transfer packet with memo',
-                )
-              } else {
-                t.deepEqual(
-                  packet,
-                  {
-                    amount: '100000000000000000001',
-                    denom: 'portdef/chanabc/uatom',
-                    memo: 'PFM Transfer',
-                    receiver: 'markaccount',
-                    sender: 'agoric1234567',
-                  },
-                  'expected transfer packet from pfm forward',
-                )
-              }
+              t.deepEqual(
+                packet,
+                {
+                  amount: '100000000000000000001',
+                  denom: 'portdef/chanabc/uatom',
+                  memo: 'I am a memo!',
+                  receiver: 'markaccount',
+                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                },
+                'expected transfer packet',
+              );
               return JSON.stringify({ result: 'AQ==' });
             } else {
               t.deepEqual(
@@ -273,7 +259,7 @@ async function testRemotePeg(t) {
     pegP,
     'markaccount',
     'I am a memo!',
-    'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc'
+    { sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc' },
   );
   const seat = await E(zoe).offer(
     transferInvitation,

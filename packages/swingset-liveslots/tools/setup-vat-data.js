@@ -11,16 +11,21 @@ const { WeakMap, WeakSet } = globalThis;
 let fakeVomKit;
 
 globalThis.VatData = harden({
+  // @ts-expect-error spread argument for non-rest parameter
   defineKind: (...args) => fakeVomKit.vom.defineKind(...args),
+  // @ts-expect-error spread argument for non-rest parameter
   defineKindMulti: (...args) => fakeVomKit.vom.defineKindMulti(...args),
+  // @ts-expect-error spread argument for non-rest parameter
   defineDurableKind: (...args) => fakeVomKit.vom.defineDurableKind(...args),
   defineDurableKindMulti: (...args) =>
+    // @ts-expect-error spread argument for non-rest parameter
     fakeVomKit.vom.defineDurableKindMulti(...args),
-  makeKindHandle: (...args) => fakeVomKit.vom.makeKindHandle(...args),
+  makeKindHandle: tag => fakeVomKit.vom.makeKindHandle(tag),
   canBeDurable: (...args) => fakeVomKit.vom.canBeDurable(...args),
   providePromiseWatcher: (...args) =>
     fakeVomKit.wpm.providePromiseWatcher(...args),
-  watchPromise: (...args) => fakeVomKit.wpm.watchPromise(...args),
+  watchPromise: (p, watcher, ...args) =>
+    fakeVomKit.wpm.watchPromise(p, watcher, ...args),
   makeScalarBigMapStore: (...args) =>
     fakeVomKit.cm.makeScalarBigMapStore(...args),
   makeScalarBigWeakMapStore: (...args) =>
@@ -47,7 +52,9 @@ export const reincarnate = (options = {}) => {
     WeakSet,
   });
 
+  // @ts-expect-error toStringTag set imperatively so it doesn't show up in the type
   globalThis.WeakMap = fakeVomKit.vom.VirtualObjectAwareWeakMap;
+  // @ts-expect-error ditto
   globalThis.WeakSet = fakeVomKit.vom.VirtualObjectAwareWeakSet;
 
   return { ...options, fakeStore, fakeVomKit };

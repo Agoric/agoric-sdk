@@ -79,7 +79,7 @@ export const makeCourierMaker =
     transferProtocol,
   }) => {
     /** @type {Sender} */
-    const send = async (zcfSeat, depositAddress, memo, sender) => {
+    const send = async (zcfSeat, depositAddress, memo, opts) => {
       const tryToSend = async () => {
         const amount = zcfSeat.getAmountAllocated('Transfer', localBrand);
         const transferPacket = await E(transferProtocol).makeTransferPacket({
@@ -87,7 +87,7 @@ export const makeCourierMaker =
           remoteDenom: sendDenom,
           depositAddress,
           memo,
-          sender
+          opts,
         });
 
         // Retain the payment.  We must not proceed on failure.

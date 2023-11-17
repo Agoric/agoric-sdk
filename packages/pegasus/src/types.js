@@ -13,7 +13,7 @@
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo
- * @property {string} sender
+ * @property {SenderOptions} opts
  */
 
 /**
@@ -48,7 +48,7 @@
  */
 
 /**
- * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress, memo: string, sender: string) => Promise<void>} Sender
+ * @typedef {(zcfSeat: ZCFSeat, depositAddress: DepositAddress, memo: string, opt: SenderOptions) => Promise<void>} Sender
  * Successive transfers are not guaranteed to be processed in the order in which they were sent.
  * @typedef {(parts: PacketParts) => Promise<Bytes | void>} Receiver
  * @typedef {object} Courier
@@ -114,28 +114,6 @@
  */
 
 /**
- * @typedef {Object} ForwardTransfer
- * @property {string} receiver - The bech32 address of the receiver.
- * @property {string} port - The port to be used for the transfer.
- * @property {string} channel - The channel identifier.
- * @property {string} [timeout] - The timeout for the action, e.g., "10m" for 10 minutes. Optional.
- * @property {number} [retries] - The number of retries in case of failure. Optional.
- * @property {string|Forward} [next] - The next forward action, either as a JSON string or a nested object. Optional.
- */
-
-/**
- * @typedef {Object} ForwardCall
- * @property {string} address the agoric address of the namesByAddress
- * @property {string} contractKey the key of the instance saved in namesByAddress
- * @property {string} functionName the function name of the method to call in the public facet
- * @property {string} args json encoded string of the args to pass into the method to call from the public facet
- */
-
-/**
- * 
- * The forward object. Supports IBC Transfer forward (Transfer key) & Contract Call forward (Call key).
- * 
- * @typedef {Object} Forward
- * @property {ForwardTransfer} [transfer] - The forward IBC transfer action.
- * @property {ForwardCall} [call] - The forward Call action.
+ * @typedef {object} SenderOptions
+ * @property {string} [sender] the sender address attached to the packet to receive any refund
  */

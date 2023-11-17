@@ -15,6 +15,7 @@ async function runDurabilityCheckTest(t, relaxDurabilityRules) {
 
   const durableHolderKind = makeKindHandle('holder');
 
+  /** @param {any} held */
   const initHolder = (held = null) => ({ held });
   const holderBehavior = {
     hold: ({ state }, value) => {

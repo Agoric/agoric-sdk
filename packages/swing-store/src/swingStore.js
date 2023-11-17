@@ -203,9 +203,29 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   // mode that defers merge work for a later attempt rather than block any
   // potential readers or writers. See https://sqlite.org/wal.html for details.
 
+  // However we also allow opening the DB with journaling off, which is unsafe
+  // and doesn't support rollback, but avoids any overhead for large
+  // transactions like for during an import.
+
+  function setUnsafeFastMode(enabled) {
+    const journalMode = enabled ? 'off' : 'wal';
+    const synchronousMode = enabled ? 'normal' : 'full';
+    !db.inTransaction || Fail`must not be in a transaction`;
+
+    db.unsafeMode(!!enabled);
+    // The WAL mode is persistent so it's not possible to switch to a different
+    // mode for an existing DB.
+    const actualMode = db.pragma(`journal_mode=${journalMode}`, {
+      simple: true,
+    });
+    actualMode === journalMode ||
+      filePath === ':memory:' ||
+      Fail`Couldn't set swing-store DB to ${journalMode} mode (is ${actualMode})`;
+    db.pragma(`synchronous=${synchronousMode}`);
+  }
+
   // PRAGMAs have to happen outside a transaction
-  db.exec(`PRAGMA journal_mode=WAL`);
-  db.exec(`PRAGMA synchronous=FULL`);
+  setUnsafeFastMode(options.unsafeFastMode);
 
   // We use IMMEDIATE because the kernel is supposed to be the sole writer of
   // the DB, and if some other process is holding a write lock, we want to find
@@ -481,7 +501,11 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   /** @type {import('./internal.js').SwingStoreInternal} */
-  const internal = harden({ snapStore, transcriptStore, bundleStore });
+  const internal = harden({
+    snapStore,
+    transcriptStore,
+    bundleStore,
+  });
 
   async function repairMetadata(exporter) {
     return doRepairMetadata(internal, exporter);
