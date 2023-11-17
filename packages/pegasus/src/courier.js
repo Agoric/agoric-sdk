@@ -36,16 +36,22 @@ export const getCourierPK = (key, keyToCourierPK) => {
  */
 function retryOperation(operation, delay, retries) {
   return new Promise((resolve, reject) => {
-      return operation()
-          .then(resolve)
-          .catch((reason) => {
-              if (retries - 1 > 0) {
-                  return retryOperation(operation, delay, retries - 1)
-                      .then(resolve)
-                      .catch(reject);
-              }
-              return reject(reason);
-          });
+    function attempt() {
+      operation()
+        .then(resolve)
+        .catch((reason) => {
+          if (retries - 1 > 0) {
+            setTimeout(() => {
+              retryOperation(operation, delay, retries - 1)
+                .then(resolve)
+                .catch(reject);
+            }, delay);
+          } else {
+            reject(reason);
+          }
+        });
+    }
+    attempt();
   });
 }
 
@@ -126,7 +132,7 @@ export const makeCourierMaker =
       if (forward.transfer) {
         redeem(zcfSeat, { Transfer: localAmount });
         const next = (typeof forward.transfer.next === "string" && typeof forward.transfer.next != undefined) ? JSON.parse(forward.transfer.next) : forward.transfer.next;
-        await send(zcfSeat, forward.transfer.receiver, next ? next : "PFM Transfer", depositAddress);
+        await send(zcfSeat, forward.transfer.receiver, next ? next : "PFM Transfer", { sender: depositAddress });
         console.log("Completed PFM Transfer Forward: ", forward);
       }
     };
@@ -184,14 +190,15 @@ export const makeCourierMaker =
         if (forward) {
           if (forward.transfer) {
             await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
+            // returning void ack will prevent WriteAcknowledgement from occurring for forwarded packet.
+            // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
+            return;
           } 
           if (forward.call) {
             const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
             await handleCall(forward, payout, namesByAddress);
+            return E(transferProtocol).makeTransferPacketAck(true);
           }
-          // returning void ack will prevent WriteAcknowledgement from occurring for forwarded packet.
-          // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
-          return;
         }
 
         const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
@@ -203,7 +210,7 @@ export const makeCourierMaker =
 
         console.error(e);
         return E(transferProtocol).makeTransferPacketAck(false, e);
-        
+
       }
     };
 

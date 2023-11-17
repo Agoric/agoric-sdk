@@ -109,6 +109,20 @@ async function testRemotePeg(t) {
           async onReceive(_c, packetBytes) {
             const packet = JSON.parse(packetBytes);
             if (packet.memo) {
+              if (packet.memo === "PFM Transfer") {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'PFM Transfer',
+                    receiver: 'markaccount',
+                    sender: 'agoric1234567',
+                  },
+                  'expected PFM Transfer packet',
+                );
+                return JSON.stringify({ result: 'AQ==' });
+              }
               t.deepEqual(
                 packet,
                 {
@@ -118,7 +132,7 @@ async function testRemotePeg(t) {
                   receiver: 'markaccount',
                   sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
                 },
-                'expected transfer packet',
+                'expected memo transfer packet',
               );
               return JSON.stringify({ result: 'AQ==' });
             } else {
@@ -250,7 +264,7 @@ async function testRemotePeg(t) {
   // test sending with memo
   const localAtoms = await E(localPurseP).withdraw({
     brand: localBrand,
-    value: 100000000000000000171n,
+    value: 100000000000000000001n,
   });
 
   const allegedName = await E(pegP).getAllegedName();
@@ -264,7 +278,7 @@ async function testRemotePeg(t) {
   const seat = await E(zoe).offer(
     transferInvitation,
     {
-      give: { Transfer: { brand: localBrand, value: 100000000000000000171n } },
+      give: { Transfer: { brand: localBrand, value: 100000000000000000001n } },
     },
     { Transfer: localAtoms },
   );
@@ -329,7 +343,8 @@ async function testRemotePeg(t) {
   };
   t.assert(await connP);
   const sendAckDataPPfmTransfer = await E(gaiaConnection).send(JSON.stringify(sendPacketPfmTransfer));
-  t.deepEqual(JSON.parse(sendAckDataPPfmTransfer), {"result":"AQ=="}, 'Gaia sent the atoms with PFM transfer memo');
+  // Should return undefined because the ack will come from the final forward
+  t.deepEqual(sendAckDataPPfmTransfer, '', 'Gaia sent the atoms with PFM transfer memo');
 
   // test sending with PFM memo forward contract call
   /** @type {Forward} */
