@@ -212,8 +212,8 @@ const readBuildJSON = async (envRecordFile, { fs }) => {
 };
 
 const writeBuildJSON = async (envRecordFile, build, { fs }) => {
-  const data = JSON.stringify(build, undefined, 2) + '\n';
-  await fs.writeFile(envRecordFile, data);
+  const data = JSON.stringify(build, undefined, 2);
+  await fs.writeFile(envRecordFile, `${data}\n`);
 };
 
 /**
@@ -223,9 +223,10 @@ const writeBuildJSON = async (envRecordFile, build, { fs }) => {
  *   stdout: typeof process.stdout,
  *   spawn: typeof import('child_process').spawn,
  *   fs: {
+ *     readFile: typeof import('fs').promises.readFile,
+ *     writeFile: typeof import('fs').promises.writeFile,
  *     existsSync: typeof import('fs').existsSync,
  *     rmdirSync: typeof import('fs').rmdirSync,
- *     readFile: typeof import('fs').promises.readFile,
  *   },
  *   os: {
  *     type: typeof import('os').type,
@@ -275,7 +276,7 @@ async function main(args, { env, spawn, fs, os }) {
           didGit = true;
           await submodule.update(); // requires git
         } else {
-          console.log(`${key} case C: have submodule/ but not .git : do nothing`);
+          console.log(`${key} case C: have submodule/, not .git : do nothing`);
         }
       } else {
         console.log(`${key} case A: no submodule/ directory : do init`);
