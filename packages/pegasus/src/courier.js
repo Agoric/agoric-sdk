@@ -175,28 +175,36 @@ export const makeCourierMaker =
 
     /** @type {Receiver} */
     const receive = async ({ value, depositAddress, memo }) => {
-      const localAmount = AmountMath.make(localBrand, value);
-      const depositFacet = await E(board).getValue(depositAddress).catch(_ => E(namesByAddress).lookup(depositAddress, WalletName.depositFacet));
-      const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
-      const forward = parseTransferMemo(memo);
+      try {
+        const localAmount = AmountMath.make(localBrand, value);
+        const depositFacet = await E(board).getValue(depositAddress).catch(_ => E(namesByAddress).lookup(depositAddress, WalletName.depositFacet));
+        const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
+        const forward = parseTransferMemo(memo);
 
-      if (forward) {
-        if (forward.transfer) {
-          await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
-        } 
-        if (forward.call) {
-          const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
-          await handleCall(forward, payout, namesByAddress);
+        if (forward) {
+          if (forward.transfer) {
+            await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
+          } 
+          if (forward.call) {
+            const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
+            await handleCall(forward, payout, namesByAddress);
+          }
+          // returning void ack will prevent WriteAcknowledgement from occurring for forwarded packet.
+          // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
+          return;
         }
-        // returning void ack will prevent WriteAcknowledgement from occurring for forwarded packet.
-        // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
-        return;
+
+        const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
+        E(depositFacet).receive(payout).catch(_ => {});
+
+        return E(transferProtocol).makeTransferPacketAck(true);
+
+      } catch (e) {
+
+        console.error(e);
+        return E(transferProtocol).makeTransferPacketAck(false, e);
+        
       }
-
-      const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
-      E(depositFacet).receive(payout).catch(_ => {});
-
-      return E(transferProtocol).makeTransferPacketAck(true);
     };
 
     return Far('courier', { send, receive });
