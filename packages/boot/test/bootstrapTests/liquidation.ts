@@ -8,13 +8,13 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { ExecutionContext } from 'ava';
+import type { ExecutionContext } from 'ava';
+import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import {
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
-} from './drivers.ts';
-import { makeSwingsetTestKit } from './supports.ts';
+} from '../../tools/drivers.ts';
 
 export type LiquidationSetup = {
   vaults: {

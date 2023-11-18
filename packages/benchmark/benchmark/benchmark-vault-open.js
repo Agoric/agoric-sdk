@@ -1,11 +1,11 @@
-import { bench } from './benchmarkerator.js';
+import { bench } from '../src/benchmarkerator.js';
 
 // eslint-disable-next-line import/order
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 
 const collateralBrandKey = 'ATOM';
 
-bench.addBenchmark('vault open', {
+bench.addBenchmark('open vault', {
   executeRound: async (context, round) => {
     const { alice } = context.actors;
 
@@ -36,4 +36,4 @@ bench.addBenchmark('vault open', {
   },
 });
 
-await bench.run('vaults');
+await bench.run();

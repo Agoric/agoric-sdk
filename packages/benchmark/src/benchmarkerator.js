@@ -4,11 +4,17 @@ import fs from 'node:fs';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 
+// XXX The following four imports are present only to make `tsc` shut up.  They do no actual work.
+import '@agoric/vats/exported.js';
+import '@agoric/inter-protocol/exported.js';
+import '@agoric/zoe/exported.js';
+import '@agoric/cosmic-swingset/src/launch-chain.js';
+
 import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from './supports.ts';
-import { makeWalletFactoryDriver } from './drivers.ts';
+import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.ts';
+import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
@@ -38,7 +44,7 @@ import { makeWalletFactoryDriver } from './drivers.ts';
  * @typedef {{
  *    options: Record<string, string>,
  *    argv: string[],
- *    actors: Record<string, import('./drivers.js').SmartWalletDriver>,
+ *    actors: Record<string, import('@agoric/boot/tools/drivers.ts').SmartWalletDriver>,
  *    title?: string,
  *    rounds?: number,
  *    config?: Record<string, unknown>,
@@ -100,7 +106,7 @@ import { makeWalletFactoryDriver } from './drivers.ts';
  *
  * @typedef {{
  *    addBenchmark: (title: string, benchmark: Benchmark) => void,
- *    run: (name?: string) => Promise<void>,
+ *    run: () => Promise<void>,
  * }} Benchmarkerator
  */
 
@@ -111,7 +117,8 @@ const argv = process.argv.slice(2);
 let commandLineRounds;
 let verbose = false;
 let help = false;
-let dump = false;
+let dumpFile;
+let slogFile;
 /** @type ManagerType */
 let defaultManagerType = 'xs-worker';
 const options = {};
@@ -142,8 +149,11 @@ FLAGS may be:
   --local          - shorthand for '--vat-type local'
                      (less realistic perf numbers but faster and easier to debug)
 
-  -d
-  --dump           - output JSON-formatted benchmark data to a file
+  -s PATH
+  --slog PATH      - output a slog file into PATH
+
+  -d PATH
+  --dump PATH      - output JSON-formatted benchmark data into PATH
 
   -h
   --help           - output this helpful usage information and then exit
@@ -178,7 +188,7 @@ while (argv[0] && stillScanningArgs) {
       break;
     case '-d':
     case '--dump':
-      dump = true;
+      dumpFile = argv.shift();
       break;
     case '--vat-type': {
       const type = argv.shift();
@@ -202,6 +212,10 @@ while (argv[0] && stillScanningArgs) {
     case '-h':
     case '--help':
       help = true;
+      break;
+    case '-s':
+    case '--slog':
+      slogFile = argv.shift();
       break;
     case '-o':
     case '--option': {
@@ -427,6 +441,7 @@ export const makeBenchmarkerator = async () => {
   const swingsetTestKit = await makeSwingsetTestKit(console.log, undefined, {
     defaultManagerType,
     verbose,
+    slogFile,
   });
   const {
     runUtils,
@@ -520,11 +535,8 @@ export const makeBenchmarkerator = async () => {
 
   /**
    * Execute the benchmarks.
-   *
-   * @param {string} [name] - string identifying the set of benchmarks being
-   *    executed.  Used for logging and labeling the output data.
    */
-  const run = async (name = 'benchmark') => {
+  const run = async () => {
     /** @type {object} */
     const benchmarkContext = { ...context };
     await null;
@@ -569,11 +581,8 @@ export const makeBenchmarkerator = async () => {
     }
     await eventLoopIteration();
     await shutdown();
-    if (dump) {
-      fs.writeFileSync(
-        `benchmark-${name}.json`,
-        JSON.stringify(benchmarkReport, null, 2),
-      );
+    if (dumpFile) {
+      fs.writeFileSync(dumpFile, JSON.stringify(benchmarkReport, null, 2));
     }
   };
 
@@ -586,4 +595,5 @@ export const makeBenchmarkerator = async () => {
 /**
  * The normal singleton benchmarkerator.
  */
+// eslint-disable-next-line @jessie.js/safe-await-separator
 export const bench = await makeBenchmarkerator();

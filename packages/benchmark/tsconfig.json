@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "checkJs": true,
+    "maxNodeModuleJsDepth": 2,
+  },
+  "include": [
+    "*.js",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "benchmark/**/*.js",
+    "benchmark/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts",
+    "tools/**/*.js",
+  ],
+}

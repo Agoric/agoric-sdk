@@ -14,31 +14,20 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { krefOf, kunser } from '@agoric/kmarshal';
+import { krefOf } from '@agoric/kmarshal';
+import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
+import '@agoric/vats/exported.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeQueue } from '@endo/stream';
 
-import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot';
-import type { E } from '@endo/eventual-send';
 import type { ExecutionContext as AvaT } from 'ava';
 
-const sink = () => {};
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
 
 const trace = makeTracer('BSTSupport', false);
-
-export const bootstrapMethods: { [P in keyof BootstrapRootObject]: P } = {
-  bootstrap: 'bootstrap',
-  consumeItem: 'consumeItem',
-  produceItem: 'produceItem',
-  resetItem: 'resetItem',
-  awaitVatObject: 'awaitVatObject',
-  snapshotStore: 'snapshotStore',
-};
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -61,105 +50,6 @@ export const keyArrayEqual = (
   const bobj = keysToObject(b, () => 1);
   return t.deepEqual(aobj, bobj, message);
 };
-
-export const makeRunUtils = (
-  controller: SwingsetController,
-  log = (..._) => {},
-) => {
-  let cranksRun = 0;
-
-  const mutex = makeQueue();
-
-  mutex.put(controller.run());
-
-  const runThunk = async <T extends () => any>(
-    thunk: T,
-  ): Promise<ReturnType<T>> => {
-    try {
-      // this promise for the last lock may fail
-      await mutex.get();
-    } catch {
-      // noop because the result will resolve for the previous runMethod return
-    }
-
-    const thunkResult = await thunk();
-
-    const result = controller.run().then(cranks => {
-      cranksRun += cranks;
-      log(`kernel ran ${cranks} cranks`);
-      return thunkResult;
-    });
-    mutex.put(result.then(sink, sink));
-    return result;
-  };
-
-  const queueAndRun = async (deliveryThunk, voidResult = false) => {
-    log('queueAndRun at', cranksRun);
-
-    const kpid = await runThunk(deliveryThunk);
-
-    if (voidResult) {
-      return undefined;
-    }
-    const status = controller.kpStatus(kpid);
-    switch (status) {
-      case 'fulfilled':
-        return kunser(controller.kpResolution(kpid));
-      case 'rejected':
-        throw kunser(controller.kpResolution(kpid));
-      case 'unresolved':
-        throw Error(`unresolved value for ${kpid}`);
-      default:
-        throw Fail`unknown status ${status}`;
-    }
-  };
-
-  type EVProxy = typeof E & {
-    sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
-    vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-  };
-  // @ts-expect-error cast, approximate
-  const EV: EVProxy = presence =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) =>
-        harden((...args) =>
-          queueAndRun(() =>
-            controller.queueToVatObject(presence, method, args),
-          ),
-        ),
-    });
-  EV.vat = vatName =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) =>
-        harden((...args) =>
-          queueAndRun(() => controller.queueToVatRoot(vatName, method, args)),
-        ),
-    });
-  // @ts-expect-error xxx
-  EV.sendOnly = presence =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) =>
-        harden((...args) =>
-          queueAndRun(
-            () => controller.queueToVatObject(presence, method, args),
-            true,
-          ),
-        ),
-    });
-  // @ts-expect-error xxx
-  EV.get = presence =>
-    new Proxy(harden({}), {
-      get: (_t, pathElement, _rx) =>
-        queueAndRun(() =>
-          controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
-            presence,
-            [pathElement],
-          ]),
-        ),
-    });
-  return harden({ runThunk, EV });
-};
-export type RunUtils = ReturnType<typeof makeRunUtils>;
 
 /**
  * @param {string} bundleDir
@@ -213,7 +103,7 @@ interface Powers {
 
 export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
-    new URL(`../../../${pkg}/${fileName}`, import.meta.url).pathname;
+    new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
 
   const importSpec = spec =>
     importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
@@ -353,6 +243,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.configSpecifier] bootstrap config specifier
  * @param [options.storage]
  * @param [options.verbose]
+ * @param [options.slogFile]
  * @param [options.defaultManagerType]
  */
 export const makeSwingsetTestKit = async (
@@ -362,6 +253,7 @@ export const makeSwingsetTestKit = async (
     configSpecifier = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
+    slogFile = undefined as string | undefined,
     defaultManagerType = 'local' as ManagerType,
   } = {},
 ) => {
@@ -453,6 +345,17 @@ export const makeSwingsetTestKit = async (
     }
   };
 
+  let slogSender;
+  if (slogFile) {
+    slogSender = await makeSlogSender({
+      stateDir: '.',
+      env: {
+        ...process.env,
+        SLOGFILE: slogFile,
+        SLOGSENDER: '',
+      },
+    });
+  }
   const { controller, timer } = await buildSwingset(
     new Map(),
     bridgeOutbound,
@@ -460,7 +363,7 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT', verbose },
+    { debugName: 'TESTBOOT', verbose, slogSender },
   );
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
