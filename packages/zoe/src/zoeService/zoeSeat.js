@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
@@ -154,12 +153,12 @@ export const makeZoeSeatAdminFactory = baggage => {
           // Since this method doesn't wait, we could re-enter via exitAllSeats.
           // If that happens, we shouldn't re-do any of the work.
           if (state.exiting) {
-            return;
+            return Promise.resolve();
           }
           assertHasNotExited(this, 'Cannot exit seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          return E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
@@ -174,13 +173,13 @@ export const makeZoeSeatAdminFactory = baggage => {
           // Since this method doesn't wait, we could re-enter via failAllSeats.
           // If that happens, we shouldn't re-do any of the work.
           if (state.exiting) {
-            return;
+            return Promise.resolve();
           }
 
           assertHasNotExited(this, 'Cannot fail seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          return E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
@@ -207,7 +206,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           }
 
           const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-          E.when(
+          void E.when(
             offerResultPromise,
             offerResult => {
               // Resolve the ephemeral promise for offerResult

@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /// <reference path="./types.js" />
 
 import { makePromiseKit } from '@endo/promise-kit';

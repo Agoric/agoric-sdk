@@ -1,5 +1,4 @@
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { makePromiseKit } from '@endo/promise-kit';
 

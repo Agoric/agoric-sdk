@@ -1,5 +1,4 @@
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
@@ -57,7 +56,7 @@ const makeDurableZoeKit = ({
   let zcfBundleCap;
 
   const saveBundleCap = () => {
-    E.when(
+    void E.when(
       Promise.all([vatAdminSvc, getZcfBundleCap(zcfSpec, vatAdminSvc)]),
       ([vatAdminService, bundleCap]) => {
         zcfBundleCap = bundleCap;
@@ -176,7 +175,7 @@ const makeDurableZoeKit = ({
 
   const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
     updateZcfBundleId(bundleId) {
-      E.when(
+      void E.when(
         getZcfBundleCap({ id: bundleId }, vatAdminSvc),
         bundleCap => {
           zcfBundleCap = bundleCap;

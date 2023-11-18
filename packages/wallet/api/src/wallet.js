@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the vat launched by the spawner in the ../deploy.js script.

@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -158,7 +157,10 @@ export const createSeatManager = (
         assertActive(self);
         assertNoStagedAllocation(self);
         doExitSeat(self);
-        E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
+        return E(zoeInstanceAdmin).exitSeat(
+          zcfSeatToSeatHandle.get(self),
+          completion,
+        );
       },
       fail(
         reason = Error(
@@ -175,7 +177,7 @@ export const createSeatManager = (
         }
         if (!hasExited(self)) {
           doExitSeat(self);
-          E(zoeInstanceAdmin).failSeat(
+          void E(zoeInstanceAdmin).failSeat(
             zcfSeatToSeatHandle.get(self),
             harden(reason),
           );

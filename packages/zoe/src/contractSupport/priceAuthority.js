@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /// <reference types="@agoric/time/src/types.d.ts" />
 
 import { E } from '@endo/eventual-send';

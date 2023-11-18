@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import {
@@ -278,7 +277,7 @@ export const makeStartInstance = (
     );
     zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
-    E.when(
+    void E.when(
       E(adminNode).done(),
       completion => {
         instanceAdmin.exitAllSeats(completion);

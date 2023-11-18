@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /* global fetch, setTimeout */
 

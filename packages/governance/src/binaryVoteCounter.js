@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';

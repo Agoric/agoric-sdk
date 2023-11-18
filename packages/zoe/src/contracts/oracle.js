@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { assert, Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';

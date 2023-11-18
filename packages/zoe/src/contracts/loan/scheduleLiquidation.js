@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 

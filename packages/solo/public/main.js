@@ -1,5 +1,4 @@
 /* global setTimeout */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 // NOTE: Runs outside SES
 
 /* global WebSocket fetch document window walletFrame localStorage */

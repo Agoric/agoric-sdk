@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
