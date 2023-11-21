@@ -691,3 +691,38 @@ test('GimixOracle brandAux marshal re-implementation', t => {
 });
 
 test.todo('make work agreement at wallet bridge / vstorage level');
+
+test('send payment to holder of github account', async t => {
+  const addr1 = 'agoric1receiver';
+
+  const rxd = [];
+  const depositFacet = Far('DepositFacet', {
+    /** @param {Payment} pmt */
+    receive: async pmt => {
+      rxd.push(pmt);
+      // XXX should return amount of pmt
+    },
+  });
+
+  const { powers } = t.context;
+  const { namesByAddress, namesByAddressAdmin } = powers.consume;
+
+  const my = makeNameHubKit();
+  my.nameAdmin.update('depositFacet', depositFacet);
+  await E(namesByAddressAdmin).update(addr1, my.nameHub, my.nameAdmin);
+
+  // t.truthy(namesByAddress);
+  const df1 = await E(namesByAddress).lookup(addr1, 'depositFacet');
+  t.is(df1, depositFacet);
+
+  const gitHubAccounts = makeNameHubKit();
+  t.log('with github credentials for bob registers address address', addr1);
+  const myHub = E(namesByAddress).lookup(addr1);
+  gitHubAccounts.nameAdmin.update('bob', myHub);
+
+  t.log('look up depositFacet by github username bob');
+  const hub2 = await E(gitHubAccounts.nameHub).lookup('bob');
+  t.is(hub2, my.nameHub);
+  const df2 = await E(hub2).lookup('depositFacet');
+  t.is(df1, df2);
+});
