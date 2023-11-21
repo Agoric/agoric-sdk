@@ -44,30 +44,6 @@ const fail = msg => {
 };
 
 /**
- * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
- *
- * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- */
-const fixHub = async namesByAddressAdmin => {
-  /** @type {import('@agoric/vats').NameHub} */
-  // @ts-expect-error mock. no has, keys, ...
-  const hub = Far('Hub work-around', {
-    lookup: async (addr, key, ...rest) => {
-      if (!(addr && key && rest.length === 0)) {
-        throw Error('unsupported');
-      }
-      await E(namesByAddressAdmin).reserve(addr);
-      const addressAdmin = await E(namesByAddressAdmin).lookupAdmin(addr);
-      assert(addressAdmin, 'no admin???');
-      await E(addressAdmin).reserve(key);
-      const addressHub = E(addressAdmin).readonly();
-      return E(addressHub).lookup(key);
-    },
-  });
-  return hub;
-};
-
-/**
  * Make a storage node for auxilliary data for a value on the board.
  *
  * @param {ERef<StorageNode>} chainStorage
@@ -87,15 +63,10 @@ const makeBoardAuxNode = async (chainStorage, boardId) => {
  */
 export const startGiMiX = async (powers, config = {}) => {
   const {
-    consume: {
-      agoricNames,
-      board,
-      chainTimerService,
-      chainStorage,
-      namesByAddressAdmin,
-      zoe,
-    },
+    consume: { agoricNames, board, chainTimerService, chainStorage, zoe },
     instance: {
+      // @ts-expect-error going beyond WellKnownName
+      consume: { postalSvc },
       // @ts-expect-error going beyond WellKnownName
       produce: { GiMiX: produceInstance },
     },
@@ -119,21 +90,18 @@ export const startGiMiX = async (powers, config = {}) => {
   /** @type {Installation<import('./gimix').prepare>} */
   const installation = await E(zoe).installBundleID(bundleID);
 
-  const namesByAddress = await fixHub(namesByAddressAdmin);
+  /** @type {import('../../zoeService/utils').StartResult<import('./postalSvc').start>['publicFacet']} */
+  const postHub = await E(zoe).getPublicFacet(postalSvc);
 
   const { creatorFacet, instance: gimixInstance } = await E(zoe).startInstance(
     installation,
     { Stable: await E(agoricNames).lookup('issuer', 'IST') },
-    { namesByAddress, timer: await chainTimerService },
+    { postalService: await postalSvc },
   );
   const { brands, issuers } = await E(zoe).getTerms(gimixInstance);
 
   const oracleInvitation = await E(creatorFacet).makeOracleInvitation();
-  const oracleDepositFacet = await E(namesByAddress).lookup(
-    oracleAddress,
-    'depositFacet',
-  );
-  await E(oracleDepositFacet).receive(oracleInvitation);
+  await E(postHub).sendTo(oracleAddress, oracleInvitation);
 
   produceInstance.resolve(gimixInstance);
   produceIssuer.resolve(issuers.GimixOracle);
@@ -154,10 +122,8 @@ export const manifest = /** @type {const} */ ({
     consume: {
       agoricNames: true,
       board: true,
-      chainStorage: true,
       chainTimerService: true,
-      namesByAddress: true,
-      namesByAddressAdmin: true,
+      chainStorage: true,
       zoe: true,
     },
     instance: {

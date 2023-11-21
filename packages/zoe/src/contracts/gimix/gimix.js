@@ -23,8 +23,7 @@ const { details: X, Fail, quote: q } = assert;
 
 /**
  * @typedef {object} GiMiXTerms
- * @property {import('@agoric/vats').NameHub} namesByAddress
- * @property {import('@agoric/time/src/types').TimerService} timer
+ * @property {Instance} postalService
  */
 
 /**
@@ -33,7 +32,9 @@ const { details: X, Fail, quote: q } = assert;
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, _privateArgs, baggage) => {
-  const { namesByAddress } = zcf.getTerms();
+  const { postalService } = zcf.getTerms();
+  const zoe = zcf.getZoeService();
+  const postHub = E(zoe).getPublicFacet(postalService);
 
   const workByJob = provideDurableMapStore(
     baggage,
@@ -130,7 +131,7 @@ export const prepare = async (zcf, _privateArgs, baggage) => {
         } = this;
         const { deliverDepositAddr, jobID, issueURL } = report;
 
-        const depositFacetP = E(namesByAddress).lookup(
+        const depositFacetP = E(postHub).lookup(
           deliverDepositAddr,
           'depositFacet',
         );

@@ -23,13 +23,14 @@ import {
   oracleBrandAuxValue,
   startGiMiX,
 } from '../../../../src/contracts/gimix/start-gimix.js';
+import { startPostalSvc } from '../../../../src/contracts/gimix/start-postalSvc.js';
 import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UNIT6 = 1_000_000n;
 
-const { entries } = Object;
+const { entries, values } = Object;
 const { Fail } = assert;
 
 /** @type {<T>(x: T | null | undefined) => T} */
@@ -49,14 +50,20 @@ const asset = specifier => myRequire.resolve(specifier);
 const makeTestContext = async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
-  const bundle = await bundleCache.load(
-    asset('../../../../src/contracts/gimix/gimix.js'),
-    'gimix',
-  );
-  const centralSupplyBundle = await bundleCache.load(
-    asset('@agoric/vats/src/centralSupply.js'),
-    'centralSupply',
-  );
+  const bundles = {
+    gimix: await bundleCache.load(
+      asset('../../../../src/contracts/gimix/gimix.js'),
+      'gimix',
+    ),
+    centralSupply: await bundleCache.load(
+      asset('@agoric/vats/src/centralSupply.js'),
+      'centralSupply',
+    ),
+    postalService: await bundleCache.load(
+      asset('../../../../src/contracts/gimix/postalSvc.js'),
+      'postalService',
+    ),
+  };
 
   const eventLoopIteration = () => new Promise(setImmediate);
 
@@ -74,8 +81,12 @@ const makeTestContext = async t => {
 
     // mock installBundleID
     const installBundleID = bid => {
-      assert.equal(bid, `b1-${bundle.endoZipBase64Sha512}`);
-      return zoeService.install(bundle);
+      for (const bundle of values(bundles)) {
+        if (bid === `b1-${bundle.endoZipBase64Sha512}`) {
+          return zoeService.install(bundle);
+        }
+      }
+      assert.fail(`unknown bundle ${bid}`);
     };
 
     const zoe = Far('ZoeService', {
@@ -99,7 +110,7 @@ const makeTestContext = async t => {
 
     const istIssuer = await E(zoe).getFeeIssuer();
     const istBrand = await E(istIssuer).getBrand();
-    const centralSupply = await E(zoeService).install(centralSupplyBundle);
+    const centralSupply = await E(zoeService).install(bundles.centralSupply);
 
     /** @type {import('@agoric/time/src/types').TimerService} */
     const chainTimerService = manualTimer;
@@ -151,7 +162,7 @@ const makeTestContext = async t => {
       zoe: powers.consume.zoe,
     });
 
-  return { bundle, faucet, manualTimer, powers };
+  return { bundles, faucet, manualTimer, powers };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -641,10 +652,18 @@ test('execute work agreement', async t => {
     bob: await wf.provideWallet('agoric1bob'),
   };
 
-  await startGiMiX(t.context.powers, {
+  const { bundles, powers } = t.context;
+  await startPostalSvc(powers, {
+    options: {
+      postalSvc: {
+        bundleID: `b1-${bundles.postalService.endoZipBase64Sha512}`,
+      },
+    },
+  });
+  await startGiMiX(powers, {
     options: {
       GiMiX: {
-        bundleID: `b1-${t.context.bundle.endoZipBase64Sha512}`,
+        bundleID: `b1-${bundles.gimix.endoZipBase64Sha512}`,
         oracleAddress: 'agoric1oracle',
       },
     },
