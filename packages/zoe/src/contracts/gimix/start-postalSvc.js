@@ -9,6 +9,8 @@
 
 import { E, Far } from '@endo/far';
 
+const { Fail } = assert;
+
 const trace = (...args) => console.log('start-postalSvc', ...args);
 
 const fail = msg => {
@@ -22,19 +24,20 @@ const fail = msg => {
  */
 const fixHub = async namesByAddressAdmin => {
   /** @type {import('@agoric/vats').NameHub} */
-  // @ts-expect-error mock. no has, keys, ...
   const hub = Far('Hub work-around', {
-    lookup: async (addr, key, ...rest) => {
-      if (!(addr && key && rest.length === 0)) {
-        throw Error('unsupported');
-      }
+    lookup: async (addr, ...rest) => {
       await E(namesByAddressAdmin).reserve(addr);
       const addressAdmin = await E(namesByAddressAdmin).lookupAdmin(addr);
       assert(addressAdmin, 'no admin???');
-      await E(addressAdmin).reserve(key);
       const addressHub = E(addressAdmin).readonly();
-      return E(addressHub).lookup(key);
+      if (rest.length === 0) return addressHub;
+      await E(addressAdmin).reserve(rest[0]);
+      return E(addressHub).lookup(...rest);
     },
+    has: _key => Fail`key space not well defined`,
+    entries: () => Fail`enumeration not supported`,
+    values: () => Fail`enumeration not supported`,
+    keys: () => Fail`enumeration not supported`,
   });
   return hub;
 };

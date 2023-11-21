@@ -20,28 +20,34 @@ export const start = zcf => {
    * @returns
    */
   const sendTo = (addr, pmt) => {
-    const dpositFacet = E(namesByAddress).lookup(addr, 'depositFacet');
-    return E(dpositFacet).receive(pmt);
+    const depositFacet = E(namesByAddress).lookup(addr, 'depositFacet');
+    return E(depositFacet).receive(pmt);
   };
 
-  const handleSend = recipient => async seat => {
-    const { give } = seat.getProposal();
-    const payouts = await withdrawFromSeat(zcf, seat, give);
+  const makeSendInvitation = recipient => {
+    assert.typeof(recipient, 'string');
 
-    // XXX partial failure?
-    for await (const pmtP of values(payouts)) {
-      const pmt = await pmtP;
-      await sendTo(recipient, pmt);
-    }
-    return `sent ${keys(payouts).join(', ')}`;
+    const handleSend = async seat => {
+      const { give } = seat.getProposal();
+      /** @type {ERef<DepositFacet>} */
+      const depositFacet = E(namesByAddress).lookup(recipient, 'depositFacet');
+      const payouts = await withdrawFromSeat(zcf, seat, give);
+
+      // XXX partial failure? return payments?
+      await Promise.all(
+        values(payouts).map(pmtP =>
+          Promise.resolve(pmtP).then(pmt => E(depositFacet).receive(pmt)),
+        ),
+      );
+      return `sent ${keys(payouts).join(', ')}`;
+    };
+
+    return zcf.makeInvitation(handleSend, 'send');
   };
 
   const publicFacet = Far('postalSvc', {
     sendTo,
-    makeSendInvitation: recipient => {
-      assert.typeof(recipient, 'string');
-      return zcf.makeInvitation(handleSend(recipient), 'send');
-    },
+    makeSendInvitation,
   });
   return { publicFacet };
 };

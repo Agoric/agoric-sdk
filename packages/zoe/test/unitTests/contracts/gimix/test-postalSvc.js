@@ -6,13 +6,11 @@ import { createRequire } from 'module';
 
 import { E, Far } from '@endo/far';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
 import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
 import { startPostalSvc } from '../../../../src/contracts/gimix/start-postalSvc.js';
-
-const { Fail } = assert;
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -22,22 +20,26 @@ const myRequire = createRequire(import.meta.url);
 const asset = specifier => myRequire.resolve(specifier);
 
 /**
- * Wrap Zoe exo in a Far so that we can override methods.
+ * Wrap Zoe exo in a record so that we can override methods.
  *
- * @param {ZoeService} zoeMethods
+ * Roughly equivalent to {@link bindAllMethods}
+ * in @agoric/internal, but that's a private API and
+ * this contract should perhaps not be in agoric-sdk.
+ *
+ * @param {ZoeService} zoeExo
  */
-const wrapZoe = zoeMethods => {
+const wrapZoe = zoeExo => {
   /** @type {ZoeService} */
   // @ts-expect-error mock
   const mock = {
     // XXX all the methods used in this test; there may be others.
-    getFeeIssuer: () => zoeMethods.getFeeIssuer(),
-    getInvitationIssuer: () => zoeMethods.getInvitationIssuer(),
-    installBundleID: (...args) => zoeMethods.installBundleID(...args),
-    startInstance: (...args) => zoeMethods.startInstance(...args),
-    getTerms: (...args) => zoeMethods.getTerms(...args),
-    getPublicFacet: (...args) => zoeMethods.getPublicFacet(...args),
-    offer: (...args) => zoeMethods.offer(...args),
+    getFeeIssuer: () => zoeExo.getFeeIssuer(),
+    getInvitationIssuer: () => zoeExo.getInvitationIssuer(),
+    installBundleID: (...args) => zoeExo.installBundleID(...args),
+    startInstance: (...args) => zoeExo.startInstance(...args),
+    getTerms: (...args) => zoeExo.getTerms(...args),
+    getPublicFacet: (...args) => zoeExo.getPublicFacet(...args),
+    offer: (...args) => zoeExo.offer(...args),
   };
   return mock;
 };
@@ -53,9 +55,9 @@ const makeTestContext = async t => {
     const { produce, consume } = makePromiseSpace();
 
     const { zoeService } = makeZoeKitForTest();
-    /**@param {string} bid */
-    const install1BundleID = bid => {
-      assert.equal(bid, `b1-${bundle.endoZipBase64Sha512}`);
+    /** @param {string} bID */
+    const install1BundleID = bID => {
+      assert.equal(bID, `b1-${bundle.endoZipBase64Sha512}`);
       return zoeService.install(bundle);
     };
     const zoe = Far('ZoeService', {
@@ -142,3 +144,5 @@ test('deliver payment using address', async t => {
     t.is(result, 'sent Payment, Invitation');
   }
 });
+
+test.todo('partial failure: send N+1 payments where >= 1 delivery fails');
