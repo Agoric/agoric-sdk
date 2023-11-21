@@ -13,7 +13,7 @@ import {
   objectMap,
   StorageNodeShape,
 } from '@agoric/internal';
-import { observeNotifier } from '@agoric/notifier';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { M, mustMatch } from '@agoric/store';
 import {
   appendToStoredArray,
@@ -22,8 +22,10 @@ import {
 import {
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
+  prepareExoClass,
   prepareExoClassKit,
   provide,
+  watchPromise,
 } from '@agoric/vat-data';
 import {
   prepareRecorderKit,
@@ -271,6 +273,57 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage);
 
+  const NotifierShape = M.remotable();
+  const updateShape = {
+    value: AmountShape,
+    updateCount: M.bigint(),
+  };
+  const amountWatcherGuard = M.interface('paymentWatcher', {
+    onFulfilled: M.call(updateShape, NotifierShape).returns(),
+    onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
+  });
+  const prepareAmountWatcher = () =>
+    prepareExoClass(
+      baggage,
+      'AmountWatcher',
+      amountWatcherGuard,
+      /**
+       * @param {Purse} purse
+       * @param {ReturnType<makeWalletWithResolvedStorageNodes>['helper']} helper
+       */
+      (purse, helper) => ({ purse, helper }),
+      {
+        /**
+         * @param {{ value: Amount, updateCount: bigint | undefined }} updateRecord
+         * @param { Notifier<Amount> } notifier
+         * @returns {void}
+         */
+        onFulfilled(updateRecord, notifier) {
+          const { helper, purse } = this.state;
+          helper.updateBalance(purse, updateRecord.value);
+          helper.watchNextBalance(
+            this.self,
+            notifier,
+            updateRecord.updateCount,
+          );
+        },
+        /**
+         * @param {unknown} err
+         * @returns {Promise<void>}
+         */
+        onRejected(err) {
+          const { helper, purse } = this.state;
+          if (isUpgradeDisconnection(err)) {
+            return helper.watchPurse(purse); // retry
+          }
+          helper.logWalletError(`failed amount observer`, err);
+          throw err;
+        },
+      },
+    );
+
+  const makeAmountWatcher = prepareAmountWatcher();
+
   /**
    * @param {UniqueParams} unique
    * @returns {State}
@@ -356,6 +409,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         .returns(M.promise()),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
+      watchNextBalance: M.call(M.any(), NotifierShape, M.bigint()).returns(),
       repairUnwatchedSeats: M.call().returns(),
       updateStatus: M.call(M.any()).returns(),
       addContinuingOffer: M.call(
@@ -478,32 +532,23 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
-          const { facets } = this;
-
           const purse = await purseRef; // promises don't fit in durable storage
 
           const { helper } = this.facets;
           // publish purse's balance and changes
-          void E.when(
-            E(purse).getCurrentAmount(),
-            balance => helper.updateBalance(purse, balance),
-            err =>
-              facets.helper.logWalletError(
-                'initial purse balance publish failed',
-                err,
-              ),
-          );
-          void observeNotifier(E(purse).getCurrentAmountNotifier(), {
-            updateState(balance) {
-              helper.updateBalance(purse, balance);
-            },
-            fail(reason) {
-              facets.helper.logWalletError(
-                '⚠️ failed updateState observer',
-                reason,
-              );
-            },
-          });
+          // This would seem to fit the observeNotifier() pattern,
+          // but purse notifiers are not necessarily durable.
+          // If there is an error due to upgrade, retry watchPurse().
+          const notifier = await E(purse).getCurrentAmountNotifier();
+
+          const handler = makeAmountWatcher(purse, helper);
+          const startP = E(notifier).getUpdateSince(undefined);
+          watchPromise(startP, handler, notifier);
+        },
+
+        watchNextBalance(handler, notifier, updateCount) {
+          const nextP = E(notifier).getUpdateSince(updateCount);
+          watchPromise(nextP, handler, notifier);
         },
 
         /**
@@ -899,7 +944,11 @@ export const prepareSmartWallet = (baggage, shared) => {
           } catch (err) {
             facets.helper.logWalletError('OFFER ERROR:', err);
             // Notify the user
-            if (watcher) {
+
+            if (err.upgradeMessage === 'vat upgraded') {
+              // The offer watchers will reconnect. Don't reclaim or exit
+              return;
+            } else if (watcher) {
               watcher.helper.updateStatus({ error: err.toString() });
             } else {
               facets.helper.updateStatus({
