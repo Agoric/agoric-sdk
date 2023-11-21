@@ -46,6 +46,7 @@ const makeTestContext = async t => {
   return {
     walletFactoryDriver,
     runUtils,
+    agoricNamesRemotes,
   };
 };
 
@@ -79,45 +80,92 @@ const upgradeZoeScript = () => {
   return upgradeZoe;
 };
 
+const sendInvitationScript = () => {
+  const addr = 'agoric1oracle-operator';
+  const sendIt = async powers => {
+    // namesByAddress is broken #8113
+    const {
+      consume: { namesByAddressAdmin, zoe },
+      instance: {
+        consume: { reserve },
+      },
+    } = powers;
+    const pf = E(zoe).getPublicFacet(reserve);
+    const anInvitation = await E(pf).makeAddCollateralInvitation();
+    await E(namesByAddressAdmin).reserve(addr);
+    // don't trigger the namesByAddressAdmin.readonly() bug
+    const addressAdmin = E(namesByAddressAdmin).lookupAdmin(addr);
+    await E(addressAdmin).reserve('depositFacet');
+    const addressHub = E(addressAdmin).readonly();
+    const addressDepositFacet = E(addressHub).lookup('depositFacet');
+    await E(addressDepositFacet).receive(anInvitation);
+  };
+
+  return sendIt;
+};
+
 test('update purse balance across upgrade', async t => {
   const oraAddr = 'agoric1oracle-operator';
-  const { walletFactoryDriver } = t.context;
+  const { walletFactoryDriver, agoricNamesRemotes } = t.context;
   t.log('provision a smartWallet for an oracle operator');
   const oraWallet = await walletFactoryDriver.provideSmartWallet(oraAddr);
-  t.log(oraWallet);
-  t.truthy(oraWallet);
+  console.log('@@@brands?', agoricNamesRemotes.brand);
 
-  t.log('upgrade zoe');
-  t.log('launching proposal');
-  const proposal = {
-    evals: [
-      {
-        json_permits: JSON.stringify({
-          consume: { vatStore: true, vatAdminSvc: true },
-        }),
-        js_code: `(${upgradeZoeScript})()`,
-      },
-    ],
+  const findPurse = (current, brand = agoricNamesRemotes.brand.Invitation) => {
+    // getCurrentWalletRecord and agoricNamesRemotes
+    // aren't using the same marshal context. hmm.
+    //     return (
+    //       current.purses.find(p => p.brand === brand) ||
+    //       Fail`brand ${brand} not found`
+    //     );
+    return current.purses[0];
   };
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
+
+  t.log('@@@', oraWallet.getCurrentWalletRecord());
+  t.log(findPurse(oraWallet.getCurrentWalletRecord()));
+
   const { EV } = t.context.runUtils;
   /** @type {ERef<import('../../src/types.js').BridgeHandler>} */
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+
+  const runCoreEval = async evals => {
+    const proposal = { evals };
+    const bridgeMessage = {
+      type: 'CORE_EVAL',
+      evals: proposal.evals,
+    };
+    t.log({ bridgeMessage });
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  };
+
+  t.log('upgrade zoe');
+  await runCoreEval([
+    {
+      json_permits: JSON.stringify({
+        consume: { vatStore: true, vatAdminSvc: true },
+      }),
+      js_code: `(${upgradeZoeScript})()`,
+    },
+  ]);
 
   // XXX can we test the messages that went to the vat console?
   // agoric1oracle-operator failed updateState observer (RemoteError#1)
   // RemoteError#1: vat terminated
 
-  t.log(
-    'start a new fluxAggregator for something like stATOM, using the address from 1 as one of the oracleAddresses',
-  );
-  t.log('oracle operator is not notified of new invitation');
-  t.pass();
+  t.log('send an invitation to the oracle operator');
+  await runCoreEval([
+    {
+      json_permits: JSON.stringify({
+        consume: { namesByAddressAdmin: true, zoe: true },
+        instance: { consume: { reserve: true } },
+      }),
+      js_code: `(${sendInvitationScript})()`,
+    },
+  ]);
+
+  t.log('oracle operator should be notified of new invitation');
+  const current = oraWallet.getCurrentWalletRecord();
+  t.true(findPurse(current).balance.value.length >= 1, 'no invitation');
 });
