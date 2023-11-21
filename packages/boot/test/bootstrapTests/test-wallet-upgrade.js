@@ -1,5 +1,6 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeWalletFactoryDriver } from './drivers.js';
@@ -44,10 +45,39 @@ const makeTestContext = async t => {
 
   return {
     walletFactoryDriver,
+    runUtils,
   };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
+
+const upgradeZoeScript = () => {
+  /**
+   * @param {VatAdminSvc} vatAdminSvc
+   * @param {any} adminNode
+   * @param {string} bundleCapName
+   * @param {unknown} vatParameters
+   */
+  const upgradeVat = async (
+    vatAdminSvc,
+    adminNode,
+    bundleCapName,
+    vatParameters = {},
+  ) => {
+    const bcap = await E(vatAdminSvc).getNamedBundleCap(bundleCapName);
+    const options = { vatParameters };
+    const incarnationNumber = await E(adminNode).upgrade(bcap, options);
+    console.log('upgraded', bundleCapName, 'to', incarnationNumber);
+  };
+
+  const upgradeZoe = async powers => {
+    const { vatStore, vatAdminSvc } = powers.consume;
+    const { adminNode } = await E(vatStore).get('zoe');
+    console.log('zoe admin node', adminNode);
+    await upgradeVat(vatAdminSvc, adminNode, 'zoe');
+  };
+  return upgradeZoe;
+};
 
 test('update purse balance across upgrade', async t => {
   const oraAddr = 'agoric1oracle-operator';
@@ -58,6 +88,33 @@ test('update purse balance across upgrade', async t => {
   t.truthy(oraWallet);
 
   t.log('upgrade zoe');
+  t.log('launching proposal');
+  const proposal = {
+    evals: [
+      {
+        json_permits: JSON.stringify({
+          consume: { vatStore: true, vatAdminSvc: true },
+        }),
+        js_code: `(${upgradeZoeScript})()`,
+      },
+    ],
+  };
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: proposal.evals,
+  };
+  t.log({ bridgeMessage });
+  const { EV } = t.context.runUtils;
+  /** @type {ERef<import('../../src/types.js').BridgeHandler>} */
+  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+    'coreEvalBridgeHandler',
+  );
+  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+
+  // XXX can we test the messages that went to the vat console?
+  // agoric1oracle-operator failed updateState observer (RemoteError#1)
+  // RemoteError#1: vat terminated
+
   t.log(
     'start a new fluxAggregator for something like stATOM, using the address from 1 as one of the oracleAddresses',
   );
