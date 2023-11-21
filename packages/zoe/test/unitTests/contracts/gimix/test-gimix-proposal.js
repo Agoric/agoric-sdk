@@ -5,6 +5,11 @@ import { fileURLToPath } from 'url';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import { permit } from '../../../../src/contracts/gimix/start-gimix.js';
+import {
+  hideImportExpr,
+  omitExportKewords,
+  redactImportDecls,
+} from './module-to-script.js';
 
 const asset = ref => fileURLToPath(new URL(ref, import.meta.url));
 
@@ -20,6 +25,7 @@ test.before(async t => {
 
   t.context = {
     readFile: fsp.readFile,
+    /* global process */
     env: process.env,
     writeFile: fsp.writeFile,
     bundle: await bundleCache.load(
@@ -27,36 +33,6 @@ test.before(async t => {
       'gimix',
     ),
   };
-});
-
-const redactImportDecls = txt =>
-  txt.replace(/^\s*import\b\s*(.*)/gm, '// REDACTED: $1');
-const omitExportKewords = txt => txt.replace(/^\s*export\b\s*/gm, '');
-// cf. ses rejectImportExpressions
-// https://github.com/endojs/endo/blob/ebc8f66e9498f13085a8e64e17fc2f5f7b528faa/packages/ses/src/transforms.js#L143
-const hideImportExpr = txt => txt.replace(/\bimport\b/g, 'XMPORT');
-
-test('module to script: redact imports; omit export keywords', t => {
-  const modText = `
-import { E, Far } from '@endo/far';
-
-/** @param {import('wonderland').Carol} carol */
-export contst alice = (carol) => {
-    E(bob).greet(carol);
-};
-    `;
-
-  const expected = `
-// REDACTED: { E, Far } from '@endo/far';
-
-/** @param {XMPORT('wonderland').Carol} carol */
-contst alice = (carol) => {
-    E(bob).greet(carol);
-};
-    `;
-
-  const script = hideImportExpr(redactImportDecls(omitExportKewords(modText)));
-  t.is(script.trim(), expected.trim());
 });
 
 test('check / save gimix permit', async t => {
