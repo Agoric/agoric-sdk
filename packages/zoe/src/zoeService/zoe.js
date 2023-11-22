@@ -171,15 +171,18 @@ const makeDurableZoeKit = ({
   };
 
   const ZoeConfigI = M.interface('ZoeConfigFacet', {
-    updateZcfBundleId: M.call(M.string()).returns(),
+    updateZcfBundleId: M.call(M.string()).returns(M.promise()),
   });
 
   const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
     updateZcfBundleId(bundleId) {
-      E.when(
+      console.log(`ZOE configure `, bundleId);
+      return E.when(
         getZcfBundleCap({ id: bundleId }, vatAdminSvc),
         bundleCap => {
           zcfBundleCap = bundleCap;
+          console.log(`ZOE configure ZCF`, bundleCap);
+          return bundleCap;
         },
         e => {
           console.error(`'🚨 unable to update ZCF Bundle: `, e);

@@ -39,9 +39,13 @@ test('walletFactory service upgrade', async t => {
         ),
       },
       [wfV1BundleName]: {
-        sourceSpec: bfile('../../../src/walletFactory.js'),
+        sourceSpec: bfile('walletFactory-V2.js'),
+        // sourceSpec: bfile('../../../src/walletFactory.js'),
       },
-      [wfV2BundleName]: { sourceSpec: bfile('walletFactory-V2.js') },
+      [wfV2BundleName]: {
+        sourceSpec: bfile('../../../src/walletFactory.js'),
+        // sourceSpec: bfile('walletFactory-V2.js'),
+      },
     },
   };
 

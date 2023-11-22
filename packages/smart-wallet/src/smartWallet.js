@@ -841,6 +841,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             facets.helper.publishCurrentState();
           } catch (err) {
+            debugger;
             console.error('OFFER ERROR:', err);
             // Notify the user
             if (watcher) {

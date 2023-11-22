@@ -29,6 +29,9 @@ export async function buildRootObject(powers, vatParameters, baggage) {
   // `zcfZygote.startContract` should exposed separately.
   const { testJigSetter } = powers;
   const { contractBundleCap } = vatParameters;
+
+  console.log(`VatRoot `, contractBundleCap);
+
   contractBundleCap ||
     Fail`expected vatParameters.contractBundleCap ${vatParameters}`;
   let { zoeService, invitationIssuer } = vatParameters;
@@ -58,30 +61,37 @@ export async function buildRootObject(powers, vatParameters, baggage) {
 
   // snapshot zygote here //////////////////
 
-  if (!firstTime) {
-    return E.when(E(zcfZygote).restartContract(vatParameters.privateArgs), () =>
-      Far('upgraded contractRunner', {}),
-    );
-  }
+  try {
+    if (!firstTime) {
+      console.log(`VATroot restart, `, vatParameters);
+      return E.when(
+        E(zcfZygote).restartContract(vatParameters.privateArgs),
+        () => Far('upgraded contractRunner', {}),
+      );
+    }
 
-  return Far('contractRunner', {
-    // initialize instance-specific state of the contract
-    /** @type {StartZcf} */
-    startZcf: (
-      zoeInstanceAdmin,
-      instanceRecordFromZoe,
-      issuerStorageFromZoe,
-      privateArgs = undefined,
-    ) => {
-      /** @type {ZCFZygote} */
-      return E(zcfZygote).startContract(
+    return Far('contractRunner', {
+      // initialize instance-specific state of the contract
+      /** @type {StartZcf} */
+      startZcf: (
         zoeInstanceAdmin,
         instanceRecordFromZoe,
         issuerStorageFromZoe,
-        privateArgs,
-      );
-    },
-  });
+        privateArgs = undefined,
+      ) => {
+        /** @type {ZCFZygote} */
+        return E(zcfZygote).startContract(
+          zoeInstanceAdmin,
+          instanceRecordFromZoe,
+          issuerStorageFromZoe,
+          privateArgs,
+        );
+      },
+    });
+  } catch (e) {
+    console.log(`VatROOT failure`, e);
+    throw ee;
+  }
 }
 
 harden(buildRootObject);

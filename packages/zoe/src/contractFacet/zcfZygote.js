@@ -62,6 +62,7 @@ export const makeZCFZygote = async (
   let instanceRecHolder;
   const makeExiter = makeMakeExiter(zcfBaggage);
 
+  console.log(`  START  ZZ`);
   /** @type {() => InstanceState} */
   const getInstanceRecHolder = () => {
     instanceRecHolder || Fail`instanceRecord must be initialized before use.`;
@@ -243,6 +244,8 @@ export const makeZCFZygote = async (
   // evaluate the contract (either the first version, or an upgrade)
   const bundleResult = await evaluateContract();
 
+  console.log(`ZZ  `, bundleResult);
+
   //#region backwards compatibility with prepare()
   const { start, meta = {} } = (() => {
     if ('prepare' in bundleResult) {
@@ -407,6 +410,7 @@ export const makeZCFZygote = async (
       issuerStorageFromZoe,
       privateArgs = undefined,
     ) => {
+      console.log(`ZZ startContract`, privateArgs);
       zoeInstanceAdmin = instanceAdminFromZoe;
       initSeatMgrAndMintKind();
 
@@ -459,6 +463,7 @@ export const makeZCFZygote = async (
     },
 
     restartContract: async (privateArgs = undefined) => {
+      console.log(`ZZ restart`, privateArgs);
       if (meta.upgradability) {
         meta.upgradability === 'canUpgrade' || Fail`contract cannot upgrade`;
       }

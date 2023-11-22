@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { allValues } from '@agoric/internal';
 
-console.warn('upgrade-walletFactory-proposal.js module evaluating');
+console.warn('upgrade-wallet-factory-proposal.js module evaluating');
 
 const { Fail } = assert;
 
@@ -80,13 +80,25 @@ export const publishAgoricBrandsDisplayInfo = async ({
   // @ts-expect-error UNTIL https://github.com/Agoric/agoric-sdk/issues/8247
   const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
   const publishBrandInfo = async brand => {
-    const [id, displayInfo, allegedName] = await Promise.all([
+    const [id, allegedName] = await Promise.all([
       E(board).getId(brand),
-      E(brand).getDisplayInfo(),
       E(brand).getAllegedName(),
     ]);
+
+    let aux;
+
+    // TODO(CTH): drop this back into the above Promise.all()  extracted for debugging.
+
+    try {
+      const displayInfo = await E(brand).getDisplayInfo();
+      aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
+      console.log(`UWFP brand`, id);
+    } catch (e) {
+      aux = marshalData.toCapData(harden({ allegedName }));
+      console.log(`UWFP timer brand`, id);
+    }
+
     const node = E(boardAux).makeChildNode(id);
-    const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
     await E(node).setValue(JSON.stringify(aux));
   };
 

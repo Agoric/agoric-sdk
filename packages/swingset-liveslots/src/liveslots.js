@@ -1446,26 +1446,34 @@ function build(
       Fail`vat source bundle lacks buildRootObject() function`;
 
     // here we finally invoke the vat code, and get back the root object
-    const rootObject = await buildRootObject(vpow, vatParameters, baggage);
-    passStyleOf(rootObject) === 'remotable' ||
-      Fail`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`;
-    getInterfaceOf(rootObject) !== undefined ||
-      Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
-    if (valToSlot.has(rootObject)) {
-      Fail`buildRootObject() must return ephemeral, not virtual/durable object`;
+    try {
+      const rootObject = await buildRootObject(vpow, vatParameters, baggage);
+
+      console.log(`LIVESLOTS root`, rootObject, passStyleOf(rootObject));
+      passStyleOf(rootObject) === 'remotable' ||
+        Fail`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`;
+      console.log(`LIVESLOTS root`, getInterfaceOf(rootObject));
+      getInterfaceOf(rootObject) !== undefined ||
+        Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
+      if (valToSlot.has(rootObject)) {
+        Fail`buildRootObject() must return ephemeral, not virtual/durable object`;
+      }
+
+      // Need to load watched promises *after* buildRootObject() so that handler kindIDs
+      // have a chance to be reassociated with their handlers.
+      watchedPromiseManager.loadWatchedPromiseTable(unmeteredRevivePromise);
+
+      const rootSlot = makeVatSlot('object', true, BigInt(0));
+      valToSlot.set(rootObject, rootSlot);
+      slotToVal.set(rootSlot, new WeakRef(rootObject));
+      retainExportedVref(rootSlot);
+      // we do not use vreffedObjectRegistry for root objects
+
+      vom.insistAllDurableKindsReconnected();
+    } catch (e) {
+      console.log(`!!! LIVESLOTS startVat fail`);
+      throw e;
     }
-
-    // Need to load watched promises *after* buildRootObject() so that handler kindIDs
-    // have a chance to be reassociated with their handlers.
-    watchedPromiseManager.loadWatchedPromiseTable(unmeteredRevivePromise);
-
-    const rootSlot = makeVatSlot('object', true, BigInt(0));
-    valToSlot.set(rootObject, rootSlot);
-    slotToVal.set(rootSlot, new WeakRef(rootObject));
-    retainExportedVref(rootSlot);
-    // we do not use vreffedObjectRegistry for root objects
-
-    vom.insistAllDurableKindsReconnected();
   }
 
   /**

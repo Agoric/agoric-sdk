@@ -82,18 +82,23 @@ export const makeAssetRegistry = assetPublisher => {
       async updateState(desc) {
         trace('registering asset', desc.issuerName);
         const { brand, issuer: issuerP, issuerName: petname } = desc;
-        // await issuer identity for use in chainStorage
-        const [issuer, displayInfo] = await Promise.all([
-          issuerP,
-          E(brand).getDisplayInfo(),
-        ]);
 
-        brandDescriptors.init(desc.brand, {
-          brand,
-          issuer,
-          petname,
-          displayInfo,
-        });
+        console.log(`WF update`, brand, issuerP);
+
+        // await issuer identity for use in chainStorage
+        const issuer = await issuerP;
+
+        // TODO(CTH): revert to prior Promise.all()
+
+        let details;
+        try {
+          const displayInfo = await E(brand).getDisplayInfo();
+          details = { brand, issuer, petname, displayInfo };
+          brandDescriptors.init(desc.brand, details);
+        } catch (e) {
+          details = { brand, issuer, petname };
+          console.warn(`Wallet Factory getting timer brand details`, petname);
+        }
       },
     },
   );
@@ -246,6 +251,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         M.await(M.remotable('Bank')),
         M.await(M.remotable('namesByAddressAdmin')),
       ).returns([M.remotable('SmartWallet'), M.boolean()]),
+      sayHelloUpgrade: M.call().returns(M.string()),
     }),
     {
       /**
@@ -285,6 +291,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           .provideAsync(address, maker, finisher)
           .then(w => [w, isNew]);
       },
+      // TODO(cth): Remove before reviews!  Only for detecting upgrade in tests
+      sayHelloUpgrade: () => 'hello, upgrade2',
     },
   );
 

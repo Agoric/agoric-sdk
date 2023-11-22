@@ -47,6 +47,7 @@ export const makeStartInstance = (
   const getFreshZcfBundleCap = async () => {
     const settledBundleCap = await getZcfBundleCapP();
     settledBundleCap !== undefined || Fail`the ZCF bundle cap was broken`;
+    console.log(`Zoe SI  getFresh`, settledBundleCap);
     return settledBundleCap;
   };
 
@@ -218,9 +219,25 @@ export const makeStartInstance = (
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
         };
-        return E.when(getFreshZcfBundleCap(), bCap =>
-          E(state.adminNode).upgrade(bCap, { vatParameters }),
-        );
+        console.log(`ZOE StartInstance upgrading`);
+        return E.when(getFreshZcfBundleCap(), bCap => {
+          try {
+            const same = bCap === vatParameters.contractBundleCap;
+
+            console.log(
+              `ZOE StartInstance upgrading`,
+              bCap,
+              vatParameters,
+              same,
+            );
+            return E(state.adminNode).upgrade(bCap, {
+              vatParameters: { ...vatParameters, flag: true },
+            });
+          } catch (e) {
+            console.log(`Zoe StartInstance failure`, e);
+            throw e;
+          }
+        });
       },
     },
   );

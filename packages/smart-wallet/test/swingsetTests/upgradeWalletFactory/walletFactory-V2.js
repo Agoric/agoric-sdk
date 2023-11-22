@@ -105,7 +105,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         M.await(M.remotable('namesByAddressAdmin')),
       ).returns([M.remotable('SmartWallet'), M.boolean()]),
       // new for V2
-      sayHelloUpgrade: M.call().returns(M.string()),
+      // sayHelloUpgrade: M.call().returns(M.string()),
     }),
     {
       /**
@@ -138,7 +138,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           .then(w => [w, makerCalled]);
       },
       // new for V2
-      sayHelloUpgrade: () => 'hello, upgrade',
+      // sayHelloUpgrade: () => 'hello, upgrade',
     },
   );
 

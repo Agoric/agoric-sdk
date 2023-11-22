@@ -7,7 +7,10 @@ import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behav
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeMarshal } from '@endo/marshal';
-import { makeAgoricNamesRemotesFromFakeStorage, slotToBoardRemote } from '@agoric/vats/tools/board-utils.js';
+import {
+  makeAgoricNamesRemotesFromFakeStorage,
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
 import type { TestFn } from 'ava';
 import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 
