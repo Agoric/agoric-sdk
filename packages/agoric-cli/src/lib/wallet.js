@@ -112,6 +112,13 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
   // values with oldest last
   const history = [];
   for await (const followerElement of iterateReverse(follower)) {
+    if ('error' in followerElement) {
+      console.error(
+        'Skipping wallet update due to error:',
+        followerElement.error,
+      );
+      continue;
+    }
     history.push(followerElement.value);
   }
 
