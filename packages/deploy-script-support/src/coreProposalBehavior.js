@@ -70,7 +70,7 @@ export const makeCoreProposalBehavior = ({
     /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
     const defaultRestoreRef = async bundleRef => {
       // extract-proposal.js creates these records, and bundleName is
-      // the name under which the bundle was installed into
+      // the optional name under which the bundle was installed into
       // config.bundles
       const bundleIdP =
         'bundleName' in bundleRef
