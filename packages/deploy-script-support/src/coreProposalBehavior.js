@@ -8,8 +8,14 @@ const t = 'makeCoreProposalBehavior';
  * @typedef {*} BootstrapPowers
  */
 
-// These permits limit the powers passed to the `behavior` function returned by
-// `makeCoreProposalBehavior`.
+/**
+ * These permits are expected to be the minimum powers required by the
+ * `behavior` function returned from `makeCoreProposalBehavior`.
+ * They are merged with all of the manifest getter's permits to produce the
+ * total permits needed by the resulting core proposal (such as might be---and
+ * generally are---written into a *-permit.json file).
+ * @see {@link ./writeCoreProposal.js}
+ */
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
   evaluateBundleCap: t,
@@ -76,8 +82,13 @@ export const makeCoreProposalBehavior = ({
 
   /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
   const behavior = async powers => {
-    // NOTE: If updating any of these names extracted from `powers`, you must
-    // change `permits` above to reflect their accessibility.
+    // NOTE: `powers` is expected to match or be a superset of the above `permits` export,
+    // which should therefore be kept in sync with this deconstruction code.
+    // HOWEVER, do note that this function is invoked with at least the *union* of powers
+    // required by individual moduleBehaviors declared by the manifest getter, which is
+    // necessary so it can use `runModuleBehaviors` to provide the appropriate subset to
+    // each one (see ./writeCoreProposal.js).
+    // Handle `powers` with the requisite care.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },
       evaluateBundleCap,
@@ -142,6 +153,7 @@ export const makeCoreProposalBehavior = ({
 
     // Evaluate the manifest.
     return runModuleBehaviors({
+      // Remember that `powers` may be arbitrarily broad.
       allPowers: powers,
       behaviors: installationNS,
       manifest: overrideManifest || manifest,
