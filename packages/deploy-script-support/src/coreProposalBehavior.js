@@ -88,9 +88,9 @@ export const makeCoreProposalBehavior = ({
     } = powers;
 
     // Get the on-chain installation containing the manifest and behaviors.
-    console.info('evaluateBundleCap', {
+    log('evaluateBundleCap', {
       manifestBundleRef,
-      exportedGetManifest: manifestGetterName,
+      manifestGetterName,
       vatAdminSvc,
     });
     let bcapP;
@@ -112,9 +112,9 @@ export const makeCoreProposalBehavior = ({
     const installationNS = await evaluateBundleCap(bundleCap);
 
     // Get the manifest and its metadata.
-    console.error('execute', {
-      exportedGetManifest: manifestGetterName,
-      behaviors: Object.keys(installationNS),
+    log('execute', {
+      manifestGetterName,
+      bundleExports: Object.keys(installationNS),
     });
     const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
