@@ -29,13 +29,15 @@ const TRANSFER_PROPOSAL_SHAPE = {
 /**
  * Make a Pegasus public API.
  *
- * @param {ZCF} zcf the Zoe Contract Facet
- * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
- * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
+ * @param {object} powers
+ * @param {ZCF} powers.zcf the Zoe Contract Facet
+ * @param {ERef<BoardDepositFacet>} powers.board where to find depositFacets by boardID
+ * @param {ERef<NameHub>} powers.namesByAddress where to find depositFacets by bech32
+ * @param {import('@agoric/whenable').When} powers.when
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
  */
-const makePegasus = (zcf, board, namesByAddress) => {
+export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
   /**
    * @typedef {object} LocalDenomState
    * @property {string} localAddr
@@ -190,6 +192,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             zcfMint.mintGains(harden(amounts), zcfSeat);
           },
           transferProtocol,
+          when,
         });
 
         const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
@@ -282,6 +285,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
               transferSeat,
             ),
           transferProtocol,
+          when,
         });
 
         const { receiveDenomToCourierPK } = localDenomState;
@@ -489,22 +493,8 @@ const makePegasus = (zcf, board, namesByAddress) => {
     },
   });
 };
+harden(makePegasus);
 
 /**
  * @typedef {ReturnType<typeof makePegasus>} Pegasus
  */
-
-/**
- * @param {ZCF<{board: ERef<BoardDepositFacet>, namesByAddress: ERef<import('@agoric/vats').NameHub>}>} zcf
- */
-const start = zcf => {
-  const { board, namesByAddress } = zcf.getTerms();
-
-  return {
-    publicFacet: makePegasus(zcf, board, namesByAddress),
-  };
-};
-
-harden(start);
-harden(makePegasus);
-export { start, makePegasus };
