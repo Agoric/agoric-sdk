@@ -12,14 +12,16 @@ import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
+import { prepareWhenableModule } from '@agoric/whenable';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeHeapZone } from '@agoric/zone/heap.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const contractPath = `${dirname}/../src/pegasus.js`;
+const contractPath = `${dirname}/../src/contract.js`;
 
 /**
  * @template T
@@ -36,6 +38,8 @@ const makeAsyncIteratorFromSubscription = sub =>
  */
 async function testRemotePeg(t) {
   t.plan(24);
+
+  const { makeWhenableKit, when } = prepareWhenableModule(makeHeapZone());
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -69,6 +73,7 @@ async function testRemotePeg(t) {
   const { publicFacet: publicAPI } = await E(zoe).startInstance(
     installationHandle,
     {},
+    {},
     { board: fakeBoard, namesByAddress: fakeNamesByAddress },
   );
 
@@ -96,6 +101,7 @@ async function testRemotePeg(t) {
               gaiaConnection = c;
             },
             async onReceive(_c, packetBytes) {
+              const { settler, whenable } = makeWhenableKit();
               const packet = JSON.parse(packetBytes);
               if (packet.memo) {
                 t.deepEqual(
@@ -109,7 +115,7 @@ async function testRemotePeg(t) {
                   },
                   'expected transfer packet',
                 );
-                return JSON.stringify({ result: 'AQ==' });
+                settler.resolve(JSON.stringify({ result: 'AQ==' }));
               } else {
                 t.deepEqual(
                   packet,
@@ -122,8 +128,9 @@ async function testRemotePeg(t) {
                   },
                   'expected transfer packet',
                 );
-                return JSON.stringify({ result: 'AQ==' });
+                settler.resolve(JSON.stringify({ result: 'AQ==' }));
               }
+              return whenable;
             },
           });
         },
@@ -180,7 +187,7 @@ async function testRemotePeg(t) {
   const localPurseP = E(localIssuerP).makeEmptyPurse();
   resolveLocalDepositFacet(E(localPurseP).getDepositFacet());
 
-  const sendAckData = await sendAckDataP;
+  const sendAckData = await when(sendAckDataP);
   const sendAck = JSON.parse(sendAckData);
   t.deepEqual(sendAck, { result: 'AQ==' }, 'Gaia sent the atoms');
   if (!sendAck.result) {
@@ -201,8 +208,8 @@ async function testRemotePeg(t) {
     sender: 'FIXME:sender2',
   };
 
-  const sendAckData2 = await E(gaiaConnection).send(
-    JSON.stringify(sendPacket2),
+  const sendAckData2 = await when(
+    E(gaiaConnection).send(JSON.stringify(sendPacket2)),
   );
   const sendAck2 = JSON.parse(sendAckData2);
   t.deepEqual(sendAck2, { result: 'AQ==' }, 'Gaia sent more atoms');
@@ -231,7 +238,7 @@ async function testRemotePeg(t) {
     .rejectTransfersWaitingForPegRemote('umuon')
     .catch(e => t.fail(e));
 
-  const sendAckData3 = await sendAckData3P;
+  const sendAckData3 = await when(sendAckData3P);
   const sendAck3 = JSON.parse(sendAckData3);
   t.deepEqual(
     sendAck3,
