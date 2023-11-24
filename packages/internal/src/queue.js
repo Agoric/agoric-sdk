@@ -36,8 +36,8 @@ export const makeWithQueue = () => {
    */
   return function withQueue(inner) {
     /**
-     * @param {T} args
-     * @returns {Promise<ReturnType<T>>}
+     * @param {Parameters<T>} args
+     * @returns {Promise<Awaited<ReturnType<T>>>}
      */
     return function queueCall(...args) {
       // Curry the arguments into the inner function, and
