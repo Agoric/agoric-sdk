@@ -40,6 +40,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
  * @property {ERef<TransferProtocol>} transferProtocol
+ * @property {import('@agoric/whenable').When} when
  * @param {ERef<Connection>} connection
  * @returns {(args: CourierArgs) => Courier}
  */
@@ -54,6 +55,7 @@ export const makeCourierMaker =
     retain,
     redeem,
     transferProtocol,
+    when,
   }) => {
     /** @type {Sender} */
     const send = async (zcfSeat, depositAddress, memo, opts) => {
@@ -71,8 +73,7 @@ export const makeCourierMaker =
         retain(zcfSeat, { Transfer: amount });
 
         // The payment is already escrowed, and proposed to retain, so try sending.
-        return E(connection)
-          .send(transferPacket)
+        return when(E(connection).send(transferPacket))
           .then(ack => E(transferProtocol).assertTransferPacketAck(ack))
           .then(
             _ => zcfSeat.exit(),
