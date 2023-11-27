@@ -4,32 +4,45 @@ import { M } from '@endo/patterns';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
+ * @param {WeakMap<object, any>} [whenable0ToEphemeral]
  */
-export const prepareWhenableKit = zone => {
+export const prepareWhenableKit = (
+  zone,
+  whenable0ToEphemeral = new WeakMap(),
+) => {
   /**
-   * @type {WeakMap<import('./when.js').Whenable['whenable0'], import('@endo/promise-kit').PromiseKit<any>>}
-   */
-  const whenableToPromiseKit = new WeakMap();
-
-  /**
-   * Get the current incarnation's promise kit associated with a whenable.
+   * Get the current incarnation's promise kit associated with a whenable0.
    *
-   * @param {import('./when.js').Whenable['whenable0']} whenable
+   * @param {import('./when.js').Whenable['whenable0']} whenable0
    * @returns {import('@endo/promise-kit').PromiseKit<any>}
    */
-  const findCurrentKit = whenable => {
-    let pk = whenableToPromiseKit.get(whenable);
+  const findCurrentKit = whenable0 => {
+    let pk = whenable0ToEphemeral.get(whenable0);
     if (!pk) {
       pk = makePromiseKit();
-      whenableToPromiseKit.set(whenable, pk);
+      whenable0ToEphemeral.set(whenable0, pk);
     }
     return pk;
   };
 
+  /**
+   * @param {(value: unknown) => void} cb
+   * @param {import('./when.js').Whenable['whenable0']} whenable0
+   * @param {Promise<any>} promise
+   * @param {unknown} value
+   */
+  const settle = (cb, whenable0, promise, value) => {
+    if (!cb) {
+      return;
+    }
+    whenable0ToEphemeral.set(whenable0, harden({ promise }));
+    cb(value);
+  };
+
   const rawMakeWhenableKit = zone.exoClassKit(
-    'WhenableKit',
+    'Whenable0Kit',
     {
-      whenable: M.interface('Whenable', {
+      whenable0: M.interface('Whenable0', {
         shorten: M.call().returns(M.promise()),
       }),
       settler: M.interface('Settler', {
@@ -39,12 +52,12 @@ export const prepareWhenableKit = zone => {
     },
     () => ({}),
     {
-      whenable: {
+      whenable0: {
         /**
          * @returns {Promise<any>}
          */
         shorten() {
-          return findCurrentKit(this.facets.whenable).promise;
+          return findCurrentKit(this.facets.whenable0).promise;
         },
       },
       settler: {
@@ -52,20 +65,24 @@ export const prepareWhenableKit = zone => {
          * @param {any} [value]
          */
         resolve(value) {
-          findCurrentKit(this.facets.whenable).resolve(value);
+          const { whenable0 } = this.facets;
+          const { resolve, promise } = findCurrentKit(whenable0);
+          settle(resolve, whenable0, promise, value);
         },
         /**
          * @param {any} [reason]
          */
         reject(reason) {
-          findCurrentKit(this.facets.whenable).reject(reason);
+          const { whenable0 } = this.facets;
+          const { reject, promise } = findCurrentKit(whenable0);
+          settle(reject, whenable0, promise, reason);
         },
       },
     },
   );
 
   const makeWhenableKit = () => {
-    const { settler, whenable: whenable0 } = rawMakeWhenableKit();
+    const { settler, whenable0 } = rawMakeWhenableKit();
     return harden({ settler, whenable: { whenable0 } });
   };
   return makeWhenableKit;
