@@ -1,5 +1,8 @@
 // @ts-nocheck
 // eslint-disable-next-line import/order
+import './lockdown.js';
+
+import { makeMarshal } from '@endo/marshal';
 import { test } from './prepare-test-env-ava.js';
 
 import {
@@ -165,6 +168,59 @@ test('unrecognized proof', async t => {
       message: /unrecognized follower proof mode.*/,
     },
   );
+});
+
+test('yields error on bad capdata without terminating', async t => {
+  const marshal = makeMarshal();
+  const improperlyMarshalledData = { bad: 'data' };
+  const properlyMarshalledData = { foo: 'bar' };
+  const fakeValues = [
+    improperlyMarshalledData,
+    marshal.toCapData(harden(properlyMarshalledData)),
+  ];
+  t.plan(4);
+  const options = { batchSize: 1, marshaller: { toCapData: data => data } };
+  const { controller, PORT } = await t.context.startFakeServer(
+    t,
+    fakeValues,
+    options,
+  );
+  controller.advance(0);
+  /** @type {import('../src/types.js').LeaderOptions} */
+  const lo = {
+    retryCallback: null, // fail fast, no retries
+    keepPolling: () => delay(1000).then(() => true), // poll really quickly
+    jitter: null, // no jitter
+  };
+  /** @type {import('../src/types.js').FollowerOptions} */
+  const so = {
+    proof: 'none',
+  };
+
+  const leader = makeLeader(`http://localhost:${PORT}/network-config`, lo);
+  const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
+  const follower = await makeFollower(castingSpec, leader, so);
+  let i = 0;
+  // eslint-disable-next-line no-unreachable-loop
+  for await (const { value, error } of iterateEach(follower)) {
+    if (i === 0) {
+      t.log(`value from follower, should be undefined:`, value);
+      t.log(`error from follower, should be defined:`, error);
+
+      t.deepEqual(value, undefined);
+      t.assert(typeof error === 'object');
+
+      i += 1;
+      controller.advance(1);
+    } else if (i === 1) {
+      t.log(`value from follower, should be defined:`, value);
+      t.log(`error from follower, should be undefined:`, error);
+
+      t.deepEqual(value, properlyMarshalledData);
+      t.deepEqual(error, undefined);
+      break;
+    }
+  }
 });
 
 test.before(t => {
