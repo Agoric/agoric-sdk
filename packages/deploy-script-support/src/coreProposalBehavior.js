@@ -10,7 +10,7 @@ const t = 'makeCoreProposalBehavior';
 
 /**
  * These permits are expected to be the minimum powers required by the
- * `behavior` function returned from `makeCoreProposalBehavior`.
+ * `coreProposalBehavior` function returned from `makeCoreProposalBehavior`.
  * They are merged with all of the manifest getter's permits to produce the
  * total permits needed by the resulting core proposal (such as might be---and
  * generally are---written into a *-permit.json file).
@@ -90,7 +90,7 @@ export const makeCoreProposalBehavior = ({
   };
 
   /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
-  const behavior = async powers => {
+  const coreProposalBehavior = async powers => {
     // NOTE: `powers` is expected to match or be a superset of the above `permits` export,
     // which should therefore be kept in sync with this deconstruction code.
     // HOWEVER, do note that this function is invoked with at least the *union* of powers
@@ -129,19 +129,19 @@ export const makeCoreProposalBehavior = ({
     }
     const bundleCap = await bcapP;
 
-    const installationNS = await evaluateBundleCap(bundleCap);
+    const proposalNS = await evaluateBundleCap(bundleCap);
 
     // Get the manifest and its metadata.
     log('execute', {
       manifestGetterName,
-      bundleExports: Object.keys(installationNS),
+      bundleExports: Object.keys(proposalNS),
     });
     const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await installationNS[manifestGetterName](
+    } = await proposalNS[manifestGetterName](
       harden({ restoreRef }),
       ...manifestGetterArgs,
     );
@@ -164,7 +164,7 @@ export const makeCoreProposalBehavior = ({
     return runModuleBehaviors({
       // Remember that `powers` may be arbitrarily broad.
       allPowers: powers,
-      behaviors: installationNS,
+      behaviors: proposalNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
@@ -173,7 +173,7 @@ export const makeCoreProposalBehavior = ({
     });
   };
 
-  return behavior;
+  return coreProposalBehavior;
 };
 
 export const makeEnactCoreProposalsFromBundleRef =
@@ -181,13 +181,13 @@ export const makeEnactCoreProposalsFromBundleRef =
   async powers => {
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
-        const subBehavior = makeCoreProposalBehavior({
+        const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
           overrideManifest,
           E,
         });
-        return subBehavior(powers);
+        return coreProposalBehavior(powers);
       }),
     );
   };
