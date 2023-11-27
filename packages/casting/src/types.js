@@ -40,12 +40,15 @@ export {};
  */
 
 /**
- * @see {ChangeFollower}
- * @template T
- * @typedef {object} ValueFollowerElement
- * @property {T} value
+ * @typedef {object} ValueFollowerBase
  * @property {number} blockHeight
  * @property {number} currentBlockHeight
+ */
+
+/**
+ * @see {ChangeFollower}
+ * @template T
+ * @typedef {ValueFollowerBase & ({ value: T } | { value: undefined, error: any })} ValueFollowerElement
  */
 
 /**

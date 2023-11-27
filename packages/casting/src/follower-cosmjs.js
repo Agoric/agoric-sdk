@@ -331,11 +331,16 @@ export const makeCosmjsFollower = (
     blockHeight,
     currentBlockHeight,
   ) => {
-    // AWAIT
-    const value = await /** @type {T} */ (
-      unserializer ? E(unserializer).fromCapData(data) : data
-    );
-    return { value, blockHeight, currentBlockHeight };
+    await null;
+    try {
+      // AWAIT
+      const value = await /** @type {T} */ (
+        unserializer ? E(unserializer).fromCapData(data) : data
+      );
+      return { value, blockHeight, currentBlockHeight };
+    } catch (e) {
+      return { blockHeight, currentBlockHeight, error: e, value: undefined };
+    }
   };
 
   /**
