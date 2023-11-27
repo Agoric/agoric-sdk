@@ -2,6 +2,7 @@
 /* global globalThis */
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 const { Fail } = assert;
@@ -75,8 +76,12 @@ const watchWhenable = (specimen, watcher) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
+ * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
-export const prepareWhen = zone => {
+export const prepareWhen = (
+  zone,
+  rejectionMeansRetry = isUpgradeDisconnection,
+) => {
   const makeReconnectWatcher = zone.exoClass(
     'ReconnectWatcher',
     PromiseWatcherI,
@@ -112,7 +117,7 @@ export const prepareWhen = zone => {
         if (!watcher) {
           return;
         }
-        if (isUpgradeDisconnection(reason)) {
+        if (rejectionMeansRetry(reason)) {
           watchWhenable(this.state.whenable, this.self);
           return;
         }
@@ -138,7 +143,14 @@ export const prepareWhen = zone => {
     if (!watcher) {
       // Shorten the whenable chain without a watcher.
       while (specimen && specimen.whenable0) {
-        specimen = await E(specimen.whenable0).shorten();
+        specimen = await E(specimen.whenable0)
+          .shorten()
+          .catch(e => {
+            if (rejectionMeansRetry(e)) {
+              return specimen;
+            }
+            throw e;
+          });
       }
       return /** @type {T} */ (specimen);
     }
