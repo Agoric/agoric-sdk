@@ -443,24 +443,19 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           // This would seem to fit the observeNotifier() pattern,
           // but purse notifiers are not (always) durable.
-          // outer loop: for each upgrade disconnection...
-          for (;;) {
-            const notifier = E(purse).getCurrentAmountNotifier();
-            try {
-              // eslint-disable-next-line no-await-in-loop
-              for await (const newBalance of subscribeLatestSimple(notifier)) {
-                helper.updateBalance(purse, newBalance);
-              }
-            } catch (err) {
-              if (isUpgradeDisconnection(err)) {
-                continue; // retry
-              }
-              console.error(
-                `*** ${address} failed amount observer, ${err} ***`,
-              );
-              // TODO: think about API change.
-              throw err;
+          // If there is an error due to upgrade, retry watchPurse().
+          const notifier = E(purse).getCurrentAmountNotifier();
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            for await (const newBalance of subscribeLatestSimple(notifier)) {
+              helper.updateBalance(purse, newBalance);
             }
+          } catch (err) {
+            if (isUpgradeDisconnection(err)) {
+              helper.watchPurse(purse); // retry
+            }
+            console.error(`*** ${address} failed amount observer, ${err} ***`);
+            throw err;
           }
         },
 
