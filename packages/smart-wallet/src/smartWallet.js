@@ -9,7 +9,7 @@ import {
   PurseShape,
 } from '@agoric/ertp';
 import { StorageNodeShape, makeTracer } from '@agoric/internal';
-import { observeNotifier } from '@agoric/notifier';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { M, mustMatch } from '@agoric/store';
 import {
   appendToStoredArray,
@@ -27,6 +27,7 @@ import {
   prepareRecorderKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
+
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
@@ -35,6 +36,24 @@ import { objectMapStoragePath } from './utils.js';
 const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SmrtWlt');
+
+/**
+ * Like `subscribeLatest` but that swallows the upgrade error that this module needs to detect and handle.
+ *
+ * @template T
+ * @param {Notifier<T>} notifierP
+ */
+async function* subscribeLatestSimple(notifierP) {
+  let lastUpdate;
+  await null; // for jessie
+  while (true) {
+    const updateRecord =
+      // eslint-disable-next-line no-await-in-loop
+      await E(notifierP).getUpdateSince(lastUpdate);
+    lastUpdate = updateRecord.updateCount;
+    yield updateRecord.value;
+  }
+}
 
 /**
  * @file Smart wallet module
@@ -418,29 +437,31 @@ export const prepareSmartWallet = (baggage, shared) => {
         /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
         async watchPurse(purseRef) {
           const { address } = this.state;
+          const { helper } = this.facets;
 
           const purse = await purseRef; // promises don't fit in durable storage
 
-          const { helper } = this.facets;
-          // publish purse's balance and changes
-          void E.when(
-            E(purse).getCurrentAmount(),
-            balance => helper.updateBalance(purse, balance),
-            err =>
+          // This would seem to fit the observeNotifier() pattern,
+          // but purse notifiers are not (always) durable.
+          // outer loop: for each upgrade disconnection...
+          for (;;) {
+            const notifier = E(purse).getCurrentAmountNotifier();
+            try {
+              // eslint-disable-next-line no-await-in-loop
+              for await (const newBalance of subscribeLatestSimple(notifier)) {
+                helper.updateBalance(purse, newBalance);
+              }
+            } catch (err) {
+              if (isUpgradeDisconnection(err)) {
+                continue; // retry
+              }
               console.error(
-                address,
-                'initial purse balance publish failed',
-                err,
-              ),
-          );
-          void observeNotifier(E(purse).getCurrentAmountNotifier(), {
-            updateState(balance) {
-              helper.updateBalance(purse, balance);
-            },
-            fail(reason) {
-              console.error(address, `failed updateState observer`, reason);
-            },
-          });
+                `*** ${address} failed amount observer, ${err} ***`,
+              );
+              // TODO: think about API change.
+              throw err;
+            }
+          }
         },
 
         /**
