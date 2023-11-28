@@ -33,6 +33,7 @@
     "prettier": "^3.0.3",
     "prettier-plugin-jsdoc": "^1.0.0",
     "type-coverage": "^2.26.3",
+    "typedoc": "^0.25.4",
     "typescript": "~5.2.2"
   },
   "engines": {
@@ -64,6 +65,7 @@
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
+    "docs": "typedoc --tsconfig tsconfig.build.json",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",

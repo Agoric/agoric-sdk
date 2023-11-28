@@ -132,7 +132,8 @@
 // ///////////////////////// Deprecated Legacy /////////////////////////////////
 
 /**
- * @template K,V
+ * @template K
+ * @template V
  * @typedef {object} LegacyWeakMap LegacyWeakMap is deprecated. Use WeakMapStore
  *   instead if possible.
  * @property {(key: K) => boolean} has Check if a key exists
@@ -145,7 +146,8 @@
  */
 
 /**
- * @template K,V
+ * @template K
+ * @template V
  * @typedef {object} LegacyMap LegacyMap is deprecated. Use MapStore instead if
  *   possible.
  * @property {(key: K) => boolean} has Check if a key exists
