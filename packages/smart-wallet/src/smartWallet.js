@@ -13,7 +13,6 @@ import {
   objectMap,
   StorageNodeShape,
 } from '@agoric/internal';
-import { observeNotifier } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
 import {
   appendToStoredArray,
@@ -34,6 +33,7 @@ import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
@@ -468,31 +468,39 @@ export const prepareSmartWallet = (baggage, shared) => {
         /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
           const { address } = this.state;
+          const { helper } = this.facets;
 
           const purse = await purseRef; // promises don't fit in durable storage
 
-          const { helper } = this.facets;
-          // publish purse's balance and changes
-          void E.when(
-            E(purse).getCurrentAmount(),
-            balance => helper.updateBalance(purse, balance),
-            err =>
-              console.error(
-                address,
-                'initial purse balance publish failed',
-                err,
-              ),
-          );
-          void observeNotifier(E(purse).getCurrentAmountNotifier(), {
-            updateState(balance) {
-              helper.updateBalance(purse, balance);
-            },
-            fail(reason) {
-              console.error(
-                `*** ${address} failed updateState observer, ${reason} ***`,
-              );
-            },
-          });
+          // This would seem to fit the observeNotifier() pattern,
+          // but purse notifiers are not (always) durable.
+          // outer loop: for each upgrade disconnection...
+          for (;;) {
+            const notifier = E(purse).getCurrentAmountNotifier();
+            let count;
+            // for each balance update
+            for (;;) {
+              try {
+                const { value: balance, updateCount } =
+                  await E(notifier).getUpdateSince(count);
+                count = updateCount;
+                helper.updateBalance(purse, balance);
+                // final update
+                if (updateCount === undefined) {
+                  return;
+                }
+              } catch (err) {
+                if (isUpgradeDisconnection(err)) {
+                  break;
+                }
+                console.error(
+                  `*** ${address} failed amount observer, ${err} ***`,
+                );
+                // TODO: think about API change.
+                throw err;
+              }
+            }
+          }
         },
 
         /**
