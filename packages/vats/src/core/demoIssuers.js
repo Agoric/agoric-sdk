@@ -243,6 +243,7 @@ export const connectFaucet = async ({
   },
   produce: { mints },
 }) => {
+  assert(mints);
   const vats = {
     mints: E(loadVat)('mints'),
   };

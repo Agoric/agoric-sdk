@@ -25,7 +25,7 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
 const trace = makeTracer('BSTSupport', false);
 

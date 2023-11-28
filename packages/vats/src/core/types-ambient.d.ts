@@ -341,6 +341,7 @@ type ChainBootstrapSpaceT = {
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
   instancePrivateArgs: Map<Instance, unknown>;
+  mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   pegasusConnections: import('@agoric/vats').NameHubKit;
