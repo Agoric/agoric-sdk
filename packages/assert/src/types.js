@@ -193,12 +193,13 @@
  * payload itself is still passed unquoted to the console as it would be
  * without `quote`.
  *
+ * @example
  * For example, the following will reveal the expected sky color, but not the
  * actual incorrect sky color, in the thrown error's message:
  * ```js
  * sky.color === expectedColor || Fail`${sky.color} should be ${quote(expectedColor)}`;
  * ```
- *
+ * @example
  * The normal convention is to locally rename `details` to `X` and `quote` to `q`
  * like `const { details: X, quote: q } = assert;`, so the above example would then be
  * ```js
