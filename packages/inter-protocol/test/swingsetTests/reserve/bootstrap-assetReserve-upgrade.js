@@ -245,6 +245,8 @@ export const buildRootObject = async () => {
       const arAdminFacet = await E(governorFacets.creatorFacet).getAdminFacet();
       const upgradeResult = await E(arAdminFacet).upgradeContract(bundleId, {
         ...staticPrivateArgs,
+        // @ts-expect-error mock
+        feeMintAccess: undefined,
         initialPoserInvitation,
       });
       assert.equal(upgradeResult.incarnationNumber, 1);

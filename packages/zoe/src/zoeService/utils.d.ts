@@ -11,16 +11,6 @@ type ContractFacet<T extends {} = {}> = {
   readonly [P in keyof T]: T[P] extends Callable ? T[P] : never;
 };
 
-export type AdminFacet = {
-  // Completion, which is currently any
-  getVatShutdownPromise: () => Promise<any>;
-  upgradeContract: (
-    contractBundleId: string,
-    newPrivateArgs?: any,
-  ) => Promise<VatUpgradeResults>;
-  restartContract: (newPrivateArgs?: any) => Promise<VatUpgradeResults>;
-};
-
 /**
  * Installation of a contract, typed by its start function.
  */
@@ -46,11 +36,29 @@ type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
+export type AdminFacet<SF extends ContractStartFunction> = {
+  // Completion, which is currently any
+  getVatShutdownPromise: () => Promise<any>;
+  upgradeContract: Parameters<SF>[1] extends undefined
+    ? (contractBundleId: string) => Promise<VatUpgradeResults>
+    : (
+        contractBundleId: string,
+        newPrivateArgs: Parameters<SF>[1],
+      ) => Promise<VatUpgradeResults>;
+  restartContract: Parameters<SF>[1] extends undefined
+    ? () => Promise<VatUpgradeResults>
+    : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
+};
+
 type StartParams<SF> = SF extends ContractStartFunction
-  ? {
-      terms: ReturnType<Parameters<SF>[0]['getTerms']>;
-      privateArgs: Parameters<SF>[1];
-    }
+  ? Parameters<SF>[1] extends undefined
+    ? {
+        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+      }
+    : {
+        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+        privateArgs: Parameters<SF>[1];
+      }
   : never;
 
 type StartResult<S> = S extends (...args: any) => Promise<infer U>
@@ -72,13 +80,13 @@ type StartContractInstance<C> = (
   publicFacet: C['publicFacet'];
   instance: Instance;
   creatorInvitation: C['creatorInvitation'];
-  adminFacet: AdminFacet;
+  adminFacet: AdminFacet<any>;
 }>;
 
 /** The result of `startInstance` */
 export type StartedInstanceKit<SF> = {
   instance: Instance<SF>;
-  adminFacet: AdminFacet;
+  adminFacet: AdminFacet<SF>;
   // theses are empty by default. the return type will override
   creatorFacet: {};
   publicFacet: {};

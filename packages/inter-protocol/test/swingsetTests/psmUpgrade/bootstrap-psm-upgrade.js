@@ -276,6 +276,8 @@ export const buildRootObject = async () => {
       ).getAdminFacet();
       const upgradeResult = await E(psmAdminFacet).upgradeContract(bundleId, {
         ...staticPrivateArgs,
+        // @ts-expect-error mock
+        feeMintAccess: undefined,
         initialPoserInvitation,
       });
       // incremented from zero

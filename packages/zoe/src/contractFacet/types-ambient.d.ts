@@ -244,4 +244,4 @@ type ContractStartFnResult<PF, CF> = {
   creatorInvitation?: Promise<Invitation<R, A>> | undefined;
 };
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
-type AdminFacet = import('../zoeService/utils').AdminFacet;
+type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
