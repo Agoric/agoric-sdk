@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     vatAdminSvc: VatAdminSve;
+ *     vatAdminSvc: VatAdminSvc;
  *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
