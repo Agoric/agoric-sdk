@@ -61,9 +61,8 @@ test('update purse balance across upgrade', async t => {
   const { walletFactoryDriver, agoricNamesRemotes } = t.context;
   t.log('provision a smartWallet for an oracle operator');
   const oraWallet = await walletFactoryDriver.provideSmartWallet(oraAddr);
-  console.log('@@@brands?', agoricNamesRemotes.brand);
 
-  const findPurse = (current, brand = agoricNamesRemotes.brand.Invitation) => {
+  const findPurse = (current, _brand = agoricNamesRemotes.brand.Invitation) => {
     // getCurrentWalletRecord and agoricNamesRemotes
     // aren't using the same marshal context. hmm.
     //     return (
@@ -72,9 +71,6 @@ test('update purse balance across upgrade', async t => {
     //     );
     return current.purses[0];
   };
-
-  t.log('@@@', oraWallet.getCurrentWalletRecord());
-  t.log(findPurse(oraWallet.getCurrentWalletRecord()));
 
   const { EV } = t.context.runUtils;
   /** @type {ERef<import('@agoric/vats/src/types.js').BridgeHandler>} */
@@ -88,7 +84,6 @@ test('update purse balance across upgrade', async t => {
       type: 'CORE_EVAL',
       evals: proposal.evals,
     };
-    t.log({ bridgeMessage });
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
   };
 
@@ -102,10 +97,6 @@ test('update purse balance across upgrade', async t => {
     },
   ]);
 
-  // XXX can we test the messages that went to the vat console?
-  // agoric1oracle-operator failed updateState observer (RemoteError#1)
-  // RemoteError#1: vat terminated
-
   t.log('send an invitation to the oracle operator');
   await runCoreEval([
     {
@@ -117,7 +108,10 @@ test('update purse balance across upgrade', async t => {
     },
   ]);
 
-  t.log('oracle operator should be notified of new invitation');
   const current = oraWallet.getCurrentWalletRecord();
-  t.true(findPurse(current).balance.value.length >= 1, 'no invitation');
+  t.log(
+    'invitation balance after sending invitation',
+    findPurse(current).balance,
+  );
+  t.true(findPurse(current).balance.value.length >= 1, 'invitation count');
 });
