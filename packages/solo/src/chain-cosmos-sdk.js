@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global clearTimeout setTimeout Buffer */
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import path from 'path';

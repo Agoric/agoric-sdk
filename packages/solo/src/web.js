@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
 import path from 'path';
