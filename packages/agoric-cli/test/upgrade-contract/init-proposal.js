@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { E } from '@endo/far';
 
 /**

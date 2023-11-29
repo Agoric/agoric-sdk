@@ -16,7 +16,6 @@
         "**/dist",
         "**/docs",
         "**/*.umd.js",
-        "**/test"
     ],
     "include": [
         "./**/*.ts",

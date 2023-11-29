@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global process setTimeout */
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { spawn } from 'child_process';

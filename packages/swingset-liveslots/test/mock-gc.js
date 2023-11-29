@@ -98,6 +98,7 @@ export function makeMockGC() {
 
   return harden({
     WeakRef: mockWeakRef,
+    /** @type {FinalizationRegistryConstructor} */
     FinalizationRegistry: mockFinalizationRegistry,
     kill,
     weakRefFor,

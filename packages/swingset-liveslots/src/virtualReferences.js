@@ -15,7 +15,7 @@ import {
  *   IDs
  * @param {(slot: string) => object} requiredValForSlot  A function that
  *   converts an object ID (vref) to an object.
- * @param {*} FinalizationRegistry  Powerful JavaScript intrinsic normally denied
+ * @param {FinalizationRegistryConstructor} FinalizationRegistry  Powerful JavaScript intrinsic normally denied
  *   by SES
  * @param {*} WeakRef  Powerful JavaScript intrinsic normally denied
  *   by SES
@@ -48,6 +48,7 @@ export function makeVirtualReferenceManager(
 
   function registerDroppedCollection(target, descriptor) {
     const wr = new WeakRef(target);
+    // @ts-expect-error the weakref is ignored
     droppedCollectionRegistry.register(target, { descriptor, wr });
   }
 
