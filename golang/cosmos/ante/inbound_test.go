@@ -221,3 +221,7 @@ func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, 
 func (msk mockSwingsetKeeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) (swingtypes.SmartWalletState, error) {
 	return swingtypes.SmartWalletStateUnspecified, fmt.Errorf("not implemented")
 }
+
+func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+	return fmt.Errorf("not implemented")
+}
