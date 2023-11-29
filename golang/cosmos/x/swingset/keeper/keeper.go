@@ -38,6 +38,12 @@ const (
 )
 
 const (
+	// WalletStoragePathSegment matches the value of WALLET_STORAGE_PATH_SEGMENT
+	// packages/vats/src/core/startWalletFactory.js
+	WalletStoragePathSegment = "wallet"
+)
+
+const (
 	stateKey            = "state"
 	swingStoreKeyPrefix = "swingStore."
 )
@@ -149,6 +155,20 @@ func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) erro
 func (k Keeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
 	path := StoragePathHighPrioritySenders + "." + addr.String()
 	return k.vstorageKeeper.HasEntry(ctx, path), nil
+}
+
+// GetSmartWalletState returns the provision state of the smart wallet for the account address
+func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) (types.SmartWalletState, error) {
+	// walletStoragePath is path of `walletStorageNode` constructed in
+	// `provideSmartWallet` from packages/smart-wallet/src/walletFactory.js
+	walletStoragePath := StoragePathCustom + "." + WalletStoragePathSegment + "." + addr.String()
+
+	// TODO: implement a pending provision state
+	if k.vstorageKeeper.HasEntry(ctx, walletStoragePath) {
+		return types.SmartWalletStateProvisioned, nil
+	}
+
+	return types.SmartWalletStateNone, nil
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
