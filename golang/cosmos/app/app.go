@@ -837,6 +837,12 @@ func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			return mvm, err
 		}
 
+		m := swingsetkeeper.NewMigrator(app.SwingSetKeeper)
+		err = m.MigrateParams(ctx)
+		if err != nil {
+			return mvm, err
+		}
+
 		return mvm, nil
 	}
 }
