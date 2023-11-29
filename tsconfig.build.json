@@ -11,7 +11,6 @@
     },
     "exclude": [
         "packages/deployment",
-        "packages/import-manager",
         "packages/swingset-runner",
         "packages/telemetry",
         "packages/xsnap/moddable",

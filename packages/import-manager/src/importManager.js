@@ -1,5 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+/// <reference types="ses" />
+
 /**
  * ImportManager allows a package to make some code available that can be run
  * locally by a calling vat without requiring a remote round trip to the hosting
@@ -36,6 +38,7 @@ function importManager() {
       for (const name of Object.getOwnPropertyNames(obj)) {
         entries[name] = obj[name];
       }
+      // @ts-expect-error entries can contain properties absent in T
       return harden(entries);
     },
   });
