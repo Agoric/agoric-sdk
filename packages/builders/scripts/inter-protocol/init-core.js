@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 /**
  * @file can be run with `agoric deploy` after a chain is running (depends on
@@ -183,7 +184,7 @@ export const defaultProposalBuilder = async (
     ],
   });
 };
-
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
@@ -192,9 +193,11 @@ export default async (homeP, endowments) => {
   });
   await Promise.all([
     writeCoreProposal('gov-econ-committee', opts =>
+      // @ts-expect-error xxx InstallBundle/wrapInstall types
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
     writeCoreProposal('gov-amm-vaults-etc', opts =>
+      // @ts-expect-error xxx InstallBundle/wrapInstall types
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);

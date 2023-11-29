@@ -98,9 +98,9 @@ const provideWhen = async (store, key, make) => {
 };
 
 /**
- * @param {{
+ * @param {Promise<{
  *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>;
- * }} homeP
+ * }>} homeP
  * @param {object} opts
  * @param {(specifier: string) => Promise<{ default: Bundle }>} opts.loadBundle
  * @param {string} [opts.installCacheKey]
