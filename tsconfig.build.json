@@ -10,7 +10,6 @@
         "outDir": "./build"
     },
     "exclude": [
-        "packages/swingset-runner",
         "packages/xsnap/moddable",
         "packages/xsnap/xsnap-native",
         "packages/xsnap-lockdown",

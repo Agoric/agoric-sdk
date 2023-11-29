@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const log = console.log;
 
@@ -11,14 +12,12 @@ export function buildRootObject() {
     bootstrap(vats) {
       log('=> Alice: bootstrap() called');
 
-      let resolver;
-      const param = new Promise((theResolver, _theRejector) => {
-        resolver = theResolver;
-      });
+      const { promise, resolve } = makePromiseKit();
+
       log('Alice: sending the promise to Bob');
-      const response = E(vats.bob).thisIsYourPromise([param]);
+      const response = E(vats.bob).thisIsYourPromise([promise]);
       log('Alice: resolving the promise that was sent to Bob');
-      resolver('Alice says hi!');
+      resolve('Alice says hi!');
       log(`Alice: awaiting Bob's response`);
       // prettier-ignore
       response.then(

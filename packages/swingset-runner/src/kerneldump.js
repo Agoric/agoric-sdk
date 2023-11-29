@@ -1,3 +1,4 @@
+// @ts-nocheck
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
@@ -52,6 +53,7 @@ function dirContains(dirpath, suffix) {
   }
 }
 
+/** @type {() => void} */
 export function main() {
   const argv = process.argv.slice(2);
   let rawMode = false;
@@ -104,6 +106,7 @@ export function main() {
   }
 
   const target = argv.shift();
+  assert(target);
   let kernelStateDBDir;
   const dbSuffix = '.mdb';
   if (target.endsWith(dbSuffix)) {

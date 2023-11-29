@@ -160,6 +160,7 @@ export const makeXorShift128 = (seed = defaultSeed) => {
     }
   };
 
+  // @ts-expect-error Argument of type 'Uint32Array' is not assignable to parameter of type 'number[]'.
   const fork = () => makeXorShift128(state);
 
   return {

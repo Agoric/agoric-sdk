@@ -19,6 +19,7 @@ function fail(message, printUsage) {
   process.exit(1);
 }
 
+/** @type {() => void} */
 export function main() {
   const argv = yargs(process.argv.slice(2))
     .string('out')
@@ -116,7 +117,7 @@ export function main() {
   try {
     lines = new Readlines(slogFile);
   } catch (e) {
-    fail(`unable to open slog file ${slogFile}`);
+    throw new Error(`unable to open slog file ${slogFile}`);
   }
 
   const summary = {};
@@ -149,7 +150,7 @@ export function main() {
   if (argv.annotations) {
     let annotations;
     try {
-      annotations = JSON.parse(fs.readFileSync(argv.annotations));
+      annotations = JSON.parse(fs.readFileSync(argv.annotations, 'utf-8'));
     } catch (e) {
       fail(`unable to read annotations file ${argv.annotations}: ${e.message}`);
     }
@@ -198,7 +199,7 @@ export function main() {
     lineNumber += 1;
     let entry;
     try {
-      entry = JSON.parse(line);
+      entry = JSON.parse(line.toString());
     } catch (err) {
       p(`// JSON.parse error on line ${lineNumber}`);
       throw err;

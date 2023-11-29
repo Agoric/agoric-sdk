@@ -34,7 +34,14 @@ if (!benchStatsFile) {
   process.exit(1);
 }
 
-function promHeader(name, metricType, help = undefined) {
+/**
+ * Generates a header for a Prometheus metric.
+ *
+ * @param {string} name
+ * @param {string} metricType
+ * @param {string} [help]
+ */
+function promHeader(name, metricType, help) {
   let hdr = '';
   if (help !== undefined) {
     hdr += `\
@@ -86,7 +93,10 @@ function gatherMetrics(kind, data, labels, specs) {
     specs.map(([prop, name]) => [prop, name]),
   );
   const propMetrics = Object.fromEntries(
-    specs.map(([prop, name, ...args]) => [prop, promHeader(name, ...args)]),
+    specs.map(([prop, name, metricType, help]) => [
+      prop,
+      promHeader(name, metricType, help),
+    ]),
   );
 
   const todo = new Set(Object.keys(data));
@@ -114,7 +124,7 @@ function gatherMetrics(kind, data, labels, specs) {
   return Object.values(propMetrics).join('');
 }
 
-function generateMetricsFromPrimeData(data, labels = undefined) {
+function generateMetricsFromPrimeData(data, labels) {
   return gatherMetrics('prime', data, labels, [
     ['up', 'stat_up', 'counter', `Number of increments`],
     ['down', 'stat_down', 'counter', `Number of decrements`],
@@ -124,7 +134,7 @@ function generateMetricsFromPrimeData(data, labels = undefined) {
   ]);
 }
 
-function generateMetricsFromBenchmarkData(data, labels = undefined) {
+function generateMetricsFromBenchmarkData(data, labels) {
   return gatherMetrics('benchmark', data, labels, [
     ['delta', 'stat_delta', 'gauge', `Autobench benchmark delta`],
     [
@@ -202,4 +212,5 @@ const curlCp = spawnSync(
   },
 );
 
+// @ts-expect-error status is number|null, but exit() takes number|undefined
 process.exit(curlCp.status);

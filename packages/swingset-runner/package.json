@@ -37,6 +37,7 @@
     "@endo/init": "^0.5.59",
     "@endo/marshal": "^0.8.8",
     "@endo/nat": "^4.1.30",
+    "@endo/promise-kit": "^0.2.59",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
