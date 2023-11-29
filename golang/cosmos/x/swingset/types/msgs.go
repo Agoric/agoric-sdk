@@ -48,6 +48,23 @@ func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress
 	return keeper.ChargeBeans(ctx, addr, beans)
 }
 
+// checkSmartWalletProvisioned verifies if a smart wallet message (MsgWalletAction
+// and MsgWalletSpendAction) can be delivered for the owner's address.
+func checkSmartWalletProvisioned(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress) error {
+	walletState := keeper.GetSmartWalletState(ctx, addr)
+
+	switch walletState {
+	case SmartWalletStateProvisioned:
+		// The address has a smart wallet
+		return nil
+	case SmartWalletStatePending:
+		// A provision is pending execution
+		return nil
+	default:
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "Owner address does not have a smart wallet")
+	}
+}
+
 func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverInbound {
 	return &MsgDeliverInbound{
 		Messages:  msgs.Messages,
@@ -137,6 +154,11 @@ func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{})
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
+	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
+	if err != nil {
+		return err
+	}
+
 	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action}, 0)
 }
 
@@ -202,6 +224,11 @@ func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interfa
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+	}
+
+	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
+	if err != nil {
+		return err
 	}
 
 	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction}, 0)
