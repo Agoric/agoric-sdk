@@ -10,7 +10,6 @@
         "outDir": "./build"
     },
     "exclude": [
-        "packages/deployment",
         "packages/swingset-runner",
         "packages/telemetry",
         "packages/xsnap/moddable",
