@@ -1,7 +1,10 @@
+// @ts-check
 /* global process */
 import fs from 'fs';
 import path from 'path';
 
+// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore cannot find name 'assert'
 const { Fail } = assert;
 
 function scanMax(filePath, fields) {
@@ -28,8 +31,9 @@ function scanMax(filePath, fields) {
   for (let row = 1; row < lines.length; row += 1) {
     const line = lines[row].split('\t');
     for (let col = 0; col < headerMap.length; col += 1) {
-      if (headerMap[col] && line[col] > maxValue) {
-        maxValue = line[col];
+      const colNum = Number(line[col]);
+      if (headerMap[col] && colNum > maxValue) {
+        maxValue = colNum;
         maxField = headerMap[col];
       }
     }
@@ -163,6 +167,7 @@ export async function renderGraph(spec, outputPath, type = 'png') {
     Fail`invalid output type ${type}, valid types are png or pdf`;
 
   let loadDir = '.';
+  /** @type {Pick<NodeJS.Socket, 'write'>} */
   let out = process.stdout;
   if (outputPath) {
     loadDir = path.dirname(outputPath);
@@ -175,6 +180,7 @@ export async function renderGraph(spec, outputPath, type = 'png') {
   // NOTE: If this import expression fails, you need to install the
   // peerDependencies.
   // Dynamic version of `import * as vega from 'vega';`
+  // @ts-expect-error
   // eslint-disable-next-line import/no-unresolved
   const vega = await import('vega');
 
