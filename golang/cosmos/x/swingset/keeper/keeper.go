@@ -335,6 +335,25 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	return nil
 }
 
+// ChargeForSmartWallet charges the fee for provisioning a smart wallet.
+func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+	beansPerUnit := k.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
+	err := k.ChargeBeans(ctx, addr, beans)
+	if err != nil {
+		return err
+	}
+
+	// TODO: mark that a smart wallet provision is pending. However in that case,
+	// auto-provisioning should still be performed (but without fees being charged),
+	// until the controller actually provisions the smart wallet (the operation may
+	// transiently fail, requiring retries until success).
+	// However the provisioning code is not currently idempotent, and has side
+	// effects when the smart wallet is already provisioned.
+
+	return nil
+}
+
 // makeFeeMenu returns a map from power flag to its fee.  In the case of duplicates, the
 // first one wins.
 func makeFeeMenu(powerFlagFees []types.PowerFlagFee) map[string]sdk.Coins {
