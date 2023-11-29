@@ -1,4 +1,4 @@
-/* Visit Visit https://www.typescriptlang.org/tsconfig to read more about this file */
+/* Visit https://www.typescriptlang.org/tsconfig to read more about this file */
 {
     "extends": [
         "./tsconfig.json",
@@ -6,10 +6,10 @@
     ],
     "compilerOptions": {
         "allowSyntheticDefaultImports": true,
+        "allowImportingTsExtensions": true,
         "outDir": "./build"
     },
     "exclude": [
-        "packages/benchmark",
         "packages/cosmic-swingset",
         "packages/deployment",
         "packages/import-manager",
