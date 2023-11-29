@@ -143,7 +143,10 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message:
-      /In "getPublicFacet" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      // Golden test uses RegExp "Or" pattern to tolerate earlier versions of
+      // Endo.
+      // TODO: Remove first disjunct once no longer needed
+      /In "getPublicFacet" method of \(ZoeService\): (?:arg 0: .*"\[undefined\]" - Must be a remotable|Expected at least 1 arguments: \[\])/,
   });
 });
 
@@ -174,7 +177,10 @@ test(`zoe.getIssuers - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message:
-      /In "getIssuers" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      // Golden test uses RegExp "Or" pattern to tolerate earlier versions of
+      // Endo.
+      // TODO: Remove first disjunct once no longer needed
+      /In "getIssuers" method of \(ZoeService\): (?:arg 0: .*"\[undefined\]" - Must be a remotable|Expected at least 1 arguments: \[\])/,
   });
 });
 
@@ -205,7 +211,9 @@ test(`zoe.getBrands - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message:
-      /In "getBrands" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      // Or pattern of golden error tolerant across versions of endo.
+      // TODO: Remove first disjunct once no longer needed
+      /In "getBrands" method of \(ZoeService\): (?:arg 0: .*"\[undefined\]" - Must be a remotable|Expected at least 1 arguments: \[\])/,
   });
 });
 
@@ -261,7 +269,9 @@ test(`zoe.getTerms - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message:
-      /In "getTerms" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      // Or pattern of golden error tolerant across versions of endo.
+      // TODO: Remove first disjunct once no longer needed
+      /In "getTerms" method of \(ZoeService\): (?:arg 0: .*"\[undefined\]" - Must be a remotable|Expected at least 1 arguments: \[\])/,
   });
 });
 
