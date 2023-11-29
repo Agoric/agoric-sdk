@@ -10,7 +10,6 @@
         "outDir": "./build"
     },
     "exclude": [
-        "packages/cosmic-swingset",
         "packages/deployment",
         "packages/import-manager",
         "packages/solo",

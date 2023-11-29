@@ -122,6 +122,11 @@ const makePrefixedBridgeStorage = (
   });
 };
 
+/**
+ * @param {string} progname
+ * @param {string[]} args
+ * @param {{env: typeof process.env, homedir: string, agcc: any}} opts
+ */
 export default async function main(progname, args, { env, homedir, agcc }) {
   const portNums = {};
 
@@ -378,7 +383,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = '-1' } = env;
     const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,

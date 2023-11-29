@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable */
 
 // https://github.com/substack/json-stable-stringify/
