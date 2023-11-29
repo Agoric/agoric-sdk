@@ -163,3 +163,73 @@ func validateQueueMax(i interface{}) error {
 	}
 	return nil
 }
+
+// UpdateParams adds any new params that are missing, configuring them to their
+// defaults, then returning the updated params or an error.
+func UpdateParams(params Params) (Params, error) {
+	newBpu, err := addDefaultBeansPerUnit(params.BeansPerUnit, DefaultBeansPerUnit())
+	if err != nil {
+		return params, err
+	}
+	newPff, err := addDefaultPowerFlagFees(params.PowerFlagFees, DefaultPowerFlagFees)
+	if err != nil {
+		return params, err
+	}
+	newQm, err := addDefaultQueueSize(params.QueueMax, DefaultQueueMax)
+	if err != nil {
+		return params, err
+	}
+
+	params.BeansPerUnit = newBpu
+	params.PowerFlagFees = newPff
+	params.QueueMax = newQm
+	return params, nil
+}
+
+// addDefaultBeansPerUnit adds the default beans per unit entries not in the
+// list of bean costs already, returning the possibly-updated list, or an error.
+func addDefaultBeansPerUnit(bpu []StringBeans, defaultBpu []StringBeans) ([]StringBeans, error) {
+	existingBpu := make(map[string]struct{}, len(bpu))
+	for _, ob := range bpu {
+		existingBpu[ob.Key] = struct{}{}
+	}
+
+	for _, b := range defaultBpu {
+		if _, exists := existingBpu[b.Key]; !exists {
+			bpu = append(bpu, b)
+		}
+	}
+	return bpu, nil
+}
+
+// addDefaultPowerFlagFees adds the default power flag fee entries not in the
+// list of power flags already, returning the possibly-updated list, or an error.
+func addDefaultPowerFlagFees(pff []PowerFlagFee, defaultPff []PowerFlagFee) ([]PowerFlagFee, error) {
+	existingPff := make(map[string]struct{}, len(pff))
+	for _, of := range pff {
+		existingPff[of.PowerFlag] = struct{}{}
+	}
+
+	for _, f := range defaultPff {
+		if _, exists := existingPff[f.PowerFlag]; !exists {
+			pff = append(pff, f)
+		}
+	}
+	return pff, nil
+}
+
+// addDefaultQueueSize adds the default queue size entries not in the
+// list of sizes already, returning the possibly-updated list, or an error.
+func addDefaultQueueSize(qs []QueueSize, defaultQs []QueueSize) ([]QueueSize, error) {
+	existingQs := make(map[string]struct{}, len(qs))
+	for _, os := range qs {
+		existingQs[os.Key] = struct{}{}
+	}
+
+	for _, s := range defaultQs {
+		if _, exists := existingQs[s.Key]; !exists {
+			qs = append(qs, s)
+		}
+	}
+	return qs, nil
+}
