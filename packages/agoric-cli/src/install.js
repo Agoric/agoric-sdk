@@ -1,3 +1,4 @@
+// @ts-check
 /* global process AggregateError Buffer */
 import path from 'path';
 import chalk from 'chalk';
@@ -38,6 +39,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       stdio: ['inherit', 'pipe', 'inherit'],
     });
     const stdout = [];
+    assert(p.childProcess.stdout);
     p.childProcess.stdout.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
@@ -175,9 +177,11 @@ export default async function installMain(progname, rawArgs, powers, opts) {
           );
           if (failures.length) {
             if (typeof AggregateError !== 'function') {
+              // @ts-expect-error Property 'reason' does not exist on type 'PromiseSettledResult'
               throw failures[0].reason;
             }
             throw AggregateError(
+              // @ts-expect-error Property 'reason' does not exist on type 'PromiseSettledResult'
               failures.map(({ reason }) => reason),
               'Failed to prune',
             );
@@ -268,6 +272,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     };
     await Promise.all(subdirs.map(removeNodeModulesSymlinks));
   } else {
+    // @ts-expect-error sdkPackageToPath is Map<string, string>
     DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
   }
 

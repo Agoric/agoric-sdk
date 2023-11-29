@@ -27,7 +27,7 @@ export const getSDKBinaries = ({
  * @param {Record<string, string | undefined>} [param0.env] the default environment
  * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
- * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
+ * @param {import('child_process').spawn} param0.spawn the spawn function
  */
 export const makePspawn = ({
   env: defaultEnv = process.env,
@@ -38,13 +38,9 @@ export const makePspawn = ({
   /**
    * Promisified spawn.
    *
-   * @param {string} cmd command name to run
-   * @param {Array<string>} cargs arguments to the command
-   * @param {object} param2
-   * @param {string} [param2.cwd]
-   * @param {string | [string, string, string]} [param2.stdio] standard IO
-   * specification
-   * @param {Record<string, string | undefined>} [param2.env] environment
+   * @param {Parameters<import('child_process').spawn>[0]} cmd command name to run
+   * @param {Parameters<import('child_process').spawn>[1]} cargs arguments to the command
+   * @param {Parameters<import('child_process').spawn>[2]} options
    * @returns {Promise<number> & { childProcess: ChildProcess }}} promise for
    * exit status. The return result has a `childProcess` property to obtain
    * control over the running process

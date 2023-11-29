@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* global process setTimeout */
 import chalk from 'chalk';
@@ -279,11 +280,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     let chainSpawn;
     if (!popts.dockerTag) {
-      chainSpawn = (args, spawnOpts = undefined) => {
+      chainSpawn = (args, spawnOpts) => {
         return pspawn(cosmosChain, [...args, `--home=${serverDir}`], spawnOpts);
       };
     } else {
-      chainSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      chainSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [
@@ -398,10 +399,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const newGenesisJson = finishCosmosGenesis({
       genesisJson,
     });
+    // @ts-expect-error typedef lacking optionality
     const newConfigToml = finishTendermintConfig({
       configToml,
       portNum,
     });
+    // @ts-expect-error typedef lacking optionality
     const newAppToml = finishCosmosApp({
       appToml,
       portNum,
@@ -486,10 +489,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     let soloSpawn;
     if (!popts.dockerTag) {
-      soloSpawn = (args, spawnOpts = undefined) =>
-        pspawn(agSolo, args, spawnOpts);
+      soloSpawn = (args, spawnOpts) => pspawn(agSolo, args, spawnOpts);
     } else {
-      soloSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      soloSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [

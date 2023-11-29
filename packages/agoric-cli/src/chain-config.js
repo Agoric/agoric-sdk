@@ -1,3 +1,4 @@
+// @ts-nocheck
 import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
 import * as Tokens from '@agoric/internal/src/tokens.js';
@@ -189,7 +190,11 @@ export function finishTendermintConfig({
   return TOML.stringify(config);
 }
 
-// Rewrite/import the genesis.json.
+/**
+ * Rewrite/import the genesis.json
+ *
+ * @param {genesisJson: string, exportedGenesisJson?: string} genesisjsons
+ */
 export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
   const genesis = JSON.parse(genesisJson);
   const exported = exportedGenesisJson ? JSON.parse(exportedGenesisJson) : {};

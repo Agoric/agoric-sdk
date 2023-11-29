@@ -1,3 +1,4 @@
+// @ts-check
 import chalk from 'chalk';
 import path from 'path';
 import { makePspawn, getSDKBinaries } from './helpers.js';
@@ -50,6 +51,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
                 },
               );
               // Ensure the build doesn't mess up stdout.
+              assert(ps.childProcess.stdout);
               ps.childProcess.stdout.pipe(process.stderr);
               return ps;
             }
