@@ -11,20 +11,24 @@ import (
 // experience if they don't.
 
 const (
-	BeansPerFeeUnit           = "feeUnit"
-	BeansPerInboundTx         = "inboundTx"
-	BeansPerBlockComputeLimit = "blockComputeLimit"
-	BeansPerMessage           = "message"
-	BeansPerMessageByte       = "messageByte"
-	BeansPerMinFeeDebit       = "minFeeDebit"
-	BeansPerStorageByte       = "storageByte"
-	BeansPerVatCreation       = "vatCreation"
-	BeansPerXsnapComputron    = "xsnapComputron"
+	BeansPerFeeUnit              = "feeUnit"
+	BeansPerInboundTx            = "inboundTx"
+	BeansPerBlockComputeLimit    = "blockComputeLimit"
+	BeansPerMessage              = "message"
+	BeansPerMessageByte          = "messageByte"
+	BeansPerMinFeeDebit          = "minFeeDebit"
+	BeansPerStorageByte          = "storageByte"
+	BeansPerVatCreation          = "vatCreation"
+	BeansPerXsnapComputron       = "xsnapComputron"
+	BeansPerSmartWalletProvision = "smartWalletProvision"
 
 	// QueueSize keys.
 	// Keep up-to-date with updateQueueAllowed() in packanges/cosmic-swingset/src/launch-chain.js
 	QueueInbound        = "inbound"
 	QueueInboundMempool = "inbound_mempool"
+
+	// PowerFlags.
+	PowerFlagSmartWallet = "SMART_WALLET"
 )
 
 var (
@@ -43,17 +47,18 @@ var (
 
 	// TODO: create the cost model we want, and update these to be more principled.
 	// These defaults currently make deploying an ag-solo cost less than $1.00.
-	DefaultBeansPerFeeUnit     = sdk.NewUint(1_000_000_000_000)                  // $1
-	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))    // $0.01
-	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1_000))  // $0.001
-	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.00002
-	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
-	DefaultBeansPerStorageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(500))    // $0.002
+	DefaultBeansPerFeeUnit              = sdk.NewUint(1_000_000_000_000)                  // $1
+	DefaultBeansPerInboundTx            = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))    // $0.01
+	DefaultBeansPerMessage              = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1_000))  // $0.001
+	DefaultBeansPerMessageByte          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.00002
+	DefaultBeansPerMinFeeDebit          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
+	DefaultBeansPerStorageByte          = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(500))    // $0.002
+	DefaultBeansPerSmartWalletProvision = DefaultBeansPerFeeUnit                          // $1
 
 	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
 
 	DefaultPowerFlagFees = []PowerFlagFee{
-		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
+		NewPowerFlagFee(PowerFlagSmartWallet, sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
 	}
 
 	DefaultInboundQueueMax = int32(1_000)
@@ -75,5 +80,6 @@ func DefaultBeansPerUnit() []StringBeans {
 		NewStringBeans(BeansPerStorageByte, DefaultBeansPerStorageByte),
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
+		NewStringBeans(BeansPerSmartWalletProvision, DefaultBeansPerSmartWalletProvision),
 	}
 }
