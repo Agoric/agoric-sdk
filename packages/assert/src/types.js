@@ -11,7 +11,7 @@
  * @callback BaseAssert
  * The `assert` function itself.
  *
- * @param {*} flag The truthy/falsy value
+ * @param {any} flag The truthy/falsy value
  * @param {Details} [optDetails] The details to throw
  * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
@@ -58,8 +58,8 @@
  * The `assert.equal` method
  *
  * Assert that two values must be `Object.is`.
- * @param {*} actual The value we received
- * @param {*} expected What we wanted
+ * @param {any} actual The value we received
+ * @param {any} expected What we wanted
  * @param {Details} [optDetails] The details to throw
  * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
@@ -193,12 +193,13 @@
  * payload itself is still passed unquoted to the console as it would be
  * without `quote`.
  *
+ * @example
  * For example, the following will reveal the expected sky color, but not the
  * actual incorrect sky color, in the thrown error's message:
  * ```js
  * sky.color === expectedColor || Fail`${sky.color} should be ${quote(expectedColor)}`;
  * ```
- *
+ * @example
  * The normal convention is to locally rename `details` to `X` and `quote` to `q`
  * like `const { details: X, quote: q } = assert;`, so the above example would then be
  * ```js
@@ -206,7 +207,7 @@
  * ```
  *
  * @callback AssertQuote
- * @param {*} payload What to declassify
+ * @param {any} payload What to declassify
  * @param {(string|number)} [spaces]
  * @returns {StringablePayload} The declassified payload
  */

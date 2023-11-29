@@ -1,0 +1,16 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "src/contractSupport/index.js",
+        "src/contractSupport/types.js",
+        "src/contractFacet/types-ambient.d.ts",
+        "src/contractFacet/types.ts",
+        "src/zoeService/types.js",
+        "src/zoeService/utils.d.ts",
+        "src/zoeService/zoe.js",
+        "src/types.js",
+        "tools/manualTimer.js",
+    ]
+}

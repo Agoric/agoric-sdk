@@ -41,6 +41,7 @@ const QuorumRule = /** @type {const} */ ({
 const positionIncluded = (positions, p) => positions.some(e => keyEQ(e, p));
 
 /**
+ * @internal
  * @param {QuestionSpec} allegedQuestionSpec
  * @returns {QuestionSpec}
  */

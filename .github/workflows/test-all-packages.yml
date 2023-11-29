@@ -72,6 +72,9 @@ jobs:
       # eslint
       - name: yarn lint primary
         run: ./scripts/lint-with-types.sh primary
+      # build the API docs to verify it works
+      - name: build API docs
+        run: yarn docs
 
   lint-rest:
     timeout-minutes: 15

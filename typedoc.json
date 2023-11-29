@@ -1,0 +1,13 @@
+{
+  "entryPoints": [
+    "packages/*"
+  ],
+  "exclude": [
+    "packages/cosmic-proto/"
+  ],
+  "name": "API documentation of Agoric SDK ",
+  "entryPointStrategy": "packages",
+  "out": "api-docs",
+  "includeVersion": true,
+  "logLevel": "Verbose"
+}

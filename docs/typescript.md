@@ -12,3 +12,13 @@ So our best solution is to have one source of truth for the types and auto-gener
 - `src/types.d.ts` is built automatically from types-ambient
   - `prepack` copies types-ambient.js to types.js and appends 'export {};' to turn it into a module, then builds
   - `postpack` deletes the new types.js and .d.ts files
+
+## Generating API docs
+
+We use [TypeDoc](https://typedoc.org/) to render API docs in HTML.
+
+```sh
+yarn docs
+open api-docs/index.html
+```
+
