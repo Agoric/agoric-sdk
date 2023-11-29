@@ -12,7 +12,6 @@
     "exclude": [
         "packages/xsnap/moddable",
         "packages/xsnap/xsnap-native",
-        "packages/xsnap-lockdown",
         "**/build",
         "**/dist",
         "**/docs",
