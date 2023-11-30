@@ -1043,7 +1043,7 @@ export const prepareVaultManagerKit = (
             state.collateralBrand,
           );
           if (!storedCollateralQuote)
-            throw Fail`lockOraclePrices called before a collateral quote was available`;
+            throw Fail`lockOraclePrices called before a collateral quote was available for ${state.collateralBrand}`;
           trace(
             `lockOraclePrices`,
             getAmountIn(storedCollateralQuote),
