@@ -1,5 +1,5 @@
 /* global process setTimeout clearTimeout setInterval clearInterval */
-
+// @ts-check
 import fs from 'fs';
 import path from 'path';
 import tmp from 'tmp';
@@ -41,8 +41,10 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
+  /** @type {typeof pspawn} */
   function pspawnStdout(...args) {
     const ps = pspawn(...args);
+    assert(ps.childProcess.stdout);
     ps.childProcess.stdout.on('data', chunk => {
       process.stdout.write(chunk);
     });
@@ -170,6 +172,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
       if (opts.stdin) {
         // Write the input to stdin.
+        assert(deployP.childProcess.stdin);
         deployP.childProcess.stdin.write(opts.stdin);
         deployP.childProcess.stdin.end();
       }
@@ -200,6 +203,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       urlReq.setTimeout(2000);
       urlReq.on('error', err => urlResolve(`Cannot connect to ${url}: ${err}`));
       urlReq.end();
+      // @ts-expect-error urlResolve could be undefined
       const urlTimeout = setTimeout(urlResolve, 3000, 'timeout');
       const urlDone = await urlP;
       clearTimeout(urlTimeout);
@@ -235,7 +239,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         });
         req.setTimeout(2000);
         req.on('error', err => {
-          if (err.code !== 'ECONNREFUSED') {
+          if ('code' in err && err.code !== 'ECONNREFUSED') {
             resolve(`Cannot connect to UI server: ${err}`);
           }
         });

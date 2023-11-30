@@ -1,3 +1,4 @@
+// @ts-check
 // From https://github.com/Agoric/agoric-sdk/pull/6903#discussion_r1098067133
 
 import { test } from './prepare-test-env-ava.js';
@@ -16,7 +17,7 @@ test('scalar maps should reject non-scalar keys', t => {
 
 test('scalar big maps should reject non-scalar keys', t => {
   const bigMap = makeScalarBigMapStore('dummy', { keyShape: M.key() });
-  t.throws(() => bigMap.init(harden({ label: 'not a scalar' })), {
+  t.throws(() => bigMap.init(harden({ label: 'not a scalar' }), 'val'), {
     message:
       /A "copyRecord" cannot be a scalar key: \{"label":"not a scalar"\}/,
   });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global setTimeout */
 import test from 'ava';
 

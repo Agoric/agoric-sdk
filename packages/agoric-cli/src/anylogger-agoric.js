@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 import anylogger from 'anylogger';
 import chalk from 'chalk';
@@ -13,8 +14,9 @@ if (DEBUG === undefined) {
 const defaultLevel = anylogger.levels[selectedLevel];
 
 const oldExt = anylogger.ext;
-anylogger.ext = (l, o) => {
-  l = oldExt(l, o);
+/** @type {typeof anylogger.ext} */
+anylogger.ext = l => {
+  l = oldExt(l);
   l.enabledFor = lvl => defaultLevel >= anylogger.levels[lvl];
 
   const prefix = l.name.replace(/:/g, ': ');

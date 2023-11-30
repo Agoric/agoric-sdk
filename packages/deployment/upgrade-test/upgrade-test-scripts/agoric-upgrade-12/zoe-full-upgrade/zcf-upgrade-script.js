@@ -1,3 +1,4 @@
+// @ts-nocheck
 // to turn on ts-check:
 /* global E */
 

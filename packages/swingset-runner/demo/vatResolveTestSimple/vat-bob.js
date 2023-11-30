@@ -1,15 +1,8 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const log = console.log;
-
-function makePR() {
-  let r;
-  const p = new Promise((resolve, _reject) => {
-    r = resolve;
-  });
-  return [p, r];
-}
 
 function hush(p) {
   p.then(
@@ -20,7 +13,7 @@ function hush(p) {
 
 export function buildRootObject() {
   let p1;
-  const [p0, r0] = makePR();
+  const { promise: p0, resolve: r0 } = makePromiseKit();
   return Far('root', {
     promise(p) {
       p1 = p;

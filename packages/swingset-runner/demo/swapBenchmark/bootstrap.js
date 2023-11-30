@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

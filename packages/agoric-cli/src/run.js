@@ -1,3 +1,4 @@
+// @ts-check
 import makeScratchPad from '@agoric/internal/src/scratch.js';
 import { makeScriptLoader } from './scripts.js';
 

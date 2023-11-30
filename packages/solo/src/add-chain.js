@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 import fetch from 'node-fetch';
 import crypto from 'crypto';
@@ -64,7 +65,7 @@ async function addChain(basedir, chainConfig, force = false) {
   netconf.gci || Fail`${url.href} does not contain a "gci" entry`;
 
   const connFile = path.join(basedir, 'connections.json');
-  const conns = JSON.parse(fs.readFileSync(connFile));
+  const conns = JSON.parse(fs.readFileSync(connFile, 'utf-8'));
   for (const conn of conns) {
     if (conn.GCI === netconf.gci) {
       if (!force) {

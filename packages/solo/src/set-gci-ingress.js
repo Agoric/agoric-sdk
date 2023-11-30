@@ -1,3 +1,4 @@
+// @ts-check
 import fs from 'fs';
 import path from 'path';
 
@@ -58,7 +59,7 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
     }
   };
 
-  JSON.parse(fs.readFileSync(fn)).forEach(add);
+  JSON.parse(fs.readFileSync(fn, 'utf-8')).forEach(add);
   const newconn = {
     type: 'chain-cosmos-sdk',
     chainID,

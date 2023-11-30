@@ -16,12 +16,16 @@ export const running = (process, { exec, spawn }) => {
     },
     exec: cmd => {
       const cp = exec(cmd);
-      const promise = new Promise((resolve, reject) => {
-        cp.addListener('error', reject);
-        cp.addListener('exit', code => {
-          resolve(code);
-        });
-      });
+
+      const promise =
+        /** @type {Promise<number> & {process: import('child_process').ChildProcess}} */ (
+          new Promise((resolve, reject) => {
+            cp.addListener('error', reject);
+            cp.addListener('exit', code => {
+              resolve(code);
+            });
+          })
+        );
       promise.process = cp;
       return promise;
     },
@@ -36,6 +40,8 @@ export const running = (process, { exec, spawn }) => {
           callback();
         },
       });
+      assert(cp.process.stdout);
+      assert(cp.process.stderr);
       cp.process.stdout.pipe(stdout);
       cp.process.stderr.pipe(process.stderr);
 
@@ -61,7 +67,7 @@ export const running = (process, { exec, spawn }) => {
       }
       return new Promise(resolve => {
         process.chdir(path);
-        resolve();
+        resolve(undefined);
       });
     },
 

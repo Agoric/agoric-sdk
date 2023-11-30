@@ -1,4 +1,4 @@
-/* eslint-disable @jessie.js/safe-await-separator */
+/* eslint-disable @jessie.js/safe-await-separator, @typescript-eslint/prefer-ts-expect-error */
 import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
@@ -259,11 +259,12 @@ show-config      display the client connection parameters
       const subArgs = args.slice(1);
       const versionFile = `chain-version.txt`;
 
-      let epoch = '0';
+      let epoch = 0;
       if (await rd.exists(versionFile)) {
         const vstr = await trimReadFile(versionFile);
         const match = vstr.match(/^(\d+)/);
-        epoch = match[1] || '0';
+        assert(match);
+        epoch = Number(match[1]) || 0;
       }
 
       let versionKind = subArgs[0];
@@ -777,6 +778,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
+        assert(selector);
         if (!selector(CLUSTER)) {
           continue;
         }
@@ -904,16 +906,16 @@ ${name}:
       };
 
       const addAll = makeGroup('all');
-      const addChainCosmos = makeGroup('ag-chain-cosmos', 4);
-      const addDweb = makeGroup('dweb', 4);
+      const addChainCosmos = makeGroup('ag-chain-cosmos');
+      const addDweb = makeGroup('dweb');
       const addRole = {};
       for (const provider of Object.keys(prov.public_ips.value).sort()) {
-        const addProvider = makeGroup(provider, 4);
+        const addProvider = makeGroup(provider);
         const ips = prov.public_ips.value[provider];
         const offset = Number(prov.offsets.value[provider]);
         const role = prov.roles.value[provider];
         if (!addRole[role]) {
-          addRole[role] = makeGroup(role, 4);
+          addRole[role] = makeGroup(role);
         }
         const keyFile = rd.resolve(
           rd.dirname(SSH_PRIVATE_KEY_FILE),
@@ -986,6 +988,7 @@ ${node}:${roleParams}
         }
       } else {
         // Need to escape each argument individually.
+        // @ts-ignore Property 'map' does not exist on type '"run"'
         const escapedArgs = cmd.map(shellEscape);
         runArg = `sh -c ${shellEscape(escapedArgs.join(' '))}`;
       }

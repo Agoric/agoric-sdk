@@ -22,7 +22,7 @@ deploy(process.argv[1], process.argv.splice(2), {
   rd: files.reading(fs, path),
   wr: files.writing(fs, path, temp),
   setup: setup({ resolve: path.resolve, env: process.env, setInterval }),
-  running: running(process, { exec, process, spawn }),
+  running: running(process, { exec, spawn }),
   inquirer,
   fetch,
 }).then(

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global process setTimeout clearTimeout */
 import path from 'path';
 import fs from 'fs';

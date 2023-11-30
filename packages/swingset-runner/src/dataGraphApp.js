@@ -62,6 +62,7 @@ function fail(message, printUsage, showFields) {
 
 export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
   const argv = process.argv.slice(2);
+  assert(argv);
 
   let outfile = null;
   const datafiles = [];
@@ -71,6 +72,7 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
   const expectFields = !fields;
   while (argv[0]) {
     const arg = argv.shift();
+    assert(arg);
     if (arg.startsWith('-')) {
       switch (arg) {
         case '--output':
@@ -91,7 +93,7 @@ export async function dataGraphApp(xField, xLabel, yField, yLabel, fields) {
         case '--fields':
         case '-f':
           if (expectFields) {
-            fields = argv.shift().split(',');
+            fields = argv.shift()?.split(',');
             break;
           }
         // note fall through to error

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global process */
 import anylogger from 'anylogger';
 
