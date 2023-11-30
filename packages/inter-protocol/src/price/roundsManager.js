@@ -435,8 +435,10 @@ export const prepareRoundsManagerKit = baggage =>
             );
           }
 
-          if (status.lastReportedRound >= roundId)
+          if (status.lastReportedRound >= roundId) {
             return 'cannot report on previous rounds';
+          }
+
           if (
             roundId !== reportingRoundId &&
             roundId !== add(reportingRoundId, 1) &&

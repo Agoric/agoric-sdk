@@ -29,6 +29,9 @@ export const privateArgsShape = harden(
   ),
 );
 
+const WALLETS_BY_ADDRESS = 'walletsByAddress';
+const UPGRADE_TO_INCARNATION_TWO = 'upgrade to incarnation two';
+
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
  * already done.
@@ -129,7 +132,7 @@ export const makeAssetRegistry = assetPublisher => {
  * }} WalletReviver
  */
 
-// NB: even though all the wallets share this contract, they
+// NB: even though all the wallets share this contract,
 // 1. they should not rely on that; they may be partitioned later
 // 2. they should never be able to detect behaviors from another wallet
 /**
@@ -142,14 +145,14 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
-  const upgrading = baggage.has('walletsByAddress');
+  const upgrading = baggage.has(WALLETS_BY_ADDRESS);
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
-  const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
+  const walletsByAddress = provideDurableMapStore(baggage, WALLETS_BY_ADDRESS);
   const provider = makeAtomicProvider(walletsByAddress);
 
   const handleWalletAction = makeExo(
@@ -220,6 +223,13 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  // An object known only to walletFactory and smartWallets. The WalletFactory
+  // only has the self facet for the pre-existing wallets that must be repaired.
+  // Self is too accessible, so use of the repair function requires use of a
+  // secret that clients won't have. This can be removed once the upgrade has
+  // taken place.
+  const upgradeToIncarnation2Key = harden({});
+
   const shared = harden({
     agoricNames,
     invitationBrand,
@@ -228,6 +238,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
+    secretWalletFactoryKey: upgradeToIncarnation2Key,
   });
 
   /**
@@ -236,6 +247,19 @@ export const prepare = async (zcf, privateArgs, baggage) => {
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
+
+  // One time repair for incarnation 2. We're adding WatchedPromises to allow
+  // wallets to durably monitor offer outcomes, but wallets that already exist
+  // need to be backfilled. This code needs to run once at the beginning of
+  // incarnation 2, and then shouldn't be needed again.
+  if (!baggage.has(UPGRADE_TO_INCARNATION_TWO)) {
+    trace('Wallet Factory upgrading to incarnation 2');
+
+    for (const wallet of walletsByAddress.values()) {
+      wallet.repairWalletForIncarnation2(upgradeToIncarnation2Key);
+    }
+    baggage.init(UPGRADE_TO_INCARNATION_TWO, 'done');
+  }
 
   const creatorFacet = prepareExo(
     baggage,

@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.3.0",
+    "@agoric/vats": "^0.15.2-u13.0",
     "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/captp": "3.1.1",
     "@endo/init": "0.5.56",
@@ -26,6 +27,7 @@
   "dependencies": {
     "@agoric/assert": "^0.6.1-u11wf.0",
     "@agoric/casting": "^0.4.3-u13.0",
+    "@agoric/deploy-script-support": "^0.10.4-u13.0",
     "@agoric/ertp": "^0.16.3-u13.0",
     "@agoric/internal": "^0.4.0-u13.0",
     "@agoric/notifier": "^0.6.3-u13.0",
