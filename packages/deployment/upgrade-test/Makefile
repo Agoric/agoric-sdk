@@ -7,7 +7,7 @@ ifeq ($(BOOTSTRAP_MODE),main)
 else
 	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
 endif
-TARGET?=agoric-upgrade-12
+TARGET?=agoric-upgrade-12 agoric-upgrade-12-split-vm
 dockerLabel?=$(TARGET)
 @echo target: $(TARGET)
 
@@ -23,6 +23,9 @@ propose-agoric-upgrade-12:
 
 agoric-upgrade-12: propose-agoric-upgrade-12
 	$(BUILD) --target agoric-upgrade-12 -t $(REPOSITORY):agoric-upgrade-12$(TAG_SUFFIX)
+
+agoric-upgrade-12-split-vm: propose-agoric-upgrade-12
+	$(BUILD) --target agoric-upgrade-12-split-vm -t $(REPOSITORY):agoric-upgrade-12-split-vm$(TAG_SUFFIX)
 
 # build main bootstrap
 build: $(TARGET)

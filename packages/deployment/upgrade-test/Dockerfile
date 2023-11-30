@@ -16,6 +16,19 @@ COPY --chmod=755 ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
 SHELL ["/bin/bash", "-c"]
 RUN . ./upgrade-test-scripts/start_to_to.sh
 
+# TEST --split-vm
+ARG DEST_IMAGE
+FROM ${DEST_IMAGE} as agoric-upgrade-12-split-vm
+ARG BOOTSTRAP_MODE
+ENV THIS_NAME= BOOTSTRAP_MODE=${BOOTSTRAP_MODE}
+COPY --from=propose-agoric-upgrade-12 /root/.agoric /root/.agoric
+
+WORKDIR /usr/src/agoric-sdk/
+COPY --chmod=755 ./env_setup.sh ./start_to_to.sh ./upgrade-test-scripts/
+SHELL ["/bin/bash", "-c"]
+ENV AGD_START_OPTIONS=--split-vm=/usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos
+RUN . ./upgrade-test-scripts/start_to_to.sh
+
 # DEST (TEST)
 #this is agoric-upgrade-12 / multi-collateral, etc.
 ARG DEST_IMAGE

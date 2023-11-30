@@ -22,7 +22,7 @@ export VALIDATORADDR=$(agd keys show validator -a --keyring-backend="test")
 export USER1ADDR=$(agd keys show user1 -a --keyring-backend="test")
 
 startAgd() {
-  agd start --log_level warn "$@" &
+  agd start --log_level warn $AGD_START_OPTIONS "$@" &
   AGD_PID=$!
   echo $AGD_PID > $HOME/.agoric/agd.pid
   wait_for_bootstrap
@@ -215,10 +215,10 @@ if [[ "$BOOTSTRAP_MODE" == "main" ]]; then
 fi
 
 # additional env specific to a version
-if [[ -n "$THIS_NAME" ]] && test -f ./upgrade-test-scripts/$THIS_NAME/env_setup.sh; then
-  echo ENV_SETUP found $THIS_NAME specific env, importing...
-  . ./upgrade-test-scripts/$THIS_NAME/env_setup.sh
-  echo ENV_SETUP imported $THIS_NAME specific env
+if [[ -n "$THIS_NAME" ]] && [[ -f "./upgrade-test-scripts/$THIS_NAME/env_setup.sh" ]]; then
+  echo "ENV_SETUP found $THIS_NAME specific env, importing..."
+  . "./upgrade-test-scripts/$THIS_NAME/env_setup.sh"
+  echo "ENV_SETUP imported $THIS_NAME specific env"
 fi
 
 echo ENV_SETUP finished
