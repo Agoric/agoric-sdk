@@ -29,6 +29,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.1-u11wf.0",
+    "@agoric/deploy-script-support": "^0.10.4-u13.0",
     "@agoric/ertp": "^0.16.3-u13.0",
     "@agoric/governance": "^0.10.4-u13.0",
     "@agoric/inter-protocol": "^0.16.2-u13.0",
@@ -46,10 +47,13 @@
     "@endo/init": "0.5.56",
     "@endo/marshal": "0.8.5",
     "@endo/nat": "4.1.27",
+    "@endo/patterns": "^0.2.2",
     "@endo/promise-kit": "0.2.56",
+    "import-meta-resolve": "^2.2.1",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
+    "@agoric/vats": "^0.15.2-u13.0",
     "@agoric/cosmic-swingset": "^0.42.0-u13.0",
     "@agoric/deploy-script-support": "^0.10.4-u13.0",
     "@agoric/smart-wallet": "^0.5.4-u13.0",
