@@ -122,7 +122,7 @@ test('run restart-vats proposal', async t => {
   const zcfProbeBundle = await bundleSource(source);
   await controller.validateAndInstallBundle(zcfProbeBundle);
   // This test self-sufficiently builds all the artifacts it needs. The test in
-  // .../packages/deployment/upgradeTest/upgradeTest-scripts/agoric-upgrade-12/zoe-upgrade/
+  // .../packages/deployment/upgradeTest/upgrade-test-scripts/unreleased-upgrade/zoe-upgrade/
   // needs a bundled copy of ./zcfProbe.js as of the final commit that will be
   // installed on-chain. Uncomment the following line and add
   // `import fs from "fs";` to generate a bundle of the contract.
