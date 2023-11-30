@@ -8,12 +8,9 @@ import { E } from '@endo/eventual-send';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
- * @template V=unknown
- * @template {any[]} A
- * @typedef {{
- *   onFulfilled?: (value: V, ...args: A) => void,
- *   onRejected?: (reason: unknown, ...args: A) => void,
- * }} PromiseWatcher
+ * @template V
+ * @template {any[]} [A=unknown[]]
+ * @typedef {[watcher: import('./types.js').PromiseWatcher<V, A>, ...args: A]} PromiseWatcherTuple
  */
 
 /**
@@ -43,9 +40,12 @@ export function makeWatchedPromiseManager({
   // this, slotToVal would forget local Promises that aren't exported.
   let promiseRegistrations;
 
-  // watched promises by vpid: each entry is an array of watches on the
-  // corresponding vpid; each of these is in turn an array of a watcher object
-  // and the arguments associated with it by `watchPromise`.
+  /**
+   * watched promises by vpid: each entry is an array of watches on the
+   * corresponding vpid; each of these is in turn an array of a watcher object
+   * and the arguments associated with it by `watchPromise`.
+   * @type {MapStore<string, PromiseWatcherTuple<unknown>[]>}
+   */
   let watchedPromiseTable;
 
   // defined promise watcher objects indexed by kindHandle
@@ -83,9 +83,10 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   *
-   * @param {Promise<unknown>} p
+   * @template T
+   * @param {Promise<T>} p
    * @param {string} vpid
+   * @returns {void}
    */
   function pseudoThen(p, vpid) {
     function settle(value, wasFulfilled) {
@@ -158,7 +159,7 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   * @type {<P extends Promise, A extends any[]>(p: P, watcher: PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
+   * @type {<P extends Promise, A extends any[]>(p: P, watcher: import('./types.js').PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
    */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a
