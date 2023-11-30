@@ -71,6 +71,11 @@ export const makeOracleCommand = (logger, io = {}) => {
       env.AGORIC_KEYRING_BACKEND,
     );
 
+  const normalizeAddress = literalOrName =>
+    normalizeAddressWithOptions(literalOrName, oracle.opts(), {
+      execFileSync,
+    });
+
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
     const networkConfig = await getNetworkConfig(env);
@@ -162,7 +167,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.warn('Now execute the prepared offer');
     });
 
-  const findOracleCap = async (from, readLatestHead) => {
+  const findOracleCap = async (instance, from, readLatestHead) => {
     const current = await getCurrent(from, { readLatestHead });
 
     const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
@@ -170,8 +175,8 @@ export const makeOracleCommand = (logger, io = {}) => {
 
     for (const [offerId, { value }] of entries) {
       /** @type {{ description: string, instance: unknown }[]} */
-      const [{ description }] = value;
-      if (description === 'oracle invitation') {
+      const [{ description, instance: candidate }] = value;
+      if (description === 'oracle invitation' && candidate === instance) {
         return offerId;
       }
     }
@@ -180,11 +185,22 @@ export const makeOracleCommand = (logger, io = {}) => {
   oracle
     .command('find-continuing-id')
     .description('print id of specified oracle continuing invitation')
-    .requiredOption('--from <address>', 'from address', String)
+    .requiredOption(
+      '--from <address>',
+      'wallet address literal or name',
+      normalizeAddress,
+    )
+    .requiredOption(
+      '--pair [brandIn.brandOut]',
+      'token pair (brandIn.brandOut)',
+      s => s.split('.'),
+    )
     .action(async opts => {
-      const { readLatestHead } = await makeRpcUtils({ fetch });
+      const { readLatestHead, lookupPriceAggregatorInstance } =
+        await rpcTools();
+      const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(opts.from, readLatestHead);
+      const offerId = await findOracleCap(instance, opts.from, readLatestHead);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -212,11 +228,6 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.log(inspect(capDatas[0], { depth: 10, colors: true }));
     });
 
-  /** @param {string} literalOrName */
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, oracle.opts(), {
-      execFileSync,
-    });
   const show = (info, indent = false) =>
     stdout.write(
       `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,
@@ -250,7 +261,8 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig } = await rpcTools();
+        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
+          await rpcTools();
         const wutil = await makeWalletUtils(
           { fetch, execFileSync, delay },
           networkConfig,
@@ -308,9 +320,12 @@ export const makeOracleCommand = (logger, io = {}) => {
           console.warn(err);
         });
 
+        const instance = lookupPriceAggregatorInstance(pair);
+
         console.error('pushPrice from each:', keyOrder);
         for await (const from of keyOrder) {
           const oracleAdminAcceptOfferId = await findOracleCap(
+            instance,
             from,
             readLatestHead,
           );
