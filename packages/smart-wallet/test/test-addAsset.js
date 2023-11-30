@@ -14,7 +14,7 @@ import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
@@ -420,8 +420,10 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
 
     /** @type {import('../src/smartWallet.js').UpdateRecord} */
     const update = await headValue(updates);
-    assert(update.updated === 'offerStatus');
-    // t.log(update.status);
+    assert(
+      update.updated === 'offerStatus',
+      `Should have had "updated":"offerStatus", had "${q(update)}"`,
+    );
     t.like(update, {
       updated: 'offerStatus',
       status: {
@@ -435,7 +437,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     const {
       status: { id, result, payouts },
     } = update;
-    // @ts-expect-error cast value to copyBag
+    // @ts-expect-error status includes payload.
     const names = payouts?.Places.value.payload.map(([name, _qty]) => name);
     t.log(id, 'result:', result, ', payouts:', names.join(', '));
 
@@ -495,13 +497,15 @@ test.serial('non-vbank asset: give before deposit', async t => {
       proposal: { give, want },
     });
     t.log('goofy client: propose to give', choices.join(', '));
-    await E(walletBridge).proposeOffer(ctx.fromBoard.toCapData(offer1));
+    await t.throwsAsync(
+      () => E(walletBridge).proposeOffer(ctx.fromBoard.toCapData(offer1)),
+      { message: /Withdrawal of .* failed because the purse only contained/ },
+    );
   };
 
   {
     const addr2 = 'agoric1player2';
     const walletUIbridge = makePromiseKit();
-    // await eventLoopIteration();
 
     const { simpleProvideWallet, consume, sendToBridge } = t.context;
     const wallet = simpleProvideWallet(addr2);
@@ -511,9 +515,8 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const mockStorage = await consume.chainStorage;
     const { aPlayer } = makeScenario(t);
 
-    aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
-    const c2 = goofyClient(mockStorage, walletUIbridge.promise);
-    await t.throwsAsync(c2, { message: /Withdrawal of {.*} failed/ });
+    await aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
+    await goofyClient(mockStorage, walletUIbridge.promise);
     await eventLoopIteration();
 
     // wallet balance was also updated

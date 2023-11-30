@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -6,7 +7,12 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { StorageNodeShape, makeTracer } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  objectMap,
+  StorageNodeShape,
+} from '@agoric/internal';
 import { observeNotifier } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
 import {
@@ -20,15 +26,19 @@ import {
   provide,
 } from '@agoric/vat-data';
 import {
+  prepareRecorderKit,
   SubscriberShape,
   TopicsRecordShape,
-  prepareRecorderKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
+import {
+  AmountKeywordRecordShape,
+  PaymentPKeywordRecordShape,
+} from '@agoric/zoe/src/typeGuards.js';
+
 import { makeInvitationsHelper } from './invitations.js';
-import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
+import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
 const { Fail, quote: q } = assert;
 
@@ -40,17 +50,36 @@ const trace = makeTracer('SmrtWlt');
  * @see {@link ../README.md}}
  */
 
+/** @typedef {number | string} OfferId */
+
+/**
+ * @typedef {{
+ *   id: OfferId,
+ *   invitationSpec: import('./invitations').InvitationSpec,
+ *   proposal: Proposal,
+ *   offerArgs?: unknown
+ * }} OfferSpec
+ */
+
+/**
+ * @typedef {{
+ *   logger:  {info: (...args: any[]) => void, error: (...args: any[]) => void},
+ *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher,
+ *   invitationFromSpec: ERef<Invitation>,
+ * }} ExecutorPowers
+ */
+
 /**
  * @typedef {{
  *   method: 'executeOffer'
- *   offer: import('./offers.js').OfferSpec,
+ *   offer: OfferSpec,
  * }} ExecuteOfferAction
  */
 
 /**
  * @typedef {{
  *   method: 'tryExitOffer'
- *   offerId: import('./offers.js').OfferId,
+ *   offerId: OfferId,
  * }} TryExitOfferAction
  */
 
@@ -81,7 +110,7 @@ const trace = makeTracer('SmrtWlt');
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
  *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
+ *   liveOffers: Array<[OfferId, import('./offers.js').OfferStatus]>,
  * }} CurrentWalletRecord
  */
 
@@ -145,8 +174,9 @@ const trace = makeTracer('SmrtWlt');
  *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
- *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
+ *   liveOffers: MapStore<OfferId, import('./offers.js').OfferStatus>,
+ *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
+ *   liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>,
  * }>} ImmutableState
  *
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
@@ -203,6 +233,8 @@ const getBrandToPurses = (walletPurses, key) => {
   return brandToPurses;
 };
 
+const REPAIRED_UNWATCHED_SEATS = 'repairedUnwatchedSeats';
+
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {SharedParams} shared
@@ -232,8 +264,9 @@ export const prepareSmartWallet = (baggage, shared) => {
     return store;
   });
 
+  const makeOfferWatcher = prepareOfferWatcher(baggage);
+
   /**
-   *
    * @param {UniqueParams} unique
    * @returns {State}
    */
@@ -297,6 +330,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       liveOfferSeats: makeScalarBigMapStore('live offer seats', {
         durable: true,
       }),
+      liveOfferPayments: makeScalarBigMapStore('live offer payments', {
+        durable: true,
+      }),
     };
 
     return {
@@ -315,9 +351,27 @@ export const prepareSmartWallet = (baggage, shared) => {
         .returns(M.promise()),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
+      repairUnwatchedSeats: M.call().returns(),
+      updateStatus: M.call(M.any()).returns(),
+      addContinuingOffer: M.call(
+        M.or(M.number(), M.string()),
+        AmountShape,
+        M.remotable('InvitationMaker'),
+        M.or(M.record(), M.undefined()),
+      ).returns(M.promise()),
+      purseForBrand: M.call(BrandShape).returns(M.promise()),
+      logWalletInfo: M.call(M.any()).returns(),
+      logWalletError: M.call(M.any()).returns(),
     }),
+
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
+    }),
+    payments: M.interface('payments support', {
+      withdrawGive: M.call(AmountKeywordRecordShape).returns(
+        PaymentPKeywordRecordShape,
+      ),
+      tryReclaimingWithdrawnPayments: M.call(M.string()).returns(M.promise()),
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
@@ -358,6 +412,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const {
             liveOffers,
             liveOfferSeats,
+            liveOfferPayments,
             offerToInvitationMakers,
             offerToPublicSubscriberPaths,
             offerToUsedInvitation,
@@ -365,6 +420,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const used =
             liveOffers.has(id) ||
             liveOfferSeats.has(id) ||
+            liveOfferPayments.has(id) ||
             offerToInvitationMakers.has(id) ||
             offerToPublicSubscriberPaths.has(id) ||
             offerToUsedInvitation.has(id);
@@ -412,7 +468,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
-          const { address } = this.state;
+          const { facets } = this;
 
           const purse = await purseRef; // promises don't fit in durable storage
 
@@ -422,8 +478,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             E(purse).getCurrentAmount(),
             balance => helper.updateBalance(purse, balance),
             err =>
-              console.error(
-                address,
+              facets.helper.logWalletError(
                 'initial purse balance publish failed',
                 err,
               ),
@@ -433,7 +488,10 @@ export const prepareSmartWallet = (baggage, shared) => {
               helper.updateBalance(purse, balance);
             },
             fail(reason) {
-              console.error(address, `failed updateState observer`, reason);
+              facets.helper.logWalletError(
+                '⚠️ failed updateState observer',
+                reason,
+              );
             },
           });
         },
@@ -442,7 +500,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Provide a purse given a NameHub of issuers and their
          * brands.
          *
-         * We current support only one NameHub, agoricNames, and
+         * We currently support only one NameHub, agoricNames, and
          * hence one purse per brand. But we store an array of them
          * to facilitate a transition to decentralized introductions.
          *
@@ -494,6 +552,121 @@ export const prepareSmartWallet = (baggage, shared) => {
           void helper.watchPurse(purse);
           return purse;
         },
+
+        repairUnwatchedSeats() {
+          const { state, facets } = this;
+          const { address, invitationPurse } = state;
+          const { liveOffers, liveOfferSeats } = state;
+          const { zoe, agoricNames } = shared;
+          const { invitationBrand, invitationIssuer } = shared;
+
+          if (baggage.has(REPAIRED_UNWATCHED_SEATS)) {
+            return;
+          }
+          baggage.init(REPAIRED_UNWATCHED_SEATS, 'present`');
+
+          const invitationFromSpec = makeInvitationsHelper(
+            zoe,
+            agoricNames,
+            invitationBrand,
+            invitationPurse,
+            state.offerToInvitationMakers.get,
+          );
+
+          for (const seatId of liveOfferSeats.keys()) {
+            const offerSpec = liveOffers.get(seatId);
+            const seat = liveOfferSeats.get(seatId);
+
+            const invitation = invitationFromSpec(offerSpec.invitationSpec);
+            const watcher = makeOfferWatcher(
+              facets.helper,
+              offerSpec,
+              address,
+              E(invitationIssuer).getAmountOf(invitation),
+              seat,
+            );
+
+            void watchOfferOutcomes(watcher, seat);
+          }
+        },
+
+        /** @param {import('./offers.js').OfferStatus} offerStatus */
+        updateStatus(offerStatus) {
+          const { state, facets } = this;
+          facets.helper.logWalletInfo('offerStatus', offerStatus);
+
+          void state.updateRecorderKit.recorder.write({
+            updated: 'offerStatus',
+            status: offerStatus,
+          });
+
+          if ('numWantsSatisfied' in offerStatus) {
+            if (state.liveOfferSeats.has(offerStatus.id)) {
+              state.liveOfferSeats.delete(offerStatus.id);
+            }
+
+            if (state.liveOfferPayments.has(offerStatus.id)) {
+              state.liveOfferPayments.delete(offerStatus.id);
+            }
+
+            if (state.liveOffers.has(offerStatus.id)) {
+              state.liveOffers.delete(offerStatus.id);
+              // This might get skipped in subsequent passes, since we .delete()
+              // the first time through
+              facets.helper.publishCurrentState();
+            }
+          }
+        },
+        async addContinuingOffer(
+          offerId,
+          invitationAmount,
+          invitationMakers,
+          publicSubscribers,
+        ) {
+          const { state, facets } = this;
+
+          state.offerToUsedInvitation.init(offerId, invitationAmount);
+          state.offerToInvitationMakers.init(offerId, invitationMakers);
+          const pathMap = await objectMapStoragePath(publicSubscribers);
+          if (pathMap) {
+            facets.helper.logWalletInfo('recording pathMap', pathMap);
+            state.offerToPublicSubscriberPaths.init(offerId, pathMap);
+          }
+          facets.helper.publishCurrentState();
+        },
+
+        /**
+         * @param {Brand} brand
+         * @returns {Promise<Purse>}
+         */
+        async purseForBrand(brand) {
+          const { state, facets } = this;
+          const { registry, invitationBrand } = shared;
+
+          if (registry.has(brand)) {
+            // @ts-expect-error virtual purse
+            return E(state.bank).getPurse(brand);
+          } else if (invitationBrand === brand) {
+            return state.invitationPurse;
+          }
+
+          const purse = await facets.helper.getPurseIfKnownBrand(
+            brand,
+            shared.agoricNames,
+          );
+          if (purse) {
+            return purse;
+          }
+          throw Fail`cannot find/make purse for ${brand}`;
+        },
+        logWalletInfo(...args) {
+          const { state } = this;
+          console.info('wallet', state.address, ...args);
+        },
+        logWalletError(...args) {
+          const { state } = this;
+          console.error('wallet', state.address, ...args);
+        },
       },
       /**
        * Similar to {DepositFacet} but async because it has to look up the purse.
@@ -509,9 +682,13 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @throws if there's not yet a purse, though the payment is held to try again when there is
          */
         async receive(payment) {
-          const { helper } = this.facets;
-          const { paymentQueues: queues, bank, invitationPurse } = this.state;
+          const {
+            state,
+            facets: { helper },
+          } = this;
+          const { paymentQueues: queues, bank, invitationPurse } = state;
           const { registry, invitationBrand } = shared;
+
           const brand = await E(payment).getAllegedBrand();
 
           // When there is a purse deposit into it
@@ -537,118 +714,181 @@ export const prepareSmartWallet = (baggage, shared) => {
           throw Fail`cannot deposit payment with brand ${brand}: no purse`;
         },
       },
+
+      payments: {
+        /**
+         * @param {AmountKeywordRecord} give
+         * @param {OfferId} offerId
+         * @returns {PaymentPKeywordRecord}
+         */
+        withdrawGive(give, offerId) {
+          const { state, facets } = this;
+
+          /** @type {MapStore<Brand, Payment>} */
+          const brandPaymentRecord = makeScalarBigMapStore('paymentToBrand', {
+            durable: true,
+          });
+          state.liveOfferPayments.init(offerId, brandPaymentRecord);
+
+          // Add each payment to liveOfferPayments as it is withdrawn. If
+          // there's an error partway through, we can recover the withdrawals.
+          return objectMap(give, amount => {
+            /** @type {Promise<Purse>} */
+            const purseP = facets.helper.purseForBrand(amount.brand);
+            const paymentP = E(purseP).withdraw(amount);
+            void E.when(
+              paymentP,
+              payment => brandPaymentRecord.init(amount.brand, payment),
+              e => {
+                // recovery will be handled by tryReclaimingWithdrawnPayments()
+                facets.helper.logWalletInfo(
+                  `⚠️ Payment withdrawal failed.`,
+                  offerId,
+                  e,
+                );
+              },
+            );
+            return paymentP;
+          });
+        },
+
+        async tryReclaimingWithdrawnPayments(offerId) {
+          const { state, facets } = this;
+          const { liveOfferPayments } = state;
+
+          if (liveOfferPayments.has(offerId)) {
+            const brandPaymentRecord = liveOfferPayments.get(offerId);
+            if (!brandPaymentRecord) {
+              return Promise.resolve(undefined);
+            }
+            // Use allSettled to ensure we attempt all the deposits, regardless of
+            // individual rejections.
+            return Promise.allSettled(
+              Array.from(brandPaymentRecord.entries()).map(async ([b, p]) => {
+                // Wait for the withdrawal to complete.  This protects against a
+                // race when updating paymentToPurse.
+                const purseP = facets.helper.purseForBrand(b);
+
+                // Now send it back to the purse.
+                return E(purseP).deposit(p);
+              }),
+            );
+          }
+        },
+      },
+
       offers: {
         /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *
-         * @param {import('./offers.js').OfferSpec} offerSpec
+         * @param {OfferSpec} offerSpec
          * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
          * @throws if any parts of the offer can be determined synchronously to be invalid
          */
         async executeOffer(offerSpec) {
           const { facets, state } = this;
-          const {
-            address,
-            bank,
-            invitationPurse,
-            offerToInvitationMakers,
-            offerToUsedInvitation,
-            offerToPublicSubscriberPaths,
-            updateRecorderKit,
-          } = this.state;
-          const { invitationBrand, zoe, invitationIssuer, registry } = shared;
+          const { address, invitationPurse } = state;
+          const { zoe, agoricNames } = shared;
+          const { invitationBrand, invitationIssuer } = shared;
 
           facets.helper.assertUniqueOfferId(String(offerSpec.id));
 
-          const logger = {
-            info: (...args) => console.info('wallet', address, ...args),
-            error: (...args) => console.error('wallet', address, ...args),
-          };
+          await null;
 
-          const executor = makeOfferExecutor({
-            zoe,
-            depositFacet: facets.deposit,
-            invitationIssuer,
-            powers: {
-              invitationFromSpec: makeInvitationsHelper(
-                zoe,
-                shared.agoricNames,
-                invitationBrand,
-                invitationPurse,
-                offerToInvitationMakers.get,
-              ),
-              /**
-               * @param {Brand} brand
-               * @returns {Promise<Purse>}
-               */
-              purseForBrand: async brand => {
-                const { helper } = facets;
-                if (registry.has(brand)) {
-                  // @ts-expect-error virtual purse
-                  return E(bank).getPurse(brand);
-                } else if (invitationBrand === brand) {
-                  return invitationPurse;
-                }
+          let seatRef;
+          let watcher;
+          try {
+            const invitationFromSpec = makeInvitationsHelper(
+              zoe,
+              agoricNames,
+              invitationBrand,
+              invitationPurse,
+              state.offerToInvitationMakers.get,
+            );
 
-                const purse = await helper.getPurseIfKnownBrand(
-                  brand,
-                  shared.agoricNames,
-                );
-                if (purse) {
-                  return purse;
-                }
-                throw Fail`cannot find/make purse for ${brand}`;
-              },
-              logger,
-            },
-            onStatusChange: offerStatus => {
-              logger.info('offerStatus', offerStatus);
+            facets.helper.logWalletInfo('starting executeOffer', offerSpec.id);
 
-              void updateRecorderKit.recorder.write({
-                updated: 'offerStatus',
-                status: offerStatus,
-              });
+            // 1. Prepare values and validate synchronously.
+            const { proposal } = offerSpec;
 
-              const isSeatExited = 'numWantsSatisfied' in offerStatus;
-              if (isSeatExited) {
-                if (state.liveOfferSeats.has(offerStatus.id)) {
-                  state.liveOfferSeats.delete(offerStatus.id);
-                }
+            const invitation = invitationFromSpec(offerSpec.invitationSpec);
 
-                if (state.liveOffers.has(offerStatus.id)) {
-                  state.liveOffers.delete(offerStatus.id);
-                  facets.helper.publishCurrentState();
-                }
-              }
-            },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').InvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
-            onNewContinuingOffer: async (
-              offerId,
+            const [paymentKeywordRecord, invitationAmount] = await Promise.all([
+              proposal?.give &&
+                deeplyFulfilledObject(
+                  facets.payments.withdrawGive(proposal.give, offerSpec.id),
+                ),
+              E(invitationIssuer).getAmountOf(invitation),
+            ]);
+
+            // 2. Begin executing offer
+            // No explicit signal to user that we reached here but if anything above
+            // failed they'd get an 'error' status update.
+
+            /** @type {UserSeat} */
+            seatRef = await E(zoe).offer(
+              invitation,
+              proposal,
+              paymentKeywordRecord,
+              offerSpec.offerArgs,
+            );
+            facets.helper.logWalletInfo(offerSpec.id, 'seated');
+
+            watcher = makeOfferWatcher(
+              facets.helper,
+              facets.deposit,
+              offerSpec,
+              address,
               invitationAmount,
-              invitationMakers,
-              publicSubscribers,
-            ) => {
-              offerToUsedInvitation.init(offerId, invitationAmount);
-              offerToInvitationMakers.init(offerId, invitationMakers);
-              const pathMap = await objectMapStoragePath(publicSubscribers);
-              if (pathMap) {
-                logger.info('recording pathMap', pathMap);
-                offerToPublicSubscriberPaths.init(offerId, pathMap);
-              }
-              facets.helper.publishCurrentState();
-            },
-          });
+              seatRef,
+            );
 
-          return executor.executeOffer(offerSpec, seatRef => {
             state.liveOffers.init(offerSpec.id, offerSpec);
-            facets.helper.publishCurrentState();
             state.liveOfferSeats.init(offerSpec.id, seatRef);
-          });
+
+            // publish the live offers
+            facets.helper.publishCurrentState();
+
+            // await so that any errors are caught and handled below
+            await watchOfferOutcomes(watcher, seatRef);
+          } catch (err) {
+            facets.helper.logWalletError('OFFER ERROR:', err);
+            // Notify the user
+            if (watcher) {
+              watcher.helper.updateStatus({ error: err.toString() });
+            } else {
+              facets.helper.updateStatus({
+                error: err.toString(),
+                ...offerSpec,
+              });
+            }
+
+            if (offerSpec?.proposal?.give) {
+              facets.payments
+                .tryReclaimingWithdrawnPayments(offerSpec.id)
+                .catch(e =>
+                  facets.helper.logWalletError(
+                    'recovery failed reclaiming payments',
+                    e,
+                  ),
+                );
+            }
+
+            if (seatRef) {
+              void E.when(E(seatRef).hasExited(), hasExited => {
+                if (!hasExited) {
+                  void E(seatRef).tryExit();
+                }
+              });
+            }
+
+            throw err;
+          }
         },
         /**
          * Take an offer's id, look up its seat, try to exit.
          *
-         * @param {import('./offers.js').OfferId} offerId
+         * @param {OfferId} offerId
          * @returns {Promise<void>}
          * @throws if the seat can't be found or E(seatRef).tryExit() fails.
          */
@@ -666,14 +906,14 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
+          const { facets } = this;
+          const { offers } = facets;
           const { publicMarshaller } = shared;
-
-          const { offers } = this.facets;
 
           /** @param {Error} err */
           const recordError = err => {
-            const { address, updateRecorderKit } = this.state;
-            console.error('wallet', address, 'handleBridgeAction error:', err);
+            const { updateRecorderKit } = this.state;
+            facets.helper.logWalletError('handleBridgeAction error:', err);
             void updateRecorderKit.recorder.write({
               updated: 'walletAction',
               status: { error: err.message },
@@ -718,24 +958,27 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         /** @deprecated use getPublicTopics */
         getCurrentSubscriber() {
-          return this.state.currentRecorderKit.subscriber;
+          const { state } = this;
+          return state.currentRecorderKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getUpdatesSubscriber() {
-          return this.state.updateRecorderKit.subscriber;
+          const { state } = this;
+          return state.updateRecorderKit.subscriber;
         },
         getPublicTopics() {
-          const { currentRecorderKit, updateRecorderKit } = this.state;
+          const { state } = this;
+
           return harden({
             current: {
               description: 'Current state of wallet',
-              subscriber: currentRecorderKit.subscriber,
-              storagePath: currentRecorderKit.recorder.getStoragePath(),
+              subscriber: state.currentRecorderKit.subscriber,
+              storagePath: state.currentRecorderKit.recorder.getStoragePath(),
             },
             updates: {
               description: 'Changes to wallet',
-              subscriber: updateRecorderKit.subscriber,
-              storagePath: updateRecorderKit.recorder.getStoragePath(),
+              subscriber: state.updateRecorderKit.subscriber,
+              storagePath: state.updateRecorderKit.recorder.getStoragePath(),
             },
           });
         },
@@ -747,6 +990,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         const { helper } = facets;
 
         void helper.watchPurse(invitationPurse);
+        helper.repairUnwatchedSeats();
       },
     },
   );

@@ -9,7 +9,7 @@ const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
-  /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
+  /** @type {Map<import('./offers.js').OfferId, import('./offers.js').OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
@@ -17,7 +17,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /**
    * keyed by description; xxx assumes unique
    *
-   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: Instance }>}
+   * @type {Map<import('./offers.js').OfferId, { acceptedIn: import('./offers.js').OfferId, description: string, instance: Instance }>}
    */
   const invitationsReceived = new Map();
 

@@ -129,7 +129,7 @@ export const makeAssetRegistry = assetPublisher => {
  * }} WalletReviver
  */
 
-// NB: even though all the wallets share this contract, they
+// NB: even though all the wallets share this contract,
 // 1. they should not rely on that; they may be partitioned later
 // 2. they should never be able to detect behaviors from another wallet
 /**
