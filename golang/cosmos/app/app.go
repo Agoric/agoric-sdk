@@ -792,17 +792,17 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	const (
-		upgradeName     = "agoric-upgrade-12"
-		upgradeNameTest = "agorictest-upgrade-12"
+		upgradeName     = "agoric-upgrade-13"
+		upgradeNameTest = "agorictest-upgrade-13"
 	)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade12Handler(app, upgradeName),
+		upgrade13Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade12Handler(app, upgradeNameTest),
+		upgrade13Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -825,8 +825,8 @@ func NewAgoricApp(
 	return app
 }
 
-// upgrade12Handler performs standard upgrade actions plus custom actions for upgrade-12.
-func upgrade12Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade13Handler performs standard upgrade actions plus custom actions for upgrade-13.
+func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
