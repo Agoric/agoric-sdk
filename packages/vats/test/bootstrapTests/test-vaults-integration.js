@@ -1,7 +1,4 @@
 // @ts-check
-/**
- * @file Bootstrap test integration vaults with smart-wallet
- */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
@@ -13,14 +10,17 @@ import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
-} from '../../tools/board-utils.js';
-import { makeWalletFactoryDriver } from './drivers.js';
+} from '@agoric/vats/tools/board-utils.js';
+
 import { makeSwingsetTestKit } from './supports.js';
+import { makeWalletFactoryDriver } from './drivers.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
  */
 const test = anyTest;
+
+/** @file Bootstrap test integration vaults with smart-wallet */
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';
@@ -140,6 +140,8 @@ test('adjust balances', async t => {
   });
 });
 
+// This test isn't marked .serial, but it depends on previous tests.
+
 test('close vault', async t => {
   const { walletFactoryDriver } = t.context;
 
@@ -155,7 +157,8 @@ test('close vault', async t => {
   });
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
-    status: { id: 'open-vault', numWantsSatisfied: 1 },
+    status: { id: 'open-vault', result: 'UNPUBLISHED', numWantsSatisfied: 1 },
+    error: undefined,
   });
   t.log('try giving more than is available in the purse/vbank');
   await t.throwsAsync(
@@ -175,6 +178,7 @@ test('close vault', async t => {
 
   const message =
     'Offer {"brand":"[Alleged: IST brand]","value":"[1n]"} is not sufficient to pay off debt {"brand":"[Alleged: IST brand]","value":"[5025000n]"}';
+
   await t.throwsAsync(
     wd.executeOfferMaker(
       Offers.vaults.CloseVault,
@@ -185,10 +189,9 @@ test('close vault', async t => {
       },
       'open-vault',
     ),
-    {
-      message,
-    },
+    { message },
   );
+
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
@@ -208,10 +211,13 @@ test('close vault', async t => {
     },
     'open-vault',
   );
+
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'close-well',
+      error: undefined,
+      numWantsSatisfied: 1,
       result: 'your vault is closed, thank you for your business',
       // funds are returned
       payouts: likePayouts(giveCollateral, 0),
@@ -230,6 +236,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
   const wantMinted = giveCollateral * 100;
   const message =
     'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: ATOM brand]","value":"[9000000n]"} collateral';
+
   await t.throwsAsync(
     wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId: 'open-vault',

@@ -193,11 +193,6 @@ test('want stable (insufficient funds)', async t => {
     'Withdrawal of {"brand":"[Alleged: AUSD brand]","value":"[20000n]"} failed because the purse only contained {"brand":"[Alleged: AUSD brand]","value":"[10000n]"}';
   const status = computedState.offerStatuses.get('insufficientFunds');
   t.is(status?.error, `Error: ${msg}`);
-  /** @type {[PromiseRejectedResult]} */
-  // @ts-expect-error cast
-  const result = status.result;
-  t.is(result[0].status, 'rejected');
-  t.is(result[0].reason.message, msg);
 });
 
 test('govern offerFilter', async t => {
@@ -383,6 +378,8 @@ test('deposit multiple payments to unknown brand', async t => {
     });
   }
 });
+
+// related to recovering dropped Payments
 
 // XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
 test('recover when some withdrawals succeed and others fail', async t => {
