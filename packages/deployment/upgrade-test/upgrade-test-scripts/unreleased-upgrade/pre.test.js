@@ -19,14 +19,3 @@ test('Ensure Network Vat is at 0', async t => {
   const incarnation = await getIncarnation('network');
   t.is(incarnation, 0);
 });
-
-test('Ensure MaxBytes param was updated', async t => {
-  const { value: rawParams } = await agd.query(
-    'params',
-    'subspace',
-    'baseapp',
-    'BlockParams',
-  );
-  const blockParams = JSON.parse(rawParams);
-  t.is(blockParams.max_bytes, '5242880');
-});

@@ -7,7 +7,7 @@ ifeq ($(BOOTSTRAP_MODE),main)
 else
 	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
 endif
-TARGET?=agoric-upgrade-12
+TARGET?=unreleased-upgrade
 dockerLabel?=$(TARGET)
 @echo target: $(TARGET)
 
@@ -18,11 +18,11 @@ BUILD = docker build --progress=plain $(BUILD_OPTS) \
 	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) \
 	-f Dockerfile upgrade-test-scripts
 
-propose-agoric-upgrade-12:
-	$(BUILD) --target propose-agoric-upgrade-12 -t $(REPOSITORY):propose-agoric-upgrade-12$(TAG_SUFFIX)
+propose-unreleased-upgrade:
+	$(BUILD) --target propose-unreleased-upgrade -t $(REPOSITORY):propose-unreleased-upgrade$(TAG_SUFFIX)
 
-agoric-upgrade-12: propose-agoric-upgrade-12
-	$(BUILD) --target agoric-upgrade-12 -t $(REPOSITORY):agoric-upgrade-12$(TAG_SUFFIX)
+unreleased-upgrade: propose-unreleased-upgrade
+	$(BUILD) --target unreleased-upgrade -t $(REPOSITORY):unreleased-upgrade$(TAG_SUFFIX)
 
 # build main bootstrap
 build: $(TARGET)
@@ -51,4 +51,4 @@ run_bash:
 shell:
 	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
 
-.PHONY: local_sdk agoric-upgrade-7-2 agoric-upgrade-8 agoric-upgrade-8-1 agoric-upgrade-9 agoric-upgrade-10 agoric-upgrade-11 agoric-upgrade-12 build build_test run
+.PHONY: local_sdk unreleased-upgrade build build_test run
