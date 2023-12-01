@@ -277,6 +277,11 @@ const checkFlow1 = async (
       message: 'Cannot exit; seat has already exited',
     });
 
+    // restart vat-admin
+    await buildAndExecuteProposal(
+      '@agoric/builders/scripts/vats/restart-vat-admin.js',
+    );
+
     // TODO express spec up top in a way it can be passed in here
     //   check.vaultNotification(managerIndex, 0, {
     //     debt: undefined,
