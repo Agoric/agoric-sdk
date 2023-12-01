@@ -2662,10 +2662,10 @@ ansi-styles@^6.0.0, ansi-styles@^6.1.0, ansi-styles@^6.2.1:
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-6.2.1.tgz#0e62320cf99c21afff3b3012192546aacbfb05c5"
   integrity sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug==
 
-anylogger@^0.21.0:
-  version "0.21.0"
-  resolved "https://registry.yarnpkg.com/anylogger/-/anylogger-0.21.0.tgz#b6cbea631cd5e1c884e5c0fa007d80bde1b22bd4"
-  integrity sha512-XJVplwflEff43l7aE48lW9gNoS0fpb1Ha4WttzjfTFlN3uJUIKALZ5oNWtwgRXPm/Q2dbp1EIddMbQ/AGHVX1A==
+anylogger@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/anylogger/-/anylogger-1.0.11.tgz#0ee55f294c6b921070dc29acd2ac9f1f35200625"
+  integrity sha512-sKTWPTG2/d71kLGVmymMJQQslUppxvCz6DN/eODL3/ckmfygZzD0t4P5tRXE3qpM62jI98F/YTHHzFhM12jiJQ==
 
 anymatch@~3.1.2:
   version "3.1.3"

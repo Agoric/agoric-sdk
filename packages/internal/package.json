@@ -28,7 +28,7 @@
     "@endo/patterns": "^0.2.5",
     "@endo/promise-kit": "^0.2.59",
     "@endo/stream": "^0.3.28",
-    "anylogger": "^0.21.0",
+    "anylogger": "^1.0.11",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
