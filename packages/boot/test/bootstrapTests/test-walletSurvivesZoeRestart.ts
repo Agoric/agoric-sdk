@@ -291,12 +291,9 @@ const checkFlow1 = async (
       '@agoric/builders/scripts/vats/restart-zoe.js',
     );
 
-    await buyer.tryExitOffer(`${collateralBrandKey}-bid3`);
-    t.like(readLatest('published.wallet.agoric1buyer'), {
-      status: {
-        id: `${collateralBrandKey}-bid3`,
-        payouts: likePayouts(outcome.bids[2].payouts),
-      },
+    // UNTIL https://github.com/Agoric/agoric-sdk/pull/8453
+    await t.throwsAsync(buyer.tryExitOffer(`${collateralBrandKey}-bid3`), {
+      message: 'Cannot exit; seat has already exited',
     });
 
     // TODO express spec up top in a way it can be passed in here
@@ -327,7 +324,7 @@ const checkFlow1 = async (
   // });
 };
 
-test.serial.failing(
+test.serial(
   'wallet survives zoe null upgrade',
   checkFlow1,
   { collateralBrandKey: 'ATOM', managerIndex: 0 },
