@@ -103,7 +103,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmos "github.com/tendermint/tendermint/libs/os"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -792,17 +791,17 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	const (
-		upgradeName     = "agoric-upgrade-12"
-		upgradeNameTest = "agorictest-upgrade-12"
+		upgradeName     = "agoric-upgrade-13"
+		upgradeNameTest = "agorictest-upgrade-13"
 	)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade12Handler(app, upgradeName),
+		upgrade13Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade12Handler(app, upgradeNameTest),
+		upgrade13Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -825,17 +824,12 @@ func NewAgoricApp(
 	return app
 }
 
-// upgrade12Handler performs standard upgrade actions plus custom actions for upgrade-12.
-func upgrade12Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade13Handler performs standard upgrade actions plus custom actions for upgrade-13.
+func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 		// Record the plan to send to SwingSet
 		app.upgradePlan = &plan
-
-		// Reflect default BlockParams.MaxBytes change to current params
-		cp := app.BaseApp.GetConsensusParams(ctx)
-		cp.Block.MaxBytes = tmtypes.DefaultBlockParams().MaxBytes
-		app.BaseApp.StoreConsensusParams(ctx, cp)
 
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
