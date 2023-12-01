@@ -177,6 +177,7 @@ harden(produceStartUpgradable);
  *   governedParams: Record<string, unknown>;
  *   timer: ERef<import('@agoric/time').TimerService>;
  *   contractGovernor: ERef<Installation>;
+ *   governorCustomTerms: Record<string, unknown>;
  *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
@@ -190,7 +191,13 @@ const startGovernedInstance = async (
     privateArgs,
     label,
   },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
+  {
+    governedParams,
+    timer,
+    contractGovernor,
+    governorCustomTerms,
+    economicCommitteeCreatorFacet,
+  },
 ) => {
   const poserInvitationP = E(
     economicCommitteeCreatorFacet,
@@ -219,6 +226,7 @@ const startGovernedInstance = async (
         issuerKeywordRecord,
         label,
       },
+      ...governorCustomTerms,
     }),
   );
   const governorFacets = await E(zoe).startInstance(
@@ -282,7 +290,7 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
+  /** @type {StartGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,
