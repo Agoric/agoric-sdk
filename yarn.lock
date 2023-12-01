@@ -9373,10 +9373,10 @@ type-coverage-core@^2.26.3:
     tslib "1 || 2"
     tsutils "3"
 
-type-coverage@^2.26.3:
-  version "2.26.3"
-  resolved "https://registry.yarnpkg.com/type-coverage/-/type-coverage-2.26.3.tgz#0033d4718dacae4bb8e963b3778b7a1b0f3dd6b9"
-  integrity sha512-gDD8D2mnBngM/lJFYv3zNUf0/GGh9u+JkcNiTDljKNpWVnwzZa0fmI38CPJR0oYF7ALnV26xeN+BoyMubS/nwg==
+type-coverage@^2.27.0:
+  version "2.27.0"
+  resolved "https://registry.yarnpkg.com/type-coverage/-/type-coverage-2.27.0.tgz#682de585b8814d0772100cd99b31df8f3eb75f7b"
+  integrity sha512-Gs4HcUPrZ+Z7De/eqZfw60SOEjzN30CI94p/2luye0IUI1y9TsWVOkchrqArR3khpN+ACXXQyxsiqH0FdoN48Q==
   dependencies:
     minimist "1"
     type-coverage-core "^2.26.3"
