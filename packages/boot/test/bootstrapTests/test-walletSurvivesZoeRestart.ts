@@ -2,16 +2,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
-import process from 'process';
-import type { ExecutionContext, TestFn } from 'ava';
 import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
-import { BridgeHandler } from '@agoric/vats';
+import type { ExecutionContext, TestFn } from 'ava';
+import process from 'process';
 import {
+  LiquidationSetup,
   LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-  LiquidationSetup,
 } from './liquidation.ts';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
@@ -152,25 +151,7 @@ const checkFlow1 = async (
     controller,
     buildProposal,
   } = t.context;
-  const { EV } = t.context.runUtils;
-
-  const buildAndExecuteProposal = async packageSpec => {
-    const proposal = await buildProposal(packageSpec);
-
-    for await (const bundle of proposal.bundles) {
-      await controller.validateAndInstallBundle(bundle);
-    }
-
-    const bridgeMessage = {
-      type: 'CORE_EVAL',
-      evals: proposal.evals,
-    };
-
-    const coreEvalBridgeHandler: ERef<BridgeHandler> = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
-    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-  };
+  const { buildAndExecuteProposal } = t.context;
 
   const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
 
