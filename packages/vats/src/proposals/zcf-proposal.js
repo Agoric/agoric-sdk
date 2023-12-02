@@ -4,7 +4,10 @@ import { E } from '@endo/far';
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<string, CreateVatResults>;
+ *     vatStore: MapStore<
+ *       string,
+ *       import('@agoric/swingset-vat').CreateVatResults
+ *     >;
  *   };
  * }} powers
  * @param {object} options
@@ -16,6 +19,7 @@ export const upgradeZcf = async (
 ) => {
   const { zoeRef, zcfRef } = options.options;
 
+  assert(zoeRef.bundleID);
   const zoeBundleCap = await E(vatAdminSvc).getBundleCap(zoeRef.bundleID);
   console.log(`ZOE BUNDLE ID: `, zoeRef.bundleID);
 
