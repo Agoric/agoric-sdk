@@ -1,4 +1,3 @@
-// @ts-check
 import { E } from '@endo/far';
 import { assertKey } from '@agoric/store';
 import { canBeDurable } from '@agoric/vat-data';

@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';

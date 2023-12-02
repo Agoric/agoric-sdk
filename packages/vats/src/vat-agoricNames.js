@@ -1,4 +1,3 @@
-// @ts-check
 // @jessy-check
 import { E, Far } from '@endo/far';
 import { BrandI } from '@agoric/ertp';

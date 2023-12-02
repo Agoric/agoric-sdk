@@ -1,4 +1,3 @@
-// @ts-check
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';

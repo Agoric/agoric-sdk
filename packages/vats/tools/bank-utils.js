@@ -1,4 +1,3 @@
-// @ts-check
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';

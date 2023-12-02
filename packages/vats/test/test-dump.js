@@ -1,4 +1,3 @@
-// @ts-check
 import test from 'ava';
 
 import { dump } from '../src/repl.js';

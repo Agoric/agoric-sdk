@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';

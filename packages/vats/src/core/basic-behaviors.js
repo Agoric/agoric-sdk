@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
