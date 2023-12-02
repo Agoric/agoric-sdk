@@ -373,7 +373,9 @@ type ChainBootstrapSpaceT = {
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
-  provisionPoolStartResult: unknown;
+  provisionPoolStartResult: GovernanceFacetKit<
+    typeof import('@agoric/inter-protocol/src/provisionPool.js').start
+  >;
   vatStore: import('./utils.js').VatStore;
   zoe: ZoeService;
 };

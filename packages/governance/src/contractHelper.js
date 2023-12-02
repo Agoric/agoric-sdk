@@ -152,7 +152,8 @@ const facetHelpers = (zcf, paramManager) => {
    *
    * @see {makeDurableGovernorFacet}
    *
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
+   * @template {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} LCF
+   * @param {LCF} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
     /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
