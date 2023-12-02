@@ -1,6 +1,7 @@
 import { assert } from '@agoric/assert';
 import { Far, E } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -14,7 +15,10 @@ export function buildRootObject(vatPowers) {
     const bundle = D(bcap).getBundle();
     assert.typeof(bundle, 'object');
     const endowments = harden({ big: 'big' });
-    const ns = await importBundle(bundle, { endowments });
+    const ns = await importBundle(bundle, {
+      endowments,
+      computeSourceMapLocation,
+    });
     const out = ns.runTheCheck('world');
     // out: [NAME, 'big', 'big', 'world']
     const ok =

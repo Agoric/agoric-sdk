@@ -2,6 +2,7 @@
 
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import { makeLiveSlots } from '@agoric/swingset-liveslots';
 import { makeManagerKit } from './manager-helper.js';
 import {
@@ -89,6 +90,7 @@ export function makeLocalVatManagerFactory({
         filePrefix: `vat-${vatID}/...`,
         endowments: { ...workerEndowments, ...lsEndowments },
         inescapableGlobalProperties,
+        computeSourceMapLocation,
       });
       return vatNS;
     }

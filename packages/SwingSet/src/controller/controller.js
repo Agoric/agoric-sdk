@@ -12,6 +12,7 @@ import microtime from 'microtime';
 
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import { initSwingStore } from '@agoric/swing-store';
 
 import { mustMatch, M } from '@endo/patterns';
@@ -210,6 +211,7 @@ export async function makeSwingsetController(
       URL: globalThis.Base64, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap
     },
+    computeSourceMapLocation,
   });
   const buildKernel = kernelNS.default;
   writeSlogObject({ type: 'import-kernel-finish' });

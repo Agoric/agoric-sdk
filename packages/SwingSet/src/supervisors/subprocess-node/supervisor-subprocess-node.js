@@ -9,6 +9,7 @@ import { Buffer } from 'buffer';
 
 import { assert, details as X, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import { makeMarshal } from '@endo/marshal';
 import {
   makeLiveSlots,
@@ -145,6 +146,7 @@ function handleSetBundle(margs) {
     const vatNS = await importBundle(bundle, {
       endowments: { ...workerEndowments, ...lsEndowments },
       inescapableGlobalProperties,
+      computeSourceMapLocation,
     });
     workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
     return vatNS;

@@ -4,6 +4,7 @@
 
 import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import { defineDurableKind } from '@agoric/vat-data';
 import { assert } from '@agoric/assert';
 import {
@@ -25,7 +26,10 @@ export const buildRootObject = async (vatPowers, vatParameters, baggage) => {
   const { contractBundleCap } = vatParameters;
   const contractBundle = D(contractBundleCap).getBundle();
   const endowments = { console, assert, VatData };
-  const contractNS = await importBundle(contractBundle, { endowments });
+  const contractNS = await importBundle(contractBundle, {
+    endowments,
+    computeSourceMapLocation,
+  });
   const { setupInstallation, setup: _ } = contractNS;
   if (!setupInstallation) {
     // fall back to old non-upgradable scheme
