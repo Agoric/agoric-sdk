@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e # exit when any command fails
+if [ -z "$PS1" ]; then
+  set -e # exit when any command fails
+fi
 
 echo ENV_SETUP starting
 
