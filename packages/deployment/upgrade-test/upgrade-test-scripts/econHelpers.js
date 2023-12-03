@@ -69,5 +69,5 @@ export const mintIST = async (addr, sendValue, giveCollateral, wantMinted) => {
     'test',
     '--yes',
   );
-  await openVault(addr, giveCollateral, wantMinted);
+  await openVault(addr, wantMinted, giveCollateral);
 };
