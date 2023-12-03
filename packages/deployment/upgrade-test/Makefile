@@ -41,6 +41,6 @@ run_test:
 	$(RUN) -e "DEST=0" $(REPOSITORY):$(dockerLabel)
 
 shell:
-	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
+	docker exec -it `docker ps --latest --format '{{json .}}' | jq -r .Names` bash
 
 .PHONY: local_sdk agoric-upgrade-13 build build_test run
