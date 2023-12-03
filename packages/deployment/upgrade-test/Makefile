@@ -49,6 +49,6 @@ run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
 
 shell:
-	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
+	docker exec -it `docker ps --latest --format '{{json .}}' | jq -r .Names` bash
 
 .PHONY: local_sdk unreleased-upgrade build build_test run
