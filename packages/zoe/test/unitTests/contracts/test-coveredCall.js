@@ -1070,3 +1070,44 @@ test('zoe - coveredCall non-fungible', async t => {
   t.deepEqual(bobCcPurse.getCurrentAmount().value, ['GrowlTiger']);
   t.deepEqual(bobRpgPurse.getCurrentAmount().value, []);
 });
+
+test('zoe - coveredCall - bad proposal shape', async t => {
+  const { moolaKit, simoleanKit, moola, zoe, vatAdminState } = setup();
+
+  // Bundle and install the contract.
+  const bundle = await bundleSource(coveredCallRoot);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
+
+  // Start an instance.
+  const issuerKeywordRecord = harden({
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
+  });
+  const { creatorInvitation } = await E(zoe).startInstance(
+    coveredCallInstallation,
+    issuerKeywordRecord,
+  );
+
+  // Make an unacceptable proposal.
+  const badProposal = harden({
+    give: { UnderlyingAsset: moola(3n) },
+    exit: { waived: null },
+  });
+  const payments = harden({
+    UnderlyingAsset: moolaKit.mint.mintPayment(moola(3n)),
+  });
+  const badSeat = await E(zoe).offer(creatorInvitation, badProposal, payments);
+  await t.throwsAsync(
+    () => E(badSeat).getOfferResult(),
+    { message: /Must have missing properties \["afterDeadline"\]/ },
+    'A bad proposal shape must be rejected',
+  );
+
+  // The payment must be returned.
+  const moolaPayout = await E(badSeat).getPayout('UnderlyingAsset');
+  const simoleanPayout = await E(badSeat).getPayout('StrikePrice');
+  t.deepEqual(await moolaKit.issuer.getAmountOf(moolaPayout), moola(3n));
+  t.is(simoleanPayout, /** @type {Payment<any>} */ (undefined));
+});
