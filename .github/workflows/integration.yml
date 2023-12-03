@@ -221,11 +221,6 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      matrix:
-        bootstrap-version: ['test', 'main']
-    # Uncomment to mark a failure of the `test` bootstrap job as a successful result
-    # continue-on-error: ${{ matrix.bootstrap-version == 'test' }}
     steps:
       - name: free up disk space
         run: |
@@ -248,7 +243,6 @@ jobs:
           create-if-needed: true
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
-        # TODO: Build this only once, not for every bootstrap-version.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: cd packages/deployment && make docker-build-sdk
@@ -256,7 +250,6 @@ jobs:
         run: |
           cd packages/deployment/upgrade-test && \
             docker build \
-              --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} \
               --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
               -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
