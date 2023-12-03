@@ -192,16 +192,11 @@ newOfferId() {
 
 printKeys() {
   echo "========== GOVERNANCE KEYS =========="
-  echo "gov1: $GOV1ADDR"
-  cat ~/.agoric/gov1.key || true
-  echo "gov2: $GOV2ADDR"
-  cat ~/.agoric/gov2.key || true
-  echo "gov3: $GOV3ADDR"
-  cat ~/.agoric/gov3.key || true
-  echo "validator: $VALIDATORADDR"
-  cat ~/.agoric/validator.key || true
-  echo "user1: $USER1ADDR"
-  cat ~/.agoric/user1.key || true
+  for i in ~/.agoric/*.key; do
+    name=$(basename $i .key)
+    echo "$name:"$'\t'$(agd keys add $name --dry-run --recover --keyring-backend=test --output=json < $i | jq -r .address) || true
+    echo $'\t'$(cat $i)
+  done
   echo "========== GOVERNANCE KEYS =========="
 }
 
