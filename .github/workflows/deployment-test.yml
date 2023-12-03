@@ -34,7 +34,7 @@ jobs:
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: 18.18
+          node-version: 18.x
           path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
