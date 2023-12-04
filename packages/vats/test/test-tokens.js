@@ -1,4 +1,3 @@
-// @ts-check
 import test from 'ava';
 
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';

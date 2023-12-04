@@ -1,4 +1,3 @@
-// @ts-check
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeBootstrap } from './lib-boot.js';
 

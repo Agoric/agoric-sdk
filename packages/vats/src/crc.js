@@ -6,7 +6,6 @@
  * Forked from npm polycrc@1.1.0 for module system compatibility, then trimmed
  * down to a version that assumes TypedArrays are universal.
  */
-// @ts-check
 /* eslint-disable no-bitwise */
 
 /** @typedef {string | number | Uint8Array | ArrayBuffer} Data */

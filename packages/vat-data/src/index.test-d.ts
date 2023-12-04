@@ -13,6 +13,7 @@ import {
   makeKindHandle,
   defineDurableKind,
   partialAssign,
+  watchPromise,
 } from '.';
 
 // for use in assignments below
@@ -168,3 +169,22 @@ const vom: VirtualObjectManager = anyVal;
 vom.missingMethod;
 // @ts-expect-error Expected 0-4 arguments but got 5
 vom.defineDurableKind(anyVal, anyVal, anyVal, anyVal, 'extra');
+
+const p: Promise<bigint> = anyVal;
+watchPromise(
+  p,
+  {
+    onFulfilled(value, extra1, extra2) {
+      expectType<bigint>(value);
+      expectType<string>(extra1);
+      // @ts-expect-error str
+      expectType<number>(extra2);
+    },
+    onRejected(reason, extra1) {
+      expectType<unknown>(reason);
+      expectType<string>(extra1);
+    },
+  },
+  'extraString',
+  'alsoString',
+);

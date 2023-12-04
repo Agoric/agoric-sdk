@@ -1,5 +1,3 @@
-// @ts-check
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';

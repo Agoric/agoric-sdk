@@ -1,4 +1,3 @@
-// @ts-check
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { M } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { E } from '@endo/far';

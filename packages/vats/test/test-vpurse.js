@@ -1,4 +1,3 @@
-// @ts-check
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
