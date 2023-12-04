@@ -3,73 +3,105 @@ import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { prepareWhenableModule } from '../src/module.js';
-import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @returns {import('ava').ImplementationFn<[]>}
  */
 const testRetryOnDisconnect = zone => async t => {
-  let doRetry = false;
-  const rejectionMeansRetry = _e => doRetry;
-  const whenable0ToEphemeral = new Map();
+  const rejectionMeansRetry = e => e && e.message === 'disconnected';
 
-  const { when, makeWhenableKit } = prepareWhenableModule(zone, {
+  const { watch, when } = prepareWhenableModule(zone, {
     rejectionMeansRetry,
-    whenable0ToEphemeral,
   });
+  const makeTestWhenable0 = zone.exoClass(
+    'TestWhenable0',
+    undefined,
+    plan => ({ plan }),
+    {
+      shorten() {
+        const { plan } = this.state;
+        const [step, ...rest] = plan;
+        this.state.plan = rest;
+        switch (step) {
+          case 'disco': {
+            const p = Promise.reject(Error('disconnected'));
+            return p;
+          }
+          case 'happy': {
+            const p = Promise.resolve('resolved');
+            return p;
+          }
+          case 'sad': {
+            const p = Promise.reject(Error('dejected'));
+            return p;
+          }
+          default: {
+            return Promise.reject(Error(`unknown plan step ${step}`));
+          }
+        }
+      },
+    },
+  );
 
-  for await (const watchPromise of [false, true]) {
-    for await (const retry of [false, true]) {
-      doRetry = retry;
-      whenable0ToEphemeral.clear();
+  const PLANS = [
+    [0, 'happy'],
+    [0, 'sad', 'happy'],
+    [1, 'disco', 'happy'],
+    [1, 'disco', 'sad'],
+    [1, 'disco', 'sad', 'disco', 'happy'],
+    [2, 'disco', 'disco', 'happy'],
+    [2, 'disco', 'disco', 'sad'],
+  ];
 
-      const { whenable, settler } = makeWhenableKit();
+  for await (const watchWhenable of [false, true]) {
+    t.log('testing watchWhenable', watchWhenable);
+    for await (const [final, ...plan] of PLANS) {
+      t.log(`testing (plan=${plan}, watchWhenable=${watchWhenable})`);
+
+      /** @type {import('../src/types.js').Whenable} */
+      const whenable = harden({ whenable0: makeTestWhenable0(plan) });
 
       let resultP;
-      if (watchPromise) {
-        const pk = makePromiseKit();
-        const p = when(whenable, {
+      if (watchWhenable) {
+        const resultW = watch(whenable, {
           onFulfilled(value) {
-            pk.resolve(value);
+            t.is(plan[final], 'happy');
+            t.is(value, 'resolved');
+            return value;
           },
           onRejected(reason) {
-            pk.reject(reason);
+            t.is(plan[final], 'sad');
+            t.is(reason && reason.message, 'dejected');
+            return ['rejected', reason];
           },
         });
-        t.regex(
-          await p,
-          /no useful return/,
-          `no useful return expected (retry=${retry}, watchPromise=${watchPromise})`,
-        );
-        resultP = pk.promise;
+        t.is('then' in resultW, false, 'watch resultW.then is undefined');
+        resultP = when(resultW);
       } else {
-        resultP = when(whenable);
+        resultP = when(whenable).catch(e => ['rejected', e]);
       }
-      resultP = resultP.catch(e => ['rejected', e]);
 
-      await null; // two turns to allow the whenable0 to be registered
-      await null;
-
-      const ephemeral = [...whenable0ToEphemeral.values()];
-      ephemeral[0].reject('disconnected');
-
-      // Simulate an upgrade.
-      whenable0ToEphemeral.clear();
-      settler.resolve('resolved');
-
-      if (retry) {
-        t.is(
-          await resultP,
-          'resolved',
-          `resolve expected (retry=${retry}, watchPromise=${watchPromise})`,
-        );
-      } else {
-        t.deepEqual(
-          await resultP,
-          ['rejected', 'disconnected'],
-          `reject expected (retry=${retry}, watchPromise=${watchPromise})`,
-        );
+      switch (plan[final]) {
+        case 'happy': {
+          t.is(
+            await resultP,
+            'resolved',
+            `resolve expected (plan=${plan}, watchWhenable=${watchWhenable})`,
+          );
+          break;
+        }
+        case 'sad': {
+          t.like(
+            await resultP,
+            ['rejected', Error('dejected')],
+            `reject expected (plan=${plan}, watchWhenable=${watchWhenable})`,
+          );
+          break;
+        }
+        default: {
+          t.fail(`unknown final plan step ${plan[final]}`);
+        }
       }
     }
   }
