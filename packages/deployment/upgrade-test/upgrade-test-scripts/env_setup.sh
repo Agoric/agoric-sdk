@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e # exit when any command fails
+if [ -z "$PS1" ]; then
+  set -e # exit when any command fails
+fi
 
 echo ENV_SETUP starting
 
@@ -204,15 +206,9 @@ printKeys() {
 }
 
 
-export USDC_DENOM="ibc/toyusdc"
-# Recent transfer to Emerynet
-export ATOM_DENOM="ibc/06362C6F7F4FB702B94C13CD2E7C03DEC357683FD978936340B43FBFBC5351EB"
-export PSM_PAIR="IST.ToyUSD"
-if [[ "$BOOTSTRAP_MODE" == "main" ]]; then
-  export USDC_DENOM="ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F"
-  export ATOM_DENOM="ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA"
-  export PSM_PAIR="IST.USDC_axl"
-fi
+export USDC_DENOM="ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F"
+export ATOM_DENOM="ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA"
+export PSM_PAIR="IST.USDC_axl"
 
 # additional env specific to a version
 if [[ -n "$THIS_NAME" ]] && test -f ./upgrade-test-scripts/$THIS_NAME/env_setup.sh; then

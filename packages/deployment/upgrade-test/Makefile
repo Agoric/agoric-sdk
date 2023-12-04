@@ -1,12 +1,6 @@
 REPOSITORY = agoric/upgrade-test
 # use :dev (latest prerelease image) unless we build local sdk
 DEST_IMAGE ?= $(if $(findstring local_sdk,$(MAKECMDGOALS)),ghcr.io/agoric/agoric-sdk:latest,ghcr.io/agoric/agoric-sdk:dev)
-BOOTSTRAP_MODE?=main
-ifeq ($(BOOTSTRAP_MODE),main)
-	TAG_SUFFIX=
-else
-	TAG_SUFFIX=-$(BOOTSTRAP_MODE)
-endif
 TARGET?=unreleased-upgrade
 dockerLabel?=$(TARGET)
 @echo target: $(TARGET)
@@ -15,21 +9,17 @@ local_sdk:
 	(cd ../ && make docker-build-sdk)
 
 BUILD = docker build --progress=plain $(BUILD_OPTS) \
-	--build-arg BOOTSTRAP_MODE=$(BOOTSTRAP_MODE) --build-arg DEST_IMAGE=$(DEST_IMAGE) \
+	--build-arg DEST_IMAGE=$(DEST_IMAGE) \
 	-f Dockerfile upgrade-test-scripts
 
 propose-unreleased-upgrade:
-	$(BUILD) --target propose-unreleased-upgrade -t $(REPOSITORY):propose-unreleased-upgrade$(TAG_SUFFIX)
+	$(BUILD) --target propose-unreleased-upgrade -t $(REPOSITORY):propose-unreleased-upgrade
 
 unreleased-upgrade: propose-unreleased-upgrade
-	$(BUILD) --target unreleased-upgrade -t $(REPOSITORY):unreleased-upgrade$(TAG_SUFFIX)
+	$(BUILD) --target unreleased-upgrade -t $(REPOSITORY):unreleased-upgrade
 
 # build main bootstrap
 build: $(TARGET)
-
-# build test bootstrap
-build_test: BOOTSTRAP_MODE=test
-build_test: $(TARGET)
 
 DEBUG ?= SwingSet:ls,SwingSet:vat
 RUN = docker run --rm -it \
@@ -49,6 +39,6 @@ run_bash:
 	$(RUN) --entrypoint /bin/bash $(REPOSITORY):$(dockerLabel)
 
 shell:
-	docker exec -it `docker ps --latest --format json | jq -r .Names` bash
+	docker exec -it `docker ps --latest --format '{{json .}}' | jq -r .Names` bash
 
 .PHONY: local_sdk unreleased-upgrade build build_test run
