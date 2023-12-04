@@ -1,3 +1,4 @@
+// @ts-check
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
@@ -5,6 +6,15 @@ import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { parseVatSlot } from './parseVatSlots.js';
+
+/**
+ * @template V=unknown
+ * @template {any[]} A
+ * @typedef {{
+ *   onFulfilled?: (value: V, ...args: A) => void,
+ *   onRejected?: (reason: unknown, ...args: A) => void,
+ * }} PromiseWatcher
+ */
 
 /**
  * @param {object} options
@@ -148,10 +158,7 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   *
-   * @param {Promise} p
-   * @param {{onFulfilled?: Function, onRejected?: Function}} watcher
-   * @param  {...any} args
+   * @type {<P extends Promise, A extends any[]>(p: P, watcher: PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
    */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a
