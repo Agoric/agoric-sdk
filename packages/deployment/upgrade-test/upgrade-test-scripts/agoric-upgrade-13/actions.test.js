@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { agd, agops, agoric } from '../cliHelper.js';
+import { agd } from '../cliHelper.js';
 import { ATOM_DENOM, CHAINID, GOV1ADDR } from '../constants.js';
 import { mintIST, openVault } from '../econHelpers.js';
 import { waitForBlock } from '../commonUpgradeHelpers.js';
@@ -36,27 +36,8 @@ test('Open Vaults with auto-provisioned wallet', async t => {
   const ATOMGiven = 2000;
   const ISTWanted = 400;
   // Decompose openVault because follower is broken for auto-provisioned wallets
-  // await openVault(userAddress, ATOMGiven, ISTWanted);
-  const offer = await agops.vaults(
-    'open',
-    '--wantMinted',
-    ISTWanted,
-    '--giveCollateral',
-    ATOMGiven,
-  );
-  await agd.tx(
-    'swingset',
-    'wallet-action',
-    '--allow-spend',
-    `'${offer}'`, // cheap/brittle escaping since `executeCommand` joins args ...
-    '--keyring-backend=test',
-    '-y',
-    `--chain-id="${CHAINID}"`,
-    `--from="${userAddress}"`,
-  );
+  await openVault(userAddress, ISTWanted, ATOMGiven);
   await waitForBlock(2);
-
-  await agoric.follow('--first-value-only', `:published.wallet.${userAddress}`);
 
   const newISTBalance = await getISTBalance(userAddress);
   console.log('New IST Balance in u13 account:', newISTBalance);
