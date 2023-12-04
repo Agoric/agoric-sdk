@@ -1,17 +1,19 @@
 // @ts-check
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { prepareWhen } from './when.js';
 import { prepareWhenableKit } from './whenable.js';
+import { prepareWatch } from './watch.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {object} [powers]
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
- * @param {WeakMap<object, unknown>} [powers.whenable0ToEphemeral]
  */
 export const prepareWhenableModule = (zone, powers) => {
-  const { rejectionMeansRetry, whenable0ToEphemeral } = powers || {};
-  const makeWhenableKit = prepareWhenableKit(zone, whenable0ToEphemeral);
-  const when = prepareWhen(zone, rejectionMeansRetry);
-  return harden({ when, makeWhenableKit });
+  const { rejectionMeansRetry = isUpgradeDisconnection } = powers || {};
+  const makeWhenableKit = prepareWhenableKit(zone);
+  const when = prepareWhen(zone, makeWhenableKit, rejectionMeansRetry);
+  const watch = prepareWatch(zone, makeWhenableKit, rejectionMeansRetry);
+  return harden({ watch, when, makeWhenableKit });
 };
 harden(prepareWhenableModule);

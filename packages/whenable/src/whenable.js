@@ -4,38 +4,41 @@ import { M } from '@endo/patterns';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {WeakMap<object, any>} [whenable0ToEphemeral]
  */
-export const prepareWhenableKit = (
-  zone,
-  whenable0ToEphemeral = new WeakMap(),
-) => {
+export const prepareWhenableKit = zone => {
+  /** WeakMap<object, any> */
+  const whenable0ToEphemeral = new WeakMap();
+
   /**
    * Get the current incarnation's promise kit associated with a whenable0.
    *
-   * @param {import('./when.js').Whenable['whenable0']} whenable0
+   * @param {import('./types.js').Whenable['whenable0']} whenable0
    * @returns {import('@endo/promise-kit').PromiseKit<any>}
    */
   const findCurrentKit = whenable0 => {
     let pk = whenable0ToEphemeral.get(whenable0);
-    if (!pk) {
-      pk = makePromiseKit();
-      whenable0ToEphemeral.set(whenable0, pk);
+    if (pk) {
+      return pk;
     }
+
+    pk = makePromiseKit();
+    pk.promise.catch(() => {}); // silence unhandled rejection
+    whenable0ToEphemeral.set(whenable0, pk);
     return pk;
   };
 
   /**
-   * @param {(value: unknown) => void} cb
-   * @param {import('./when.js').Whenable['whenable0']} whenable0
-   * @param {Promise<any>} promise
+   * @param {'resolve' | 'reject'} kind
+   * @param {import('./types.js').Whenable['whenable0']} whenable0
    * @param {unknown} value
    */
-  const settle = (cb, whenable0, promise, value) => {
+  const settle = (kind, whenable0, value) => {
+    const kit = findCurrentKit(whenable0);
+    const cb = kit[kind];
     if (!cb) {
       return;
     }
-    whenable0ToEphemeral.set(whenable0, harden({ promise }));
+    whenable0ToEphemeral.set(whenable0, harden({ promise: kit.promise }));
     cb(value);
   };
 
@@ -66,36 +69,52 @@ export const prepareWhenableKit = (
          */
         resolve(value) {
           const { whenable0 } = this.facets;
-          const { resolve, promise } = findCurrentKit(whenable0);
-          settle(resolve, whenable0, promise, value);
+          settle('resolve', whenable0, value);
         },
         /**
          * @param {any} [reason]
          */
         reject(reason) {
           const { whenable0 } = this.facets;
-          const { reject, promise } = findCurrentKit(whenable0);
-          settle(reject, whenable0, promise, reason);
+          settle('reject', whenable0, reason);
         },
       },
     },
   );
 
+  /**
+   * @template T
+   * @returns {import('./types.js').WhenableKit<T>}
+   */
   const makeWhenableKit = () => {
     const { settler, whenable0 } = rawMakeWhenableKit();
-    return harden({ settler, whenable: { whenable0 } });
+    const whenable = { whenable0 };
+    /**
+     * It would be nice to fully type this, but TypeScript gives:
+     * TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+     * @type {unknown}
+     */
+    const whenablePromiseLike = {
+      whenable0,
+      then(onFulfilled, onRejected) {
+        // This promise behaviour is ephemeral.  If you want a persistent
+        // subscription, you must use `when(p, watcher)`.
+        const { promise } = findCurrentKit(whenable0);
+        return promise.then(onFulfilled, onRejected);
+      },
+      catch(onRejected) {
+        const { promise } = findCurrentKit(whenable0);
+        return promise.catch(onRejected);
+      },
+      finally(onFinally) {
+        const { promise } = findCurrentKit(whenable0);
+        return promise.finally(onFinally);
+      },
+    };
+    const promise = /** @type {Promise<T>} */ (whenablePromiseLike);
+    return harden({ settler, whenable, promise });
   };
   return makeWhenableKit;
 };
 
 harden(prepareWhenableKit);
-
-/**
- * @template [T=any]
- * @typedef {{ whenable: import('./when').Whenable<T>, settler: Settler<T> }} WhenableKit
- */
-
-/**
- * @template [T=any]
- * @typedef {{ resolve(value?: T): void, reject(reason?: any): void }} Settler
- */
