@@ -127,7 +127,7 @@ test('protocol connection listen', async t => {
       t.is(p, port, `port is tracked in onAccept`);
       t.is(listenHandler, listener, `listenHandler is tracked in onAccept`);
       let handler;
-      return harden({
+      return Far('connectionHandler', {
         async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
           t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
           handler = connectionHandler;
@@ -206,7 +206,7 @@ test('loopback protocol', async t => {
   /** @type {ListenHandler} */
   const listener = Far('listener', {
     async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
-      return harden({
+      return Far('connectionHandler', {
         async onReceive(c, packet, _connectionHandler) {
           t.is(`${packet}`, 'ping', 'expected ping');
           return 'pingack';
