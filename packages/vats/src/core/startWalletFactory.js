@@ -1,4 +1,3 @@
-// @ts-check
 import { makeMap } from 'jessie.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';

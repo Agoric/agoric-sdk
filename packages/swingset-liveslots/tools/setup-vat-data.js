@@ -23,6 +23,7 @@ globalThis.VatData = harden({
   makeKindHandle: tag => fakeVomKit.vom.makeKindHandle(tag),
   canBeDurable: (...args) => fakeVomKit.vom.canBeDurable(...args),
   providePromiseWatcher: (...args) =>
+    // @ts-expect-error spread argument for non-rest parameter
     fakeVomKit.wpm.providePromiseWatcher(...args),
   watchPromise: (p, watcher, ...args) =>
     fakeVomKit.wpm.watchPromise(p, watcher, ...args),

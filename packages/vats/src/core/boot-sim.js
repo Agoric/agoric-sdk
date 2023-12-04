@@ -1,4 +1,3 @@
-// @ts-check
 import { makeBootstrap } from './lib-boot.js';
 
 import * as basicBehaviorsPlus from './basic-behaviors.js';

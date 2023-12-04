@@ -8,7 +8,14 @@ const t = 'makeCoreProposalBehavior';
  * @typedef {*} BootstrapPowers
  */
 
-// These permits apply to `allPowers` in `behavior` below.
+/**
+ * These permits are expected to be the minimum powers required by the
+ * `coreProposalBehavior` function returned from `makeCoreProposalBehavior`.
+ * They are merged with all of the manifest getter's permits to produce the
+ * total permits needed by the resulting core proposal (such as might be---and
+ * generally are---written into a *-permit.json file).
+ * @see {@link ./writeCoreProposal.js}
+ */
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
   evaluateBundleCap: t,
@@ -25,7 +32,7 @@ export const permits = {
  *
  * @param {object} opts
  * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
- * @param {[string, ...unknown[]]} opts.getManifestCall
+ * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
@@ -34,7 +41,7 @@ export const permits = {
  */
 export const makeCoreProposalBehavior = ({
   manifestBundleRef,
-  getManifestCall,
+  getManifestCall: [manifestGetterName, ...manifestGetterArgs],
   overrideManifest,
   E,
   log = console.info,
@@ -42,24 +49,55 @@ export const makeCoreProposalBehavior = ({
 }) => {
   const { entries, fromEntries } = Object;
 
-  // deeplyFulfilled is a bit overkill for what we need.
+  /**
+   * Given an object whose properties may be promise-valued, return a promise
+   * for an analogous object in which each such value has been replaced with its
+   * fulfillment.
+   * This is a non-recursive form of endo `deeplyFulfilled`.
+   *
+   * @template T
+   * @param {{[K in keyof T]: (T[K] | Promise<T[K]>)}} obj
+   * @returns {Promise<T>}
+   */
   const shallowlyFulfilled = async obj => {
     if (!obj) {
       return obj;
     }
-    const ents = await Promise.all(
+    const awaitedEntries = await Promise.all(
       entries(obj).map(async ([key, valueP]) => {
         const value = await valueP;
         return [key, value];
       }),
     );
-    return fromEntries(ents);
+    return fromEntries(awaitedEntries);
   };
 
-  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} allPowers */
-  const behavior = async allPowers => {
-    // NOTE: If updating any of these names extracted from `allPowers`, you must
-    // change `permits` above to reflect their accessibility.
+  const makeRestoreRef = (vatAdminSvc, zoe) => {
+    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
+    const defaultRestoreRef = async bundleRef => {
+      // extract-proposal.js creates these records, and bundleName is
+      // the optional name under which the bundle was installed into
+      // config.bundles
+      const bundleIdP =
+        'bundleName' in bundleRef
+          ? E(vatAdminSvc).getBundleIDByName(bundleRef.bundleName)
+          : bundleRef.bundleID;
+      const bundleID = await bundleIdP;
+      const label = bundleID.slice(0, 8);
+      return E(zoe).installBundleID(bundleID, label);
+    };
+    return defaultRestoreRef;
+  };
+
+  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
+  const coreProposalBehavior = async powers => {
+    // NOTE: `powers` is expected to match or be a superset of the above `permits` export,
+    // which should therefore be kept in sync with this deconstruction code.
+    // HOWEVER, do note that this function is invoked with at least the *union* of powers
+    // required by individual moduleBehaviors declared by the manifest getter, which is
+    // necessary so it can use `runModuleBehaviors` to provide the appropriate subset to
+    // each one (see ./writeCoreProposal.js).
+    // Handle `powers` with the requisite care.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },
       evaluateBundleCap,
@@ -67,59 +105,53 @@ export const makeCoreProposalBehavior = ({
       modules: {
         utils: { runModuleBehaviors },
       },
-    } = allPowers;
-    const [exportedGetManifest, ...manifestArgs] = getManifestCall;
-
-    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
-    const defaultRestoreRef = async ref => {
-      // extract-proposal.js creates these records, and bundleName is
-      // the name under which the bundle was installed into
-      // config.bundles
-      const p =
-        'bundleName' in ref
-          ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
-          : ref.bundleID;
-      const bundleID = await p;
-      const label = bundleID.slice(0, 8);
-      return E(zoe).installBundleID(bundleID, label);
-    };
-    const restoreRef = overrideRestoreRef || defaultRestoreRef;
+    } = powers;
 
     // Get the on-chain installation containing the manifest and behaviors.
-    console.info('evaluateBundleCap', {
+    log('evaluateBundleCap', {
       manifestBundleRef,
-      exportedGetManifest,
+      manifestGetterName,
       vatAdminSvc,
     });
     let bcapP;
     if ('bundleName' in manifestBundleRef) {
       bcapP = E(vatAdminSvc).getNamedBundleCap(manifestBundleRef.bundleName);
-    } else {
+    } else if ('bundleID' in manifestBundleRef) {
       bcapP = E(vatAdminSvc).getBundleCap(manifestBundleRef.bundleID);
+    } else {
+      const keys = Reflect.ownKeys(manifestBundleRef).map(key =>
+        typeof key === 'string' ? JSON.stringify(key) : String(key),
+      );
+      const keysStr = `[${keys.join(', ')}]`;
+      throw Error(
+        `bundleRef must have own bundleName or bundleID, missing in ${keysStr}`,
+      );
     }
     const bundleCap = await bcapP;
 
-    const manifestNS = await evaluateBundleCap(bundleCap);
+    const proposalNS = await evaluateBundleCap(bundleCap);
 
-    console.error('execute', {
-      exportedGetManifest,
-      behaviors: Object.keys(manifestNS),
+    // Get the manifest and its metadata.
+    log('execute', {
+      manifestGetterName,
+      bundleExports: Object.keys(proposalNS),
     });
+    const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await manifestNS[exportedGetManifest](
+    } = await proposalNS[manifestGetterName](
       harden({ restoreRef }),
-      ...manifestArgs,
+      ...manifestGetterArgs,
     );
 
-    // Await references in the options or installations.
+    // Await promises in the returned options and installations records.
     const [options, installations] = await Promise.all(
       [rawOptions, rawInstallations].map(shallowlyFulfilled),
     );
 
-    // Publish the installations for behavior dependencies.
+    // Publish the installations for our dependencies.
     const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
     await Promise.all(
       entries(installations || {}).map(([key, value]) => {
@@ -128,10 +160,11 @@ export const makeCoreProposalBehavior = ({
       }),
     );
 
-    // Evaluate the manifest for our behaviors.
+    // Evaluate the manifest.
     return runModuleBehaviors({
-      allPowers,
-      behaviors: manifestNS,
+      // Remember that `powers` may be arbitrarily broad.
+      allPowers: powers,
+      behaviors: proposalNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
@@ -140,22 +173,21 @@ export const makeCoreProposalBehavior = ({
     });
   };
 
-  // Make the behavior the completion value.
-  return behavior;
+  return coreProposalBehavior;
 };
 
 export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
-  async allPowers => {
+  async powers => {
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
-        const subBehavior = makeCoreProposalBehavior({
+        const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
           overrideManifest,
           E,
         });
-        return subBehavior(allPowers);
+        return coreProposalBehavior(powers);
       }),
     );
   };

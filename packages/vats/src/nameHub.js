@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert, NonNullish } from '@agoric/assert';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';

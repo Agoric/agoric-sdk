@@ -1,3 +1,4 @@
+// @ts-check
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
@@ -5,6 +6,12 @@ import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { parseVatSlot } from './parseVatSlots.js';
+
+/**
+ * @template V
+ * @template {any[]} [A=unknown[]]
+ * @typedef {[watcher: import('./types.js').PromiseWatcher<V, A>, ...args: A]} PromiseWatcherTuple
+ */
 
 /**
  * @param {object} options
@@ -28,17 +35,28 @@ export function makeWatchedPromiseManager({
   const { makeScalarBigMapStore } = collectionManager;
   const { defineDurableKind } = vom;
 
-  // virtual Store (not durable) mapping vpid to Promise objects, to
-  // maintain the slotToVal registration until resolution. Without
-  // this, slotToVal would forget local Promises that aren't exported.
+  /**
+   * virtual Store (not durable) mapping vpid to Promise objects, to
+   * maintain the slotToVal registration until resolution. Without
+   * this, slotToVal would forget local Promises that aren't exported.
+   *
+   * @type {MapStore<string, Promise<unknown>>}
+   */
   let promiseRegistrations;
 
-  // watched promises by vpid: each entry is an array of watches on the
-  // corresponding vpid; each of these is in turn an array of a watcher object
-  // and the arguments associated with it by `watchPromise`.
+  /**
+   * watched promises by vpid: each entry is an array of watches on the
+   * corresponding vpid; each of these is in turn an array of a watcher object
+   * and the arguments associated with it by `watchPromise`.
+   * @type {MapStore<string, PromiseWatcherTuple<unknown>[]>}
+   */
   let watchedPromiseTable;
 
-  // defined promise watcher objects indexed by kindHandle
+  /**
+   * defined promise watcher objects indexed by kindHandle
+   *
+   * @type {MapStore<import('./vatDataTypes.js').DurableKindHandle, import('./types.js').PromiseWatcher<unknown>>}
+   */
   let promiseWatcherByKindTable;
 
   function preparePromiseWatcherTables() {
@@ -73,11 +91,17 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   *
-   * @param {Promise<unknown>} p
+   * @template T
+   * @param {Promise<T>} p
    * @param {string} vpid
+   * @returns {void}
    */
   function pseudoThen(p, vpid) {
+    /**
+     *
+     * @param {T} value
+     * @param {boolean} wasFulfilled
+     */
     function settle(value, wasFulfilled) {
       const watches = watchedPromiseTable.get(vpid);
       watchedPromiseTable.delete(vpid);
@@ -121,20 +145,28 @@ export function makeWatchedPromiseManager({
     }
   }
 
+  /**
+   * @template V
+   * @template {any[]} A]
+   * @param {import('./vatDataTypes.js').DurableKindHandle} kindHandle
+   * @param {(value: V, ...args: A) => void} fulfillHandler
+   * @param {(reason: any, ...args: A) => void} rejectHandler
+   * @returns {import('./types.js').PromiseWatcher<V, A>}
+   */
   function providePromiseWatcher(
     kindHandle,
-    fulfillHandler = x => x,
-    rejectHandler = x => {
-      throw x;
-    },
+    // @ts-expect-error xxx rest params in typedef
+    fulfillHandler = _value => {},
+    // @ts-expect-error xxx rest params in typedef
+    rejectHandler = _reason => {},
   ) {
     assert.typeof(fulfillHandler, 'function');
     assert.typeof(rejectHandler, 'function');
 
     const makeWatcher = defineDurableKind(kindHandle, initEmpty, {
-      // @ts-expect-error  TS is confused by the spread operator
+      /** @type {(context: unknown, res: V, ...args: A) => void} */
       onFulfilled: (_context, res, ...args) => fulfillHandler(res, ...args),
-      // @ts-expect-error
+      /** @type {(context: unknown, rej: unknown, ...args: A) => void} */
       onRejected: (_context, rej, ...args) => rejectHandler(rej, ...args),
     });
 
@@ -148,10 +180,7 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   *
-   * @param {Promise} p
-   * @param {{onFulfilled?: Function, onRejected?: Function}} watcher
-   * @param  {...any} args
+   * @type {<P extends Promise<any>, A extends any[]>(p: P, watcher: import('./types.js').PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
    */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a

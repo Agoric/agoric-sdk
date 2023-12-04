@@ -1,4 +1,3 @@
-// @ts-check
 // Ambient types
 import '@agoric/zoe/exported.js';
 import './src/core/types-ambient.js';

@@ -1,5 +1,4 @@
 /* global globalThis */
-// @ts-check
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
