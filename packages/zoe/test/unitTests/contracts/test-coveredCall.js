@@ -5,7 +5,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';
@@ -1106,8 +1106,10 @@ test('zoe - coveredCall - bad proposal shape', async t => {
   );
 
   // The payment must be returned.
-  const moolaPayout = await E(badSeat).getPayout('UnderlyingAsset');
-  const simoleanPayout = await E(badSeat).getPayout('StrikePrice');
-  t.deepEqual(await moolaKit.issuer.getAmountOf(moolaPayout), moola(3n));
-  t.is(simoleanPayout, /** @type {Payment<any>} */ (undefined));
+  const payouts = await deeplyFulfilled(E(badSeat).getPayouts());
+  t.deepEqual(payouts, payments);
+  t.deepEqual(
+    await moolaKit.issuer.getAmountOf(payouts.UnderlyingAsset),
+    moola(3n),
+  );
 });
