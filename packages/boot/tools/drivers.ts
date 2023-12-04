@@ -315,6 +315,7 @@ export const makeGovernanceDriver = async (
       await enactLatestProposal();
       await testKit.advanceTimeBy(1, 'minutes');
     },
+    ecMembers,
   };
 };
 

@@ -14,7 +14,11 @@ import { Fail } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.ts';
-import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
+import {
+  makeWalletFactoryDriver,
+  makeGovernanceDriver,
+} from '@agoric/boot/tools/drivers.ts';
+import { makeLiquidationTestKit } from '@agoric/boot/tools/liquidation.ts';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is
@@ -45,6 +49,7 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
  *    options: Record<string, string>,
  *    argv: string[],
  *    actors: Record<string, import('@agoric/boot/tools/drivers.ts').SmartWalletDriver>,
+ *    tools: Record<string, unknown>,
  *    title?: string,
  *    rounds?: number,
  *    config?: Record<string, unknown>,
@@ -67,6 +72,9 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
  *  // The label string for the benchmark currently being executed
  *  title: string,
  *
+ *  // Functions provided to do things
+ *  tools: Record<string, unknown>,
+ *
  *  // The number of rounds of this benchmark that will be executed
  *  rounds: number,
  *
@@ -79,7 +87,9 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
  *
  * @typedef {{
  *    setup?: (context: BenchmarkContext) => Promise<Record<string, unknown> | undefined>,
+ *    setupRound?: (context: BenchmarkContext, round: number) => Promise<void>,
  *    executeRound: (context: BenchmarkContext, round: number) => Promise<void>,
+ *    finishRound?: (context: BenchmarkContext, round: number) => Promise<void>,
  *    finish?: (context: BenchmarkContext) => Promise<void>,
  *    rounds?: number,
  * }} Benchmark
@@ -89,6 +99,22 @@ import { makeWalletFactoryDriver } from '@agoric/boot/tools/drivers.ts';
  *   // return a record, it will be included as the `config` property of the
  *   // benchmark context parameter of subsequent calls into the benchmark object.
  *   setup?: (context: BenchmarkContext) => Promise<Record<string, unknown> | undefined>,
+ *
+ *   // Optional setup method for an individual round.  This is executed as part
+ *   // of a benchmark round, just prior to calling the `executeRound` method,
+ *   // but does not count towards the timing or resource usage statistics for
+ *   // the round itself.  Use this when there is per-round initialization that
+ *   // is necessary to execute the round but which should not be considered
+ *   // part of the operation being measured.
+ *   setupRound?: (context: BenchmarkContext, round: number) => Promise<void>,
+ *
+ *   // Optional finish method for an individual round.  This is executed as
+ *   // part of a benchmark round, just after calling the `executeRound` method,
+ *   // but does not count towards the timing or resource usage statistics for
+ *   // the round itself.  Use this when there is per-round teardown that is
+ *   // necessary after executing the round but which should not be considered
+ *   // part of the operation being measured.
+ *   finishRound?: (context: BenchmarkContext, round: number) => Promise<void>,
  *
  *   // Run one round of the benchmark
  *   executeRound: (context: BenchmarkContext, round: number) => Promise<void>,
@@ -117,7 +143,7 @@ const argv = process.argv.slice(2);
 let commandLineRounds;
 let verbose = false;
 let help = false;
-let dumpFile;
+let outputFile;
 let slogFile;
 /** @type ManagerType */
 let defaultManagerType = 'xs-worker';
@@ -204,7 +230,7 @@ while (argv[0] && stillScanningArgs) {
       break;
     case '-o':
     case '--output':
-      dumpFile = argv.shift();
+      outputFile = argv.shift();
       break;
     case '--vat-type': {
       const type = argv.shift();
@@ -399,18 +425,6 @@ const organizeSetupStats = (rawStats, elapsedTime, cranks) => {
 };
 
 const printBenchmarkStats = stats => {
-  const w1 = 32;
-  const h1 = `${'Stat'.padEnd(w1)}`;
-  const d1 = `${''.padEnd(w1, '-')}`;
-
-  const w2 = 6;
-  const h2 = `${'Delta'.padStart(w2)}`;
-  const d2 = ` ${''.padStart(w2 - 1, '-')}`;
-
-  const w3 = 10;
-  const h3 = `${'PerRound'.padStart(w3)}`;
-  const d3 = ` ${''.padStart(w3 - 1, '-')}`;
-
   const cpr = pn(stats.cranksPerRound).trim();
   log(
     `${stats.cranks} cranks over ${stats.rounds} rounds (${cpr} cranks/round)`,
@@ -425,25 +439,64 @@ const printBenchmarkStats = stats => {
     // prettier-ignore
     `${stats.rounds} rounds in ${stats.elapsedTime}ns (${stats.timePerRound.toFixed(3)}/round})`,
   );
-  log(`${h1} ${h2} ${h3}`);
-  log(`${d1} ${d2} ${d3}`);
 
-  const data = stats.data;
-  for (const [key, entry] of Object.entries(data)) {
-    const col1 = `${key.padEnd(w1)}`;
-    const col2 = `${String(entry.delta).padStart(w2)}`;
-    const col3 = `${pn(entry.deltaPerRound).padStart(w3)}`;
+  const wc1 = 32;
+  const hc1 = `${'Counter'.padEnd(wc1)}`;
+  const dc1 = `${''.padEnd(wc1, '-')}`;
+
+  const wc2 = 6;
+  const hc2 = `${'Delta'.padStart(wc2)}`;
+  const dc2 = ` ${''.padStart(wc2 - 1, '-')}`;
+
+  const wc3 = 10;
+  const hc3 = `${'PerRound'.padStart(wc3)}`;
+  const dc3 = ` ${''.padStart(wc3 - 1, '-')}`;
+
+  log(``);
+  log(`${hc1} ${hc2} ${hc3}`);
+  log(`${dc1} ${dc2} ${dc3}`);
+  for (const [key, entry] of Object.entries(stats.counters)) {
+    const col1 = `${key.padEnd(wc1)}`;
+    const col2 = `${String(entry.delta).padStart(wc2)}`;
+    const col3 = `${pn(entry.deltaPerRound).padStart(wc3)}`;
     log(`${col1} ${col2} ${col3}`);
+  }
+
+  const wg1 = 32;
+  const hg1 = `${'Gauge'.padEnd(wg1)}`;
+  const dg1 = `${''.padEnd(wg1, '-')}`;
+
+  const wg2 = 6;
+  const hg2 = `${'Start'.padStart(wg2)}`;
+  const dg2 = ` ${''.padStart(wg2 - 1, '-')}`;
+
+  const wg3 = 6;
+  const hg3 = `${'End'.padStart(wg3)}`;
+  const dg3 = ` ${''.padStart(wg3 - 1, '-')}`;
+
+  const wg4 = 6;
+  const hg4 = `${'Delta'.padStart(wg4)}`;
+  const dg4 = ` ${''.padStart(wg4 - 1, '-')}`;
+
+  log(``);
+  log(`${hg1} ${hg2} ${hg3} ${hg4}`);
+  log(`${dg1} ${dg2} ${dg3} ${dg4}`);
+  for (const [key, entry] of Object.entries(stats.gauges)) {
+    const col1 = `${key.padEnd(wg1)}`;
+    const col2 = `${String(entry.start).padStart(wg2)}`;
+    const col3 = `${String(entry.end).padStart(wg3)}`;
+    const col4 = `${String(entry.end - entry.start).padStart(wg4)}`;
+    log(`${col1} ${col2} ${col3} ${col4}`);
   }
 };
 
-const organizeRoundsStats = (
-  rawBefore,
-  rawAfter,
-  elapsedTime,
-  cranks,
-  rounds,
-) => {
+const organizeRoundsStats = (rounds, perRoundStats) => {
+  let elapsedTime = 0;
+  let cranks = 0;
+  for (const { start, end } of perRoundStats) {
+    elapsedTime += Number(end.time - start.time);
+    cranks += end.cranks - start.cranks;
+  }
   const stats = {
     elapsedTime,
     cranks,
@@ -451,17 +504,31 @@ const organizeRoundsStats = (
     timePerCrank: cranks ? elapsedTime / cranks : 0,
     timePerRound: elapsedTime / rounds,
     cranksPerRound: cranks / rounds,
-    data: {},
+    perRoundStats,
+    counters: {},
+    gauges: {},
   };
 
-  // Note: the following assumes rawBefore and rawAfter have the same keys.
-  for (const [key, value] of Object.entries(rawBefore)) {
+  // Note: the following assumes stats records all have the same keys.
+  const first = perRoundStats[0].start.rawStats;
+  const last = perRoundStats[perRoundStats.length - 1].end.rawStats;
+  for (const key of Object.keys(first)) {
     if (isMainKey(key)) {
-      const delta = rawAfter[key] - value;
-      stats.data[key] = {
-        delta,
-        deltaPerRound: delta / rounds,
-      };
+      if (Object.hasOwn(first, `${key}Max`)) {
+        stats.gauges[key] = {
+          start: first[key],
+          end: last[key],
+        };
+      } else {
+        let delta = 0;
+        for (const { start, end } of perRoundStats) {
+          delta += Number(end.rawStats[key] - start.rawStats[key]);
+        }
+        stats.counters[key] = {
+          delta,
+          deltaPerRound: delta / rounds,
+        };
+      }
     }
   }
   return stats;
@@ -509,16 +576,26 @@ export const makeBenchmarkerator = async () => {
     agoricNamesRemotes,
   );
 
-  const actors = {
-    gov1: await walletFactoryDriver.provideSmartWallet(
+  const governanceDriver = await makeGovernanceDriver(
+    swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    [
       'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
-    ),
-    gov2: await walletFactoryDriver.provideSmartWallet(
       'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
-    ),
-    gov3: await walletFactoryDriver.provideSmartWallet(
       'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
-    ),
+    ],
+  );
+
+  const liquidationTestKit = await makeLiquidationTestKit({
+    swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    governanceDriver,
+    like: () => {},
+  });
+
+  const actors = {
     atom1: await walletFactoryDriver.provideSmartWallet(
       'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
     ),
@@ -529,6 +606,11 @@ export const makeBenchmarkerator = async () => {
     bob: await walletFactoryDriver.provideSmartWallet('agoric1bob'),
     carol: await walletFactoryDriver.provideSmartWallet('agoric1carol'),
   };
+  let idx = 1;
+  for (const gov of governanceDriver.ecMembers) {
+    actors[`gov${idx}`] = gov;
+    idx += 1;
+  }
 
   const setupEndTime = readClock();
   const setupCranks = getCrankNumber();
@@ -544,8 +626,13 @@ export const makeBenchmarkerator = async () => {
   printSetupStats(setupStats);
   log('-'.repeat(70));
   const benchmarkReport = { setup: setupStats };
+  const tools = {
+    ...swingsetTestKit,
+    ...liquidationTestKit,
+    walletFactoryDriver,
+  };
 
-  const context = harden({ options, argv, actors });
+  const context = { options, argv, actors, tools };
 
   /**
    * Add a benchmark to the set being run by an execution of the benchmark
@@ -561,8 +648,16 @@ export const makeBenchmarkerator = async () => {
       typeof benchmark.setup === 'function' ||
         Fail`benchmark setup must be a function`;
     }
+    if (benchmark.setupRound) {
+      typeof benchmark.setupRound === 'function' ||
+        Fail`benchmark setupRound must be a function`;
+    }
     benchmark.executeRound ||
       Fail`no executeRound function for benchmark ${title}`;
+    if (benchmark.finishRound) {
+      typeof benchmark.finishRound === 'function' ||
+        Fail`benchmark finishRound must be a function`;
+    }
     typeof benchmark.executeRound === 'function' ||
       Fail`benchmark executeRound must be a function`;
     if (benchmark.finish) {
@@ -594,25 +689,31 @@ export const makeBenchmarkerator = async () => {
       benchmarkContext.config = await (benchmark.setup
         ? benchmark.setup(benchmarkContext)
         : {});
-      const roundsStartRawStats = controller.getStats();
-      const roundsStartTime = readClock();
-      const cranksAtRoundsStart = getCrankNumber();
+      log(`Benchmark "${title}" setup complete`);
+      log(`------------------------------------------------------------------`);
+      const perRoundStats = [];
       for (let round = 1; round <= rounds; round += 1) {
+        if (benchmark.setupRound) {
+          await benchmark.setupRound(benchmarkContext, round);
+        }
+        const start = {
+          rawStats: controller.getStats(),
+          time: readClock(),
+          cranks: getCrankNumber(),
+        };
         log(`Benchmark "${title}" round ${round}:`);
         await benchmark.executeRound(benchmarkContext, round);
+        const end = {
+          rawStats: controller.getStats(),
+          time: readClock(),
+          cranks: getCrankNumber(),
+        };
+        perRoundStats.push({ start, end });
+        if (benchmark.finishRound) {
+          await benchmark.finishRound(benchmarkContext, round);
+        }
       }
-      const roundsEndRawStats = controller.getStats();
-      const roundsEndTime = readClock();
-      const cranksAtRoundsEnd = getCrankNumber();
-      const cranksDuringRounds = cranksAtRoundsEnd - cranksAtRoundsStart;
-      const roundsElapsedTime = Number(roundsEndTime - roundsStartTime);
-      const benchmarkStats = organizeRoundsStats(
-        roundsStartRawStats,
-        roundsEndRawStats,
-        roundsElapsedTime,
-        cranksDuringRounds,
-        rounds,
-      );
+      const benchmarkStats = organizeRoundsStats(rounds, perRoundStats);
       log('-'.repeat(70));
       log(`Benchmark "${title}" stats:`);
       printBenchmarkStats(benchmarkStats);
@@ -624,8 +725,15 @@ export const makeBenchmarkerator = async () => {
     }
     await eventLoopIteration();
     await shutdown();
-    if (dumpFile) {
-      fs.writeFileSync(dumpFile, JSON.stringify(benchmarkReport, null, 2));
+    if (outputFile) {
+      fs.writeFileSync(
+        outputFile,
+        JSON.stringify(
+          benchmarkReport,
+          (_key, value) => (typeof value === 'bigint' ? Number(value) : value),
+          2,
+        ),
+      );
     }
   };
 

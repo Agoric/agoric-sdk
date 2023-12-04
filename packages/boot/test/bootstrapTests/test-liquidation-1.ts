@@ -12,7 +12,7 @@ import {
   makeLiquidationTestContext,
   scale6,
   LiquidationSetup,
-} from './liquidation.ts';
+} from '../../tools/liquidation.ts';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 

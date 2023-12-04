@@ -84,6 +84,25 @@ optional except for `executeRound`:
   benchmark.  The `round` argument is the number of the benchmark round
   that this call to `executeRound` is being asked to execute (counting from 1).
 
+`setupRound: (context: BenchmarkContext, round: number) => Promise<void>`
+
+  A optional async method which is called to perform initializations required
+  for a single round of the benchmark.  It is called immediately before calling
+  `executeRound` but its execution time and any resources it consumes will not
+  be accounted against the stats for the round in question.  The `round`
+  argument is the number of the benchmark round that the corresponding call to
+  `executeRound` is being asked to execute (counting from 1).
+
+`finishRound: (context: BenchmarkContext, round: number) => Promise<void>`
+
+  A optional async method which is called to perform teardowns required by a
+  single round of the benchmark.  It is called immediately after calling
+  `executeRound` but its execution time and any resources it consumes will not
+  be accounted against the stats for the round in question (or the round that
+  follows).  The `round` argument is the number of the benchmark round that the
+  corresponding call to `executeRound` that just completed execution (counting
+  from 1).
+
 `finish?: (context: BenchmarkContext) => Promise<void>`
 
   An optional async method to perform any post-run teardown that you need to do.
