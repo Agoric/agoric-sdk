@@ -26,6 +26,12 @@ on:
   schedule:
     - cron: '17 6 * * *'
 
+permissions:
+  actions: read
+  checks: write
+  contents: read
+  statuses: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
