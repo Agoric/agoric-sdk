@@ -5,7 +5,7 @@ import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js'
 import { E, Far } from '@endo/far';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareWhen, prepareWhenableKit } from '@agoric/whenable';
+import { prepareWhenableModule } from '@agoric/whenable';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
@@ -27,8 +27,7 @@ test('network - ibc', async t => {
   );
   const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
   const zone = makeDurableZone(provideBaggage('network - ibc'));
-  const when = prepareWhen(zone);
-  const makeWhenableKit = prepareWhenableKit(zone);
+  const { when, makeWhenableKit } = prepareWhenableModule(zone);
 
   const { subscription, publication } = makeSubscriptionKit();
 
