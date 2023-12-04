@@ -450,9 +450,11 @@ export const makeCosmjsFollower = (
     // contain data.
     await null;
     for (;;) {
-      ({ value: cursorData, height: cursorBlockHeight } =
+      let thisHeight;
+      ({ value: cursorData, height: thisHeight } =
         await getDataAtHeight(cursorBlockHeight));
       if (cursorData.length !== 0) {
+        cursorBlockHeight = thisHeight;
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
           cursorData,
