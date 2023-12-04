@@ -1,6 +1,5 @@
 import test from 'ava';
 
-import { promises as fs } from 'fs';
 import { agd, agops, agoric } from '../cliHelper.js';
 import { ATOM_DENOM, CHAINID, GOV1ADDR } from '../constants.js';
 import { mintIST, openVault } from '../econHelpers.js';
@@ -45,10 +44,6 @@ test('Open Vaults with auto-provisioned wallet', async t => {
     '--giveCollateral',
     ATOMGiven,
   );
-  const offerPath = `/tmp/u13-vaults`; // await mkTemp('agops.XXX');
-  await fs.writeFile(offerPath, offer);
-  console.log('Vaults Offer written', offerPath);
-  //$ agd --chain-id=agoriclocal --from=$(agd keys add u13 --dry-run --recover --keyring-backend=test --output=json < ~/.agoric/u13user.key | jq -r .address) tx swingset wallet-action --allow-spend "$(cat /tmp/u13-vaults)" --keyring-backend=test --yes
   await agd.tx(
     'swingset',
     'wallet-action',
@@ -61,7 +56,6 @@ test('Open Vaults with auto-provisioned wallet', async t => {
   );
   await waitForBlock(2);
 
-  //$ agoric follow --verbose :published.wallet.$(agd keys add u13 --dry-run --recover --keyring-backend=test --output=json < ~/.agoric/u13user.key | jq -r .address)
   await agoric.follow('--first-value-only', `:published.wallet.${userAddress}`);
 
   const newISTBalance = await getISTBalance(userAddress);
