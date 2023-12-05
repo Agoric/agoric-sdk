@@ -68,7 +68,13 @@ export const makeLiquidationTestKit = async ({
   agoricNamesRemotes,
   walletFactoryDriver,
   governanceDriver,
-  like,
+  t,
+}: {
+  swingsetTestKit: SwingsetTestKit;
+  agoricNamesRemotes: AgoricNamesRemotes;
+  walletFactoryDriver: WalletFactoryDriver;
+  governanceDriver: GovernanceDriver;
+  t: Pick<ExecutionContext, 'like'>;
 }) => {
   const priceFeedDrivers = {} as Record<
     string,
@@ -91,7 +97,7 @@ export const makeLiquidationTestKit = async ({
     const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
 
-    await 0;
+    await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
       priceFeedDrivers[collateralBrandKey] = await makePriceFeedDriver(
         collateralBrandKey,
@@ -143,7 +149,7 @@ export const makeLiquidationTestKit = async ({
     );
 
     // confirm Relevant Governance Parameter Assumptions
-    like(readLatest(`${managerPath}.governance`), {
+    t.like(readLatest(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
         InterestRate: {
@@ -168,7 +174,7 @@ export const makeLiquidationTestKit = async ({
         },
       },
     });
-    like(readLatest('published.auction.governance'), {
+    t.like(readLatest('published.auction.governance'), {
       current: {
         AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
         ClockStep: {
@@ -201,7 +207,7 @@ export const makeLiquidationTestKit = async ({
       const notification = readLatest(
         `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
-      like(notification, partial);
+      t.like(notification, partial);
     },
   };
 
@@ -228,7 +234,7 @@ export const makeLiquidationTestKit = async ({
         wantMinted: setup.vaults[i].ist,
         giveCollateral: setup.vaults[i].atom,
       });
-      like(minter.getLatestUpdateRecord(), {
+      t.like(minter.getLatestUpdateRecord(), {
         updated: 'offerStatus',
         status: { id: offerId, numWantsSatisfied: 1 },
       });
@@ -276,7 +282,7 @@ export const makeLiquidationTestKit = async ({
         ...setup.bids[i],
         maxBuy,
       });
-      like(
+      t.like(
         swingsetTestKit.readLatest(`published.wallet.${buyerWalletAddress}`),
         {
           status: {
@@ -346,7 +352,7 @@ export const makeLiquidationTestContext = async t => {
     agoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
-    like: t.like,
+    t,
   });
   return {
     ...swingsetTestKit,

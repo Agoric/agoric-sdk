@@ -440,6 +440,8 @@ const printBenchmarkStats = stats => {
     `${stats.rounds} rounds in ${stats.elapsedTime}ns (${stats.timePerRound.toFixed(3)}/round})`,
   );
 
+  // There are lots of temp variables used here simply so things lay out cleanly
+  // in the source text.  Don't try to read too much meaning into the names themselves.
   const wc1 = 32;
   const hc1 = `${'Counter'.padEnd(wc1)}`;
   const dc1 = `${''.padEnd(wc1, '-')}`;
@@ -592,7 +594,8 @@ export const makeBenchmarkerator = async () => {
     agoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
-    like: () => {},
+    // @ts-expect-error missing 'skip' property of real Ava like
+    t: { like: () => {} }, // XXX noop
   });
 
   const actors = {
