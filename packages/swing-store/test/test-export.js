@@ -36,6 +36,8 @@ const exportTest = test.macro(async (t, mode) => {
   const ss1 = initSwingStore(dbDir, options);
   const ks = ss1.kernelStorage;
 
+  ss1.hostStorage.kvStore.set('host.h1', 'hostvalue1');
+
   // build a DB with four spans (one in an old incarnation, two
   // historical but current incarnation, only one inUse) and two
   // snapshots (only one inUSe)
@@ -87,6 +89,13 @@ const exportTest = test.macro(async (t, mode) => {
     artifactMode = 'debug';
   }
   const exporter = makeSwingStoreExporter(dbDir, { artifactMode });
+
+  // hostKV
+  t.is(exporter.getHostKV('host.h1'), 'hostvalue1');
+  t.is(exporter.getHostKV('host.hmissing'), undefined);
+  t.throws(() => exporter.getHostKV('nonhost'), {
+    message: 'getHostKV requires host keys',
+  });
 
   // exportData
   {

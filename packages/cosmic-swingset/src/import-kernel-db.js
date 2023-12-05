@@ -145,6 +145,9 @@ export const performStateSyncImport = async (
   // Represent the data in `exportDir` as a SwingSetExporter object.
   /** @type {import('@agoric/swing-store').SwingStoreExporter} */
   const exporter = harden({
+    getHostKV(_key) {
+      return undefined;
+    },
     async *getExportData() {
       log?.('importing export data');
       const exportData = createReadStream(
