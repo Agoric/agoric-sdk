@@ -9,8 +9,11 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
-import { makeSwingsetTestKit } from './supports.ts';
+import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.ts';
 import {
+  type GovernanceDriver,
+  type PriceFeedDriver,
+  type WalletFactoryDriver,
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
@@ -76,10 +79,7 @@ export const makeLiquidationTestKit = async ({
   governanceDriver: GovernanceDriver;
   t: Pick<ExecutionContext, 'like'>;
 }) => {
-  const priceFeedDrivers = {} as Record<
-    string,
-    Awaited<ReturnType<typeof makePriceFeedDriver>>
-  >;
+  const priceFeedDrivers = {} as Record<string, PriceFeedDriver>;
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
