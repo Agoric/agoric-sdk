@@ -76,6 +76,9 @@ export function buildData() {
  */
 export function makeExporter(exportData, artifacts) {
   return {
+    getHostKV(_key) {
+      return undefined;
+    },
     async *getExportData() {
       for (const [key, value] of exportData.entries()) {
         /** @type { import('../src/exporter.js').KVPair } */

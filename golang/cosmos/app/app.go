@@ -838,6 +838,12 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			return mvm, err
 		}
 
+		m := swingsetkeeper.NewMigrator(app.SwingSetKeeper)
+		err = m.MigrateParams(ctx)
+		if err != nil {
+			return mvm, err
+		}
+
 		return mvm, nil
 	}
 }

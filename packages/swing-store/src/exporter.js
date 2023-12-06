@@ -36,6 +36,11 @@ import { validateArtifactMode } from './internal.js';
  * the concurrent activity of other swingStore instances, the data representing
  * the commit point will stay consistent and available.
  *
+ * @property {(key: string) => string | undefined} getHostKV
+ *
+ * Retrieve a value from the "host" portion of the kvStore, just like
+ * hostStorage.hostKVStore.get() would do.
+ *
  * @property {() => AnyIterableIterator<KVPair>} getExportData
  *
  * Get a full copy of the first-stage export data (key-value pairs) from the
@@ -112,6 +117,33 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     assertComplete(internal, artifactMode);
   }
 
+  const sqlKVGet = db.prepare(`
+    SELECT value
+    FROM kvStore
+    WHERE key = ?
+  `);
+  sqlKVGet.pluck(true);
+
+  /**
+   * Obtain the value stored for a given host key. This is for the
+   * benefit of clients who need to briefly query the DB to ensure
+   * they are exporting the right thing, and need to avoid modifying
+   * anything (or creating a read-write DB lock) in the process.
+   *
+   * @param {string} key  The key whose value is sought.
+   *
+   * @returns {string | undefined} the (string) value for the given key, or
+   *    undefined if there is no such value.
+   *
+   * @throws if key is not a string, or the key is not in the host
+   * section
+   */
+  function getHostKV(key) {
+    typeof key === 'string' || Fail`key must be a string`;
+    getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
+    return sqlKVGet.get(key);
+  }
+
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
     FROM kvStore
@@ -173,6 +205,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   }
 
   return harden({
+    getHostKV,
     getExportData,
     getArtifactNames,
     getArtifact,
