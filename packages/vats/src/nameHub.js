@@ -37,7 +37,7 @@ export const NameHubIKit = harden({
     update: M.call(KeyShape, M.any())
       .optional(M.remotable('newAdminValue'))
       .returns(M.any()),
-    lookupAdmin: M.call(KeyShape).returns(M.promise()),
+    lookupAdmin: M.call().rest(M.arrayOf(KeyShape)).returns(M.promise()),
     delete: M.call(KeyShape).returns(M.any()),
     readonly: M.call().returns(M.remotable()),
   }),
