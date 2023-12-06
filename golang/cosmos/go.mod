@@ -158,7 +158,7 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.3
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.2
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.3
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
