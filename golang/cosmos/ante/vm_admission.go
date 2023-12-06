@@ -34,10 +34,7 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 	// Ask the controller if we are rejecting messages.
 	for _, msg := range tx.GetMsgs() {
 		if camsg, ok := msg.(vm.ControllerAdmissionMsg); ok {
-			newCtx, err := camsg.CheckAdmissibility(ctx, ad.data)
-			if err == nil {
-				ctx = newCtx
-			} else {
+			if err := camsg.CheckAdmissibility(ctx, ad.data); err != nil {
 				// Only let admission errors interrupt the transaction if we're not
 				// simulating, otherwise our gas estimation will be too low.
 				if !simulate {

@@ -88,10 +88,10 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 }
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
-func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) (sdk.Context, error) {
+func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	/*
@@ -101,7 +101,7 @@ func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{
 		}
 	*/
 
-	return ctx, chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages, 0)
+	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages, 0)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -161,18 +161,18 @@ func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
 }
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
-func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) (sdk.Context, error) {
+func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
 	if err != nil {
-		return ctx, err
+		return err
 	}
 
-	return ctx, chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action}, 0)
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action}, 0)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -233,18 +233,18 @@ func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalle
 }
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
-func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) (sdk.Context, error) {
+func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
 	if err != nil {
-		return ctx, err
+		return err
 	}
 
-	return ctx, chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction}, 0)
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction}, 0)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -310,14 +310,14 @@ func (msg MsgProvision) ValidateBasic() error {
 }
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
-func (msg MsgProvision) CheckAdmissibility(ctx sdk.Context, data interface{}) (sdk.Context, error) {
+func (msg MsgProvision) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	// TODO: consider disallowing a provision message for a smart wallet if the
 	// smart wallet is already provisioned or pending provisioning. However we
 	// currently do not track whether a smart wallet is pending provisioning.
 
 	// For explicitly provisioning, swingset will take care of charging,
 	// so we skip admission fees.
-	return ctx, nil
+	return nil
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -351,12 +351,12 @@ func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstal
 }
 
 // CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
-func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) (sdk.Context, error) {
+func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
-	return ctx, chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle}, msg.ExpectedUncompressedSize())
+	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle}, msg.ExpectedUncompressedSize())
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.

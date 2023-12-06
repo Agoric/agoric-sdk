@@ -13,11 +13,7 @@ type ControllerContext struct {
 
 type ControllerAdmissionMsg interface {
 	sdk.Msg
-	// CheckAdmissibility verifies that the message may be admitted into the
-	// block or mempool. If no error is returned, it must return a context to use
-	// while processing the message. If no updated context is necessary it should
-	// return the input context.
-	CheckAdmissibility(sdk.Context, interface{}) (sdk.Context, error)
+	CheckAdmissibility(sdk.Context, interface{}) error
 
 	// GetInboundMsgCount returns the number of Swingset messages which will
 	// be added to the inboundQueue.
