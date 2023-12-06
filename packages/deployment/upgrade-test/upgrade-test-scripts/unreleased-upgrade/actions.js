@@ -2,11 +2,25 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { voteLatestProposalAndWait } from '../commonUpgradeHelpers.js';
-import { CHAINID, GOV1ADDR, VALIDATORADDR } from '../constants.js';
+import { getUser, voteLatestProposalAndWait } from '../commonUpgradeHelpers.js';
+import { CHAINID, GOV1ADDR, HOME, VALIDATORADDR } from '../constants.js';
 import { agd, bundleSource } from '../cliHelper.js';
 
 const directoryName = dirname(fileURLToPath(import.meta.url));
+
+export const addUser = async user => {
+  const userKeyData = await agd.keys('add', user, '--keyring-backend=test');
+  await fs.writeFile(`${HOME}/.agoric/${user}.key`, userKeyData.mnemonic);
+
+  const userAddress = await getUser(user);
+  return userAddress;
+};
+
+export const getISTBalance = async (addr, denom = 'uist', unit = 1_000_000) => {
+  const coins = await agd.query('bank', 'balances', addr);
+  const coin = coins.balances.find(a => a.denom === denom);
+  return Number(coin.amount) / unit;
+};
 
 export const installBundles = async bundlesData => {
   const bundleIds = {};
