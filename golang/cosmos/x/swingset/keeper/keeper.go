@@ -158,17 +158,17 @@ func (k Keeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (boo
 }
 
 // GetSmartWalletState returns the provision state of the smart wallet for the account address
-func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) (types.SmartWalletState, error) {
+func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.SmartWalletState {
 	// walletStoragePath is path of `walletStorageNode` constructed in
 	// `provideSmartWallet` from packages/smart-wallet/src/walletFactory.js
 	walletStoragePath := StoragePathCustom + "." + WalletStoragePathSegment + "." + addr.String()
 
 	// TODO: implement a pending provision state
 	if k.vstorageKeeper.HasEntry(ctx, walletStoragePath) {
-		return types.SmartWalletStateProvisioned, nil
+		return types.SmartWalletStateProvisioned
 	}
 
-	return types.SmartWalletStateNone, nil
+	return types.SmartWalletStateNone
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {

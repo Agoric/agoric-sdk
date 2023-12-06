@@ -149,10 +149,8 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 	// We need to generate a provision action until the smart wallet has
 	// been fully provisioned by the controller. This is because a provision is
 	// not guaranteed to succeed (e.g. lack of provision pool funds)
-	walletState, err := keeper.GetSmartWalletState(ctx, owner)
-	if err != nil {
-		return err
-	} else if walletState == types.SmartWalletStateProvisioned {
+	walletState := keeper.GetSmartWalletState(ctx, owner)
+	if walletState == types.SmartWalletStateProvisioned {
 		return nil
 	}
 
@@ -170,7 +168,7 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 		AutoProvision: true,
 	}
 
-	err = keeper.routeAction(ctx, msg, action)
+	err := keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return err

@@ -165,7 +165,9 @@ func validateQueueMax(i interface{}) error {
 }
 
 // UpdateParams appends any missing params, configuring them to their defaults,
-// then returning the updated params or an error.
+// then returning the updated params or an error. Existing params are not
+// modified, regardless of their value, and they are not removed if they no
+// longer appear in the defaults.
 func UpdateParams(params Params) (Params, error) {
 	newBpu, err := appendMissingDefaultBeansPerUnit(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {

@@ -2,15 +2,15 @@ import test from 'ava';
 
 import { agd } from '../cliHelper.js';
 import { ATOM_DENOM, CHAINID, GOV1ADDR } from '../constants.js';
+import { addUser, getISTBalance } from './actions.js';
 import { mintIST, openVault } from '../econHelpers.js';
 import { waitForBlock } from '../commonUpgradeHelpers.js';
-import { addUser, getISTBalance } from './actions.js';
 
 test.before(async t => {
   await mintIST(GOV1ADDR, 12340000000, 10000, 2000);
 
   await waitForBlock(2);
-  const userAddress = await addUser('u13user');
+  const userAddress = await addUser('user-auto');
   await agd.tx(
     'bank',
     'send',
@@ -30,13 +30,13 @@ test.before(async t => {
 });
 
 test('Open Vaults with auto-provisioned wallet', async t => {
-  const { userAddress } = t.context;
+  const { userAddress } = /** @type {{userAddress: string}} */ (t.context);
   t.is(await getISTBalance(userAddress), 1);
 
   const ATOMGiven = 2000;
   const ISTWanted = 400;
-  // Decompose openVault because follower is broken for auto-provisioned wallets
   await openVault(userAddress, ISTWanted, ATOMGiven);
+
   await waitForBlock(2);
 
   const newISTBalance = await getISTBalance(userAddress);
