@@ -236,7 +236,6 @@ export function finishCosmosGenesis({ genesisJson, exportedGenesisJson }) {
 
   // Set the denomination for different modules.
   genesis.app_state.mint.params.mint_denom = MINT_DENOM;
-  genesis.app_state.crisis.constant_fee.denom = MINT_DENOM;
   genesis.app_state.gov.deposit_params.min_deposit = GOV_DEPOSIT_COINS;
   genesis.app_state.gov.voting_params.voting_period = GOV_VOTING_PERIOD;
 
