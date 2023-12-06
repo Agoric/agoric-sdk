@@ -245,15 +245,6 @@
  */
 
 /**
- * @typedef {import('@agoric/time').Timestamp} Deadline
- */
-
-/**
- * @typedef {object} Timer
- * @property {(deadline: Deadline, wakerP: ERef<Waker>) => void} setWakeup
- */
-
-/**
  * @typedef {object} OnDemandExitRule
  * @property {null} onDemand
  */
@@ -265,7 +256,7 @@
 
 /**
  * @typedef {object} AfterDeadlineExitRule
- * @property {{timer:Timer, deadline:Deadline}} afterDeadline
+ * @property {{timer: import('@agoric/time').TimerService, deadline: import('@agoric/time').Timestamp}} afterDeadline
  */
 
 /**
