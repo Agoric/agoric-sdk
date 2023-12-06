@@ -13,10 +13,10 @@ BUILD = docker build --progress=plain $(BUILD_OPTS) \
 	-f Dockerfile upgrade-test-scripts
 
 propose-agoric-upgrade-13:
-	$(BUILD) --target propose-agoric-upgrade-13 -t $(REPOSITORY):propose-agoric-upgrade-13$(TAG_SUFFIX)
+	$(BUILD) --target propose-agoric-upgrade-13 -t $(REPOSITORY):propose-agoric-upgrade-13
 
 agoric-upgrade-13: propose-agoric-upgrade-13
-	$(BUILD) --target agoric-upgrade-13 -t $(REPOSITORY):agoric-upgrade-13$(TAG_SUFFIX)
+	$(BUILD) --target agoric-upgrade-13 -t $(REPOSITORY):agoric-upgrade-13
 
 # build main bootstrap
 build: $(TARGET)
