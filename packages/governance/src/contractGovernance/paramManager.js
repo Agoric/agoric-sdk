@@ -47,8 +47,8 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
- * @property {(name: string, value: import('@agoric/time/src/types').Timestamp) => ParamManagerBuilder} addTimestamp
- * @property {(name: string, value: import('@agoric/time/src/types').RelativeTime) => ParamManagerBuilder} addRelativeTime
+ * @property {(name: string, value: import('@agoric/time').Timestamp) => ParamManagerBuilder} addTimestamp
+ * @property {(name: string, value: import('@agoric/time').RelativeTime) => ParamManagerBuilder} addRelativeTime
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
  */
@@ -197,13 +197,13 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time/src/types').Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: import('@agoric/time').Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addTimestamp = (name, value, builder) => {
     buildCopyParam(name, value, assertTimestamp, ParamTypes.TIMESTAMP);
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time/src/types').RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: import('@agoric/time').RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRelativeTime = (name, value, builder) => {
     buildCopyParam(name, value, assertRelativeTime, ParamTypes.RELATIVE_TIME);
     return builder;

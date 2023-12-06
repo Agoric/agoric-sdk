@@ -1,6 +1,4 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference types="@agoric/time/src/types.d.ts" />
-
 import { Fail, q } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
@@ -53,7 +51,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * is a stub until we complete what is now in `fluxAggregatorKit.js`.
  *
  * @param {ZCF<{
- * timer: import('@agoric/time/src/types').TimerService,
+ * timer: import('@agoric/time').TimerService,
  * POLL_INTERVAL: bigint,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
@@ -127,7 +125,7 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: import('@agoric/time/src/types').Timestamp) => Promise<void>} [querier]
+   * @property {(timestamp: import('@agoric/time').Timestamp) => Promise<void>} [querier]
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
@@ -144,7 +142,7 @@ const start = async (zcf, privateArgs) => {
 
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
-  /** @type {import('@agoric/time/src/types').TimerWaker} */
+  /** @type {import('@agoric/time').TimerWaker} */
   const waker = Far('waker', {
     async wake(timestamp) {
       // Run all the queriers.
@@ -167,7 +165,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
-   * @param {import('@agoric/time/src/types').TimestampRecord} [param0.timestamp]
+   * @param {import('@agoric/time').TimestampRecord} [param0.timestamp]
    */
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
@@ -259,7 +257,7 @@ const start = async (zcf, privateArgs) => {
     );
 
   /**
-   * @param {import('@agoric/time/src/types').Timestamp} timestamp
+   * @param {import('@agoric/time').Timestamp} timestamp
    */
   const updateQuote = async timestamp => {
     timestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
@@ -593,11 +591,11 @@ const start = async (zcf, privateArgs) => {
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {import('@agoric/time/src/types').Timestamp} */
+      /** @type {import('@agoric/time').Timestamp} */
       let lastWakeTimestamp = 0n;
 
       /**
-       * @param {import('@agoric/time/src/types').Timestamp} timestamp
+       * @param {import('@agoric/time').Timestamp} timestamp
        */
       record.querier = async timestamp => {
         // Submit the query.

@@ -21,8 +21,8 @@ const makeVoterVat = async (log, vats, zoe) => {
 
 /**
  * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
- * @param {import('@agoric/time/src/types').Timestamp} closingTime
- * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time/src/types').TimerService }} tools
+ * @param {import('@agoric/time').Timestamp} closingTime
+ * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time').TimerService }} tools
  * @param {*} quorumRule
  */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {

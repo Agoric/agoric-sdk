@@ -396,7 +396,7 @@ test('concurrent flow 1', async t => {
     /**
      * @type {Record<
      *   string,
-     *   import('@agoric/time/src/types.js').TimestampRecord
+     *   import('@agoric/time').TimestampRecord
      * >}
      */
     const { nextDescendingStepTime, nextStartTime } = readLatest(

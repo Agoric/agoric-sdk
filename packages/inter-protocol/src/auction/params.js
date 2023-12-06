@@ -70,7 +70,7 @@ export const auctioneerParamTypes = harden({
  * @property {bigint} DiscountStep
  * @property {RelativeTime} AuctionStartDelay
  * @property {RelativeTime} PriceLockPeriod
- * @property {import('@agoric/time/src/types').TimerBrand} TimerBrand
+ * @property {import('@agoric/time').TimerBrand} TimerBrand
  */
 
 /** @param {AuctionParams} initial */
@@ -147,7 +147,7 @@ harden(makeAuctioneerParamManager);
 
 /**
  * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} caps
- * @param {ERef<Timer>} timer
+ * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {ERef<AssetReservePublicFacet>} reservePublicFacet
  * @param {AuctionParams} params

@@ -252,7 +252,7 @@ const COMPLETION = 20n * 60n;
  * is far enough away, else 5) run after endTime
  *
  * @param {import('../auction/scheduler.js').FullSchedule} schedules
- * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {() => void} thunk
  */
 const whenQuiescent = async (schedules, timer, thunk) => {

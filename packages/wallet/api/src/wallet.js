@@ -26,7 +26,7 @@ import './internal-types.js';
  * board: ERef<import('@agoric/vats').Board>,
  * cacheStorageNode: ERef<StorageNode>,
  * localTimerPollInterval?: bigint,
- * localTimerService?: import('@agoric/time/src/types').TimerService,
+ * localTimerService?: import('@agoric/time').TimerService,
  * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * timerDevice?: unknown,

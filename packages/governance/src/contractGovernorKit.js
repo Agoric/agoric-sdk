@@ -15,7 +15,7 @@ const trace = makeTracer('CGK', false);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- *   timer: import('@agoric/time/src/types').TimerService,
+ *   timer: import('@agoric/time').TimerService,
  *   zoe: ERef<ZoeService>,
  * }} powers
  */
