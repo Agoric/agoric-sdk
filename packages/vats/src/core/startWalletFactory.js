@@ -108,6 +108,9 @@ export const startWalletFactory = async (
   },
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
+  // The wallet path is read by the cosmos side to check provisioning
+  // See `WalletStoragePathSegment` and `GetSmartWalletState` in
+  // golang/cosmos/x/swingset/keeper/keeper.go
   const WALLET_STORAGE_PATH_SEGMENT = 'wallet';
   const POOL_STORAGE_PATH_SEGMENT = 'provisionPool';
   const OLD_WALLET_STORAGE_PATH = 'published.wallet';
