@@ -38,6 +38,12 @@ const (
 )
 
 const (
+	// WalletStoragePathSegment matches the value of WALLET_STORAGE_PATH_SEGMENT
+	// packages/vats/src/core/startWalletFactory.js
+	WalletStoragePathSegment = "wallet"
+)
+
+const (
 	stateKey            = "state"
 	swingStoreKeyPrefix = "swingStore."
 )
@@ -149,6 +155,20 @@ func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) erro
 func (k Keeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
 	path := StoragePathHighPrioritySenders + "." + addr.String()
 	return k.vstorageKeeper.HasEntry(ctx, path), nil
+}
+
+// GetSmartWalletState returns the provision state of the smart wallet for the account address
+func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.SmartWalletState {
+	// walletStoragePath is path of `walletStorageNode` constructed in
+	// `provideSmartWallet` from packages/smart-wallet/src/walletFactory.js
+	walletStoragePath := StoragePathCustom + "." + WalletStoragePathSegment + "." + addr.String()
+
+	// TODO: implement a pending provision state
+	if k.vstorageKeeper.HasEntry(ctx, walletStoragePath) {
+		return types.SmartWalletStateProvisioned
+	}
+
+	return types.SmartWalletStateNone
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
@@ -312,6 +332,25 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	// Record the new owing value, whether we have debited immediately or not
 	// (i.e. there is more owing than before, but not enough to debit).
 	k.SetBeansOwing(ctx, addr, remainderOwing)
+	return nil
+}
+
+// ChargeForSmartWallet charges the fee for provisioning a smart wallet.
+func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+	beansPerUnit := k.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
+	err := k.ChargeBeans(ctx, addr, beans)
+	if err != nil {
+		return err
+	}
+
+	// TODO: mark that a smart wallet provision is pending. However in that case,
+	// auto-provisioning should still be performed (but without fees being charged),
+	// until the controller actually provisions the smart wallet (the operation may
+	// transiently fail, requiring retries until success).
+	// However the provisioning code is not currently idempotent, and has side
+	// effects when the smart wallet is already provisioned.
+
 	return nil
 }
 

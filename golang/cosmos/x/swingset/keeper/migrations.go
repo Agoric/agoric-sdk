@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	v32 "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/legacy/v32"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -17,8 +17,13 @@ func NewMigrator(keeper Keeper) Migrator {
 
 // Migrate1to2 migrates from version 1 to 2.
 func (m Migrator) Migrate1to2(ctx sdk.Context) error {
+	return m.MigrateParams(ctx)
+}
+
+// MigrateParams migrates params by setting new params to their default value
+func (m Migrator) MigrateParams(ctx sdk.Context) error {
 	params := m.keeper.GetParams(ctx)
-	newParams, err := v32.UpdateParams(params)
+	newParams, err := types.UpdateParams(params)
 	if err != nil {
 		return err
 	}
