@@ -106,6 +106,9 @@ test('b0 import', async t => {
   const idA = makeB0ID(b0A);
   const nameA = `bundle.${idA}`;
   const exporter = {
+    getHostKV(_key) {
+      return undefined;
+    },
     async *getExportData() {
       yield /** @type {const} */ ([nameA, idA]);
     },
@@ -134,6 +137,9 @@ test('b0 bad import', async t => {
   const idA = makeB0ID(b0A);
   const nameA = `bundle.${idA}`;
   const exporter = {
+    getHostKV(_key) {
+      return undefined;
+    },
     async *getExportData() {
       yield /** @type {const} */ ([nameA, idA]);
     },
