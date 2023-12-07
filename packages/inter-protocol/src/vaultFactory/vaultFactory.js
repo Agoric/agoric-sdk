@@ -39,7 +39,7 @@ const trace = makeTracer('VF', true);
  *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
- *     timerService: import('@agoric/time/src/types').TimerService;
+ *     timerService: import('@agoric/time').TimerService;
  *   }
  * >} VaultFactoryZCF
  */

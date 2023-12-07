@@ -58,7 +58,7 @@ const start = zcf => {
    *
    * @param {AmountKeywordRecord} price
    * @param {AmountKeywordRecord} assets
-   * @param {Timer} timeAuthority
+   * @param {import('@agoric/time').TimerService} timeAuthority
    * @param {any} deadline
    * @returns {Promise<Payment>}
    */

@@ -131,7 +131,7 @@ export const vaultParamPattern = M.splitRecord(
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
  *   priceAuthority: ERef<PriceAuthority>;
- *   timer: ERef<import('@agoric/time/src/types').TimerService>;
+ *   timer: ERef<import('@agoric/time').TimerService>;
  *   reservePublicFacet: AssetReservePublicFacet;
  *   interestTiming: InterestTiming;
  *   shortfallInvitationAmount: Amount<'set'>;

@@ -20,7 +20,7 @@ import type {
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { TimerService } from '@agoric/time/src/types.js';
+import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
 import type { SwingsetTestKit } from './supports.ts';

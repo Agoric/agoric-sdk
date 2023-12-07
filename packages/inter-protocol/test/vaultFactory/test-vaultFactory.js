@@ -128,7 +128,7 @@ test.before(async t => {
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {NatValue[] | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} stableInitialLiquidity
  * @param {bigint} [startFrequency]

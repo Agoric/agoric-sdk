@@ -81,7 +81,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint
- * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller

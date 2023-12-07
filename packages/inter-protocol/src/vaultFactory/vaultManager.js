@@ -70,7 +70,7 @@ const { details: X, Fail, quote: q } = assert;
 const trace = makeTracer('VM');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
-/** @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime */
+/** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**

@@ -256,7 +256,7 @@ const checkFlow1 = async (
     {
       const { nextDescendingStepTime, nextStartTime } = readLatest(
         'published.auction.schedule',
-      ) as Record<string, import('@agoric/time/src/types.js').TimestampRecord>;
+      ) as Record<string, import('@agoric/time').TimestampRecord>;
       t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
     }
 

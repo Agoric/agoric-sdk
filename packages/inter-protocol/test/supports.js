@@ -55,7 +55,7 @@ harden(setUpZoeForTest);
 
 /**
  * @param {any} t
- * @param {import('@agoric/time/src/types').TimerService} [optTimer]
+ * @param {import('@agoric/time').TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
