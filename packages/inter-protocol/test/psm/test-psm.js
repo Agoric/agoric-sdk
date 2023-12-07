@@ -734,6 +734,7 @@ test('extra give wantMintedInvitation', async t => {
 const makeMockBankManager = t => {
   /** @type {BankManager} */
   const bankManager = Far('mock BankManager', {
+    __getInterfaceGuard__: () => undefined,
     getAssetSubscription: () => assert.fail('not impl'),
     getModuleAccountAddress: () => assert.fail('not impl'),
     getRewardDistributorDepositFacet: () =>
