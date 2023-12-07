@@ -54,6 +54,9 @@ function convert(orig) {
  */
 export function makeExporter(exportData, artifacts) {
   return {
+    getHostKV(_key) {
+      return undefined;
+    },
     async *getExportData() {
       for (const [key, value] of exportData.entries()) {
         /** @type { KVPair } */

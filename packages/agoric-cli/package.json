@@ -8,6 +8,10 @@
     "agoric": "src/entrypoint.js",
     "agops": "src/bin-agops.js"
   },
+  "exports": {
+    "./src/entrypoint.js": "./src/entrypoint.js",
+    "./src/helpers.js": "./src/helpers.js"
+  },
   "files": [
     "src",
     "exported.js"
