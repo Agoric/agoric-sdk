@@ -327,6 +327,10 @@ export async function makeSwingsetController(
       return kernel.shutdown();
     },
 
+    reapAllVats() {
+      kernel.reapAllVats();
+    },
+
     changeKernelOptions(options) {
       kernel.changeKernelOptions(options);
     },

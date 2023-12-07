@@ -155,7 +155,10 @@ export {};
  * @typedef {{
  *   bundle: Bundle
  * }} BundleRef
- * @typedef {(SourceSpec | BundleSpec | BundleRef ) & {
+ * @typedef {{
+ *   bundleName: string
+ * }} BundleName
+ * @typedef {(SourceSpec | BundleSpec | BundleRef | BundleName ) & {
  *   creationOptions?: Record<string, any>,
  *   parameters?: Record<string, any>,
  * }} SwingSetConfigProperties
