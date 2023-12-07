@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.2-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.2-u12.0...@agoric/swing-store@0.9.2-u13.0) (2023-12-07)
+
+
+### Features
+
+* add exporter.getHostKV() API ([16435d2](https://github.com/Agoric/agoric-sdk/commit/16435d20e9ede86916a54c7bae54ecfc59e4c950)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+
+
+
 ### [0.9.2-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.2-u11wf.0...@agoric/swing-store@0.9.2-u12.0) (2023-11-10)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zone",
-  "version": "0.2.3-u12.0",
+  "version": "0.2.3-u13.0",
   "description": "Allocation zone abstraction for objects on the heap, persistent stores, etc.",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -25,8 +25,8 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/store": "^0.9.3-u12.0",
-    "@agoric/vat-data": "^0.5.3-u12.0",
+    "@agoric/store": "^0.9.3-u13.0",
+    "@agoric/vat-data": "^0.5.3-u13.0",
     "@endo/far": "0.2.18"
   },
   "publishConfig": {

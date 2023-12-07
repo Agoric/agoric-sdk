@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet",
-  "version": "0.18.4-u12.0",
+  "version": "0.18.4-u13.0",
   "type": "module",
   "main": "index.js",
   "license": "Apache-2.0",

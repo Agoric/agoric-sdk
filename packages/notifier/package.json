@@ -1,6 +1,6 @@
 {
   "name": "@agoric/notifier",
-  "version": "0.6.3-u12.0",
+  "version": "0.6.3-u13.0",
   "description": "Notifier allows services to update clients about state changes using a stream of promises",
   "type": "module",
   "main": "src/index.js",
@@ -34,11 +34,11 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.1-u11wf.0",
-    "@agoric/internal": "^0.4.0-u12.0",
-    "@agoric/store": "^0.9.3-u12.0",
-    "@agoric/swing-store": "^0.9.2-u12.0",
-    "@agoric/swingset-vat": "^0.32.3-u12.0",
-    "@agoric/vat-data": "^0.5.3-u12.0",
+    "@agoric/internal": "^0.4.0-u13.0",
+    "@agoric/store": "^0.9.3-u13.0",
+    "@agoric/swing-store": "^0.9.2-u13.0",
+    "@agoric/swingset-vat": "^0.32.3-u13.0",
+    "@agoric/vat-data": "^0.5.3-u13.0",
     "@endo/far": "0.2.18",
     "@endo/marshal": "0.8.5",
     "@endo/promise-kit": "0.2.56"

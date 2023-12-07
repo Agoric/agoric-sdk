@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u12.0...@agoric/cosmic-swingset@0.42.0-u13.0) (2023-12-07)
+
+
+### Features
+
+* add exporter.getHostKV() API ([16435d2](https://github.com/Agoric/agoric-sdk/commit/16435d20e9ede86916a54c7bae54ecfc59e4c950)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+
+
+### Bug Fixes
+
+* export state-sync snapshot without a DB write-lock ([2d388c2](https://github.com/Agoric/agoric-sdk/commit/2d388c2d51425b9d98b79d54ea6a2de96da67042)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+
+
+
 ## [0.42.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u11wf.0...@agoric/cosmic-swingset@0.42.0-u12.0) (2023-11-10)
 
 
