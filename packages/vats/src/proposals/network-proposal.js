@@ -40,14 +40,14 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     });
     ps.push(
       E(vats.ibc)
-        .createInstance(callbacks)
-        .then(ibcHandler =>
+        .createHandlers(callbacks)
+        .then(({ protocolHandler, bridgeHandler }) =>
           E(dibcBridgeManager)
-            .initHandler(ibcHandler)
+            .initHandler(bridgeHandler)
             .then(() =>
               E(vats.network).registerProtocolHandler(
                 ['/ibc-port', '/ibc-hop'],
-                ibcHandler,
+                protocolHandler,
               ),
             ),
         ),
