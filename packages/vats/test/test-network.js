@@ -43,10 +43,11 @@ test('network - ibc', async t => {
     },
   });
 
-  const ibcHandler = await E(ibcVat).createInstance(callbacks);
+  const { protocolHandler, bridgeHandler } =
+    await E(ibcVat).createHandlers(callbacks);
   await E(networkVat).registerProtocolHandler(
     ['/ibc-port', '/ibc-hop'],
-    ibcHandler,
+    protocolHandler,
   );
 
   // Actually test the ibc port binding.
@@ -119,7 +120,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge({
+    await E(bridgeHandler).fromBridge({
       event: 'channelOpenAck',
       portID: 'port-1',
       channelID: 'channel-1',
@@ -148,7 +149,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge({
+    await E(bridgeHandler).fromBridge({
       event: 'acknowledgementPacket',
       packet: {
         data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
@@ -169,7 +170,7 @@ test('network - ibc', async t => {
   await testIBCOutbound();
 
   const testIBCInbound = async () => {
-    await E(ibcHandler).fromBridge({
+    await E(bridgeHandler).fromBridge({
       event: 'channelOpenTry',
       channelID: 'channel-2',
       portID: 'port-1',
@@ -180,7 +181,7 @@ test('network - ibc', async t => {
       counterpartyVersion: 'bazo',
     });
 
-    await E(ibcHandler).fromBridge({
+    await E(bridgeHandler).fromBridge({
       event: 'channelOpenConfirm',
       portID: 'port-1',
       channelID: 'channel-2',
@@ -197,7 +198,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge({
+    await E(bridgeHandler).fromBridge({
       event: 'receivePacket',
       packet: {
         data: 'aW5ib3VuZC1tc2c=',
