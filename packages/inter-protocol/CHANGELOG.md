@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.16.2-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u12.0...@agoric/inter-protocol@0.16.2-u13.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* **inter-protocol:** brands in CLI need not start with A-Z ([#8258](https://github.com/Agoric/agoric-sdk/issues/8258)) ([fd9a44d](https://github.com/Agoric/agoric-sdk/commit/fd9a44db84e2cb9c9c78f850be7dbb8911650d54))
+
+
+
 ### [0.16.2-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u11wf.0...@agoric/inter-protocol@0.16.2-u12.0) (2023-11-10)
 
 **Note:** Version bump only for package @agoric/inter-protocol

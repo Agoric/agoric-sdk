@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.3-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.3-u12.0...@agoric/casting@0.4.3-u13.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* **casting:** dont crash on bad capdata ([3f01369](https://github.com/Agoric/agoric-sdk/commit/3f0136994c0b4033c872f9593cabb19bab05f01c))
+* **casting:** properly follow an unpopulated state entry ([48296f7](https://github.com/Agoric/agoric-sdk/commit/48296f78f783e8e5ae1e5fbe92ae10e5e7880837))
+
+
+
 ### [0.4.3-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.3-u11wf.0...@agoric/casting@0.4.3-u12.0) (2023-11-10)
 
 **Note:** Version bump only for package @agoric/casting

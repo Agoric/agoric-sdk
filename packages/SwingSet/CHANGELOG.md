@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.3-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u12.0...@agoric/swingset-vat@0.32.3-u13.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* handle Node 18 breaking change ([#8600](https://github.com/Agoric/agoric-sdk/issues/8600)) ([2c64440](https://github.com/Agoric/agoric-sdk/commit/2c64440d5b5957076ad9ac7b9243de3b600c859f))
+
+
+
 ### [0.32.3-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u11wf.0...@agoric/swingset-vat@0.32.3-u12.0) (2023-11-10)
 
 

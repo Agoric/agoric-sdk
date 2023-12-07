@@ -2,18 +2,22 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { Offers } from '../src/clientSupport.js';
 import { withAmountUtils } from './supports.js';
-import { makeParseAmount, Offers } from '../src/clientSupport.js';
 
 const ist = withAmountUtils(makeIssuerKit('IST'));
 const atom = withAmountUtils(makeIssuerKit('ATOM'));
+const stAtom = withAmountUtils(makeIssuerKit('stATOM'));
 
 const brands = {
   IST: ist.brand,
   ATOM: atom.brand,
+  stATOM: stAtom.brand,
 };
 
-const agoricNames = /** @type {const} */ ({
+// XXX use @satisfies
+/** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */
+const agoricNames = /** @type {any} */ ({
   brand: brands,
   vbankAsset: {
     uist: {
@@ -32,6 +36,14 @@ const agoricNames = /** @type {const} */ ({
       issuerName: 'ATOM',
       proposedName: 'ATOM',
     },
+    'ibc/sttoyatom': {
+      denom: 'ibc/sttoyatom',
+      brand: /** @type {any} */ (stAtom.brand),
+      displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+      issuer: /** @type {any} */ ({}),
+      issuerName: 'stATOM',
+      proposedName: 'stATOM',
+    },
   },
 });
 
@@ -43,16 +55,14 @@ test('Offers.auction.Bid', async t => {
     { cliArg: -0.1, offerBidScaling: makeRatio(110n, ist.brand, 100n) },
   ];
 
-  const parseAmount = makeParseAmount(agoricNames);
   discounts.forEach(({ cliArg, offerBidScaling }) => {
     t.log('discount', cliArg * 100, '%');
     t.deepEqual(
-      Offers.auction.Bid(brands, {
+      Offers.auction.Bid(agoricNames, {
         offerId: 'foo1',
         give: '4.56IST',
         discount: cliArg,
         maxBuy: '10_000ATOM',
-        parseAmount,
       }),
       {
         id: 'foo1',
@@ -75,12 +85,11 @@ test('Offers.auction.Bid', async t => {
   const price = 7;
   const offerPrice = makeRatio(7n, ist.brand, 1n, atom.brand);
   t.deepEqual(
-    Offers.auction.Bid(brands, {
+    Offers.auction.Bid(agoricNames, {
       offerId: 'by-price2',
       give: '4.56IST',
       price,
       maxBuy: '10_000ATOM',
-      parseAmount,
     }),
     {
       id: 'by-price2',
@@ -98,13 +107,12 @@ test('Offers.auction.Bid', async t => {
   );
 
   t.deepEqual(
-    Offers.auction.Bid(brands, {
+    Offers.auction.Bid(agoricNames, {
       offerId: 'by-price2',
       maxBuy: '10_000ATOM',
       wantMinimum: '1.23ATOM',
       give: '4.56IST',
       price,
-      parseAmount,
     }),
     {
       id: 'by-price2',
@@ -125,15 +133,42 @@ test('Offers.auction.Bid', async t => {
     'optional want',
   );
 
+  const offerPrice2 = makeRatio(7n, ist.brand, 1n, stAtom.brand);
+  t.deepEqual(
+    Offers.auction.Bid(agoricNames, {
+      offerId: 'by-price3',
+      maxBuy: '10_000stATOM',
+      wantMinimum: '1.23stATOM',
+      give: '4.56IST',
+      price,
+    }),
+    {
+      id: 'by-price3',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['auctioneer'],
+        callPipe: [['makeBidInvitation', [stAtom.brand]]],
+      },
+      proposal: {
+        give: { Bid: ist.make(4_560_000n) },
+        want: { Collateral: stAtom.make(1_230_000n) },
+      },
+      offerArgs: {
+        offerPrice: offerPrice2,
+        maxBuy: stAtom.make(10_000_000_000n),
+      },
+    },
+    'lowercase brand',
+  );
+
   t.throws(
     () =>
       // @ts-expect-error error checking test
-      Offers.auction.Bid(brands, {
+      Offers.auction.Bid(agoricNames, {
         offerId: 'by-price2',
         wantMinimum: '1.23ATOM',
         give: '4.56IST',
         price,
-        parseAmount,
       }),
     { message: 'missing ["maxBuy"]' },
   );

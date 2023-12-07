@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u12.0...@agoric/cosmos@0.35.0-u13.0) (2023-12-07)
+
+
+### Features
+
+* **cosmos:** un-wire x/crisis ([#8582](https://github.com/Agoric/agoric-sdk/issues/8582)) ([19404a3](https://github.com/Agoric/agoric-sdk/commit/19404a3c5cd10d9c454f190b60cbf0aa715f605c))
+* **x/swingset:** auto-provision smart wallet ([5073800](https://github.com/Agoric/agoric-sdk/commit/5073800f87c92a194a21c9cc59ad1bb570a39b95))
+* **x/swingset:** refuse smart wallet messages if not provisioned ([50a5a55](https://github.com/Agoric/agoric-sdk/commit/50a5a557956562fc05b8c2defd99a0102a35153f))
+* pick up return-grants from latest cosmos-sdk ([975533e](https://github.com/Agoric/agoric-sdk/commit/975533e088f96c80cf8d6f6b7c5f45665e3495ba))
+* update ibc-go to v4, adapt packages and API ([6672e5c](https://github.com/Agoric/agoric-sdk/commit/6672e5cb780c8baa530ac59bff27d793e1ff8f50))
+
+
+### Bug Fixes
+
+* handle hang-on-halt behavior from agoric-labs/cosmos-sdk[#305](https://github.com/Agoric/agoric-sdk/issues/305) ([7ae9a70](https://github.com/Agoric/agoric-sdk/commit/7ae9a705478727d1d7ace7c665861cfee14b5f28))
+* update dependencies to fix tests ([9d750dd](https://github.com/Agoric/agoric-sdk/commit/9d750dd39993d380a5e889ea7faa4bb78c3257aa))
+
+
+### Reverts
+
+* Revert "fix: handle hang-on-halt behavior from agoric-labs/cosmos-sdk#305" ([3a37f5e](https://github.com/Agoric/agoric-sdk/commit/3a37f5e472405d1d3bee2075b47ecd3632ba4073)), closes [agoric-labs/cosmos-sdk#305](https://github.com/agoric-labs/cosmos-sdk/issues/305) [agoric-labs/cosmos-sdk#305](https://github.com/agoric-labs/cosmos-sdk/issues/305)
+
+
+
 ## [0.35.0-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u11wf.0...@agoric/cosmos@0.35.0-u12.0) (2023-11-10)
 
 

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.4-u12.0...@agoric/solo@0.10.4-u13.0) (2023-12-07)
+
+
+### Bug Fixes
+
+* **solo:** properly expose `/wallet/bridge.html` ([#8533](https://github.com/Agoric/agoric-sdk/issues/8533)) ([0095b0d](https://github.com/Agoric/agoric-sdk/commit/0095b0d8ef4cfd42e17b64f391c30eac8a5f018a))
+
+
+
 ### [0.10.4-u12.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.10.4-u11wf.0...@agoric/solo@0.10.4-u12.0) (2023-11-10)
 
 

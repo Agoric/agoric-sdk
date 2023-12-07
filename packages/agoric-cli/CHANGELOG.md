@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.2-u12.0...agoric@0.22.0-u13.0) (2023-12-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* restrict exports from 'agoric' package
+
+### Features
+
+* **cosmos:** un-wire x/crisis ([#8582](https://github.com/Agoric/agoric-sdk/issues/8582)) ([19404a3](https://github.com/Agoric/agoric-sdk/commit/19404a3c5cd10d9c454f190b60cbf0aa715f605c))
+
+
+### Bug Fixes
+
+* **agops:** fix continuing id lookup in oracle setPrice ([0ac9697](https://github.com/Agoric/agoric-sdk/commit/0ac969746c7337d45287fd040b636d27d296a062))
+* **agoric:** print errors while following ([deab7e4](https://github.com/Agoric/agoric-sdk/commit/deab7e4065fe5dd6cc1a3c5bf8c0db861cb7856b))
+* **casting:** dont crash on bad capdata ([3f01369](https://github.com/Agoric/agoric-sdk/commit/3f0136994c0b4033c872f9593cabb19bab05f01c))
+* **cli:** handle not found error in vstorage requests ([8111c43](https://github.com/Agoric/agoric-sdk/commit/8111c4344bcaa6e06085020813e2431cba9d1632))
+
+
+### Miscellaneous Chores
+
+* restrict exports from 'agoric' package ([63c1abb](https://github.com/Agoric/agoric-sdk/commit/63c1abbfcb0710bdd0a22382eb4a683216a6c453))
+
+
+
 ### [0.21.2-u12.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.2-u11wf.0...agoric@0.21.2-u12.0) (2023-11-10)
 
 **Note:** Version bump only for package agoric

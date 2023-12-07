@@ -330,11 +330,16 @@ export const makeCosmjsFollower = (
     blockHeight,
     currentBlockHeight,
   ) => {
-    // AWAIT
-    const value = await /** @type {T} */ (
-      unserializer ? E(unserializer).fromCapData(data) : data
-    );
-    return { value, blockHeight, currentBlockHeight };
+    await null;
+    try {
+      // AWAIT
+      const value = await /** @type {T} */ (
+        unserializer ? E(unserializer).fromCapData(data) : data
+      );
+      return { value, blockHeight, currentBlockHeight };
+    } catch (e) {
+      return { blockHeight, currentBlockHeight, error: e, value: undefined };
+    }
   };
 
   /**
@@ -442,10 +447,12 @@ export const makeCosmjsFollower = (
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
-      ({ value: cursorData, height: cursorBlockHeight } = await getDataAtHeight(
+      let thisHeight;
+      ({ value: cursorData, height: thisHeight } = await getDataAtHeight(
         cursorBlockHeight,
       ));
       if (cursorData.length !== 0) {
+        cursorBlockHeight = thisHeight;
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
           cursorData,

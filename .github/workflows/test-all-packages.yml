@@ -550,9 +550,6 @@ jobs:
   test-docker-build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      matrix:
-        bootstrap-version: ['test', 'main']
     steps:
       - name: free up additional worker space
         run: |
@@ -571,7 +568,7 @@ jobs:
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: cd packages/deployment && make docker-build-sdk
       - name: docker build upgrade test
-        run: cd packages/deployment/upgrade-test && docker build --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
+        run: cd packages/deployment/upgrade-test && docker build --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
       - name: docker run upgrade final stage
         run: docker run --env "DEST=0" docker-upgrade-test:latest
       - uses: ./.github/actions/post-test

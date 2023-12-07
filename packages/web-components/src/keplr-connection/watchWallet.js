@@ -69,7 +69,10 @@ export const watchWallet = async (leader, address, context, rpcs) => {
   const watchCurrent = async () => {
     let lastPaths;
     for await (const { value } of iterateLatest(currentFollower)) {
-      const { offerToPublicSubscriberPaths: currentPaths } = value;
+      const { offerToPublicSubscriberPaths: currentPaths } =
+        /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+          value
+        );
       // eslint-disable-next-line no-continue
       if (currentPaths === lastPaths) continue;
 

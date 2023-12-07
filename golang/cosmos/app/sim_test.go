@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	gaia "github.com/cosmos/gaia/v7/app"
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 
-	"github.com/cosmos/gaia/v7/app/helpers"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/app/helpers"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
@@ -76,8 +76,8 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
 }
 
-//// TODO: Make another test for the fuzzer itself, which just has noOp txs
-//// and doesn't depend on the application.
+// // TODO: Make another test for the fuzzer itself, which just has noOp txs
+// // and doesn't depend on the application.
 func TestAppStateDeterminism(t *testing.T) {
 	if !simapp.FlagEnabledValue {
 		t.Skip("skipping application simulation")
