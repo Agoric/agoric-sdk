@@ -101,12 +101,14 @@ export const prepareRoundsManagerKit = baggage =>
       contract: M.interface(
         'contract',
         {
-          authenticateQuote: M.call(M.any()).returns(M.any()),
-          makeCreateQuote: M.call().optional(M.any()).returns(M.any()),
-          eligibleForSpecificRound: M.call(M.any()).returns(M.boolean()),
-          getRoundData: M.call(M.any()).returns(M.promise()),
-          getRoundStatus: M.call(M.any()).returns(M.record()),
-          oracleRoundStateSuggestRound: M.call(M.any()).returns(M.record()),
+          authenticateQuote: M.call().rest(M.any()).returns(M.any()),
+          makeCreateQuote: M.call().rest(M.any()).returns(M.any()),
+          eligibleForSpecificRound: M.call().rest(M.any()).returns(M.boolean()),
+          getRoundData: M.call().rest(M.any()).returns(M.promise()),
+          getRoundStatus: M.call().rest(M.any()).returns(M.record()),
+          oracleRoundStateSuggestRound: M.call()
+            .rest(M.any())
+            .returns(M.record()),
         },
         // TODO(6571) stop sloppy
         { sloppy: true },
