@@ -4,6 +4,7 @@
   "description": "Timestamps, time math, timer service API definition",
   "type": "module",
   "main": "index.js",
+  "types": "index.js",
   "engines": {
     "node": ">=14.15.0"
   },
