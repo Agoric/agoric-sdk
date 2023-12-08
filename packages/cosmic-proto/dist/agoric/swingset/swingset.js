@@ -72,15 +72,15 @@ export const CoreEvalProposal = {
   },
 };
 function createBaseCoreEval() {
-  return { jsonPermits: '', jsCode: '' };
+  return { json_permits: '', js_code: '' };
 }
 export const CoreEval = {
   encode(message, writer = _m0.Writer.create()) {
-    if (message.jsonPermits !== '') {
-      writer.uint32(10).string(message.jsonPermits);
+    if (message.json_permits !== '') {
+      writer.uint32(10).string(message.json_permits);
     }
-    if (message.jsCode !== '') {
-      writer.uint32(18).string(message.jsCode);
+    if (message.js_code !== '') {
+      writer.uint32(18).string(message.js_code);
     }
     return writer;
   },
@@ -92,10 +92,10 @@ export const CoreEval = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.jsonPermits = reader.string();
+          message.json_permits = reader.string();
           break;
         case 2:
-          message.jsCode = reader.string();
+          message.js_code = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -106,48 +106,50 @@ export const CoreEval = {
   },
   fromJSON(object) {
     return {
-      jsonPermits: isSet(object.jsonPermits) ? String(object.jsonPermits) : '',
-      jsCode: isSet(object.jsCode) ? String(object.jsCode) : '',
+      json_permits: isSet(object.json_permits)
+        ? String(object.json_permits)
+        : '',
+      js_code: isSet(object.js_code) ? String(object.js_code) : '',
     };
   },
   toJSON(message) {
     const obj = {};
-    message.jsonPermits !== undefined &&
-      (obj.jsonPermits = message.jsonPermits);
-    message.jsCode !== undefined && (obj.jsCode = message.jsCode);
+    message.json_permits !== undefined &&
+      (obj.json_permits = message.json_permits);
+    message.js_code !== undefined && (obj.js_code = message.js_code);
     return obj;
   },
   fromPartial(object) {
     const message = createBaseCoreEval();
-    message.jsonPermits = object.jsonPermits ?? '';
-    message.jsCode = object.jsCode ?? '';
+    message.json_permits = object.json_permits ?? '';
+    message.js_code = object.js_code ?? '';
     return message;
   },
 };
 function createBaseParams() {
   return {
-    beansPerUnit: [],
-    feeUnitPrice: [],
-    bootstrapVatConfig: '',
-    powerFlagFees: [],
-    queueMax: [],
+    beans_per_unit: [],
+    fee_unit_price: [],
+    bootstrap_vat_config: '',
+    power_flag_fees: [],
+    queue_max: [],
   };
 }
 export const Params = {
   encode(message, writer = _m0.Writer.create()) {
-    for (const v of message.beansPerUnit) {
+    for (const v of message.beans_per_unit) {
       StringBeans.encode(v, writer.uint32(10).fork()).ldelim();
     }
-    for (const v of message.feeUnitPrice) {
+    for (const v of message.fee_unit_price) {
       Coin.encode(v, writer.uint32(18).fork()).ldelim();
     }
-    if (message.bootstrapVatConfig !== '') {
-      writer.uint32(26).string(message.bootstrapVatConfig);
+    if (message.bootstrap_vat_config !== '') {
+      writer.uint32(26).string(message.bootstrap_vat_config);
     }
-    for (const v of message.powerFlagFees) {
+    for (const v of message.power_flag_fees) {
       PowerFlagFee.encode(v, writer.uint32(34).fork()).ldelim();
     }
-    for (const v of message.queueMax) {
+    for (const v of message.queue_max) {
       QueueSize.encode(v, writer.uint32(42).fork()).ldelim();
     }
     return writer;
@@ -160,23 +162,23 @@ export const Params = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.beansPerUnit.push(
+          message.beans_per_unit.push(
             StringBeans.decode(reader, reader.uint32()),
           );
           break;
         case 2:
-          message.feeUnitPrice.push(Coin.decode(reader, reader.uint32()));
+          message.fee_unit_price.push(Coin.decode(reader, reader.uint32()));
           break;
         case 3:
-          message.bootstrapVatConfig = reader.string();
+          message.bootstrap_vat_config = reader.string();
           break;
         case 4:
-          message.powerFlagFees.push(
+          message.power_flag_fees.push(
             PowerFlagFee.decode(reader, reader.uint32()),
           );
           break;
         case 5:
-          message.queueMax.push(QueueSize.decode(reader, reader.uint32()));
+          message.queue_max.push(QueueSize.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -187,77 +189,77 @@ export const Params = {
   },
   fromJSON(object) {
     return {
-      beansPerUnit: Array.isArray(object?.beansPerUnit)
-        ? object.beansPerUnit.map(e => StringBeans.fromJSON(e))
+      beans_per_unit: Array.isArray(object?.beans_per_unit)
+        ? object.beans_per_unit.map(e => StringBeans.fromJSON(e))
         : [],
-      feeUnitPrice: Array.isArray(object?.feeUnitPrice)
-        ? object.feeUnitPrice.map(e => Coin.fromJSON(e))
+      fee_unit_price: Array.isArray(object?.fee_unit_price)
+        ? object.fee_unit_price.map(e => Coin.fromJSON(e))
         : [],
-      bootstrapVatConfig: isSet(object.bootstrapVatConfig)
-        ? String(object.bootstrapVatConfig)
+      bootstrap_vat_config: isSet(object.bootstrap_vat_config)
+        ? String(object.bootstrap_vat_config)
         : '',
-      powerFlagFees: Array.isArray(object?.powerFlagFees)
-        ? object.powerFlagFees.map(e => PowerFlagFee.fromJSON(e))
+      power_flag_fees: Array.isArray(object?.power_flag_fees)
+        ? object.power_flag_fees.map(e => PowerFlagFee.fromJSON(e))
         : [],
-      queueMax: Array.isArray(object?.queueMax)
-        ? object.queueMax.map(e => QueueSize.fromJSON(e))
+      queue_max: Array.isArray(object?.queue_max)
+        ? object.queue_max.map(e => QueueSize.fromJSON(e))
         : [],
     };
   },
   toJSON(message) {
     const obj = {};
-    if (message.beansPerUnit) {
-      obj.beansPerUnit = message.beansPerUnit.map(e =>
+    if (message.beans_per_unit) {
+      obj.beans_per_unit = message.beans_per_unit.map(e =>
         e ? StringBeans.toJSON(e) : undefined,
       );
     } else {
-      obj.beansPerUnit = [];
+      obj.beans_per_unit = [];
     }
-    if (message.feeUnitPrice) {
-      obj.feeUnitPrice = message.feeUnitPrice.map(e =>
+    if (message.fee_unit_price) {
+      obj.fee_unit_price = message.fee_unit_price.map(e =>
         e ? Coin.toJSON(e) : undefined,
       );
     } else {
-      obj.feeUnitPrice = [];
+      obj.fee_unit_price = [];
     }
-    message.bootstrapVatConfig !== undefined &&
-      (obj.bootstrapVatConfig = message.bootstrapVatConfig);
-    if (message.powerFlagFees) {
-      obj.powerFlagFees = message.powerFlagFees.map(e =>
+    message.bootstrap_vat_config !== undefined &&
+      (obj.bootstrap_vat_config = message.bootstrap_vat_config);
+    if (message.power_flag_fees) {
+      obj.power_flag_fees = message.power_flag_fees.map(e =>
         e ? PowerFlagFee.toJSON(e) : undefined,
       );
     } else {
-      obj.powerFlagFees = [];
+      obj.power_flag_fees = [];
     }
-    if (message.queueMax) {
-      obj.queueMax = message.queueMax.map(e =>
+    if (message.queue_max) {
+      obj.queue_max = message.queue_max.map(e =>
         e ? QueueSize.toJSON(e) : undefined,
       );
     } else {
-      obj.queueMax = [];
+      obj.queue_max = [];
     }
     return obj;
   },
   fromPartial(object) {
     const message = createBaseParams();
-    message.beansPerUnit =
-      object.beansPerUnit?.map(e => StringBeans.fromPartial(e)) || [];
-    message.feeUnitPrice =
-      object.feeUnitPrice?.map(e => Coin.fromPartial(e)) || [];
-    message.bootstrapVatConfig = object.bootstrapVatConfig ?? '';
-    message.powerFlagFees =
-      object.powerFlagFees?.map(e => PowerFlagFee.fromPartial(e)) || [];
-    message.queueMax =
-      object.queueMax?.map(e => QueueSize.fromPartial(e)) || [];
+    message.beans_per_unit =
+      object.beans_per_unit?.map(e => StringBeans.fromPartial(e)) || [];
+    message.fee_unit_price =
+      object.fee_unit_price?.map(e => Coin.fromPartial(e)) || [];
+    message.bootstrap_vat_config = object.bootstrap_vat_config ?? '';
+    message.power_flag_fees =
+      object.power_flag_fees?.map(e => PowerFlagFee.fromPartial(e)) || [];
+    message.queue_max =
+      object.queue_max?.map(e => QueueSize.fromPartial(e)) || [];
     return message;
   },
 };
 function createBaseState() {
-  return { queueAllowed: [] };
+  return { queue_allowed: [] };
 }
 export const State = {
   encode(message, writer = _m0.Writer.create()) {
-    for (const v of message.queueAllowed) {
+    for (const v of message.queue_allowed) {
       QueueSize.encode(v, writer.uint32(10).fork()).ldelim();
     }
     return writer;
@@ -270,7 +272,7 @@ export const State = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.queueAllowed.push(QueueSize.decode(reader, reader.uint32()));
+          message.queue_allowed.push(QueueSize.decode(reader, reader.uint32()));
           break;
         default:
           reader.skipType(tag & 7);
@@ -281,26 +283,26 @@ export const State = {
   },
   fromJSON(object) {
     return {
-      queueAllowed: Array.isArray(object?.queueAllowed)
-        ? object.queueAllowed.map(e => QueueSize.fromJSON(e))
+      queue_allowed: Array.isArray(object?.queue_allowed)
+        ? object.queue_allowed.map(e => QueueSize.fromJSON(e))
         : [],
     };
   },
   toJSON(message) {
     const obj = {};
-    if (message.queueAllowed) {
-      obj.queueAllowed = message.queueAllowed.map(e =>
+    if (message.queue_allowed) {
+      obj.queue_allowed = message.queue_allowed.map(e =>
         e ? QueueSize.toJSON(e) : undefined,
       );
     } else {
-      obj.queueAllowed = [];
+      obj.queue_allowed = [];
     }
     return obj;
   },
   fromPartial(object) {
     const message = createBaseState();
-    message.queueAllowed =
-      object.queueAllowed?.map(e => QueueSize.fromPartial(e)) || [];
+    message.queue_allowed =
+      object.queue_allowed?.map(e => QueueSize.fromPartial(e)) || [];
     return message;
   },
 };
@@ -357,12 +359,12 @@ export const StringBeans = {
   },
 };
 function createBasePowerFlagFee() {
-  return { powerFlag: '', fee: [] };
+  return { power_flag: '', fee: [] };
 }
 export const PowerFlagFee = {
   encode(message, writer = _m0.Writer.create()) {
-    if (message.powerFlag !== '') {
-      writer.uint32(10).string(message.powerFlag);
+    if (message.power_flag !== '') {
+      writer.uint32(10).string(message.power_flag);
     }
     for (const v of message.fee) {
       Coin.encode(v, writer.uint32(18).fork()).ldelim();
@@ -377,7 +379,7 @@ export const PowerFlagFee = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.powerFlag = reader.string();
+          message.power_flag = reader.string();
           break;
         case 2:
           message.fee.push(Coin.decode(reader, reader.uint32()));
@@ -391,7 +393,7 @@ export const PowerFlagFee = {
   },
   fromJSON(object) {
     return {
-      powerFlag: isSet(object.powerFlag) ? String(object.powerFlag) : '',
+      power_flag: isSet(object.power_flag) ? String(object.power_flag) : '',
       fee: Array.isArray(object?.fee)
         ? object.fee.map(e => Coin.fromJSON(e))
         : [],
@@ -399,7 +401,7 @@ export const PowerFlagFee = {
   },
   toJSON(message) {
     const obj = {};
-    message.powerFlag !== undefined && (obj.powerFlag = message.powerFlag);
+    message.power_flag !== undefined && (obj.power_flag = message.power_flag);
     if (message.fee) {
       obj.fee = message.fee.map(e => (e ? Coin.toJSON(e) : undefined));
     } else {
@@ -409,7 +411,7 @@ export const PowerFlagFee = {
   },
   fromPartial(object) {
     const message = createBasePowerFlagFee();
-    message.powerFlag = object.powerFlag ?? '';
+    message.power_flag = object.power_flag ?? '';
     message.fee = object.fee?.map(e => Coin.fromPartial(e)) || [];
     return message;
   },
@@ -467,7 +469,7 @@ export const QueueSize = {
   },
 };
 function createBaseEgress() {
-  return { nickname: '', peer: new Uint8Array(), powerFlags: [] };
+  return { nickname: '', peer: new Uint8Array(), power_flags: [] };
 }
 export const Egress = {
   encode(message, writer = _m0.Writer.create()) {
@@ -477,7 +479,7 @@ export const Egress = {
     if (message.peer.length !== 0) {
       writer.uint32(18).bytes(message.peer);
     }
-    for (const v of message.powerFlags) {
+    for (const v of message.power_flags) {
       writer.uint32(26).string(v);
     }
     return writer;
@@ -496,7 +498,7 @@ export const Egress = {
           message.peer = reader.bytes();
           break;
         case 3:
-          message.powerFlags.push(reader.string());
+          message.power_flags.push(reader.string());
           break;
         default:
           reader.skipType(tag & 7);
@@ -511,8 +513,8 @@ export const Egress = {
       peer: isSet(object.peer)
         ? bytesFromBase64(object.peer)
         : new Uint8Array(),
-      powerFlags: Array.isArray(object?.powerFlags)
-        ? object.powerFlags.map(e => String(e))
+      power_flags: Array.isArray(object?.power_flags)
+        ? object.power_flags.map(e => String(e))
         : [],
     };
   },
@@ -523,10 +525,10 @@ export const Egress = {
       (obj.peer = base64FromBytes(
         message.peer !== undefined ? message.peer : new Uint8Array(),
       ));
-    if (message.powerFlags) {
-      obj.powerFlags = message.powerFlags.map(e => e);
+    if (message.power_flags) {
+      obj.power_flags = message.power_flags.map(e => e);
     } else {
-      obj.powerFlags = [];
+      obj.power_flags = [];
     }
     return obj;
   },
@@ -534,14 +536,14 @@ export const Egress = {
     const message = createBaseEgress();
     message.nickname = object.nickname ?? '';
     message.peer = object.peer ?? new Uint8Array();
-    message.powerFlags = object.powerFlags?.map(e => e) || [];
+    message.power_flags = object.power_flags?.map(e => e) || [];
     return message;
   },
 };
-function createBaseExtensionSnapshotterArtifactPayload() {
+function createBaseSwingStoreArtifact() {
   return { name: '', data: new Uint8Array() };
 }
-export const ExtensionSnapshotterArtifactPayload = {
+export const SwingStoreArtifact = {
   encode(message, writer = _m0.Writer.create()) {
     if (message.name !== '') {
       writer.uint32(10).string(message.name);
@@ -554,7 +556,7 @@ export const ExtensionSnapshotterArtifactPayload = {
   decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExtensionSnapshotterArtifactPayload();
+    const message = createBaseSwingStoreArtifact();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -589,7 +591,7 @@ export const ExtensionSnapshotterArtifactPayload = {
     return obj;
   },
   fromPartial(object) {
-    const message = createBaseExtensionSnapshotterArtifactPayload();
+    const message = createBaseSwingStoreArtifact();
     message.name = object.name ?? '';
     message.data = object.data ?? new Uint8Array();
     return message;

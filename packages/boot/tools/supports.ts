@@ -24,6 +24,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 
 import type { ExecutionContext as AvaT } from 'ava';
+import type { CoreEval } from '@agoric/cosmic-proto/dist/agoric/swingset/swingset.js';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
@@ -172,7 +173,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
           loadAndRmPkgFile(permit),
           loadAndRmPkgFile(script),
         ]);
-        return { json_permits: permits, js_code: code };
+        return { json_permits: permits, js_code: code } as CoreEval;
       }),
     );
 
@@ -190,6 +191,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   return buildAndExtract;
 };
 harden(makeProposalExtractor);
+export type ProposalExtractor = ReturnType<typeof makeProposalExtractor>;
 
 export const matchRef = (
   t: AvaT,

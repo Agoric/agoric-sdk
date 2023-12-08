@@ -25,12 +25,12 @@ export interface CoreEval {
    * Grant these JSON-stringified core bootstrap permits to the jsCode, as the
    * `powers` endowment.
    */
-  jsonPermits: string;
+  json_permits: string;
   /**
    * Evaluate this JavaScript code in a Compartment endowed with `powers` as
    * well as some powerless helpers.
    */
-  jsCode: string;
+  js_code: string;
 }
 /** Params are the swingset configuration/governance parameters. */
 export interface Params {
@@ -45,27 +45,27 @@ export interface Params {
    * nodes must all serialize and deserialize the existing order without
    * permuting it.
    */
-  beansPerUnit: StringBeans[];
+  beans_per_unit: StringBeans[];
   /**
    * The price in Coins per the unit named "fee".  This value is used by
    * cosmic-swingset JS code to decide how many tokens to charge.
    *
    * cost = beans_used * fee_unit_price / beans_per_unit["fee"]
    */
-  feeUnitPrice: Coin[];
+  fee_unit_price: Coin[];
   /**
    * The SwingSet bootstrap vat configuration file.  Not usefully modifiable
    * via governance as it is only referenced by the chain's initial
    * construction.
    */
-  bootstrapVatConfig: string;
+  bootstrap_vat_config: string;
   /**
    * If the provision submitter doesn't hold a provisionpass, their requested
    * power flags are looked up in this fee menu (first match wins) and the sum
    * is charged.  If any power flag is not found in this menu, the request is
    * rejected.
    */
-  powerFlagFees: PowerFlagFee[];
+  power_flag_fees: PowerFlagFee[];
   /**
    * Maximum sizes for queues.
    * These values are used by SwingSet to compute how many messages should be
@@ -75,7 +75,7 @@ export interface Params {
    * nodes must all serialize and deserialize the existing order without
    * permuting it.
    */
-  queueMax: QueueSize[];
+  queue_max: QueueSize[];
 }
 /** The current state of the module. */
 export interface State {
@@ -83,7 +83,7 @@ export interface State {
    * The allowed number of items to add to queues, as determined by SwingSet.
    * Transactions which attempt to enqueue more should be rejected.
    */
-  queueAllowed: QueueSize[];
+  queue_allowed: QueueSize[];
 }
 /** Map element of a string key to a Nat bean count. */
 export interface StringBeans {
@@ -94,7 +94,7 @@ export interface StringBeans {
 }
 /** Map a provisioning power flag to its corresponding fee. */
 export interface PowerFlagFee {
-  powerFlag: string;
+  power_flag: string;
   fee: Coin[];
 }
 /** Map element of a string key to a size. */
@@ -109,10 +109,15 @@ export interface Egress {
   nickname: string;
   peer: Uint8Array;
   /** TODO: Remove these power flags as they are deprecated and have no effect. */
-  powerFlags: string[];
+  power_flags: string[];
 }
-/** The payload messages used by swingset state-sync */
-export interface ExtensionSnapshotterArtifactPayload {
+/**
+ * SwingStoreArtifact encodes an artifact of a swing-store export.
+ * Artifacts may be stored or transmitted in any order. Most handlers do
+ * maintain the artifact order from their original source as an effect of how
+ * they handle the artifacts.
+ */
+export interface SwingStoreArtifact {
   name: string;
   data: Uint8Array;
 }
@@ -127,8 +132,8 @@ export declare const CoreEvalProposal: {
       description?: string | undefined;
       evals?:
         | {
-            jsonPermits?: string | undefined;
-            jsCode?: string | undefined;
+            json_permits?: string | undefined;
+            js_code?: string | undefined;
           }[]
         | undefined;
     } & {
@@ -136,23 +141,23 @@ export declare const CoreEvalProposal: {
       description?: string | undefined;
       evals?:
         | ({
-            jsonPermits?: string | undefined;
-            jsCode?: string | undefined;
+            json_permits?: string | undefined;
+            js_code?: string | undefined;
           }[] &
             ({
-              jsonPermits?: string | undefined;
-              jsCode?: string | undefined;
+              json_permits?: string | undefined;
+              js_code?: string | undefined;
             } & {
-              jsonPermits?: string | undefined;
-              jsCode?: string | undefined;
+              json_permits?: string | undefined;
+              js_code?: string | undefined;
             } & {
               [K in Exclude<keyof I['evals'][number], keyof CoreEval>]: never;
             })[] & {
               [K_1 in Exclude<
                 keyof I['evals'],
                 keyof {
-                  jsonPermits?: string | undefined;
-                  jsCode?: string | undefined;
+                  json_permits?: string | undefined;
+                  js_code?: string | undefined;
                 }[]
               >]: never;
             })
@@ -169,11 +174,11 @@ export declare const CoreEval: {
   toJSON(message: CoreEval): unknown;
   fromPartial<
     I extends {
-      jsonPermits?: string | undefined;
-      jsCode?: string | undefined;
+      json_permits?: string | undefined;
+      js_code?: string | undefined;
     } & {
-      jsonPermits?: string | undefined;
-      jsCode?: string | undefined;
+      json_permits?: string | undefined;
+      js_code?: string | undefined;
     } & { [K in Exclude<keyof I, keyof CoreEval>]: never },
   >(
     object: I,
@@ -186,22 +191,22 @@ export declare const Params: {
   toJSON(message: Params): unknown;
   fromPartial<
     I extends {
-      beansPerUnit?:
+      beans_per_unit?:
         | {
             key?: string | undefined;
             beans?: string | undefined;
           }[]
         | undefined;
-      feeUnitPrice?:
+      fee_unit_price?:
         | {
             denom?: string | undefined;
             amount?: string | undefined;
           }[]
         | undefined;
-      bootstrapVatConfig?: string | undefined;
-      powerFlagFees?:
+      bootstrap_vat_config?: string | undefined;
+      power_flag_fees?:
         | {
-            powerFlag?: string | undefined;
+            power_flag?: string | undefined;
             fee?:
               | {
                   denom?: string | undefined;
@@ -210,14 +215,14 @@ export declare const Params: {
               | undefined;
           }[]
         | undefined;
-      queueMax?:
+      queue_max?:
         | {
             key?: string | undefined;
             size?: number | undefined;
           }[]
         | undefined;
     } & {
-      beansPerUnit?:
+      beans_per_unit?:
         | ({
             key?: string | undefined;
             beans?: string | undefined;
@@ -230,12 +235,12 @@ export declare const Params: {
               beans?: string | undefined;
             } & {
               [K in Exclude<
-                keyof I['beansPerUnit'][number],
+                keyof I['beans_per_unit'][number],
                 keyof StringBeans
               >]: never;
             })[] & {
               [K_1 in Exclude<
-                keyof I['beansPerUnit'],
+                keyof I['beans_per_unit'],
                 keyof {
                   key?: string | undefined;
                   beans?: string | undefined;
@@ -243,7 +248,7 @@ export declare const Params: {
               >]: never;
             })
         | undefined;
-      feeUnitPrice?:
+      fee_unit_price?:
         | ({
             denom?: string | undefined;
             amount?: string | undefined;
@@ -256,12 +261,12 @@ export declare const Params: {
               amount?: string | undefined;
             } & {
               [K_2 in Exclude<
-                keyof I['feeUnitPrice'][number],
+                keyof I['fee_unit_price'][number],
                 keyof Coin
               >]: never;
             })[] & {
               [K_3 in Exclude<
-                keyof I['feeUnitPrice'],
+                keyof I['fee_unit_price'],
                 keyof {
                   denom?: string | undefined;
                   amount?: string | undefined;
@@ -269,10 +274,10 @@ export declare const Params: {
               >]: never;
             })
         | undefined;
-      bootstrapVatConfig?: string | undefined;
-      powerFlagFees?:
+      bootstrap_vat_config?: string | undefined;
+      power_flag_fees?:
         | ({
-            powerFlag?: string | undefined;
+            power_flag?: string | undefined;
             fee?:
               | {
                   denom?: string | undefined;
@@ -281,7 +286,7 @@ export declare const Params: {
               | undefined;
           }[] &
             ({
-              powerFlag?: string | undefined;
+              power_flag?: string | undefined;
               fee?:
                 | {
                     denom?: string | undefined;
@@ -289,7 +294,7 @@ export declare const Params: {
                   }[]
                 | undefined;
             } & {
-              powerFlag?: string | undefined;
+              power_flag?: string | undefined;
               fee?:
                 | ({
                     denom?: string | undefined;
@@ -303,12 +308,12 @@ export declare const Params: {
                       amount?: string | undefined;
                     } & {
                       [K_4 in Exclude<
-                        keyof I['powerFlagFees'][number]['fee'][number],
+                        keyof I['power_flag_fees'][number]['fee'][number],
                         keyof Coin
                       >]: never;
                     })[] & {
                       [K_5 in Exclude<
-                        keyof I['powerFlagFees'][number]['fee'],
+                        keyof I['power_flag_fees'][number]['fee'],
                         keyof {
                           denom?: string | undefined;
                           amount?: string | undefined;
@@ -318,14 +323,14 @@ export declare const Params: {
                 | undefined;
             } & {
               [K_6 in Exclude<
-                keyof I['powerFlagFees'][number],
+                keyof I['power_flag_fees'][number],
                 keyof PowerFlagFee
               >]: never;
             })[] & {
               [K_7 in Exclude<
-                keyof I['powerFlagFees'],
+                keyof I['power_flag_fees'],
                 keyof {
-                  powerFlag?: string | undefined;
+                  power_flag?: string | undefined;
                   fee?:
                     | {
                         denom?: string | undefined;
@@ -336,7 +341,7 @@ export declare const Params: {
               >]: never;
             })
         | undefined;
-      queueMax?:
+      queue_max?:
         | ({
             key?: string | undefined;
             size?: number | undefined;
@@ -349,12 +354,12 @@ export declare const Params: {
               size?: number | undefined;
             } & {
               [K_8 in Exclude<
-                keyof I['queueMax'][number],
+                keyof I['queue_max'][number],
                 keyof QueueSize
               >]: never;
             })[] & {
               [K_9 in Exclude<
-                keyof I['queueMax'],
+                keyof I['queue_max'],
                 keyof {
                   key?: string | undefined;
                   size?: number | undefined;
@@ -374,14 +379,14 @@ export declare const State: {
   toJSON(message: State): unknown;
   fromPartial<
     I extends {
-      queueAllowed?:
+      queue_allowed?:
         | {
             key?: string | undefined;
             size?: number | undefined;
           }[]
         | undefined;
     } & {
-      queueAllowed?:
+      queue_allowed?:
         | ({
             key?: string | undefined;
             size?: number | undefined;
@@ -394,12 +399,12 @@ export declare const State: {
               size?: number | undefined;
             } & {
               [K in Exclude<
-                keyof I['queueAllowed'][number],
+                keyof I['queue_allowed'][number],
                 keyof QueueSize
               >]: never;
             })[] & {
               [K_1 in Exclude<
-                keyof I['queueAllowed'],
+                keyof I['queue_allowed'],
                 keyof {
                   key?: string | undefined;
                   size?: number | undefined;
@@ -407,7 +412,7 @@ export declare const State: {
               >]: never;
             })
         | undefined;
-    } & { [K_2 in Exclude<keyof I, 'queueAllowed'>]: never },
+    } & { [K_2 in Exclude<keyof I, 'queue_allowed'>]: never },
   >(
     object: I,
   ): State;
@@ -436,7 +441,7 @@ export declare const PowerFlagFee: {
   toJSON(message: PowerFlagFee): unknown;
   fromPartial<
     I extends {
-      powerFlag?: string | undefined;
+      power_flag?: string | undefined;
       fee?:
         | {
             denom?: string | undefined;
@@ -444,7 +449,7 @@ export declare const PowerFlagFee: {
           }[]
         | undefined;
     } & {
-      powerFlag?: string | undefined;
+      power_flag?: string | undefined;
       fee?:
         | ({
             denom?: string | undefined;
@@ -499,14 +504,14 @@ export declare const Egress: {
     I extends {
       nickname?: string | undefined;
       peer?: Uint8Array | undefined;
-      powerFlags?: string[] | undefined;
+      power_flags?: string[] | undefined;
     } & {
       nickname?: string | undefined;
       peer?: Uint8Array | undefined;
-      powerFlags?:
+      power_flags?:
         | (string[] &
             string[] & {
-              [K in Exclude<keyof I['powerFlags'], keyof string[]>]: never;
+              [K in Exclude<keyof I['power_flags'], keyof string[]>]: never;
             })
         | undefined;
     } & { [K_1 in Exclude<keyof I, keyof Egress>]: never },
@@ -514,17 +519,11 @@ export declare const Egress: {
     object: I,
   ): Egress;
 };
-export declare const ExtensionSnapshotterArtifactPayload: {
-  encode(
-    message: ExtensionSnapshotterArtifactPayload,
-    writer?: _m0.Writer,
-  ): _m0.Writer;
-  decode(
-    input: _m0.Reader | Uint8Array,
-    length?: number,
-  ): ExtensionSnapshotterArtifactPayload;
-  fromJSON(object: any): ExtensionSnapshotterArtifactPayload;
-  toJSON(message: ExtensionSnapshotterArtifactPayload): unknown;
+export declare const SwingStoreArtifact: {
+  encode(message: SwingStoreArtifact, writer?: _m0.Writer): _m0.Writer;
+  decode(input: _m0.Reader | Uint8Array, length?: number): SwingStoreArtifact;
+  fromJSON(object: any): SwingStoreArtifact;
+  toJSON(message: SwingStoreArtifact): unknown;
   fromPartial<
     I extends {
       name?: string | undefined;
@@ -532,12 +531,10 @@ export declare const ExtensionSnapshotterArtifactPayload: {
     } & {
       name?: string | undefined;
       data?: Uint8Array | undefined;
-    } & {
-      [K in Exclude<keyof I, keyof ExtensionSnapshotterArtifactPayload>]: never;
-    },
+    } & { [K in Exclude<keyof I, keyof SwingStoreArtifact>]: never },
   >(
     object: I,
-  ): ExtensionSnapshotterArtifactPayload;
+  ): SwingStoreArtifact;
 };
 type Builtin =
   | Date

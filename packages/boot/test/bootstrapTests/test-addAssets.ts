@@ -3,18 +3,18 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { TimeMath } from '@agoric/time';
+import type { CoreEvalProposal } from '@agoric/cosmic-proto/dist/agoric/swingset/swingset.js';
 import {
   LiquidationTestContext,
   makeLiquidationTestContext,
 } from './liquidation.ts';
-import { makeProposalExtractor } from '../../tools/supports.ts';
 
 const test = anyTest as TestFn<
   LiquidationTestContext & {
     getCollateralProposal: (
       name: string,
       id: string,
-    ) => Awaited<ReturnType<ReturnType<typeof makeProposalExtractor>>>;
+    ) => Pick<CoreEvalProposal, 'evals'>;
   }
 >;
 

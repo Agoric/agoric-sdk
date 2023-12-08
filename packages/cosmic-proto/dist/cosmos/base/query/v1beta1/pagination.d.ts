@@ -34,7 +34,7 @@ export interface PageRequest {
      * count_total is only respected when offset is used. It is ignored when key
      * is set.
      */
-    countTotal: boolean;
+    count_total: boolean;
     /** reverse is set to true if results are to be returned in the descending order. */
     reverse: boolean;
 }
@@ -52,7 +52,7 @@ export interface PageResponse {
      * next_key is the key to be passed to PageRequest.key to
      * query the next page most efficiently
      */
-    nextKey: Uint8Array;
+    next_key: Uint8Array;
     /**
      * total is total number of results available if PageRequest.count_total
      * was set, its value is undefined otherwise
@@ -68,7 +68,7 @@ export declare const PageRequest: {
         key?: Uint8Array | undefined;
         offset?: string | number | Long | undefined;
         limit?: string | number | Long | undefined;
-        countTotal?: boolean | undefined;
+        count_total?: boolean | undefined;
         reverse?: boolean | undefined;
     } & {
         key?: Uint8Array | undefined;
@@ -216,7 +216,7 @@ export declare const PageRequest: {
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
         } & { [K_1 in Exclude<keyof I["limit"], keyof Long>]: never; }) | undefined;
-        countTotal?: boolean | undefined;
+        count_total?: boolean | undefined;
         reverse?: boolean | undefined;
     } & { [K_2 in Exclude<keyof I, keyof PageRequest>]: never; }>(object: I): PageRequest;
 };
@@ -226,10 +226,10 @@ export declare const PageResponse: {
     fromJSON(object: any): PageResponse;
     toJSON(message: PageResponse): unknown;
     fromPartial<I extends {
-        nextKey?: Uint8Array | undefined;
+        next_key?: Uint8Array | undefined;
         total?: string | number | Long | undefined;
     } & {
-        nextKey?: Uint8Array | undefined;
+        next_key?: Uint8Array | undefined;
         total?: string | number | (Long & {
             high: number;
             low: number;

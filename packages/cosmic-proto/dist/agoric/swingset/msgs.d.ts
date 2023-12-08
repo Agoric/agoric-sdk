@@ -30,7 +30,7 @@ export interface MsgWalletActionResponse {}
 export interface MsgWalletSpendAction {
   owner: Uint8Array;
   /** The action to perform, as JSON-stringified marshalled data. */
-  spendAction: string;
+  spend_action: string;
 }
 /** MsgWalletSpendActionResponse is an empty reply. */
 export interface MsgWalletSpendActionResponse {}
@@ -38,7 +38,7 @@ export interface MsgWalletSpendActionResponse {}
 export interface MsgProvision {
   nickname: string;
   address: Uint8Array;
-  powerFlags: string[];
+  power_flags: string[];
   submitter: Uint8Array;
 }
 /** MsgProvisionResponse is an empty reply. */
@@ -51,9 +51,9 @@ export interface MsgInstallBundle {
    * Either bundle or compressed_bundle will be set.
    * Default compression algorithm is gzip.
    */
-  compressedBundle: Uint8Array;
+  compressed_bundle: Uint8Array;
   /** Size in bytes of uncompression of compressed_bundle. */
-  uncompressedSize: Long;
+  uncompressed_size: Long;
 }
 /**
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
@@ -297,10 +297,10 @@ export declare const MsgWalletSpendAction: {
   fromPartial<
     I extends {
       owner?: Uint8Array | undefined;
-      spendAction?: string | undefined;
+      spend_action?: string | undefined;
     } & {
       owner?: Uint8Array | undefined;
-      spendAction?: string | undefined;
+      spend_action?: string | undefined;
     } & { [K in Exclude<keyof I, keyof MsgWalletSpendAction>]: never },
   >(
     object: I,
@@ -327,15 +327,15 @@ export declare const MsgProvision: {
     I extends {
       nickname?: string | undefined;
       address?: Uint8Array | undefined;
-      powerFlags?: string[] | undefined;
+      power_flags?: string[] | undefined;
       submitter?: Uint8Array | undefined;
     } & {
       nickname?: string | undefined;
       address?: Uint8Array | undefined;
-      powerFlags?:
+      power_flags?:
         | (string[] &
             string[] & {
-              [K in Exclude<keyof I['powerFlags'], keyof string[]>]: never;
+              [K in Exclude<keyof I['power_flags'], keyof string[]>]: never;
             })
         | undefined;
       submitter?: Uint8Array | undefined;
@@ -362,13 +362,13 @@ export declare const MsgInstallBundle: {
     I extends {
       bundle?: string | undefined;
       submitter?: Uint8Array | undefined;
-      compressedBundle?: Uint8Array | undefined;
-      uncompressedSize?: string | number | Long | undefined;
+      compressed_bundle?: Uint8Array | undefined;
+      uncompressed_size?: string | number | Long | undefined;
     } & {
       bundle?: string | undefined;
       submitter?: Uint8Array | undefined;
-      compressedBundle?: Uint8Array | undefined;
-      uncompressedSize?:
+      compressed_bundle?: Uint8Array | undefined;
+      uncompressed_size?:
         | string
         | number
         | (Long & {
@@ -443,7 +443,7 @@ export declare const MsgInstallBundle: {
             toUnsigned: () => Long;
             xor: (other: string | number | Long) => Long;
           } & {
-            [K in Exclude<keyof I['uncompressedSize'], keyof Long>]: never;
+            [K in Exclude<keyof I['uncompressed_size'], keyof Long>]: never;
           })
         | undefined;
     } & { [K_1 in Exclude<keyof I, keyof MsgInstallBundle>]: never },

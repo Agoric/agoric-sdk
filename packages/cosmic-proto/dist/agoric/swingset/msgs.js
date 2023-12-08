@@ -231,15 +231,15 @@ export const MsgWalletActionResponse = {
   },
 };
 function createBaseMsgWalletSpendAction() {
-  return { owner: new Uint8Array(), spendAction: '' };
+  return { owner: new Uint8Array(), spend_action: '' };
 }
 export const MsgWalletSpendAction = {
   encode(message, writer = _m0.Writer.create()) {
     if (message.owner.length !== 0) {
       writer.uint32(10).bytes(message.owner);
     }
-    if (message.spendAction !== '') {
-      writer.uint32(18).string(message.spendAction);
+    if (message.spend_action !== '') {
+      writer.uint32(18).string(message.spend_action);
     }
     return writer;
   },
@@ -254,7 +254,7 @@ export const MsgWalletSpendAction = {
           message.owner = reader.bytes();
           break;
         case 2:
-          message.spendAction = reader.string();
+          message.spend_action = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -268,7 +268,9 @@ export const MsgWalletSpendAction = {
       owner: isSet(object.owner)
         ? bytesFromBase64(object.owner)
         : new Uint8Array(),
-      spendAction: isSet(object.spendAction) ? String(object.spendAction) : '',
+      spend_action: isSet(object.spend_action)
+        ? String(object.spend_action)
+        : '',
     };
   },
   toJSON(message) {
@@ -277,14 +279,14 @@ export const MsgWalletSpendAction = {
       (obj.owner = base64FromBytes(
         message.owner !== undefined ? message.owner : new Uint8Array(),
       ));
-    message.spendAction !== undefined &&
-      (obj.spendAction = message.spendAction);
+    message.spend_action !== undefined &&
+      (obj.spend_action = message.spend_action);
     return obj;
   },
   fromPartial(object) {
     const message = createBaseMsgWalletSpendAction();
     message.owner = object.owner ?? new Uint8Array();
-    message.spendAction = object.spendAction ?? '';
+    message.spend_action = object.spend_action ?? '';
     return message;
   },
 };
@@ -325,7 +327,7 @@ function createBaseMsgProvision() {
   return {
     nickname: '',
     address: new Uint8Array(),
-    powerFlags: [],
+    power_flags: [],
     submitter: new Uint8Array(),
   };
 }
@@ -337,7 +339,7 @@ export const MsgProvision = {
     if (message.address.length !== 0) {
       writer.uint32(18).bytes(message.address);
     }
-    for (const v of message.powerFlags) {
+    for (const v of message.power_flags) {
       writer.uint32(26).string(v);
     }
     if (message.submitter.length !== 0) {
@@ -359,7 +361,7 @@ export const MsgProvision = {
           message.address = reader.bytes();
           break;
         case 3:
-          message.powerFlags.push(reader.string());
+          message.power_flags.push(reader.string());
           break;
         case 4:
           message.submitter = reader.bytes();
@@ -377,8 +379,8 @@ export const MsgProvision = {
       address: isSet(object.address)
         ? bytesFromBase64(object.address)
         : new Uint8Array(),
-      powerFlags: Array.isArray(object?.powerFlags)
-        ? object.powerFlags.map(e => String(e))
+      power_flags: Array.isArray(object?.power_flags)
+        ? object.power_flags.map(e => String(e))
         : [],
       submitter: isSet(object.submitter)
         ? bytesFromBase64(object.submitter)
@@ -392,10 +394,10 @@ export const MsgProvision = {
       (obj.address = base64FromBytes(
         message.address !== undefined ? message.address : new Uint8Array(),
       ));
-    if (message.powerFlags) {
-      obj.powerFlags = message.powerFlags.map(e => e);
+    if (message.power_flags) {
+      obj.power_flags = message.power_flags.map(e => e);
     } else {
-      obj.powerFlags = [];
+      obj.power_flags = [];
     }
     message.submitter !== undefined &&
       (obj.submitter = base64FromBytes(
@@ -407,7 +409,7 @@ export const MsgProvision = {
     const message = createBaseMsgProvision();
     message.nickname = object.nickname ?? '';
     message.address = object.address ?? new Uint8Array();
-    message.powerFlags = object.powerFlags?.map(e => e) || [];
+    message.power_flags = object.power_flags?.map(e => e) || [];
     message.submitter = object.submitter ?? new Uint8Array();
     return message;
   },
@@ -449,8 +451,8 @@ function createBaseMsgInstallBundle() {
   return {
     bundle: '',
     submitter: new Uint8Array(),
-    compressedBundle: new Uint8Array(),
-    uncompressedSize: Long.ZERO,
+    compressed_bundle: new Uint8Array(),
+    uncompressed_size: Long.ZERO,
   };
 }
 export const MsgInstallBundle = {
@@ -461,11 +463,11 @@ export const MsgInstallBundle = {
     if (message.submitter.length !== 0) {
       writer.uint32(18).bytes(message.submitter);
     }
-    if (message.compressedBundle.length !== 0) {
-      writer.uint32(26).bytes(message.compressedBundle);
+    if (message.compressed_bundle.length !== 0) {
+      writer.uint32(26).bytes(message.compressed_bundle);
     }
-    if (!message.uncompressedSize.isZero()) {
-      writer.uint32(32).int64(message.uncompressedSize);
+    if (!message.uncompressed_size.isZero()) {
+      writer.uint32(32).int64(message.uncompressed_size);
     }
     return writer;
   },
@@ -483,10 +485,10 @@ export const MsgInstallBundle = {
           message.submitter = reader.bytes();
           break;
         case 3:
-          message.compressedBundle = reader.bytes();
+          message.compressed_bundle = reader.bytes();
           break;
         case 4:
-          message.uncompressedSize = reader.int64();
+          message.uncompressed_size = reader.int64();
           break;
         default:
           reader.skipType(tag & 7);
@@ -501,11 +503,11 @@ export const MsgInstallBundle = {
       submitter: isSet(object.submitter)
         ? bytesFromBase64(object.submitter)
         : new Uint8Array(),
-      compressedBundle: isSet(object.compressedBundle)
-        ? bytesFromBase64(object.compressedBundle)
+      compressed_bundle: isSet(object.compressed_bundle)
+        ? bytesFromBase64(object.compressed_bundle)
         : new Uint8Array(),
-      uncompressedSize: isSet(object.uncompressedSize)
-        ? Long.fromValue(object.uncompressedSize)
+      uncompressed_size: isSet(object.uncompressed_size)
+        ? Long.fromValue(object.uncompressed_size)
         : Long.ZERO,
     };
   },
@@ -516,15 +518,15 @@ export const MsgInstallBundle = {
       (obj.submitter = base64FromBytes(
         message.submitter !== undefined ? message.submitter : new Uint8Array(),
       ));
-    message.compressedBundle !== undefined &&
-      (obj.compressedBundle = base64FromBytes(
-        message.compressedBundle !== undefined
-          ? message.compressedBundle
+    message.compressed_bundle !== undefined &&
+      (obj.compressed_bundle = base64FromBytes(
+        message.compressed_bundle !== undefined
+          ? message.compressed_bundle
           : new Uint8Array(),
       ));
-    message.uncompressedSize !== undefined &&
-      (obj.uncompressedSize = (
-        message.uncompressedSize || Long.ZERO
+    message.uncompressed_size !== undefined &&
+      (obj.uncompressed_size = (
+        message.uncompressed_size || Long.ZERO
       ).toString());
     return obj;
   },
@@ -532,10 +534,11 @@ export const MsgInstallBundle = {
     const message = createBaseMsgInstallBundle();
     message.bundle = object.bundle ?? '';
     message.submitter = object.submitter ?? new Uint8Array();
-    message.compressedBundle = object.compressedBundle ?? new Uint8Array();
-    message.uncompressedSize =
-      object.uncompressedSize !== undefined && object.uncompressedSize !== null
-        ? Long.fromValue(object.uncompressedSize)
+    message.compressed_bundle = object.compressed_bundle ?? new Uint8Array();
+    message.uncompressed_size =
+      object.uncompressed_size !== undefined &&
+      object.uncompressed_size !== null
+        ? Long.fromValue(object.uncompressed_size)
         : Long.ZERO;
     return message;
   },

@@ -54,16 +54,10 @@ export const bridgeCoreEval = async allPowers => {
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
+    /** @param {import('@agoric/cosmic-swingset/src/types.js').BridgeMessage} obj */
     async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
-          /**
-           * Type defined by
-           * `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto`
-           * CoreEval.
-           *
-           * @type {{ evals: { json_permits: string; js_code: string }[] }}
-           */
           const { evals } = obj;
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>

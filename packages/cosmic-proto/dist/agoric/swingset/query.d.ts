@@ -43,22 +43,22 @@ export declare const QueryParamsResponse: {
     I extends {
       params?:
         | {
-            beansPerUnit?:
+            beans_per_unit?:
               | {
                   key?: string | undefined;
                   beans?: string | undefined;
                 }[]
               | undefined;
-            feeUnitPrice?:
+            fee_unit_price?:
               | {
                   denom?: string | undefined;
                   amount?: string | undefined;
                 }[]
               | undefined;
-            bootstrapVatConfig?: string | undefined;
-            powerFlagFees?:
+            bootstrap_vat_config?: string | undefined;
+            power_flag_fees?:
               | {
-                  powerFlag?: string | undefined;
+                  power_flag?: string | undefined;
                   fee?:
                     | {
                         denom?: string | undefined;
@@ -67,7 +67,7 @@ export declare const QueryParamsResponse: {
                     | undefined;
                 }[]
               | undefined;
-            queueMax?:
+            queue_max?:
               | {
                   key?: string | undefined;
                   size?: number | undefined;
@@ -78,22 +78,22 @@ export declare const QueryParamsResponse: {
     } & {
       params?:
         | ({
-            beansPerUnit?:
+            beans_per_unit?:
               | {
                   key?: string | undefined;
                   beans?: string | undefined;
                 }[]
               | undefined;
-            feeUnitPrice?:
+            fee_unit_price?:
               | {
                   denom?: string | undefined;
                   amount?: string | undefined;
                 }[]
               | undefined;
-            bootstrapVatConfig?: string | undefined;
-            powerFlagFees?:
+            bootstrap_vat_config?: string | undefined;
+            power_flag_fees?:
               | {
-                  powerFlag?: string | undefined;
+                  power_flag?: string | undefined;
                   fee?:
                     | {
                         denom?: string | undefined;
@@ -102,14 +102,14 @@ export declare const QueryParamsResponse: {
                     | undefined;
                 }[]
               | undefined;
-            queueMax?:
+            queue_max?:
               | {
                   key?: string | undefined;
                   size?: number | undefined;
                 }[]
               | undefined;
           } & {
-            beansPerUnit?:
+            beans_per_unit?:
               | ({
                   key?: string | undefined;
                   beans?: string | undefined;
@@ -122,12 +122,12 @@ export declare const QueryParamsResponse: {
                     beans?: string | undefined;
                   } & {
                     [K in Exclude<
-                      keyof I['params']['beansPerUnit'][number],
+                      keyof I['params']['beans_per_unit'][number],
                       keyof import('./swingset.js').StringBeans
                     >]: never;
                   })[] & {
                     [K_1 in Exclude<
-                      keyof I['params']['beansPerUnit'],
+                      keyof I['params']['beans_per_unit'],
                       keyof {
                         key?: string | undefined;
                         beans?: string | undefined;
@@ -135,7 +135,7 @@ export declare const QueryParamsResponse: {
                     >]: never;
                   })
               | undefined;
-            feeUnitPrice?:
+            fee_unit_price?:
               | ({
                   denom?: string | undefined;
                   amount?: string | undefined;
@@ -148,12 +148,12 @@ export declare const QueryParamsResponse: {
                     amount?: string | undefined;
                   } & {
                     [K_2 in Exclude<
-                      keyof I['params']['feeUnitPrice'][number],
+                      keyof I['params']['fee_unit_price'][number],
                       keyof import('../../cosmos/base/v1beta1/coin.js').Coin
                     >]: never;
                   })[] & {
                     [K_3 in Exclude<
-                      keyof I['params']['feeUnitPrice'],
+                      keyof I['params']['fee_unit_price'],
                       keyof {
                         denom?: string | undefined;
                         amount?: string | undefined;
@@ -161,10 +161,10 @@ export declare const QueryParamsResponse: {
                     >]: never;
                   })
               | undefined;
-            bootstrapVatConfig?: string | undefined;
-            powerFlagFees?:
+            bootstrap_vat_config?: string | undefined;
+            power_flag_fees?:
               | ({
-                  powerFlag?: string | undefined;
+                  power_flag?: string | undefined;
                   fee?:
                     | {
                         denom?: string | undefined;
@@ -173,7 +173,7 @@ export declare const QueryParamsResponse: {
                     | undefined;
                 }[] &
                   ({
-                    powerFlag?: string | undefined;
+                    power_flag?: string | undefined;
                     fee?:
                       | {
                           denom?: string | undefined;
@@ -181,7 +181,7 @@ export declare const QueryParamsResponse: {
                         }[]
                       | undefined;
                   } & {
-                    powerFlag?: string | undefined;
+                    power_flag?: string | undefined;
                     fee?:
                       | ({
                           denom?: string | undefined;
@@ -195,12 +195,12 @@ export declare const QueryParamsResponse: {
                             amount?: string | undefined;
                           } & {
                             [K_4 in Exclude<
-                              keyof I['params']['powerFlagFees'][number]['fee'][number],
+                              keyof I['params']['power_flag_fees'][number]['fee'][number],
                               keyof import('../../cosmos/base/v1beta1/coin.js').Coin
                             >]: never;
                           })[] & {
                             [K_5 in Exclude<
-                              keyof I['params']['powerFlagFees'][number]['fee'],
+                              keyof I['params']['power_flag_fees'][number]['fee'],
                               keyof {
                                 denom?: string | undefined;
                                 amount?: string | undefined;
@@ -210,14 +210,14 @@ export declare const QueryParamsResponse: {
                       | undefined;
                   } & {
                     [K_6 in Exclude<
-                      keyof I['params']['powerFlagFees'][number],
+                      keyof I['params']['power_flag_fees'][number],
                       keyof import('./swingset.js').PowerFlagFee
                     >]: never;
                   })[] & {
                     [K_7 in Exclude<
-                      keyof I['params']['powerFlagFees'],
+                      keyof I['params']['power_flag_fees'],
                       keyof {
-                        powerFlag?: string | undefined;
+                        power_flag?: string | undefined;
                         fee?:
                           | {
                               denom?: string | undefined;
@@ -228,7 +228,7 @@ export declare const QueryParamsResponse: {
                     >]: never;
                   })
               | undefined;
-            queueMax?:
+            queue_max?:
               | ({
                   key?: string | undefined;
                   size?: number | undefined;
@@ -241,12 +241,12 @@ export declare const QueryParamsResponse: {
                     size?: number | undefined;
                   } & {
                     [K_8 in Exclude<
-                      keyof I['params']['queueMax'][number],
+                      keyof I['params']['queue_max'][number],
                       keyof import('./swingset.js').QueueSize
                     >]: never;
                   })[] & {
                     [K_9 in Exclude<
-                      keyof I['params']['queueMax'],
+                      keyof I['params']['queue_max'],
                       keyof {
                         key?: string | undefined;
                         size?: number | undefined;
@@ -287,7 +287,7 @@ export declare const QueryEgressResponse: {
         | {
             nickname?: string | undefined;
             peer?: Uint8Array | undefined;
-            powerFlags?: string[] | undefined;
+            power_flags?: string[] | undefined;
           }
         | undefined;
     } & {
@@ -295,15 +295,15 @@ export declare const QueryEgressResponse: {
         | ({
             nickname?: string | undefined;
             peer?: Uint8Array | undefined;
-            powerFlags?: string[] | undefined;
+            power_flags?: string[] | undefined;
           } & {
             nickname?: string | undefined;
             peer?: Uint8Array | undefined;
-            powerFlags?:
+            power_flags?:
               | (string[] &
                   string[] & {
                     [K in Exclude<
-                      keyof I['egress']['powerFlags'],
+                      keyof I['egress']['power_flags'],
                       keyof string[]
                     >]: never;
                   })
