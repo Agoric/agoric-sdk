@@ -17,6 +17,8 @@ import {
   publishDepositFacet,
 } from '../../../src/walletFactory.js';
 
+const UPGRADE_TO_INCARNATION_TWO = 'upgrade to incarnation two';
+
 /**
  * @type {typeof import('../../../src/walletFactory.js').prepare}
  */
@@ -78,6 +80,13 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  // An object known only to walletFactory and smartWallets. The WalletFactory
+  // only has the self facet for the pre-existing wallets that must be repaired.
+  // Self is too accessible, so use of the repair function requires use of a
+  // secret that clients won't have. This can be removed once the upgrade has
+  // taken place.
+  const upgradeToIncarnation2Key = harden({});
+
   const shared = harden({
     agoricNames,
     invitationBrand,
@@ -86,6 +95,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
+    secretWalletFactoryKey: upgradeToIncarnation2Key,
   });
 
   /**

@@ -158,6 +158,7 @@ const trace = makeTracer('SmrtWlt');
  *   invitationDisplayInfo: DisplayInfo,
  *   publicMarshaller: Marshaller,
  *   zoe: ERef<ZoeService>,
+ *   secretWalletFactoryKey: any,
  * }} SharedParams
  *
  * @typedef {ImmutableState & MutableState} State
@@ -250,6 +251,12 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationDisplayInfo: DisplayInfoShape,
       publicMarshaller: M.remotable('Marshaller'),
       zoe: M.eref(M.remotable('ZoeService')),
+
+      // known only to smartWallets and walletFactory, this allows the
+      // walletFactory to invoke functions on the self facet that no one else
+      // can. Used to protect the upgrade-to-incarnation 2 repair. This can be
+      // dropped once the repair has taken place.
+      secretWalletFactoryKey: M.any(),
     }),
   );
 
@@ -386,6 +393,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       getCurrentSubscriber: M.call().returns(SubscriberShape),
       getUpdatesSubscriber: M.call().returns(SubscriberShape),
       getPublicTopics: M.call().returns(TopicsRecordShape),
+      repairWalletForIncarnation2: M.call(M.any()).returns(),
     }),
   };
 
@@ -553,6 +561,14 @@ export const prepareSmartWallet = (baggage, shared) => {
           return purse;
         },
 
+        // see https://github.com/Agoric/agoric-sdk/issues/8445 and
+        // https://github.com/Agoric/agoric-sdk/issues/8286. As originally
+        // released, the smartWallet didn't durably monitor the promises for the
+        // outcomes of offers, and would have dropped them on upgrade of Zoe or
+        // the smartWallet itself. Using watchedPromises, (see offerWatcher.js)
+        // we've addressed the problem for new offers. The function will
+        // backfill the solution for offers that were outstanding before the
+        // transition to incarnation 2 of the smartWallet.
         repairUnwatchedSeats() {
           const { state, facets } = this;
           const { address, invitationPurse } = state;
@@ -587,6 +603,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             );
 
             void watchOfferOutcomes(watcher, seat);
+            trace(`Repaired seat ${seatId} for wallet ${address}`);
           }
         },
 
@@ -982,6 +999,21 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
           });
         },
+        // one-time use function. Remove this and repairUnwatchedSeats once the
+        // repair has taken place.
+        repairWalletForIncarnation2(key) {
+          const {
+            state: { address },
+            facets: { helper },
+          } = this;
+
+          if (key !== shared.secretWalletFactoryKey) {
+            return;
+          }
+
+          trace('Repairing wallet', address);
+          helper.repairUnwatchedSeats();
+        },
       },
     },
     {
@@ -990,7 +1022,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         const { helper } = facets;
 
         void helper.watchPurse(invitationPurse);
-        helper.repairUnwatchedSeats();
       },
     },
   );
