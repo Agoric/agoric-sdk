@@ -197,6 +197,8 @@ export const makePriceFeedDriver = async (
     },
   };
 };
+harden(makePriceFeedDriver);
+export type PriceFeedDriver = Awaited<ReturnType<typeof makePriceFeedDriver>>;
 
 export const makeGovernanceDriver = async (
   testKit: SwingsetTestKit,
@@ -315,8 +317,11 @@ export const makeGovernanceDriver = async (
       await enactLatestProposal();
       await testKit.advanceTimeBy(1, 'minutes');
     },
+    ecMembers,
   };
 };
+harden(makeGovernanceDriver);
+export type GovernanceDriver = Awaited<ReturnType<typeof makeGovernanceDriver>>;
 
 export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
   const { EV } = testKit.runUtils;
@@ -401,3 +406,5 @@ export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
     },
   };
 };
+harden(makeZoeDriver);
+export type ZoeDriver = Awaited<ReturnType<typeof makeZoeDriver>>;
