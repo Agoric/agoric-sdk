@@ -158,14 +158,6 @@ module.exports = {
       },
     },
     {
-      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
-      rules: {
-        // NOTE: This rule is enabled for the repository in general.  We turn it
-        // off for test code for now.
-        '@jessie.js/safe-await-separator': 'off',
-      },
-    },
-    {
       // Types files have no promises to lint and that linter chokes on the .d.ts twin.
       // Maybe due to https://github.com/typescript-eslint/typescript-eslint/issues/7435
       files: ['types*.js'],
