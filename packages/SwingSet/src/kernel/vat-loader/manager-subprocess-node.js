@@ -30,14 +30,15 @@ export function makeNodeSubprocessFactory(tools) {
       Fail`nodeOptions must be an array`;
 
     // Node worker subprocess adds `nameDisplayArg` as a dummy argument so that
-    // 'ps'shows which worker is for which vat
+    // 'ps' shows which worker is for which vat
     const nameDisplayArg = `${vatID}:${name !== undefined ? name : ''}`;
 
     const mk = makeManagerKit();
 
     // start the worker and establish a connection
-    const { fromChild, toChild, terminate, done } = startSubprocessWorker(
+    const { fromChild, toChild, done } = startSubprocessWorker(
       nameDisplayArg,
+      vatID,
       nodeOptions,
     );
 
@@ -107,7 +108,8 @@ export function makeNodeSubprocessFactory(tools) {
     sendToWorker(['setBundle', vatID, bundle, liveSlotsOptions]);
 
     function shutdown() {
-      terminate();
+      // terminate(); // XXX currently disabled since it breaks profiling; we should revisit if we develop a problem with worker vat processes refusing to exit when requested to do so
+      sendToWorker(['exit']);
       return E.when(done, _ => undefined);
     }
     const manager = mk.getManager(shutdown);

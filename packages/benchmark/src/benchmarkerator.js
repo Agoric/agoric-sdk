@@ -132,31 +132,45 @@ ${process.argv[0]} ${process.argv[1]} [FLAGS] [-- [ARGS...]]
 
 FLAGS may be:
   -r N
-  --rounds N       - execute N rounds of each benchmark by default
+  --rounds N        - execute N rounds of each benchmark
 
   -b PATT
-  --benchmark PATT - only execute benchmarks matching PATT (may be specified more than once)
+  --benchmark PATT  - only execute benchmarks matching PATT (may be specified more than once)
 
   -v
-  --verbose        - output verbose debugging messages it runs
+  --verbose         - output verbose debugging messages as it runs
 
-  -o NAME VAL
-  --option NAME VAL - set named option NAME to VAL
+  -c NAME VAL
+  --config NAME VAL - set named configuration option NAME to VAL
 
-  --vat-type TYPE  - use the specified vat manager type rather than the default 'xs-worker'
+  --vat-type TYPE   - use the specified vat manager type rather than the default 'xs-worker'
 
   -l
-  --local          - shorthand for '--vat-type local'
-                     (less realistic perf numbers but faster and easier to debug)
+  --local           - shorthand for '--vat-type local'
+                      (less realistic perf numbers but faster and easier to debug)
+
+  -n
+  --node            - shorthand for '--vat-type node-subprocess'
+                      (similar to --local, but enables per-vat profiling and debugging in v8)
+
+  -x
+  --xs              - shorthand for '--vat-type xs-worker'
+                      (the default; provided for completeness)
+
+  -p VATID
+  --profile VATID   - turn on CPU profile for vat VATID (may be repeated for multiple vats)
+
+  -d VATID
+  --debug VATID     - turn on debugging for vat VATID
 
   -s PATH
-  --slog PATH      - output a slog file into PATH
+  --slog PATH       - output a slog file into PATH
 
-  -d PATH
-  --dump PATH      - output JSON-formatted benchmark data into PATH
+  -o PATH
+  --output PATH     - output JSON-formatted benchmark data into PATH
 
   -h
-  --help           - output this helpful usage information and then exit
+  --help            - output this helpful usage information and then exit
 
 additional ARGS are passed to the benchmark in the context.argv array
 `);
@@ -171,6 +185,8 @@ const fail = (message, printUsage) => {
 };
 
 let stillScanningArgs = true;
+const profileVats = [];
+const debugVats = [];
 while (argv[0] && stillScanningArgs) {
   const flag = argv.shift();
   switch (flag) {
@@ -186,8 +202,8 @@ while (argv[0] && stillScanningArgs) {
     case '--verbose':
       verbose = true;
       break;
-    case '-d':
-    case '--dump':
+    case '-o':
+    case '--output':
       dumpFile = argv.shift();
       break;
     case '--vat-type': {
@@ -208,17 +224,33 @@ while (argv[0] && stillScanningArgs) {
     case '--local':
       defaultManagerType = 'local';
       break;
+    case '-n':
+    case '--node':
+      defaultManagerType = 'node-subprocess';
+      break;
+    case '-x':
+    case '--xs':
+      defaultManagerType = 'xs-worker';
+      break;
     case '-?':
     case '-h':
     case '--help':
       help = true;
       break;
+    case '-p':
+    case '--profile':
+      profileVats.push(argv.shift());
+      break;
+    case '-d':
+    case '--debug':
+      debugVats.push(argv.shift());
+      break;
     case '-s':
     case '--slog':
       slogFile = argv.shift();
       break;
-    case '-o':
-    case '--option': {
+    case '-c':
+    case '--config': {
       const optionName = argv.shift();
       const optionValue = argv.shift();
       options[optionName] = optionValue;
@@ -230,6 +262,15 @@ while (argv[0] && stillScanningArgs) {
     default:
       fail(`invalid command line option ${flag}`, true);
       break;
+  }
+}
+
+if (defaultManagerType === 'local') {
+  if (profileVats.length > 0) {
+    fail`per-vat profiling not supported under vat type 'local'`;
+  }
+  if (debugVats.length > 0) {
+    fail`per-vat debugging not supported under vat type 'local'`;
   }
 }
 
@@ -441,6 +482,8 @@ export const makeBenchmarkerator = async () => {
   const swingsetTestKit = await makeSwingsetTestKit(console.log, undefined, {
     defaultManagerType,
     verbose,
+    profileVats,
+    debugVats,
     slogFile,
   });
   const {

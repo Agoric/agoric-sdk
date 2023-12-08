@@ -143,6 +143,7 @@ export function makeXsSubprocessFactory({
     // start the worker and establish a connection
     let worker = await startXSnap(nameDisplayArg, {
       bundleIDs,
+      vatID,
       handleCommand: handleCommandKit.handleCommand,
       metered,
       init: snapshotInfo && { from: 'snapStore', vatID },
@@ -258,6 +259,7 @@ export function makeXsSubprocessFactory({
       [worker, snapshotResults] = await Promise.all([
         startXSnap(nameDisplayArg, {
           bundleIDs,
+          vatID,
           handleCommand: handleCommandKit.handleCommand,
           metered,
           init: {
