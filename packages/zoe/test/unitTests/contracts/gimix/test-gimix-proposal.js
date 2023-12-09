@@ -1,7 +1,7 @@
 // @ts-check
 import test from 'ava';
 import fsp from 'fs/promises';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import { permit } from '../../../../src/contracts/gimix/start-gimix.js';
@@ -11,7 +11,9 @@ import {
   redactImportDecls,
 } from './module-to-script.js';
 
-const asset = ref => fileURLToPath(new URL(ref, import.meta.url));
+import { oneScript as startPostalSvcScript } from '../../../../src/contracts/gimix/start-postalSvc.js';
+
+const myRequire = createRequire(import.meta.url);
 
 /**
  * If $SCRIPT is set, the test(s) below will write
@@ -29,7 +31,7 @@ test.before(async t => {
     env: process.env,
     writeFile: fsp.writeFile,
     bundle: await bundleCache.load(
-      asset('../../../../src/contracts/gimix/gimix.js'),
+      myRequire.resolve('../../../../src/contracts/gimix/gimix.js'),
       'gimix',
     ),
   };
@@ -56,7 +58,7 @@ test('check / render gimix proposal', async t => {
   const { env, readFile, bundle } = t.context;
 
   const modText = await readFile(
-    asset('../../../../src/contracts/gimix/start-gimix.js'),
+    myRequire.resolve('../../../../src/contracts/gimix/start-gimix.js'),
     'utf-8',
   );
 
