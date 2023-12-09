@@ -2,91 +2,27 @@
 // eslint-disable-next-line import/order
 import { test as anyTest } from '../../../../tools/prepare-test-env-ava.js';
 
-import { createRequire } from 'module';
-
 import { E, Far } from '@endo/far';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
+import { makeNameHubKit } from '@agoric/vats';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { makeZoeKitForTest } from '../../../../tools/setup-zoe.js';
 import { startPostalSvc } from '../../../../src/contracts/gimix/start-postalSvc.js';
+import { makeTestBootPowers } from './boot-tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const myRequire = createRequire(import.meta.url);
-/** @param {string} specifier */
-const asset = specifier => myRequire.resolve(specifier);
-
-/**
- * Wrap Zoe exo in a record so that we can override methods.
- *
- * Roughly equivalent to {@link bindAllMethods}
- * in @agoric/internal, but that's a private API and
- * this contract should perhaps not be in agoric-sdk.
- *
- * @param {ZoeService} zoeExo
- */
-const wrapZoe = zoeExo => {
-  /** @type {ZoeService} */
-  // @ts-expect-error mock
-  const mock = {
-    // XXX all the methods used in this test; there may be others.
-    getFeeIssuer: () => zoeExo.getFeeIssuer(),
-    getInvitationIssuer: () => zoeExo.getInvitationIssuer(),
-    installBundleID: (...args) => zoeExo.installBundleID(...args),
-    startInstance: (...args) => zoeExo.startInstance(...args),
-    getTerms: (...args) => zoeExo.getTerms(...args),
-    getPublicFacet: (...args) => zoeExo.getPublicFacet(...args),
-    offer: (...args) => zoeExo.offer(...args),
-  };
-  return mock;
-};
-
 const makeTestContext = async t => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const bundle = await bundleCache.load(
-    asset('../../../../src/contracts/gimix/postalSvc.js'),
-    'gimix',
+  const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
+  const { zoeService } = makeZoeKitForTest();
+  const { bundles, powers } = await makeTestBootPowers(
+    t,
+    zoeService,
+    bundleCache,
   );
 
-  const bootstrap = async () => {
-    const { produce, consume } = makePromiseSpace();
-
-    const { zoeService } = makeZoeKitForTest();
-    /** @param {string} bID */
-    const install1BundleID = bID => {
-      assert.equal(bID, `b1-${bundle.endoZipBase64Sha512}`);
-      return zoeService.install(bundle);
-    };
-    const zoe = Far('ZoeService', {
-      ...wrapZoe(zoeService),
-      installBundleID: install1BundleID,
-    });
-    produce.zoe.resolve(zoe);
-
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-      makeNameHubKit();
-    const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log, [
-      'installation',
-      'instance',
-    ]);
-
-    produce.agoricNames.resolve(agoricNames);
-
-    const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
-    produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
-
-    /** @type {BootstrapPowers}}  */
-    // @ts-expect-error mock
-    const powers = { produce, consume, ...spaces };
-
-    return powers;
-  };
-
-  const powers = await bootstrap();
-  return { bundle, powers };
+  return { bundles, powers };
 };
 
 test.before(async t => (t.context = await makeTestContext(t)));
@@ -103,7 +39,10 @@ test('deliver payment using address', async t => {
     },
   });
 
-  const { powers, bundle } = t.context;
+  const {
+    powers,
+    bundles: { postalSvc: bundle },
+  } = t.context;
   const { agoricNames, zoe, namesByAddressAdmin } = powers.consume;
 
   await startPostalSvc(powers, {
