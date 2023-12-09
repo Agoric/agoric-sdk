@@ -87,3 +87,21 @@ test('check / render gimix proposal', async t => {
     await t.notThrowsAsync(writeFile(env.SCRIPT, script));
   }
 });
+
+test('check / render postalSvc script', t => {
+  const bundle = {
+    endoZipBase64Sha512: 'deadbeef',
+  };
+  let script = hideImportExpr(
+    redactImportDecls(omitExportKewords(`${startPostalSvcScript}`)),
+  );
+
+  script = script.replace(
+    /bundleID = fail.*/,
+    `bundleID = ${JSON.stringify(`b1-${bundle.endoZipBase64Sha512}`)},`,
+  );
+  // t.log(script);
+
+  const c = new Compartment({ E: () => {}, Far: () => {} });
+  t.notThrows(() => c.evaluate(script));
+});

@@ -9,88 +9,99 @@
 
 import { E, Far } from '@endo/far';
 
-const { Fail } = assert;
+export const oneScript = () => {
+  const { Fail } = assert;
 
-const trace = (...args) => console.log('start-postalSvc', ...args);
+  const trace = (...args) => console.log('start-postalSvc', ...args);
 
-const fail = msg => {
-  throw Error(msg);
+  const fail = msg => {
+    throw Error(msg);
+  };
+
+  /**
+   * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
+   *
+   * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+   */
+  const fixHub = async namesByAddressAdmin => {
+    /** @type {import('@agoric/vats').NameHub} */
+    const hub = Far('Hub work-around', {
+      lookup: async (addr, ...rest) => {
+        await E(namesByAddressAdmin).reserve(addr);
+        const addressAdmin = await E(namesByAddressAdmin).lookupAdmin(addr);
+        assert(addressAdmin, 'no admin???');
+        const addressHub = E(addressAdmin).readonly();
+        if (rest.length === 0) return addressHub;
+        await E(addressAdmin).reserve(rest[0]);
+        return E(addressHub).lookup(...rest);
+      },
+      has: _key => Fail`key space not well defined`,
+      entries: () => Fail`enumeration not supported`,
+      values: () => Fail`enumeration not supported`,
+      keys: () => Fail`enumeration not supported`,
+    });
+    return hub;
+  };
+
+  /**
+   * @param {BootstrapPowers} powers
+   * @param {{ options?: { postalSvc: {
+   *   bundleID: string;
+   * }}}} config
+   */
+  const startPostalSvc = async (powers, { options } = {}) => {
+    const {
+      consume: { zoe, namesByAddressAdmin },
+      produce: { postalSvcStartResult },
+      installation: {
+        // @ts-expect-error not statically known at genesis
+        produce: { postalSvc: produceInstallation },
+      },
+      instance: {
+        // @ts-expect-error not statically known at genesis
+        produce: { postalSvc: produceInstance },
+      },
+    } = powers;
+    const {
+      // rendering this template requires not re-flowing the next line
+      bundleID = fail(`bundleID required`),
+    } = options?.postalSvc ?? {};
+
+    /** @type {Installation<import('./postalSvc').start>} */
+    const installation = await E(zoe).installBundleID(bundleID);
+    produceInstallation.resolve(installation);
+
+    const namesByAddress = await fixHub(namesByAddressAdmin);
+
+    const [IST, Invitation] = await Promise.all([
+      E(zoe).getFeeIssuer(),
+      E(zoe).getInvitationIssuer(),
+    ]);
+    const startResult = await E(zoe).startInstance(
+      installation,
+      { IST, Invitation },
+      { namesByAddress },
+    );
+    postalSvcStartResult.resolve(startResult);
+    const { instance } = startResult;
+    produceInstance.resolve(instance);
+
+    trace('postalSvc started');
+  };
+  return startPostalSvc;
 };
 
-/**
- * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
- *
- * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- */
-const fixHub = async namesByAddressAdmin => {
-  /** @type {import('@agoric/vats').NameHub} */
-  const hub = Far('Hub work-around', {
-    lookup: async (addr, ...rest) => {
-      await E(namesByAddressAdmin).reserve(addr);
-      const addressAdmin = await E(namesByAddressAdmin).lookupAdmin(addr);
-      assert(addressAdmin, 'no admin???');
-      const addressHub = E(addressAdmin).readonly();
-      if (rest.length === 0) return addressHub;
-      await E(addressAdmin).reserve(rest[0]);
-      return E(addressHub).lookup(...rest);
-    },
-    has: _key => Fail`key space not well defined`,
-    entries: () => Fail`enumeration not supported`,
-    values: () => Fail`enumeration not supported`,
-    keys: () => Fail`enumeration not supported`,
-  });
-  return hub;
-};
-
-/**
- * @param {BootstrapPowers} powers
- * @param {{ options?: { postalSvc: {
- *   bundleID: string;
- * }}}} config
- */
-export const startPostalSvc = async (powers, config) => {
-  const {
-    consume: { zoe, namesByAddressAdmin },
-    installation: {
-      // @ts-expect-error not statically known at genesis
-      produce: { postalSvc: produceInstallation },
-    },
-    instance: {
-      // @ts-expect-error not statically known at genesis
-      produce: { postalSvc: produceInstance },
-    },
-  } = powers;
-  const { bundleID = fail(`no bundleID; try test-gimix-proposal.js?`) } =
-    config.options?.postalSvc ?? {};
-
-  /** @type {Installation<import('./postalSvc').start>} */
-  const installation = await E(zoe).installBundleID(bundleID);
-  produceInstallation.resolve(installation);
-
-  const namesByAddress = await fixHub(namesByAddressAdmin);
-
-  const [IST, Invitation] = await Promise.all([
-    E(zoe).getFeeIssuer(),
-    E(zoe).getInvitationIssuer(),
-  ]);
-  const { instance } = await E(zoe).startInstance(
-    installation,
-    { IST, Invitation },
-    { namesByAddress },
-  );
-  produceInstance.resolve(instance);
-
-  trace('postalSvc started');
-};
+export const startPostalSvc = oneScript();
 
 export const manifest = /** @type {const} */ ({
-  [startPostalSvc.name]: {
+  startPostalSvc: {
     consume: {
       agoricNames: true,
       namesByAddress: true,
       namesByAddressAdmin: true,
       zoe: true,
     },
+    produce: { postalSvcStartResult: true },
     installation: {
       produce: { postalSvc: true },
     },
