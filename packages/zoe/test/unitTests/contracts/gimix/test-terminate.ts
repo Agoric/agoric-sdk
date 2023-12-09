@@ -30,12 +30,14 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 const makeTestContext = async t => {
   const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
+
+  console.time('TestContext', 'swingsetTestKit');
   const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/', {
     configSpecifier: PLATFORM_CONFIG,
   });
+  const { controller, runUtils, storage } = swingsetTestKit;
+  console.timeLog('TestContext', 'swingsetTestKit');
 
-  const { runUtils, storage } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
   // vaultFactoryKit is one of the last things produced in bootstrap.
@@ -55,6 +57,7 @@ const makeTestContext = async t => {
   );
 
   return {
+    controller,
     walletFactoryDriver,
     runUtils,
     agoricNamesRemotes,
@@ -99,7 +102,7 @@ const makeScenario = async t => {
 };
 
 test('terminate a contract by upgrading to one that shuts down', async t => {
-  const { walletFactoryDriver, env, bundleCache } = t.context;
+  const { walletFactoryDriver, env, bundleCache, controller } = t.context;
   const { findPurse, runCoreEval } = await makeScenario(t);
 
   t.log('provision a smartWallet for an oracle operator');
@@ -113,6 +116,13 @@ test('terminate a contract by upgrading to one that shuts down', async t => {
     ),
     // myRequire.resolve(`../../../../src/contracts/gimix/terminalIncarnation.js`);
   };
+
+  const { values } = Object;
+  for await (const bundle of values(bundles)) {
+    await controller.validateAndInstallBundle(bundle);
+  }
+
+  t.log('installed', values(bundles).length, 'bundles');
 
   const { postalSvc: bundle } = bundles;
 
