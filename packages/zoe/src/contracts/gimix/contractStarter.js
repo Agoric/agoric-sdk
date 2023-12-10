@@ -21,8 +21,10 @@
 
 import { E, Far } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+// import { makeDurableZone } from '@agoric/zone/durable.js';
 import { InstallationShape, IssuerRecordShape } from '../../typeGuards.js';
 import { depositToSeat } from '../../contractSupport/zoeHelpers.js';
+import { makeScalarWeakMapStore } from '@agoric/store';
 
 /** @template SF @typedef {import('../../zoeService/utils').StartParams<SF>} StartParams<SF> */
 
@@ -59,12 +61,23 @@ export const StartOptionsShape = M.and(
 const noHandler = () => Fail`no handler`;
 const NoProposalShape = M.not(M.any());
 
+/** @type {ContractMeta} */
+export const meta = harden({
+  customTermsShape: { terminalIncarnationBundleID: M.string() },
+});
+
 /**
- * @param {ZCF} zcf
+ * @typedef {{ terminalIncarnationBundleID: string }} StarterTerms
+ *
+ * @param {ZCF<StarterTerms>} zcf
  * @param {unknown} _privateArgs
- * @param {unknown} _baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} _baggage
  */
 export const start = (zcf, _privateArgs, _baggage) => {
+  // const myZone = makeDurableZone(baggage);
+  // const kitByInstance = myZone.weakMapStore('kitByInstance');
+  const kitByInstance = makeScalarWeakMapStore();
+  const { terminalIncarnationBundleID } = zcf.getTerms();
   const zoe = zcf.getZoeService();
   const invitationIssuerP = E(zoe).getInvitationIssuer();
 
@@ -95,7 +108,7 @@ export const start = (zcf, _privateArgs, _baggage) => {
       const { issuerKeywordRecord, customTerms, privateArgs, instanceLabel } =
         opts;
       /** @type {StartedInstanceKit<SF>} */
-      const it = await E(zoe).startInstance(
+      const kit = await E(zoe).startInstance(
         installation,
         issuerKeywordRecord,
         customTerms,
@@ -103,7 +116,8 @@ export const start = (zcf, _privateArgs, _baggage) => {
         instanceLabel,
       );
       // WARNING: adminFacet is dropped
-      const { instance, creatorFacet } = it;
+      const { instance, creatorFacet } = kit;
+      kitByInstance.init(instance, kit);
 
       const handlesInDetails = zcf.makeInvitation(
         noHandler,
@@ -124,9 +138,22 @@ export const start = (zcf, _privateArgs, _baggage) => {
     return zcf.makeInvitation(handleStart, 'start');
   };
 
-  const publicFacet = Far('PublicFacet', {
+  const publicFacet = Far('StarterPublic', {
     makeStartInvitation,
   });
 
-  return { publicFacet };
+  const makeTerminateInvitation = instance => {
+    const kit = kitByInstance.get(instance);
+    const handler = async _seat => {
+      await E(kit.adminFacet).upgradeContract(terminalIncarnationBundleID);
+    };
+    return zcf.makeInvitation(handler, 'terminate');
+  };
+
+  /** Follows invitationMaker pattern */
+  const creatorFacet = Far('StarterCreator', {
+    Terminate: makeTerminateInvitation,
+  });
+
+  return { publicFacet, creatorFacet };
 };

@@ -78,12 +78,16 @@ test('use contractStarter to start postalSvc', async t => {
     },
     _config,
   ) => {
+    // TODO: get from config
+    const terminalIncarnationBundleID = idOf(bundles.terminalIncarnation);
     const installation = await consumeInstallation;
 
     const invitationIssuer = await E(zoe).getInvitationIssuer();
-    const startResult = await E(zoe).startInstance(installation, {
-      Invitation: invitationIssuer,
-    });
+    const startResult = await E(zoe).startInstance(
+      installation,
+      { Invitation: invitationIssuer },
+      { terminalIncarnationBundleID },
+    );
     contractStarterStartResult.resolve(startResult);
     const { instance } = startResult;
     produceInstance.resolve(instance);
