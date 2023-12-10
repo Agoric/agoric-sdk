@@ -14,10 +14,6 @@ export const oneScript = () => {
 
   const trace = (...args) => console.log('start-postalSvc', ...args);
 
-  const fail = msg => {
-    throw Error(msg);
-  };
-
   /**
    * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
    *
@@ -45,31 +41,51 @@ export const oneScript = () => {
 
   /**
    * @param {BootstrapPowers} powers
+   * @param {{options?: { postalSvc?: { bundleID?: string} }}} [config]
+   */
+  const installPostalSvc = async (
+    {
+      consume: { zoe },
+      installation: {
+        produce: { postalSvc: produceInstallation },
+      },
+    },
+    { options } = {},
+  ) => {
+    const {
+      // rendering this template requires not re-flowing the next line
+      bundleID = Fail(`bundleID required`),
+    } = options?.postalSvc || {};
+
+    console.log('bundleID', bundleID);
+
+    const installation = await E(zoe).installBundleID(bundleID);
+    produceInstallation.reset();
+    produceInstallation.resolve(installation);
+  };
+
+  /**
+   * @param {BootstrapPowers} powers
    * @param {{ options?: { postalSvc: {
    *   bundleID: string;
-   * }}}} config
+   * }}}} [_config]
    */
-  const startPostalSvc = async (powers, { options } = {}) => {
+  const startPostalSvc = async (powers, _config) => {
     const {
       consume: { zoe, namesByAddressAdmin },
       produce: { postalSvcStartResult },
       installation: {
         // @ts-expect-error not statically known at genesis
-        produce: { postalSvc: produceInstallation },
+        consume: { postalSvc: consumeInstallation },
       },
       instance: {
         // @ts-expect-error not statically known at genesis
         produce: { postalSvc: produceInstance },
       },
     } = powers;
-    const {
-      // rendering this template requires not re-flowing the next line
-      bundleID = fail(`bundleID required`),
-    } = options?.postalSvc ?? {};
 
     /** @type {Installation<import('./postalSvc').start>} */
-    const installation = await E(zoe).installBundleID(bundleID);
-    produceInstallation.resolve(installation);
+    const installation = await consumeInstallation;
 
     const namesByAddress = await fixHub(namesByAddressAdmin);
 
@@ -88,7 +104,8 @@ export const oneScript = () => {
 
     trace('postalSvc started');
   };
-  return startPostalSvc;
+
+  return (p, c) => Promise.all([installPostalSvc(p, c), startPostalSvc(p, c)]);
 };
 
 export const startPostalSvc = oneScript();
