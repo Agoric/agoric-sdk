@@ -28,6 +28,8 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 // const PLATFORM_CONFIG = '@agoric/vm-config/decentral-core-config.json';
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
+const idOf = b => `b1-${b.endoZipBase64Sha512}`;
+
 const makeTestContext = async t => {
   const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
 
@@ -124,18 +126,17 @@ test('terminate a contract by upgrading to one that shuts down', async t => {
 
   t.log('installed', values(bundles).length, 'bundles');
 
-  const { postalSvc: bundle } = bundles;
-
   let script = hideImportExpr(
     redactImportDecls(omitExportKewords(`${startPostalSvcScript}`)),
   );
 
+  const { postalSvc: bundle } = bundles;
   script = script.replace(
-    /bundleID = fail.*/,
-    `bundleID = ${JSON.stringify(`b1-${bundle.endoZipBase64Sha512}`)},`,
+    /bundleID = Fail\b.*/,
+    `bundleID = ${JSON.stringify(idOf(bundle))},`,
   );
 
-  t.log('start postalSvc');
+  // t.log('start postalSvc', script, psManifest.startPostalSvc);
   await runCoreEval([
     {
       json_permits: JSON.stringify(psManifest.startPostalSvc),
