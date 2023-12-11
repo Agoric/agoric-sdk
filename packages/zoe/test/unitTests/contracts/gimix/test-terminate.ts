@@ -111,12 +111,15 @@ test('terminate a contract by upgrading to one that shuts down', async t => {
   const oraAddr = 'agoric1oracle-operator';
   const oraWallet = await walletFactoryDriver.provideSmartWallet(oraAddr);
 
+  const dir1 = '../../../../src/contracts/gimix';
+  const load1 = name =>
+    bundleCache.load(
+      myRequire.resolve(`../../../../src/contracts/gimix/${name}.js`),
+      name,
+    );
   const bundles = {
-    postalSvc: await bundleCache.load(
-      myRequire.resolve(`../../../../src/contracts/gimix/postalSvc.js`),
-      'postalSvc',
-    ),
-    // myRequire.resolve(`../../../../src/contracts/gimix/terminalIncarnation.js`);
+    postalSvc: await load1('postalSvc'),
+    terminalIncarnation: await load1('terminalIncarnation'),
   };
 
   const { values } = Object;
@@ -136,6 +139,8 @@ test('terminate a contract by upgrading to one that shuts down', async t => {
     `bundleID = ${JSON.stringify(idOf(bundle))},`,
   );
 
+  script = script.replace(/shutDown = false\b.*/, `shutDown = true,`);
+
   // t.log('start postalSvc', script, psManifest.startPostalSvc);
   await runCoreEval([
     {
@@ -144,5 +149,15 @@ test('terminate a contract by upgrading to one that shuts down', async t => {
     },
   ]);
 
-  t.fail('TODO');
+  const { EV } = t.context.runUtils;
+  const startResult = await EV.vat('bootstrap').consumeItem(
+    'postalSvcStartResult',
+  );
+  t.log({ startResult });
+  const shutdownReason0 = await EV(startResult.adminFacet).upgradeContract(
+    idOf(bundles.terminalIncarnation),
+  );
+  const shutdownReason =
+    await EV.vat('bootstrap').consumeItem('postalSvcShutdown');
+  t.deepEqual(shutdownReason, 'TODO');
 });
