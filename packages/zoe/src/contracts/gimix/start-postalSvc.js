@@ -9,10 +9,11 @@
 
 import { E, Far } from '@endo/far';
 
-export const oneScript = () => {
+export const oneScript = (p0, c0) => {
   const { Fail } = assert;
 
-  const trace = (...args) => console.log('start-postalSvc', ...args);
+  const trace = (...args) => console.log('-- start-postalSvc:', ...args);
+  trace('defining functions');
 
   /**
    * ref https://github.com/Agoric/agoric-sdk/issues/8408#issuecomment-1741445458
@@ -43,25 +44,25 @@ export const oneScript = () => {
    * @param {BootstrapPowers} powers
    * @param {{options?: { postalSvc?: { bundleID?: string} }}} [config]
    */
-  const installPostalSvc = async (
-    {
+  const installPostalSvc = async (powers, { options } = {}) => {
+    trace('installPostalSvc()...');
+    const {
       consume: { zoe },
       installation: {
         produce: { postalSvc: produceInstallation },
       },
-    },
-    { options } = {},
-  ) => {
+    } = powers;
     const {
       // rendering this template requires not re-flowing the next line
       bundleID = Fail(`bundleID required`),
     } = options?.postalSvc || {};
 
-    console.log('bundleID', bundleID);
+    trace('bundleID', bundleID);
 
     const installation = await E(zoe).installBundleID(bundleID);
     produceInstallation.reset();
     produceInstallation.resolve(installation);
+    trace('postalSvc installed');
   };
 
   /**
@@ -71,6 +72,7 @@ export const oneScript = () => {
    * }}}} [_config]
    */
   const startPostalSvc = async (powers, _config) => {
+    trace('startPostalSvc()...');
     const {
       consume: { zoe, namesByAddressAdmin },
       produce: { postalSvcStartResult },
@@ -105,10 +107,15 @@ export const oneScript = () => {
     trace('postalSvc started');
   };
 
-  return (p, c) => Promise.all([installPostalSvc(p, c), startPostalSvc(p, c)]);
+  trace('core eval function called');
+  return Promise.all([
+    installPostalSvc(p0, c0),
+    startPostalSvc(p0, c0),
+    // shutdownPostalSvc(p, c),
+  ]);
 };
 
-export const startPostalSvc = oneScript();
+export const startPostalSvc = oneScript;
 
 export const manifest = /** @type {const} */ ({
   startPostalSvc: {
@@ -121,6 +128,7 @@ export const manifest = /** @type {const} */ ({
     produce: { postalSvcStartResult: true },
     installation: {
       produce: { postalSvc: true },
+      consume: { postalSvc: true },
     },
     instance: {
       produce: { postalSvc: true },
