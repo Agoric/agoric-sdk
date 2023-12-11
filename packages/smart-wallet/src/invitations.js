@@ -100,6 +100,8 @@ export const makeInvitationsHelper = (
     },
     /** @type {(spec: PurseInvitationSpec) => Promise<Invitation>} */
     async purse(spec) {
+      debugger;
+
       mustMatch(spec, shape.PurseInvitationSpec);
 
       const { instance, description } = spec;
@@ -121,6 +123,7 @@ export const makeInvitationsHelper = (
         const iCount = invitations.filter(
           details => instance === details.instance,
         ).length;
+        debugger;
         assert.fail(
           `no invitation match (${dCount} description and ${iCount} instance)`,
         );

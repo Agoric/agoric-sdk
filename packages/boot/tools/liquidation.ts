@@ -11,9 +11,6 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
 import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.ts';
 import {
-  type GovernanceDriver,
-  type PriceFeedDriver,
-  type WalletFactoryDriver,
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
@@ -71,15 +68,9 @@ export const makeLiquidationTestKit = async ({
   agoricNamesRemotes,
   walletFactoryDriver,
   governanceDriver,
-  t,
-}: {
-  swingsetTestKit: SwingsetTestKit;
-  agoricNamesRemotes: AgoricNamesRemotes;
-  walletFactoryDriver: WalletFactoryDriver;
-  governanceDriver: GovernanceDriver;
-  t: Pick<ExecutionContext, 'like'>;
+  like,
 }) => {
-  const priceFeedDrivers = {} as Record<string, PriceFeedDriver>;
+  const priceFeedDrivers = {} as Record<string, Awaited<ReturnType<typeof makePriceFeedDriver>>;
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
@@ -97,7 +88,7 @@ export const makeLiquidationTestKit = async ({
     const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
 
-    await null;
+    await 0;
     if (!priceFeedDrivers[collateralBrandKey]) {
       priceFeedDrivers[collateralBrandKey] = await makePriceFeedDriver(
         collateralBrandKey,
@@ -149,7 +140,7 @@ export const makeLiquidationTestKit = async ({
     );
 
     // confirm Relevant Governance Parameter Assumptions
-    t.like(readLatest(`${managerPath}.governance`), {
+    like(readLatest(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
         InterestRate: {
@@ -174,7 +165,7 @@ export const makeLiquidationTestKit = async ({
         },
       },
     });
-    t.like(readLatest('published.auction.governance'), {
+    like(readLatest('published.auction.governance'), {
       current: {
         AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
         ClockStep: {
@@ -207,7 +198,7 @@ export const makeLiquidationTestKit = async ({
       const notification = readLatest(
         `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
-      t.like(notification, partial);
+      like(notification, partial);
     },
   };
 
@@ -234,7 +225,7 @@ export const makeLiquidationTestKit = async ({
         wantMinted: setup.vaults[i].ist,
         giveCollateral: setup.vaults[i].atom,
       });
-      t.like(minter.getLatestUpdateRecord(), {
+      like(minter.getLatestUpdateRecord(), {
         updated: 'offerStatus',
         status: { id: offerId, numWantsSatisfied: 1 },
       });
@@ -282,7 +273,7 @@ export const makeLiquidationTestKit = async ({
         ...setup.bids[i],
         maxBuy,
       });
-      t.like(
+      like(
         swingsetTestKit.readLatest(`published.wallet.${buyerWalletAddress}`),
         {
           status: {

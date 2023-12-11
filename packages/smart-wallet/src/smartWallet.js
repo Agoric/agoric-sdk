@@ -425,10 +425,11 @@ export const prepareSmartWallet = (baggage, shared) => {
             offerToPublicSubscriberPaths,
             offerToUsedInvitation,
           } = this.state;
+          debugger; //   liveOfferPayments &&
           const used =
             liveOffers.has(id) ||
             liveOfferSeats.has(id) ||
-            liveOfferPayments.has(id) ||
+            (liveOfferPayments && liveOfferPayments.has(id)) ||
             offerToInvitationMakers.has(id) ||
             offerToPublicSubscriberPaths.has(id) ||
             offerToUsedInvitation.has(id);
@@ -622,7 +623,11 @@ export const prepareSmartWallet = (baggage, shared) => {
               state.liveOfferSeats.delete(offerStatus.id);
             }
 
-            if (state.liveOfferPayments.has(offerStatus.id)) {
+            debugger;
+            if (
+              state.liveOfferPayments &&
+              state.liveOfferPayments.has(offerStatus.id)
+            ) {
               state.liveOfferPayments.delete(offerStatus.id);
             }
 
@@ -678,6 +683,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         logWalletInfo(...args) {
           const { state } = this;
+          debugger;
+
           console.info('wallet', state.address, ...args);
         },
         logWalletError(...args) {
@@ -773,7 +780,8 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { state, facets } = this;
           const { liveOfferPayments } = state;
 
-          if (liveOfferPayments.has(offerId)) {
+          debugger;
+          if (liveOfferPayments && liveOfferPayments.has(offerId)) {
             const brandPaymentRecord = liveOfferPayments.get(offerId);
             if (!brandPaymentRecord) {
               return Promise.resolve(undefined);
@@ -866,9 +874,13 @@ export const prepareSmartWallet = (baggage, shared) => {
             // publish the live offers
             facets.helper.publishCurrentState();
 
+            debugger; /// something  must be a string-valued data property.
+
             // await so that any errors are caught and handled below
             await watchOfferOutcomes(watcher, seatRef);
           } catch (err) {
+            debugger;
+
             facets.helper.logWalletError('OFFER ERROR:', err);
             // Notify the user
             if (watcher) {

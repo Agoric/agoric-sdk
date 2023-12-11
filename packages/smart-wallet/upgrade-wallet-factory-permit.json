@@ -1,0 +1,20 @@
+{
+  "consume": {
+    "walletFactoryStartResult": "walletFactoryStartResult",
+    "provisionPoolStartResult": "provisionPoolStartResult",
+    "chainStorage": "chainStorage",
+    "walletBridgeManager": "walletBridgeManager",
+    "agoricNamesAdmin": "makeCoreProposalBehavior",
+    "vatAdminSvc": "makeCoreProposalBehavior",
+    "zoe": "makeCoreProposalBehavior"
+  },
+  "evaluateBundleCap": "makeCoreProposalBehavior",
+  "installation": {
+    "produce": "makeCoreProposalBehavior"
+  },
+  "modules": {
+    "utils": {
+      "runModuleBehaviors": "makeCoreProposalBehavior"
+    }
+  }
+}

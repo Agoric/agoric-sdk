@@ -24,7 +24,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makeMockTestSpace);
 });
 
-test('bridge handler', async t => {
+test.only('bridge handler', async t => {
   const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
   const updates = await E(smartWallet).getUpdatesSubscriber();
 

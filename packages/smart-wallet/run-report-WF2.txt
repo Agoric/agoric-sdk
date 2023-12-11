@@ -1,0 +1,11 @@
+agoric: run: Deploy script will run with Node.js ESM
+creating upgrade-wallet-factory-permit.json
+creating upgrade-wallet-factory.js
+You can now run a governance submission command like:
+  agd tx gov submit-proposal swingset-core-eval upgrade-wallet-factory-permit.json upgrade-wallet-factory.js \
+    --title="Enable <something>" --description="Evaluate upgrade-wallet-factory.js" --deposit=1000000ubld \
+    --gas=auto --gas-adjustment=1.2
+Remember to install bundles before submitting the proposal:
+  agd tx swingset install-bundle @/Users/chris/.agoric/cache/b1-26f446ce950eb2ca78e4f08091dd2cb496fb9094231cfe133aada1155915e85b0d7dc1449b6d7f8c4bb2ee676198da15bd45f96283bf9303ca100d38f64b289a.json
+  agd tx swingset install-bundle @/Users/chris/.agoric/cache/b1-639898c8ce8d46b8d76b9d7b1d56dd75dbc177ba5e957aec0d0c81a9059376194afeb2bac65cca4d194a63c82e44b6c33b93049279a1e0b693964e0cc7ad64ec.json
+
