@@ -8,4 +8,7 @@
 // @ts-check
 
 /** @param {ZCF} zcf */
-export const start = zcf => zcf.shutdown(true);
+export const start = zcf => {
+  zcf.shutdown(true);
+  return {};
+};
