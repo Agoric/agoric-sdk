@@ -100,12 +100,13 @@ test('use contractStarter to start postalSvc', async t => {
   });
   await startContractStarter(powers, {});
 
+  const starterInstallation = await powers.installation.consume.contractStarter;
   /** @typedef { typeof import('../../../../src/contracts/gimix/contractStarter.js').start } ContractStarterFn */
   /** @type { StartedInstanceKit<ContractStarterFn>['instance'] } */
-  const instance = await powers.instance.consume.contractStarter;
-  t.truthy(instance);
+  const starterInstance = await powers.instance.consume.contractStarter;
+  t.truthy(starterInstance);
   const { zoe } = powers.consume;
-  const pf = E(zoe).getPublicFacet(instance);
+  const pf = E(zoe).getPublicFacet(starterInstance);
 
   const toStart = await E(pf).makeStartInvitation({
     bundleID: idOf(bundles.postalSvc),
@@ -119,19 +120,28 @@ test('use contractStarter to start postalSvc', async t => {
   t.deepEqual(Object.keys(payouts), ['Started']);
   const pmt = await payouts.Started;
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const amt = await E(invitationIssuer).getAmountOf(pmt);
   const invitationBrand = await E(invitationIssuer).getBrand();
-  t.is(amt.brand, invitationBrand);
+  const amt = await E(invitationIssuer).getAmountOf(pmt);
+
   t.true(Array.isArray(amt.value));
   t.is(amt.value.length, 1);
   const [info] = amt.value;
-  t.deepEqual(Object.keys(info), [
-    'customDetails',
-    'description',
-    'handle',
-    'installation',
-    'instance',
-  ]);
-  t.is(info.instance, instance);
-  t.log(info.customDetails);
+  t.log(info);
+  const {
+    handle,
+    customDetails: { installation, instance }, // newly started
+  } = info;
+  t.deepEqual(amt, {
+    brand: invitationBrand,
+    value: [
+      {
+        description: 'started',
+        customDetails: { installation, instance },
+        handle,
+        instance: starterInstance,
+        installation: starterInstallation,
+      },
+    ],
+  });
+});
 });
