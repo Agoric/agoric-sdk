@@ -55,6 +55,15 @@ test(`E(zoe).installBundleID bad id`, async t => {
   });
 });
 
+test(`E(zoe).installBundleID bad label`, async t => {
+  const { zoe } = setup();
+  // @ts-expect-error deliberate invalid arguments for testing
+  await t.throwsAsync(() => E(zoe).installBundleID('a', harden([])), {
+    message:
+      'In "installBundleID" method of (ZoeService): arg 1?: copyArray [] - Must be a string',
+  });
+});
+
 test(`E(zoe).installBundleID(bundleID)`, async t => {
   const { zoe, vatAdminState } = setup();
   const contractPath = `${dirname}/../../src/contracts/atomicSwap`;

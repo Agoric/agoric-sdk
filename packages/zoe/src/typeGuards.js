@@ -276,10 +276,12 @@ export const ZoeStorageManagerIKit = harden({
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string()),
     ),
-    installBundle: M.call(M.or(InstanceHandleShape, BundleShape)).returns(
-      M.promise(),
-    ),
-    installBundleID: M.call(M.string()).returns(M.promise()),
+    installBundle: M.call(M.or(InstanceHandleShape, BundleShape))
+      .optional(M.string())
+      .returns(M.promise()),
+    installBundleID: M.call(M.string())
+      .optional(M.string())
+      .returns(M.promise()),
 
     getPublicFacet: M.call(InstanceHandleShape).returns(
       M.eref(M.remotable('PublicFacet')),
@@ -310,6 +312,7 @@ export const ZoeStorageManagerIKit = harden({
       IssuerPKeywordRecordShape,
       M.or(InstanceHandleShape, BundleShape),
       M.or(BundleCapShape, BundleShape),
+      M.string(),
     ).returns(M.promise()),
     unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(
       UnwrappedInstallationShape,
@@ -321,10 +324,10 @@ export const ZoeStorageManagerIKit = harden({
 });
 
 export const ZoeServiceI = M.interface('ZoeService', {
-  install: M.call(M.any()).returns(M.promise()),
-  installBundleID: M.call(M.string()).returns(M.promise()),
+  install: M.call(M.any()).optional(M.string()).returns(M.promise()),
+  installBundleID: M.call(M.string()).optional(M.string()).returns(M.promise()),
   startInstance: M.call(M.eref(InstallationShape))
-    .optional(IssuerPKeywordRecordShape, M.any(), M.any())
+    .optional(IssuerPKeywordRecordShape, M.record(), M.record(), M.string())
     .returns(M.promise()),
   offer: M.call(M.eref(InvitationShape))
     .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
