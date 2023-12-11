@@ -327,7 +327,7 @@ export const ZoeServiceI = M.interface('ZoeService', {
   install: M.call(M.any()).optional(M.string()).returns(M.promise()),
   installBundleID: M.call(M.string()).optional(M.string()).returns(M.promise()),
   startInstance: M.call(M.eref(InstallationShape))
-    .optional(IssuerPKeywordRecordShape, M.any(), M.any())
+    .optional(IssuerPKeywordRecordShape, M.any(), M.any(), M.string())
     .returns(M.promise()),
   offer: M.call(M.eref(InvitationShape))
     .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
