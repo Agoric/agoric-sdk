@@ -144,4 +144,14 @@ test('use contractStarter to start postalSvc', async t => {
     ],
   });
 });
+
+test('terminalIncarnation contract shuts down', async t => {
+  const { powers, bundles } = t.context;
+  const { zoe } = powers.consume;
+  const id = idOf(bundles.terminalIncarnation);
+  const installation = await E(zoe).installBundleID(id);
+  const kit = await E(zoe).startInstance(installation);
+  const reason = await E(kit.adminFacet).getVatShutdownPromise();
+  t.log('shutdown reason', reason);
+  t.truthy(reason);
 });
