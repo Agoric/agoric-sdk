@@ -107,6 +107,26 @@ export const oneScript = (p0, c0) => {
     trace('postalSvc started');
   };
 
+  /**
+   * @param {BootstrapPowers} powers
+   * @param {{options?: { postalSvc?: { shutdown?: boolean} }}} [config]
+   */
+  const shutdownPostalSvc = async (
+    { consume: { postalSvcStartResult }, produce: { postalSvcShutdown } },
+    { options } = {},
+  ) => {
+    const {
+      // rendering this template requires not re-flowing the next line
+      shutdown = false,
+    } = options?.postalSvc || {};
+    if (!shutdown) return;
+    trace('awaiting shutdown');
+    const kit = await postalSvcStartResult;
+    const reason = await E(kit.adminFacet).getVatShutdownPromise();
+    trace('shutdown reason', reason);
+    postalSvcShutdown.resolve(reason);
+  };
+
   trace('core eval function called');
   return Promise.all([
     installPostalSvc(p0, c0),
@@ -125,7 +145,7 @@ export const manifest = /** @type {const} */ ({
       namesByAddressAdmin: true,
       zoe: true,
     },
-    produce: { postalSvcStartResult: true },
+    produce: { postalSvcStartResult: true, postalSvcShutdown: true },
     installation: {
       produce: { postalSvc: true },
       consume: { postalSvc: true },
