@@ -88,7 +88,7 @@
  *   localAddr: Endpoint,
  *   remoteAddr: Endpoint,
  *   c: ConnectionHandler,
- * ) => void} [onOpen]
+ * ) => PromiseWhenable<void>} [onOpen]
  *   The connection has been opened
  * @property {(
  *   connection: Connection,
