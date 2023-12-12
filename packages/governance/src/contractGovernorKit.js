@@ -1,15 +1,56 @@
 import { Fail } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
-import { prepareExoClassKit } from '@agoric/vat-data';
+import { UnguardedHelperI, makeTracer } from '@agoric/internal';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import {
+  InvitationShape,
+  InstanceHandleShape,
+  InstallationShape,
+} from '@agoric/zoe/src/typeGuards.js';
+import { TimestampShape } from '@agoric/time';
 import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import {
   CONTRACT_ELECTORATE,
   setupParamGovernance,
 } from './contractGovernance/governParam.js';
+import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
 const trace = makeTracer('CGK', false);
+
+const ContractGovernorKitI = {
+  helper: UnguardedHelperI,
+  creator: M.interface('Contract Governor Kit creator', {
+    replaceElectorate: M.call(InvitationShape).returns(M.promise()),
+    voteOnParamChanges: M.call(
+      InstallationShape,
+      TimestampShape,
+      ParamChangesSpecShape,
+    ).returns(M.promise()),
+    voteOnApiInvocation: M.call(
+      M.string(),
+      M.arrayOf(M.any()),
+      InstallationShape,
+      TimestampShape,
+    ).returns(M.promise()),
+    voteOnOfferFilter: M.call(
+      InstallationShape,
+      TimestampShape,
+      M.arrayOf(M.string()),
+    ).returns(M.promise()),
+    getCreatorFacet: M.call().returns(M.remotable('ElectorateCreator')),
+    getAdminFacet: M.call().returns(M.remotable('ElectorateAdmin')),
+    getInstance: M.call().returns(InstanceHandleShape),
+    getPublicFacet: M.call().returns(M.remotable('ElectoratePublic')),
+  }),
+  public: M.interface('Contract Governor Kit public', {
+    getElectorate: M.call().returns(M.promise(/* Instance */)),
+    getGovernedContract: M.call().returns(InstanceHandleShape),
+    validateVoteCounter: M.call(InstanceHandleShape).returns(M.promise()),
+    validateElectorate: M.call(InstanceHandleShape).returns(M.promise()),
+    validateTimer: M.call(ClosingRuleShape).returns(),
+  }),
+};
 
 /**
  *
@@ -36,7 +77,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   const makeContractGovernorKit = prepareExoClassKit(
     baggage,
     'ContractGovernorKit',
-    undefined,
+    ContractGovernorKitI,
     /**
      * @param {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<GovernableStartFn>} startedInstanceKit
      * @param {LimitedCF<unknown>} limitedCreatorFacet
