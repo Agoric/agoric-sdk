@@ -89,10 +89,6 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {import('.').Zone['exoClassKit']} */
-  // @ts-ignore This type check regressed inexplicably with the release
-  // following after @endo/exo@0.2.6.
-  // The lint error does not occur in local lint, but does in integration with
-  // @agoric/vats, so can not be suppressed with ts-expect-error.
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {import('.').Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
