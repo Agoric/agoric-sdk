@@ -145,6 +145,7 @@ module.exports = {
     {
       files: ['*.ts'],
       rules: {
+        'jsdoc/require-param-type': 'off',
         // TS has this covered and eslint gets it wrong
         'no-undef': 'off',
       },
