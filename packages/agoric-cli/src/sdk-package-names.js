@@ -10,6 +10,7 @@ export default [
   "@agoric/builders",
   "@agoric/cache",
   "@agoric/casting",
+  "@agoric/contracts",
   "@agoric/cosmic-proto",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
