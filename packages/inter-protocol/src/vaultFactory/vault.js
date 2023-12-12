@@ -296,6 +296,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             oldCollateral,
             state.idInManager,
             state.phase,
+            // @ts-expect-error xxx prepareExoClassKit typedef
             facets.self,
           );
         },
@@ -440,6 +441,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             oldCollateral,
             state.idInManager,
             state.phase,
+            // @ts-expect-error xxx prepareExoClassKit typedef
             facets.self,
           );
 
@@ -585,6 +587,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           seat.exit();
 
           // eslint-disable-next-line no-use-before-define
+          // @ts-expect-error xxx prepareExoClassKit typedef
           const vaultKit = makeVaultKit(self, state.storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
@@ -668,6 +671,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           trace('initVault updateDebtAccounting fired');
 
           // So that makeVaultKit can be synchronous
+          // @ts-expect-error xxx prepareExoClassKit typedef
           const vaultKit = makeVaultKit(self, storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
