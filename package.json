@@ -77,7 +77,7 @@
     "test": "yarn lerna run --no-bail test",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
-    "build": "yarn workspaces foreach run build",
+    "build": "yarn workspaces foreach --verbose run build",
     "postinstall": "patch-package",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
