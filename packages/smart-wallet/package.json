@@ -10,10 +10,10 @@
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:xs": "exit 0",
-    "lint": "run-s --continue-on-error 'lint:*'",
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint:types": "yarn run --top-level tsc",
+    "lint:eslint": "yarn run --top-level eslint ."
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "workspace:*",

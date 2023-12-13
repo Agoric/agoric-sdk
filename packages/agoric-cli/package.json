@@ -23,9 +23,9 @@
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error 'lint:*'",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run --top-level tsc",
+    "lint:eslint": "yarn run --top-level eslint ."
   },
   "devDependencies": {
     "@agoric/cosmic-swingset": "workspace:*",

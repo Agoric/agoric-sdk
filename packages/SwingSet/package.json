@@ -16,9 +16,9 @@
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:xs-worker": "ava test/workers/test-worker.js -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error 'lint:*'",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run --top-level tsc",
+    "lint:eslint": "yarn run --top-level eslint ."
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.5.0",

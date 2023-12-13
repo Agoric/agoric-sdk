@@ -11,9 +11,9 @@
     "test:c8": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "eslint .",
-    "lint:types": "tsc"
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:eslint": "yarn run --top-level eslint .",
+    "lint:types": "yarn run --top-level tsc"
   },
   "keywords": [],
   "author": "Agoric",

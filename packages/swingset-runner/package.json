@@ -14,8 +14,8 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "eslint .",
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:eslint": "yarn run --top-level eslint .",
     "ci:autobench": "./autobench.js"
   },
   "dependencies": {
