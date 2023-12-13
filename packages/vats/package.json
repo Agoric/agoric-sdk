@@ -22,7 +22,6 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.10",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/governance": "^0.10.3",
@@ -36,6 +35,7 @@
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
+    "@endo/errors": "^1.2.10",
     "@endo/far": "^1.1.11",
     "@endo/import-bundle": "^1.4.0",
     "@endo/marshal": "^1.6.4",
