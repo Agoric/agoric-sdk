@@ -1750,6 +1750,15 @@ export default function buildKernel(
     }
   }
 
+  function reapAllVats() {
+    for (const [_, vatID] of kernelKeeper.getStaticVats()) {
+      kernelKeeper.scheduleReap(vatID);
+    }
+    for (const vatID of kernelKeeper.getDynamicVats()) {
+      kernelKeeper.scheduleReap(vatID);
+    }
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -1935,6 +1944,7 @@ export default function buildKernel(
     step,
     run,
     shutdown,
+    reapAllVats,
     changeKernelOptions,
 
     // the rest are for testing and debugging
