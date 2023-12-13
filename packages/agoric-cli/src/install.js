@@ -1,8 +1,9 @@
-/* global process AggregateError Buffer */
+/* eslint-env node */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
 import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
+import { listWorkspaces } from './lib/yarn.js';
 
 const REQUIRED_AGORIC_START_PACKAGES = [
   '@agoric/solo',
@@ -31,19 +32,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
   async function getWorktreePackagePaths(cwd = '.', map = new Map()) {
-    // run `yarn workspaces info` to get the list of directories to
-    // use, instead of a hard-coded list
-    const p = pspawn('yarn', ['workspaces', '--silent', 'info'], {
-      cwd,
-      stdio: ['inherit', 'pipe', 'inherit'],
-    });
-    const stdout = [];
-    p.childProcess.stdout.on('data', out => stdout.push(out));
-    await p;
-    const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
-    Object.entries(d).forEach(([name, { location }]) =>
-      map.set(name, path.resolve(cwd, location)),
-    );
+    for (const { name, location } of listWorkspaces()) {
+      map.set(name, path.resolve(cwd, location));
+    }
     return map;
   }
 

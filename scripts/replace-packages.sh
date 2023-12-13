@@ -14,10 +14,7 @@ DSTDIR=${2-$PWD/node_modules}
 pushd "$SRCDIR"
 yarn install
 yarn build
-yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
-  # Skip private packages.
-  test "$(jq .private < "$dir/package.json")" != true || continue
-
+yarn workspaces list --no-private --json | jq --slurp --raw-output '.[].location' | while read -r dir; do
   # Create the tarball.
   pushd "$dir"
   name=$(jq -r .name < package.json)

@@ -99,8 +99,10 @@ fi
   mkdir -p "$STAMPS"
 
   if $NEED_NODEJS; then
+    # XXX any package manager should work
     lazy_yarn() {
       yarn --version 2>/dev/null 1>&2 || {
+        # TODO use corepack instead
         # Auto-download the Yarn version we need, if allowed.
         $SKIP_DOWNLOAD || {
           npm install -g yarn
@@ -122,7 +124,8 @@ fi
     files=( package.json )
     while IFS= read -r line; do
       files+=( "$line" )
-    done < <(lazy_yarn -s workspaces info |
+      # XXX can be simplified; no test coverage
+    done < <(lazy_yarn -s workspaces list --json |
       sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
 
     src=$(find "${files[@]}" "${print[@]}" | head -1 || true)

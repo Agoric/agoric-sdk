@@ -68,7 +68,7 @@ When one subproject depends upon another, `node_modules/` will contain a
 symlink to the subproject (e.g. `ERTP` depends upon `marshal`, so
 `node_modules/@endo/marshal` is a symlink to `packages/marshal`).
 
-Run `yarn workspaces info` to get a report on which subprojects (aka
+Run `yarn workspaces list` to get a report on which subprojects (aka
 "workspaces") depend upon which others. The `mismatchedWorkspaceDependencies`
 section tells us when symlinks could not be used (generally because e.g.
 `ERTP` wants `marshal@0.1.0`, but `packages/marshal/package.json` says it's
