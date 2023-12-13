@@ -9,7 +9,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.ts';
+import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,
@@ -17,7 +17,7 @@ import {
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
-} from './drivers.ts';
+} from './drivers.js';
 
 export type LiquidationSetup = {
   vaults: {
