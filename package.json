@@ -64,7 +64,6 @@
   },
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
-    "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "docs": "typedoc --tsconfig tsconfig.build.json",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
