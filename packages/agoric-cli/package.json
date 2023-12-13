@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/main.js",
   "bin": {
-    "agoric": "src/entrypoint.js",
-    "agops": "src/bin-agops.js"
+    "agops": "src/bin-agops.js",
+    "agoric": "src/entrypoint.js"
   },
   "exports": {
     "./src/entrypoint.js": "./src/entrypoint.js",
