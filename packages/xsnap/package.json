@@ -18,7 +18,7 @@
     "build": "yarn build:bin && yarn build:env",
     "postinstall": "yarn build:from-env",
     "clean": "rm -rf xsnap-native/xsnap/build",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "run-s --continue-on-error 'lint:*'",
     "lint:js": "eslint 'src/**/*.js' 'test/**/*.js' api.js",
     "lint:types": "tsc",
     "lint-fix": "eslint --fix 'src/**/*.js' 'test/**/*.js' api.js",

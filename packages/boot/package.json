@@ -10,7 +10,7 @@
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava 'test/bootstrapTests/**/test-*.js' 'test/upgrading/**/test-*.js'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "run-s --continue-on-error 'lint:*'",
     "lint:types": "tsc",
     "lint:eslint": "eslint ."
   },

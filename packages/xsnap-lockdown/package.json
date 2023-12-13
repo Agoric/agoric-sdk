@@ -11,7 +11,7 @@
     "build:bundle-source": "node scripts/build-bundle.js",
     "build": "yarn build:bundle-rollup && yarn build:bundle-source",
     "clean": "rm -rf dist",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "run-s --continue-on-error 'lint:*'",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
     "lint:types": "tsc",
     "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
