@@ -164,11 +164,13 @@ The supported command line options are:
 | `-l`<br/>`--local` | Shorthand for `--vat-type local` (vats run in the same process as the kernel; less realistic than `xs-worker` but much faster and easier to debug) |
 | `-n`<br/>`--node` | Shorthand for `--vat-type node-subprocess` |
 | `-x`<br/>`--xs` | Shorthand for `--vat-type xs-worker` |
-| `-o PATH`<br/>`--output PATH` | Output JSON-formated benchmark data into _PATH_ |
-| `-s PATH`<br/>`--slog PATH` | Output a slog file into _PATH_ |
-| `-p VATID`<br/>`--profile VATID` | Collect CPU profile data for vat VATID |
-| `-d VATID`<br/>`--debug VATID` | Enable debug mode for vat VATID |
+| `-o PATH`<br/>`--output PATH` | Output JSON-formated benchmark data into a file named _PATH_ |
+| `-s PATH`<br/>`--slog PATH` | Output a slog file into a file named _PATH_ |
+| `-p VATID`<br/>`--profile VATID` | Collect CPU profile data for vat VATID (may be specified more than once) |
+| `-d VATID`<br/>`--debug VATID` | Enable debug mode for vat VATID (may be specified more than once) |
 | `-h`<br/>`--help` | Output this helpful usage information and then exit |
+
+VATIDs take the form of a "v" followed by decimal digits, e.g, "v9" or "v47".
 
 An optional `--` flag ends the options list.  Any remaining command line
 arguments after `--` are are passed to the benchmark itself in the
@@ -191,7 +193,7 @@ crank counts, and the various kernel resource usage data reported by
 Per-vat JS engine-level profiling is enabled for a given vat via the `--profile
 VATID` command line option.  Note that this option is only available when the
 vat manager type is `node-process` or `xs-worker`.  For `node-process` vats, the
-profiling data will be placed in the file `CPU.${vatID}:${vatName}.cpuprofile`.
+profiling data will be placed in the file `CPU.${vatID}-${vatName}.cpuprofile`.
 The `.cpuprofile` file format can be read and displayed by Chrome debugger, VS
 Code plugins available for this purpose, and various other tools.  For
 `xs-worker` vats, profiling data format is TBD.

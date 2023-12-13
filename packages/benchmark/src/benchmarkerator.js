@@ -187,13 +187,13 @@ FLAGS may be:
   --profile VATID   - turn on CPU profile for vat VATID (may be repeated for multiple vats)
 
   -d VATID
-  --debug VATID     - turn on debugging for vat VATID
+  --debug VATID     - turn on debugging for vat VATID (may be repeated for multiple vats)
 
   -s PATH
-  --slog PATH       - output a slog file into PATH
+  --slog PATH       - output a slog file into a file named PATH
 
   -o PATH
-  --output PATH     - output JSON-formatted benchmark data into PATH
+  --output PATH     - output JSON-formatted benchmark data into a file named PATH
 
   -h
   --help            - output this helpful usage information and then exit
@@ -293,10 +293,10 @@ while (argv[0] && stillScanningArgs) {
 
 if (defaultManagerType === 'local') {
   if (profileVats.length > 0) {
-    fail`per-vat profiling not supported under vat type 'local'`;
+    fail(`per-vat profiling not supported under vat type 'local'`);
   }
   if (debugVats.length > 0) {
-    fail`per-vat debugging not supported under vat type 'local'`;
+    fail(`per-vat debugging not supported under vat type 'local'`);
   }
 }
 
