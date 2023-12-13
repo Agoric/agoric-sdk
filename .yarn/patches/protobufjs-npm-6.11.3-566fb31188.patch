@@ -1,8 +1,8 @@
-diff --git a/node_modules/protobufjs/src/util/minimal.js b/node_modules/protobufjs/src/util/minimal.js
-index 3c406de..083f71c 100644
---- a/node_modules/protobufjs/src/util/minimal.js
-+++ b/node_modules/protobufjs/src/util/minimal.js
-@@ -280,13 +280,38 @@ function newError(name) {
+diff --git a/src/util/minimal.js b/src/util/minimal.js
+index 3c406dee753b5c6fb29dda2e64d4482e754e7873..182aae76467453e3a57a54b4790f29e331ad26f0 100644
+--- a/src/util/minimal.js
++++ b/src/util/minimal.js
+@@ -280,14 +280,39 @@ function newError(name) {
              merge(this, properties);
      }
  
@@ -13,7 +13,8 @@ index 3c406de..083f71c 100644
 -    CustomError.prototype.toString = function toString() {
 -        return this.name + ": " + this.message;
 -    };
-+    CustomError.prototype = Object.create(Error.prototype, {
+-
++        CustomError.prototype = Object.create(Error.prototype, {
 +        constructor: {
 +            value: CustomError,
 +            writable: true,
@@ -45,6 +46,7 @@ index 3c406de..083f71c 100644
 +            configurable: true,
 +        },
 +    });
- 
++        
      return CustomError;
  }
+ 
