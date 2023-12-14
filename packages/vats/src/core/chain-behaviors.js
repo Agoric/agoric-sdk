@@ -52,54 +52,57 @@ export const bridgeCoreEval = async allPowers => {
   };
   harden(evaluateBundleCap);
 
+  /**
+   * Type defined by
+   * `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto` CoreEval.
+   *
+   * @typedef {{ json_permits: string; js_code: string }} CoreEval
+   */
+
+  /**
+   * Evaluates code in a single-use compartment to get a "behavior"
+   * which is then invoked with powers attenuated according to permits.
+   *
+   * @param {CoreEval} coreEval
+   * @returns {unknown}
+   */
+  const evaluateCoreEval = ({ json_permits: permitsSrc, js_code: code }) => {
+    const permits = JSON.parse(permitsSrc);
+    const powers = extractPowers(permits, {
+      evaluateBundleCap,
+      ...allPowers,
+    });
+
+    // Inspired by ../repl.js:
+    const globals = harden({
+      ...allPowers.modules,
+      ...farExports,
+      ...endowments,
+    });
+
+    const compartment = new Compartment(globals);
+    harden(compartment.globalThis);
+    const behavior = compartment.evaluate(code);
+    return behavior(powers);
+  };
+
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
     async fromBridge(obj) {
-      switch (obj.type) {
-        case 'CORE_EVAL': {
-          /**
-           * Type defined by
-           * `agoric-sdk/golang/cosmos/proto/agoric/swingset/swingset.proto`
-           * CoreEval.
-           *
-           * @type {{ evals: { json_permits: string; js_code: string }[] }}
-           */
-          const { evals } = obj;
-          return Promise.all(
-            evals.map(({ json_permits: jsonPermit, js_code: code }) =>
-              // Run in a new turn to avoid crosstalk of the evaluations.
-              Promise.resolve()
-                .then(() => {
-                  const permit = JSON.parse(jsonPermit);
-                  const powers = extractPowers(permit, {
-                    evaluateBundleCap,
-                    ...allPowers,
-                  });
-
-                  // Inspired by ../repl.js:
-                  const globals = harden({
-                    ...allPowers.modules,
-                    ...farExports,
-                    ...endowments,
-                  });
-
-                  // Evaluate the code in the context of the globals.
-                  const compartment = new Compartment(globals);
-                  harden(compartment.globalThis);
-                  const behavior = compartment.evaluate(code);
-                  return behavior(powers);
-                })
-                .catch(err => {
-                  console.error('CORE_EVAL failed:', err);
-                  throw err;
-                }),
-            ),
-          ).then(_ => {});
-        }
-        default: {
-          throw Fail`Unrecognized request ${obj.type}`;
-        }
-      }
+      obj.type === 'CORE_EVAL' || Fail`Unrecognized request ${obj.type}`;
+      /** @type {{ evals: CoreEval[] }} */
+      const { evals } = obj;
+      await Promise.all(
+        evals.map(coreEval => {
+          // Run in a new turn to avoid crosstalk of the evaluations.
+          return Promise.resolve()
+            .then(() => evaluateCoreEval(coreEval))
+            .catch(err => {
+              console.error('CORE_EVAL failed:', err);
+              throw err;
+            });
+        }),
+      );
     },
   });
   coreEvalBridgeHandler.resolve(handler);
