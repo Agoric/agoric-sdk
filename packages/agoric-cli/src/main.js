@@ -19,8 +19,8 @@ import followMain from './follow.js';
 import walletMain from './open.js';
 import { makeWalletCommand } from './commands/wallet.js';
 
-const DEFAULT_DAPP_TEMPLATE = 'dapp-game-places';
-const DEFAULT_DAPP_URL_BASE = 'https://github.com/agoric-labs/';
+const DEFAULT_DAPP_TEMPLATE = 'dapp-offer-up';
+const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
 const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
