@@ -22,7 +22,7 @@ import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWallet
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
-import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
+import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { SwingsetTestKit } from './supports.ts';
 
 export const makeWalletFactoryDriver = async (
