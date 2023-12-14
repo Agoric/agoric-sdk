@@ -160,7 +160,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function allocatePromiseID() {
-    return vrm.allocateNextID('promiseID');
+    const exportID = nextExportID;
+    nextExportID += 1;
+    return exportID;
   }
 
   let nextCollectionID = 1;
