@@ -14,7 +14,7 @@
     "build": "exit 0",
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
-    "test:xs-worker": "ava test/workers/test-worker.js -m 'xsnap vat manager'",
+    "test:xs-worker": "ava test/workers -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
