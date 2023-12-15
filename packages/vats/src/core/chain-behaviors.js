@@ -95,12 +95,9 @@ export const bridgeCoreEval = async allPowers => {
       await Promise.all(
         evals.map(coreEval => {
           // Run in a new turn to avoid crosstalk of the evaluations.
-          return Promise.resolve()
-            .then(() => evaluateCoreEval(coreEval))
-            .catch(err => {
-              console.error('CORE_EVAL failed:', err);
-              throw err;
-            });
+          const evalP = E(evaluateCoreEval)(coreEval);
+          evalP.catch(err => console.error('CORE_EVAL failed:', err));
+          return evalP;
         }),
       );
     },
