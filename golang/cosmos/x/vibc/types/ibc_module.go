@@ -1,10 +1,6 @@
-package vibc
+package types
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-
 	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -27,144 +23,23 @@ const (
 )
 
 var (
-	_ porttypes.IBCModule = IBCModule{}
+	_ porttypes.IBCModule = (*IBCModule)(nil)
 )
 
+type IBCModuleImpl interface {
+	ClaimCapability(ctx sdk.Context, channelCap *capability.Capability, path string) error
+	GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool)
+	PushAction(ctx sdk.Context, action vm.Action) error
+}
+
 type IBCModule struct {
-	keeper Keeper
+	impl IBCModuleImpl
 }
 
-type portMessage struct { // comes from swingset's IBC handler
-	Type              string              `json:"type"` // IBC_METHOD
-	Method            string              `json:"method"`
-	Packet            channeltypes.Packet `json:"packet"`
-	RelativeTimeoutNs uint64              `json:"relativeTimeoutNs,string"`
-	Order             string              `json:"order"`
-	Hops              []string            `json:"hops"`
-	Version           string              `json:"version"`
-	Ack               []byte              `json:"ack"`
-}
-
-func stringToOrder(order string) channeltypes.Order {
-	switch order {
-	case "ORDERED":
-		return channeltypes.ORDERED
-	case "UNORDERED":
-		return channeltypes.UNORDERED
-	default:
-		return channeltypes.NONE
-	}
-}
-
-func orderToString(order channeltypes.Order) string {
-	switch order {
-	case channeltypes.ORDERED:
-		return "ORDERED"
-	case channeltypes.UNORDERED:
-		return "UNORDERED"
-	default:
-		return "NONE"
-	}
-}
-
-func NewIBCModule(keeper Keeper) IBCModule {
+func NewIBCModule(impl IBCModuleImpl) IBCModule {
 	return IBCModule{
-		keeper: keeper,
+		impl: impl,
 	}
-}
-
-func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
-	// fmt.Println("ibc.go downcall", str)
-	ctx := sdk.UnwrapSDKContext(cctx)
-	keeper := ch.keeper
-
-	msg := new(portMessage)
-	err = json.Unmarshal([]byte(str), &msg)
-	if err != nil {
-		return ret, err
-	}
-
-	if msg.Type != "IBC_METHOD" {
-		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"`)
-	}
-
-	switch msg.Method {
-	case "sendPacket":
-		timeoutTimestamp := msg.Packet.TimeoutTimestamp
-		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
-			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
-		}
-
-		seq, err := keeper.SendPacket(
-			ctx,
-			msg.Packet.SourcePort,
-			msg.Packet.SourceChannel,
-			msg.Packet.TimeoutHeight,
-			timeoutTimestamp,
-			msg.Packet.Data,
-		)
-		if err == nil {
-			// synthesize the sent packet
-			packet := channeltypes.NewPacket(
-				msg.Packet.Data, seq,
-				msg.Packet.SourcePort, msg.Packet.SourceChannel,
-				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-				msg.Packet.TimeoutHeight, timeoutTimestamp,
-			)
-			bytes, err := json.Marshal(&packet)
-			if err == nil {
-				ret = string(bytes)
-			}
-		}
-
-	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "startChannelOpenInit":
-		err = keeper.ChanOpenInit(
-			ctx, stringToOrder(msg.Order), msg.Hops,
-			msg.Packet.SourcePort,
-			msg.Packet.DestinationPort,
-			msg.Version,
-		)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "bindPort":
-		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx, msg.Packet)
-		if err == nil {
-			ret = "true"
-		}
-
-	default:
-		err = fmt.Errorf("unrecognized method %s", msg.Method)
-	}
-
-	// fmt.Println("ibc.go downcall reply", ret, err)
-	return
-}
-
-func (im IBCModule) PushAction(ctx sdk.Context, action vm.Action) error {
-	// fmt.Println("ibc.go upcall", send)
-	return im.keeper.PushAction(ctx, action)
-	// fmt.Println("ibc.go upcall reply", reply, err)
 }
 
 type channelOpenInitEvent struct {
@@ -200,13 +75,13 @@ func (im IBCModule) OnChanOpenInit(
 		AsyncVersions:  AsyncVersions,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return "", err
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err := im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+	if err := im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
 		return "", err
 	}
 
@@ -250,17 +125,24 @@ func (im IBCModule) OnChanOpenTry(
 		AsyncVersions:  AsyncVersions,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return "", err
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err = im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+	if err = im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
 		return "", sdkioerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
-	return event.Version, err
+	if !event.AsyncVersions {
+		// We have to supply a synchronous version, so just echo back the one they sent.
+		return event.Version, nil
+	}
+
+	// Use an empty version string to indicate that the VM explicitly (possibly
+	// async) performs the WriteOpenTryChannel.
+	return "", nil
 }
 
 type channelOpenAckEvent struct {
@@ -282,7 +164,7 @@ func (im IBCModule) OnChanOpenAck(
 ) error {
 	// We don't care if the channel was found.  If it wasn't then GetChannel
 	// returns an empty channel object that we can still use without crashing.
-	channel, _ := im.keeper.GetChannel(ctx, portID, channelID)
+	channel, _ := im.impl.GetChannel(ctx, portID, channelID)
 
 	channel.Counterparty.ChannelId = counterpartyChannelID
 	event := channelOpenAckEvent{
@@ -293,7 +175,7 @@ func (im IBCModule) OnChanOpenAck(
 		ConnectionHops:      channel.ConnectionHops,
 	}
 
-	return im.PushAction(ctx, event)
+	return im.impl.PushAction(ctx, event)
 }
 
 type channelOpenConfirmEvent struct {
@@ -313,7 +195,7 @@ func (im IBCModule) OnChanOpenConfirm(
 		ChannelID: channelID,
 	}
 
-	return im.PushAction(ctx, event)
+	return im.impl.PushAction(ctx, event)
 }
 
 type channelCloseInitEvent struct {
@@ -333,7 +215,7 @@ func (im IBCModule) OnChanCloseInit(
 		ChannelID: channelID,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	return err
 }
 
@@ -354,7 +236,7 @@ func (im IBCModule) OnChanCloseConfirm(
 		ChannelID: channelID,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	return err
 }
 
@@ -383,7 +265,7 @@ func (im IBCModule) OnRecvPacket(
 		Relayer: relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
@@ -411,7 +293,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 		Relayer:         relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -436,7 +318,7 @@ func (im IBCModule) OnTimeoutPacket(
 		Relayer: relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}

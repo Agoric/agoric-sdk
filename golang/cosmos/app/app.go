@@ -502,16 +502,13 @@ func NewAgoricApp(
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
-		appCodec, keys[vibc.StoreKey],
+		appCodec,
 		app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.BankKeeper,
-		scopedVibcKeeper,
-		app.SwingSetKeeper.PushAction,
-	)
+	).WithScope(keys[vibc.StoreKey], scopedVibcKeeper, app.SwingSetKeeper.PushAction)
 
-	vibcModule := vibc.NewAppModule(app.VibcKeeper)
+	vibcModule := vibc.NewAppModule(app.VibcKeeper, app.BankKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
-	app.vibcPort = vm.RegisterPortHandler("vibc", vibcIBCModule)
+	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),

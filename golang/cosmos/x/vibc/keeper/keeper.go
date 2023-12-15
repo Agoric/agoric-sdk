@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	sdkioerrors "cosmossdk.io/errors"
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
@@ -16,47 +15,66 @@ import (
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
 
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
-	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
+)
+
+var (
+	_ porttypes.ICS4Wrapper = Keeper{}
+	_ types.IBCModuleImpl   = Keeper{}
+	_ types.ReceiverImpl    = Keeper{}
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey storetypes.StoreKey
-	cdc      codec.Codec
+	cdc codec.Codec
 
 	channelKeeper types.ChannelKeeper
 	portKeeper    types.PortKeeper
-	scopedKeeper  capabilitykeeper.ScopedKeeper
-	bankKeeper    bankkeeper.Keeper
 
-	PushAction vm.ActionPusher
+	// Filled out by `WithScope`
+	scopedKeeper types.ScopedKeeper
+	storeKey     storetypes.StoreKey
+	pushAction   vm.ActionPusher
 }
 
-// NewKeeper creates a new dIBC Keeper instance
+// NewKeeper creates a new vibc Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key storetypes.StoreKey,
-	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
-	bankKeeper bankkeeper.Keeper,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
-	pushAction vm.ActionPusher,
+	cdc codec.Codec,
+	channelKeeper types.ChannelKeeper,
+	portKeeper types.PortKeeper,
 ) Keeper {
 
 	return Keeper{
-		storeKey:      key,
 		cdc:           cdc,
-		bankKeeper:    bankKeeper,
 		channelKeeper: channelKeeper,
 		portKeeper:    portKeeper,
-		scopedKeeper:  scopedKeeper,
-		PushAction:    pushAction,
 	}
 }
 
-func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return k.bankKeeper.GetBalance(ctx, addr, denom)
+// WithScope returns a new Keeper copied from the receiver, but with the given
+// store key, scoped keeper, and push action.
+func (k Keeper) WithScope(storeKey storetypes.StoreKey, scopedKeeper types.ScopedKeeper, pushAction vm.ActionPusher) Keeper {
+	k.storeKey = storeKey
+	k.scopedKeeper = scopedKeeper
+	k.pushAction = pushAction
+	return k
+}
+
+// PushAction sends a vm.Action to the VM controller.
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
+	return k.pushAction(ctx, action)
+}
+
+// GetICS4Wrapper returns the ICS4Wrapper interface for the keeper.
+func (k Keeper) GetICS4Wrapper() porttypes.ICS4Wrapper {
+	return k
+}
+
+// GetAppVersion defines a wrapper function for the channel Keeper's function
+// in order to expose it to the vibc IBC handler.
+func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+	return k.channelKeeper.GetAppVersion(ctx, portID, channelID)
 }
 
 // GetChannel defines a wrapper function for the channel Keeper's function
@@ -65,9 +83,8 @@ func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channelty
 	return k.channelKeeper.GetChannel(ctx, portID, channelID)
 }
 
-// ChanOpenInit defines a wrapper function for the channel Keeper's function
-// in order to expose it to the vibc IBC handler.
-func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
+// ReceiveChanOpenInit wraps the keeper's ChanOpenInit function.
+func (k Keeper) ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
 	portID, rPortID, version string,
 ) error {
 	capName := host.PortPath(portID)
@@ -92,41 +109,41 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 	return nil
 }
 
+// ReceiveSendPacket wraps the keeper's SendPacket function.
+func (k Keeper) ReceiveSendPacket(ctx sdk.Context, packet ibcexported.PacketI) (uint64, error) {
+	sourcePort := packet.GetSourcePort()
+	sourceChannel := packet.GetSourceChannel()
+	timeoutHeight := packet.GetTimeoutHeight()
+	timeoutRevisionNumber := timeoutHeight.GetRevisionNumber()
+	timeoutRevisionHeight := timeoutHeight.GetRevisionHeight()
+	clientTimeoutHeight := clienttypes.NewHeight(timeoutRevisionNumber, timeoutRevisionHeight)
+	timeoutTimestamp := packet.GetTimeoutTimestamp()
+	data := packet.GetData()
+
+	capName := host.ChannelCapabilityPath(sourcePort, sourceChannel)
+	chanCap, ok := k.GetCapability(ctx, capName)
+	if !ok {
+		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+	}
+	return k.SendPacket(ctx, chanCap, sourcePort, sourceChannel, clientTimeoutHeight, timeoutTimestamp, data)
+}
+
 // SendPacket defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) SendPacket(
 	ctx sdk.Context,
+	chanCap *capability.Capability,
 	sourcePort string,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
 	timeoutTimestamp uint64,
 	data []byte,
 ) (uint64, error) {
-	capName := host.ChannelCapabilityPath(sourcePort, sourceChannel)
-	chanCap, ok := k.GetCapability(ctx, capName)
-	if !ok {
-		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
-	}
 	return k.channelKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
-var _ ibcexported.Acknowledgement = (*rawAcknowledgement)(nil)
-
-type rawAcknowledgement struct {
-	data []byte
-}
-
-func (r rawAcknowledgement) Acknowledgement() []byte {
-	return r.data
-}
-
-func (r rawAcknowledgement) Success() bool {
-	return true
-}
-
-// WriteAcknowledgement defines a wrapper function for the channel Keeper's function
-// in order to expose it to the vibc IBC handler.
-func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement []byte) error {
+// ReceiveWriteAcknowledgement wraps the keeper's WriteAcknowledgment function.
+func (k Keeper) ReceiveWriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
 	portID := packet.GetDestPort()
 	channelID := packet.GetDestChannel()
 	capName := host.ChannelCapabilityPath(portID, channelID)
@@ -134,15 +151,33 @@ func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI
 	if !ok {
 		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	ack := rawAcknowledgement{
-		data: acknowledgement,
-	}
+	return k.WriteAcknowledgement(ctx, chanCap, packet, ack)
+}
+
+// WriteAcknowledgement defines a wrapper function for the channel Keeper's function
+// in order to expose it to the vibc IBC handler.
+func (k Keeper) WriteAcknowledgement(ctx sdk.Context, chanCap *capability.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
 	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
-// ChanCloseInit defines a wrapper function for the channel Keeper's function
+// ReceiveWriteOpenTryChannel wraps the keeper's WriteOpenTryChannel function.
+func (k Keeper) ReceiveWriteOpenTryChannel(ctx sdk.Context, packet ibcexported.PacketI, order channeltypes.Order, connectionHops []string, version string) error {
+	portID := packet.GetDestPort()
+	channelID := packet.GetDestChannel()
+	counterparty := channeltypes.NewCounterparty(packet.GetSourcePort(), packet.GetSourceChannel())
+	k.WriteOpenTryChannel(ctx, portID, channelID, order, connectionHops, counterparty, version)
+	return nil
+}
+
+// WriteOpenTryChannel is a wrapper function for the channel Keeper's function
+func (k Keeper) WriteOpenTryChannel(ctx sdk.Context, portID, channelID string, order channeltypes.Order,
+	connectionHops []string, counterparty channeltypes.Counterparty, version string) {
+	k.channelKeeper.WriteOpenTryChannel(ctx, portID, channelID, order, connectionHops, counterparty, version)
+}
+
+// ReceiveChanCloseInit is a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
-func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
+func (k Keeper) ReceiveChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
@@ -155,20 +190,21 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	return nil
 }
 
-// BindPort defines a wrapper function for the port Keeper's function in
-// order to expose it to the vibc IBC handler.
-func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	_, ok := k.scopedKeeper.GetCapability(ctx, host.PortPath(portID))
+// ReceiveBindPort is a wrapper function for the port Keeper's function in order
+// to expose it to the vibc IBC handler.
+func (k Keeper) ReceiveBindPort(ctx sdk.Context, portID string) error {
+	portPath := host.PortPath(portID)
+	_, ok := k.GetCapability(ctx, portPath)
 	if ok {
 		return fmt.Errorf("port %s is already bound", portID)
 	}
 	cap := k.portKeeper.BindPort(ctx, portID)
-	return k.ClaimCapability(ctx, cap, host.PortPath(portID))
+	return k.ClaimCapability(ctx, cap, portPath)
 }
 
-// TimeoutExecuted defines a wrapper function for the channel Keeper's function
-// in order to expose it to the vibc IBC handler.
-func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
+// ReceiveTimeoutExecuted is a wrapper function for the channel Keeper's
+// function in order to expose it to the vibc IBC handler.
+func (k Keeper) ReceiveTimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) error {
 	portID := packet.GetSourcePort()
 	channelID := packet.GetSourceChannel()
 	capName := host.ChannelCapabilityPath(portID, channelID)
@@ -180,11 +216,12 @@ func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) err
 }
 
 // ClaimCapability allows the vibc module to claim a capability that IBC module
-// passes to it
+// passes to it.
 func (k Keeper) ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error {
 	return k.scopedKeeper.ClaimCapability(ctx, cap, name)
 }
 
+// GetCapability allows the vibc module to retrieve a capability.
 func (k Keeper) GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool) {
 	return k.scopedKeeper.GetCapability(ctx, name)
 }
