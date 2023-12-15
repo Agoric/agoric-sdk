@@ -1,5 +1,6 @@
 /* global E */
-// @ts-nocheck
+// @ts-check
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)
@@ -26,12 +27,12 @@ const { values } = Object;
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
- * @param {ERef<NameAdmin>} nameAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
-   * @param {ERef<NameAdmin>} nextAdmin
+   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
    * @param {string[]} path
    */
   const nextPath = async (nextAdmin, path) => {
