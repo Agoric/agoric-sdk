@@ -75,8 +75,9 @@ test.after.always(t => {
 test('metrics path', async t => {
   const { EV } = t.context.runUtils;
   // example of awaitVatObject
-  const vaultFactoryKit =
-    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
+    'vaultFactoryKit',
+  );
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
   const vfMetricsPath = await EV.get(vfTopics.metrics).storagePath;
   t.is(vfMetricsPath, 'published.vaultFactory.metrics');

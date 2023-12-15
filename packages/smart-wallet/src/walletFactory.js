@@ -2,6 +2,9 @@
  * @file Wallet Factory
  *
  * Contract to make smart wallets.
+ *
+ * Note: The upgrade test uses a slightly modified copy of this file. When the
+ * interface changes here, that will also need to change.
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
@@ -223,11 +226,13 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
-  // An object known only to walletFactory and smartWallets. The WalletFactory
-  // only has the self facet for the pre-existing wallets that must be repaired.
-  // Self is too accessible, so use of the repair function requires use of a
-  // secret that clients won't have. This can be removed once the upgrade has
-  // taken place.
+  /**
+   * An object known only to walletFactory and smartWallets. The WalletFactory
+   * only has the self facet for the pre-existing wallets that must be repaired.
+   * Self is too accessible, so use of the repair function requires use of a
+   * secret that clients won't have. This can be removed once the upgrade has
+   * taken place.
+   */
   const upgradeToIncarnation2Key = harden({});
 
   const shared = harden({
@@ -255,6 +260,9 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   if (!baggage.has(UPGRADE_TO_INCARNATION_TWO)) {
     trace('Wallet Factory upgrading to incarnation 2');
 
+    // This could take a while, depending on how many outstanding wallets exist.
+    // The current plan is that it will run exactly once, and inside an upgrade
+    // handler, between blocks.
     for (const wallet of walletsByAddress.values()) {
       wallet.repairWalletForIncarnation2(upgradeToIncarnation2Key);
     }

@@ -372,7 +372,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       purseForBrand: M.call(BrandShape).returns(M.promise()),
       logWalletInfo: M.call(M.any()).returns(),
       logWalletError: M.call(M.any()).returns(),
-      // XXX is there a better guard for a bigMapStore?
+      // XXX is there a tighter guard for a bigMapStore than M.any()?
       getLiveOfferPayments: M.call().returns(M.any()),
     }),
 
@@ -566,14 +566,16 @@ export const prepareSmartWallet = (baggage, shared) => {
           return purse;
         },
 
-        // see https://github.com/Agoric/agoric-sdk/issues/8445 and
-        // https://github.com/Agoric/agoric-sdk/issues/8286. As originally
-        // released, the smartWallet didn't durably monitor the promises for the
-        // outcomes of offers, and would have dropped them on upgrade of Zoe or
-        // the smartWallet itself. Using watchedPromises, (see offerWatcher.js)
-        // we've addressed the problem for new offers. The function will
-        // backfill the solution for offers that were outstanding before the
-        // transition to incarnation 2 of the smartWallet.
+        /**
+         * see https://github.com/Agoric/agoric-sdk/issues/8445 and
+         * https://github.com/Agoric/agoric-sdk/issues/8286. As originally
+         * released, the smartWallet didn't durably monitor the promises for the
+         * outcomes of offers, and would have dropped them on upgrade of Zoe or
+         * the smartWallet itself. Using watchedPromises, (see offerWatcher.js)
+         * we've addressed the problem for new offers. This function will
+         * backfill the solution for offers that were outstanding before the
+         * transition to incarnation 2 of the smartWallet.
+         */
         async repairUnwatchedSeats() {
           const { state, facets } = this;
           const { address, invitationPurse } = state;
@@ -1014,22 +1016,27 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         getPublicTopics() {
           const { state } = this;
+          const { currentRecorderKit, updateRecorderKit } = state;
 
           return harden({
             current: {
               description: 'Current state of wallet',
-              subscriber: state.currentRecorderKit.subscriber,
-              storagePath: state.currentRecorderKit.recorder.getStoragePath(),
+              subscriber: currentRecorderKit.subscriber,
+              storagePath: currentRecorderKit.recorder.getStoragePath(),
             },
             updates: {
               description: 'Changes to wallet',
-              subscriber: state.updateRecorderKit.subscriber,
-              storagePath: state.updateRecorderKit.recorder.getStoragePath(),
+              subscriber: updateRecorderKit.subscriber,
+              storagePath: updateRecorderKit.recorder.getStoragePath(),
             },
           });
         },
-        // one-time use function. Remove this and repairUnwatchedSeats once the
-        // repair has taken place.
+        /**
+         * one-time use function. Remove this and repairUnwatchedSeats once the
+         * repair has taken place.
+         *
+         * @param {object} key
+         */
         repairWalletForIncarnation2(key) {
           const { facets } = this;
 

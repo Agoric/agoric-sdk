@@ -2,7 +2,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 
 /**
  * @file
- *   `agoric run scripts/vats/upgrade-wallet-factory2.js | tee run-report.txt`
+ *   `agoric run scripts/smart-wallet/build-wallet-factory2-upgrade.js`
  * produces a proposal and permit file, as well as the necessary bundles. It
  * also prints helpful instructions for copying the files and installing them.
  */
