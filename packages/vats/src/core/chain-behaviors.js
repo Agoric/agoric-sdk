@@ -60,8 +60,8 @@ export const bridgeCoreEval = async allPowers => {
    */
 
   /**
-   * Evaluates code in a single-use compartment to get a "behavior"
-   * which is then invoked with powers attenuated according to permits.
+   * Evaluates code in a single-use compartment to get a "behavior" which is
+   * then invoked with powers attenuated according to permits.
    *
    * @param {CoreEval} coreEval
    * @returns {unknown}
