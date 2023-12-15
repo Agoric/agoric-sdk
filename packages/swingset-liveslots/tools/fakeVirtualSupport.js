@@ -159,10 +159,12 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return exportID;
   }
 
+  // different starting point for more distinct IDs
+  let nextPromiseID = 7;
   function allocatePromiseID() {
-    const exportID = nextExportID;
-    nextExportID += 1;
-    return exportID;
+    const promiseID = nextPromiseID;
+    nextPromiseID += 1;
+    return promiseID;
   }
 
   let nextCollectionID = 1;
