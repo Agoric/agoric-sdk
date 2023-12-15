@@ -75,7 +75,7 @@ export const outputAction = (bridgeAction, stdout = process.stdout) => {
   stdout.write('\n');
 };
 
-const sendHint =
+export const sendHint =
   'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
 
 /**
@@ -101,6 +101,7 @@ export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
     offer,
   };
   outputAction(spendAction, stdout);
+  stdout.write(sendHint);
 };
 
 /**
