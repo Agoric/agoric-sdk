@@ -397,7 +397,7 @@ type BootstrapPowers = BootstrapSpace & {
   vatPowers: { [prop: string]: any; D: DProxy };
   vatParameters: BootstrapVatParams;
   runBehaviors: (manifest: unknown) => Promise<unknown>;
-  modules: Record<string, Record<string, any>>;
+  modules: import('./boot-chain.js').BootstrapModules;
 };
 
 type BootstrapSpace = WellKnownSpaces &

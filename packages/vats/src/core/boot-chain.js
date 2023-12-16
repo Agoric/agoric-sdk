@@ -17,6 +17,7 @@ const modules = {
   behaviors: { ...behaviors },
   utils: { ...utils },
 };
+/** @typedef {typeof modules} BootstrapModules */
 
 export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
 

@@ -26,7 +26,7 @@ const config = {
 };
 
 /** @param {unknown} permittedPowers see gov-add-psm-permit.json */
-const main = async permittedPowers => {
+const govAddPsm = async permittedPowers => {
   console.log('starting PSM:', DAI);
   const {
     consume: { feeMintAccess: _, ...restC },
@@ -43,4 +43,4 @@ const main = async permittedPowers => {
 };
 
 // "export" from script
-main;
+govAddPsm;
