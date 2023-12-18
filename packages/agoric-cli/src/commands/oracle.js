@@ -15,6 +15,7 @@ import {
   makeWalletUtils,
   outputAction,
   sendAction,
+  sendHint,
 } from '../lib/wallet.js';
 import { bigintReplacer } from '../lib/format.js';
 
@@ -128,7 +129,7 @@ export const makeOracleCommand = (logger, io = {}) => {
         offer,
       });
 
-      console.warn('Now execute the prepared offer');
+      console.warn(sendHint);
     });
 
   oracle
@@ -163,7 +164,7 @@ export const makeOracleCommand = (logger, io = {}) => {
         offer,
       });
 
-      console.warn('Now execute the prepared offer');
+      console.warn(sendHint);
     });
 
   const findOracleCap = async (instance, from, readLatestHead) => {
