@@ -205,6 +205,7 @@ const setupServices = async (
    *   CollateralManager,
    * ]}
    */
+  // @ts-expect-error Undiagnosed test-only type error
   const [
     governorInstance,
     vaultFactory, // creator
@@ -700,6 +701,7 @@ test('liquidate two loans', async t => {
   let shortfallBalance = 0n;
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -1225,6 +1227,7 @@ test('collect fees from loan', async t => {
   await reserveMetrics.assertInitial(reserveInitialState(run.makeEmpty()));
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -1476,6 +1479,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   let shortfallBalance = 0n;
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -1786,6 +1790,7 @@ test('reinstate vault', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -2087,6 +2092,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -2321,6 +2327,7 @@ test('Bug 7346 excess collateral to holder', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -2773,6 +2780,7 @@ test('Bug 7784 reconstitute both', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -2990,6 +2998,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present
@@ -3268,6 +3277,7 @@ test('Bug 7851 & no bidders', async t => {
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
   const cm = await E(aethVaultManager).getPublicFacet();
+  // @ts-expect-error Undiagnosed test-only type error
   const aethVaultMetrics = await vaultManagerMetricsTracker(t, cm);
   await aethVaultMetrics.assertInitial({
     // present

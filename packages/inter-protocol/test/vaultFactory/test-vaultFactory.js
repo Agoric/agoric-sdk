@@ -227,6 +227,7 @@ const setupServices = async (
    *   CollateralManager,
    * ]}
    */
+  // @ts-expect-error Undiagnosed test-only type error
   const [
     governorInstance,
     vaultFactory, // creator
@@ -1704,6 +1705,7 @@ test('manager notifiers, with snapshot', async t => {
   const { aethVaultManager, vfPublic } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
+  // @ts-expect-error Undiagnosed test-only type error
   const m = await vaultManagerMetricsTracker(t, cm);
 
   trace('0. Creation');
