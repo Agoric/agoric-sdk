@@ -189,7 +189,7 @@ export const preparePaymentLedger = (
     if (recoverySetsState === 'noRecoverySets') {
       assert(optRecoverySet === undefined);
     }
-    if (optRecoverySet !== undefined) {
+    if (optRecoverySet !== undefined && !AmountMath.isEmpty(amount)) {
       optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
     }
