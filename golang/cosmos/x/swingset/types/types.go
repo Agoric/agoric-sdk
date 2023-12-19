@@ -45,16 +45,18 @@ type Messages struct {
 	Ack      uint64
 }
 
-func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
-	// [message[], ack]
-	// message [num, body]
-	packet := make([]interface{}, 2)
-	err := json.Unmarshal([]byte(jsonString), &packet)
+// UnmarshalMessagesJSON decodes Messages from JSON text.
+// Input must represent an array in which the first element is an array of
+// [messageNum: integer, messageBody: string] pairs and the second element is
+// an "Ack" integer.
+func UnmarshalMessagesJSON(jsonString string) (ret *Messages, err error) {
+	packet := [2]interface{}{}
+	err = json.Unmarshal([]byte(jsonString), &packet)
 	if err != nil {
 		return nil, err
 	}
 
-	ret := &Messages{}
+	ret = &Messages{}
 
 	ackFloat, ok := packet[1].(float64)
 	if !ok {
@@ -72,12 +74,13 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 
 	ret.Messages = make([]string, len(msgs))
 	ret.Nums = make([]uint64, len(msgs))
-	for i, nummsgi := range msgs {
-		nummsg, ok := nummsgi.([]interface{})
-		if !ok || len(nummsg) != 2 {
+	for i, rawMsg := range msgs {
+		arrMsg, ok := rawMsg.([]interface{})
+		if !ok || len(arrMsg) != 2 {
 			return nil, errors.New("Message is not a pair")
 		}
-		numFloat, ok := nummsg[0].(float64)
+
+		numFloat, ok := arrMsg[0].(float64)
 		if !ok {
 			return nil, errors.New("Message Num is not an integer")
 		}
@@ -85,11 +88,11 @@ func UnmarshalMessagesJSON(jsonString string) (*Messages, error) {
 		if err != nil {
 			return nil, errors.New("Message num is not a Nat")
 		}
-		msg, ok := nummsg[1].(string)
+
+		ret.Messages[i], ok = arrMsg[1].(string)
 		if !ok {
 			return nil, errors.New("Message is not a string")
 		}
-		ret.Messages[i] = msg
 	}
 
 	return ret, nil
