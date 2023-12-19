@@ -94,7 +94,7 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v6/modules/core/02-client"
 	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	ibcporttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	"github.com/gorilla/mux"
@@ -121,6 +121,8 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
+	vtransferkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
 
 	// Import the packet forward middleware
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
@@ -220,6 +222,7 @@ type GaiaApp struct { // nolint: golint
 	vibcPort         int
 	vstoragePort     int
 	vlocalchainPort  int
+	vtransferPort    int
 
 	upgradeDetails *upgradeDetails
 
@@ -260,6 +263,7 @@ type GaiaApp struct { // nolint: golint
 	VibcKeeper               vibc.Keeper
 	VbankKeeper              vbank.Keeper
 	VlocalchainKeeper        vlocalchain.Keeper
+	VtransferKeeper          vtransferkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -514,6 +518,14 @@ func NewAgoricApp(
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
 	app.vibcPort = app.AgdServer.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
+	vibcForVtransferKeeper := app.VibcKeeper.WithScope(nil, scopedTransferKeeper, func(ctx sdk.Context, action vm.Action) error {
+		// TODO: Send the event to the vm.
+		fmt.Println("@@@ vtransfer action", action)
+		return nil
+	})
+	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, vibcForVtransferKeeper)
+	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vibc.NewReceiver(app.VtransferKeeper))
+
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
@@ -555,7 +567,7 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
-		app.IBCKeeper.ChannelKeeper,
+		app.VtransferKeeper.GetICS4Wrapper(),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -569,11 +581,13 @@ func NewAgoricApp(
 		app.BankKeeper,
 		scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+	transferApp := transfer.NewAppModule(app.TransferKeeper)
+	var transferStack ibcporttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
-	transferPFMModule := packetforward.NewIBCMiddleware(
-		transferIBCModule,
+	transferStack = packetforward.NewIBCMiddleware(
+		transferStack,
 		app.PacketForwardKeeper,
 		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
@@ -596,14 +610,14 @@ func NewAgoricApp(
 	// create static IBC router, add transfer route, then set and seal it
 	// Don't be confused by the name!  The port router maps *module names* (not
 	// PortIDs) to modules.
-	ibcRouter := porttypes.NewRouter()
+	ibcRouter := ibcporttypes.NewRouter()
 
 	// transfer stack contains (from top to bottom):
 	// - ICA Host
-	// - Packet Forward Middleware wrapping transfer IBC
+	// - Packet Forward Middleware wrapping ibc-hooks, then transfer IBC
 	// - vIBC
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferPFMModule).
+		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(vibc.ModuleName, vibcIBCModule)
 
 	// Seal the router
@@ -658,7 +672,7 @@ func NewAgoricApp(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		transferModule,
+		transferApp,
 		icaModule,
 		packetforward.NewAppModule(app.PacketForwardKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
@@ -787,7 +801,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		transferApp,
 	)
 
 	app.sm.RegisterStoreDecoders()

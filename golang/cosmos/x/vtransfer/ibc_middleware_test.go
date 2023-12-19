@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
-	simappparams "github.com/cosmos/ibc-go/v4/testing/simapp/params"
+	simappparams "github.com/cosmos/ibc-go/v6/testing/simapp/params"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	ibctesting "github.com/cosmos/ibc-go/v4/testing"
-	"github.com/cosmos/ibc-go/v4/testing/simapp"
+	ibctesting "github.com/cosmos/ibc-go/v6/testing"
+	"github.com/cosmos/ibc-go/v6/testing/simapp"
 )
 
 type TestApp struct {
