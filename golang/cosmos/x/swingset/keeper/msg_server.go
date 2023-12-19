@@ -45,13 +45,11 @@ func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionM
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// msg.Nums and msg.Messages must be zipped into an array of [num, message] pairs.
 	messages := make([][]interface{}, len(msg.Messages))
 	for i, message := range msg.Messages {
-		messages[i] = make([]interface{}, 2)
-		messages[i][0] = msg.Nums[i]
-		messages[i][1] = message
+		messages[i] = []interface{}{msg.Nums[i], message}
 	}
-
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
 		Peer:        msg.Submitter.String(),
