@@ -60,13 +60,13 @@ export const bridgeCoreEval = async allPowers => {
    */
 
   /**
-   * Evaluates code in a single-use compartment to get a "behavior" which is
-   * then invoked with powers attenuated according to permits.
+   * Runs code in a single-use compartment to get a "behavior" which is then
+   * invoked with powers attenuated according to permits.
    *
    * @param {CoreEval} coreEval
    * @returns {unknown}
    */
-  const evaluateCoreEval = ({ json_permits: permitsSrc, js_code: code }) => {
+  const executeCoreEval = ({ json_permits: permitsSrc, js_code: code }) => {
     const permits = JSON.parse(permitsSrc);
     const powers = extractPowers(permits, {
       evaluateBundleCap,
@@ -95,7 +95,7 @@ export const bridgeCoreEval = async allPowers => {
       await Promise.all(
         evals.map(coreEval => {
           // Run in a new turn to avoid crosstalk of the evaluations.
-          const evalP = E(evaluateCoreEval)(coreEval);
+          const evalP = E(executeCoreEval)(coreEval);
           evalP.catch(err => console.error('CORE_EVAL failed:', err));
           return evalP;
         }),
