@@ -5,98 +5,97 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
+	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-
-	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/types"
-	transfertypes "github.com/cosmos/ibc-go/v4/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
+)
+
+var (
+	_ porttypes.ICS4Wrapper = (*Keeper)(nil)
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
-	cdc      codec.Codec
-
-	channelKeeper types.ChannelKeeper
-	portKeeper    types.PortKeeper
-	scopedKeeper  capabilitykeeper.ScopedKeeper
-	ics4Wrapper   porttypes.ICS4Wrapper
-
-	PushAction vm.ActionPusher
+	vibckeeper.Keeper
+	cdc codec.Codec
 }
 
 // NewKeeper creates a new dIBC Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey,
-	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
-	bankKeeper bankkeeper.Keeper,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
-	ics4Wrapper porttypes.ICS4Wrapper,
-	pushAction vm.ActionPusher,
+	cdc codec.Codec,
+	vibcKeeper vibckeeper.Keeper,
 ) Keeper {
-
 	return Keeper{
-		storeKey:      key,
-		cdc:           cdc,
-		channelKeeper: channelKeeper,
-		portKeeper:    portKeeper,
-		scopedKeeper:  scopedKeeper,
-		ics4Wrapper:   ics4Wrapper,
-		PushAction:    pushAction,
+		Keeper: vibcKeeper,
+		cdc:    cdc,
 	}
 }
 
-// GetAppVersion returns the underlying application version.
-func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return k.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
+func (k Keeper) ReceiveWriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
+	portID := packet.GetDestPort()
+	channelID := packet.GetDestChannel()
+	capName := host.ChannelCapabilityPath(portID, channelID)
+	chanCap, ok := k.GetCapability(ctx, capName)
+	if !ok {
+		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+	}
+	return k.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
-// OnRecvPacket implements our middleware's custom OnRecvPacket. Essentially we check to see if the memo contains a contract
+// WriteAcknowledgement implements our middleware's custom WriteAcknowledgement.
+// Essentially we check to see if the memo contains a contract
 // invocation, and if so, send it to the VM.
-func (k Keeper) OnRecvPacket(
+func (k Keeper) WriteAcknowledgement(
 	ctx sdk.Context,
-	packet channeltypes.Packet,
-	relayer sdk.AccAddress,
-) (ack exported.Acknowledgement, invoked bool) {
-
-	// Check the memo to see if this is a contract invocation.
-	transferData := transfertypes.MsgTransfer{}
-	err := transferData.Unmarshal(packet.GetData())
+	chanCap *capability.Capability,
+	packet ibcexported.PacketI,
+	ack ibcexported.Acknowledgement,
+) error {
+	_, err := k.parseContractInvoke(ctx, packet)
 	if err != nil {
-		return nil, false
-	}
-	if transferData.Memo != "" {
-		var call types.ContractInvoke
-		err = json.Unmarshal([]byte(transferData.Memo), &call)
-		// If the memo is not a contract invocation, we don't need to do anything and assume nothing needs to be done.
-		// Thus, it gets pushed up the middleware stack.
-		if err != nil {
-			return nil, false
-		}
-
-		// AFTER THIS POINT, WE KNOW THAT THE MEMO IS A CONTRACT INVOCATION
-
-		// Send to VM
-		event := types.ReceiveInvokeEvent{
-			Type:        "VTRANSFER_INVOKE",
-			Event:       "callContract",
-			Call:        call,
-			BlockHeight: ctx.BlockHeight(),
-			BlockTime:   ctx.BlockTime().Unix(),
-		}
-
-		err = k.PushAction(ctx, event)
-		if err != nil {
-			return channeltypes.NewErrorAcknowledgement(err), true
-		}
-		return nil, true
+		// We can't parse, but that means just to pass it up the middleware stack.
+		return k.Keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 	}
 
-	return nil, false
+	// AFTER THIS POINT, WE KNOW THAT THE MEMO IS A CONTRACT INVOCATION
+	// Send to VM
+	event := types.IBCMiddlewareEvent{
+		Event:       "writeAcknowledgement",
+		Packet:      packet,
+		PendingAck:  ack.Acknowledgement(),
+		BlockHeight: ctx.BlockHeight(),
+		BlockTime:   ctx.BlockTime().Unix(),
+	}
+
+	if err := k.PushAction(ctx, event); err != nil {
+		errAck := channeltypes.NewErrorAcknowledgement(err)
+		return k.Keeper.WriteAcknowledgement(ctx, chanCap, packet, errAck)
+	}
+
+	return nil
+}
+
+// Check the memo to see if this is a contract invocation.
+func (k Keeper) parseContractInvoke(ctx sdk.Context, packet ibcexported.PacketI) (*types.ContractInvoke, error) {
+	var transferData transfertypes.FungibleTokenPacketData
+	err := k.cdc.UnmarshalJSON(packet.GetData(), &transferData)
+	if err != nil {
+		return nil, err
+	}
+
+	var invoke types.ContractInvoke
+	err = json.Unmarshal([]byte(transferData.Memo), &invoke)
+	if err != nil {
+		return nil, err
+	}
+
+	return &invoke, nil
 }
