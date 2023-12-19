@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -20,41 +21,61 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// Types describing "action" messages sent to the swingset kernel.
+type ActionMeta struct {
+	Type        string `json:"type"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
 type deliverInboundAction struct {
-	Type        string          `json:"type"` // DELIVER_INBOUND
-	Peer        string          `json:"peer"`
-	Messages    [][]interface{} `json:"messages"`
-	Ack         uint64          `json:"ack"`
-	BlockHeight int64           `json:"blockHeight"`
-	BlockTime   int64           `json:"blockTime"`
+	*ActionMeta
+	Peer     string          `json:"peer"`
+	Messages [][]interface{} `json:"messages"`
+	Ack      uint64          `json:"ack"`
 }
 type walletAction struct {
-	Type        string `json:"type"` // WALLET_ACTION
-	Owner       string `json:"owner"`
-	Action      string `json:"action"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	*ActionMeta
+	Owner  string `json:"owner"`
+	Action string `json:"action"`
 }
 type walletSpendAction struct {
-	Type        string `json:"type"` // WALLET_SPEND_ACTION
+	*ActionMeta
 	Owner       string `json:"owner"`
 	SpendAction string `json:"spendAction"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
 }
 type provisionAction struct {
+	*ActionMeta
 	*types.MsgProvision
-	Type          string `json:"type"` // PLEASE_PROVISION
-	BlockHeight   int64  `json:"blockHeight"`
-	BlockTime     int64  `json:"blockTime"`
-	AutoProvision bool   `json:"autoProvision"`
+	AutoProvision bool `json:"autoProvision"`
 }
 type installBundleAction struct {
+	*ActionMeta
 	*types.MsgInstallBundle
-	Type        string `json:"type"` // INSTALL_BUNDLE
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+}
+
+// finishAction adds to an "action" instance meta-information that is necessary
+// for it to be accepted by the swingset kernel (most notably a type string).
+func finishAction[T *deliverInboundAction | *walletAction | *walletSpendAction | *provisionAction | *installBundleAction](action T, ctx sdk.Context) T {
+	meta := &ActionMeta{BlockHeight: ctx.BlockHeight(), BlockTime: ctx.BlockTime().Unix()}
+	switch typed := any(action).(type) {
+	case *deliverInboundAction:
+		meta.Type = "DELIVER_INBOUND"
+		typed.ActionMeta = meta
+	case *walletAction:
+		meta.Type = "WALLET_ACTION"
+		typed.ActionMeta = meta
+	case *walletSpendAction:
+		meta.Type = "WALLET_SPEND_ACTION"
+		typed.ActionMeta = meta
+	case *provisionAction:
+		meta.Type = "PLEASE_PROVISION"
+		typed.ActionMeta = meta
+	case *installBundleAction:
+		meta.Type = "INSTALL_BUNDLE"
+		typed.ActionMeta = meta
+	default:
+		panic(fmt.Errorf("Unexpected action: %T", action))
+	}
+	return action
 }
 
 // routeAction appends an action to either the normal or high-priority queue
@@ -80,14 +101,11 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 	for i, message := range msg.Messages {
 		messages[i] = []interface{}{msg.Nums[i], message}
 	}
-	action := &deliverInboundAction{
-		Type:        "DELIVER_INBOUND",
-		Peer:        msg.Submitter.String(),
-		Messages:    messages,
-		Ack:         msg.Ack,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-	}
+	action := finishAction(&deliverInboundAction{
+		Peer:     msg.Submitter.String(),
+		Messages: messages,
+		Ack:      msg.Ack,
+	}, ctx)
 
 	err := keeper.routeAction(ctx, msg, action)
 	if err != nil {
@@ -104,13 +122,10 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 		return nil, err
 	}
 
-	action := &walletAction{
-		Type:        "WALLET_ACTION",
-		Owner:       msg.Owner.String(),
-		Action:      msg.Action,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-	}
+	action := finishAction(&walletAction{
+		Owner:  msg.Owner.String(),
+		Action: msg.Action,
+	}, ctx)
 
 	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
@@ -127,13 +142,10 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		return nil, err
 	}
 
-	action := &walletSpendAction{
-		Type:        "WALLET_SPEND_ACTION",
+	action := finishAction(&walletSpendAction{
 		Owner:       msg.Owner.String(),
 		SpendAction: msg.SpendAction,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
-	}
+	}, ctx)
 
 	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
@@ -161,13 +173,10 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 		PowerFlags: []string{types.PowerFlagSmartWallet},
 	}
 
-	action := &provisionAction{
+	action := finishAction(&provisionAction{
 		MsgProvision:  msg,
-		Type:          "PLEASE_PROVISION",
-		BlockHeight:   ctx.BlockHeight(),
-		BlockTime:     ctx.BlockTime().Unix(),
 		AutoProvision: true,
-	}
+	}, ctx)
 
 	err := keeper.routeAction(ctx, msg, action)
 	if err != nil {
@@ -185,12 +194,9 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		return nil, err
 	}
 
-	action := &provisionAction{
+	action := finishAction(&provisionAction{
 		MsgProvision: msg,
-		Type:         "PLEASE_PROVISION",
-		BlockHeight:  ctx.BlockHeight(),
-		BlockTime:    ctx.BlockTime().Unix(),
-	}
+	}, ctx)
 
 	// Create the account, if it doesn't already exist.
 	egress := types.NewEgress(msg.Nickname, msg.Address, msg.PowerFlags)
@@ -214,12 +220,10 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	if err != nil {
 		return nil, err
 	}
-	action := &installBundleAction{
+
+	action := finishAction(&installBundleAction{
 		MsgInstallBundle: msg,
-		Type:             "INSTALL_BUNDLE",
-		BlockHeight:      ctx.BlockHeight(),
-		BlockTime:        ctx.BlockTime().Unix(),
-	}
+	}, ctx)
 
 	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
