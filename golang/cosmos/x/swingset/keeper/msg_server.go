@@ -90,7 +90,6 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 	}
 
 	err := keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +111,8 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
 	err = keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +134,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
-	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
+
 	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
 		return nil, err
@@ -173,7 +170,6 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 	}
 
 	err := keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return err
 	}
@@ -204,7 +200,6 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 	}
 
 	err = keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +222,6 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	}
 
 	err = keeper.routeAction(ctx, msg, action)
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
 	}
