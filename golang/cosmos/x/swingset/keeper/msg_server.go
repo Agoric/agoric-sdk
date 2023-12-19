@@ -12,7 +12,7 @@ type msgServer struct {
 	Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the bank MsgServer interface
+// NewMsgServerImpl returns an implementation of the swingset MsgServer interface
 // for the provided Keeper.
 func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
@@ -20,15 +20,45 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
+// Types describing "action" messages sent to the swingset kernel.
 type deliverInboundAction struct {
-	Type        string          `json:"type"`
+	Type        string          `json:"type"` // DELIVER_INBOUND
 	Peer        string          `json:"peer"`
 	Messages    [][]interface{} `json:"messages"`
 	Ack         uint64          `json:"ack"`
 	BlockHeight int64           `json:"blockHeight"`
 	BlockTime   int64           `json:"blockTime"`
 }
+type walletAction struct {
+	Type        string `json:"type"` // WALLET_ACTION
+	Owner       string `json:"owner"`
+	Action      string `json:"action"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+type walletSpendAction struct {
+	Type        string `json:"type"` // WALLET_SPEND_ACTION
+	Owner       string `json:"owner"`
+	SpendAction string `json:"spendAction"`
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
+type provisionAction struct {
+	*types.MsgProvision
+	Type          string `json:"type"` // PLEASE_PROVISION
+	BlockHeight   int64  `json:"blockHeight"`
+	BlockTime     int64  `json:"blockTime"`
+	AutoProvision bool   `json:"autoProvision"`
+}
+type installBundleAction struct {
+	*types.MsgInstallBundle
+	Type        string `json:"type"` // INSTALL_BUNDLE
+	BlockHeight int64  `json:"blockHeight"`
+	BlockTime   int64  `json:"blockTime"`
+}
 
+// routeAction appends an action to either the normal or high-priority queue
+// based on details of its containing message.
 func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionMsg, action vm.Jsonable) error {
 	isHighPriority, err := msg.IsHighPriority(ctx, keeper)
 	if err != nil {
@@ -67,14 +97,6 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 	return &types.MsgDeliverInboundResponse{}, nil
 }
 
-type walletAction struct {
-	Type        string `json:"type"` // WALLET_ACTION
-	Owner       string `json:"owner"`
-	Action      string `json:"action"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
-}
-
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -100,14 +122,6 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 	return &types.MsgWalletActionResponse{}, nil
 }
 
-type walletSpendAction struct {
-	Type        string `json:"type"` // WALLET_SPEND_ACTION
-	Owner       string `json:"owner"`
-	SpendAction string `json:"spendAction"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
-}
-
 func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
@@ -129,14 +143,6 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		return nil, err
 	}
 	return &types.MsgWalletSpendActionResponse{}, nil
-}
-
-type provisionAction struct {
-	*types.MsgProvision
-	Type          string `json:"type"` // PLEASE_PROVISION
-	BlockHeight   int64  `json:"blockHeight"`
-	BlockTime     int64  `json:"blockTime"`
-	AutoProvision bool   `json:"autoProvision"`
 }
 
 // provisionIfNeeded generates a provision action if no smart wallet is already
@@ -204,13 +210,6 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 	}
 
 	return &types.MsgProvisionResponse{}, nil
-}
-
-type installBundleAction struct {
-	*types.MsgInstallBundle
-	Type        string `json:"type"` // INSTALL_BUNDLE
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
 }
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
