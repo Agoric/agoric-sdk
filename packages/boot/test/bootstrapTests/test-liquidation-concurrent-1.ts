@@ -393,7 +393,12 @@ test('concurrent flow 1', async t => {
   console.log('step 10 of 10');
   // continuing after now would start a new auction
   {
-    /** @type {Record<string, import('@agoric/time').TimestampRecord>} */
+    /**
+     * @type {Record<
+     *   string,
+     *   import('@agoric/time').TimestampRecord
+     * >}
+     */
     const { nextDescendingStepTime, nextStartTime } = readLatest(
       'published.auction.schedule',
     );

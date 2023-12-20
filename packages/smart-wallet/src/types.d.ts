@@ -1,9 +1,8 @@
 /**
  * @file Some types for smart-wallet contract
  *
- *   Similar to types.js but in TypeScript syntax because some types here need it.
- *   Downside is it can't reference any ambient types, which most of agoric-sdk
- *   type are presently.
+ * Similar to types.js but in TypeScript syntax because some types here need it.
+ * Downside is it can't reference any ambient types, which most of agoric-sdk type are presently.
  */
 
 import type { ERef } from '@endo/far';
@@ -17,7 +16,7 @@ declare const CapDataShape: unique symbol;
 /**
  * A petname can either be a plain string or a path for which the first element
  * is a petname for the origin, and the rest of the elements are a snapshot of
- * the names that were first given by that origin. We are migrating away from
+ * the names that were first given by that origin.  We are migrating away from
  * using plain strings, for consistency.
  */
 export type Petname = string | string[];
@@ -45,7 +44,7 @@ export type BridgeActionCapData = WalletCapData<
  */
 export type WalletActionMsg = {
   type: 'WALLET_ACTION';
-  /** base64 of Uint8Array of bech32 data */
+  /** base64 of Uint8Array of bech32 data  */
   owner: string;
   /** JSON of BridgeActionCapData */
   action: string;
@@ -60,7 +59,7 @@ export type WalletActionMsg = {
  */
 export type WalletSpendActionMsg = {
   type: 'WALLET_SPEND_ACTION';
-  /** base64 of Uint8Array of bech32 data */
+  /** base64 of Uint8Array of bech32 data  */
   owner: string;
   /** JSON of BridgeActionCapData */
   spendAction: string;
@@ -77,7 +76,9 @@ export type WalletSpendActionMsg = {
  */
 export type WalletBridgeMsg = WalletActionMsg | WalletSpendActionMsg;
 
-/** Used for clientSupport helpers */
+/**
+ * Used for clientSupport helpers
+ */
 export type OfferMaker = (
   agoricNames: AgoricNamesRemotes,
   ...rest: any[]

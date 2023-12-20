@@ -227,7 +227,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  *
  * In the case of Ava tests, this kernel is expected to be shared across all
  * tests in a given test module. By default Ava tests run in parallel, so be
- * careful to avoid ordering dependencies between them. For example, test
+ * careful to avoid ordering dependencies between them.  For example, test
  * accounts balances using separate wallets or test vault factory metrics using
  * separate collateral managers. (Or use test.serial)
  *
