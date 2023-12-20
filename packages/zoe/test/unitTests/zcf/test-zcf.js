@@ -989,7 +989,7 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
     message:
-      'In "getPayout" method of (ZoeSeatKit userSeat): Expected at least 1 arguments: []',
+      'In "getPayout" method of (ZoeUserSeat userSeat): Expected at least 1 arguments: []',
   });
 });
 

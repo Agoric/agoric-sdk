@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
+import { SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -10,33 +10,14 @@ import '../types.js';
 import '../internal-types.js';
 import {
   AmountKeywordRecordShape,
-  ExitObjectShape,
   KeywordShape,
+  ExitObjectShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
-import { declareOldZoeSeatAdminKind } from './originalZoeSeat.js';
 
 const { Fail } = assert;
 
-// ZoeSeatAdmin has the implementation of these methods, but ZoeUserSeat is the
-// facet shared with users. The latter transparently forwards to the former.
-const coreUserSeatMethods = harden({
-  getProposal: M.call().returns(M.promise()),
-  getPayouts: M.call().returns(M.promise()),
-  getPayout: M.call(KeywordShape).returns(M.promise()),
-  getOfferResult: M.call().returns(M.promise()),
-  hasExited: M.call().returns(M.promise()),
-  numWantsSatisfied: M.call().returns(M.promise()),
-  getFinalAllocation: M.call().returns(M.promise()),
-  getExitSubscriber: M.call().returns(M.any()),
-});
-
-const ZoeSeatAdmin = harden({
-  userSeatAccess: M.interface('UserSeatAccess', {
-    ...coreUserSeatMethods,
-    initExitObjectSetter: M.call(M.any()).returns(),
-    assertHasNotExited: M.call(M.string()).returns(),
-  }),
+const OriginalZoeSeatIKit = harden({
   zoeSeatAdmin: M.interface('ZoeSeatAdmin', {
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
@@ -52,20 +33,33 @@ const ZoeSeatAdmin = harden({
       M.promise(),
     ),
   }),
+  userSeat: M.interface('UserSeat', {
+    getProposal: M.call().returns(M.promise()),
+    getPayouts: M.call().returns(M.promise()),
+    getPayout: M.call(KeywordShape).returns(M.promise()),
+    getOfferResult: M.call().returns(M.promise()),
+    hasExited: M.call().returns(M.promise()),
+    tryExit: M.call().returns(M.promise()),
+    numWantsSatisfied: M.call().returns(M.promise()),
+    getFinalAllocation: M.call().returns(M.promise()),
+    getExitSubscriber: M.call().returns(M.any()),
+  }),
 });
 
-const ZoeUserSeat = harden({
-  userSeat: M.interface('UserSeat', {
-    ...coreUserSeatMethods,
-    tryExit: M.call().returns(M.promise()),
-  }),
-  exitObjSetter: M.interface('exitObjSetter', {
-    setExitObject: M.call(M.or(M.remotable(), M.undefined())).returns(),
-  }),
-});
+const assertHasNotExited = (c, msg) => {
+  !c.state.instanceAdminHelper.hasExited(c.facets.zoeSeatAdmin) ||
+    assert(!c.state.instanceAdminHelper.hasExited(c.facets.zoeSeatAdmin), msg);
+};
 
 /**
- * makeZoeSeatAdminFactory returns a maker for an object that manages the state
+ * declareOldZoeSeatAdminKind declares an exo for the original kind of ZoeSeatKit.
+ * This version creates a reference cycle that garbage collection can't remove
+ * because it goes through weakMaps in two different Vats. We've defined a new
+ * Kind that doesn't have this problem, but we won't upgrade the existing
+ * objects, so the Kind must continue to be defined, but we don't return the
+ * maker function.
+ *
+ * The original ZoeSeatKit is an object that manages the state
  * of a seat participating in a Zoe contract and return its two facets.
  *
  * The UserSeat is suitable to be handed to an agent outside zoe and the
@@ -76,15 +70,9 @@ const ZoeUserSeat = harden({
  * query or update the allocation or exit the seat cleanly.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {() => PublishKit<any>} makeDurablePublishKit
  */
-export const makeZoeSeatAdminFactory = baggage => {
-  const makeDurablePublishKit = prepareDurablePublishKit(
-    baggage,
-    'zoe Seat publisher',
-  );
-
-  declareOldZoeSeatAdminKind(baggage, makeDurablePublishKit);
-
+export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
   const doExit = (
     zoeSeatAdmin,
     currentAllocation,
@@ -112,15 +100,18 @@ export const makeZoeSeatAdminFactory = baggage => {
    */
   const ephemeralOfferResultStore = new WeakMap();
 
-  const makeZoeSeatAdmin = prepareExoClassKit(
+  // notice that this returns a maker function which we drop on the floor.
+  prepareExoClassKit(
     baggage,
-    'ZoeSeatAdmin',
-    ZoeSeatAdmin,
+    'ZoeSeatKit',
+    OriginalZoeSeatIKit,
     /**
+     *
      * @param {Allocation} initialAllocation
      * @param {ProposalRecord} proposal
      * @param {InstanceAdminHelper} instanceAdminHelper
      * @param {WithdrawFacet} withdrawFacet
+     * @param {ERef<ExitObj>} [exitObj]
      * @param {boolean} [offerResultIsUndefined]
      */
     (
@@ -128,6 +119,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       proposal,
       instanceAdminHelper,
       withdrawFacet,
+      exitObj = undefined,
       // emptySeatKits start with offerResult validly undefined; others can set
       // it to anything (including undefined) in resolveExitAndResult()
       offerResultIsUndefined = false,
@@ -136,6 +128,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       return {
         currentAllocation: initialAllocation,
         proposal,
+        exitObj,
         offerResult: undefined,
         offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
@@ -144,13 +137,132 @@ export const makeZoeSeatAdminFactory = baggage => {
         subscriber,
         payouts: harden({}),
         exiting: false,
-        /** @type {{ setExitObject: (exitObj: ExitObj | undefined) => void} | undefined} */
-        exitObjectSetter: undefined,
       };
     },
     {
-      // methods for userSeat to call
-      userSeatAccess: {
+      zoeSeatAdmin: {
+        replaceAllocation(replacementAllocation) {
+          const { state } = this;
+          assertHasNotExited(
+            this,
+            'Cannot replace allocation. Seat has already exited',
+          );
+          harden(replacementAllocation);
+          // Merging happens in ZCF, so replacementAllocation can
+          // replace the old allocation entirely.
+
+          state.currentAllocation = replacementAllocation;
+        },
+        exit(completion) {
+          const { state, facets } = this;
+          // Since this method doesn't wait, we could re-enter via exitAllSeats.
+          // If that happens, we shouldn't re-do any of the work.
+          if (state.exiting) {
+            return;
+          }
+          assertHasNotExited(this, 'Cannot exit seat. Seat has already exited');
+
+          state.exiting = true;
+          E.when(
+            doExit(
+              facets.zoeSeatAdmin,
+              state.currentAllocation,
+              state.withdrawFacet,
+              state.instanceAdminHelper,
+            ),
+            () => state.publisher.finish(completion),
+          );
+        },
+        fail(reason) {
+          const { state, facets } = this;
+          // Since this method doesn't wait, we could re-enter via failAllSeats.
+          // If that happens, we shouldn't re-do any of the work.
+          if (state.exiting) {
+            return;
+          }
+
+          assertHasNotExited(this, 'Cannot fail seat. Seat has already exited');
+
+          state.exiting = true;
+          E.when(
+            doExit(
+              facets.zoeSeatAdmin,
+              state.currentAllocation,
+              state.withdrawFacet,
+              state.instanceAdminHelper,
+            ),
+            () => state.publisher.fail(reason),
+            () => state.publisher.fail(reason),
+          );
+        },
+        // called only for seats resulting from offers.
+        /** @param {HandleOfferResult} result */
+        resolveExitAndResult({ offerResultPromise, exitObj }) {
+          const { state, facets } = this;
+
+          !state.offerResultStored ||
+            Fail`offerResultStored before offerResultPromise`;
+
+          if (!ephemeralOfferResultStore.has(facets.userSeat)) {
+            // this was called before getOfferResult
+            const kit = makePromiseKit();
+            kit.resolve(offerResultPromise);
+            ephemeralOfferResultStore.set(facets.userSeat, kit);
+          }
+
+          const pKit = ephemeralOfferResultStore.get(facets.userSeat);
+          E.when(
+            offerResultPromise,
+            offerResult => {
+              // Resolve the ephemeral promise for offerResult
+              pKit.resolve(offerResult);
+              // Now we want to store the offerResult in `state` to get it off the heap,
+              // but we need to handle three cases:
+              //   1. already durable. (This includes being a remote presence.)
+              //   2. has promises for durable objects.
+              //   3. not durable even after resolving promises.
+              // For #1 we can assign directly, but we deeply await to also handle #2.
+              void E.when(
+                deeplyFulfilled(offerResult),
+                fulfilledOfferResult => {
+                  try {
+                    // In cases 1-2 this assignment will succeed.
+                    state.offerResult = fulfilledOfferResult;
+                    // If it doesn't, then these lines won't be reached so the
+                    // flag will stay false and the promise will stay in the heap
+                    state.offerResultStored = true;
+                    ephemeralOfferResultStore.delete(facets.userSeat);
+                  } catch (err) {
+                    console.warn(
+                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                    );
+                  }
+                },
+                // no rejection handler because an offer result containing promises that reject
+                // is within spec
+              );
+            },
+            e => {
+              pKit.reject(e);
+              // NB: leave the rejected promise in the ephemeralOfferResultStore
+              // because it can't go in durable state
+            },
+          );
+
+          state.exitObj = exitObj;
+        },
+        getExitSubscriber() {
+          const { state } = this;
+          return state.subscriber;
+        },
+        async finalPayouts(payments) {
+          const { state } = this;
+
+          const settledPayouts = await deeplyFulfilled(payments);
+          state.payouts = settledPayouts;
+        },
+      },
+      userSeat: {
         async getProposal() {
           const { state } = this;
           return state.proposal;
@@ -184,12 +296,12 @@ export const makeZoeSeatAdminFactory = baggage => {
             return state.offerResult;
           }
 
-          if (ephemeralOfferResultStore.has(facets.zoeSeatAdmin)) {
-            return ephemeralOfferResultStore.get(facets.zoeSeatAdmin).promise;
+          if (ephemeralOfferResultStore.has(facets.userSeat)) {
+            return ephemeralOfferResultStore.get(facets.userSeat).promise;
           }
 
           const kit = makePromiseKit();
-          ephemeralOfferResultStore.set(facets.zoeSeatAdmin, kit);
+          ephemeralOfferResultStore.set(facets.userSeat, kit);
           return kit.promise;
         },
         async hasExited() {
@@ -200,268 +312,35 @@ export const makeZoeSeatAdminFactory = baggage => {
             state.instanceAdminHelper.hasExited(facets.zoeSeatAdmin)
           );
         },
-        async numWantsSatisfied() {
-          const { state } = this;
-          return E.when(
-            state.subscriber.subscribeAfter(),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
-            () => satisfiesWant(state.proposal, state.currentAllocation),
-          );
-        },
-        getExitSubscriber() {
-          const { state } = this;
-          return state.subscriber;
-        },
-        getFinalAllocation() {
-          const { state } = this;
-          return E.when(
-            state.subscriber.subscribeAfter(),
-            () => state.currentAllocation,
-            () => state.currentAllocation,
-          );
-        },
-        initExitObjectSetter(setter) {
-          this.state.exitObjectSetter = setter;
-        },
-        assertHasNotExited(msg) {
-          const { state, facets } = this;
-          const { instanceAdminHelper } = state;
-          const hasExited1 = instanceAdminHelper.hasExited(facets.zoeSeatAdmin);
-
-          !hasExited1 || assert(!hasExited1, msg);
-        },
-      },
-      zoeSeatAdmin: {
-        replaceAllocation(replacementAllocation) {
-          const { state, facets } = this;
-          facets.userSeatAccess.assertHasNotExited(
-            'Cannot replace allocation. Seat has already exited',
-          );
-          harden(replacementAllocation);
-          // Merging happens in ZCF, so replacementAllocation can
-          // replace the old allocation entirely.
-
-          state.currentAllocation = replacementAllocation;
-        },
-        exit(completion) {
-          const { state, facets } = this;
-          // Since this method doesn't wait, we could re-enter via exitAllSeats.
-          // If that happens, we shouldn't re-do any of the work.
-          if (state.exiting) {
-            return;
-          }
-          facets.userSeatAccess.assertHasNotExited(
-            'Cannot exit seat. Seat has already exited',
-          );
-
-          state.exiting = true;
-          E.when(
-            doExit(
-              facets.zoeSeatAdmin,
-              state.currentAllocation,
-              state.withdrawFacet,
-              state.instanceAdminHelper,
-            ),
-            () => {
-              if (state.exitObjectSetter) {
-                state.exitObjectSetter.setExitObject(undefined);
-                state.exitObjectSetter = undefined;
-              }
-              return state.publisher.finish(completion);
-            },
-          );
-        },
-        fail(reason) {
-          const { state, facets } = this;
-          // Since this method doesn't wait, we could re-enter via failAllSeats.
-          // If that happens, we shouldn't re-do any of the work.
-          if (state.exiting) {
-            return;
-          }
-
-          facets.userSeatAccess.assertHasNotExited(
-            'Cannot fail seat. Seat has already exited',
-          );
-
-          state.exiting = true;
-          void E.when(
-            doExit(
-              facets.zoeSeatAdmin,
-              state.currentAllocation,
-              state.withdrawFacet,
-              state.instanceAdminHelper,
-            ),
-            () => state.publisher.fail(reason),
-            () => state.publisher.fail(reason),
-          );
-
-          if (state.exitObjectSetter) {
-            state.exitObjectSetter.setExitObject(undefined);
-            state.exitObjectSetter = undefined;
-          }
-        },
-        // called only for seats resulting from offers.
-        /** @param {HandleOfferResult} result */
-        resolveExitAndResult({ offerResultPromise, exitObj }) {
-          const { state, facets } = this;
-
-          !state.offerResultStored ||
-            Fail`offerResultStored before offerResultPromise`;
-
-          if (!ephemeralOfferResultStore.has(facets.zoeSeatAdmin)) {
-            // this was called before getOfferResult
-            const kit = makePromiseKit();
-            kit.resolve(offerResultPromise);
-            ephemeralOfferResultStore.set(facets.zoeSeatAdmin, kit);
-          }
-
-          const pKit = ephemeralOfferResultStore.get(facets.zoeSeatAdmin);
-          void E.when(
-            offerResultPromise,
-            offerResult => {
-              // Resolve the ephemeral promise for offerResult
-              pKit.resolve(offerResult);
-              // Now we want to store the offerResult in `state` to get it off the heap,
-              // but we need to handle three cases:
-              //   1. already durable. (This includes being a remote presence.)
-              //   2. has promises for durable objects.
-              //   3. not durable even after resolving promises.
-              // For #1 we can assign directly, but we deeply await to also handle #2.
-              void E.when(
-                deeplyFulfilled(offerResult),
-                fulfilledOfferResult => {
-                  try {
-                    // In cases 1-2 this assignment will succeed.
-                    state.offerResult = fulfilledOfferResult;
-                    // If it doesn't, then these lines won't be reached so the
-                    // flag will stay false and the promise will stay in the heap
-                    state.offerResultStored = true;
-                    ephemeralOfferResultStore.delete(facets.zoeSeatAdmin);
-                  } catch (err) {
-                    console.warn(
-                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
-                    );
-                  }
-                },
-                // no rejection handler because an offer result containing promises that reject
-                // is within spec
-              );
-            },
-            e => {
-              pKit.reject(e);
-              // NB: leave the rejected promise in the ephemeralOfferResultStore
-              // because it can't go in durable state
-            },
-          );
-
-          // @ts-expect-error exitObjectSetter is set at birth.
-          state.exitObjectSetter.setExitObject(exitObj);
-        },
-        getExitSubscriber() {
-          const { state } = this;
-          return state.subscriber;
-        },
-        async finalPayouts(payments) {
-          const { state } = this;
-
-          const settledPayouts = await deeplyFulfilled(payments);
-          state.payouts = settledPayouts;
-        },
-      },
-    },
-  );
-
-  const makeUserSeat = prepareExoClassKit(
-    baggage,
-    'ZoeUserSeat',
-    ZoeUserSeat,
-    (userSeatAccess, exitObj) => {
-      return {
-        userSeatAccess,
-        exitObj,
-      };
-    },
-    {
-      userSeat: {
-        async getProposal() {
-          return this.state.userSeatAccess.getProposal();
-        },
-        async getPayouts() {
-          return this.state.userSeatAccess.getPayouts();
-        },
-        async getPayout(keyword) {
-          return this.state.userSeatAccess.getPayout(keyword);
-        },
-
-        async getOfferResult() {
-          return this.state.userSeatAccess.getOfferResult();
-        },
-        async hasExited() {
-          return this.state.userSeatAccess.hasExited();
-        },
         async tryExit() {
           const { state } = this;
-
-          state.userSeatAccess.assertHasNotExited(
-            'Cannot exit; seat has already exited',
-          );
           if (!state.exitObj)
-            throw Fail`exitObj not initialized or already nullified`;
+            throw Fail`exitObj must be initialized before use`;
+          assertHasNotExited(this, 'Cannot exit; seat has already exited');
 
-          const exitResult = E(state.exitObj).exit();
-
-          // unlink an un-collectible cycle.
-          state.exitObj = undefined;
-
-          return exitResult;
+          return E(state.exitObj).exit();
         },
         async numWantsSatisfied() {
-          return this.state.userSeatAccess.numWantsSatisfied();
+          const { state } = this;
+          return E.when(
+            state.subscriber.subscribeAfter(),
+            () => satisfiesWant(state.proposal, state.currentAllocation),
+            () => satisfiesWant(state.proposal, state.currentAllocation),
+          );
         },
         getExitSubscriber() {
-          return this.state.userSeatAccess.getExitSubscriber();
+          const { state } = this;
+          return state.subscriber;
         },
         getFinalAllocation() {
-          return this.state.userSeatAccess.getFinalAllocation();
-        },
-      },
-      exitObjSetter: {
-        setExitObject(exitObject) {
-          this.state.exitObj = exitObject;
+          const { state } = this;
+          return E.when(
+            state.subscriber.subscribeAfter(),
+            () => state.currentAllocation,
+            () => state.currentAllocation,
+          );
         },
       },
     },
   );
-
-  /**
-   * @param {Allocation} initialAllocation
-   * @param {ProposalRecord} proposal
-   * @param {InstanceAdminHelper} instanceAdminHelper
-   * @param {WithdrawFacet} withdrawFacet
-   * @param {ERef<ExitObj>} [exitObj]
-   * @param {boolean} [offerResultIsUndefined]
-   */
-  const makeZoeSeatAdminKit = (
-    initialAllocation,
-    proposal,
-    instanceAdminHelper,
-    withdrawFacet,
-    exitObj = undefined,
-    offerResultIsUndefined = false,
-  ) => {
-    const { zoeSeatAdmin, userSeatAccess } = makeZoeSeatAdmin(
-      initialAllocation,
-      proposal,
-      instanceAdminHelper,
-      withdrawFacet,
-      offerResultIsUndefined,
-    );
-    const { userSeat, exitObjSetter } = makeUserSeat(userSeatAccess, exitObj);
-    userSeatAccess.initExitObjectSetter(exitObjSetter);
-
-    // The original makeZoeSeatAdminKit returned two facets of the same kind.
-    // This is returning two independent facets.
-    return { userSeat, zoeSeatAdmin };
-  };
-  return makeZoeSeatAdminKit;
 };
