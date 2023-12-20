@@ -21,7 +21,7 @@ import {
 } from '../../../src/contractSupport/ratio.js';
 
 /**
- * @param {*} t
+ * @param {any} t
  * @param {Amount<'nat'>} a1
  * @param {Amount<'nat'>} a2
  * @param {Brand} brand
@@ -449,7 +449,7 @@ test('ratio - rounding', t => {
    * @param {bigint} numerator
    * @param {bigint} divisor
    * @param {bigint} expected
-   * @param {*} method
+   * @param {any} method
    */
   const assertRounding = (numerator, divisor, expected, method) => {
     const ratio = makeRatioFromAmounts(moe(1n), moe(divisor));
@@ -487,7 +487,14 @@ test('ratio - oneMinus', t => {
 const { brand } = makeIssuerKit('moe');
 
 test('ratio - quantize', t => {
-  /** @type {Array<[numBefore: bigint, denBefore: bigint, numAfter: bigint, denAfter: bigint]>} */
+  /** @type {Array<
+  [
+    numBefore: bigint,
+    denBefore: bigint,
+    numAfter: bigint,
+    denAfter: bigint,
+  ]
+>} */
   const cases = /** @type {const} */ [
     [1n, 1n, 1n, 1n],
     [10n, 10n, 10n, 10n],

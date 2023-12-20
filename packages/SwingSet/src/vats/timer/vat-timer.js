@@ -26,31 +26,24 @@ import { TimeMath } from '@agoric/time';
  * @typedef {import('@agoric/time').RelativeTime} RelativeTime
  * @typedef {import('@agoric/time').RelativeTimeValue} RelativeTimeValue
  * @typedef {import('@agoric/time').TimerService} TimerService
- *
- * @typedef {object} Handler
- * Handler is a user-provided Far object with .wake(time) used for callbacks
+ * @typedef {object} Handler Handler is a user-provided Far object with
+ *   .wake(time) used for callbacks
  * @property {(scheduled: Timestamp) => unknown} wake
- *
- * @typedef {unknown} CancelToken
- * CancelToken must be pass-by-reference and durable, either local or remote
- *
+ * @typedef {unknown} CancelToken CancelToken must be pass-by-reference and
+ *   durable, either local or remote
  * @typedef {{
- *  scheduleYourself: () => void,
- *  fired: (now: TimestampValue) => void,
- *  cancel: () => void,
+ *   scheduleYourself: () => void;
+ *   fired: (now: TimestampValue) => void;
+ *   cancel: () => void;
  * }} Event
  *
  * @typedef {MapStore<TimestampValue, Event[]>} Schedule
- *
  * @typedef {{ cancel: () => void }} Cancellable
- *
  * @typedef {WeakMapStore<CancelToken, Cancellable[]>} CancelTable
- *
  * @typedef {unknown} PromiseEvent
- *
  * @typedef {{
- *  resolve: (scheduled: Timestamp) => void
- *  reject: (err: unknown) => void
+ *   resolve: (scheduled: Timestamp) => void;
+ *   reject: (err: unknown) => void;
  * }} WakeupPromiseControls
  *
  * @typedef {LegacyWeakMap<PromiseEvent, WakeupPromiseControls>} WakeupPromiseTable
@@ -85,9 +78,9 @@ const addEvent = (schedule, when, event) => {
  */
 const removeEvent = (schedule, when, event) => {
   if (schedule.has(when)) {
-    /** @typedef { Event[] } */
+    /** @typedef {Event[]} */
     const originalEvents = schedule.get(when);
-    /** @typedef { Event[] } */
+    /** @typedef {Event[]} */
     const remainingEvents = originalEvents.filter(ev => ev !== event);
     if (remainingEvents.length === 0) {
       schedule.delete(when);
@@ -168,7 +161,7 @@ const firstWakeup = schedule => {
  *
  * @param {Schedule} schedule
  * @param {TimestampValue} upto
- * @returns { Event[] }
+ * @returns {Event[]}
  */
 const removeEventsUpTo = (schedule, upto) => {
   assert.typeof(upto, 'bigint');
@@ -304,8 +297,8 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   const toTimestamp = when => TimeMath.coerceTimestampRecord(when, timerBrand);
 
   /**
-   * convert external Timestamp (maybe a branded TimestampRecord,
-   * maybe a brandless TimestampValue) to internal bigint
+   * convert external Timestamp (maybe a branded TimestampRecord, maybe a
+   * brandless TimestampValue) to internal bigint
    *
    * @param {Timestamp} when
    * @returns {TimestampValue}
@@ -451,7 +444,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   };
 
   /**
-   * @returns { PromiseEvent }
+   * @returns {PromiseEvent}
    */
   const makePromiseEvent = prepareKind(
     baggage,
@@ -600,14 +593,14 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   };
 
   /**
-   * wakeAt(when): return a Promise that fires (with the scheduled
-   * wakeup time) somewhat after 'when'. If a 'cancelToken' is
-   * provided, calling ts.cancel(cancelToken) before wakeup will cause
-   * the Promise to be rejected instead.
+   * wakeAt(when): return a Promise that fires (with the scheduled wakeup time)
+   * somewhat after 'when'. If a 'cancelToken' is provided, calling
+   * ts.cancel(cancelToken) before wakeup will cause the Promise to be rejected
+   * instead.
    *
    * @param {Timestamp} whenTS
    * @param {CancelToken} [cancelToken]
-   * @returns { Promise<Timestamp> }
+   * @returns {Promise<Timestamp>}
    */
   const wakeAt = (whenTS, cancelToken = undefined) => {
     const when = fromTimestamp(whenTS);
@@ -616,12 +609,12 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   };
 
   /**
-   * addDelay(delay): return a Promise that fires (with the scheduled
-   * wakeup time) at 'delay' time units in the future.
+   * addDelay(delay): return a Promise that fires (with the scheduled wakeup
+   * time) at 'delay' time units in the future.
    *
    * @param {RelativeTime} delayRT
    * @param {CancelToken} [cancelToken]
-   * @returns { Promise<Timestamp> }
+   * @returns {Promise<Timestamp>}
    */
   const addDelay = (delayRT, cancelToken = undefined) => {
     const delay = fromRelativeTime(delayRT);
@@ -632,10 +625,10 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   };
 
   /**
-   * cancel(token): Cancel an outstanding one-shot, or a Notifier
-   * (outstanding or idle), or new-style repeater (not `makeRepeater`,
-   * which has .disable). For things that return Promises, the Promise
-   * is rejected with Error('TimerCancelled').
+   * cancel(token): Cancel an outstanding one-shot, or a Notifier (outstanding
+   * or idle), or new-style repeater (not `makeRepeater`, which has .disable).
+   * For things that return Promises, the Promise is rejected with
+   * Error('TimerCancelled').
    *
    * @param {CancelToken} cancelToken
    */
@@ -652,12 +645,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
 
   /**
    * Internal function to register a handler, which will be invoked as
-   * handler.wake(scheduledTime) at the earliest non-past instance of
-   * `start + k*interval`. When the wake() result promise
-   * fulfills, the repeater will be rescheduled for the next such
-   * instance (there may be gaps). If that promise rejects, the
-   * repeater will be cancelled. The repeater can also be cancelled by
-   * providing `cancelToken` and calling
+   * handler.wake(scheduledTime) at the earliest non-past instance of `start +
+   * k*interval`. When the wake() result promise fulfills, the repeater will be
+   * rescheduled for the next such instance (there may be gaps). If that promise
+   * rejects, the repeater will be cancelled. The repeater can also be cancelled
+   * by providing `cancelToken` and calling
    * `E(timerService).cancel(cancelToken)`.
    *
    * @param {TimestampValue} start
@@ -886,8 +878,8 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   );
 
   /**
-   * makeNotifier(delay, interval): return a Notifier that fires on
-   * the same schedule as makeRepeater()
+   * makeNotifier(delay, interval): return a Notifier that fires on the same
+   * schedule as makeRepeater()
    *
    * @param {RelativeTime} delay
    * @param {RelativeTime} interval
@@ -938,10 +930,10 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   // }
 
   /**
-   * createTimerService() registers devices.timer and returns the
-   * timer service. This must called at least once, to connect the
-   * device, but we don't prohibit it from being called again (to
-   * replace the device), just in case that's useful someday
+   * createTimerService() registers devices.timer and returns the timer service.
+   * This must called at least once, to connect the device, but we don't
+   * prohibit it from being called again (to replace the device), just in case
+   * that's useful someday
    *
    * @param {unknown} timerNode
    * @returns {TimerService}

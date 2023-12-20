@@ -18,10 +18,8 @@ import { Fail } from '@agoric/assert';
  * @callback CacheDelete
  * @param {string} key
  * @returns {void}
- *
  * @callback CacheFlush
  * @returns {void}
- *
  * @callback CacheInsistClear
  * @returns {void}
  */
@@ -38,17 +36,15 @@ import { Fail } from '@agoric/assert';
 /**
  * Cache of virtual object/collection state
  *
- * This cache is empty between deliveries. Within a delivery, the
- * first access to some data will cause vatstore reads to populate the
- * cache, then the data is retained until end-of-delivery. Writes to
- * data will update the cache entry and mark it as dirty. At
- * end-of-delivery, we flush the cache, writing out any dirty entries,
- * and deleting all entries.
+ * This cache is empty between deliveries. Within a delivery, the first access
+ * to some data will cause vatstore reads to populate the cache, then the data
+ * is retained until end-of-delivery. Writes to data will update the cache entry
+ * and mark it as dirty. At end-of-delivery, we flush the cache, writing out any
+ * dirty entries, and deleting all entries.
  *
- * This needs RAM for everything read during a delivery (rather than
- * having a fixed maximum size), but yields a simple (easy to debug)
- * deterministic relationship between data access and reads/writes to
- * the backing store.
+ * This needs RAM for everything read during a delivery (rather than having a
+ * fixed maximum size), but yields a simple (easy to debug) deterministic
+ * relationship between data access and reads/writes to the backing store.
  *
  * @template V
  * @param {(key: string) => V} readBacking
@@ -56,8 +52,8 @@ import { Fail } from '@agoric/assert';
  * @param {(key: string) => void} deleteBacking
  * @returns {Cache<V>}
  *
- * This cache is part of the virtual object manager and is not intended to be
- * used independently; it is exported only for the benefit of test code.
+ *   This cache is part of the virtual object manager and is not intended to be
+ *   used independently; it is exported only for the benefit of test code.
  */
 export function makeCache(readBacking, writeBacking, deleteBacking) {
   const stash = new Map();

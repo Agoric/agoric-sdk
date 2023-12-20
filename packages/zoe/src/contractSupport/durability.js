@@ -46,9 +46,9 @@ export const provideEmptySeat = (zcf, baggage, name) => {
 harden(provideEmptySeat);
 
 /**
- * For use in contract upgrades to provide values that come from other vats.
- * All vats must be able to finish their upgrade without contacting other vats,
- * so whatever values an instance needs from other vats must be saved in the first
+ * For use in contract upgrades to provide values that come from other vats. All
+ * vats must be able to finish their upgrade without contacting other vats, so
+ * whatever values an instance needs from other vats must be saved in the first
  * incarnation and read from baggage in each subsequent.
  *
  * This abstracts that condition so that the contract can convert a dictionary
@@ -62,10 +62,7 @@ harden(provideEmptySeat);
  * For example,
  *
  *     const invitationIssuerP = E(zoe).getInvitationIssuer();
- *     const {
- *       invitationIssuer,
- *       invitationBrand,
- *     } = await provideAll(baggage, {
+ *     const { invitationIssuer, invitationBrand } = await provideAll(baggage, {
  *       invitationIssuer: () => invitationIssuerP,
  *       invitationBrand: () => E(invitationIssuerP).getBrand(),
  *     });
@@ -100,8 +97,9 @@ export const provideAll = (baggage, thunks) => {
 harden(provideAll);
 
 /**
- * Like provideAsync in AtomicProvider but assumes only one call so there are no race conditions.
- * Additionally offers a `withValue` helper useful for triggering procesess on a provided object.
+ * Like provideAsync in AtomicProvider but assumes only one call so there are no
+ * race conditions. Additionally offers a `withValue` helper useful for
+ * triggering procesess on a provided object.
  *
  * @see {makeAtomicProvider}
  * @see {AtomicProvider}

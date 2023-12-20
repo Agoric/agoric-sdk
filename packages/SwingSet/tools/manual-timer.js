@@ -9,12 +9,10 @@ import { buildRootObject } from '../src/vats/timer/vat-timer.js';
  * @typedef {import('@agoric/time').Timestamp} Timestamp
  * @typedef {import('@agoric/time').TimerService} TimerService
  * @typedef {import('../src/devices/timer/device-timer.js').Waker} Waker
- *
  * @typedef {object} ManualTimerCallbacks
  * @property {(newTime: bigint, msg?: string) => void} [advanceTo]
  * @property {(now: bigint, when: bigint) => void} [setWakeup]
  * @property {(now: bigint) => void} [wake]
- *
  * @typedef {object} ManualTimerState
  * @property {bigint} now
  * @property {undefined | bigint} currentWakeup
@@ -25,10 +23,10 @@ import { buildRootObject } from '../src/vats/timer/vat-timer.js';
  * Adapted from 'setup()' in test-vat-timer.js
  *
  * @param {ManualTimerCallbacks} callbacks
- * @returns {{ timerService: TimerService, state: ManualTimerState }}
+ * @returns {{ timerService: TimerService; state: ManualTimerState }}
  */
 const setup = callbacks => {
-  /** @type {{ now: bigint, currentWakeup: any, currentHandler: any }} */
+  /** @type {{ now: bigint; currentWakeup: any; currentHandler: any }} */
   const state = {
     now: 0n, // current time, updated during test
     currentWakeup: undefined,
@@ -71,13 +69,19 @@ const setup = callbacks => {
 };
 
 /**
- * A fake TimerService, for unit tests that do not use a real
- * kernel. You can make time pass by calling `advanceTo(when)`.
+ * A fake TimerService, for unit tests that do not use a real kernel. You can
+ * make time pass by calling `advanceTo(when)`.
  *
  * @param {object} [options]
  * @param {Timestamp} [options.startTime]
  * @param {ManualTimerCallbacks} [options.callbacks]
- * @returns {TimerService & { advanceTo: (when: Timestamp, msg?: string) => bigint; advanceBy: (rel: import('@agoric/time').RelativeTime, msg?: string) => bigint; }}
+ * @returns {TimerService & {
+ *   advanceTo: (when: Timestamp, msg?: string) => bigint;
+ *   advanceBy: (
+ *     rel: import('@agoric/time').RelativeTime,
+ *     msg?: string,
+ *   ) => bigint;
+ * }}
  */
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, callbacks = {}, ...other } = options;

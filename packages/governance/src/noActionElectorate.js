@@ -9,7 +9,7 @@ import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
  * This Electorate visibly has no members, takes no votes, and approves no
  * changes.
  *
- *  @type {ContractStartFn<ElectoratePublic, ElectorateCreatorFacet>}
+ * @type {ContractStartFn<ElectoratePublic, ElectorateCreatorFacet>}
  */
 const start = zcf => {
   const { subscriber } = makePublishKit();

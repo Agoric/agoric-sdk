@@ -36,7 +36,10 @@ export const sumAmountKeywordRecord = (amr, issuerRecord) => {
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @param {{ (keyword: string, issuerRecord: IssuerRecord): void }} recordIssuer
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {(exit?: undefined) => { zcfSeat: any; userSeat: Promise<UserSeat> }} makeEmptySeatKit
+ * @param {(exit?: undefined) => {
+ *   zcfSeat: any;
+ *   userSeat: Promise<UserSeat>;
+ * }} makeEmptySeatKit
  * @param {ZcfMintReallocator} reallocator
  */
 export const prepareZcMint = (
@@ -76,7 +79,10 @@ export const prepareZcMint = (
       getIssuerRecord() {
         return this.state.mintyIssuerRecord;
       },
-      /** @type {(gains: Record<string, Amount>, zcfSeat?: ZCFSeat) => ZCFSeat} */
+      /** @type {(
+  gains: Record<string, Amount>,
+  zcfSeat?: ZCFSeat,
+) => ZCFSeat} */
       mintGains(gains, zcfSeat = makeEmptySeatKit().zcfSeat) {
         const { mintyIssuerRecord, zoeMint } = this.state;
         gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);

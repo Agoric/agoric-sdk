@@ -6,7 +6,7 @@ import { ZipWriter } from '@endo/zip';
 const { Fail, quote: q } = assert;
 
 export const start = () => {
-  /** @type { Map<string, [string, Uint8Array]>} */
+  /** @type {Map<string, [string, Uint8Array]>} */
   const hashToEntry = new Map();
 
   /** @param {string[]} hashes */
@@ -19,7 +19,7 @@ export const start = () => {
   };
 
   const makeBundler = ({ zoe }) => {
-    /** @type { Map<string, [string, Uint8Array]>} */
+    /** @type {Map<string, [string, Uint8Array]>} */
     const nameToContent = new Map();
 
     return Far('Bundler', {
@@ -56,7 +56,7 @@ export const start = () => {
           hashToEntry.set(hash, [name, content]);
         }
       },
-      /** @param {{ moduleFormat: string}} bundleShell */
+      /** @param {{ moduleFormat: string }} bundleShell */
       install: bundleShell => {
         const writer = new ZipWriter();
         for (const [name, [_hash, content]] of nameToContent.entries()) {

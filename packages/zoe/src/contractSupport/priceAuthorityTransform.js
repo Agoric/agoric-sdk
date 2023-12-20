@@ -122,8 +122,8 @@ export const makePriceAuthorityTransform = async ({
      * Return a quote when sourceMethod fires.
      *
      * @param {Amount<'nat'>} amountIn the input value to the calcAmountTrigger
-     * @param {Amount<'nat'>} amountOutLimit the value to compare with the output
-     * of calcAmountTrigger
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the
+     *   output of calcAmountTrigger
      */
     const quoteWhenOut = async (amountIn, amountOutLimit) => {
       AmountMath.coerce(actualBrandIn, amountIn);

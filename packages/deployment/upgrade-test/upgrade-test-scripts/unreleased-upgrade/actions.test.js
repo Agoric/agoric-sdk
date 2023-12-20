@@ -54,7 +54,7 @@ test.before(async t => {
 });
 
 test('Open Vaults with auto-provisioned wallet', async t => {
-  const { userAddress } = /** @type {{userAddress: string}} */ (t.context);
+  const { userAddress } = /** @type {{ userAddress: string }} */ (t.context);
   t.is(await getISTBalance(userAddress), 1);
 
   const ATOMGiven = 2000;

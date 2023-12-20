@@ -32,7 +32,7 @@ export function generateAccessToken({
 }
 
 /**
- * @param {string|number} port
+ * @param {string | number} port
  * @param {string} [sharedStateDir]
  * @returns {Promise<string>}
  */

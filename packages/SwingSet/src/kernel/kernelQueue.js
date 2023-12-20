@@ -6,8 +6,9 @@ import { insistVatID } from '../lib/id.js';
 
 /**
  * @param {object} tools
- * @param {KernelKeeper} tools.kernelKeeper  Kernel keeper managing persistent kernel state
- * @param {(problem: unknown, err?: Error) => void } [tools.panic]
+ * @param {KernelKeeper} tools.kernelKeeper Kernel keeper managing persistent
+ *   kernel state
+ * @param {(problem: unknown, err?: Error) => void} [tools.panic]
  */
 export function makeKernelQueueHandler(tools) {
   const {
@@ -80,19 +81,19 @@ export function makeKernelQueueHandler(tools) {
   }
 
   /**
-   * Enqueue a message to some kernel object, as if the message had been sent
-   * by some other vat. This requires a kref as a target.
+   * Enqueue a message to some kernel object, as if the message had been sent by
+   * some other vat. This requires a kref as a target.
    *
-   * @param {string} kref  Target of the message
-   * @param {string|symbol} method  The method name
-   * @param {any[]} args  The arguments array
+   * @param {string} kref Target of the message
+   * @param {string | symbol} method The method name
+   * @param {any[]} args The arguments array
    * @param {ResolutionPolicy} [policy] How the kernel should handle an eventual
-   *    resolution or rejection of the message's result promise. Should be
-   *    one of 'none' (don't even create a result promise), 'ignore' (do
-   *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'
-   *    (log only rejections), or 'panic' (panic the kernel upon a
-   *    rejection).
-   * @returns {string | undefined} the kpid of the sent message's result promise, if any
+   *   resolution or rejection of the message's result promise. Should be one of
+   *   'none' (don't even create a result promise), 'ignore' (do nothing),
+   *   'logAlways' (log the resolution or rejection), 'logFailure' (log only
+   *   rejections), or 'panic' (panic the kernel upon a rejection).
+   * @returns {string | undefined} the kpid of the sent message's result
+   *   promise, if any
    */
   function queueToKref(kref, method, args, policy = 'ignore') {
     // queue a message on the end of the queue, with 'absolute' krefs.

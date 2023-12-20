@@ -2,9 +2,9 @@ import { Fail } from '@agoric/assert';
 
 /**
  * @param {string} managerType
- * @param {import("../controller/bundle-handler").BundleHandler} bundleHandler
+ * @param {import('../controller/bundle-handler').BundleHandler} bundleHandler
  * @param {string[]} [nodeOptions]
- * @returns {Promise<import("../types-internal").WorkerOptions>}
+ * @returns {Promise<import('../types-internal').WorkerOptions>}
  */
 export async function makeWorkerOptions(
   managerType,
@@ -27,9 +27,11 @@ export async function makeWorkerOptions(
 }
 
 /**
- * @param {import("../types-internal").WorkerOptions} origWorkerOptions
- * @param {{bundleHandler: import("../controller/bundle-handler").BundleHandler}} options
- * @returns {Promise<import("../types-internal").WorkerOptions>}
+ * @param {import('../types-internal').WorkerOptions} origWorkerOptions
+ * @param {{
+ *   bundleHandler: import('../controller/bundle-handler').BundleHandler;
+ * }} options
+ * @returns {Promise<import('../types-internal').WorkerOptions>}
  */
 export async function updateWorkerOptions(
   origWorkerOptions,

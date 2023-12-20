@@ -89,7 +89,7 @@ function makeSchemaCache(syscall, unserialize) {
     const { label, keyShape, valueShape } = unserialize(schemataCapData);
     return harden({ keyShape, valueShape, label, schemataCapData });
   };
-  /** @type {(collectionID: string, value: SchemaCacheValue) => void } */
+  /** @type {(collectionID: string, value: SchemaCacheValue) => void} */
   const writeBacking = (collectionID, value) => {
     const { schemataCapData } = value;
     const schemataKey = prefixc(collectionID, '|schemata');
@@ -105,13 +105,13 @@ function makeSchemaCache(syscall, unserialize) {
 }
 
 /**
- * @param {*} syscall
+ * @param {any} syscall
  * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm
  * @param {() => number} allocateExportID
  * @param {() => number} allocateCollectionID
  * @param {(val: any) => string | undefined} convertValToSlot
- * @param {*} convertSlotToVal
- * @param {*} registerValue
+ * @param {any} convertSlotToVal
+ * @param {any} registerValue
  * @param {import('@endo/marshal').ToCapData<string>} serialize
  * @param {import('@endo/marshal').FromCapData<string>} unserialize
  * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
@@ -130,7 +130,7 @@ export function makeCollectionManager(
 ) {
   const storeKindIDToName = new Map();
 
-  /** @type { import('./cache.js').Cache<SchemaCacheValue>} */
+  /** @type {import('./cache.js').Cache<SchemaCacheValue>} */
   const schemaCache = makeSchemaCache(syscall, unserialize);
 
   const storeKindInfo = {
@@ -226,12 +226,14 @@ export function makeCollectionManager(
   const BIGINT_TAG_LEN = 10;
 
   /**
-   * Delete an entry from a collection as part of garbage collecting the entry's key.
+   * Delete an entry from a collection as part of garbage collecting the entry's
+   * key.
    *
-   * @param {string} collectionID - the collection from which the entry is to be deleted
+   * @param {string} collectionID - the collection from which the entry is to be
+   *   deleted
    * @param {string} vobjID - the entry key being removed
-   *
-   * @returns {boolean} true if this removal possibly introduces a further GC opportunity
+   * @returns {boolean} true if this removal possibly introduces a further GC
+   *   opportunity
    */
   function deleteCollectionEntry(collectionID, vobjID) {
     const ordinalKey = prefixc(collectionID, `|${vobjID}`);
@@ -532,7 +534,7 @@ export function makeCollectionManager(
     }
 
     /**
-     * Clear the entire contents of a collection non-selectively.  Since we are
+     * Clear the entire contents of a collection non-selectively. Since we are
      * being unconditional, we don't need to inspect any of the keys to decide
      * what to do and therefore can avoid deserializing the keys. In particular,
      * this avoids swapping in any virtual objects that were used as keys, which
@@ -900,7 +902,7 @@ export function makeCollectionManager(
    * @template K,V
    * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
-   * @returns {MapStore<K,V>}
+   * @returns {MapStore<K, V>}
    */
   function makeBigMapStore(label = 'map', options = {}) {
     const {
@@ -944,7 +946,7 @@ export function makeCollectionManager(
    * @template K,V
    * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
-   * @returns {WeakMapStore<K,V>}
+   * @returns {WeakMapStore<K, V>}
    */
   function makeBigWeakMapStore(label = 'weakMap', options = {}) {
     const {
@@ -1071,31 +1073,31 @@ export function makeCollectionManager(
   };
 
   /**
-   * Produce a *scalar* big map: keys can only be atomic values, primitives, or
+   * Produce a _scalar_ big map: keys can only be atomic values, primitives, or
    * remotables.
    *
    * @template K,V
    * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
-   * @returns {MapStore<K,V>}
+   * @returns {MapStore<K, V>}
    */
   const makeScalarBigMapStore = (label = 'map', options = {}) =>
     makeBigMapStore(label, narrowKeyShapeOption(M.scalar(), options));
 
   /**
-   * Produce a *scalar* weak big map: keys can only be atomic values,
+   * Produce a _scalar_ weak big map: keys can only be atomic values,
    * primitives, or remotables.
    *
    * @template K,V
    * @param {string} [label] - diagnostic label for the store
    * @param {StoreOptions} [options]
-   * @returns {WeakMapStore<K,V>}
+   * @returns {WeakMapStore<K, V>}
    */
   const makeScalarBigWeakMapStore = (label = 'weakMap', options = {}) =>
     makeBigWeakMapStore(label, narrowKeyShapeOption(M.scalar(), options));
 
   /**
-   * Produce a *scalar* big set: keys can only be atomic values, primitives, or
+   * Produce a _scalar_ big set: keys can only be atomic values, primitives, or
    * remotables.
    *
    * @template K
@@ -1107,7 +1109,7 @@ export function makeCollectionManager(
     makeBigSetStore(label, narrowKeyShapeOption(M.scalar(), options));
 
   /**
-   * Produce a *scalar* weak big set: keys can only be atomic values,
+   * Produce a _scalar_ weak big set: keys can only be atomic values,
    * primitives, or remotables.
    *
    * @template K

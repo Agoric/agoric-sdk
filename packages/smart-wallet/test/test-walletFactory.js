@@ -13,7 +13,9 @@ import {
 
 import '@agoric/vats/src/core/types-ambient.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
+/** @type {import('ava').TestFn<
+  Awaited<ReturnType<makeDefaultTestContext>>
+>} */
 const test = anyTest;
 
 const mockAddress1 = 'mockAddress1';

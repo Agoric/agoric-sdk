@@ -3,11 +3,11 @@ import { Fail } from '@agoric/assert';
 
 /**
  * @typedef {{
- *   has: (key: string) => boolean,
- *   get: (key: string) => string | undefined,
- *   getNextKey: (previousKey: string) => string | undefined,
- *   set: (key: string, value: string, bypassHash?: boolean ) => void,
- *   delete: (key: string) => void,
+ *   has: (key: string) => boolean;
+ *   get: (key: string) => string | undefined;
+ *   getNextKey: (previousKey: string) => string | undefined;
+ *   set: (key: string, value: string, bypassHash?: boolean) => void;
+ *   delete: (key: string) => void;
  * }} KVStore
  */
 
@@ -24,10 +24,12 @@ export function getKeyType(key) {
 }
 
 /**
- * @param {object} db  The SQLite database connection.
- * @param {() => void} ensureTxn  Called before mutating methods to establish a DB transaction
- * @param {(...args: string[]) => void} trace  Called after sets/gets to record a debug log
- * @returns { KVStore }
+ * @param {object} db The SQLite database connection.
+ * @param {() => void} ensureTxn Called before mutating methods to establish a
+ *   DB transaction
+ * @param {(...args: string[]) => void} trace Called after sets/gets to record a
+ *   debug log
+ * @returns {KVStore}
  */
 
 export function makeKVStore(db, ensureTxn, trace) {
@@ -49,11 +51,9 @@ export function makeKVStore(db, ensureTxn, trace) {
   /**
    * Obtain the value stored for a given key.
    *
-   * @param {string} key  The key whose value is sought.
-   *
+   * @param {string} key The key whose value is sought.
    * @returns {string | undefined} the (string) value for the given key, or
-   *    undefined if there is no such value.
-   *
+   *   undefined if there is no such value.
    * @throws if key is not a string.
    */
   function get(key) {
@@ -70,29 +70,18 @@ export function makeKVStore(db, ensureTxn, trace) {
   sqlKVGetNextKey.pluck(true);
 
   /**
-   * getNextKey enables callers to iterate over all keys within a
-   * given range. To build an iterator of all keys from start
-   * (inclusive) to end (exclusive), do:
+   * getNextKey enables callers to iterate over all keys within a given range.
+   * To build an iterator of all keys from start (inclusive) to end (exclusive),
+   * do:
    *
-   * function* iterate(start, end) {
-   *   if (kvStore.has(start)) {
-   *     yield start;
-   *   }
-   *   let prev = start;
-   *   while (true) {
-   *     let next = kvStore.getNextKey(prev);
-   *     if (!next || next >= end) {
-   *       break;
-   *     }
-   *     yield next;
-   *     prev = next;
-   *   }
-   * }
+   * function* iterate(start, end) { if (kvStore.has(start)) { yield start; }
+   * let prev = start; while (true) { let next = kvStore.getNextKey(prev); if
+   * (!next || next >= end) { break; } yield next; prev = next; } }
    *
-   * @param {string} previousKey  The key returned will always be later than this one.
-   *
-   * @returns {string | undefined} a key string, or undefined if we reach the end of the store
-   *
+   * @param {string} previousKey The key returned will always be later than this
+   *   one.
+   * @returns {string | undefined} a key string, or undefined if we reach the
+   *   end of the store
    * @throws if previousKey is not a string
    */
 
@@ -104,10 +93,8 @@ export function makeKVStore(db, ensureTxn, trace) {
   /**
    * Test if the state contains a value for a given key.
    *
-   * @param {string} key  The key that is of interest.
-   *
+   * @param {string} key The key that is of interest.
    * @returns {boolean} true if a value is stored for the key, false if not.
-   *
    * @throws if key is not a string.
    */
   function has(key) {
@@ -122,12 +109,11 @@ export function makeKVStore(db, ensureTxn, trace) {
   `);
 
   /**
-   * Store a value for a given key.  The value will replace any prior value if
+   * Store a value for a given key. The value will replace any prior value if
    * there was one.
    *
-   * @param {string} key  The key whose value is being set.
-   * @param {string} value  The value to set the key to.
-   *
+   * @param {string} key The key whose value is being set.
+   * @param {string} value The value to set the key to.
    * @throws if either parameter is not a string.
    */
   function set(key, value) {
@@ -146,11 +132,10 @@ export function makeKVStore(db, ensureTxn, trace) {
   `);
 
   /**
-   * Remove any stored value for a given key.  It is permissible for there to
-   * be no existing stored value for the key.
+   * Remove any stored value for a given key. It is permissible for there to be
+   * no existing stored value for the key.
    *
-   * @param {string} key  The key whose value is to be deleted
-   *
+   * @param {string} key The key whose value is to be deleted
    * @throws if key is not a string.
    */
   function del(key) {

@@ -15,14 +15,15 @@ import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
  */
 
 /**
- *
- * @param {*} homeP
- * @param {*} endowments
+ * @param {any} homeP
+ * @param {any} endowments
  * @param {{
- *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>,
- *   getBundleSpec: (...args: *) => Promise<import('./externalTypes.js').ManifestBundleRef>,
- *   log?: typeof console.log,
- *   writeFile?: typeof fs.promises.writeFile
+ *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>;
+ *   getBundleSpec: (
+ *     ...args: any
+ *   ) => Promise<import('./externalTypes.js').ManifestBundleRef>;
+ *   log?: typeof console.log;
+ *   writeFile?: typeof fs.promises.writeFile;
  * }} io
  * @returns {WriteCoreProposal}
  */
@@ -69,14 +70,12 @@ export const makeWriteCoreProposal = (
     };
   };
 
-  let mutex =
-    /** @type {Promise<import('./externalTypes.js').ManifestBundleRef | undefined>} */ (
-      Promise.resolve()
-    );
+  let mutex = /** @type {Promise<
+  import('./externalTypes.js').ManifestBundleRef | undefined
+>} */ (Promise.resolve());
   /** @type {WriteCoreProposal} */
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
     /**
-     *
      * @param {string} entrypoint
      * @param {string} [bundlePath]
      * @returns {Promise<NodeModule>}

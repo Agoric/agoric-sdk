@@ -6,8 +6,8 @@ import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
-/** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes */
 
 const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();
@@ -23,15 +23,17 @@ const emptyCurrentRecord = {
 /**
  * @param {string} addr
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>}
+ * @returns {Promise<
+ *   import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+ * >}
  */
 export const getCurrent = async (addr, { readLatestHead }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
-  let current =
-    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord> | undefined} */ (
-      await readLatestHead(`published.wallet.${addr}.current`)
-    );
+  let current = /** @type {Partial<
+      import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+    >
+  | undefined} */ (await readLatestHead(`published.wallet.${addr}.current`));
   if (current === undefined) {
     throw new Error(`undefined current node for ${addr}`);
   }
@@ -58,7 +60,9 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 /**
  * @param {string} addr
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>}
+ * @returns {Promise<
+ *   import('@agoric/smart-wallet/src/smartWallet').UpdateRecord
+ * >}
  */
 export const getLastUpdate = (addr, { readLatestHead }) => {
   // @ts-expect-error cast
@@ -67,7 +71,7 @@ export const getLastUpdate = (addr, { readLatestHead }) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
- * @param {Pick<import('stream').Writable,'write'>} [stdout]
+ * @param {Pick<import('stream').Writable, 'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
   const capData = marshaller.toCapData(harden(bridgeAction));
@@ -81,8 +85,8 @@ export const sendHint =
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
  * @param {{
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
+ *   stdout: Pick<import('stream').Writable, 'write'>;
+ *   stderr: Pick<import('stream').Writable, 'write'>;
  * }} io
  */
 export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
@@ -92,8 +96,8 @@ export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
- * @param {Pick<import('stream').Writable,'write'>} [stdout]
- * @param {Pick<import('stream').Writable,'write'>} [stderr]
+ * @param {Pick<import('stream').Writable, 'write'>} [stdout]
+ * @param {Pick<import('stream').Writable, 'write'>} [stderr]
  */
 export const outputExecuteOfferAction = (
   offer,
@@ -111,7 +115,11 @@ export const outputExecuteOfferAction = (
 
 /**
  * @deprecated use `.current` node for current state
- * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
+ * @param {import('@agoric/casting').Follower<
+ *   import('@agoric/casting').ValueFollowerElement<
+ *     import('@agoric/smart-wallet/src/smartWallet').UpdateRecord
+ *   >
+ * >} follower
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceWalletState = async (follower, invitationBrand) => {
@@ -140,17 +148,17 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
 /**
  * Sign and broadcast a wallet-action.
  *
- * @throws { Error & { code: number } } if transaction fails
+ * @throws {Error & { code: number }} if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
  * @param {import('./rpc').MinimalNetworkConfig & {
- *   from: string,
- *   fees?: string,
- *   verbose?: boolean,
- *   keyring?: {home?: string, backend: string},
- *   stdout: Pick<import('stream').Writable, 'write'>,
- *   execFileSync: typeof import('child_process').execFileSync,
- *   delay: (ms: number) => Promise<void>,
- *   dryRun?: boolean,
+ *   from: string;
+ *   fees?: string;
+ *   verbose?: boolean;
+ *   keyring?: { home?: string; backend: string };
+ *   stdout: Pick<import('stream').Writable, 'write'>;
+ *   execFileSync: typeof import('child_process').execFileSync;
+ *   delay: (ms: number) => Promise<void>;
+ *   dryRun?: boolean;
  * }} opts
  */
 export const sendAction = async (bridgeAction, opts) => {
@@ -187,7 +195,7 @@ export const sendAction = async (bridgeAction, opts) => {
  */
 export const findContinuingIds = (current, agoricNames) => {
   // XXX should runtime type-check
-  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
+  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][] }} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
 
   Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
@@ -199,7 +207,7 @@ export const findContinuingIds = (current, agoricNames) => {
 
   const found = [];
   for (const [offerId, { value }] of entries) {
-    /** @type {{ description: string, instance: unknown }[]} */
+    /** @type {{ description: string; instance: unknown }[]} */
     const [{ description, instance }] = value;
     if (
       description === 'charter member invitation' ||
@@ -220,7 +228,7 @@ export const makeWalletUtils = async (
     await makeRpcUtils({ fetch }, networkConfig);
   /**
    * @param {string} from
-   * @param {number|string} [minHeight]
+   * @param {number | string} [minHeight]
    */
   const storedWalletState = async (from, minHeight = undefined) => {
     const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -249,8 +257,8 @@ export const makeWalletUtils = async (
    * Get OfferStatus by id, polling until available.
    *
    * @param {string} from
-   * @param {string|number} id
-   * @param {number|string} minHeight
+   * @param {string | number} id
+   * @param {number | string} minHeight
    * @param {boolean} [untilNumWantsSatisfied]
    */
   const pollOffer = async (

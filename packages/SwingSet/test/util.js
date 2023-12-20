@@ -46,7 +46,7 @@ export function dumpKT(kernel) {
 }
 
 /**
- * @param {(d: unknown) => void} [onDispatchCallback ]
+ * @param {(d: unknown) => void} [onDispatchCallback]
  */
 export function buildDispatch(onDispatchCallback) {
   const log = [];

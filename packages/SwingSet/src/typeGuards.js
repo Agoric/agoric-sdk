@@ -26,11 +26,10 @@ const SwingSetConfigDescriptor = M.recordOf(
 );
 
 /**
- * NOTE: this pattern suffices for PSM bootstrap,
- * but does not cover the whole SwingSet config syntax.
+ * NOTE: this pattern suffices for PSM bootstrap, but does not cover the whole
+ * SwingSet config syntax.
  *
- * {@link ./docs/configuration.md}
- * TODO: move this to swingset?
+ * {@link ./docs/configuration.md} TODO: move this to swingset?
  *
  * @see SwingSetConfig
  * in ./types-external.js

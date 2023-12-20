@@ -3,8 +3,8 @@
 import { Fail } from '@agoric/assert';
 
 /**
- * Iterate over keys with a given prefix, in lexicographic order,
- * excluding an exact match of the prefix.
+ * Iterate over keys with a given prefix, in lexicographic order, excluding an
+ * exact match of the prefix.
  *
  * @param {KVStore} kvStore
  * @param {string} prefix

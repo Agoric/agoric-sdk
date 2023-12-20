@@ -15,7 +15,7 @@ const SOLO_PORT = 7999;
 // XXX test depends on this exact value from the Inter Protocol economy,
 // by way of agoric-cli (which this test covertly depends upon)
 export const Stable = harden(
-  /** @type {const } */ ({
+  /** @type {const} */ ({
     symbol: 'IST',
     denom: 'uist',
     proposedName: 'Agoric stable token',

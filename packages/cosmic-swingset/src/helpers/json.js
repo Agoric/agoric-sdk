@@ -1,8 +1,8 @@
 // @ts-check
 
 /**
- * Parses JSON and, if necessary, throws exceptions that include the location
- * of the offending file.
+ * Parses JSON and, if necessary, throws exceptions that include the location of
+ * the offending file.
  *
  * @param {string} source
  * @param {string} location

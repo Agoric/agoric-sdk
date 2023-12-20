@@ -18,9 +18,9 @@ import djson from '../lib/djson.js';
  * @typedef {import('../types-internal.js').TranscriptDeliveryShutdownWorker} TDShutdownWorker
  * @typedef {import('../types-internal.js').TranscriptDeliveryResults} TranscriptDeliveryResults
  * @typedef {import('../types-internal.js').TranscriptEntry} TranscriptEntry
- * @typedef {{ body: string, slots: unknown[] }} Capdata
- * @typedef { [unknown, ...unknown[]] } Tagged
- * @typedef { { moduleFormat: string }} Bundle
+ * @typedef {{ body: string; slots: unknown[] }} Capdata
+ * @typedef {[unknown, ...unknown[]]} Tagged
+ * @typedef {{ moduleFormat: string }} Bundle
  */
 
 /**
@@ -77,19 +77,18 @@ function onlyRealDelivery(transcriptEntry) {
 }
 
 /**
- * Make a syscallHandler that returns results from a
- * previously-recorded transcript, instead of executing them for
- * real. The vat must perform exactly the same syscalls as before,
- * else it gets a vat-fatal error.
+ * Make a syscallHandler that returns results from a previously-recorded
+ * transcript, instead of executing them for real. The vat must perform exactly
+ * the same syscalls as before, else it gets a vat-fatal error.
  *
- * @param {*} kernelSlog
+ * @param {any} kernelSlog
  * @param {string} vatID
  * @param {number} deliveryNum
  * @param {TranscriptEntry} transcriptEntry
- * @returns { {
- *   syscallHandler: (vso: VatSyscallObject) => VatSyscallResult,
- *   finishSimulation: () => void,
- * } }
+ * @returns {{
+ *   syscallHandler: (vso: VatSyscallObject) => VatSyscallResult;
+ *   finishSimulation: () => void;
+ * }}
  */
 export function makeSyscallSimulator(
   kernelSlog,
@@ -188,7 +187,7 @@ function slogReplay(kernelSlog, vatID, deliveryNum, te) {
 
 /** @param {number} max */
 export const makeLRU = max => {
-  /** @type { string[] } */
+  /** @type {string[]} */
   const items = [];
 
   return harden({
@@ -229,11 +228,16 @@ export const makeLRU = max => {
 /**
  * @param {object} details
  * @param {KernelKeeper} details.kernelKeeper
- * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} details.vatLoader
- * @param {(vatID: string, translators: VatTranslators) => VatSyscallHandler} details.buildVatSyscallHandler
- * @param { import('../types-internal.js').KernelPanic } details.panic
- * @param { import('../types-external.js').VatWarehousePolicy } details.warehousePolicy
- * @param { import('../types-external.js').KernelSlog } details.kernelSlog
+ * @param {ReturnType<
+ *   typeof import('./vat-loader/vat-loader.js').makeVatLoader
+ * >} details.vatLoader
+ * @param {(
+ *   vatID: string,
+ *   translators: VatTranslators,
+ * ) => VatSyscallHandler} details.buildVatSyscallHandler
+ * @param {import('../types-internal.js').KernelPanic} details.panic
+ * @param {import('../types-external.js').VatWarehousePolicy} details.warehousePolicy
+ * @param {import('../types-external.js').KernelSlog} details.kernelSlog
  */
 export function makeVatWarehouse({
   kernelSlog,
@@ -255,21 +259,23 @@ export function makeVatWarehouse({
   // console.debug('makeVatWarehouse', { warehousePolicy });
 
   /**
-   * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
+   * @typedef {ReturnType<
+   *   typeof import('./vatTranslator').makeVatTranslators
+   * >} VatTranslators
    * @typedef {{
-   *   manager: VatManager,
-   *   translators: VatTranslators,
-   *   syscallHandler: VatSyscallHandler,
-   *   enablePipelining: boolean,
-   *   options: import('../types-internal.js').RecordedVatOptions,
+   *   manager: VatManager;
+   *   translators: VatTranslators;
+   *   syscallHandler: VatSyscallHandler;
+   *   enablePipelining: boolean;
+   *   options: import('../types-internal.js').RecordedVatOptions;
    * }} VatInfo
    */
   const ephemeral = {
-    /** @type {Map<string, VatInfo> } key is vatID */
+    /** @type {Map<string, VatInfo>} key is vatID */
     vats: new Map(),
   };
 
-  /** @type {Map<string, VatTranslators> } */
+  /** @type {Map<string, VatTranslators>} */
   const xlate = new Map();
   /** @param {string} vatID */
   function provideTranslators(vatID) {
@@ -344,7 +350,7 @@ export function makeVatWarehouse({
     // initialize-worker event, to represent the vatLoader.create()
     // we're about to do
     if (options.useTranscript && vatKeeper.transcriptSize() === 0) {
-      /** @type { TDInitializeWorkerOptions } */
+      /** @type {TDInitializeWorkerOptions} */
       const initOpts = { source: {}, workerOptions: options.workerOptions };
       // if the vat is somehow using a full bundle, we don't want that
       // in the transcript: we only record bundleIDs
@@ -435,14 +441,12 @@ export function makeVatWarehouse({
   }
 
   /**
-   * @typedef { import('../types-internal.js').MeterID } MeterID
+   * @typedef {import('../types-internal.js').MeterID} MeterID
    */
 
   /**
    * @param {string} vatID
-   * @returns {{ enablePipelining: boolean, meterID?: MeterID }
-   *  | undefined // if the vat is dead or never initialized
-   * }
+   * @returns {{ enablePipelining: boolean; meterID?: MeterID } | undefined; // if the vat is dead or never initialized}
    */
   function lookup(vatID) {
     const liveInfo = ephemeral.vats.get(vatID);
@@ -462,7 +466,6 @@ export function makeVatWarehouse({
   const recent = makeLRU(maxVatsOnline);
 
   /**
-   *
    * does not modify the kernelDB
    *
    * @param {string} vatID
@@ -489,9 +492,8 @@ export function makeVatWarehouse({
   /**
    * Simple fixed-size LRU cache policy
    *
-   * TODO: policy input: did a vat get a message? how long ago?
-   * "important" vat option?
-   * options: pay $/block to keep in RAM - advisory; not consensus
+   * TODO: policy input: did a vat get a message? how long ago? "important" vat
+   * option? options: pay $/block to keep in RAM - advisory; not consensus
    * creation arg: # of vats to keep in RAM (LRU 10~50~100)
    *
    * @param {VatID} currentVatID
@@ -508,7 +510,12 @@ export function makeVatWarehouse({
     await evict(lru);
   }
 
-  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
+  /** @type {(
+  vatID: string,
+  kd: KernelDeliveryObject,
+  d: VatDeliveryObject,
+  vs: VatSlog,
+) => Promise<VatDeliveryResult>} */
   async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
 
@@ -525,7 +532,7 @@ export function makeVatWarehouse({
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const crankNum = kernelKeeper.getCrankNumber();
     const deliveryNum = vatKeeper.nextDeliveryNum(); // transcript endPos
-    /** @type { SlogFinishDelivery } */
+    /** @type {SlogFinishDelivery} */
     const finishSlog = vs.delivery(crankNum, deliveryNum, kd, vd);
 
     // wrap the syscallHandler with a syscall recorder
@@ -551,8 +558,8 @@ export function makeVatWarehouse({
   }
 
   /**
-   * Save a heap snapshot for the given vatID, if the snapshotInterval
-   * is satisified
+   * Save a heap snapshot for the given vatID, if the snapshotInterval is
+   * satisified
    *
    * @param {VatID} vatID
    */
@@ -590,7 +597,7 @@ export function makeVatWarehouse({
     //   (not sure we'd want that anyways)
     // * vat-fatal errors or self-termination are not processed
     //
-    /** @type { KernelDeliveryObject } */
+    /** @type {KernelDeliveryObject} */
     const kd = harden(['bringOutYourDead']);
     // eslint-disable-next-line no-use-before-define
     const vd = kernelDeliveryToVatDelivery(vatID, kd);
@@ -641,9 +648,9 @@ export function makeVatWarehouse({
   }
 
   /**
-   * stop any existing worker, delete transcript and any snapshot, so
-   * the next time we send a delivery, we'll start a new worker (maybe
-   * with new source code)
+   * stop any existing worker, delete transcript and any snapshot, so the next
+   * time we send a delivery, we'll start a new worker (maybe with new source
+   * code)
    *
    * @param {string} vatID
    * @returns {Promise<number>} the incarnation number of the new incarnation

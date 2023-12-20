@@ -27,7 +27,7 @@ function parentLog(first, ...args) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/** @param { (item: import('./types.js').Tagged) => unknown } [handleUpstream] */
+/** @param {(item: import('./types.js').Tagged) => unknown} [handleUpstream] */
 const makeRevokableHandleCommandKit = handleUpstream => {
   /**
    * @param {Uint8Array} msg
@@ -49,15 +49,14 @@ const makeRevokableHandleCommandKit = handleUpstream => {
 
 /**
  * @param {{
- *   kernelKeeper: KernelKeeper,
- *   kernelSlog: KernelSlog,
- *   startXSnap: import('../../controller/startXSnap.js').StartXSnap,
- *   testLog: (...args: unknown[]) => void,
+ *   kernelKeeper: KernelKeeper;
+ *   kernelSlog: KernelSlog;
+ *   startXSnap: import('../../controller/startXSnap.js').StartXSnap;
+ *   testLog: (...args: unknown[]) => void;
  * }} tools
  * @returns {VatManagerFactory}
- *
- * @typedef { { moduleFormat: 'getExport', source: string } } ExportBundle
- * @typedef { (msg: Uint8Array) => Promise<Uint8Array> } AsyncHandler
+ * @typedef {{ moduleFormat: 'getExport'; source: string }} ExportBundle
+ * @typedef {(msg: Uint8Array) => Promise<Uint8Array>} AsyncHandler
  */
 export function makeXsSubprocessFactory({
   kernelKeeper,
@@ -96,7 +95,7 @@ export function makeXsSubprocessFactory({
 
     const mk = makeManagerKit();
 
-    /** @type { (item: import('./types.js').Tagged) => unknown } */
+    /** @type {(item: import('./types.js').Tagged) => unknown} */
     function handleUpstream([type, ...args]) {
       parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
@@ -149,7 +148,9 @@ export function makeXsSubprocessFactory({
       init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
-    /** @type { (item: import('./types.js').Tagged) => Promise<import('./types.js').WorkerResults> } */
+    /** @type {(
+  item: import('./types.js').Tagged,
+) => Promise<import('./types.js').WorkerResults>} */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
@@ -181,12 +182,12 @@ export function makeXsSubprocessFactory({
     }
 
     /**
-     * @param { VatDeliveryObject} delivery
+     * @param {VatDeliveryObject} delivery
      * @returns {Promise<VatDeliveryResult>}
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
-      /** @type { import('./types.js').WorkerResults } */
+      /** @type {import('./types.js').WorkerResults} */
       let result;
       await null;
       try {
@@ -213,7 +214,7 @@ export function makeXsSubprocessFactory({
 
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       // Attach the meterUsage to the deliver result.
-      /** @type { VatDeliveryResult } */
+      /** @type {VatDeliveryResult} */
       // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
       // @ts-ignore I don't know how to appease tsc
       const deliverResult = harden([
@@ -272,7 +273,9 @@ export function makeXsSubprocessFactory({
       ]);
       await closeP;
 
-      /** @type {Partial<import('@agoric/swing-store/src/snapStore.js').SnapshotInfo>} */
+      /** @type {Partial<
+  import('@agoric/swing-store/src/snapStore.js').SnapshotInfo
+>} */
       const reloadSnapshotInfo = {
         snapPos,
         hash: snapshotResults.hash,

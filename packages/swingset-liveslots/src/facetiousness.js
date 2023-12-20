@@ -1,16 +1,15 @@
 import { Fail } from '@agoric/assert';
 
 /**
- * Assess the facetiousness of a value.  If the value is an object containing
+ * Assess the facetiousness of a value. If the value is an object containing
  * only named properties and each such property's value is a function, `obj`
- * represents a single facet and 'one' is returned.  If each property's value
- * is instead an object of facetiousness 'one', `obj` represents multiple
- * facets and 'many' is returned.  In all other cases `obj` does not represent
- * any kind of facet abstraction and 'not' is returned.
+ * represents a single facet and 'one' is returned. If each property's value is
+ * instead an object of facetiousness 'one', `obj` represents multiple facets
+ * and 'many' is returned. In all other cases `obj` does not represent any kind
+ * of facet abstraction and 'not' is returned.
  *
- * @typedef {'one'|'many'|'not'} Facetiousness
- *
- * @param {*} obj  The (alleged) object to be assessed
+ * @typedef {'one' | 'many' | 'not'} Facetiousness
+ * @param {any} obj The (alleged) object to be assessed
  * @returns {Facetiousness} an assessment of the facetiousness of `obj`
  */
 export function assessFacetiousness(obj) {

@@ -15,8 +15,8 @@ const { quote: q } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {(string:string) => undefined} log
- * @param {Record<string,Installation>} installations
+ * @param {(string: string) => undefined} log
+ * @param {Record<string, Installation>} installations
  * @param {ERef<GovernorCreatorFacet<any>>} contractFacetAccess
  * @param {bigint} deadline
  */
@@ -73,7 +73,10 @@ const installContracts = async (zoe, cb) => {
  * @param {ERef<ZoeService>} zoe
  * @param {Record<string, Installation>} installations
  * @param {Record<string, unknown>} electorateTerms
- * @returns {Promise<{electorateCreatorFacet: *, electorateInstance: Instance}>}
+ * @returns {Promise<{
+ *   electorateCreatorFacet: any;
+ *   electorateInstance: Instance;
+ * }>}
  */
 const startElectorate = async (zoe, installations, electorateTerms) => {
   const { creatorFacet: electorateCreatorFacet, instance: electorateInstance } =
@@ -269,7 +272,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
-  /** @type {{zoeService: ERef<ZoeService>}} */
+  /** @type {{ zoeService: ERef<ZoeService> }} */
   const { zoeService: zoe } = await E(vats.zoe).buildZoe(
     vatAdminSvc,
     undefined,

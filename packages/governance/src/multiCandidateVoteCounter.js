@@ -47,9 +47,9 @@ const makeMultiCandidateVoteCounter = (
   const positions = questionSpec.positions;
   const maxChoices = questionSpec.maxChoices;
 
-  /** @type { PromiseRecord<Position[]> } */
+  /** @type {PromiseRecord<Position[]>} */
   const outcomePromise = makePromiseKit();
-  /** @type { PromiseRecord<VoteStatistics> } */
+  /** @type {PromiseRecord<VoteStatistics>} */
   const tallyPromise = makePromiseKit();
 
   /**
@@ -57,7 +57,7 @@ const makeMultiCandidateVoteCounter = (
    * @property {Position[]} chosen
    * @property {bigint} shares
    */
-  /** @type {MapStore<Handle<'Voter'>,RecordedBallot> } */
+  /** @type {MapStore<Handle<'Voter'>, RecordedBallot>} */
   const allBallots = makeScalarMapStore('voterHandle');
 
   const countVotes = () => {
@@ -77,7 +77,7 @@ const makeMultiCandidateVoteCounter = (
       }
     }
 
-    /** @type { VoteStatistics } */
+    /** @type {VoteStatistics} */
     const stats = {
       spoiled,
       votes: allBallots.getSize(),
@@ -141,7 +141,7 @@ const makeMultiCandidateVoteCounter = (
     }
 
     E.when(outcomePromise.promise, winPositions => {
-      /** @type { MultiOutcomeRecord } */
+      /** @type {MultiOutcomeRecord} */
       const voteOutcome = {
         question: details.questionHandle,
         positions: winPositions,
@@ -218,8 +218,8 @@ const makeMultiCandidateVoteCounter = (
 };
 
 /**
- * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>} zcf
- * @param {{outcomePublisher: Publisher<MultiOutcomeRecord>}} outcomePublisher
+ * @param {ZCF<{ questionSpec: QuestionSpec; quorumThreshold: bigint }>} zcf
+ * @param {{ outcomePublisher: Publisher<MultiOutcomeRecord> }} outcomePublisher
  */
 const start = (zcf, { outcomePublisher }) => {
   const { questionSpec, quorumThreshold } = zcf.getTerms();

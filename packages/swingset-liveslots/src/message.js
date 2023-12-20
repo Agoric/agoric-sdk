@@ -3,22 +3,20 @@ import { insistCapData } from './capdata.js';
 
 /**
  * @typedef {{
- * methargs: import('./types').SwingSetCapData, // of [method, args]
- * result: string | undefined | null,
+ *   methargs: import('./types').SwingSetCapData; // of [method, args]
+ *   result: string | undefined | null;
  * }} Message
  */
 
 /**
  * Assert function to ensure that something expected to be a message object
- * actually is.  A message object should have a .method property that's a
- * string, a .args property that's a capdata object, and optionally a .result
- * property that, if present, must be a string.
+ * actually is. A message object should have a .method property that's a string,
+ * a .args property that's a capdata object, and optionally a .result property
+ * that, if present, must be a string.
  *
- * @param {any} message  The object to be tested
- *
+ * @param {any} message The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- *
  * @returns {asserts message is Message}
  */
 

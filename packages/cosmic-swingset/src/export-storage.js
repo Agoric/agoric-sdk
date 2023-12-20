@@ -6,7 +6,7 @@ const { Fail, quote: q } = assert;
  * Export any specified storage subtrees, then delete the ones marked to clear.
  *
  * @param {(method: string, args: unknown[]) => any} batchChainStorage send a
- * batch command over the chain storage bridge
+ *   batch command over the chain storage bridge
  * @param {string[]} [exportStorageSubtrees] chain storage paths identifying
  *   roots of subtrees for which data should be exported into bootstrap vat
  *   parameter `chainStorageEntries` (e.g., `exportStorageSubtrees: ['c.o']`
@@ -14,7 +14,7 @@ const { Fail, quote: q } = assert;
  *   '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
  * @param {string[]} [clearStorageSubtrees] chain storage paths identifying
  *   roots of subtrees for which data should be deleted (TODO: including
- *   overlaps with exportStorageSubtrees, which are *not* preserved).
+ *   overlaps with exportStorageSubtrees, which are _not_ preserved).
  */
 export const exportStorage = (
   batchChainStorage,

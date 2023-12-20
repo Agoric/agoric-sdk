@@ -24,10 +24,12 @@ export const getSDKBinaries = ({
  * Create a promisified spawn function with the following built-in parameters.
  *
  * @param {object} param0
- * @param {Record<string, string | undefined>} [param0.env] the default environment
- * @param {*} [param0.chalk] a colorizer
+ * @param {Record<string, string | undefined>} [param0.env] the default
+ *   environment
+ * @param {any} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
- * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
+ * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess} param0.spawn
+ *   the spawn function
  */
 export const makePspawn = ({
   env: defaultEnv = process.env,
@@ -43,11 +45,11 @@ export const makePspawn = ({
    * @param {object} param2
    * @param {string} [param2.cwd]
    * @param {string | [string, string, string]} [param2.stdio] standard IO
-   * specification
+   *   specification
    * @param {Record<string, string | undefined>} [param2.env] environment
-   * @returns {Promise<number> & { childProcess: ChildProcess }}} promise for
-   * exit status. The return result has a `childProcess` property to obtain
-   * control over the running process
+   * @returns {Promise<number> & { childProcess: ChildProcess }} } promise for
+   *   exit status. The return result has a `childProcess` property to obtain
+   *   control over the running process
    */
   function pspawn(
     cmd,

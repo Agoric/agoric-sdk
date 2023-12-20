@@ -87,7 +87,7 @@ const makeContinuingInvitation = async (
   return invitationP;
 };
 
-/** @typedef {{method: string, args: Array<any> }} InvitationMaker */
+/** @typedef {{ method: string; args: Array<any> }} InvitationMaker */
 /**
  * @param {InvitationMaker} invitationMaker
  * @param {string} instanceHandleBoardId

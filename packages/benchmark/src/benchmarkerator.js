@@ -42,97 +42,90 @@ import { makeLiquidationTestKit } from '@agoric/boot/tools/liquidation.ts';
 // taxonomy the name of this module should sit, but it's probably somewhere.
 
 /**
- * The benchmark context object.  The benchmarkerator provides this to
- * benchmarks when they run.
+ * The benchmark context object. The benchmarkerator provides this to benchmarks
+ * when they run.
  *
  * @typedef {{
- *    options: Record<string, string>,
- *    argv: string[],
- *    actors: Record<string, import('@agoric/boot/tools/drivers.ts').SmartWalletDriver>,
- *    tools: Record<string, unknown>,
- *    title?: string,
- *    rounds?: number,
- *    config?: Record<string, unknown>,
+ *   options: Record<string, string>;
+ *   argv: string[];
+ *   actors: Record<
+ *     string,
+ *     import('@agoric/boot/tools/drivers.ts').SmartWalletDriver
+ *   >;
+ *   tools: Record<string, unknown>;
+ *   title?: string;
+ *   rounds?: number;
+ *   config?: Record<string, unknown>;
  * }} BenchmarkContext
+ *   BenchmarkContext: // Named options from the command line options:
+ *   Record<string, string>,
  *
- * BenchmarkContext:
- *  // Named options from the command line
- *  options: Record<string, string>,
+ *   // Other unparsed args from the command line argv: string[],
  *
- *  // Other unparsed args from the command line
- *  argv: string[],
+ *   // Wallet drivers for the various personae that exist in the test //
+ *   environment. Currently present are 'gov1', 'gov2', and 'gov3' (the //
+ *   governance committee); 'atom1' and 'atom2' (ersatz ATOM-USD price feed //
+ *   oracles); and 'alice', 'bob', and 'carol' (arbitrary users to participate
+ *   // in interactions being exercized) actors: Record<string,
+ *   SmartWalletDriver>,
  *
- *  // Wallet drivers for the various personae that exist in the test
- *  // environment.  Currently present are 'gov1', 'gov2', and 'gov3' (the
- *  // governance committee); 'atom1' and 'atom2' (ersatz ATOM-USD price feed
- *  // oracles); and 'alice', 'bob', and 'carol' (arbitrary users to participate
- *  // in interactions being exercized)
- *  actors: Record<string, SmartWalletDriver>,
+ *   // The label string for the benchmark currently being executed title: string,
  *
- *  // The label string for the benchmark currently being executed
- *  title: string,
+ *   // Functions provided to do things tools: Record<string, unknown>,
  *
- *  // Functions provided to do things
- *  tools: Record<string, unknown>,
+ *   // The number of rounds of this benchmark that will be executed rounds:
+ *   number,
  *
- *  // The number of rounds of this benchmark that will be executed
- *  rounds: number,
+ *   // Optional, benchmark-specific configuration information provided by the //
+ *   benchmark's `setup` method config?: Record<string, unknown>,
  *
- *  // Optional, benchmark-specific configuration information provided by the
- *  // benchmark's `setup` method
- *  config?: Record<string, unknown>,
- *
- *
- * The benchmark object.  The benchmark author supplies this.
- *
+ *   The benchmark object. The benchmark author supplies this.
  * @typedef {{
- *    setup?: (context: BenchmarkContext) => Promise<Record<string, unknown> | undefined>,
- *    setupRound?: (context: BenchmarkContext, round: number) => Promise<void>,
- *    executeRound: (context: BenchmarkContext, round: number) => Promise<void>,
- *    finishRound?: (context: BenchmarkContext, round: number) => Promise<void>,
- *    finish?: (context: BenchmarkContext) => Promise<void>,
- *    rounds?: number,
+ *   setup?: (
+ *     context: BenchmarkContext,
+ *   ) => Promise<Record<string, unknown> | undefined>;
+ *   setupRound?: (context: BenchmarkContext, round: number) => Promise<void>;
+ *   executeRound: (context: BenchmarkContext, round: number) => Promise<void>;
+ *   finishRound?: (context: BenchmarkContext, round: number) => Promise<void>;
+ *   finish?: (context: BenchmarkContext) => Promise<void>;
+ *   rounds?: number;
  * }} Benchmark
+ *   Benchmark: // Optional setup method: do whatever pre-run setup you need to
+ *   do. If you // return a record, it will be included as the `config` property
+ *   of the // benchmark context parameter of subsequent calls into the
+ *   benchmark object. setup?: (context: BenchmarkContext) =>
+ *   Promise<Record<string, unknown> | undefined>,
  *
- * Benchmark:
- *   // Optional setup method: do whatever pre-run setup you need to do.  If you
- *   // return a record, it will be included as the `config` property of the
- *   // benchmark context parameter of subsequent calls into the benchmark object.
- *   setup?: (context: BenchmarkContext) => Promise<Record<string, unknown> | undefined>,
+ *   // Optional setup method for an individual round. This is executed as part //
+ *   of a benchmark round, just prior to calling the `executeRound` method, //
+ *   but does not count towards the timing or resource usage statistics for //
+ *   the round itself. Use this when there is per-round initialization that //
+ *   is necessary to execute the round but which should not be considered //
+ *   part of the operation being measured. setupRound?: (context:
+ *   BenchmarkContext, round: number) => Promise<void>,
  *
- *   // Optional setup method for an individual round.  This is executed as part
- *   // of a benchmark round, just prior to calling the `executeRound` method,
- *   // but does not count towards the timing or resource usage statistics for
- *   // the round itself.  Use this when there is per-round initialization that
- *   // is necessary to execute the round but which should not be considered
- *   // part of the operation being measured.
- *   setupRound?: (context: BenchmarkContext, round: number) => Promise<void>,
+ *   // Optional finish method for an individual round. This is executed as //
+ *   part of a benchmark round, just after calling the `executeRound` method, //
+ *   but does not count towards the timing or resource usage statistics for //
+ *   the round itself. Use this when there is per-round teardown that is //
+ *   necessary after executing the round but which should not be considered //
+ *   part of the operation being measured. finishRound?: (context:
+ *   BenchmarkContext, round: number) => Promise<void>,
  *
- *   // Optional finish method for an individual round.  This is executed as
- *   // part of a benchmark round, just after calling the `executeRound` method,
- *   // but does not count towards the timing or resource usage statistics for
- *   // the round itself.  Use this when there is per-round teardown that is
- *   // necessary after executing the round but which should not be considered
- *   // part of the operation being measured.
- *   finishRound?: (context: BenchmarkContext, round: number) => Promise<void>,
+ *   // Run one round of the benchmark executeRound: (context: BenchmarkContext,
+ *   round: number) => Promise<void>,
  *
- *   // Run one round of the benchmark
- *   executeRound: (context: BenchmarkContext, round: number) => Promise<void>,
+ *   // Optional finish method: do any post-run teardown you need to clean things
+ *   up. // Called after all rounds have executed. finish?: (context:
+ *   BenchmarkContext) => Promise<void>,
  *
- *   // Optional finish method: do any post-run teardown you need to clean things up.
- *   // Called after all rounds have executed.
- *   finish?: (context: BenchmarkContext) => Promise<void>,
+ *   // The number of rounds that will be run if not overridden on the command
+ *   line. // Defaults to 1 if not specified. rounds?: number,
  *
- *   // The number of rounds that will be run if not overridden on the command line.
- *   // Defaults to 1 if not specified.
- *   rounds?: number,
- *
- *
- * The benchmarkerator object.  The benchmarkerator framework supplies this.
- *
+ *   The benchmarkerator object. The benchmarkerator framework supplies this.
  * @typedef {{
- *    addBenchmark: (title: string, benchmark: Benchmark) => void,
- *    run: () => Promise<void>,
+ *   addBenchmark: (title: string, benchmark: Benchmark) => void;
+ *   run: () => Promise<void>;
  * }} Benchmarkerator
  */
 
@@ -310,8 +303,7 @@ if (help) {
 /**
  * Test if a given benchmark should be included in the benchmarks that get run.
  *
- * @param {string} title  The title of the benchmark in question
- *
+ * @param {string} title The title of the benchmark in question
  * @returns {boolean} true iff the benchmark should be run this time through.
  */
 const shouldIncludeBenchmark = title => {
@@ -329,8 +321,7 @@ const shouldIncludeBenchmark = title => {
 /**
  * Test if a given kernel stats key is one of the main keys or a subsidiary key.
  *
- * @param {string} key  The key in question
- *
+ * @param {string} key The key in question
  * @returns {boolean} true iff the key is one of the main keys.
  */
 const isMainKey = key =>
@@ -341,8 +332,7 @@ const isMainKey = key =>
  * right of the decimal point -- unless it's an integer, in which case, in the
  * interest of visual clarity, replace the fractional part with spaces.
  *
- * @param {number} n  The number to format
- *
+ * @param {number} n The number to format
  * @returns {string} a prettily formatted representation of `n`
  */
 const pn = n => n.toFixed(3).replace(/[.]000$/, '    ');
@@ -540,7 +530,7 @@ const organizeRoundsStats = (rounds, perRoundStats) => {
  * Produce a new benchmarkerator object.
  *
  * Note: Most likely you do not need to use this, as this the benchmarkerator is
- * typically a singleton.  But we provide it just in case...
+ * typically a singleton. But we provide it just in case...
  *
  * @returns {Promise<Benchmarkerator>}
  */
@@ -641,8 +631,8 @@ export const makeBenchmarkerator = async () => {
    * Add a benchmark to the set being run by an execution of the benchmark
    * framework.
    *
-   * @param {string} title - string identifying the benchmark.  Used for logging
-   *    and execution control.
+   * @param {string} title - string identifying the benchmark. Used for logging
+   *   and execution control.
    * @param {Benchmark} benchmark - the benchmark itself
    */
   const addBenchmark = (title, benchmark) => {

@@ -14,8 +14,8 @@ import { mintQuote } from './priceAuthorityTransform.js';
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
 
 /**
- * Override `makeQuoteNotifier`, `quoteGiven` to provide an initial price
- * in case one is not yet available from the source.
+ * Override `makeQuoteNotifier`, `quoteGiven` to provide an initial price in
+ * case one is not yet available from the source.
  *
  * Mainly for testing vaults without waiting for oracle operators to PushPrice.
  *

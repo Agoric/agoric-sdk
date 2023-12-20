@@ -35,9 +35,8 @@ import { prepareZcMint } from './zcfMint.js';
 const { Fail } = assert;
 
 /**
- * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
- * made, then the contract code is evaluated, then a particular
- * instance is made.
+ * Make the ZCF vat in zygote-usable form. First, a generic ZCF is made, then
+ * the contract code is evaluated, then a particular instance is made.
  *
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
@@ -219,8 +218,8 @@ export const makeZCFZygote = async (
    *     }
    *   | {
    *       prepare: ContractStartFn;
-   *       customTermsShape?: Pick<ContractMeta, 'customTermsShape'>,
-   *       privateArgsShape?: Pick<ContractMeta, 'privateArgsShape'>,
+   *       customTermsShape?: Pick<ContractMeta, 'customTermsShape'>;
+   *       privateArgsShape?: Pick<ContractMeta, 'privateArgsShape'>;
    *     }
    *   | {
    *       buildRootObject: undefined;

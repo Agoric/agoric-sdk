@@ -84,7 +84,7 @@ function makeMeterControl() {
     return harden(wrapped);
   }
 
-  /** @type { MeterControl } */
+  /** @type {MeterControl} */
   const meterControl = {
     isMeteringDisabled,
     assertIsMetered,
@@ -102,10 +102,10 @@ const meterControl = makeMeterControl();
  * Wrap byte-level protocols with tagged array codec.
  *
  * @param {(cmd: ArrayBuffer) => ArrayBuffer} issueCommand as from xsnap
- * @typedef { [unknown, ...unknown[]] } Tagged tagged array
+ * @typedef {[unknown, ...unknown[]]} Tagged tagged array
  */
 function managerPort(issueCommand) {
-  /** @type { (item: Tagged) => ArrayBuffer } */
+  /** @type {(item: Tagged) => ArrayBuffer} */
   const encode = item => {
     let txt;
     try {
@@ -117,12 +117,12 @@ function managerPort(issueCommand) {
     return encoder.encode(txt).buffer;
   };
 
-  /** @type { (msg: ArrayBuffer) => any } */
+  /** @type {(msg: ArrayBuffer) => any} */
   const decodeData = msg => JSON.parse(decoder.decode(msg) || 'null');
 
-  /** @type { (msg: ArrayBuffer) => Tagged } */
+  /** @type {(msg: ArrayBuffer) => Tagged} */
   function decode(msg) {
-    /** @type { Tagged } */
+    /** @type {Tagged} */
     const item = decodeData(msg);
     Array.isArray(item) || Fail`expected array`;
     item.length > 0 || Fail`empty array lacks tag`;
@@ -130,20 +130,20 @@ function managerPort(issueCommand) {
   }
 
   return harden({
-    /** @type { (item: Tagged) => void } */
+    /** @type {(item: Tagged) => void} */
     send: item => {
       issueCommand(encode(item));
     },
-    /** @type { (item: Tagged) => unknown } */
+    /** @type {(item: Tagged) => unknown} */
     call: item => decodeData(issueCommand(encode(item))),
 
     /**
      * Wrap an async Tagged handler in the xsnap async reporting idiom.
      *
      * @param {(item: Tagged) => Promise<Tagged>} f async Tagged handler
-     * @returns {(msg: ArrayBuffer) => Report<ArrayBuffer>} xsnap style handleCommand
-     *
-     * @typedef { { result?: T } } Report<T> report T when idle
+     * @returns {(msg: ArrayBuffer) => Report<ArrayBuffer>} xsnap style
+     *   handleCommand
+     * @typedef {{ result?: T }} Report<T> report T when idle
      * @template T
      */
     handlerFrom(f) {
@@ -185,7 +185,8 @@ function abbreviateReplacer(_, arg) {
  * @param {ReturnType<typeof managerPort>} port
  */
 function makeWorker(port) {
-  /** @type { ((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>) | null } */
+  /** @type {((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>)
+  | null} */
   let dispatch = null;
 
   /**
@@ -195,7 +196,7 @@ function makeWorker(port) {
    * @returns {Promise<Tagged>}
    */
   async function setBundle(vatID, bundle, liveSlotsOptions) {
-    /** @type { VatSyscallHandler } */
+    /** @type {VatSyscallHandler} */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
       const result = port.call(['syscall', vatSyscallObject]);
@@ -294,7 +295,7 @@ function makeWorker(port) {
     return ['dispatchReady'];
   }
 
-  /** @type { (item: Tagged) => Promise<Tagged> } */
+  /** @type {(item: Tagged) => Promise<Tagged>} */
   async function handleItem([tag, ...args]) {
     workerLog('handleItem', tag, args.length);
     switch (tag) {

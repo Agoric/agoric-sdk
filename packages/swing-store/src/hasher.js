@@ -4,8 +4,8 @@ import { createHash } from 'crypto';
 
 /**
  * @typedef {{
- *   add: (more: string | Buffer) => Hasher,
- *   finish: () => string,
+ *   add: (more: string | Buffer) => Hasher;
+ *   finish: () => string;
  * }} Hasher
  */
 

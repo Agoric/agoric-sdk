@@ -8,7 +8,6 @@ import { TimeMath } from '../src/timeMath.js';
  * @typedef {import('../src/types').RelativeTime} RelativeTime
  * @typedef {import('../src/types').TimestampValue} TimestampValue
  * @typedef {import('../src/types').TimeMathType} TimeMathType
- *
  */
 
 // TODO Although TimeMath is altogether rather simple, to test it well

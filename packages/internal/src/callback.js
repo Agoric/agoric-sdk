@@ -9,13 +9,15 @@ const { fromEntries } = Object;
 
 const { ownKeys: rawOwnKeys } = Reflect;
 const ownKeys =
-  /** @type {<T extends PropertyKey>(obj: {[K in T]?: unknown}) => T[]} */ (
+  /** @type {<T extends PropertyKey>(obj: { [K in T]?: unknown }) => T[]} */ (
     rawOwnKeys
   );
 
 /**
  * @template T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} MakeAttenuator
+ * @typedef {(
+ *   ...args: Parameters<ReturnType<prepareAttenuator>>
+ * ) => Farable<T>} MakeAttenuator
  */
 
 /**
@@ -28,12 +30,13 @@ const ownKeys =
  * @typedef {import('./types').SyncCallback<I>} SyncCallback
  */
 
-/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> & T} Farable */
+/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> &
+  T} Farable */
 
 /**
  * @param {unknown} key
  * @returns {key is PropertyKey} FIXME: should be just `PropertyKey` but TS
- * complains it can't be used as an index type.
+ *   complains it can't be used as an index type.
  */
 const isPropertyKey = key => {
   switch (typeof key) {
@@ -126,7 +129,7 @@ harden(makeFunctionCallback);
  * @template {(...args: unknown[]) => any} I
  * @template {PropertyKey} P
  * @template {{
- *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>
+ *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
  * }} [T={ [x in P]: I }]
  * @template {unknown[]} [B=[]]
  * @param {T} target
@@ -152,7 +155,7 @@ harden(makeSyncMethodCallback);
  * @template {(...args: unknown[]) => any} I
  * @template {PropertyKey} P
  * @template {import('@endo/far').ERef<{
- *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>
+ *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
  * }>} [T=import('@endo/far').ERef<{ [x in P]: I }>]
  * @template {unknown[]} [B=[]]
  * @param {T} target
@@ -194,13 +197,14 @@ harden(isCallback);
  * Prepare an attenuator class whose methods can be redirected via callbacks.
  *
  * @template {PropertyKey} M
- * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate attenuators.
+ * @param {import('@agoric/base-zone').Zone} zone The zone in which to allocate
+ *   attenuators.
  * @param {M[]} methodNames Methods to forward.
  * @param {object} opts
  * @param {import('@endo/patterns').InterfaceGuard<{
- *  [K in M]: import('@endo/patterns').MethodGuard
- * }>} [opts.interfaceGuard] An interface guard for the
- * new attenuator.
+ *   [K in M]: import('@endo/patterns').MethodGuard;
+ * }>} [opts.interfaceGuard]
+ *   An interface guard for the new attenuator.
  * @param {string} [opts.tag] A tag for the new attenuator exoClass.
  */
 export const prepareAttenuator = (
@@ -210,7 +214,7 @@ export const prepareAttenuator = (
 ) => {
   /**
    * @typedef {(this: any, ...args: unknown[]) => any} Method
-   * @typedef {{ [K in M]?: Callback<any> | null}} Overrides
+   * @typedef {{ [K in M]?: Callback<any> | null }} Overrides
    * @typedef {{ [K in M]: (this: any, ...args: unknown[]) => any }} Methods
    */
   const methods = /** @type {Methods} */ (
@@ -253,14 +257,13 @@ export const prepareAttenuator = (
    * and/or individual method override callbacks.
    *
    * @param {object} opts
-   * @param {unknown} [opts.target] The target for any methods that
-   * weren't specified in `opts.overrides`.
+   * @param {unknown} [opts.target] The target for any methods that weren't
+   *   specified in `opts.overrides`.
    * @param {boolean} [opts.isSync=false] Whether the target should be treated
-   * as synchronously available.
-   * @param {Overrides} [opts.overrides] Set individual
-   * callbacks for methods (whose names must be defined in the
-   * `prepareAttenuator` or `prepareGuardedAttenuator` call).  Nullish overrides
-   * mean to throw.
+   *   as synchronously available.
+   * @param {Overrides} [opts.overrides] Set individual callbacks for methods
+   *   (whose names must be defined in the `prepareAttenuator` or
+   *   `prepareGuardedAttenuator` call). Nullish overrides mean to throw.
    */
   const makeAttenuator = zone.exoClass(
     tag,

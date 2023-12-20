@@ -4,11 +4,10 @@
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  *
- * A note about ERTP AssetKinds: Within Zoe, the assetKind of
- * validated amounts must be consistent with the brand's assetKind.
- * This is stricter than the validation provided by AmountMath
- * currently. When the brand has an assetKind itself, AmountMath will
- * validate that.
+ * A note about ERTP AssetKinds: Within Zoe, the assetKind of validated amounts
+ * must be consistent with the brand's assetKind. This is stricter than the
+ * validation provided by AmountMath currently. When the brand has an assetKind
+ * itself, AmountMath will validate that.
  */
 
 /// <reference path="../../../ERTP/exported.js" />
@@ -36,13 +35,15 @@ const { Fail } = assert;
  * Create a durable instance of Zoe.
  *
  * @param {object} options
- * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability. Must be provided by caller
- * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
- * power to create a new vat. If it's not available when makeZoe() is called, it
- * must be provided later using setVatAdminService().
+ * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability. Must be
+ *   provided by caller
+ * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The
+ *   vatAdmin Service, which carries the power to create a new vat. If it's not
+ *   available when makeZoe() is called, it must be provided later using
+ *   setVatAdminService().
  * @param {ShutdownWithFailure} [options.shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
+ *   shutdown the Zoe Vat. This function needs to use the vatPowers available to
+ *   a vat.
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
  * @param {ZCFSpec} [options.zcfSpec] - Pointer to the contract facet bundle.
  */
@@ -253,18 +254,16 @@ const makeDurableZoeKit = ({
 };
 
 /**
- * @deprecated
- * Create an instance of Zoe.
+ * @deprecated Create an instance of Zoe.
  *
- * This will fail upgrades and should only be used in tests through the helper
- * `makeZoeKitForTest`.
- *
- * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
- * power to create a new vat. If it's not available when makeZoe() is called, it
- * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to
- * shutdown the Zoe Vat. This function needs to use the vatPowers
- * available to a vat.
+ *   This will fail upgrades and should only be used in tests through the helper
+ *   `makeZoeKitForTest`.
+ * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin
+ *   Service, which carries the power to create a new vat. If it's not available
+ *   when makeZoe() is called, it must be provided later using
+ *   setVatAdminService().
+ * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to shutdown the
+ *   Zoe Vat. This function needs to use the vatPowers available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]
  * @param {ZCFSpec} [zcfSpec] - Pointer to the contract facet bundle.
  */

@@ -39,7 +39,10 @@ export const makeOfferHandlerStorage = zcfBaggage => {
   };
 
   /**
-   * @type {(invitationHandle: InvitationHandle, details?: Details) => OfferHandler}
+   * @type {(
+   *   invitationHandle: InvitationHandle,
+   *   details?: Details,
+   * ) => OfferHandler}
    */
   const takeOfferHandler = (
     invitationHandle,

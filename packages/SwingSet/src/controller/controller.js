@@ -91,20 +91,22 @@ function unhandledRejectionHandler(e, pr) {
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {Record<string, unknown>} deviceEndowments
  * @param {{
- *   verbose?: boolean,
- *   debugPrefix?: string,
- *   slogCallbacks?: unknown,
- *   slogSender?: import('@agoric/telemetry').SlogSender,
- *   testTrackDecref?: unknown,
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy,
- *   overrideVatManagerOptions?: unknown,
- *   spawn?: typeof import('child_process').spawn,
- *   env?: Record<string, string | undefined>,
- *   kernelBundle?: Bundle
- *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
- *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
- *   profileVats?: string[],
- *   debugVats?: string[],
+ *   verbose?: boolean;
+ *   debugPrefix?: string;
+ *   slogCallbacks?: unknown;
+ *   slogSender?: import('@agoric/telemetry').SlogSender;
+ *   testTrackDecref?: unknown;
+ *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
+ *   overrideVatManagerOptions?: unknown;
+ *   spawn?: typeof import('child_process').spawn;
+ *   env?: Record<string, string | undefined>;
+ *   kernelBundle?: Bundle;
+ *   xsnapBundleData?: ReturnType<
+ *     import('./bundle-handler.js').makeXsnapBundleData
+ *   >;
+ *   bundleHandler?: import('./bundle-handler.js').BundleHandler;
+ *   profileVats?: string[];
+ *   debugVats?: string[];
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -246,7 +248,7 @@ export async function makeSwingsetController(
     warehousePolicy,
     overrideVatManagerOptions,
   };
-  /** @type { ReturnType<typeof import('../kernel').default> } */
+  /** @type {ReturnType<typeof import('../kernel').default>} */
   const kernel = buildKernel(
     kernelEndowments,
     deviceEndowments,
@@ -384,7 +386,7 @@ export async function makeSwingsetController(
      * Queue a method call into the named vat
      *
      * @param {string} vatName
-     * @param {string|symbol} method
+     * @param {string | symbol} method
      * @param {unknown[]} args
      * @param {ResolutionPolicy} resultPolicy
      */
@@ -406,7 +408,7 @@ export async function makeSwingsetController(
      * Queue a method call to an object represented by a kmarshal token
      *
      * @param {any} target
-     * @param {string|symbol} method
+     * @param {string | symbol} method
      * @param {unknown[]} args
      * @param {ResolutionPolicy} resultPolicy
      */
@@ -458,10 +460,10 @@ export async function makeSwingsetController(
  * configure devices.
  *
  * The official API does these as two separate steps because the two sometimes
- * need to happen at different times.  In particular, sometimes you need the
- * host to be able to control whether or not to initialize independent of the
- * SwingSet's history.  Also sometimes you want different runtime options for
- * the two stages; this can happen, for example, in some debugging cases.
+ * need to happen at different times. In particular, sometimes you need the host
+ * to be able to control whether or not to initialize independent of the
+ * SwingSet's history. Also sometimes you want different runtime options for the
+ * two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
  * @param {string[]} argv
@@ -477,7 +479,7 @@ export async function makeSwingsetController(
  *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
+ * @typedef {import('@agoric/swing-store').KVStore} KVStore
  */
 export async function buildVatController(
   config,

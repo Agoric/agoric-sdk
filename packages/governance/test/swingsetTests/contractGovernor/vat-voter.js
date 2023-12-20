@@ -24,7 +24,6 @@ const build = async (log, zoe) => {
           return E(voter).castBallotFor(questionHandle, [choice]);
         },
         /**
-         *
          * @param {Instance} counterInstance
          * @param {Instance} governedInstance
          * @param {Instance} electorateInstance

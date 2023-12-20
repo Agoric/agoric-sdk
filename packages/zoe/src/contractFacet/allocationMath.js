@@ -5,8 +5,7 @@ const { Fail, quote: q } = assert;
 /**
  * @callback Operation
  *
- * An operation such as add or subtract.
- *
+ *   An operation such as add or subtract.
  * @param {Amount | undefined} amount
  * @param {Amount | undefined} diff
  * @param {Keyword} keyword
@@ -14,9 +13,8 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- * Add amounts to an allocation, or subtract amounts from an
- * allocation, by keyword. The operationFn performs the actual adding
- * or subtracting.
+ * Add amounts to an allocation, or subtract amounts from an allocation, by
+ * keyword. The operationFn performs the actual adding or subtracting.
  *
  * @param {Allocation} allocation
  * @param {AmountKeywordRecord} amountKeywordRecord

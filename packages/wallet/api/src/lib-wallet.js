@@ -3,7 +3,7 @@
 
 /**
  * This file defines the wallet internals without dependency on the ag-solo on
- * which it runs.  It could be better factored, as it evolved ex nihilo.
+ * which it runs. It could be better factored, as it evolved ex nihilo.
  *
  * Ideally, the APIs defined by ./types.js would drive the organization of this
  * and other implementation files.
@@ -64,14 +64,14 @@ const cmp = (a, b) => {
 
 /**
  * @param {{
- * agoricNames?: ERef<NameHub>
- * board: ERef<import('@agoric/vats').Board>
- * dateNow?: () => number,
- * inboxStateChangeHandler?: (state: any) => void,
- * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>
- * namesByAddress?: ERef<NameHub>
- * pursesStateChangeHandler?: (state: any) => void,
- * zoe: ERef<ZoeService>,
+ *   agoricNames?: ERef<NameHub>;
+ *   board: ERef<import('@agoric/vats').Board>;
+ *   dateNow?: () => number;
+ *   inboxStateChangeHandler?: (state: any) => void;
+ *   myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>;
+ *   namesByAddress?: ERef<NameHub>;
+ *   pursesStateChangeHandler?: (state: any) => void;
+ *   zoe: ERef<ZoeService>;
  * }} opt
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
@@ -91,7 +91,7 @@ export function makeWalletRoot({
   let lastId = 0;
 
   /**
-   * Add or update a record's `meta` property.  Note that the Stamps are in
+   * Add or update a record's `meta` property. Note that the Stamps are in
    * milliseconds since the epoch, and they are only added if this backend has
    * been supplied a `localTimerService`.
    *
@@ -750,7 +750,7 @@ export function makeWalletRoot({
 
   /**
    * @param {Petname} petname
-   * @param {ERef<{receive: (payment: Payment) => Promise<void>}>} actions
+   * @param {ERef<{ receive: (payment: Payment) => Promise<void> }>} actions
    * @param {string} [address]
    */
   const addContact = async (petname, actions, address = undefined) => {
@@ -889,7 +889,7 @@ export function makeWalletRoot({
     return issuer;
   }
 
-  /** @param {{origin?: string?}} opt */
+  /** @param {{ origin?: string? }} opt */
   function getOffers({ origin = null } = {}) {
     // return the offers sorted by id
     return [...idToOffer.entries()]
@@ -1193,7 +1193,7 @@ export function makeWalletRoot({
       return undefined;
     }
 
-    /** @type {{ depositedP?: Promise<any[]>, dappContext?: any }} */
+    /** @type {{ depositedP?: Promise<any[]>; dappContext?: any }} */
     let ret = {};
     let alreadyResolved = false;
     const rejected = e => {
@@ -1579,7 +1579,6 @@ export function makeWalletRoot({
 
   /**
    * @deprecated use getPublicSubscribers instead
-   *
    * @param {string} rawId - The offer's raw id.
    * @param {string} dappOrigin - The origin of the dapp the offer came from.
    * @throws if the offer result doesn't have a uiNotifier.
@@ -1623,7 +1622,6 @@ export function makeWalletRoot({
 
   /**
    * @deprecated use getPublicSubscribers instead
-   *
    * @param {string} rawId - The offer's raw id.
    * @param {string} dappOrigin - The origin of the dapp the offer came from.
    * @throws if the offer result doesn't have notifiers.
@@ -1718,7 +1716,7 @@ export function makeWalletRoot({
   const handleSuggestIssuerAction = ({ petname, boardId }) =>
     suggestIssuer(petname, boardId);
 
-  /** @typedef {{spendAction: string}} Action */
+  /** @typedef {{ spendAction: string }} Action */
   /**
    * @param {Action} obj
    * @returns {Promise<any>}

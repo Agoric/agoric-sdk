@@ -22,11 +22,12 @@ const { quote: q, Fail } = assert;
 
 /**
  * @file Two objects are defined here, both called InstanceAdminSomething.
- * InstanceAdminStorage is a container for individual InstanceAdmins. Each
- * InstanceAdmin is associated with a particular contract instance, and is used
- * by both Zoe and ZCF to record and access the instance state. startInstance
- * also defines zoeInstanceAdmin, which is a facet that is passed to startZcf()
- * that wraps access to a zoeInstanceAdmin and other stores.
+ *   InstanceAdminStorage is a container for individual InstanceAdmins. Each
+ *   InstanceAdmin is associated with a particular contract instance, and is
+ *   used by both Zoe and ZCF to record and access the instance state.
+ *   startInstance also defines zoeInstanceAdmin, which is a facet that is
+ *   passed to startZcf() that wraps access to a zoeInstanceAdmin and other
+ *   stores.
  */
 
 const InstanceAdminStorageIKit = harden({
@@ -246,15 +247,15 @@ const helperBehavior = {
 
 /**
  * @typedef {Readonly<{
- *   publicFacet: unknown,
- *   handlerOfferObj: unknown,
+ *   publicFacet: unknown;
+ *   handlerOfferObj: unknown;
  * }>} ImmutableState
  * @typedef {{
- *   offerFilterStrings: string[],
+ *   offerFilterStrings: string[];
  * }} MutableState
  * @typedef {MutableState & ImmutableState} State
  * @typedef {{
- *   state: State,
+ *   state: State;
  * }} MethodContext
  */
 

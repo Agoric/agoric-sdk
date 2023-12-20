@@ -3,7 +3,11 @@
 import { isObject } from '@endo/marshal';
 
 /**
- * @typedef {{ name: string, upgradeMessage: string, incarnationNumber: number }} DisconnectionObject
+ * @typedef {{
+ *   name: string;
+ *   upgradeMessage: string;
+ *   incarnationNumber: number;
+ * }} DisconnectionObject
  */
 
 /**

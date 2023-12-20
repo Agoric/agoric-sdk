@@ -99,9 +99,8 @@ const makeUpdateRecordFromPublicationRecord = record => {
 };
 
 /**
- * Makes a `{ publisher, subscriber }` pair for doing efficient
- * distributed pub/sub supporting both "each" and "latest" iteration
- * of published values.
+ * Makes a `{ publisher, subscriber }` pair for doing efficient distributed
+ * pub/sub supporting both "each" and "latest" iteration of published values.
  *
  * @template T
  * @returns {PublishKit<T>}
@@ -235,34 +234,36 @@ const initDurablePublishKitState = (options = {}) => {
 
 // We need the WeakMap key for a kit to be a vref-bearing object
 // in its cohort, and have arbitrarily chosen the publisher facet.
-/** @typedef {Publisher<*>} DurablePublishKitEphemeralKey */
+/** @typedef {Publisher<any>} DurablePublishKitEphemeralKey */
 /**
- * @param {PublishKit<*>} facets
+ * @param {PublishKit<any>} facets
  * @returns {DurablePublishKitEphemeralKey}
  */
 const getEphemeralKey = facets => facets.publisher;
 
 /**
  * @typedef DurablePublishKitEphemeralData
- * @property {Promise<*> | undefined} currentP The current-result promise
+ * @property {Promise<any> | undefined} currentP The current-result promise
  *   (undefined unless resolved with unrecoverable ephemeral data)
- * @property {Promise<*>} tailP The next-result promise
+ * @property {Promise<any>} tailP The next-result promise
  * @property {((value: any) => void) | undefined} tailR The next-result resolver
  *   (undefined when the publish kit has terminated)
  */
 
-/** @type {WeakMap<DurablePublishKitEphemeralKey, DurablePublishKitEphemeralData>} */
+/** @type {WeakMap<
+  DurablePublishKitEphemeralKey,
+  DurablePublishKitEphemeralData
+>} */
 const durablePublishKitEphemeralData = new WeakMap();
 
 /**
- * Returns the current-result promise associated with a given durable
- * publish kit, recreated unless we already have one with retained
- * ephemeral data.
+ * Returns the current-result promise associated with a given durable publish
+ * kit, recreated unless we already have one with retained ephemeral data.
  *
  * @param {DurablePublishKitState} state
- * @param {PublishKit<*>} facets
- * @param {Promise<*>} tail
- * @returns {Promise<*>}
+ * @param {PublishKit<any>} facets
+ * @param {Promise<any>} tail
+ * @returns {Promise<any>}
  */
 const provideCurrentP = (state, facets, tail) => {
   const ephemeralKey = getEphemeralKey(facets);
@@ -292,16 +293,15 @@ const provideCurrentP = (state, facets, tail) => {
 };
 
 /**
- * Returns the next-result promise and resolver associated with a given
- * durable publish kit.
- * These are lost on upgrade but recreated on-demand, preserving the
- * value in (but not the identity of) the current { value, done } result
- * when possible, which is always the case when that value is terminal
- * (i.e., from `finish` or `fail`) or when the durable publish kit is
- * configured with `valueDurability: 'mandatory'`.
+ * Returns the next-result promise and resolver associated with a given durable
+ * publish kit. These are lost on upgrade but recreated on-demand, preserving
+ * the value in (but not the identity of) the current { value, done } result
+ * when possible, which is always the case when that value is terminal (i.e.,
+ * from `finish` or `fail`) or when the durable publish kit is configured with
+ * `valueDurability: 'mandatory'`.
  *
  * @param {DurablePublishKitState} state
- * @param {PublishKit<*>} facets
+ * @param {PublishKit<any>} facets
  * @returns {DurablePublishKitEphemeralData}
  */
 const provideDurablePublishKitEphemeralData = (state, facets) => {
@@ -331,7 +331,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
 /**
  * Extends the sequence of results.
  *
- * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
+ * @param {{ state: DurablePublishKitState; facets: PublishKit<any> }} context
  * @param {any} value
  * @param {DurablePublishKitState['status']} [targetStatus]
  */
@@ -407,7 +407,7 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
   const makeMemoizedUpdateRecord = makeUpdateRecordFromPublicationRecord;
 
   /**
-   * @returns {() => PublishKit<*>}
+   * @returns {() => PublishKit<any>}
    */
   return prepareExoClassKit(
     baggage,

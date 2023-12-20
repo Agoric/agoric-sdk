@@ -7,7 +7,7 @@
  */
 
 /**
- * The ground state for a cache key value is `undefined`.  It is impossible to
+ * The ground state for a cache key value is `undefined`. It is impossible to
  * distinguish a set value of `undefined` from an unset key.
  *
  * @type {State}

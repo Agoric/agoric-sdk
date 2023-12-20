@@ -78,7 +78,7 @@ export const makeAllocationMap = transfers => {
     }
   }
 
-  /** @type {[ZCFSeat,AmountKeywordRecord][]} */
+  /** @type {[ZCFSeat, AmountKeywordRecord][]} */
   const resultingAllocations = [];
   for (const [seat, [incrList, decrList]] of allocations.entries()) {
     let newAlloc = seat.getCurrentAllocation();

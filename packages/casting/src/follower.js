@@ -16,7 +16,9 @@ import { makeCastingSpec } from './casting-spec.js';
 const makeSubscriptionFollower = spec => {
   const transform = value =>
     harden({ value, blockHeight: NaN, currentBlockHeight: NaN });
-  /** @type {import('./types').Follower<import('./types.js').ValueFollowerElement<T>>} */
+  /** @type {import('./types').Follower<
+  import('./types.js').ValueFollowerElement<T>
+>} */
   const follower = Far('subscription/notifier follower', {
     getLatestIterable: async () => {
       const { notifier, subscription } = await spec;

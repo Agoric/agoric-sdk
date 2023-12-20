@@ -20,15 +20,17 @@ import { xsnap } from './xsnap.js';
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.cjs`;
 
-/** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
+/** @type {(
+  ref: string,
+  readFile: typeof import('fs').promises.readFile,
+) => Promise<string>} */
 const asset = (ref, readFile) =>
   readFile(new URL(ref, import.meta.url).pathname, 'utf8');
 
 /**
- * When we bundle test scripts, we leave these externals
- * as `require(...)` style graph exits and (in avaHandler.cjs)
- * supply them via a `require` endowment
- * on the Compartment used to run the script.
+ * When we bundle test scripts, we leave these externals as `require(...)` style
+ * graph exits and (in avaHandler.cjs) supply them via a `require` endowment on
+ * the Compartment used to run the script.
  */
 const externals = [
   'ava',
@@ -47,8 +49,7 @@ const decoder = new TextDecoder();
 const { keys } = Object;
 
 /**
- * Quick-n-dirty work-alike for matcher
- * https://github.com/sindresorhus/matcher
+ * Quick-n-dirty work-alike for matcher https://github.com/sindresorhus/matcher
  *
  * @param {string} specimen
  * @param {string} pattern
@@ -62,35 +63,34 @@ function isMatch(specimen, pattern) {
  *
  * The subprocess reports back once for each test assertion.
  *
- * @typedef {{ id?: number, status: Status, message?: string }
- *         | { plan: number}
- *         | { note: string, label?: string }
- * } TapMessage
+ * @typedef {{ id?: number; status: Status; message?: string }
+ *   | { plan: number }
+ *   | { note: string; label?: string }} TapMessage
+ *   It also calls back if a test calls `bundleSource`.
  *
- * It also calls back if a test calls `bundleSource`.
- *
- * And finally it reports back a summary of assertion results.
- *
+ *   And finally it reports back a summary of assertion results.
  * @typedef {{
- *   pass: number,
- *   fail: number,
- *   total: number,
+ *   pass: number;
+ *   fail: number;
+ *   total: number;
  * }} Summary
- *
  * @param {string} filename
  * @param {string[]} preamble scripts to run in XS start compartment
- * @param {{ verbose?: boolean, titleMatch?: string }} options
+ * @param {{ verbose?: boolean; titleMatch?: string }} options
  * @param {{
- *   spawnXSnap: (opts: object) => XSnap,
- *   bundleSource: import('@endo/bundle-source').BundleSource,
- *   resolve: ResolveFn,
- *   dirname: typeof import('path').dirname,
- *   basename: typeof import('path').basename,
+ *   spawnXSnap: (opts: object) => XSnap;
+ *   bundleSource: import('@endo/bundle-source').BundleSource;
+ *   resolve: ResolveFn;
+ *   dirname: typeof import('path').dirname;
+ *   basename: typeof import('path').basename;
  * }} io
  * @returns {Promise<TestResults>}
- *
- * @typedef {{ total: number, pass: number, fail: { filename: string, name: string }[] }} TestResults
- * @typedef { 'ok' | 'not ok' | 'SKIP' } Status
+ * @typedef {{
+ *   total: number;
+ *   pass: number;
+ *   fail: { filename: string; name: string }[];
+ * }} TestResults
+ * @typedef {'ok' | 'not ok' | 'SKIP'} Status
  * @typedef {ReturnType<typeof import('./xsnap').xsnap>} XSnap
  */
 async function runTestScript(
@@ -101,24 +101,31 @@ async function runTestScript(
 ) {
   const testBundle = await bundleSource(filename, 'getExport', { externals });
   let assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
-  /** @type { number | null } */
+  /** @type {number | null} */
   let plan = null;
   /** @type {TestResults} */
   const testStatus = { total: 0, pass: 0, fail: [] };
   let label = '';
-  /** @type { string[] } */
+  /** @type {string[]} */
   let testNames = [];
 
   /**
    * Handle callback "command" from xsnap subprocess.
    *
-   * @type { (msg: ArrayBuffer) => Promise<ArrayBuffer> }
+   * @type {(msg: ArrayBuffer) => Promise<ArrayBuffer>}
    */
   async function handleCommand(message) {
     /**
      * See also send() in avaHandler.cjs
      *
-     * @type { TapMessage | { testNames: string[] } | { bundleSource: Parameters<import('@endo/bundle-source').BundleSource> } | Summary }
+     * @type {TapMessage
+     *   | { testNames: string[] }
+     *   | {
+     *       bundleSource: Parameters<
+     *         import('@endo/bundle-source').BundleSource
+     *       >;
+     *     }
+     *   | Summary}
      */
     const msg = JSON.parse(decoder.decode(message));
     // console.log(input, msg, qty, byStatus);
@@ -215,15 +222,16 @@ async function runTestScript(
  * @param {object} options
  * @param {string} [options.packageFilename]
  * @param {{
- *   readFile: typeof import('fs').promises.readFile,
- *   glob: typeof import('glob')
+ *   readFile: typeof import('fs').promises.readFile;
+ *   glob: typeof import('glob');
  * }} io
  * @returns {Promise<AvaXSConfig>}
- *
  * @typedef {object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files
- * @property {string[]} require - specifiers of modules to run before each test script
- * @property {string[]} [exclude] - files containing any of these should be skipped
+ * @property {string[]} require - specifiers of modules to run before each test
+ *   script
+ * @property {string[]} [exclude] - files containing any of these should be
+ *   skipped
  * @property {boolean} debug
  * @property {boolean} verbose
  * @property {string} [titleMatch]
@@ -301,14 +309,14 @@ async function avaConfig(args, options, { glob, readFile }) {
 /**
  * @param {string[]} args - CLI args (excluding node interpreter, script name)
  * @param {{
- *   bundleSource: import('@endo/bundle-source').BundleSource,
- *   spawn: typeof import('child_process')['spawn'],
- *   osType: typeof import('os')['type'],
- *   readFile: typeof import('fs')['promises']['readFile'],
- *   resolve: typeof import('path').resolve,
- *   dirname: typeof import('path').dirname,
- *   basename: typeof import('path').basename,
- *   glob: typeof import('glob'),
+ *   bundleSource: import('@endo/bundle-source').BundleSource;
+ *   spawn: (typeof import('child_process'))['spawn'];
+ *   osType: (typeof import('os'))['type'];
+ *   readFile: (typeof import('fs'))['promises']['readFile'];
+ *   resolve: typeof import('path').resolve;
+ *   dirname: typeof import('path').dirname;
+ *   basename: typeof import('path').basename;
+ *   glob: typeof import('glob');
  * }} io
  */
 export async function main(
@@ -332,8 +340,8 @@ export async function main(
     });
 
   /**
-   * SES objects to `import(...)`
-   * avaAssert and avaHandler only use import() in type comments
+   * SES objects to `import(...)` avaAssert and avaHandler only use import() in
+   * type comments
    *
    * @param {string} src
    */
@@ -358,7 +366,7 @@ export async function main(
     hideImport(await asset(avaHandler, readFile)),
   ];
 
-  /** @type { TestResults } */
+  /** @type {TestResults} */
   const stats = { total: 0, pass: 0, fail: [] };
 
   for (const filename of files) {
@@ -403,7 +411,7 @@ export async function main(
  *
  * @param {typeof import('path')} path
  * @returns {ResolveFn}
- * @typedef {typeof import('path').resolve } ResolveFn
+ * @typedef {typeof import('path').resolve} ResolveFn
  */
 export function makeBundleResolve(path) {
   const bundleRoots = [

@@ -20,7 +20,6 @@
  *           'testnet-1.19.0'], ['gci', '4bc8d...'], ['ordered', 'transfer']]
  *
  * @typedef {[string, string][]} Multiaddr
- *
  * @typedef {string} Textaddr An address string formatted as in
  *   https://github.com/multiformats/multiaddr
  */

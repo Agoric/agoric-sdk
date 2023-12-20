@@ -3,9 +3,8 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 /**
  * @param {import('ava').ExecutionContext<unknown>} t
  * @param {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} storage
- * @param {({ note: string } | { node: string, owner: string }) &
- *  ({ pattern: string, replacement: string } | {})
- * } opts
+ * @param {({ note: string } | { node: string; owner: string }) &
+ *   ({ pattern: string; replacement: string } | {})} opts
  */
 export const documentStorageSchema = async (t, storage, opts) => {
   // chainStorage publication is unsynchronized

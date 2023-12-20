@@ -5,7 +5,7 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
 
-/** @type { KernelSyscallResult } */
+/** @type {KernelSyscallResult} */
 const OKNULL = harden(['ok', null]);
 
 export function makeKernelSyscallHandler(tools) {
@@ -19,7 +19,7 @@ export function makeKernelSyscallHandler(tools) {
     deviceHooks,
   } = tools;
 
-  /** @type {{kvStore: KVStore}} */
+  /** @type {{ kvStore: KVStore }} */
   const { kvStore } = kernelKeeper;
 
   function send(target, msg) {
@@ -51,7 +51,6 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   *
    * @param {string} vatID
    * @param {string} key
    * @returns {KernelSyscallResult}
@@ -65,7 +64,6 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   *
    * @param {string} vatID
    * @param {string} key
    * @param {string} value
@@ -80,16 +78,15 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   * Get the next vatstore key after 'priorKey' (in lexicographic
-   * order, as defined by swingstore's getNextKey() function), or
-   * undefined if this vat's portion of the vatstore has no more keys
+   * Get the next vatstore key after 'priorKey' (in lexicographic order, as
+   * defined by swingstore's getNextKey() function), or undefined if this vat's
+   * portion of the vatstore has no more keys
    *
-   * @param {string} vatID  The vat whose vatstore is being iterated
+   * @param {string} vatID The vat whose vatstore is being iterated
    * @param {string} priorKey A key before the desired key
-   *
-   * @returns {['ok', string|null]} A pair of a status code and
-   *   a result value. In the case of this operation, the status code
-   *   is always 'ok'. The result value is either a key or null.
+   * @returns {['ok', string | null]} A pair of a status code and a result
+   *   value. In the case of this operation, the status code is always 'ok'. The
+   *   result value is either a key or null.
    */
   function vatstoreGetNextKey(vatID, priorKey) {
     const dbPriorKey = vatstoreKeyKey(vatID, priorKey);
@@ -105,7 +102,6 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   *
    * @param {string} vatID
    * @param {string} key
    * @returns {KernelSyscallResult}
@@ -120,7 +116,6 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   /**
-   *
    * @param {string} deviceSlot
    * @param {string} method
    * @param {SwingSetCapData} args
@@ -137,9 +132,9 @@ export function makeKernelSyscallHandler(tools) {
     dev || Fail`unknown deviceRef ${deviceSlot}`;
     const ki = harden([deviceSlot, method, args]);
     const di = dev.translators.kernelInvocationToDeviceInvocation(ki);
-    /** @type { DeviceInvocationResult } */
+    /** @type {DeviceInvocationResult} */
     const dr = dev.manager.invoke(di);
-    /** @type { KernelSyscallResult } */
+    /** @type {KernelSyscallResult} */
     const kr = dev.translators.deviceResultToKernelResult(dr);
     assert.equal(kr.length, 2);
     if (kr[0] === 'ok') {
@@ -210,17 +205,17 @@ export function makeKernelSyscallHandler(tools) {
     const hook = hooks[hookName];
     hook || Fail`device ${deviceID} has no hook named ${hookName}`;
     insistCapData(args);
-    /** @type { SwingSetCapData } */
+    /** @type {SwingSetCapData} */
     const hres = hook(args);
     insistCapData(hres);
-    /** @type { KernelSyscallResult } */
+    /** @type {KernelSyscallResult} */
     const ksr = harden(['ok', hres]);
     return ksr;
   }
 
   /**
    * @param {KernelSyscallObject} ksc
-   * @returns { KernelSyscallResult}
+   * @returns {KernelSyscallResult}
    */
   function kernelSyscallHandler(ksc) {
     // this repeated pattern is necessary to get the typechecker to refine 'ksc' and 'args' properly

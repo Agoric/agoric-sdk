@@ -9,7 +9,7 @@ import { assert, Fail } from '@agoric/assert';
 // agnostic about the internal details of the serialization encoding.
 
 /**
- * @typedef {{getKref: () => string, iface: () => string} | Promise} KCap
+ * @typedef {{ getKref: () => string; iface: () => string } | Promise} KCap
  */
 
 const { toStringTag } = Symbol;

@@ -7,37 +7,52 @@ import { createSHA256 } from './hasher.js';
 
 /**
  * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef {IterableIterator<T> | AsyncIterableIterator<T>} AnyIterableIterator<T>
  */
 
 /**
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
+ * @typedef {import('./internal.js').ArtifactMode} ArtifactMode
  * @typedef {{
- *   initTranscript: (vatID: string) => void,
- *   rolloverSpan: (vatID: string) => number,
- *   rolloverIncarnation: (vatID: string) => number,
- *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, incarnation: number },
- *   deleteVatTranscripts: (vatID: string) => void,
- *   addItem: (vatID: string, item: string) => void,
- *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
+ *   initTranscript: (vatID: string) => void;
+ *   rolloverSpan: (vatID: string) => number;
+ *   rolloverIncarnation: (vatID: string) => number;
+ *   getCurrentSpanBounds: (vatID: string) => {
+ *     startPos: number;
+ *     endPos: number;
+ *     hash: string;
+ *     incarnation: number;
+ *   };
+ *   deleteVatTranscripts: (vatID: string) => void;
+ *   addItem: (vatID: string, item: string) => void;
+ *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>;
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>
- *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
- *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
- *   importTranscriptSpanRecord: (key: string, value: string) => void,
- *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
- *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
- *   repairTranscriptSpanRecord: (key: string, value: string) => void,
- *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
+ *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>;
+ *   getExportRecords: (
+ *     includeHistorical: boolean,
+ *   ) => IterableIterator<readonly [key: string, value: string]>;
+ *   getArtifactNames: (
+ *     artifactMode: ArtifactMode,
+ *   ) => AsyncIterableIterator<string>;
+ *   importTranscriptSpanRecord: (key: string, value: string) => void;
+ *   populateTranscriptSpan: (
+ *     name: string,
+ *     makeChunkIterator: () => AnyIterableIterator<Uint8Array>,
+ *     options: { artifactMode: ArtifactMode },
+ *   ) => Promise<void>;
+ *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void;
+ *   repairTranscriptSpanRecord: (key: string, value: string) => void;
+ *   readFullVatTranscript: (
+ *     vatID: string,
+ *   ) => Iterable<{ position: number; item: string }>;
  * }} TranscriptStoreInternal
  *
  * @typedef {{
- *   dumpTranscripts: (includeHistorical?: boolean) => {[vatID: string]: {[position: number]: string}}
+ *   dumpTranscripts: (includeHistorical?: boolean) => {
+ *     [vatID: string]: { [position: number]: string };
+ *   };
  * }} TranscriptStoreDebug
- *
  */
 
 function* empty() {
@@ -55,12 +70,12 @@ function insistTranscriptPosition(position) {
 }
 
 /**
- * @param {*} db
+ * @param {any} db
  * @param {() => void} ensureTxn
- * @param {(key: string, value: string | undefined ) => void} noteExport
+ * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepTranscripts]
- * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
+ * @returns {TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug}
  */
 export function makeTranscriptStore(
   db,
@@ -178,13 +193,12 @@ export function makeTranscriptStore(
 
   /**
    * Compute a new cumulative hash for a span that includes a new transcript
-   * item.  This is computed by hashing together the hash from the previous item
+   * item. This is computed by hashing together the hash from the previous item
    * in its span together with the new item's own text.
    *
-   * @param {string} priorHash  The previous item's hash
-   * @param {string} item  The item itself
-   *
-   * @returns {string}  The hash of the combined parameters.
+   * @param {string} priorHash The previous item's hash
+   * @param {string} item The item itself
+   * @returns {string} The hash of the combined parameters.
    */
   function updateSpanHash(priorHash, item) {
     const itemHash = createSHA256(item).finish();
@@ -193,7 +207,8 @@ export function makeTranscriptStore(
 
   /**
    * @type {string} Seed hash to use as the prior hash when computing the hash
-   * of the very first item in a span, since it has no prior item to draw upon.
+   *   of the very first item in a span, since it has no prior item to draw
+   *   upon.
    */
   const initialHash = createSHA256('start of transcript span').finish();
 
@@ -206,7 +221,7 @@ export function makeTranscriptStore(
   /**
    * Start a new transcript for a given vat
    *
-   * @param {string} vatID  The vat whose transcript this shall be
+   * @param {string} vatID The vat whose transcript this shall be
    */
   function initTranscript(vatID) {
     ensureTxn();
@@ -225,9 +240,13 @@ export function makeTranscriptStore(
   /**
    * Obtain the bounds and other metadata for a vat's current transcript span.
    *
-   * @param {string} vatID  The vat in question
-   *
-   * @returns {{startPos: number, endPos: number, hash: string, incarnation: number}}
+   * @param {string} vatID The vat in question
+   * @returns {{
+   *   startPos: number;
+   *   endPos: number;
+   *   hash: string;
+   *   incarnation: number;
+   * }}
    */
   function getCurrentSpanBounds(vatID) {
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
@@ -273,9 +292,8 @@ export function makeTranscriptStore(
    * End the current transcript span for a vat and start a new span in a new
    * incarnation (e.g., after a vat upgrade).
    *
-   * @param {string} vatID  The vat whose transcript is to rollover to a new
-   *    span.
-   *
+   * @param {string} vatID The vat whose transcript is to rollover to a new
+   *   span.
    * @returns {number} the new incarnation number
    */
   function rolloverIncarnation(vatID) {
@@ -286,9 +304,8 @@ export function makeTranscriptStore(
    * End the current transcript span for a vat and start a new span in the
    * current incarnation (e.g., after a heap snapshot event).
    *
-   * @param {string} vatID  The vat whose transcript is to rollover to a new
-   *    span.
-   *
+   * @param {string} vatID The vat whose transcript is to rollover to a new
+   *   span.
    * @returns {number} the incarnation number
    */
   function rolloverSpan(vatID) {
@@ -313,7 +330,8 @@ export function makeTranscriptStore(
   `);
 
   /**
-   * Delete all transcript data for a given vat (for use when, e.g., a vat is terminated)
+   * Delete all transcript data for a given vat (for use when, e.g., a vat is
+   * terminated)
    *
    * @param {string} vatID
    */
@@ -355,32 +373,32 @@ export function makeTranscriptStore(
   /**
    * Obtain artifact metadata records for spans contained in this store.
    *
-   * @param {boolean} includeHistorical  If true, include all metadata that is
+   * @param {boolean} includeHistorical If true, include all metadata that is
    *   present in the store regardless of its currency; if false, only include
    *   the metadata that is part of the swingset's active operational state.
    *
-   * Note: in the currently anticipated operational mode, this flag should
-   * always be set to `true`, because *all* transcript span metadata is, for
-   * now, considered part of the consensus set.  This metadata is being retained
-   * as a hedge against possible future need, wherein we find it necessary to
-   * replay a vat's entire history from t0 and therefor need to be able to
-   * validate historical transcript artifacts that were recovered from external
-   * archives rather than retained directly.  While such a need seems highly
-   * unlikely, it hypothetically could be forced by some necessary vat upgrade
-   * that implicates path-dependent ephemeral state despite our best efforts to
-   * avoid having any such state.  However, the flag itself is present in case
-   * future operational policy allows for pruning historical transcript span
-   * metadata, for example because we've determined that such full-history
-   * replay will never be required or because such replay would be prohibitively
-   * expensive regardless of need and therefor other repair strategies employed.
+   *   Note: in the currently anticipated operational mode, this flag should
+   *   always be set to `true`, because _all_ transcript span metadata is, for
+   *   now, considered part of the consensus set. This metadata is being
+   *   retained as a hedge against possible future need, wherein we find it
+   *   necessary to replay a vat's entire history from t0 and therefor need to
+   *   be able to validate historical transcript artifacts that were recovered
+   *   from external archives rather than retained directly. While such a need
+   *   seems highly unlikely, it hypothetically could be forced by some
+   *   necessary vat upgrade that implicates path-dependent ephemeral state
+   *   despite our best efforts to avoid having any such state. However, the
+   *   flag itself is present in case future operational policy allows for
+   *   pruning historical transcript span metadata, for example because we've
+   *   determined that such full-history replay will never be required or
+   *   because such replay would be prohibitively expensive regardless of need
+   *   and therefor other repair strategies employed.
    *
-   * The only code path which could use 'false' would be `swingstore.dump()`,
-   * which takes the same flag.
-   *
+   *   The only code path which could use 'false' would be `swingstore.dump()`,
+   *   which takes the same flag.
    * @yields {readonly [key: string, value: string]}
-   * @returns {IterableIterator<readonly [key: string, value: string]>}
-   *    An iterator over pairs of [spanMetadataKey, rec], where `rec` is a
-   *    JSON-encoded metadata record for the span named by `spanMetadataKey`.
+   * @returns {IterableIterator<readonly [key: string, value: string]>} An
+   *   iterator over pairs of [spanMetadataKey, rec], where `rec` is a
+   *   JSON-encoded metadata record for the span named by `spanMetadataKey`.
    */
   function* getExportRecords(includeHistorical = true) {
     if (includeHistorical) {
@@ -403,12 +421,13 @@ export function makeTranscriptStore(
   /**
    * Obtain artifact names for spans contained in this store.
    *
-   * @param {ArtifactMode} artifactMode Control which artifacts should be exported.
-   *   At 'operational', only include current spans. At 'replay',
-   *   include all spans of the current incarnation for each vat. At
-   *   'archival' and 'debug', include all spans.
+   * @param {ArtifactMode} artifactMode Control which artifacts should be
+   *   exported. At 'operational', only include current spans. At 'replay',
+   *   include all spans of the current incarnation for each vat. At 'archival'
+   *   and 'debug', include all spans.
    * @yields {string}
-   * @returns {AsyncIterableIterator<string>}  An iterator over the names of all the artifacts requested
+   * @returns {AsyncIterableIterator<string>} An iterator over the names of all
+   *   the artifacts requested
    */
   async function* getArtifactNames(artifactMode) {
     // for all non-'debug' modes, the exporter asserts that all
@@ -465,11 +484,11 @@ export function makeTranscriptStore(
   /**
    * Read the items in a transcript span
    *
-   * @param {string} vatID  The vat whose transcript is being read
+   * @param {string} vatID The vat whose transcript is being read
    * @param {number} [startPos] A start position identifying the span to be
-   *    read; defaults to the current span, whatever it is
-   *
-   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
+   *   read; defaults to the current span, whatever it is
+   * @returns {IterableIterator<string>} An iterator over the items in the
+   *   indicated span
    */
   function readSpan(vatID, startPos) {
     /** @type {number | undefined} */
@@ -518,12 +537,12 @@ export function makeTranscriptStore(
 
   /**
    * Read a transcript span and return it as a stream of data suitable for
-   * export to another store.  Transcript items are terminated by newlines.
+   * export to another store. Transcript items are terminated by newlines.
    *
    * Transcript span artifact names should be strings of the form:
-   *   `transcript.${vatID}.${startPos}.${endPos}`
+   * `transcript.${vatID}.${startPos}.${endPos}`
    *
-   * @param {string} name  The name of the transcript artifact to be read
+   * @param {string} name The name of the transcript artifact to be read
    * @returns {AsyncIterableIterator<Uint8Array>}
    * @yields {Uint8Array}
    */
@@ -556,8 +575,8 @@ export function makeTranscriptStore(
   /**
    * Append an item to the current transcript span for a given vat
    *
-   * @param {string} vatID  The whose transcript is being added to
-   * @param {string} item  The item to add
+   * @param {string} vatID The whose transcript is being added to
+   * @param {string} item The item to add
    */
   const addItem = (vatID, item) => {
     ensureTxn();
@@ -629,11 +648,11 @@ export function makeTranscriptStore(
   /**
    * Import a transcript span from another store.
    *
-   * @param {string} name  Artifact Name of the transcript span
-   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
+   * @param {string} name Artifact Name of the transcript span
+   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator get an
+   *   iterator of transcript byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
-   *
    * @returns {Promise<void>}
    */
   async function populateTranscriptSpan(name, makeChunkIterator, options) {

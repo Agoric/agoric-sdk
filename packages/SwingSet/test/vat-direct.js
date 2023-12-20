@@ -3,8 +3,8 @@ import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
 import { extractMessage } from './vat-util.js';
 
 /**
- * A testing vat that generically exposes kernel interactions
- * which are normally handled by liveslots.
+ * A testing vat that generically exposes kernel interactions which are normally
+ * handled by liveslots.
  */
 
 /**

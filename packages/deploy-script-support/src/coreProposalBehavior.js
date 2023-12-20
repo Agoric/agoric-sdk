@@ -4,8 +4,8 @@ const t = 'makeCoreProposalBehavior';
 /**
  * TODO import these from @agoric/vats when the types are better managed
  *
- * @typedef {*} ChainBootstrapSpace
- * @typedef {*} BootstrapPowers
+ * @typedef {any} ChainBootstrapSpace
+ * @typedef {any} BootstrapPowers
  */
 
 /**
@@ -14,6 +14,7 @@ const t = 'makeCoreProposalBehavior';
  * They are merged with all of the manifest getter's permits to produce the
  * total permits needed by the resulting core proposal (such as might be---and
  * generally are---written into a *-permit.json file).
+ *
  * @see {@link ./writeCoreProposal.js}
  */
 export const permits = {
@@ -27,7 +28,7 @@ export const permits = {
  * Create a behavior for a core-eval proposal.
  *
  * We rely on directly stringifying this function to leverage our JS toolchain
- * for catching bugs.  Thus, this maker must not reference any other modules or
+ * for catching bugs. Thus, this maker must not reference any other modules or
  * definitions.
  *
  * @param {object} opts
@@ -36,7 +37,11 @@ export const permits = {
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
+ * @param {(
+ *   ref: import('./externalTypes.js').ManifestBundleRef,
+ * ) => Promise<
+ *   import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>
+ * >} [opts.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
@@ -52,11 +57,10 @@ export const makeCoreProposalBehavior = ({
   /**
    * Given an object whose properties may be promise-valued, return a promise
    * for an analogous object in which each such value has been replaced with its
-   * fulfillment.
-   * This is a non-recursive form of endo `deeplyFulfilled`.
+   * fulfillment. This is a non-recursive form of endo `deeplyFulfilled`.
    *
    * @template T
-   * @param {{[K in keyof T]: (T[K] | Promise<T[K]>)}} obj
+   * @param {{ [K in keyof T]: T[K] | Promise<T[K]> }} obj
    * @returns {Promise<T>}
    */
   const shallowlyFulfilled = async obj => {
@@ -73,7 +77,9 @@ export const makeCoreProposalBehavior = ({
   };
 
   const makeRestoreRef = (vatAdminSvc, zoe) => {
-    /** @type {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<Installation<unknown>>} */
+    /** @type {(
+  ref: import('./externalTypes.js').ManifestBundleRef,
+) => Promise<Installation<unknown>>} */
     const defaultRestoreRef = async bundleRef => {
       // extract-proposal.js creates these records, and bundleName is
       // the optional name under which the bundle was installed into
@@ -89,7 +95,8 @@ export const makeCoreProposalBehavior = ({
     return defaultRestoreRef;
   };
 
-  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers */
+  /** @param {ChainBootstrapSpace &
+  BootstrapPowers & { evaluateBundleCap: any }} powers */
   const coreProposalBehavior = async powers => {
     // NOTE: `powers` is expected to match or be a superset of the above `permits` export,
     // which should therefore be kept in sync with this deconstruction code.

@@ -1,8 +1,7 @@
 /**
  * @file Proposal Builder: Start Game with non-vbank Place NFT asset
  *
- * Usage:
- *   agoric run build-game1-start.js
+ *   Usage: agoric run build-game1-start.js
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';

@@ -8,8 +8,8 @@ const { details: X, Fail } = assert;
 const sink = () => {};
 
 /**
- * Check the promise returned by a function for rejection by vat upgrade,
- * and refetch upon encountering that condition.
+ * Check the promise returned by a function for rejection by vat upgrade, and
+ * refetch upon encountering that condition.
  *
  * @template T
  * @param {() => ERef<T>} getter
@@ -78,13 +78,13 @@ export const subscribe = itP =>
 
 /**
  * Asyncronously iterates over the contents of a PublicationRecord chain as they
- * appear.  This iteration must drop parts of publication records that are no
+ * appear. This iteration must drop parts of publication records that are no
  * longer needed so they can be garbage collected.
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
- * @param {ERef<PublicationRecord<T>>} nextCellP
- *   PublicationRecord corresponding with the first iteration result
+ * @param {ERef<PublicationRecord<T>>} nextCellP PublicationRecord
+ *   corresponding with the first iteration result
  * @returns {ForkableAsyncIterableIterator<T, T>}
  */
 const makeEachIterator = (topic, nextCellP) => {
@@ -131,13 +131,13 @@ const makeEachIterator = (topic, nextCellP) => {
 
 /**
  * Given a local or remote subscriber, returns a local AsyncIterable which
- * provides "prefix lossy" iterations of the underlying PublicationList.
- * By "prefix lossy", we mean that you may miss everything published before
- * you ask the returned iterable for an iterator. But the returned iterator
- * will enumerate each thing published from that iterator's starting point
- * up to a disconnection result indicating upgrade of the producer
- * (which breaks the gap-free guarantee and therefore terminates any active
- * iterator while still supporting creation of new iterators).
+ * provides "prefix lossy" iterations of the underlying PublicationList. By
+ * "prefix lossy", we mean that you may miss everything published before you ask
+ * the returned iterable for an iterator. But the returned iterator will
+ * enumerate each thing published from that iterator's starting point up to a
+ * disconnection result indicating upgrade of the producer (which breaks the
+ * gap-free guarantee and therefore terminates any active iterator while still
+ * supporting creation of new iterators).
  *
  * If the underlying PublicationList is terminated, that terminal value will be
  * reported losslessly.
@@ -244,9 +244,9 @@ const makeLatestIterator = topic => cloneLatestIterator(topic);
 
 /**
  * Given a local or remote subscriber, returns a local AsyncIterable which
- * provides "lossy" iterations of the underlying PublicationList.
- * By "lossy", we mean that you may miss any published state if a more
- * recent published state can be reported instead.
+ * provides "lossy" iterations of the underlying PublicationList. By "lossy", we
+ * mean that you may miss any published state if a more recent published state
+ * can be reported instead.
  *
  * If the underlying PublicationList is terminated by upgrade of the producer,
  * it will be re-requested. All other terminal values will be losslessly

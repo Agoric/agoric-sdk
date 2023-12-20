@@ -8,7 +8,7 @@ export function buildRootObject(vatPowers) {
       const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,
       );
-      /** @type {{zoeService: ERef<ZoeService>}} */
+      /** @type {{ zoeService: ERef<ZoeService> }} */
       const { zoeService: zoe } = await E(vats.zoe).buildZoe(
         vatAdminSvc,
         undefined,

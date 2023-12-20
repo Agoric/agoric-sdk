@@ -17,12 +17,12 @@ const makeTerms = (number, invitationAmount) => {
 };
 
 /**
- *
  * @param {ZCF<
- * GovernanceTerms<{
- *   MalleableNumber: 'nat',
- * }>>} zcf
- * @param {{initialPoserInvitation: Invitation}} privateArgs
+ *   GovernanceTerms<{
+ *     MalleableNumber: 'nat';
+ *   }>
+ * >} zcf
+ * @param {{ initialPoserInvitation: Invitation }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   const { augmentPublicFacet, makeGovernorFacet, params } =

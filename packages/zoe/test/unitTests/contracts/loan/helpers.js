@@ -18,7 +18,7 @@ const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {UserSeat} seat
  * @param {Keyword} keyword
  * @param {IssuerKit} kit
@@ -40,7 +40,7 @@ export const checkPayout = async (
 };
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {string} expected
@@ -51,11 +51,11 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 };
 
 /**
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
- * @param {InvitationDetails} expectedNullHandle expected invitation
- * details with the handle set to 'null'
+ * @param {InvitationDetails} expectedNullHandle expected invitation details
+ *   with the handle set to 'null'
  */
 export const checkDetails = async (t, zoe, invitation, expectedNullHandle) => {
   const details = await E(zoe).getInvitationDetails(invitation);
@@ -147,7 +147,7 @@ export const makeSeatKit = async (zcf, proposal, payments) => {
 
 /**
  * @callback PerformAddCollateral
- * @param {import("ava").ExecutionContext<unknown>} t
+ * @param {import('ava').ExecutionContext<unknown>} t
  * @param {ZoeService} zoe
  * @param {IssuerKit} collateralKit
  * @param {IssuerKit} loanKit

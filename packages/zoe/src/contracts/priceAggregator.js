@@ -46,21 +46,20 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 /**
  * @deprecated use fluxAggregator
  *
- * This contract aggregates price values from a set of oracles and provides a
- * PriceAuthority for their median. This naive method is game-able and so this module
- * is a stub until we complete what is now in `fluxAggregatorKit.js`.
- *
+ *   This contract aggregates price values from a set of oracles and provides a
+ *   PriceAuthority for their median. This naive method is game-able and so this
+ *   module is a stub until we complete what is now in `fluxAggregatorKit.js`.
  * @param {ZCF<{
- * timer: import('@agoric/time').TimerService,
- * POLL_INTERVAL: bigint,
- * brandIn: Brand<'nat'>,
- * brandOut: Brand<'nat'>,
- * unitAmountIn: Amount<'nat'>,
+ *   timer: import('@agoric/time').TimerService;
+ *   POLL_INTERVAL: bigint;
+ *   brandIn: Brand<'nat'>;
+ *   brandOut: Brand<'nat'>;
+ *   unitAmountIn: Amount<'nat'>;
  * }>} zcf
  * @param {{
- * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
- * storageNode: ERef<StorageNode>,
+ *   marshaller: Marshaller;
+ *   quoteMint?: ERef<Mint<'set'>>;
+ *   storageNode: ERef<StorageNode>;
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
@@ -96,7 +95,6 @@ const start = async (zcf, privateArgs) => {
   let lastPrice;
 
   /**
-   *
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
@@ -331,7 +329,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * We typically don't rely on decimal places in contract code, but if an
    * oracle price source supplies a single dimensionless price, we need to
-   * interpret it as a ratio for units of brandOut per units of brandIn.  If we
+   * interpret it as a ratio for units of brandOut per units of brandIn. If we
    * don't do this, then our quoted prices (i.e. `amountOut`) would not be
    * correct for brands with different decimalPlaces.
    *
@@ -340,7 +338,7 @@ const start = async (zcf, privateArgs) => {
    * amountOut:amountIn ratio used in calculations.
    *
    * If a price source wishes to supply an amountOut:amountIn ratio explicitly,
-   * it is free to do so, and that is the preferred way.  We leave this
+   * it is free to do so, and that is the preferred way. We leave this
    * unitPriceScale implementation intact, however, since price sources may be
    * outside the distributed object fabric and unable to convey brand references
    * (since they can communicate only plain data).
@@ -352,7 +350,6 @@ const start = async (zcf, privateArgs) => {
     brandOut,
   );
   /**
-   *
    * @param {ParsableNumber} numericData
    * @returns {Ratio}
    */
@@ -362,7 +359,6 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
-   *
    * @param {Notifier<OraclePriceSubmission>} oracleNotifier
    * @param {number} scaleValueOut
    * @param {(result: Ratio) => Promise<void>} pushResult
@@ -448,9 +444,15 @@ const start = async (zcf, privateArgs) => {
        *
        * @param {ZCFSeat} seat
        * @param {object} param1
-       * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
+       * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional
+       *   notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{
+       *   admin: OracleAdmin<Price>;
+       *   invitationMakers: {
+       *     PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>;
+       *   };
+       * }>}
        */
       const offerHandler = async (
         seat,

@@ -84,24 +84,23 @@ export async function makeFakePriceAuthority(options) {
   const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
-   * @type {NotifierRecord<import('@agoric/time').Timestamp>}
-   * We need to have a notifier driven by the
-   * TimerService because if the timer pushes updates to individual
-   * QuoteNotifiers, we have a dependency inversion and the timer can never know
-   * when the QuoteNotifier goes away.  (Don't even mention WeakRefs... they're
-   * not exposed to userspace under Swingset because they're nondeterministic.)
+   * @type {NotifierRecord<import('@agoric/time').Timestamp>} We need to have a
+   *   notifier driven by the TimerService because if the timer pushes updates
+   *   to individual QuoteNotifiers, we have a dependency inversion and the
+   *   timer can never know when the QuoteNotifier goes away. (Don't even
+   *   mention WeakRefs... they're not exposed to userspace under Swingset
+   *   because they're nondeterministic.)
    *
-   * TODO It would be desirable to add a timestamp notifier interface to the
-   * TimerService https://github.com/Agoric/agoric-sdk/issues/2002
+   *   TODO It would be desirable to add a timestamp notifier interface to the
+   *   TimerService https://github.com/Agoric/agoric-sdk/issues/2002
    *
-   * Caveat: even if we had a timestamp notifier, we can't use it for triggers
-   * yet unless we rewrite our manualTimer tests not to depend on when exactly a
-   * trigger has been fired for a given tick.
+   *   Caveat: even if we had a timestamp notifier, we can't use it for triggers
+   *   yet unless we rewrite our manualTimer tests not to depend on when exactly
+   *   a trigger has been fired for a given tick.
    */
   const { notifier: ticker, updater: tickUpdater } = makeNotifierKit();
 
   /**
-   *
    * @param {Amount<'nat'>} amountIn
    * @param {Brand} brandOut
    * @param {import('@agoric/time').Timestamp} quoteTime
@@ -158,7 +157,10 @@ export async function makeFakePriceAuthority(options) {
   let latestTick;
 
   // clients who are waiting for a specific timestamp
-  /** @type { [when: import('@agoric/time').Timestamp, resolve: (quote: PriceQuote) => void][] } */
+  /** @type {[
+  when: import('@agoric/time').Timestamp,
+  resolve: (quote: PriceQuote) => void,
+][]} */
   let timeClients = [];
 
   // Check if a comparison request has been satisfied.

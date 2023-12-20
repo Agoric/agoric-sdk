@@ -29,7 +29,8 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  * manage contracts that allow governance to invoke functions.
  *
  * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
- * @param {Array<string | symbol>} governedNames names of the governed API methods
+ * @param {Array<string | symbol>} governedNames names of the governed API
+ *   methods
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ApiGovernor}

@@ -7,41 +7,39 @@ export const TransferPartShape = M.splitArray(
 );
 
 /**
- * Asks Zoe (via zcf) to rearrange the allocations among the seats
- * mentioned. This is a set of changes to allocations that must satisfy
- * several constraints. If these constraints are all met, then the
- * reallocation happens atomically. Otherwise it does not happen
- * at all.
+ * Asks Zoe (via zcf) to rearrange the allocations among the seats mentioned.
+ * This is a set of changes to allocations that must satisfy several
+ * constraints. If these constraints are all met, then the reallocation happens
+ * atomically. Otherwise it does not happen at all.
  *
  * The conditions
- *    * All the mentioned seats are still live -- enforced by ZCF.
- *    * No outstanding stagings for any of the mentioned seats.
- *      Stagings now deprecated in favor or atomicRearrange. To
- *      prevent confusion, for each reallocation, it can only be
- *      expressed in the old way or the new way, but not a mixture.
- *    * Offer safety -- enforced by ZCF.
- *    * Overall conservation -- enforced by ZCF.
- *    * The overall transfer is expressed as an array of `TransferPart`.
- *      Each individual `TransferPart` is one of
- *       - A transfer from a `fromSeat` to a `toSeat`.
- *         This is not needed for Zoe's safety, as Zoe does
-           its own overall conservation check. Rather, it helps catch
-           and diagnose contract bugs earlier.
- *       - A taking from a `fromSeat`'s allocation. See the `fromOnly`
-           helper.
-         - A giving into a `toSeat`'s allocation. See the `toOnly`
-           helper.
  *
- * TODO(6679) Refactor `atomicRearrange`from being a helper into being
- * zcf's replacement for reallocate. It was made a helper during
- * the transition, to avoid interference with progress on Zoe durability.
+ * - All the mentioned seats are still live -- enforced by ZCF.
+ * - No outstanding stagings for any of the mentioned seats. Stagings now
+ *   deprecated in favor or atomicRearrange. To prevent confusion, for each
+ *   reallocation, it can only be expressed in the old way or the new way, but
+ *   not a mixture.
+ * - Offer safety -- enforced by ZCF.
+ * - Overall conservation -- enforced by ZCF.
+ * - The overall transfer is expressed as an array of `TransferPart`. Each
+ *   individual `TransferPart` is one of
  *
- * See the helpers below, `fromOnly`, `toOnly`, and `atomicTransfer`,
- * which will remain helpers. These helper are for convenience
- * in expressing atomic rearrangements clearly.
+ *   - A transfer from a `fromSeat` to a `toSeat`. This is not needed for Zoe's
+ *       safety, as Zoe does its own overall conservation check. Rather, it
+ *       helps catch and diagnose contract bugs earlier.
+ *   - A taking from a `fromSeat`'s allocation. See the `fromOnly` helper.
+ *
+ *       - A giving into a `toSeat`'s allocation. See the `toOnly` helper.
+ *
+ * TODO(6679) Refactor `atomicRearrange`from being a helper into being zcf's
+ * replacement for reallocate. It was made a helper during the transition, to
+ * avoid interference with progress on Zoe durability.
+ *
+ * See the helpers below, `fromOnly`, `toOnly`, and `atomicTransfer`, which will
+ * remain helpers. These helper are for convenience in expressing atomic
+ * rearrangements clearly.
  *
  * @deprecated use the zcf builtin instead
- *
  * @param {ZCF} zcf
  * @param {TransferPart[]} transfers
  */
@@ -51,11 +49,11 @@ export const atomicRearrange = (zcf, transfers) => {
 
 /**
  * Sometimes a TransferPart in an atomicRearrange only expresses what amounts
- * should be taken from a seat, leaving it to other TransferPart of the
- * same atomicRearrange to balance it out. For this case, the
- * `[fromSeat, undefined, fromAmounts]` form is more clearly expressed as
- * `fromOnly(fromSeat, fromAmounts)`. Unlike TransferPart, both arguments to
- * `fromOnly` are non-optional, as otherwise it doesn't make much sense.
+ * should be taken from a seat, leaving it to other TransferPart of the same
+ * atomicRearrange to balance it out. For this case, the `[fromSeat, undefined,
+ * fromAmounts]` form is more clearly expressed as `fromOnly(fromSeat,
+ * fromAmounts)`. Unlike TransferPart, both arguments to `fromOnly` are
+ * non-optional, as otherwise it doesn't make much sense.
  *
  * @param {ZCFSeat} fromSeat
  * @param {AmountKeywordRecord} fromAmounts
@@ -66,11 +64,11 @@ export const fromOnly = (fromSeat, fromAmounts) =>
 
 /**
  * Sometimes a TransferPart in an atomicRearrange only expresses what amounts
- * should be given to a seat, leaving it to other TransferPart of the
- * same atomicRearrange to balance it out. For this case, the
- * `[undefined, toSeat, undefined, toAmounts]` form is more clearly expressed as
- * `toOnly(toSeat, toAmounts)`. Unlike TransferPart, both arguments to
- * `toOnly` are non-optional, as otherwise it doesn't make much sense.
+ * should be given to a seat, leaving it to other TransferPart of the same
+ * atomicRearrange to balance it out. For this case, the `[undefined, toSeat,
+ * undefined, toAmounts]` form is more clearly expressed as `toOnly(toSeat,
+ * toAmounts)`. Unlike TransferPart, both arguments to `toOnly` are
+ * non-optional, as otherwise it doesn't make much sense.
  *
  * @param {ZCFSeat} toSeat
  * @param {AmountKeywordRecord} toAmounts

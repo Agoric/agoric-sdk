@@ -3,7 +3,7 @@ import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
 /**
- * @typedef {'dropExport'  | 'retireExport'  | 'retireImport'}  GCActionType
+ * @typedef {'dropExport' | 'retireExport' | 'retireImport'} GCActionType
  * @typedef {'dropExports' | 'retireExports' | 'retireImports'} GCQueueEventType
  */
 
@@ -34,7 +34,7 @@ function parseAction(s) {
 }
 
 /**
- * @param {*} kernelKeeper
+ * @param {any} kernelKeeper
  * @returns {import('../types-internal.js').RunQueueEvent | undefined}
  */
 export function processGCActionSet(kernelKeeper) {

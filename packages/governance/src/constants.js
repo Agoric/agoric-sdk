@@ -21,4 +21,4 @@ export const ParamTypes = /** @type {const} */ ({
 });
 
 harden(ParamTypes);
-/** @typedef {typeof ParamTypes[keyof typeof ParamTypes]} ParamType */
+/** @typedef {(typeof ParamTypes)[keyof typeof ParamTypes]} ParamType */

@@ -55,7 +55,8 @@ export const buildRootObject = () => {
     },
 
     /**
-     * Derives a remotable from an object by mapping each object property into a method that returns the value.
+     * Derives a remotable from an object by mapping each object property into a
+     * method that returns the value.
      *
      * @param {string} label
      * @param {Record<string, any>} returnValues

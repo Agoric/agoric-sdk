@@ -32,7 +32,6 @@ const TRANSFER_PROPOSAL_SHAPE = {
  * @param {ZCF} zcf the Zoe Contract Facet
  * @param {ERef<BoardDepositFacet>} board where to find depositFacets by boardID
  * @param {ERef<NameHub>} namesByAddress where to find depositFacets by bech32
- *
  * @typedef {import('@agoric/vats').NameHub} NameHub
  */
 const makePegasus = (zcf, board, namesByAddress) => {
@@ -44,7 +43,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @property {IterationObserver<Denom>} receiveDenomPublication
    * @property {Subscription<Denom>} remoteDenomSubscription
    * @property {bigint} lastDenomNonce Distinguish Pegasus-created denom names
-   * that are sent and received from a remote connection
+   *   that are sent and received from a remote connection
    * @property {(reason: CloseReason) => void} abort
    */
 
@@ -73,7 +72,6 @@ const makePegasus = (zcf, board, namesByAddress) => {
    * @property {Denom} receiveDenom
    * @property {Denom} sendDenom
    * @property {string} allegedName
-   *
    * @param {LocalDenomState} state
    * @param {PegasusDescriptor} desc
    * @returns {Peg}
@@ -452,13 +450,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
     },
 
     /**
-     * Create a Zoe invitation to transfer assets over network to a deposit address.
+     * Create a Zoe invitation to transfer assets over network to a deposit
+     * address.
      *
      * @param {ERef<Peg>} pegP the peg over which to transfer
      * @param {DepositAddress} depositAddress the remote receiver's address
      * @param {string} [memo] the memo to attach to ics transfer packet
      * @param {SenderOptions} [opts] additional sender options
-     * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
+     * @returns {Promise<Invitation>} to transfer, make an offer of { give: {
+     *   Transfer: pegAmount } } to this invitation
      */
     async makeInvitationToTransfer(pegP, depositAddress, memo = '', opts = {}) {
       // Verify the peg.
@@ -495,7 +495,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
  */
 
 /**
- * @param {ZCF<{board: ERef<BoardDepositFacet>, namesByAddress: ERef<import('@agoric/vats').NameHub>}>} zcf
+ * @param {ZCF<{
+ *   board: ERef<BoardDepositFacet>;
+ *   namesByAddress: ERef<import('@agoric/vats').NameHub>;
+ * }>} zcf
  */
 const start = zcf => {
   const { board, namesByAddress } = zcf.getTerms();

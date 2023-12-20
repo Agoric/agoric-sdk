@@ -7,24 +7,22 @@ import { assert, Fail } from '@agoric/assert';
 /**
  * @template {unknown} [T=unknown]
  * @typedef {{
- *   has: (key: string) => boolean,
- *   get: (key: string) => T | undefined,
- *   getNextKey: (previousKey: string) => string | undefined,
- *   set: (key: string, value: T ) => void,
- *   delete: (key: string) => void,
+ *   has: (key: string) => boolean;
+ *   get: (key: string) => T | undefined;
+ *   getNextKey: (previousKey: string) => string | undefined;
+ *   set: (key: string, value: T) => void;
+ *   delete: (key: string) => void;
  * }} KVStore
  */
 
 /**
- * Assert function to ensure that an object implements the StorageAPI
- * interface: methods { has, getNextKey, get, set, delete }
- * (cf. packages/SwingSet/docs/state.md#transactions).
+ * Assert function to ensure that an object implements the StorageAPI interface:
+ * methods { has, getNextKey, get, set, delete } (cf.
+ * packages/SwingSet/docs/state.md#transactions).
  *
- * @param {*} kvStore  The object to be tested
- *
+ * @param {any} kvStore The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- *
  * @returns {void}
  */
 export function insistStorageAPI(kvStore) {
@@ -38,16 +36,16 @@ export function insistStorageAPI(kvStore) {
  * until told to commit (or abort) them.
  *
  * @template {unknown} [T=unknown]
- * @param {KVStore<T>} kvStore  The StorageAPI object to wrap
+ * @param {KVStore<T>} kvStore The StorageAPI object to wrap
  * @param {{
- *   onGet?: (key: string, value: T) => void, // a callback invoked after getting a value from kvStore
- *   onPendingSet?: (key: string, value: T) => void, // a callback invoked after a new uncommitted value is set
- *   onPendingDelete?: (key: string) => void, // a callback invoked after a new uncommitted delete
- *   onCommit?: () => void, // a callback invoked after pending operations have been committed
- *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
- * }} listeners  Optional callbacks to be invoked when respective events occur
- *
- * @returns {{kvStore: KVStore<T>, commit: () => void, abort: () => void}}
+ *   onGet?: (key: string, value: T) => void; // a callback invoked after getting a value from kvStore
+ *   onPendingSet?: (key: string, value: T) => void; // a callback invoked after a new uncommitted value is set
+ *   onPendingDelete?: (key: string) => void; // a callback invoked after a new uncommitted delete
+ *   onCommit?: () => void; // a callback invoked after pending operations have been committed
+ *   onAbort?: () => void; // a callback invoked after pending operations have been aborted
+ * }} listeners
+ *   Optional callbacks to be invoked when respective events occur
+ * @returns {{ kvStore: KVStore<T>; commit: () => void; abort: () => void }}
  */
 export function makeBufferedStorage(kvStore, listeners = {}) {
   insistStorageAPI(kvStore);

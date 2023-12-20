@@ -15,10 +15,10 @@ import { parseVatSlot } from './parseVatSlots.js';
 
 /**
  * @param {object} options
- * @param {*} options.syscall
+ * @param {any} options.syscall
  * @param {import('./virtualReferences.js').VirtualReferenceManager} options.vrm
  * @param {import('./virtualObjectManager.js').VirtualObjectManager} options.vom
- * @param {*} options.collectionManager
+ * @param {any} options.collectionManager
  * @param {import('@endo/marshal').ConvertValToSlot<any>} options.convertValToSlot
  * @param {import('@endo/marshal').ConvertSlotToVal<any>} options.convertSlotToVal
  * @param {(vref: any) => boolean} options.maybeExportPromise
@@ -36,9 +36,9 @@ export function makeWatchedPromiseManager({
   const { defineDurableKind } = vom;
 
   /**
-   * virtual Store (not durable) mapping vpid to Promise objects, to
-   * maintain the slotToVal registration until resolution. Without
-   * this, slotToVal would forget local Promises that aren't exported.
+   * virtual Store (not durable) mapping vpid to Promise objects, to maintain
+   * the slotToVal registration until resolution. Without this, slotToVal would
+   * forget local Promises that aren't exported.
    *
    * @type {MapStore<string, Promise<unknown>>}
    */
@@ -48,6 +48,7 @@ export function makeWatchedPromiseManager({
    * watched promises by vpid: each entry is an array of watches on the
    * corresponding vpid; each of these is in turn an array of a watcher object
    * and the arguments associated with it by `watchPromise`.
+   *
    * @type {MapStore<string, PromiseWatcherTuple<unknown>[]>}
    */
   let watchedPromiseTable;
@@ -55,7 +56,10 @@ export function makeWatchedPromiseManager({
   /**
    * defined promise watcher objects indexed by kindHandle
    *
-   * @type {MapStore<import('./vatDataTypes.js').DurableKindHandle, import('./types.js').PromiseWatcher<unknown>>}
+   * @type {MapStore<
+   *   import('./vatDataTypes.js').DurableKindHandle,
+   *   import('./types.js').PromiseWatcher<unknown>
+   * >}
    */
   let promiseWatcherByKindTable;
 
@@ -98,7 +102,6 @@ export function makeWatchedPromiseManager({
    */
   function pseudoThen(p, vpid) {
     /**
-     *
      * @param {T} value
      * @param {boolean} wasFulfilled
      */
@@ -147,7 +150,7 @@ export function makeWatchedPromiseManager({
 
   /**
    * @template V
-   * @template {any[]} A]
+   * @template {any[]}
    * @param {import('./vatDataTypes.js').DurableKindHandle} kindHandle
    * @param {(value: V, ...args: A) => void} fulfillHandler
    * @param {(reason: any, ...args: A) => void} rejectHandler
@@ -180,7 +183,11 @@ export function makeWatchedPromiseManager({
   }
 
   /**
-   * @type {<P extends Promise<any>, A extends any[]>(p: P, watcher: import('./types.js').PromiseWatcher<Awaited<P>, A>, ...args: A) => void}
+   * @type {<P extends Promise<any>, A extends any[]>(
+   *   p: P,
+   *   watcher: import('./types.js').PromiseWatcher<Awaited<P>, A>,
+   *   ...args: A
+   * ) => void}
    */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a

@@ -71,8 +71,8 @@ export function buildData() {
 }
 
 /**
- * @param { Map<string, string | null> } exportData
- * @param { Map<string, string> } artifacts
+ * @param {Map<string, string | null>} exportData
+ * @param {Map<string, string>} artifacts
  */
 export function makeExporter(exportData, artifacts) {
   return {
@@ -81,7 +81,7 @@ export function makeExporter(exportData, artifacts) {
     },
     async *getExportData() {
       for (const [key, value] of exportData.entries()) {
-        /** @type { import('../src/exporter.js').KVPair } */
+        /** @type {import('../src/exporter.js').KVPair} */
         const pair = [key, value];
         yield pair;
       }

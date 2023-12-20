@@ -15,9 +15,9 @@ export const PublicTopicShape = M.splitRecord(
 /**
  * @template {object} T topic value
  * @typedef {{
- *   description?: string,
- *   subscriber: Subscriber<T>,
- *   storagePath: ERef<string>,
+ *   description?: string;
+ *   subscriber: Subscriber<T>;
+ *   storagePath: ERef<string>;
  * }} PublicTopic
  */
 
@@ -25,14 +25,15 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
 
 /**
  * @typedef {{
- *   [topicName: string]: PublicTopic<unknown>,
+ *   [topicName: string]: PublicTopic<unknown>;
  * }} TopicsRecord
  */
 
 /**
  * @template T
  * @param {string} description
- * @param {import('./recorder.js').RecorderKit<T> | import('./recorder.js').EventualRecorderKit<T>} recorderKit
+ * @param {import('./recorder.js').RecorderKit<T>
+ *   | import('./recorder.js').EventualRecorderKit<T>} recorderKit
  * @returns {PublicTopic<T>}
  */
 export const makeRecorderTopic = (description, recorderKit) => {

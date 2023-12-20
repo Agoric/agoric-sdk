@@ -18,7 +18,7 @@
 
 /**
  * @typedef WithdrawFacet
- * @property {(allocation:Allocation) => PaymentPKeywordRecord} withdrawPayments
+ * @property {(allocation: Allocation) => PaymentPKeywordRecord} withdrawPayments
  */
 
 /**
@@ -34,8 +34,8 @@
  */
 
 /**
- * @callback MakeZoeSeatAdminKit
- * Make the Zoe seat admin, user seat and a notifier
+ * @callback MakeZoeSeatAdminKit Make the Zoe seat admin, user seat and a
+ *   notifier
  * @param {Allocation} initialAllocation
  * @param {InstanceAdminHelper} instanceAdminHelper
  * @param {ProposalRecord} proposal
@@ -56,8 +56,8 @@
  * @typedef {object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {ShutdownWithFailure} fail called with the reason
- * for calling fail on this seat, where reason is normally an instanceof Error.
+ * @property {ShutdownWithFailure} fail called with the reason for calling fail
+ *   on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 
@@ -72,17 +72,18 @@
  */
 
 /**
- * The seatHandle may be created in either the Zoe or ZCF vat,
- * depending on whether the seat comes from a normal offer or a
- * request by the contract for an "empty" seat.
+ * The seatHandle may be created in either the Zoe or ZCF vat, depending on
+ * whether the seat comes from a normal offer or a request by the contract for
+ * an "empty" seat.
  *
  * @typedef {object} InstanceAdmin
  * @property {() => void} assertAcceptingOffers
- * @property {(invitationHandle: InvitationHandle,
- *     initialAllocation: Allocation,
- *     proposal: ProposalRecord,
- *     offerArgs?: object,
- * ) => UserSeat } makeUserSeat
+ * @property {(
+ *   invitationHandle: InvitationHandle,
+ *   initialAllocation: Allocation,
+ *   proposal: ProposalRecord,
+ *   offerArgs?: object,
+ * ) => UserSeat} makeUserSeat
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {() => Instance} getInstance
  * @property {() => object} getPublicFacet
@@ -100,14 +101,15 @@
  */
 
 /**
- * The seatHandle may be created in either the Zoe or ZCF vat,
- * depending on whether the seat comes from a normal offer or a
- * request by the contract for an "empty" seat.
+ * The seatHandle may be created in either the Zoe or ZCF vat, depending on
+ * whether the seat comes from a normal offer or a request by the contract for
+ * an "empty" seat.
  *
  * @typedef {object} HandleOfferObj
- * @property {(invitationHandle: InvitationHandle,
- *             seatData: SeatData,
- *            ) => HandleOfferResult} handleOffer
+ * @property {(
+ *   invitationHandle: InvitationHandle,
+ *   seatData: SeatData,
+ * ) => HandleOfferResult} handleOffer
  */
 
 /**
@@ -122,9 +124,10 @@
 /**
  * @typedef {object} ZoeInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {(issuerP: ERef<Issuer>,
- *             keyword: Keyword
- *            ) => Promise<IssuerRecord>} saveIssuer
+ * @property {(
+ *   issuerP: ERef<Issuer>,
+ *   keyword: Keyword,
+ * ) => Promise<IssuerRecord>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
@@ -142,16 +145,15 @@
 /**
  * @callback RegisterFeeMint
  * @param {Keyword} keyword - the keyword to use for the issuer
- * @param {FeeMintAccess} allegedFeeMintAccess - an object that
- * purports to be the object that allows access to the feeMint
+ * @param {FeeMintAccess} allegedFeeMintAccess - an object that purports to be
+ *   the object that allows access to the feeMint
  * @returns {ZoeMint<'nat'>}
  */
 
 /**
  * @callback WrapIssuerKitWithZoeMint
  * @param {Keyword} keyword - the keyword to use for the issuer
- * @param {IssuerKit} localIssuerKit - an issuer kit that originates
- * within Zoe
+ * @param {IssuerKit} localIssuerKit - an issuer kit that originates within Zoe
  */
 
 /**
@@ -188,11 +190,11 @@
  * @typedef {object} ZoeMint
  * @property {() => IssuerRecord<K>} getIssuerRecord
  * @property {(totalToMint: Amount<K>) => void} mintAndEscrow
- * @property {(totalToBurn: Amount<K>) => void} withdrawAndBurn
- * Note that the burning is asynchronous, and so may not have happened by
- * the time withdrawAndBurn returns. We rely on our other bookkeeping so that
- * these assets are assumed burned elsewhere, so no one will try to access
- * them even before they are actually burned.
+ * @property {(totalToBurn: Amount<K>) => void} withdrawAndBurn Note that the
+ *   burning is asynchronous, and so may not have happened by the time
+ *   withdrawAndBurn returns. We rely on our other bookkeeping so that these
+ *   assets are assumed burned elsewhere, so no one will try to access them even
+ *   before they are actually burned.
  */
 
 /**
@@ -241,11 +243,9 @@
  */
 
 /**
- * @callback GetAssetKindByBrand
- * Get the assetKind for a brand known by Zoe
+ * @callback GetAssetKindByBrand Get the assetKind for a brand known by Zoe
  *
- * To be deleted when brands have a property for assetKind
- *
+ *   To be deleted when brands have a property for assetKind
  * @param {Brand} brand
  * @returns {AssetKind}
  */
@@ -263,8 +263,8 @@
 /**
  * @callback DropAllReferences
  *
- * Drops all of the references in the seat-related weakStores by
- * dropping the stores
+ *   Drops all of the references in the seat-related weakStores by dropping the
+ *   stores
  * @returns {void}
  */
 
@@ -283,22 +283,22 @@
 /**
  * @callback CreateSeatManager
  *
- * The SeatManager holds the active zcfSeats and can reallocate and
- * make new zcfSeats.
- *
+ *   The SeatManager holds the active zcfSeats and can reallocate and make new
+ *   zcfSeats.
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
  * @param {ShutdownWithFailure} shutdownWithFailure
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
+ * @returns {{
+ *   seatManager: ZcfSeatManager;
+ *   zcfMintReallocator: ZcfMintReallocator;
+ * }}
  */
 
 /**
  * @callback InstanceStateAddIssuer
  *
- * Add an issuer and its keyword to the instanceRecord for the
- * contract instance
- *
+ *   Add an issuer and its keyword to the instanceRecord for the contract instance
  * @param {Keyword} keyword
  * @param {IssuerRecord} issuerRecord
  * @returns {void}

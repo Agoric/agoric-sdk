@@ -9,7 +9,7 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  * @typedef {object} StartXSnapInitFromBundlesDetails
  * @property {'bundles'} from
  *
- * TODO: Move bundleIDs here
+ *   TODO: Move bundleIDs here
  */
 
 /**
@@ -24,25 +24,27 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  * @property {'snapStore'} from
  * @property {string} vatID
  *
- * TODO: transition to direct snapshot stream, and remove this option
+ *   TODO: transition to direct snapshot stream, and remove this option
  */
 
-/** @typedef {StartXSnapInitFromBundlesDetails | StartXSnapInitFromSnapshotStreamDetails | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
+/** @typedef {StartXSnapInitFromBundlesDetails
+  | StartXSnapInitFromSnapshotStreamDetails
+  | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
 
 /** @typedef {ReturnType<typeof makeStartXSnap>} StartXSnap */
 
 /**
  * @param {{
- *   bundleHandler: import('./bundle-handler.js').BundleHandler,
- *   snapStore?: import('@agoric/swing-store').SnapStore,
- *   spawn: typeof import('child_process').spawn
- *   fs: import('fs'),
- *   tmpName: import('tmp')['tmpName'],
- *   debug?: boolean,
- *   workerTraceRootPath?: string,
- *   overrideBundles?: import('../types-external.js').Bundle[],
- *   profileVats?: string[],
- *   debugVats?: string[],
+ *   bundleHandler: import('./bundle-handler.js').BundleHandler;
+ *   snapStore?: import('@agoric/swing-store').SnapStore;
+ *   spawn: typeof import('child_process').spawn;
+ *   fs: import('fs');
+ *   tmpName: import('tmp')['tmpName'];
+ *   debug?: boolean;
+ *   workerTraceRootPath?: string;
+ *   overrideBundles?: import('../types-external.js').Bundle[];
+ *   profileVats?: string[];
+ *   debugVats?: string[];
  * }} options
  */
 export function makeStartXSnap(options) {
@@ -81,7 +83,7 @@ export function makeStartXSnap(options) {
     };
   }
 
-  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
+  /** @type {import('@agoric/xsnap/src/xsnap').XSnapOptions} */
   const xsnapOpts = {
     os: osType(),
     fs: { ...fs, ...fs.promises, tmpName },

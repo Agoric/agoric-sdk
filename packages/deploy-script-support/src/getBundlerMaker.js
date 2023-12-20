@@ -1,8 +1,8 @@
 // @ts-check
 /**
  * This helper mainly exists to bridge the gaps that would be filled by
- * bundlecap support.  It will probably go away after bundlecap support is
- * complete.  Something like it is necessary, since the desire to limit the
+ * bundlecap support. It will probably go away after bundlecap support is
+ * complete. Something like it is necessary, since the desire to limit the
  * maximum Cosmos transaction size will still prevent large bundles from being
  * sent in a single message.
  *
@@ -13,7 +13,9 @@
 import { E } from '@endo/far';
 import url from 'url';
 
-/** @typedef {ReturnType<import('./endo-pieces-contract.js')['start']>['publicFacet']} BundleMaker */
+/** @typedef {ReturnType<
+  import('./endo-pieces-contract.js')['start']
+>['publicFacet']} BundleMaker */
 
 export const makeGetBundlerMaker =
   (homeP, { lookup, bundleSource }) =>

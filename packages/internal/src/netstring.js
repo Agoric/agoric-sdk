@@ -20,11 +20,10 @@ export function encode(data) {
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
   /**
-   *
    * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
@@ -85,11 +84,10 @@ export function decode(data, optMaxChunkSize) {
 export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
   /**
-   *
    * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {

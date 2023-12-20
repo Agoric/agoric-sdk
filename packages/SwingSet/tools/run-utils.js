@@ -59,8 +59,8 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   /**
    * @typedef {import('@endo/eventual-send').EProxy & {
-   *  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
-   *  vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
+   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+   *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
    * }} EVProxy
    */
 

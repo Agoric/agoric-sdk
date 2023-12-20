@@ -9,20 +9,27 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
  * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
  */
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
+/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>}
+  RemotableBrand */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 /** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
-/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>} KindFacets */
+/** @template T @typedef
+  {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
+  DefineKindOptions */
+/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>}
+  KindFacet */
+/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>}
+  KindFacets */
 /** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
 /** @typedef {import('@agoric/swingset-liveslots').InterfaceGuardKit} InterfaceGuardKit */
 
 /**
- * Make a version of the argument function that takes a kind context but
- * ignores it.
+ * Make a version of the argument function that takes a kind context but ignores
+ * it.
  *
- * @type {<T extends Function>(fn: T) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
+ * @type {<T extends Function>(
+ *   fn: T,
+ * ) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
@@ -93,15 +100,16 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: ReturnType<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
     defineKind(tag, init, methods, {
@@ -117,15 +125,16 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: T,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: T;
+   *     state: ReturnType<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const defineVirtualExoClassKit = (
     tag,
@@ -147,15 +156,16 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: ReturnType<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const defineDurableExoClass = (
     kindHandle,
@@ -177,15 +187,16 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: T,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: T;
+   *     state: ReturnType<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const defineDurableExoClassKit = (
     kindHandle,
@@ -208,15 +219,16 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: ReturnType<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const prepareExoClass = (
     baggage,
@@ -242,15 +254,16 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: T,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: T;
+   *     state: ReturnType<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: ReturnType<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+   * @returns {(...args: Parameters<I>) => T & RemotableBrand<{}, T>}
    */
   const prepareExoClassKit = (
     baggage,

@@ -12,13 +12,12 @@ const filterBadStatus = res => {
 /**
  * Make an RpcClient using explicit access to the network.
  *
- * The RpcClient implementations included in cosmjs
- * such as {@link https://cosmos.github.io/cosmjs/latest/tendermint-rpc/classes/HttpClient.html HttpClient}
+ * The RpcClient implementations included in cosmjs such as
+ * {@link https://cosmos.github.io/cosmjs/latest/tendermint-rpc/classes/HttpClient.html HttpClient}
  * use ambient authority (fetch or axios) for network access.
  *
- * To facilitate cooperation without vulnerability,
- * as well as unit testing, etc. this RpcClient maker takes
- * network access as a parameter, following
+ * To facilitate cooperation without vulnerability, as well as unit testing,
+ * etc. this RpcClient maker takes network access as a parameter, following
  * {@link https://github.com/Agoric/agoric-sdk/wiki/OCap-Discipline|OCap Discipline}.
  *
  * @param {string} url

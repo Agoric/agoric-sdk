@@ -6,7 +6,8 @@ const defaultLabelToKeys = label => harden([label]);
 harden(defaultLabelToKeys);
 
 /**
- * @param {string} debugName Only used internally for diagnostics, not available to user code
+ * @param {string} debugName Only used internally for diagnostics, not available
+ *   to user code
  * @param {import('./types.js').Stores} stores
  * @param {import('@agoric/swingset-liveslots').MapStore<string, any>} [backingStore]
  */
@@ -32,7 +33,7 @@ export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
   };
 
   /**
-   * Ensure the wrapped function is only called once per incarnation.  It is
+   * Ensure the wrapped function is only called once per incarnation. It is
    * expected to update the backing store directly.
    *
    * @template {(key: string, ...rest: unknown[]) => any} T
@@ -53,20 +54,21 @@ export const makeOnceKit = (debugName, stores, backingStore = undefined) => {
 
   /**
    * The best way to understand the purpose of `makeOnce` is to first understand
-   * what `makeOnce` does on a durable zone. Used correctly, `makeOnce` should only
-   * be called at most once on any zone,key pair during any vat incarnation.
-   * Given that constraint, if there is already a value bound to that
-   * zone,key pair, it must have been left there by a previous incarnation and
-   * `makeOnce` will simply return it. If not, then `maker(key)` is called to
-   * determine the initial value of that slot, which will normally be preserved
-   * by similar calls to `makeOnce` in future incarnations --- though that will be
-   * up to them.
+   * what `makeOnce` does on a durable zone. Used correctly, `makeOnce` should
+   * only be called at most once on any zone,key pair during any vat
+   * incarnation. Given that constraint, if there is already a value bound to
+   * that zone,key pair, it must have been left there by a previous incarnation
+   * and `makeOnce` will simply return it. If not, then `maker(key)` is called
+   * to determine the initial value of that slot, which will normally be
+   * preserved by similar calls to `makeOnce` in future incarnations --- though
+   * that will be up to them.
    *
    * Also ensures the maker returns a storable value.
    *
    * @template V
    * @param {string} key The string name of the Zone slot to provide.
-   * @param {(key: string) => V} maker Called to create a fresh value to fill an empty slot.
+   * @param {(key: string) => V} maker Called to create a fresh value to fill an
+   *   empty slot.
    * @returns {V} The value of the key's slot.
    */
   const makeOnce = (key, maker) => {

@@ -35,10 +35,9 @@ let modRetains;
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {[unknown, ...object]} imp
- * Objects to import, preceded by a dummy element.
- * The `imp` name itself is three characters long for visual similarity
- * with `vir` and `dur` analogs.
+ * @param {[unknown, ...object]} imp Objects to import, preceded by a dummy
+ *   element. The `imp` name itself is three characters long for visual
+ *   similarity with `vir` and `dur` analogs.
  * @returns {Record<string, object>}
  */
 const buildExports = (baggage, imp) => {

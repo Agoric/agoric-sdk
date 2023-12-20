@@ -1,15 +1,13 @@
 import { Fail } from '@agoric/assert';
 
 /**
- * Assert function to ensure that an object implements the StorageAPI
- * interface: methods { has, getNextKey, get, set, delete }
- * (cf. packages/SwingSet/docs/state.md#transactions).
+ * Assert function to ensure that an object implements the StorageAPI interface:
+ * methods { has, getNextKey, get, set, delete } (cf.
+ * packages/SwingSet/docs/state.md#transactions).
  *
- * @param {*} kvStore  The object to be tested
- *
+ * @param {any} kvStore The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- *
  * @returns {void}
  */
 export function insistStorageAPI(kvStore) {

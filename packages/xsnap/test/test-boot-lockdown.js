@@ -48,7 +48,7 @@ async function bootWorker(name, script, savePrinted = false) {
 }
 
 /**
- * @param {*} t
+ * @param {any} t
  * @param {boolean} [savePrinted]
  */
 async function bootSESWorker(t, savePrinted = false) {

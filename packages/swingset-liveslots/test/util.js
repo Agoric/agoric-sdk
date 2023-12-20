@@ -4,7 +4,7 @@ import { vstr } from './vat-util.js';
 export { vstr };
 
 /**
- * @param {(d: unknown) => void} [onDispatchCallback ]
+ * @param {(d: unknown) => void} [onDispatchCallback]
  */
 export function buildDispatch(onDispatchCallback) {
   const log = [];

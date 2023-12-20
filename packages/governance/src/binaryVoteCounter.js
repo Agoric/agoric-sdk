@@ -52,9 +52,9 @@ const makeBinaryVoteCounter = (
 
   let isOpen = true;
   const positions = questionSpec.positions;
-  /** @type { PromiseRecord<Position> } */
+  /** @type {PromiseRecord<Position>} */
   const outcomePromise = makePromiseKit();
-  /** @type { PromiseRecord<VoteStatistics> } */
+  /** @type {PromiseRecord<VoteStatistics>} */
   const tallyPromise = makePromiseKit();
   // The Electorate is responsible for creating a unique seat for each voter.
   // This voteCounter allows voters to re-vote, and replaces their previous
@@ -65,7 +65,7 @@ const makeBinaryVoteCounter = (
    * @property {Position} chosen
    * @property {bigint} shares
    */
-  /** @type {MapStore<Handle<'Voter'>,RecordedBallot> } */
+  /** @type {MapStore<Handle<'Voter'>, RecordedBallot>} */
   const allBallots = makeScalarMapStore('voterHandle');
 
   const countVotes = () => {
@@ -85,7 +85,7 @@ const makeBinaryVoteCounter = (
       }
     }
 
-    /** @type { VoteStatistics } */
+    /** @type {VoteStatistics} */
     const stats = {
       spoiled,
       votes: allBallots.getSize(),
@@ -203,8 +203,8 @@ const makeBinaryVoteCounter = (
 // instance in the publicFacet before returning public and creator facets.
 
 /**
- * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint}>} zcf
- * @param {{outcomePublisher: Publisher<OutcomeRecord>}} outcomePublisher
+ * @param {ZCF<{ questionSpec: QuestionSpec; quorumThreshold: bigint }>} zcf
+ * @param {{ outcomePublisher: Publisher<OutcomeRecord> }} outcomePublisher
  */
 const start = (zcf, { outcomePublisher }) => {
   // There are a variety of ways of counting quorums. The parameters must be

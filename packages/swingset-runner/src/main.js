@@ -110,23 +110,26 @@ function fail(message, printUsage) {
 /**
  * In swingset benchmark mode, the configured swingset is loaded indirectly,
  * interposing a benchmark controller vat we provide here as the swingset's
- * bootstrap vat.  In addition, the benchmark author is expected to provide a
- * benchmark driver vat from a file specified on the command line.  This
+ * bootstrap vat. In addition, the benchmark author is expected to provide a
+ * benchmark driver vat from a file specified on the command line. This
  * benchmark driver vat is expected to expose the methods `setup` and
- * `runBenchmarkRound`.  The controller vat's `bootstrap` method invokes the
+ * `runBenchmarkRound`. The controller vat's `bootstrap` method invokes the
  * swingset's "real" `bootstrap` method and then tells the benchmark driver vat
- * to perform setup for the benchmark.  The controller vat then orchestrates the
+ * to perform setup for the benchmark. The controller vat then orchestrates the
  * execution of the directed number of bootstrap rounds.
  *
  * In order to perform the controller interposition and benchmark orchestration,
  * this function generates a new swingset configuration with selective
  * modifications and changes to the original swingset configuration.
  *
- * @param {*} baseConfig  The original configuration being adapted for benchmark use
- * @param {string} swingsetBenchmarkDriverPath  Path to the benchmark driver vat source
- * @param {string[]} bootstrapArgv  Bootstrap args from the swingset-runner command line
- *
- * @returns {*} a new configuration that is a copy of `baseConfig` with modifications applied.
+ * @param {any} baseConfig The original configuration being adapted for
+ *   benchmark use
+ * @param {string} swingsetBenchmarkDriverPath Path to the benchmark driver vat
+ *   source
+ * @param {string[]} bootstrapArgv Bootstrap args from the swingset-runner
+ *   command line
+ * @returns {any} a new configuration that is a copy of `baseConfig` with
+ *   modifications applied.
  */
 function generateSwingsetBenchmarkConfig(
   baseConfig,

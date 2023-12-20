@@ -5,13 +5,14 @@ import { isStreamCell } from './lib-chainStorage.js';
 const { Fail } = assert;
 
 /**
- * Should be a union with Remotable, but that's `any`, making this type meaningless
+ * Should be a union with Remotable, but that's `any`, making this type
+ * meaningless
  *
  * @typedef {{ getBoardId: () => string }} BoardRemote
  */
 
 /**
- * @param {*} slotInfo
+ * @param {any} slotInfo
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
@@ -30,13 +31,15 @@ export const boardValToSlot = val => {
 };
 
 /**
- * A marshaller which can serialize getBoardId() -bearing
- * Remotables. This allows the caller to pick their slots. The
- * deserializer is configurable: the default cannot handle
- * Remotable-bearing data.
+ * A marshaller which can serialize getBoardId() -bearing Remotables. This
+ * allows the caller to pick their slots. The deserializer is configurable: the
+ * default cannot handle Remotable-bearing data.
  *
  * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<import('@endo/marshal').Marshal<string>, 'serialize' | 'unserialize'>}
+ * @returns {Omit<
+ *   import('@endo/marshal').Marshal<string>,
+ *   'serialize' | 'unserialize'
+ * >}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
   return makeMarshal(boardValToSlot, slotToVal, {
@@ -64,8 +67,11 @@ harden(assertCapData);
  *
  * @param {Map<string, string>} data
  * @param {string} key
- * @param {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} fromCapData
- * @param {number} index index of the desired value in a deserialized stream cell
+ * @param {ReturnType<
+ *   typeof import('@endo/marshal').makeMarshal
+ * >['fromCapData']} fromCapData
+ * @param {number} index index of the desired value in a deserialized stream
+ *   cell
  */
 export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const serialized = data.get(key) || Fail`no data for ${key}`;
@@ -83,7 +89,7 @@ export const unmarshalFromVstorage = (data, key, fromCapData, index) => {
   const marshalled = values.at(index);
   assert.typeof(marshalled, 'string');
 
-  /** @type {import("@endo/marshal").CapData<string>} */
+  /** @type {import('@endo/marshal').CapData<string>} */
   const capData = harden(JSON.parse(marshalled));
   assertCapData(capData);
 

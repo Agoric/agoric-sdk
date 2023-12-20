@@ -20,7 +20,6 @@ const setupNonFungible = () => {
   }
 
   /**
-   *
    * @param {string} name
    * @param {string} power
    * @param {string} [desc]

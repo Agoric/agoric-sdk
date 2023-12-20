@@ -91,7 +91,7 @@ test('makeMeasureSeconds', async t => {
 });
 
 test('assertAllDefined', t => {
-  /** @type {{ s: string, m: string | undefined, u?: string}} */
+  /** @type {{ s: string; m: string | undefined; u?: string }} */
   const obj = { s: 'defined', m: 'maybe' };
   assertAllDefined(obj);
   // typecheck

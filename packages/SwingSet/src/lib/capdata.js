@@ -5,10 +5,10 @@ import { kunser, krefOf } from '@agoric/kmarshal';
 /* eslint-disable jsdoc/require-returns-check */
 /**
  * Assert function to ensure that something expected to be a capdata object
- * actually is.  A capdata object should have a .body property that's a string
+ * actually is. A capdata object should have a .body property that's a string
  * and a .slots property that's an array of strings.
  *
- * @param {any} capdata  The object to be tested
+ * @param {any} capdata The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  * @returns {asserts capdata is import('@endo/marshal').CapData<string>}
@@ -22,8 +22,8 @@ export function insistCapData(capdata) {
 }
 
 /**
- * Returns the slot of a presence if the provided capdata is composed
- * of a single presence, `null` otherwise
+ * Returns the slot of a presence if the provided capdata is composed of a
+ * single presence, `null` otherwise
  *
  * @param {import('@endo/marshal').CapData<string>} data
  */

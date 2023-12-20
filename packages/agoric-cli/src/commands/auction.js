@@ -16,21 +16,23 @@ const { Fail } = assert;
 /**
  * @template {ParamTypesMap} M
  * @typedef {{
- *   [K in keyof M]: ParamValueForType<M[K]>
+ *   [K in keyof M]: ParamValueForType<M[K]>;
  * }} ParamValues
  */
 
-/** @typedef {ReturnType<import('@agoric/inter-protocol/src/auction/params.js').makeAuctioneerParams>} AuctionParamRecord */
+/** @typedef {ReturnType<
+  import('@agoric/inter-protocol/src/auction/params.js').makeAuctioneerParams
+>} AuctionParamRecord */
 /** @typedef {ParamValues<ParamTypesMapFromRecord<AuctionParamRecord>>} AuctionParams */
 
 /**
  * @param {import('anylogger').Logger} _logger
  * @param {{
- *   createCommand: typeof import('commander').createCommand,
- *   fetch: typeof window.fetch,
- *   stdout: Pick<import('stream').Writable, 'write'>,
- *   stderr: Pick<import('stream').Writable, 'write'>,
- *   now: () => number,
+ *   createCommand: typeof import('commander').createCommand;
+ *   fetch: typeof window.fetch;
+ *   stdout: Pick<import('stream').Writable, 'write'>;
+ *   stderr: Pick<import('stream').Writable, 'write'>;
+ *   now: () => number;
  * }} io
  */
 export const makeAuctionCommand = (
@@ -80,17 +82,16 @@ export const makeAuctionCommand = (
     )
     .action(
       /**
-       *
        * @param {{
-       *   charterAcceptOfferId: string,
-       *   startFrequency?: bigint,
-       *   clockStep?: bigint,
-       *   startingRate?: bigint,
-       *   lowestRate?: bigint,
-       *   discountStep?: bigint,
-       *   priceLockPeriod?: bigint,
-       *   offerId: string,
-       *   deadline: number,
+       *   charterAcceptOfferId: string;
+       *   startFrequency?: bigint;
+       *   clockStep?: bigint;
+       *   startingRate?: bigint;
+       *   lowestRate?: bigint;
+       *   discountStep?: bigint;
+       *   priceLockPeriod?: bigint;
+       *   offerId: string;
+       *   deadline: number;
        * }} opts
        */
       async opts => {
@@ -110,8 +111,8 @@ export const makeAuctionCommand = (
         timerBrand || Fail`no timer brand?`;
 
         /**
-         * typed param manager requires RelativeTimeRecord
-         * but TimeMath.toRel prodocues a RelativeTime (which may be a bare bigint).
+         * typed param manager requires RelativeTimeRecord but TimeMath.toRel
+         * prodocues a RelativeTime (which may be a bare bigint).
          *
          * @param {bigint} relValue
          * @returns {import('@agoric/time').RelativeTimeRecord}

@@ -14,7 +14,8 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
-/** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
+/** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>}
+  DefineKindOptions */
 
 const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
@@ -111,7 +112,10 @@ const LABEL_INSTANCES = (env.DEBUG || '')
  */
 
 const makeDataCache = syscall => {
-  /** @type {(baseRef: string) => { capdatas: any, valueMap: Map<string, any> }} */
+  /** @type {(baseRef: string) => {
+  capdatas: any;
+  valueMap: Map<string, any>;
+}} */
   const readBacking = baseRef => {
     const rawState = syscall.vatstoreGet(`vom.${baseRef}`);
     assert(rawState);
@@ -119,7 +123,10 @@ const makeDataCache = syscall => {
     const valueMap = new Map(); // populated lazily by each state getter
     return { capdatas, valueMap }; // both mutable
   };
-  /** @type {(baseRef: string, value: { capdatas: any, valueMap: Map<string, any> }) => void} */
+  /** @type {(
+  baseRef: string,
+  value: { capdatas: any; valueMap: Map<string, any> },
+) => void} */
   const writeBacking = (baseRef, value) => {
     const rawState = JSON.stringify(value.capdatas);
     syscall.vatstoreSet(`vom.${baseRef}`, rawState);
@@ -142,19 +149,19 @@ const makeContextCache = (makeState, makeContext) => {
 };
 
 /**
- * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
+ * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider} ContextProvider
  */
 
 /**
- * @param {*} contextCache
- * @param {*} getSlotForVal
+ * @param {any} contextCache
+ * @param {any} getSlotForVal
  * @returns {ContextProvider}
  */
 const makeContextProvider = (contextCache, getSlotForVal) =>
   harden(rep => contextCache.get(getSlotForVal(rep)));
 
 const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
-  /** @type { Record<string, any> } */
+  /** @type {Record<string, any>} */
   const contextProviderKit = {};
   for (const [index, name] of facetNames.entries()) {
     contextProviderKit[name] = rep => {
@@ -297,59 +304,60 @@ const insistSameCapData = (oldCD, newCD) => {
 };
 
 /**
- * Create a new virtual object manager.  There is one of these for each vat.
+ * Create a new virtual object manager. There is one of these for each vat.
  *
- * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm  Virtual reference manager, to handle reference counting and GC
- *   of virtual references.
- * @param {() => number} allocateExportID  Function to allocate the next object
+ * @param {any} syscall Vat's syscall object, used to access the vatstore
+ *   operations.
+ * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm
+ *   Virtual reference manager, to handle reference counting and GC of virtual
+ *   references.
+ * @param {() => number} allocateExportID Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {(val: object) => string | undefined} getSlotForVal  A function that returns the
- *   object ID (vref) for a given object, if any.  their corresponding export
- *   IDs
+ * @param {(val: object) => string | undefined} getSlotForVal A function that
+ *   returns the object ID (vref) for a given object, if any. their
+ *   corresponding export IDs
  * @param {(slot: string) => object} requiredValForSlot
- * @param {*} registerValue  Function to register a new slot+value in liveSlot's
- *   various tables
- * @param {import('@endo/marshal').ToCapData<string>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
- * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
- *   syscall params
+ * @param {any} registerValue Function to register a new slot+value in
+ *   liveSlot's various tables
+ * @param {import('@endo/marshal').ToCapData<string>} serialize Serializer for
+ *   this vat
+ * @param {import('@endo/marshal').FromCapData<string>} unserialize
+ *   Unserializer for this vat
+ * @param {any} assertAcceptableSyscallCapdataSize Function to check for
+ *   oversized syscall params
  * @param {import('./types').LiveSlotsOptions} [liveSlotsOptions]
- * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
- * Specifying the underlying WeakMap/WeakSet objects to wrap with
- * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently
- * defined on `globalThis` when the maker is invoked, to avoid infinite
- * recursion if our returned WeakMap/WeakSet wrappers are subsequently installed
- * on globalThis.
- *
+ * @param {{ WeakMap: typeof WeakMap; WeakSet: typeof WeakSet }} [powers]
+ *   Specifying the underlying WeakMap/WeakSet objects to wrap with
+ *   VirtualObjectAwareWeakMap/Set. By default, capture the ones currently
+ *   defined on `globalThis` when the maker is invoked, to avoid infinite
+ *   recursion if our returned WeakMap/WeakSet wrappers are subsequently
+ *   installed on globalThis.
  * @returns a new virtual object manager.
  *
- * The virtual object manager allows the creation of persistent objects that do
- * not need to occupy memory when they are not in use.  It provides five
- * functions:
+ *   The virtual object manager allows the creation of persistent objects that do
+ *   not need to occupy memory when they are not in use. It provides five
+ *   functions:
  *
- * - `defineKind`, `defineKindMulti`, `defineDurableKind`, and
- *    `defineDurableKindMulti` enable users to define new types of virtual
- *    object by providing an implementation of the new kind of object's
- *    behavior.  The result is a maker function that will produce new
- *    virtualized instances of the defined object type on demand.
+ *   - `defineKind`, `defineKindMulti`, `defineDurableKind`, and
+ *       `defineDurableKindMulti` enable users to define new types of virtual
+ *       object by providing an implementation of the new kind of object's
+ *       behavior. The result is a maker function that will produce new
+ *       virtualized instances of the defined object type on demand.
+ *   - `VirtualObjectAwareWeakMap` and `VirtualObjectAwareWeakSet` are drop-in
+ *       replacements for JavaScript's builtin `WeakMap` and `WeakSet` classes
+ *       which understand the magic internal voodoo used to implement virtual
+ *       objects and will do the right thing when virtual objects are used as
+ *       keys. The intent is that the hosting environment will inject these as
+ *       substitutes for their regular JS analogs in way that should be
+ *       transparent to ordinary users of those classes.
+ *   - `flushStateCache` will empty the object manager's cache of in-memory object
+ *       instances, writing any changed state to the persistent store. This
+ *       should be called at the end of each crank, to ensure the syscall trace
+ *       does not depend upon GC of Representatives.
  *
- * - `VirtualObjectAwareWeakMap` and `VirtualObjectAwareWeakSet` are drop-in
- *    replacements for JavaScript's builtin `WeakMap` and `WeakSet` classes
- *    which understand the magic internal voodoo used to implement virtual
- *    objects and will do the right thing when virtual objects are used as keys.
- *    The intent is that the hosting environment will inject these as
- *    substitutes for their regular JS analogs in way that should be transparent
- *    to ordinary users of those classes.
- *
- * - `flushStateCache` will empty the object manager's cache of in-memory object
- *    instances, writing any changed state to the persistent store. This should
- *    be called at the end of each crank, to ensure the syscall trace does not
- *    depend upon GC of Representatives.
- *
- * The `defineKind` functions are made available to user vat code in the
- * `VatData` global (along with various other storage functions defined
- * elsewhere).
+ *   The `defineKind` functions are made available to user vat code in the
+ *   `VatData` global (along with various other storage functions defined
+ *   elsewhere).
  */
 export const makeVirtualObjectManager = (
   syscall,
@@ -566,11 +574,11 @@ export const makeVirtualObjectManager = (
 
   /**
    * @typedef {{
-   *  kindID: string,
-   *  tag: string,
-   *  unfaceted?: boolean,
-   *  facets?: string[],
-   *  stateShapeCapData?: import('./types.js').SwingSetCapData
+   *   kindID: string;
+   *   tag: string;
+   *   unfaceted?: boolean;
+   *   facets?: string[];
+   *   stateShapeCapData?: import('./types.js').SwingSetCapData;
    * }} DurableKindDescriptor
    */
 
@@ -615,94 +623,86 @@ export const makeVirtualObjectManager = (
   /**
    * Define a new kind of virtual object.
    *
-   * @param {string} kindID  The kind ID to associate with the new kind.
-   *
-   * @param {string} tag  A descriptive tag string as used in calls to `Far`
-   *
-   * @param {*} init  An initialization function that will return the initial
-   *    state of a new instance of the kind of virtual object being defined.
-   *
+   * @param {string} kindID The kind ID to associate with the new kind.
+   * @param {string} tag A descriptive tag string as used in calls to `Far`
+   * @param {any} init An initialization function that will return the initial
+   *   state of a new instance of the kind of virtual object being defined.
    * @param {boolean} multifaceted True if this should be a multi-faceted
-   *    virtual object, false if it should be single-faceted.
+   *   virtual object, false if it should be single-faceted.
+   * @param {any} behavior A bag of functions (in the case of a single-faceted
+   *   object) or a bag of bags of functions (in the case of a multi-faceted
+   *   object) that will become the methods of the object or its facets.
+   * @param {DefineKindOptions<any>} options Additional options to configure
+   *   the virtual object kind being defined. See the documentation of
+   *   DefineKindOptions for the meaning of each option.
+   * @param {boolean} isDurable A flag indicating whether or not the newly
+   *   defined kind should be a durable kind.
+   * @param {DurableKindDescriptor} [durableKindDescriptor] Descriptor for the
+   *   durable kind, if it is, in fact, durable
+   * @returns {any} a maker function that can be called to manufacture new
+   *   instances of this kind of object. The parameters of the maker function
+   *   are those of the `init` function.
    *
-   * @param {*} behavior A bag of functions (in the case of a single-faceted
-   *    object) or a bag of bags of functions (in the case of a multi-faceted
-   *    object) that will become the methods of the object or its facets.
+   *   Notes on theory of operation:
    *
-   * @param {DefineKindOptions<*>} options
-   *    Additional options to configure the virtual object kind
-   *    being defined. See the documentation of DefineKindOptions
-   *    for the meaning of each option.
+   *   Virtual objects are structured in three layers: representatives, inner
+   *   selves, and state data.
    *
-   * @param {boolean} isDurable  A flag indicating whether or not the newly defined
-   *    kind should be a durable kind.
+   *   A representative is the manifestation of a virtual object that vat code has
+   *   direct access to. A given virtual object can have at most one
+   *   representative, which will be created as needed. This will happen when
+   *   the instance is initially made, and can also happen (if it does not
+   *   already exist) when the instance's virtual object ID is deserialized,
+   *   either when delivered as part of an incoming message or read as part of
+   *   another virtual object's state. A representative will be kept alive in
+   *   memory as long as there is a variable somewhere that references it
+   *   directly or indirectly. However, if a representative becomes unreferenced
+   *   in memory it is subject to garbage collection, leaving the representation
+   *   that is kept in the vat store as the record of its state from which a mew
+   *   representative can be reconstituted at need. Since only one
+   *   representative exists at a time, references to them may be compared with
+   *   the equality operator (===). Although the identity of a representative
+   *   can change over time, this is never visible to code running in the vat.
+   *   Methods invoked on a representative always operate on the underlying
+   *   virtual object state.
    *
-   * @param {DurableKindDescriptor} [durableKindDescriptor]  Descriptor for the
-   *    durable kind, if it is, in fact, durable
+   *   The inner self represents the in-memory information about an object, aside
+   *   from its state. There is an inner self for each virtual object that is
+   *   currently resident in memory; that is, there is an inner self for each
+   *   virtual object for which there is currently a representative present
+   *   somewhere in the vat. The inner self maintains two pieces of information:
+   *   its corresponding virtual object's virtual object ID, and a pointer to
+   *   the virtual object's state in memory if the virtual object's state is, in
+   *   fact, currently resident in memory. If the state is not in memory, the
+   *   inner self's pointer to the state is null. In addition, the virtual
+   *   object manager maintains an LRU cache of inner selves. Inner selves that
+   *   are in the cache are not necessarily referenced by any existing
+   *   representative, but are available to be used should such a representative
+   *   be needed. How this all works will be explained in a moment.
    *
-   * @returns {*} a maker function that can be called to manufacture new
-   *    instances of this kind of object.  The parameters of the maker function
-   *    are those of the `init` function.
+   *   The state of a virtual object is a collection of mutable properties, each
+   *   of whose values is itself immutable and serializable. The methods of a
+   *   virtual object have access to this state by closing over a state object.
+   *   However, the state object they close over is not the actual state object,
+   *   but a wrapper with accessor methods that both ensure that a
+   *   representation of the state is in memory when needed and perform
+   *   deserialization on read and serialization on write; this wrapper is held
+   *   by the representative, so that method invocations always see the wrapper
+   *   belonging to the invoking representative. The actual state object holds
+   *   marshaled serializations of each of the state properties. When written to
+   *   persistent storage, this is represented as a JSON-stringified object each
+   *   of whose properties is one of the marshaled property values.
    *
-   * Notes on theory of operation:
-   *
-   * Virtual objects are structured in three layers: representatives, inner
-   * selves, and state data.
-   *
-   * A representative is the manifestation of a virtual object that vat code has
-   * direct access to.  A given virtual object can have at most one
-   * representative, which will be created as needed.  This will happen when the
-   * instance is initially made, and can also happen (if it does not already
-   * exist) when the instance's virtual object ID is deserialized, either when
-   * delivered as part of an incoming message or read as part of another virtual
-   * object's state.  A representative will be kept alive in memory as long as
-   * there is a variable somewhere that references it directly or indirectly.
-   * However, if a representative becomes unreferenced in memory it is subject
-   * to garbage collection, leaving the representation that is kept in the vat
-   * store as the record of its state from which a mew representative can be
-   * reconstituted at need.  Since only one representative exists at a time,
-   * references to them may be compared with the equality operator (===).
-   * Although the identity of a representative can change over time, this is
-   * never visible to code running in the vat.  Methods invoked on a
-   * representative always operate on the underlying virtual object state.
-   *
-   * The inner self represents the in-memory information about an object, aside
-   * from its state.  There is an inner self for each virtual object that is
-   * currently resident in memory; that is, there is an inner self for each
-   * virtual object for which there is currently a representative present
-   * somewhere in the vat.  The inner self maintains two pieces of information:
-   * its corresponding virtual object's virtual object ID, and a pointer to the
-   * virtual object's state in memory if the virtual object's state is, in fact,
-   * currently resident in memory.  If the state is not in memory, the inner
-   * self's pointer to the state is null.  In addition, the virtual object
-   * manager maintains an LRU cache of inner selves.  Inner selves that are in
-   * the cache are not necessarily referenced by any existing representative,
-   * but are available to be used should such a representative be needed.  How
-   * this all works will be explained in a moment.
-   *
-   * The state of a virtual object is a collection of mutable properties, each
-   * of whose values is itself immutable and serializable.  The methods of a
-   * virtual object have access to this state by closing over a state object.
-   * However, the state object they close over is not the actual state object,
-   * but a wrapper with accessor methods that both ensure that a representation
-   * of the state is in memory when needed and perform deserialization on read
-   * and serialization on write; this wrapper is held by the representative, so
-   * that method invocations always see the wrapper belonging to the invoking
-   * representative.  The actual state object holds marshaled serializations of
-   * each of the state properties.  When written to persistent storage, this is
-   * represented as a JSON-stringified object each of whose properties is one
-   * of the marshaled property values.
-   *
-   * When a method of a virtual object attempts to access one of the properties
-   * of the object's state, the accessor first checks to see if the state is in
-   * memory.  If it is not, it is loaded from persistent storage, the
-   * corresponding inner self is made to point at it, and then the inner self is
-   * placed at the head of the LRU cache (causing the least recently used inner
-   * self to fall off the end of the cache).  If it *is* in memory, it is
-   * promoted to the head of the LRU cache but the overall contents of the cache
-   * remain unchanged.  When an inner self falls off the end of the LRU, its
-   * reference to the state is nulled out and the object holding the state
-   * becomes garbage collectable.
+   *   When a method of a virtual object attempts to access one of the properties
+   *   of the object's state, the accessor first checks to see if the state is
+   *   in memory. If it is not, it is loaded from persistent storage, the
+   *   corresponding inner self is made to point at it, and then the inner self
+   *   is placed at the head of the LRU cache (causing the least recently used
+   *   inner self to fall off the end of the cache). If it _is_ in memory, it is
+   *   promoted to the head of the LRU cache but the overall contents of the
+   *   cache remain unchanged. When an inner self falls off the end of the LRU,
+   *   its reference to the state is nulled out and the object holding the state
+   *   becomes garbage collectable.
    */
   const defineKindInternal = (
     kindID,
@@ -869,7 +869,10 @@ export const makeVirtualObjectManager = (
     // (capdata) contents of the virtual-object state record.
     // dataCache[baseRef] -> { capdatas, valueMap }
     // valueCD=capdatas[prop], value=valueMap.get(prop)
-    /** @type { import('./cache.js').Cache<{ capdatas: any, valueMap: Map<string, any> }>} */
+    /** @type {import('./cache.js').Cache<{
+  capdatas: any;
+  valueMap: Map<string, any>;
+}>} */
     const dataCache = makeDataCache(syscall);
     allCaches.push(dataCache);
 
@@ -1157,7 +1160,6 @@ export const makeVirtualObjectManager = (
   };
 
   /**
-   *
    * @param {string} tag
    * @returns {import('@agoric/vat-data').DurableKindHandle}
    */
@@ -1294,5 +1296,5 @@ export const makeVirtualObjectManager = (
   });
 };
 /**
- * @typedef { ReturnType<typeof makeVirtualObjectManager> } VirtualObjectManager
+ * @typedef {ReturnType<typeof makeVirtualObjectManager>} VirtualObjectManager
  */

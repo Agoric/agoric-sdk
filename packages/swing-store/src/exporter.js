@@ -13,82 +13,76 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @template T
- *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
+ * @typedef {Iterable<T> | AsyncIterable<T>} AnyIterable<T>
  */
 /**
  * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef {IterableIterator<T> | AsyncIterableIterator<T>} AnyIterableIterator<T>
  */
 
 /**
- *
- * @typedef {readonly [
- *   key: string,
- *   value?: string | null | undefined,
- * ]} KVPair
- *
+ * @typedef {readonly [key: string, value?: string | null | undefined]} KVPair
  * @typedef {object} SwingStoreExporter
  *
- * Allows export of data from a swingStore as a fixed view onto the content as
- * of the most recent commit point at the time the exporter was created.  The
- * exporter may be used while another SwingStore instance is active for the same
- * DB, possibly in another thread or process.  It guarantees that regardless of
- * the concurrent activity of other swingStore instances, the data representing
- * the commit point will stay consistent and available.
- *
+ *   Allows export of data from a swingStore as a fixed view onto the content as
+ *   of the most recent commit point at the time the exporter was created. The
+ *   exporter may be used while another SwingStore instance is active for the
+ *   same DB, possibly in another thread or process. It guarantees that
+ *   regardless of the concurrent activity of other swingStore instances, the
+ *   data representing the commit point will stay consistent and available.
  * @property {(key: string) => string | undefined} getHostKV
  *
- * Retrieve a value from the "host" portion of the kvStore, just like
- * hostStorage.hostKVStore.get() would do.
- *
+ *   Retrieve a value from the "host" portion of the kvStore, just like
+ *   hostStorage.hostKVStore.get() would do.
  * @property {() => AnyIterableIterator<KVPair>} getExportData
  *
- * Get a full copy of the first-stage export data (key-value pairs) from the
- * swingStore. This represents both the contents of the KVStore (excluding host
- * and local prefixes), as well as any data needed to validate all artifacts,
- * both current and historical. As such it represents the root of trust for the
- * application.
+ *   Get a full copy of the first-stage export data (key-value pairs) from the
+ *   swingStore. This represents both the contents of the KVStore (excluding
+ *   host and local prefixes), as well as any data needed to validate all
+ *   artifacts, both current and historical. As such it represents the root of
+ *   trust for the application.
  *
- * Content of validation data (with supporting entries for indexing):
- * - kv.${key} = ${value}  // ordinary kvStore data entry
- * - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash }};
- * - snapshot.${vatID}.current = `snapshot.${vatID}.${snapPos}`
- * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
- * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
+ *   Content of validation data (with supporting entries for indexing):
+ *
+ *   - kv.${key} = ${value} // ordinary kvStore data entry
+ *   - snapshot.${vatID}.${snapPos} = ${{ vatID, snapPos, hash }};
+ *   - snapshot.${vatID}.current = `snapshot.${vatID}.${snapPos}`
+ *   - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
+ *   - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
  * @property {() => AnyIterableIterator<string>} getArtifactNames
  *
- * Get a list of name of artifacts available from the swingStore.  A name
- * returned by this method guarantees that a call to `getArtifact` on the same
- * exporter instance will succeed.  The `artifactMode` option to
- * `makeSwingStoreExporter` controls the filtering of the artifact names
- * yielded.
+ *   Get a list of name of artifacts available from the swingStore. A name
+ *   returned by this method guarantees that a call to `getArtifact` on the same
+ *   exporter instance will succeed. The `artifactMode` option to
+ *   `makeSwingStoreExporter` controls the filtering of the artifact names
+ *   yielded.
  *
- * Artifact names:
- * - transcript.${vatID}.${startPos}.${endPos}
- * - snapshot.${vatID}.${snapPos}
- * - bundle.${bundleID}
+ *   Artifact names:
+ *
+ *   - transcript.${vatID}.${startPos}.${endPos}
+ *   - snapshot.${vatID}.${snapPos}
+ *   - bundle.${bundleID}
  *
  * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
- *
- * Retrieve an artifact by name as a sequence of binary chunks.  May throw if
- * the artifact is not available, which can occur if the artifact is historical
- * and wasn't preserved.
- *
+ *   Retrieve an artifact by name as a sequence of binary chunks. May throw if the
+ *   artifact is not available, which can occur if the artifact is historical
+ *   and wasn't preserved.
  * @property {() => Promise<void>} close
  *
- * Dispose of all resources held by this exporter. Any further operation on this
- * exporter or its outstanding iterators will fail.
+ *   Dispose of all resources held by this exporter. Any further operation on this
+ *   exporter or its outstanding iterators will fail.
  */
 
 /**
- * @typedef { object } ExportSwingStoreOptions
- * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
+ * @typedef {object} ExportSwingStoreOptions
+ * @property {import('./internal.js').ArtifactMode} [artifactMode] What
+ *   artifacts should/must the exporter provide?
  */
 
 /**
  * @param {string} dirPath
- * @param { ExportSwingStoreOptions } [options]
+ * @param {ExportSwingStoreOptions} [options]
  * @returns {SwingStoreExporter}
  */
 export function makeSwingStoreExporter(dirPath, options = {}) {
@@ -125,18 +119,15 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   sqlKVGet.pluck(true);
 
   /**
-   * Obtain the value stored for a given host key. This is for the
-   * benefit of clients who need to briefly query the DB to ensure
-   * they are exporting the right thing, and need to avoid modifying
-   * anything (or creating a read-write DB lock) in the process.
+   * Obtain the value stored for a given host key. This is for the benefit of
+   * clients who need to briefly query the DB to ensure they are exporting the
+   * right thing, and need to avoid modifying anything (or creating a read-write
+   * DB lock) in the process.
    *
-   * @param {string} key  The key whose value is sought.
-   *
+   * @param {string} key The key whose value is sought.
    * @returns {string | undefined} the (string) value for the given key, or
-   *    undefined if there is no such value.
-   *
-   * @throws if key is not a string, or the key is not in the host
-   * section
+   *   undefined if there is no such value.
+   * @throws if key is not a string, or the key is not in the host section
    */
   function getHostKV(key) {
     typeof key === 'string' || Fail`key must be a string`;

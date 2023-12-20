@@ -60,7 +60,9 @@ export function makeNodeSubprocessFactory(tools) {
 
     /**
      * @param {import('@agoric/swingset-liveslots').VatDeliveryObject} delivery
-     * @returns {Promise<import('@agoric/swingset-liveslots').VatDeliveryResult>}
+     * @returns {Promise<
+     *   import('@agoric/swingset-liveslots').VatDeliveryResult
+     * >}
      */
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);

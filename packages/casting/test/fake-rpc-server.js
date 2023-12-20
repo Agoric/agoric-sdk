@@ -72,13 +72,16 @@ const fakeStatusResult = {
   },
 };
 
-/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
+/** @typedef {Partial<
+  import('ava').ExecutionContext<{ cleanups: Array<() => void> }>
+> & { context }} FakeServerTestContext */
 /**
  * @param {FakeServerTestContext} t
- * @param {Array<{any}>} fakeValues
+ * @param {Array<{ any }>} fakeValues
  * @param {object} [options]
  * @param {Marshaller} [options.marshaller]
- * @param {number} [options.batchSize] count of stream-cell results per response, or 0/absent to return lone naked values
+ * @param {number} [options.batchSize] count of stream-cell results per
+ *   response, or 0/absent to return lone naked values
  */
 export const startFakeServer = (t, fakeValues, options = {}) => {
   const { log = console.log } = t;

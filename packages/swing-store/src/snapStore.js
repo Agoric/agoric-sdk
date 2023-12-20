@@ -26,47 +26,59 @@ import { buffer } from './util.js';
 
 /**
  * @template T
- *  @typedef { import('./exporter').AnyIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef {import('./exporter').AnyIterableIterator<T>} AnyIterableIterator<T>
  */
 
 /**
- * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
+ * @typedef {import('./exporter').SwingStoreExporter} SwingStoreExporter
+ * @typedef {import('./internal.js').ArtifactMode} ArtifactMode
  * @typedef {{
- *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
- *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
- *   deleteAllUnusedSnapshots: () => void,
- *   deleteVatSnapshots: (vatID: string) => void,
- *   stopUsingLastSnapshot: (vatID: string) => void,
- *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
+ *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>;
+ *   saveSnapshot: (
+ *     vatID: string,
+ *     snapPos: number,
+ *     snapshotStream: AsyncIterable<Uint8Array>,
+ *   ) => Promise<SnapshotResult>;
+ *   deleteAllUnusedSnapshots: () => void;
+ *   deleteVatSnapshots: (vatID: string) => void;
+ *   stopUsingLastSnapshot: (vatID: string) => void;
+ *   getSnapshotInfo: (vatID: string) => SnapshotInfo;
  * }} SnapStore
  *
  * @typedef {{
- *   exportSnapshot: (name: string) => AsyncIterableIterator<Uint8Array>,
- *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
- *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
- *   importSnapshotRecord: (key: string, value: string) => void,
- *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
- *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
- *   repairSnapshotRecord: (key: string, value: string) => void,
+ *   exportSnapshot: (name: string) => AsyncIterableIterator<Uint8Array>;
+ *   getExportRecords: (
+ *     includeHistorical: boolean,
+ *   ) => IterableIterator<readonly [key: string, value: string]>;
+ *   getArtifactNames: (
+ *     artifactMode: ArtifactMode,
+ *   ) => AsyncIterableIterator<string>;
+ *   importSnapshotRecord: (key: string, value: string) => void;
+ *   populateSnapshot: (
+ *     name: string,
+ *     makeChunkIterator: () => AnyIterableIterator<Uint8Array>,
+ *     options: { artifactMode: ArtifactMode },
+ *   ) => Promise<void>;
+ *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void;
+ *   repairSnapshotRecord: (key: string, value: string) => void;
  * }} SnapStoreInternal
  *
  * @typedef {{
- *   hasHash: (vatID: string, hash: string) => boolean,
- *   dumpSnapshots: (includeHistorical?: boolean) => {},
- *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
+ *   hasHash: (vatID: string, hash: string) => boolean;
+ *   dumpSnapshots: (includeHistorical?: boolean) => {};
+ *   deleteSnapshotByHash: (vatID: string, hash: string) => void;
  * }} SnapStoreDebug
- *
  */
 
 const finished = promisify(finishedCallback);
 
 /**
- * @param {*} db
+ * @param {any} db
  * @param {() => void} ensureTxn
  * @param {{
- *   measureSeconds: ReturnType<typeof import('@agoric/internal').makeMeasureSeconds>,
+ *   measureSeconds: ReturnType<
+ *     typeof import('@agoric/internal').makeMeasureSeconds
+ *   >;
  * }} io
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
@@ -282,7 +294,7 @@ export function makeSnapStore(
    * another store.
    *
    * Snapshot artifact names should be strings of the form:
-   *   `snapshot.${vatID}.${startPos}`
+   * `snapshot.${vatID}.${startPos}`
    *
    * @param {string} name
    * @returns {AsyncIterableIterator<Uint8Array>}
@@ -359,7 +371,8 @@ export function makeSnapStore(
   sqlGetSnapshotList.pluck(true);
 
   /**
-   * Delete all snapshots for a given vat (for use when, e.g., a vat is terminated)
+   * Delete all snapshots for a given vat (for use when, e.g., a vat is
+   * terminated)
    *
    * @param {string} vatID
    */
@@ -385,7 +398,6 @@ export function makeSnapStore(
    * aside from the snapshot blob itself.
    *
    * @param {string} vatID
-   *
    * @returns {SnapshotInfo}
    */
   function getSnapshotInfo(vatID) {
@@ -407,7 +419,6 @@ export function makeSnapStore(
    *
    * @param {string} vatID
    * @param {string} hash
-   *
    * @returns {boolean}
    */
   function hasHash(vatID, hash) {
@@ -450,20 +461,19 @@ export function makeSnapStore(
   /**
    * Obtain artifact metadata records for spanshots contained in this store.
    *
-   * @param {boolean} includeHistorical  If true, include all metadata that is
+   * @param {boolean} includeHistorical If true, include all metadata that is
    *   present in the store regardless of its currency; if false, only include
    *   the metadata that is part of the swingset's active operational state.
    *
-   * Note: in the currently anticipated operational mode, this flag should
-   * always be set to `true`, because *all* snapshot metadata is, for now,
-   * considered part of the consensus set.  This metadata is being retained for
-   * diagnostic purposes and as a hedge against possible future need.  While
-   * such a need seems highly unlikely, the future is uncertain and it will be
-   * easier to purge this data later than to recover it if it is lost.  However,
-   * the flag itself is present in case future operational policy allows for
-   * pruning historical metadata, for example after further analysis and
-   * practical experience tells us that it will not be needed.
-   *
+   *   Note: in the currently anticipated operational mode, this flag should
+   *   always be set to `true`, because _all_ snapshot metadata is, for now,
+   *   considered part of the consensus set. This metadata is being retained for
+   *   diagnostic purposes and as a hedge against possible future need. While
+   *   such a need seems highly unlikely, the future is uncertain and it will be
+   *   easier to purge this data later than to recover it if it is lost.
+   *   However, the flag itself is present in case future operational policy
+   *   allows for pruning historical metadata, for example after further
+   *   analysis and practical experience tells us that it will not be needed.
    * @yields {readonly [key: string, value: string]}
    * @returns {IterableIterator<readonly [key: string, value: string]>}
    */
@@ -562,8 +572,9 @@ export function makeSnapStore(
   `);
 
   /**
-   * @param {string} name  Artifact name of the snapshot
-   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
+   * @param {string} name Artifact name of the snapshot
+   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator get an
+   *   iterator of snapshot byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
    * @returns {Promise<void>}
@@ -635,7 +646,6 @@ export function makeSnapStore(
 
   /**
    * debug function to list all snapshots
-   *
    */
   function* listAllSnapshots() {
     yield* sqlListAllSnapshots.iterate();

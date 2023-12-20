@@ -53,11 +53,10 @@ const ContractGovernorKitI = {
 };
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- *   timer: import('@agoric/time').TimerService,
- *   zoe: ERef<ZoeService>,
+ *   timer: import('@agoric/time').TimerService;
+ *   zoe: ERef<ZoeService>;
  * }} powers
  */
 export const prepareContractGovernorKit = (baggage, powers) => {
@@ -171,7 +170,11 @@ export const prepareContractGovernorKit = (baggage, powers) => {
          */
         replaceElectorate(poserInvitation) {
           const { creatorFacet } = this.state;
-          /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
+          /** @type {Promise<
+  import('./contractGovernance/typedParamManager.js').TypedParamManager<{
+    Electorate: 'invitation';
+  }>
+>} */
           // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
           // @ts-ignore cast
           const paramMgr = E(E(creatorFacet).getParamMgrRetriever()).get({

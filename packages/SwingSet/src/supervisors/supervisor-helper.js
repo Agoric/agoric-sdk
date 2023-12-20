@@ -10,16 +10,17 @@ import '../types-ambient.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
- * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
- * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
+ * @typedef {(
+ *   delivery: VatDeliveryObject,
+ * ) => VatDeliveryResult | Promise<VatDeliveryResult>} VatDispatcherSyncAsync
+ * @typedef {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} VatDispatcher
  */
 
 /**
- * Given the liveslots 'dispatch' function, return a version that never
- * rejects. It will always return a VatDeliveryResult, even if liveslots
- * throws or rejects. All supervisors should wrap the liveslots `dispatch`
- * function with this one, and call it in response to messages from the
- * manager process.
+ * Given the liveslots 'dispatch' function, return a version that never rejects.
+ * It will always return a VatDeliveryResult, even if liveslots throws or
+ * rejects. All supervisors should wrap the liveslots `dispatch` function with
+ * this one, and call it in response to messages from the manager process.
  *
  * @param {VatDispatcherSyncAsync} dispatch
  * @returns {VatDispatcher}
@@ -59,13 +60,13 @@ export { makeSupervisorDispatch };
  * VatSyscallObject and (synchronously) returns a VatSyscallResult.
  *
  * @param {VatSyscallHandler} syscallToManager
- * @typedef { unknown } TheSyscallObjectWithMethodsThatLiveslotsWants
+ * @typedef {unknown} TheSyscallObjectWithMethodsThatLiveslotsWants
  * @returns {TheSyscallObjectWithMethodsThatLiveslotsWants}
  */
 function makeSupervisorSyscall(syscallToManager) {
   function doSyscall(fields) {
     insistVatSyscallObject(fields);
-    /** @type { VatSyscallObject } */
+    /** @type {VatSyscallObject} */
     const vso = harden(fields);
     let r;
     try {
@@ -94,7 +95,12 @@ function makeSupervisorSyscall(syscallToManager) {
   // this will be given to liveslots, it should have distinct methods that
   // return immediate results or throw errors
   const syscallForVat = {
-    /** @type {(target: string, method: string, args: SwingSetCapData, result?: string) => unknown } */
+    /** @type {(
+  target: string,
+  method: string,
+  args: SwingSetCapData,
+  result?: string,
+) => unknown} */
     send: (target, methargs, result) =>
       doSyscall(['send', target, { methargs, result }]),
     subscribe: vpid => doSyscall(['subscribe', vpid]),
@@ -130,8 +136,8 @@ export { makeSupervisorSyscall };
 /**
  * Create a vat console from a log stream maker.
  *
- * TODO: consider other methods per SES VirtualConsole.
- * See https://github.com/Agoric/agoric-sdk/issues/2146
+ * TODO: consider other methods per SES VirtualConsole. See
+ * https://github.com/Agoric/agoric-sdk/issues/2146
  *
  * @param {(level: string) => (...args: any[]) => void} makeLog
  */

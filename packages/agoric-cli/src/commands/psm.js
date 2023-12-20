@@ -10,10 +10,10 @@ import { outputExecuteOfferAction } from '../lib/wallet.js';
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
 /**
- * Integration testing.
- * These are against a live network so don't run in CI.
+ * Integration testing. These are against a live network so don't run in CI.
  *
- * AGORIC_NET=ollinet bin/agops psm swap --wantMinted 6 --feePct 0.01 --offerId 123  | jq '.body |fromjson | .offer.id' # should be 123
+ * AGORIC_NET=ollinet bin/agops psm swap --wantMinted 6 --feePct 0.01 --offerId
+ * 123 | jq '.body |fromjson | .offer.id' # should be 123
  */
 
 /**
@@ -73,7 +73,6 @@ export const makePsmCommand = logger => {
     };
 
     /**
-     *
      * @param {[Minted: string, Anchor: string]} pair
      */
     const getGovernanceState = async ([Minted, Anchor]) => {

@@ -10,7 +10,7 @@ import {
   invertPromiseSettlement,
 } from './iterable-testing-tools.js';
 
-/** @param {{conclusionMethod: 'finish' | 'fail', conclusionValue: any}} config */
+/** @param {{ conclusionMethod: 'finish' | 'fail'; conclusionValue: any }} config */
 const makeBatchPublishKit = ({ conclusionMethod, conclusionValue }) => {
   const { publisher, subscriber } = makePublishKit();
 

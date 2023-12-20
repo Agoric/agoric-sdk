@@ -12,9 +12,9 @@
 /**
  * Create a purse for a new, local issuer. Used only for ZCFMint issuers.
  *
- * Note: in the case of the feeMint, it may have been registered
- * before with `feeMintAccess`. In that case, we do not create a new
- * purse, but reuse the existing purse.
+ * Note: in the case of the feeMint, it may have been registered before with
+ * `feeMintAccess`. In that case, we do not create a new purse, but reuse the
+ * existing purse.
  *
  * @callback ProvideLocalPurse
  * @param {Issuer} issuer
@@ -23,10 +23,10 @@
  */
 
 /**
- * Deposits payments or promises for payments according to the
- * `give` property of the proposal. Using the proposal, creates an
- * initial allocation including the amount deposited for `give`
- * keywords and an empty amount for `want` keywords.
+ * Deposits payments or promises for payments according to the `give` property
+ * of the proposal. Using the proposal, creates an initial allocation including
+ * the amount deposited for `give` keywords and an empty amount for `want`
+ * keywords.
  *
  * @callback DepositPayments
  * @param {ProposalRecord} proposal
@@ -56,16 +56,17 @@
 /**
  * @callback UnwrapInstallation
  *
- * Assert the installation is known, and return the bundle/bundlecap and
- * installation
- *
+ *   Assert the installation is known, and return the bundle/bundlecap and
+ *   installation
  * @param {ERef<Installation>} installationP
  * @returns {ERef<{
- *   bundle?: SourceBundle,
- *   bundleCap?: BundleCap,
- *   bundleID?: BundleID,
- *   installation:Installation
- * }>} XXX not really an ERef; the implemention is sync and the API is a promise because of callWhen
+ *   bundle?: SourceBundle;
+ *   bundleCap?: BundleCap;
+ *   bundleID?: BundleID;
+ *   installation: Installation;
+ * }>}
+ *   XXX not really an ERef; the implemention is sync and the API is a promise
+ *   because of callWhen
  */
 // TODO remove or automate ERef https://github.com/Agoric/agoric-sdk/issues/7110
 
@@ -89,14 +90,14 @@
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {() => Issuer} getInvitationIssuer
  * @property {() => object} getRoot of CreateVatResults
- * @property {() => import('@agoric/swingset-vat').VatAdminFacet} getAdminNode of CreateVatResults
+ * @property {() => import('@agoric/swingset-vat').VatAdminFacet} getAdminNode
+ *   of CreateVatResults
  */
 
 /**
  * Create a storage manager for a particular contract instance. The
- * ZoeInstanceStorageManager encapsulates access to the
- * issuerStorage and escrowStorage from Zoe, and stores the
- * instance-specific terms
+ * ZoeInstanceStorageManager encapsulates access to the issuerStorage and
+ * escrowStorage from Zoe, and stores the instance-specific terms
  *
  * @callback MakeZoeInstanceStorageManager
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
@@ -143,8 +144,7 @@
  */
 
 /**
- * Use VatAdminSvc to create a new vat, but only with the code of the
- * ZCF bundle
+ * Use VatAdminSvc to create a new vat, but only with the code of the ZCF bundle
  *
  * @callback CreateZCFVat
  * @param {BundleCap} contractBundleCap

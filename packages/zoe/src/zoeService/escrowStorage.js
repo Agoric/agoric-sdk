@@ -11,8 +11,8 @@ import { cleanKeywords } from '../cleanProposal.js';
 import { arrayToObj } from '../objArrayConversion.js';
 
 /**
- * Store the pool purses whose purpose is to escrow assets, with one
- * purse per brand.
+ * Store the pool purses whose purpose is to escrow assets, with one purse per
+ * brand.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -58,8 +58,7 @@ export const provideEscrowStorage = baggage => {
     );
 
   /**
-   *
-   *  Only used internally. Actually deposit a payment or promise for payment.
+   * Only used internally. Actually deposit a payment or promise for payment.
    *
    * @param {ERef<Payment>} paymentP
    * @param {Amount} amount

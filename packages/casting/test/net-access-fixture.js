@@ -2,6 +2,7 @@ const { stringify: jq } = JSON;
 
 /**
  * @file to regenerate
+ *
  *   1. set RECORDING=true in test-interpose-net-access.js
  *   2. run: yarn test test/test-test-interpose-net-access.js --update-snapshots
  *   3. for each map in test-test-interpose-net-access.js.md, copy it and
@@ -111,8 +112,7 @@ export const web2 = new Map([
 ]);
 
 /**
- * @param {string} str
- * ack: https://stackoverflow.com/a/7616484
+ * @param {string} str ack: https://stackoverflow.com/a/7616484
  */
 const hashCode = str => {
   let hash = 0;
@@ -132,11 +132,11 @@ const hashCode = str => {
 /**
  * Normalize JSON RPC request ID
  *
- * tendermint-rpc generates ids using ambient access to Math.random()
- * So we normalize them to a hash of the rest of the JSON.
+ * tendermint-rpc generates ids using ambient access to Math.random() So we
+ * normalize them to a hash of the rest of the JSON.
  *
- * Earlier, we tried a sequence number, but it was non-deterministic
- * with multiple interleaved requests.
+ * Earlier, we tried a sequence number, but it was non-deterministic with
+ * multiple interleaved requests.
  *
  * @param {string} argsKey
  */
@@ -152,8 +152,8 @@ const normalizeID = argsKey => {
 /**
  * Wrap `fetch` to capture JSON RPC IO traffic.
  *
- * @param {typeof window.fetch} fetch
- * returns wraped fetch along with a .web map for use with {@link replayIO}
+ * @param {typeof window.fetch} fetch returns wraped fetch along with a .web
+ *   map for use with {@link replayIO}
  */
 export const captureIO = fetch => {
   const web = new Map();
@@ -176,8 +176,8 @@ export const captureIO = fetch => {
 /**
  * Replay captured JSON RPC IO.
  *
- * @param {Map<string, any>} web map from
- *   JSON-stringified fetch args to fetched JSON data.
+ * @param {Map<string, any>} web map from JSON-stringified fetch args to fetched
+ *   JSON data.
  */
 export const replayIO = web => {
   /** @type {typeof window.fetch} */

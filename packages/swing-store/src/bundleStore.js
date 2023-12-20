@@ -9,37 +9,52 @@ import { Fail, q } from '@agoric/assert';
 import { createSHA256 } from './hasher.js';
 
 /**
- * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
- * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
- * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
+ * @typedef {{
+ *   moduleFormat: 'getExport';
+ *   source: string;
+ *   sourceMap?: string;
+ * }} GetExportBundle
+ * @typedef {{
+ *   moduleFormat: 'nestedEvaluate';
+ *   source: string;
+ *   sourceMap?: string;
+ * }} NestedEvaluateBundle
+ * @typedef {{
+ *   moduleFormat: 'endoZipBase64';
+ *   endoZipBase64: string;
+ *   endoZipBase64Sha512: string;
+ * }} EndoZipBase64Bundle
+ * @typedef {EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle} Bundle
  */
 /**
- * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
+ * @typedef {import('./exporter').SwingStoreExporter} SwingStoreExporter
+ * @typedef {import('./internal.js').ArtifactMode} ArtifactMode
  * @typedef {{
  *   addBundle: (bundleID: string, bundle: Bundle) => void;
- *   hasBundle: (bundleID: string) => boolean
+ *   hasBundle: (bundleID: string) => boolean;
  *   getBundle: (bundleID: string) => Bundle;
  *   deleteBundle: (bundleID: string) => void;
  * }} BundleStore
  *
  * @typedef {{
- *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
- *   repairBundleRecord: (key: string, value: string) => void,
- *   importBundleRecord: (key: string, value: string) => void,
- *   importBundle: (name: string, dataProvider: () => Promise<Buffer>) => Promise<void>,
- *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
- *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
- *   getArtifactNames: () => AsyncIterableIterator<string>,
- *   getBundleIDs: () => IterableIterator<string>,
+ *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>;
+ *   repairBundleRecord: (key: string, value: string) => void;
+ *   importBundleRecord: (key: string, value: string) => void;
+ *   importBundle: (
+ *     name: string,
+ *     dataProvider: () => Promise<Buffer>,
+ *   ) => Promise<void>;
+ *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void;
+ *   getExportRecords: () => IterableIterator<
+ *     readonly [key: string, value: string]
+ *   >;
+ *   getArtifactNames: () => AsyncIterableIterator<string>;
+ *   getBundleIDs: () => IterableIterator<string>;
  * }} BundleStoreInternal
  *
  * @typedef {{
- *   dumpBundles: () => {},
+ *   dumpBundles: () => {};
  * }} BundleStoreDebug
- *
  */
 
 function bundleIDFromName(name) {
@@ -55,7 +70,7 @@ function bundleIDFromName(name) {
 }
 
 /**
- * @param {*} db
+ * @param {any} db
  * @param {() => void} ensureTxn
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @returns {BundleStore & BundleStoreInternal & BundleStoreDebug}
@@ -136,10 +151,9 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   }
 
   /**
-   * Store a complete bundle in a single operation, used by runtime
-   * (i.e. not an import). We rely upon the caller to provide a
-   * correct bundle (e.g. no unexpected properties), but we still
-   * check the ID against the contents.
+   * Store a complete bundle in a single operation, used by runtime (i.e. not an
+   * import). We rely upon the caller to provide a correct bundle (e.g. no
+   * unexpected properties), but we still check the ID against the contents.
    *
    * @param {string} bundleID
    * @param {Bundle} bundle
@@ -252,11 +266,9 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * Read a bundle and return it as a stream of data suitable for export to
    * another store.
    *
-   * Bundle artifact names should be strings of the form:
-   *   `bundle.${bundleID}`
+   * Bundle artifact names should be strings of the form: `bundle.${bundleID}`
    *
    * @param {string} name
-   *
    * @yields {Uint8Array}
    * @returns {AsyncIterableIterator<Uint8Array>}
    */
@@ -300,11 +312,11 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   }
 
   /**
-   * Call addBundleRecord() first, then this importBundle() will
-   * populate the record.
+   * Call addBundleRecord() first, then this importBundle() will populate the
+   * record.
    *
-   * @param {string} name  Artifact name, `bundle.${bundleID}`
-   * @param {() => Promise<Buffer>} dataProvider  Function to get bundle bytes
+   * @param {string} name Artifact name, `bundle.${bundleID}`
+   * @param {() => Promise<Buffer>} dataProvider Function to get bundle bytes
    * @returns {Promise<void>}
    */
   async function importBundle(name, dataProvider) {

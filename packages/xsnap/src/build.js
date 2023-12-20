@@ -11,7 +11,7 @@ const asset = path => new URL(path, import.meta.url).pathname;
 
 const ModdableSDK = {
   MODDABLE: asset('../moddable'),
-  /** @type { Record<string, { path: string, make?: string }>} */
+  /** @type {Record<string, { path: string; make?: string }>} */
   platforms: {
     Linux: { path: 'lin' },
     Darwin: { path: 'mac' },
@@ -25,7 +25,7 @@ const ModdableSDK = {
  *
  * @param {string} command
  * @param {{
- *   spawn: typeof import('child_process').spawn,
+ *   spawn: typeof import('child_process').spawn;
  * }} io
  */
 function makeCLI(command, { spawn }) {
@@ -141,17 +141,17 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 /**
  * @param {string[]} args
  * @param {{
- *   env: Record<string, string | undefined>,
- *   stdout: typeof process.stdout,
- *   spawn: typeof import('child_process').spawn,
+ *   env: Record<string, string | undefined>;
+ *   stdout: typeof process.stdout;
+ *   spawn: typeof import('child_process').spawn;
  *   fs: {
- *     existsSync: typeof import('fs').existsSync,
- *     rmdirSync: typeof import('fs').rmdirSync,
- *     readFile: typeof import('fs').promises.readFile,
- *   },
+ *     existsSync: typeof import('fs').existsSync;
+ *     rmdirSync: typeof import('fs').rmdirSync;
+ *     readFile: typeof import('fs').promises.readFile;
+ *   };
  *   os: {
- *     type: typeof import('os').type,
- *   }
+ *     type: typeof import('os').type;
+ *   };
  * }} io
  */
 async function main(args, { env, stdout, spawn, fs, os }) {

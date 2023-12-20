@@ -12,9 +12,13 @@ import { Fail } from '@agoric/assert';
  */
 
 /**
- * @typedef {{[idx: number]: string | undefined, head?: string, tail?: string}} QueueStorageDump
+ * @typedef {{
+ *   [idx: number]: string | undefined;
+ *   head?: string;
+ *   tail?: string;
+ * }} QueueStorageDump
  * @param {QueueStorageDump} [init]
- * @returns {{storage: QueueStorage; dump: () => QueueStorageDump}}
+ * @returns {{ storage: QueueStorage; dump: () => QueueStorageDump }}
  */
 export const makeQueueStorageMock = init => {
   const storage = new Map(init && Object.entries(init));
@@ -40,17 +44,18 @@ export const makeQueueStorageMock = init => {
 /**
  * Create a queue backed by some sort of scoped storage.
  *
- * The queue writes the following bare keys, and expect any prefixing/scoping
- * to be handled by the storage:
+ * The queue writes the following bare keys, and expect any prefixing/scoping to
+ * be handled by the storage:
+ *
  * - `head`: the index of the first entry of the queue.
- * - `tail`: the index *past* the last entry in the queue.
+ * - `tail`: the index _past_ the last entry in the queue.
  * - `<index>`: the contents of the queue at the given index.
  *
  * For the cosmos inbound queues (`actionQueue` or `highPriorityQueue`), the
  * golang side will push into the queue, updating the index stored at key
- * `${queuePath}.tail` and setting data for key `${queuePath}.${index}`.
- * The JS side will shift the queue, updating the index at key
- * `${queuePath}.head` and reading and deleting `${queuePath}.${index}`.
+ * `${queuePath}.tail` and setting data for key `${queuePath}.${index}`. The JS
+ * side will shift the queue, updating the index at key `${queuePath}.head` and
+ * reading and deleting `${queuePath}.${index}`.
  *
  * Parallel access is not supported, only a single outstanding operation at a
  * time.

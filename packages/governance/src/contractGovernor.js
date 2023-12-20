@@ -47,8 +47,8 @@ harden(validateQuestionDetails);
 
 /**
  * Validate that the questions counted by the voteCounter correspond to a
- * parameter change question that the electorate hosts, and that the
- * voteCounter and other details are consistent.
+ * parameter change question that the electorate hosts, and that the voteCounter
+ * and other details are consistent.
  *
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} electorate
@@ -83,11 +83,8 @@ harden(validateQuestionFromCounter);
  * contract's terms as a "governed" record. If the contract expects privateArgs,
  * those will be provided in this contract's `privateArgs` under 'governed:'.
  *
- * terms = {
- *    timer,
- *    governedContractInstallation,
- *    governed: { issuerKeywordRecord, terms },
- * };
+ * terms = { timer, governedContractInstallation, governed: {
+ * issuerKeywordRecord, terms }, };
  *
  * The electorate that will vote on governance questions is itself a governed
  * parameter. Its value is available from the publicFacet using
@@ -109,47 +106,45 @@ harden(validateQuestionFromCounter);
  * questions that will invoke pre-defined APIs in the contract.
  *
  * This facet will usually be closely held. The creatorFacet can also be used to
- * retrieve the governed instance, publicFacet, and its creatorFacet with
- * the voteOn*() methods omitted.
+ * retrieve the governed instance, publicFacet, and its creatorFacet with the
+ * voteOn*() methods omitted.
  *
  * The governed contract's terms include the instance of this (governing)
- * contract (as electionManager) so clients will be able to look up the state
- * of the governed parameters.
+ * contract (as electionManager) so clients will be able to look up the state of
+ * the governed parameters.
  *
- * template {{}} PF Public facet of governed
- * template {ContractPowerfulCreatorFacet} CF Creator facet of governed
- * type {ContractStartFn<
- * GovernorPublic,
- * GovernorCreatorFacet<PF,CF>,
- * {
- *   timer: import('@agoric/time').TimerService,
- *   governedContractInstallation: Installation<CF>,
- *   governed: {
- *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}},
- *   }
- * }>}
+ * template {{}} PF Public facet of governed template
+ * {ContractPowerfulCreatorFacet} CF Creator facet of governed type
+ * {ContractStartFn< GovernorPublic, GovernorCreatorFacet<PF,CF>, { timer:
+ * import('@agoric/time').TimerService, governedContractInstallation:
+ * Installation<CF>, governed: { issuerKeywordRecord: IssuerKeywordRecord,
+ * terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}}, } }>}
  */
 
 /**
- * Start an instance of a governor, governing a "governed" contract specified in terms.
+ * Start an instance of a governor, governing a "governed" contract specified in
+ * terms.
  *
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time').TimerService,
- *   governedContractInstallation: Installation<SF>,
+ *   timer: import('@agoric/time').TimerService;
+ *   governedContractInstallation: Installation<SF>;
  *   governed: {
- *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
- *     label?: string,
- *   }
+ *     issuerKeywordRecord: IssuerKeywordRecord;
+ *     terms: {
+ *       governedParams: {
+ *         [CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam;
+ *       };
+ *     };
+ *     label?: string;
+ *   };
  * }>} zcf
  * @param {{
- *   governed: Record<string, unknown>
+ *   governed: Record<string, unknown>;
  * }} privateArgs
  * @returns {Promise<{
- *   creatorFacet: GovernorCreatorFacet<SF>,
- *   publicFacet: GovernorPublic,
+ *   creatorFacet: GovernorCreatorFacet<SF>;
+ *   publicFacet: GovernorPublic;
  * }>}
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

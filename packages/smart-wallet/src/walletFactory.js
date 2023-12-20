@@ -1,7 +1,7 @@
 /**
  * @file Wallet Factory
  *
- * Contract to make smart wallets.
+ *   Contract to make smart wallets.
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
@@ -56,8 +56,8 @@ export const publishDepositFacet = async (
  * Make a registry for use by the wallet instances.
  *
  * This doesn't need to persist durably because the `assetPublisher` has a
- * "pinned" topic and call to getAssetSubscription gets a fresh stream of all the
- * assets that it knows of.
+ * "pinned" topic and call to getAssetSubscription gets a fresh stream of all
+ * the assets that it knows of.
  *
  * @param {AssetPublisher} assetPublisher
  */
@@ -65,12 +65,13 @@ export const makeAssetRegistry = assetPublisher => {
   trace('makeAssetRegistry', assetPublisher);
   /**
    * @typedef {{
-   *   brand: Brand,
-   *   displayInfo: DisplayInfo,
-   *   issuer: Issuer,
-   *   petname: import('./types').Petname
+   *   brand: Brand;
+   *   displayInfo: DisplayInfo;
+   *   issuer: Issuer;
+   *   petname: import('./types').Petname;
    * }} BrandDescriptor
-   * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
+   *   For use by clients to describe brands to users. Includes `displayInfo` to
+   *   save a remote call.
    */
   /** @type {MapStore<Brand, BrandDescriptor>} */
   const brandDescriptors = makeScalarMapStore();
@@ -110,22 +111,24 @@ export const makeAssetRegistry = assetPublisher => {
 
 /**
  * @typedef {{
- *   agoricNames: ERef<NameHub>,
- *   board: ERef<import('@agoric/vats').Board>,
- *   assetPublisher: AssetPublisher,
+ *   agoricNames: ERef<NameHub>;
+ *   board: ERef<import('@agoric/vats').Board>;
+ *   assetPublisher: AssetPublisher;
  * }} SmartWalletContractTerms
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
- *
  * @typedef {{
  *   getAssetSubscription: () => ERef<
- *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>
+ *   >;
  * }} AssetPublisher
  *
  * @typedef {boolean} isRevive
  * @typedef {{
- *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
- *   ackWallet: (address: string) => isRevive,
+ *   reviveWallet: (
+ *     address: string,
+ *   ) => Promise<import('./smartWallet').SmartWallet>;
+ *   ackWallet: (address: string) => isRevive;
  * }} WalletReviver
  */
 
@@ -135,9 +138,9 @@ export const makeAssetRegistry = assetPublisher => {
 /**
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
- *   storageNode: ERef<StorageNode>,
- *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
- *   walletReviver?: ERef<WalletReviver>,
+ *   storageNode: ERef<StorageNode>;
+ *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>;
+ *   walletReviver?: ERef<WalletReviver>;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -161,17 +164,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       /**
        * Designed to be called by the bridgeManager vat.
        *
-       * If this errors before calling handleBridgeAction(), the failure will not be observable. The
-       * promise does reject, but as of now bridge manager drops instead of handling it. Eventually
-       * we'll make the bridge able to give feedback about the requesting transaction. Meanwhile we
-       * could write the error to chainStorage but we don't have a guarantee of the wallet owner to
-       * associate it with. (We could have a shared `lastError` node but it would be so noisy as to
-       * not provide much info to the end user.)
+       * If this errors before calling handleBridgeAction(), the failure will
+       * not be observable. The promise does reject, but as of now bridge
+       * manager drops instead of handling it. Eventually we'll make the bridge
+       * able to give feedback about the requesting transaction. Meanwhile we
+       * could write the error to chainStorage but we don't have a guarantee of
+       * the wallet owner to associate it with. (We could have a shared
+       * `lastError` node but it would be so noisy as to not provide much info
+       * to the end user.)
        *
-       * Once the owner is known, this calls handleBridgeAction which ensures that all errors
-       * are published in the owner wallet's vstorage path.
+       * Once the owner is known, this calls handleBridgeAction which ensures
+       * that all errors are published in the owner wallet's vstorage path.
        *
-       * @param {import('./types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
+       * @param {import('./types.js').WalletBridgeMsg} obj validated by
+       *   shape.WalletBridgeMsg
        * @returns {Promise<void>}
        */
       fromBridge: async obj => {
@@ -232,6 +238,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   /**
    * Holders of this object:
+   *
    * - vat (transitively from holding the wallet factory)
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
@@ -252,14 +259,18 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
        * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
-       *   along with a flag to distinguish between looking up an existing wallet
-       *   and creating a new one.
+       * @returns {Promise<
+       *   [wallet: import('./smartWallet').SmartWallet, isNew: boolean]
+       * >}
+       *   wallet along with a flag to distinguish between looking up an existing
+       *   wallet and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
-        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        /** @type {(
+  address: string,
+) => Promise<import('./smartWallet').SmartWallet>} */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

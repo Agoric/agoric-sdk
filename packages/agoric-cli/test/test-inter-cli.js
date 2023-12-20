@@ -16,13 +16,13 @@ const { entries } = Object;
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
 
 /**
- * @param {{ boardId: string, iface: string }} detail
+ * @param {{ boardId: string; iface: string }} detail
  * @returns {BoardRemote}
  */
 const makeBoardRemote = ({ boardId, iface }) =>
   Far(iface, { getBoardId: () => boardId });
 
-/** @type {Record<string, (Brand<'nat'> & BoardRemote)>} */
+/** @type {Record<string, Brand<'nat'> & BoardRemote>} */
 // @ts-expect-error mock
 const topBrands = harden({
   ATOM: makeBoardRemote({ boardId: 'board03446', iface: 'Brand' }),
@@ -37,7 +37,10 @@ const agoricNames = harden({
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
   },
 
-  /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
+  /** @type {Record<
+  string,
+  import('agoric/src/lib/format.js').AssetDescriptor
+>} */
   vbankAsset: {
     ubld: {
       denom: 'ubld',
@@ -188,8 +191,9 @@ const makeProcess = (t, keyring, out) => {
 };
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus & {
+ *   offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec;
+ * }}
  */
 const offerStatus2 = harden({
   id: 'bid-1680241587424',
@@ -253,8 +257,9 @@ test('amount parsing', t => {
 test.todo('want as max collateral wanted');
 
 /**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus & {
+ *   offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec;
+ * }}
  */
 const offerStatus1 = harden({
   error: 'Error: "nameKey" not found: (a string)',

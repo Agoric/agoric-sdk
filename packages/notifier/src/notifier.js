@@ -20,16 +20,15 @@ export const makeNotifier = sharableInternalsP => {
       E(sharableInternalsP).getUpdateSince(updateCount),
 
     /**
-     * Use this to distribute a Notifier efficiently over the network,
-     * by obtaining this from the Notifier to be replicated, and applying
-     * `makeNotifier` to it at the new site to get an equivalent local
-     * Notifier at that site.
+     * Use this to distribute a Notifier efficiently over the network, by
+     * obtaining this from the Notifier to be replicated, and applying
+     * `makeNotifier` to it at the new site to get an equivalent local Notifier
+     * at that site.
      */
     getSharableNotifierInternals: async () => sharableInternalsP,
     /**
-     * @deprecated
-     * Used only by `makeCastingSpecFromRef`.  Instead that function should use
-     * the `StoredFacet` API.
+     * @deprecated Used only by `makeCastingSpecFromRef`. Instead that function
+     *   should use the `StoredFacet` API.
      */
     getStoreKey: () => harden({ notifier }),
   });
@@ -63,17 +62,18 @@ harden(makeNotifierFromSubscriber);
  * Produces a pair of objects, which allow a service to produce a stream of
  * update promises.
  *
- * The initial state argument has to be truly optional even though it can
- * be any first class value including `undefined`. We need to distinguish the
- * presence vs the absence of it, which we cannot do with the optional argument
- * syntax. Rather we use the arity of the `initialStateArr` array.
+ * The initial state argument has to be truly optional even though it can be any
+ * first class value including `undefined`. We need to distinguish the presence
+ * vs the absence of it, which we cannot do with the optional argument syntax.
+ * Rather we use the arity of the `initialStateArr` array.
  *
  * If no initial state is provided to `makeNotifierKit`, then it starts without
  * an initial state. Its initial state will instead be the state of the first
  * update.
  *
  * @template T
- * @param {[] | [T]} initialStateArr the first state to be returned (typed as rest array to permit `undefined`)
+ * @param {[] | [T]} initialStateArr the first state to be returned (typed as
+ *   rest array to permit `undefined`)
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
@@ -102,10 +102,9 @@ export const makeNotifierKit = (...initialStateArr) => {
  * Adaptor from async iterable to notifier.
  *
  * @deprecated The resulting notifier is lossless, which is not desirable.
- * Prefer makeNotifierFromSubscriber, and refer to
- * https://github.com/Agoric/agoric-sdk/issues/5413 and
- * https://github.com/Agoric/agoric-sdk/pull/5695 for context.
- *
+ *   Prefer makeNotifierFromSubscriber, and refer to
+ *   https://github.com/Agoric/agoric-sdk/issues/5413 and
+ *   https://github.com/Agoric/agoric-sdk/pull/5695 for context.
  * @template T
  * @param {ERef<AsyncIterable<T>>} asyncIterableP
  * @returns {Notifier<T>}
@@ -113,10 +112,10 @@ export const makeNotifierKit = (...initialStateArr) => {
 export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const iteratorP = E(asyncIterableP)[Symbol.asyncIterator]();
 
-  /** @type {Promise<UpdateRecord<T>>|undefined} */
+  /** @type {Promise<UpdateRecord<T>> | undefined} */
   let optNextPromise;
   let currentUpdateCount = 0n;
-  /** @type {ERef<UpdateRecord<T>>|undefined} */
+  /** @type {ERef<UpdateRecord<T>> | undefined} */
   let currentResponse;
   let final = false;
 

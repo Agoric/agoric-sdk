@@ -25,12 +25,12 @@ const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 /**
  * @param {import('anylogger').Logger} _logger
  * @param {{
- *   env?: Record<string, string|undefined>,
- *   fetch?: typeof window.fetch,
- *   stdout?: Pick<import('stream').Writable, 'write'>,
- *   stderr?: Pick<import('stream').Writable, 'write'>,
- *   execFileSync?: typeof execFileSyncAmbient,
- *   delay?: (ms: number) => Promise<void>,
+ *   env?: Record<string, string | undefined>;
+ *   fetch?: typeof window.fetch;
+ *   stdout?: Pick<import('stream').Writable, 'write'>;
+ *   stderr?: Pick<import('stream').Writable, 'write'>;
+ *   execFileSync?: typeof execFileSyncAmbient;
+ *   delay?: (ms: number) => Promise<void>;
  * }} [io]
  */
 export const makeGovCommand = (_logger, io = {}) => {
@@ -62,7 +62,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       keyringBackend: defaultKeyring,
     });
 
-  /** @type {(info: unknown, indent?: unknown) => boolean } */
+  /** @type {(info: unknown, indent?: unknown) => boolean} */
   const show = (info, indent) =>
     stdout.write(`${JSON.stringify(info, null, indent ? 2 : undefined)}\n`);
 
@@ -75,14 +75,19 @@ export const makeGovCommand = (_logger, io = {}) => {
   };
 
   /**
-   * Make an offer from agoricNames, wallet status; sign and broadcast it,
-   * given a sendFrom address; else print it.
+   * Make an offer from agoricNames, wallet status; sign and broadcast it, given
+   * a sendFrom address; else print it.
    *
    * @param {{
-   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord | undefined) => OfferSpec,
-   *   sendFrom?: string | undefined,
-   *   keyringBackend: string,
-   *   instanceName?: string,
+   *   toOffer: (
+   *     agoricNames: any,
+   *     current:
+   *       | import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+   *       | undefined,
+   *   ) => OfferSpec;
+   *   sendFrom?: string | undefined;
+   *   keyringBackend: string;
+   *   instanceName?: string;
    * }} detail
    * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
    */

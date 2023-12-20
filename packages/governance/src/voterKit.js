@@ -22,7 +22,12 @@ const InvitationMakerI = M.interface('invitationMaker', {
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {object} powers
  * @param {ZCF} powers.zcf
- * @param {(questionHandle: Handle<'Question'>, voterHandle: Handle<'Voter'>, chosenPositions: Position[], weight: bigint) => ERef<CompletedBallet>} powers.submitVote
+ * @param {(
+ *   questionHandle: Handle<'Question'>,
+ *   voterHandle: Handle<'Voter'>,
+ *   chosenPositions: Position[],
+ *   weight: bigint,
+ * ) => ERef<CompletedBallet>} powers.submitVote
  */
 export const prepareVoterKit = (baggage, { submitVote, zcf }) => {
   const makeVoterHandle = defineDurableHandle(baggage, 'Voter');

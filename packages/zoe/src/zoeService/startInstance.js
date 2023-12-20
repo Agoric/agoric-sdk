@@ -14,12 +14,15 @@ import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
+/** @typedef {import('@agoric/swingset-vat').BundleCap} BundleCap */
 
 const { Fail, quote: q } = assert;
 
 /**
- * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
+ * @param {Pick<
+ *   ZoeStorageManager,
+ *   'makeZoeInstanceStorageManager' | 'unwrapInstallation'
+ * >} startInstanceAccess
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} zoeBaggage
@@ -62,7 +65,6 @@ export const makeStartInstance = (
     'zoeInstanceAdmin',
     InstanceAdminI,
     /**
-     *
      * @param {ZoeInstanceStorageManager} instanceStorage
      * @param {InstanceAdmin} instanceAdmin
      * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToSeatAdmin
@@ -183,9 +185,8 @@ export const makeStartInstance = (
     'adminFacet',
     AdminFacetI,
     /**
-     *
      * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
-     * @param {*} contractBundleCap
+     * @param {any} contractBundleCap
      */
     (adminNode, contractBundleCap) => ({
       adminNode,
