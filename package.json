@@ -54,10 +54,7 @@
           "plugins": [
             "prettier-plugin-jsdoc"
           ],
-          "jsdocAddDefaultToDescription": false,
-          "jsdocCapitalizeDescription": false,
-          "jsdocCommentLineStrategy": "keep",
-          "tsdoc": true
+          "jsdocCommentLineStrategy": "keep"
         }
       }
     ],

@@ -20,9 +20,7 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
 
 /**
  * @typedef {string} IBCPortID
- *
  * @typedef {string} IBCChannelID
- *
  * @typedef {string} IBCConnectionID
  */
 
@@ -58,7 +56,6 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @typedef {object} Counterparty
    * @property {string} port_id
    * @property {string} channel_id
-   *
    * @typedef {object} ConnectingInfo
    * @property {'ORDERED' | 'UNORDERED'} order
    * @property {string[]} connectionHops
@@ -66,9 +63,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
    * @property {string} channelID
    * @property {Counterparty} counterparty
    * @property {string} version
-   *
    * @typedef {PromiseRecord<AttemptDescription>} OnConnectP
-   *
    * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
    *   localAddr: Endpoint;
    *   onConnectP: OnConnectP;

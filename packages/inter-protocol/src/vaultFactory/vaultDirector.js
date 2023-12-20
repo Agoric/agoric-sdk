@@ -49,11 +49,8 @@ const trace = makeTracer('VD', true);
  * }} MetricsNotification
  *
  * @typedef {Readonly<{}>} ImmutableState
- *
  * @typedef {{}} MutableState
- *
  * @typedef {ImmutableState & MutableState} State
- *
  * @typedef {{
  *   burnDebt: BurnDebt;
  *   getGovernedParams: (
@@ -68,7 +65,6 @@ const trace = makeTracer('VD', true);
  * @typedef {Readonly<{
  *   state: State;
  * }>} MethodContext
- *
  * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<
  *     import('./params.js').VaultDirectorParams
  *   >} VaultDirectorParamManager

@@ -21,7 +21,6 @@ harden(meta);
 
 /**
  * @typedef {import('@agoric/time').RelativeTime} RelativeTime
- *
  * @typedef {import('@agoric/time').TimerService} TimerService
  */
 

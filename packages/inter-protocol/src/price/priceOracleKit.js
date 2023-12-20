@@ -30,7 +30,6 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  */
 /**
  * @typedef {Readonly<HeldParams & {}>} ImmutableState
- *
  * @typedef {OracleStatus & {}} MutableState
  */
 /** @typedef {ImmutableState & MutableState} State */

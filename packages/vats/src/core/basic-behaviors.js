@@ -49,10 +49,8 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {}} powers
- *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
  *   as from createVatByName
- *
  * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
@@ -328,7 +326,6 @@ harden(produceStartGovernedUpgradable);
  *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
  * }} powers
  *
- *
  * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 export const buildZoe = async ({
@@ -361,7 +358,6 @@ harden(buildZoe);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
- *
  *
  * @typedef {ERef<
  *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>

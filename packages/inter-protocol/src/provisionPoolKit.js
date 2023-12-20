@@ -54,7 +54,6 @@ const { details: X, quote: q, Fail } = assert;
  *
  * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
- *
  * @typedef {import('@agoric/vats/src/vat-bank.js').Bank} Bank
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {

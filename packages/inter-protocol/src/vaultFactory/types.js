@@ -2,15 +2,10 @@
 
 /**
  * @typedef {import('./vault').VaultNotification} VaultNotification
- *
  * @typedef {import('./vault').Vault} Vault
- *
  * @typedef {import('./vaultKit').VaultKit} VaultKit
- *
  * @typedef {import('./vaultManager').VaultManager} VaultManager
- *
  * @typedef {import('./vaultManager').CollateralManager} CollateralManager
- *
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  *
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
@@ -20,7 +15,6 @@
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
  * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
  * @typedef {import('@agoric/time').RelativeTime} RelativeTime
  */
 

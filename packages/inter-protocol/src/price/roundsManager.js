@@ -17,7 +17,6 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 /** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
  * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
  * @typedef {import('@agoric/time').TimerService} TimerService
  */
 
@@ -36,7 +35,6 @@ const validRoundId = roundId => {
 
 /**
  * @typedef {{ roundId: number | undefined; unitPrice: NatValue }} PriceRound
- *
  * @typedef {Pick<RoundData, 'roundId' | 'startedAt'> & { startedBy: string }} LatestRound
  */
 

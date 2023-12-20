@@ -12,7 +12,6 @@ import { TimeMath } from '@agoric/time';
 
 /**
  * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
  * @typedef {import('@agoric/time').RelativeTime} RelativeTime
  */
 
