@@ -2,6 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
+import { type TestFn } from 'ava';
 import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import {
@@ -10,11 +11,11 @@ import {
   makeMockTestSpace,
   topicPath,
 } from './supports.js';
+import { type OfferSpec } from '../src/offers.js';
 
-import '@agoric/vats/src/core/types-ambient.js';
-
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
-const test = anyTest;
+const test = anyTest as TestFn<
+  Awaited<ReturnType<typeof makeDefaultTestContext>>
+>;
 
 const mockAddress1 = 'mockAddress1';
 const mockAddress2 = 'mockAddress2';
@@ -36,8 +37,7 @@ test('bridge handler', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
-  const offerSpec = {
+  const offerSpec: OfferSpec = {
     id: 1,
     invitationSpec: {
       source: 'purse',
@@ -90,8 +90,7 @@ test('bridge with offerId string', async t => {
 
   // fund the wallet with anchor
 
-  /** @type {import('../src/offers.js').OfferSpec} */
-  const offerSpec = {
+  const offerSpec: OfferSpec = {
     id: 'uniqueString',
     invitationSpec: {
       source: 'purse',

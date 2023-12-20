@@ -3,13 +3,13 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { withAmountUtils } from './supports.js';
+import { type ExecutionContext } from 'ava';
+import { withAmountUtils } from './supports.ts';
 
-/**
- * @param {import('ava').ExecutionContext} t
- * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
- */
-export const makeDefaultTestContext = async (t, makeSpace) => {
+export const makeDefaultTestContext = async (
+  t: ExecutionContext,
+  makeSpace: (logger) => Promise<ChainBootstrapSpace>,
+) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
   const { consume } = await makeSpace(log);
@@ -24,8 +24,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
-  const installation = E(zoe).install(bundle);
+  const installation = E(zoe).install(bundle) as Promise<
+    Installation<import('../src/walletFactory.js').start>
+  >;
   //#endregion
 
   // copied from makeClientBanks()

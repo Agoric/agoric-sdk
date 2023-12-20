@@ -1,26 +1,33 @@
 // @ts-check
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+/* eslint @jessie.js/safe-await-separator: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { E, Far } from '@endo/far';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import type { MockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
+import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import bundleSource from '@endo/bundle-source';
-import { makeMarshal } from '@endo/marshal';
+import { E, Far } from '@endo/far';
+import { CapData, makeMarshal } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import type { ExecutionContext, TestFn } from 'ava';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeDefaultTestContext } from './contexts.js';
-import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
+import type { OfferSpec } from '../src/offers.js';
+import type { BridgeAction, UpdateRecord } from '../src/smartWallet.js';
+import { makeDefaultTestContext } from './contexts.ts';
+import { ActionType, headValue, makeMockTestSpace } from './supports.ts';
 
 const { Fail } = assert;
 
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
-const test = anyTest;
+const test = anyTest as TestFn<
+  Awaited<ReturnType<typeof makeDefaultTestContext>>
+>;
 
 test.before(async t => {
   const withBankManager = async () => {
@@ -62,8 +69,7 @@ test.serial('avoid O(wallets) storage writes for a new asset', async t => {
 
     // stick around waiting for things to happen
     const current = await E(smartWallet).getCurrentSubscriber();
-    /** @type {bigint | undefined} */
-    let publishCount;
+    let publishCount: bigint | undefined;
     for (;;) {
       const news = await E(current).subscribeAfter(publishCount);
       publishCount = news.publishCount;
@@ -107,63 +113,60 @@ test.serial('avoid O(wallets) storage writes for a new asset', async t => {
 const BOARD_AUX = 'boardAux';
 /**
  * Make a storage node for auxilliary data for a value on the board.
- *
- * @param {ERef<StorageNode>} chainStorage
- * @param {string} boardId
  */
-const makeBoardAuxNode = async (chainStorage, boardId) => {
+const makeBoardAuxNode = async (
+  chainStorage: ERef<StorageNode>,
+  boardId: string,
+) => {
   const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
   return E(boardAux).makeChildNode(boardId);
 };
 
 const marshalData = makeMarshal(_val => Fail`data only`);
 
-/** @type {<T>(xP: Promise<T | null | undefined>) => Promise<T>} */
-const the = async xP => {
+const the = async <T>(xP: Promise<T | null | undefined>): Promise<T> => {
   const x = await xP;
   assert(x != null, 'resolution is unexpectedly nullish');
   return x;
 };
 
-/** @typedef {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} MockVStorageRoot */
-
 const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;
 
-/** @param {import('ava').ExecutionContext<Awaited<ReturnType<makeDefaultTestContext>>>} t */
-const makeScenario = t => {
+const makeScenario = (
+  t: ExecutionContext<Awaited<ReturnType<typeof makeDefaultTestContext>>>,
+) => {
   /**
    * A player and their user agent (wallet UI, signer)
    *
-   * @param {string} addr
-   * @param {PromiseKit<*>} bridgeKit - to announce UI is ready
-   * @param {MockVStorageRoot} vsRPC - access to vstorage via RPC
-   * @param {typeof t.context.sendToBridge} broadcastMsg
-   * @param {*} walletUpdates - access to wallet updates via RPC
+   * @param addr
+   * @param bridgeKit - to announce UI is ready
+   * @param vsRPC - access to vstorage via RPC
+   * @param broadcastMsg
+   * @param walletUpdates - access to wallet updates via RPC
    */
   const aPlayer = async (
-    addr,
-    bridgeKit,
-    vsRPC,
-    broadcastMsg,
-    walletUpdates,
+    addr: string,
+    bridgeKit: PromiseKit<any>,
+    vsRPC: MockChainStorageRoot,
+    broadcastMsg: typeof t.context.sendToBridge,
+    walletUpdates: any,
   ) => {
     const ctx = makeImportContext();
-    const vsGet = path =>
+    const vsGet = (path: string) =>
       E(vsRPC).getBody(`mockChainStorageRoot.${path}`, ctx.fromBoard);
 
     // Ingest well-known brands, instances.
     // Wait for vstorage publication to settle first.
     await eventLoopIteration();
-    /** @type {Record<string, Brand>} */
-    // @ts-expect-error unsafe testing cast
-    const wkBrand = Object.fromEntries(await vsGet(`agoricNames.brand`));
+    const wkBrand = Object.fromEntries(
+      (await vsGet(`agoricNames.brand`)) as Array<[string, Brand]>,
+    );
     await vsGet(`agoricNames.instance`);
     t.log(addr, 'wallet UI: ingest well-known brands', wkBrand.Place);
 
     assert(broadcastMsg);
-    /** @param {import('../src/smartWallet.js').BridgeAction} action */
-    const signAndBroadcast = async action => {
+    const signAndBroadcast = async (action: BridgeAction) => {
       const actionEncoding = ctx.fromBoard.toCapData(action);
       const addIssuerMsg = {
         type: ActionType.WALLET_SPEND_ACTION,
@@ -183,14 +186,11 @@ const makeScenario = t => {
 
     const { entries } = Object;
     const uiBridge = Far('UIBridge', {
-      /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
-      proposeOffer: async offerEncoding => {
-        /** @type {import('../src/offers.js').OfferSpec} */
-        const offer = ctx.fromBoard.fromCapData(offerEncoding);
+      proposeOffer: async (offerEncoding: CapData<string>) => {
+        const offer: OfferSpec = ctx.fromBoard.fromCapData(offerEncoding);
         const { give, want } = offer.proposal;
         for await (const [kw, amt] of entries({ ...give, ...want })) {
-          // @ts-expect-error
-          const { displayInfo } = await auxInfo(amt.brand);
+          const { displayInfo } = (await auxInfo(amt.brand)) as IssuerKit;
           const kind = displayInfo?.assetKind === 'nat' ? 'fungible' : 'NFT';
           t.log('wallet:', kind, 'display for', kw, amt.brand);
         }
@@ -207,7 +207,7 @@ const makeScenario = t => {
 
 test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   const pettyCashQty = 1000n;
-  const pettyCashPK = makePromiseKit();
+  const pettyCashPK = makePromiseKit<Purse>();
 
   const publishBrandInfo = async (chainStorage, board, brand) => {
     const [id, displayInfo] = await Promise.all([
@@ -219,11 +219,10 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     await E(node).setValue(JSON.stringify(aux));
   };
 
-  /**
-   * @param {BootstrapPowers} powers
-   * @param {Record<string, Bundle>} bundles
-   */
-  const finishBootstrap = async ({ consume }, bundles) => {
+  const finishBootstrap = async (
+    { consume }: BootstrapPowers,
+    bundles: Record<string, Bundle>,
+  ) => {
     const kindAdmin = kind => E(consume.agoricNamesAdmin).lookupAdmin(kind);
 
     const publishAgoricNames = async () => {
@@ -287,10 +286,14 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   /**
    * Core eval script to start contract
    *
-   * @param {BootstrapPowers} permittedPowers
-   * @param {Bundle} bundle - in prod: a bundleId
+   * @param permittedPowers
+   * @param permittedPowers.consume
+   * @param bundle - in prod: a bundleId
    */
-  const startGameContract = async ({ consume }, bundle) => {
+  const startGameContract = async (
+    { consume }: BootstrapPowers,
+    bundle: Bundle,
+  ) => {
     const { agoricNames, agoricNamesAdmin, board, chainStorage, zoe } = consume;
     const istBrand = await E(agoricNames).lookup('brand', 'IST');
     const ist = {
@@ -317,10 +320,10 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
   };
 
   /**
-   * @param {MockVStorageRoot} rpc - access to vstorage (in prod: via RPC)
-   * @param {*} walletBridge - iframe connection to wallet UI
+   * @param rpc - access to vstorage (in prod: via RPC)
+   * @param walletBridge - iframe connection to wallet UI
    */
-  const dappFrontEnd = async (rpc, walletBridge) => {
+  const dappFrontEnd = async (rpc: MockChainStorageRoot, walletBridge: any) => {
     const { fromEntries } = Object;
     const ctx = makeImportContext();
     await eventLoopIteration();
@@ -341,8 +344,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ),
     };
     const give = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
-    /** @type {import('../src/offers.js').OfferSpec} */
-    const offer1 = harden({
+    const offer1: OfferSpec = harden({
       id: 'joinGame1234',
       invitationSpec: {
         source: 'contract',
@@ -381,13 +383,9 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     return updates;
   };
 
-  /** @type {BootstrapPowers} */
-  // @ts-expect-error mock
-  const somePowers = { consume };
+  const somePowers = { consume } as BootstrapPowers;
 
-  /** @type {MockVStorageRoot} */
-  // @ts-expect-error mock
-  const mockStorage = await consume.chainStorage;
+  const mockStorage = (await consume.chainStorage) as MockChainStorageRoot;
   await finishBootstrap(somePowers, bundles);
   t.log(
     'install game contract bundle with hash:',
@@ -412,14 +410,12 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       ),
     ]);
 
-    /** @type {[string, bigint][]} */
     const expected = [
       ['Park Place', 1n],
       ['Boardwalk', 1n],
-    ];
+    ] as [string, bigint][];
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord} */
-    const update = await headValue(updates);
+    const update: UpdateRecord = await headValue(updates);
     assert(update.updated === 'offerStatus');
     // t.log(update.status);
     t.like(update, {
@@ -443,10 +439,8 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     const ctx = makeImportContext();
     const vsGet = (path, ix = -1) =>
       mockStorage.getBody(`mockChainStorageRoot.${path}`, ctx.fromBoard, ix);
-    /** @type {Record<string, Brand>} */
     const wkb = Object.fromEntries(
-      // @ts-expect-error unsafe testing cast
-      vsGet(`agoricNames.brand`),
+      vsGet(`agoricNames.brand`) as Array<[string, Brand]>,
     );
     vsGet(`agoricNames.instance`);
 
@@ -462,10 +456,10 @@ test.serial('non-vbank asset: give before deposit', async t => {
   /**
    * Goofy client: proposes to give Places before we have any
    *
-   * @param {MockVStorageRoot} rpc - access to vstorage (in prod: via RPC)
-   * @param {*} walletBridge - iframe connection to wallet UI
+   * @param rpc - access to vstorage (in prod: via RPC)
+   * @param walletBridge - iframe connection to wallet UI
    */
-  const goofyClient = async (rpc, walletBridge) => {
+  const goofyClient = async (rpc: MockChainStorageRoot, walletBridge: any) => {
     const { fromEntries } = Object;
     const ctx = makeImportContext();
     const vsGet = path =>
@@ -484,8 +478,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     };
     const want = { Price: AmountMath.make(wkBrand.IST, 25n * CENT) };
 
-    /** @type {import('../src/offers.js').OfferSpec} */
-    const offer1 = harden({
+    const offer1: OfferSpec = harden({
       id: 'joinGame2345',
       invitationSpec: {
         source: 'contract',
@@ -506,9 +499,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const { simpleProvideWallet, consume, sendToBridge } = t.context;
     const wallet = simpleProvideWallet(addr2);
     const updates = await E(wallet).getUpdatesSubscriber();
-    /** @type {MockVStorageRoot} */
-    // @ts-expect-error mock
-    const mockStorage = await consume.chainStorage;
+    const mockStorage = (await consume.chainStorage) as MockChainStorageRoot;
     const { aPlayer } = makeScenario(t);
 
     aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
@@ -523,13 +514,10 @@ test.serial('non-vbank asset: give before deposit', async t => {
     vsGet(`agoricNames.brand`);
     vsGet(`agoricNames.instance`);
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord & {updated: 'offerStatus'}} */
-    let offerUpdate;
+    let offerUpdate: UpdateRecord & { updated: 'offerStatus' };
     let ix = -1;
     for (;;) {
-      /** @type {import('../src/smartWallet.js').UpdateRecord} */
-      // @ts-expect-error
-      const update = vsGet(`wallet.${addr2}`, ix);
+      const update = vsGet(`wallet.${addr2}`, ix) as UpdateRecord;
       if (update.updated === 'offerStatus') {
         offerUpdate = update;
         break;

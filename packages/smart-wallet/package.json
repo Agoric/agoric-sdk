@@ -55,13 +55,22 @@
   },
   "homepage": "https://github.com/Agoric/agoric#readme",
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.js",
+      "test/**/test-*.ts"
+    ],
+    "nodeArguments": [
+      "--loader=tsx",
+      "--no-warnings"
     ],
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "2m"
+    "timeout": "20m"
   },
   "publishConfig": {
     "access": "public"

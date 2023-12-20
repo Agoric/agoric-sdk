@@ -1,15 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/far';
+import { type TestFn } from 'ava';
 import path from 'path';
-import { makeMockTestSpace } from './supports.js';
-
-import '@agoric/vats/src/core/types-ambient.js';
-
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
-const test = anyTest;
+import { makeMockTestSpace } from './supports.ts';
 
 const makeTestContext = async () => {
   // To debug, pass t.log instead of null logger
@@ -26,8 +22,9 @@ const makeTestContext = async () => {
     `${dirname}/../src/walletFactory.js`,
     'walletFactory',
   );
-  /** @type {Promise<Installation<import('../src/walletFactory.js').start>>} */
-  const installation = E(zoe).install(bundle);
+  const installation = E(zoe).install(bundle) as Promise<
+    Installation<import('../src/walletFactory.js').start>
+  >;
   //#endregion
 
   // copied from makeClientBanks()
@@ -46,6 +43,8 @@ const makeTestContext = async () => {
   };
 };
 
+const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+
 test.before(async t => {
   t.context = await makeTestContext();
 });
@@ -63,7 +62,7 @@ test('customTermsShape', async t => {
       {
         agoricNames,
         board,
-        assetPublisher: /** @type {any} */ ({}),
+        assetPublisher: {} as any,
         //   @ts-expect-error extra term
         extra: board,
       },
@@ -99,7 +98,7 @@ test('privateArgsShape', async t => {
   const terms = {
     agoricNames,
     board,
-    assetPublisher: /** @type {any} */ ({}),
+    assetPublisher: {} as any,
   };
 
   // missing an arg

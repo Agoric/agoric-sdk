@@ -4,7 +4,11 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import {
+  type BridgeManager,
+  makeAgoricNamesAccess,
+  makePromiseSpace,
+} from '@agoric/vats';
 import {
   installBootContracts,
   makeAddressNameHubs,
@@ -16,38 +20,25 @@ import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { TopicsRecord } from '@agoric/zoe/src/contractSupport/topics.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
 
 export { ActionType };
 
-/**
- * @param {object} kit
- * @param {Brand<'nat'>} kit.brand
- * @param {Issuer<'nat'>} kit.issuer
- * @param {Mint<'nat'>} [kit.mint]
- */
-export const withAmountUtils = kit => {
+export const withAmountUtils = (
+  kit: Pick<IssuerKit<'nat'>, 'brand' | 'issuer'>,
+) => {
   return {
     ...kit,
-    /**
-     * @param {NatValue} v
-     */
-    make: v => AmountMath.make(kit.brand, v),
+    make: (v: NatValue) => AmountMath.make(kit.brand, v),
     makeEmpty: () => AmountMath.makeEmpty(kit.brand),
-    /**
-     * @param {NatValue} n
-     * @param {NatValue} [d]
-     */
-    makeRatio: (n, d) => makeRatio(n, kit.brand, d),
+    makeRatio: (n: NatValue, d?: NatValue) => makeRatio(n, kit.brand, d),
   };
 };
-/** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
+export type AmountUtils = ReturnType<typeof withAmountUtils>;
 
-/**
- * @param {ERef<StoredFacet>} subscription
- */
-export const subscriptionKey = subscription => {
+export const subscriptionKey = (subscription: ERef<StoredFacet>) => {
   return E(subscription)
     .getStoreKey()
     .then(storeKey => {
@@ -58,8 +49,7 @@ export const subscriptionKey = subscription => {
     });
 };
 
-/** @returns {import('@agoric/vats').BridgeManager} */
-const makeFakeBridgeManager = () =>
+const makeFakeBridgeManager = (): BridgeManager =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
@@ -86,16 +76,16 @@ const makeFakeBridgeManager = () =>
       });
     },
   });
-/**
- * @param {*} log
- * @returns {Promise<ChainBootstrapSpace>}>}
- */
-export const makeMockTestSpace = async log => {
-  const space = /** @type {any} */ (makePromiseSpace(log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
-      space
-    );
+
+export const makeMockTestSpace = async (log): Promise<ChainBootstrapSpace> => {
+  const space = makePromiseSpace(log) as any as BootstrapPowers & {
+    consume: {
+      loadVat: (n: 'mints') => MintsVat;
+      loadCriticalVat: (n: 'mints') => MintsVat;
+    };
+  };
+  const { consume, produce } = space;
+
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -110,7 +100,7 @@ export const makeMockTestSpace = async log => {
       case 'mints':
         return mintsRoot();
       case 'board': {
-        const baggage = makeScalarBigMapStore('baggage');
+        const baggage = makeScalarBigMapStore<string, unknown>('baggage');
         return boardRoot({}, {}, baggage);
       }
       default:
@@ -133,12 +123,9 @@ export const makeMockTestSpace = async log => {
 
   produce.bankManager.resolve(
     Promise.resolve(
-      Far(
-        'mockBankManager',
-        /** @type {any} */ ({
-          getBankForAddress: _a => fakeBankKit.bank,
-        }),
-      ),
+      Far('mockBankManager', {
+        getBankForAddress: _a => fakeBankKit.bank,
+      } as any),
     ),
   );
 
@@ -153,19 +140,19 @@ export const makeMockTestSpace = async log => {
   return space;
 };
 
-/**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
- * @param {string} subscriberName
- */
-export const topicPath = (hasTopics, subscriberName) => {
+export const topicPath = (
+  hasTopics: ERef<{ getPublicTopics: () => TopicsRecord }>,
+  subscriberName: string,
+) => {
   return E(hasTopics)
     .getPublicTopics()
     .then(subscribers => subscribers[subscriberName])
     .then(tr => tr.storagePath);
 };
 
-/** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
-export const headValue = async subscriber => {
+export const headValue = async <T>(
+  subscriber: ERef<Subscriber<T>>,
+): Promise<T> => {
   await eventLoopIteration();
   const record = await E(subscriber).subscribeAfter();
   return record.head.value;
