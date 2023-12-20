@@ -36,7 +36,6 @@ const trace = makeTracer('VF', true);
 /**
  * @typedef {ZCF<
  *   GovernanceTerms<import('./params').VaultDirectorParams> & {
- *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     timerService: import('@agoric/time').TimerService;
@@ -70,6 +69,7 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
+ *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
@@ -80,6 +80,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialShortfallInvitation,
     marshaller,
     storageNode,
+    auctioneerPublicFacet,
   } = privateArgs;
 
   trace('awaiting debtMint');
@@ -91,7 +92,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
-  const { timerService, auctioneerPublicFacet } = zcf.getTerms();
+  const { timerService } = zcf.getTerms();
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,

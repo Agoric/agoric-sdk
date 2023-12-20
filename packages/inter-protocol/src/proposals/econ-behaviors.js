@@ -252,7 +252,6 @@ export const setupVaultFactoryArguments = async (
 
   const vaultFactoryTerms = makeGovernedVFTerms({
     priceAuthority,
-    auctioneerPublicFacet,
     reservePublicFacet,
     interestTiming,
     timer: chainTimerService,
@@ -264,6 +263,7 @@ export const setupVaultFactoryArguments = async (
   });
 
   const vaultFactoryPrivateArgs = {
+    auctioneerPublicFacet,
     feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,
