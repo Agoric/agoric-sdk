@@ -31,7 +31,7 @@
     "lerna": "^5.6.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.0.3",
-    "prettier-plugin-jsdoc": "^1.0.0",
+    "prettier-plugin-jsdoc": "git+https://github.com/turadg/prettier-plugin-jsdoc.git",
     "type-coverage": "^2.26.3",
     "typedoc": "^0.25.4",
     "typescript": "~5.3.2"
@@ -44,19 +44,13 @@
     "overrides": [
       {
         "files": [
-          "packages/ERTP/**/*.{js,ts}",
-          "packages/inter-protocol/**/*.{js,ts}",
-          "packages/store/**/*.{js,ts}",
-          "packages/vats/**/*.{js,ts}"
+          "packages/**/*.{js,ts}"
         ],
         "options": {
           "plugins": [
             "prettier-plugin-jsdoc"
           ],
-          "jsdocAddDefaultToDescription": false,
-          "jsdocParser": true,
-          "jsdocCapitalizeDescription": false,
-          "tsdoc": true
+          "jsdocCommentLineStrategy": "keep"
         }
       }
     ],

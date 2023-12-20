@@ -58,12 +58,13 @@ const safeHintFromDescription = description =>
 
 /**
  * @param {XSnapOptions} options
- *
  * @typedef {object} XSnapOptions
  * @property {string} os
  * @property {Spawn} spawn
- * @property {Pick<typeof import('fs/promises'), 'open' | 'stat' | 'unlink'> & Pick<typeof import('fs'), 'createReadStream'> & Pick<typeof import('tmp'), 'tmpName'>} fs
- * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
+ * @property {Pick<typeof import('fs/promises'), 'open' | 'stat' | 'unlink'> &
+ *   Pick<typeof import('fs'), 'createReadStream'> &
+ *   Pick<typeof import('tmp'), 'tmpName'>} fs
+ * @property {(request: Uint8Array) => Promise<Uint8Array>} [handleCommand]
  * @property {string} [name]
  * @property {boolean} [debug]
  * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
@@ -237,12 +238,23 @@ export async function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const xsnapProcessStdio =
-    /** @type {[undefined, Readable, Readable, Writable, Readable, undefined, undefined, Readable, Writable]} */ (
-      /** @type {(Readable | Writable | undefined | null)[]} */ (
-        xsnapProcess.stdio
-      )
-    );
+  const xsnapProcessStdio = /**
+   * @type {[
+   *   undefined,
+   *   Readable,
+   *   Readable,
+   *   Writable,
+   *   Readable,
+   *   undefined,
+   *   undefined,
+   *   Readable,
+   *   Writable,
+   * ]}
+   */ (
+    /** @type {(Readable | Writable | undefined | null)[]} */ (
+      xsnapProcess.stdio
+    )
+  );
 
   const messagesToXsnap = makeNetstringWriter(
     makeNodeWriter(xsnapProcessStdio[3]),
@@ -274,7 +286,12 @@ export async function xsnap(options) {
    * @template T
    * @typedef {object} RunResult
    * @property {T} reply
-   * @property {{ meterType: string, allocate: number|null, compute: number|null, timestamps: number[]|null }} meterUsage
+   * @property {{
+   *   meterType: string;
+   *   allocate: number | null;
+   *   compute: number | null;
+   *   timestamps: number[] | null;
+   * }} meterUsage
    */
 
   /**

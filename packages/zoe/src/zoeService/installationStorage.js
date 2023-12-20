@@ -14,8 +14,8 @@ import {
 
 const { Fail, quote: q } = assert;
 
-/** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-/** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
+/** @typedef {import('@agoric/swingset-vat').BundleCap} BundleCap */
+/** @typedef {import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
@@ -23,7 +23,12 @@ const { Fail, quote: q } = assert;
  * @param {Baggage} zoeBaggage
  */
 export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
-  /** @type {WeakMapStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
+  /**
+   * @type {WeakMapStore<
+   *   Installation,
+   *   { bundleCap: BundleCap; bundleID: BundleID }
+   * >}
+   */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundleCap',
@@ -46,7 +51,12 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     },
   );
 
-  /** @type {(bundle: SourceBundle, bundleLabel?: string) => Installation<unknown>} */
+  /**
+   * @type {(
+   *   bundle: SourceBundle,
+   *   bundleLabel?: string,
+   * ) => Installation<unknown>}
+   */
   const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',
@@ -59,13 +69,13 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
   );
 
   /**
-   * Create an installation from a bundle ID or a full bundle. If we are
-   * given a bundle ID, wait for the corresponding code bundle to be received
-   * by the swingset kernel, then store its bundlecap. The code is currently
-   * evaluated each time it is used to make a new instance of a contract.
-   * When SwingSet supports zygotes, the code will be evaluated once when
-   * creating a zcfZygote, then the start() function will be called each time
-   * an instance is started.
+   * Create an installation from a bundle ID or a full bundle. If we are given a
+   * bundle ID, wait for the corresponding code bundle to be received by the
+   * swingset kernel, then store its bundlecap. The code is currently evaluated
+   * each time it is used to make a new instance of a contract. When SwingSet
+   * supports zygotes, the code will be evaluated once when creating a
+   * zcfZygote, then the start() function will be called each time an instance
+   * is started.
    */
 
   /** @type {InstallBundle} */

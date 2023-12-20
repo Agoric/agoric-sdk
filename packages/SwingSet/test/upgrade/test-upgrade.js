@@ -37,8 +37,8 @@ const dumpState = (debug, vatID) => {
 /**
  * @param {string} bootstrapVatPath
  * @param {KernelOptions & {
- *  staticVatPaths?: Record<string, string>,
- *  bundlePaths?: Record<string, string>,
+ *   staticVatPaths?: Record<string, string>;
+ *   bundlePaths?: Record<string, string>;
  * }} [options]
  * @returns {SwingSetConfig}
  */
@@ -46,7 +46,7 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
   const { staticVatPaths = {}, bundlePaths = {}, ...kernelOptions } = options;
   /**
    * @param {Record<string, string>} paths
-   * @returns {Record<string, {sourceSpec: string}>}
+   * @returns {Record<string, { sourceSpec: string }>}
    */
   const specsFromPaths = paths => {
     const entries = Object.entries(paths).map(([name, path]) => [
@@ -75,16 +75,31 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {object} bundleData
  * @param {SwingSetConfig} config
  * @param {object} [options]
- * @param {object} [options.extraRuntimeOpts]
- * Refcount incrementing should be manual,
- * see https://github.com/Agoric/agoric-sdk/issues/7213
+ * @param {object} [options.extraRuntimeOpts] Refcount incrementing should be
+ *   manual, see https://github.com/Agoric/agoric-sdk/issues/7213
  * @returns {Promise<{
- *   controller: Awaited<ReturnType<typeof makeSwingsetController>>,
- *   kvStore: KVStore,
- *   messageToVat: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
- *   messageToVatAndRetain: (vatName: string, method: string, ...args: unknown[]) => Promise<unknown>,
- *   messageToObject: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
- *   messageToObjectAndRetain: (target: unknown, method: string, ...args: unknown[]) => Promise<unknown>,
+ *   controller: Awaited<ReturnType<typeof makeSwingsetController>>;
+ *   kvStore: KVStore;
+ *   messageToVat: (
+ *     vatName: string,
+ *     method: string,
+ *     ...args: unknown[]
+ *   ) => Promise<unknown>;
+ *   messageToVatAndRetain: (
+ *     vatName: string,
+ *     method: string,
+ *     ...args: unknown[]
+ *   ) => Promise<unknown>;
+ *   messageToObject: (
+ *     target: unknown,
+ *     method: string,
+ *     ...args: unknown[]
+ *   ) => Promise<unknown>;
+ *   messageToObjectAndRetain: (
+ *     target: unknown,
+ *     method: string,
+ *     ...args: unknown[]
+ *   ) => Promise<unknown>;
  * }>}
  */
 const initKernelForTest = async (t, bundleData, config, options = {}) => {
@@ -543,7 +558,7 @@ test('non-durable exports are abandoned by upgrade of liveslots vat', async t =>
     virCounter: 'getVirtualCounter',
     durCounter: 'getDurableCounter',
   };
-  /** @type {Record<string, { presence: unknown, kref: string }>} */
+  /** @type {Record<string, { presence: unknown; kref: string }>} */
   const counters = {};
   const runIncrement = presence => messageToObject(presence, 'increment');
   for (const [name, methodName] of Object.entries(counterGetters)) {

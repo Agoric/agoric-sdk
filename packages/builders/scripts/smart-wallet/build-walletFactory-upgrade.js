@@ -1,8 +1,7 @@
 /**
  * @file Proposal Builder: Upgrade walletFactory
  *
- * Usage:
- *   agoric run build-walletFactory-upgrade.js
+ *   Usage: agoric run build-walletFactory-upgrade.js
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';

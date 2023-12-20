@@ -316,10 +316,8 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {unknown} criticalVatKey
  * @param {(...args: any) => void} [log]
  * @param {string} [label]
- *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
  *   as from createVatByName
- *
  * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (

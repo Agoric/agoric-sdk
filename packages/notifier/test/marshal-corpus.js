@@ -1,9 +1,9 @@
 /**
  * Based on roundTripPairs from test-marshal.js
  *
- * A list of `[body, justinSrc]` pairs, where the body parses into
- * an encoding that decodes to a Justin expression that evaluates to something
- * that has the same encoding.
+ * A list of `[body, justinSrc]` pairs, where the body parses into an encoding
+ * that decodes to a Justin expression that evaluates to something that has the
+ * same encoding.
  */
 export const jsonPairs = harden([
   // Justin is the same as the JSON encoding but without unnecessary quoting

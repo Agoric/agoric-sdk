@@ -78,6 +78,9 @@ const calcCrc = (data, crcDigits) => {
  * @see {prepareExoClassKit}
  * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
  *
+ *
+ *
+ *
  * @typedef {import('@endo/marshal').Passable} Key
  */
 

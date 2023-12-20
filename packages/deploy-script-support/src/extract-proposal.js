@@ -11,7 +11,8 @@ import {
 } from './coreProposalBehavior.js';
 
 /**
- * @typedef {string | { module: string, entrypoint: string, args?: Array<unknown> }} ConfigProposal
+ * @typedef {string
+ *   | { module: string; entrypoint: string; args?: Array<unknown> }} ConfigProposal
  */
 
 const { details: X, Fail } = assert;
@@ -41,7 +42,8 @@ const findModule = (initDir, srcSpec) =>
     : req.resolve(srcSpec);
 
 /**
- * @param {{ bundleID?: string, bundleName?: string }} handle - mutated then hardened
+ * @param {{ bundleID?: string; bundleName?: string }} handle - mutated then
+ *   hardened
  * @param {string} sourceSpec - the specifier of a module to load
  * @param {number} sequence - the sequence number of the proposal
  * @param {string} piece - the piece of the proposal
@@ -54,18 +56,17 @@ const namedHandleToBundleSpec = async (handle, sourceSpec, sequence, piece) => {
 };
 
 /**
- * Format core proposals to be run at bootstrap:
- * SwingSet `bundles` configuration
- * and `code` to execute them, interpolating functions
- * such as `makeCoreProposalBehavior`.
+ * Format core proposals to be run at bootstrap: SwingSet `bundles`
+ * configuration and `code` to execute them, interpolating functions such as
+ * `makeCoreProposalBehavior`.
  *
- * Core proposals are proposals for use with swingset-core-eval.
- * In production, they are triggered by BLD holder governance decisions,
- * but for sim-chain and such, they can be declared statically in
- * the chain configuration, in which case they are run at bootstrap.
+ * Core proposals are proposals for use with swingset-core-eval. In production,
+ * they are triggered by BLD holder governance decisions, but for sim-chain and
+ * such, they can be declared statically in the chain configuration, in which
+ * case they are run at bootstrap.
  *
- * @param {ConfigProposal[]} coreProposals - governance
- * proposals to run at chain bootstrap for scenarios such as sim-chain.
+ * @param {ConfigProposal[]} coreProposals - governance proposals to run at
+ *   chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
  * @param {object} [opts]
  * @param {typeof makeEnactCoreProposalsFromBundleRef} [opts.makeEnactCoreProposals]
@@ -88,7 +89,12 @@ export const extractCoreProposalBundles = async (
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<{ bundleID?: string, bundleName?: string }, { source: string, bundle?: string }>} */
+  /**
+   * @type {Map<
+   *   { bundleID?: string; bundleName?: string },
+   *   { source: string; bundle?: string }
+   * >}
+   */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();
@@ -121,7 +127,12 @@ export const extractCoreProposalBundles = async (
       const thisProposalSequence = getSequenceForProposal(i);
       const initPath = findModule(dirname, module);
       const initDir = path.dirname(initPath);
-      /** @type {Record<string, import('./externalTypes.js').ProposalBuilder>} */
+      /**
+       * @type {Record<
+       *   string,
+       *   import('./externalTypes.js').ProposalBuilder
+       * >}
+       */
       const ns = await import(initPath);
       const install = (srcSpec, bundlePath) => {
         const absoluteSrc = findModule(initDir, srcSpec);

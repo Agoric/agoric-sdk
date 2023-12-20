@@ -44,23 +44,16 @@ program.addCommand(makeVaultsCommand(logger));
  *
  * Perhaps a more straightforward approach would be:
  *
- *  - makeTUI({ stdout, stderr, logger })
- *    where tui.show(data) prints data as JSON to stdout
- *    and tui.warn() and tui.error() log ad-hoc to stderr
- *  - makeQueryClient({ fetch })
- *    with q.withConfig(networkConfig)
- *    and q.vstorage.get('published...') (no un-marshaling)
- *    and q.pollBlocks(), q.pollTx()
- *    also, printing the progress message should be done
- *    in the lookup callback
- *  - makeBoardClient(queryClient)
- *    with b.readLatestHead('published...')
- *  - makeKeyringNames({ execFileSync })
- *    with names.lookup('gov1') -> 'agoric1...'
- *    and names.withBackend('test')
- *    and names.withHome('~/.agoric')
- *  - makeSigner({ execFileSync })
- *    signer.sendSwingsetTx()
+ * - makeTUI({ stdout, stderr, logger }) where tui.show(data) prints data as JSON
+ *   to stdout and tui.warn() and tui.error() log ad-hoc to stderr
+ * - makeQueryClient({ fetch }) with q.withConfig(networkConfig) and
+ *   q.vstorage.get('published...') (no un-marshaling) and q.pollBlocks(),
+ *   q.pollTx() also, printing the progress message should be done in the lookup
+ *   callback
+ * - makeBoardClient(queryClient) with b.readLatestHead('published...')
+ * - makeKeyringNames({ execFileSync }) with names.lookup('gov1') -> 'agoric1...'
+ *   and names.withBackend('test') and names.withHome('~/.agoric')
+ * - makeSigner({ execFileSync }) signer.sendSwingsetTx()
  */
 const procIO = {
   env: { ...process.env },

@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 
 // XXX board is Board but specifying that leads to type errors with imports which aren't worth fixing right now
 /**
- * @param {typeof import('@endo/bundle-source')['default']} bundleSource
+ * @param {(typeof import('@endo/bundle-source'))['default']} bundleSource
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('./startInstance.js').InstallationManager>} installationManager
  * @param {ERef<any>} board
@@ -25,7 +25,7 @@ export const makeInstall = (
   /**
    * @param {string} contractPath
    * @param {Petname} contractPetname
-   * @returns {Promise<{ installation: Installation, id: string}>}
+   * @returns {Promise<{ installation: Installation; id: string }>}
    */
   const install = async (contractPath, contractPetname) => {
     const resolvedPath = pathResolve ? pathResolve(contractPath) : contractPath;

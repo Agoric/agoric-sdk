@@ -97,7 +97,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 /**
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @param {*} divideOp
+ * @param {any} divideOp
  */
 const multiplyHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
@@ -134,7 +134,7 @@ export const multiplyBy = (amount, ratio) => {
 /**
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @param {*} divideOp
+ * @param {any} divideOp
  */
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
@@ -315,7 +315,8 @@ export const ratioGTE = (left, right) => {
 };
 
 /**
- * True iff the ratios are the same values (equal or equivalant may return false)
+ * True iff the ratios are the same values (equal or equivalant may return
+ * false)
  *
  * @param {Ratio} left
  * @param {Ratio} right

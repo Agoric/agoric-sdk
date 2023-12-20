@@ -6,7 +6,7 @@ import { E } from '@endo/far';
  * Used in an offer execution to manage payments state safely.
  *
  * @param {(brand: Brand) => Promise<Purse>} purseForBrand
- * @param {{ receive: (payment: *) => Promise<Amount> }} depositFacet
+ * @param {{ receive: (payment: any) => Promise<Amount> }} depositFacet
  */
 export const makePaymentsHelper = (purseForBrand, depositFacet) => {
   /** @type {PaymentPKeywordRecord | null} */
@@ -75,7 +75,8 @@ export const makePaymentsHelper = (purseForBrand, depositFacet) => {
 
     /**
      * @param {PaymentPKeywordRecord} payouts
-     * @returns {Promise<AmountKeywordRecord>} amounts for deferred deposits will be empty
+     * @returns {Promise<AmountKeywordRecord>} amounts for deferred deposits
+     *   will be empty
      */
     async depositPayouts(payouts) {
       /** Record<string, Promise<Amount>> */

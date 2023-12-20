@@ -21,7 +21,7 @@ const totalPlaces = amt => {
 };
 
 /**
- * @param {ZCF<{joinPrice: Amount}>} zcf
+ * @param {ZCF<{ joinPrice: Amount }>} zcf
  */
 export const start = async zcf => {
   const { joinPrice } = zcf.getTerms();

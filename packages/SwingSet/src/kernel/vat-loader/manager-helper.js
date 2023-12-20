@@ -56,43 +56,43 @@ import {
 // slots on the inbound (dispatch) path.
 
 /**
- * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: MakeSnapshot) => VatManager,
- *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
- *              setDeliverToWorker: (dtw: unknown) => void,
- *            } } ManagerKit
+ * @typedef {{
+ *   getManager: (
+ *     shutdown: () => Promise<void>,
+ *     makeSnapshot?: MakeSnapshot,
+ *   ) => VatManager;
+ *   syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult;
+ *   setDeliverToWorker: (dtw: unknown) => void;
+ * }} ManagerKit
  */
 
 /**
- * TODO: stale
- * This generic helper runs on the manager side. It handles transcript
- * record/replay, and errors in the manager-specific code.
+ * TODO: stale This generic helper runs on the manager side. It handles
+ * transcript record/replay, and errors in the manager-specific code.
  *
  * Create me at the beginning of the manager factory, with a vatKeeper and
  * vatSyscallHandler.
  *
  * When you build the handler that accepts syscall requests from the worker,
- * that handler should call my { syscallFromWorker } function, so I can
- * forward those requests to vatSyscallHandler (after going through the
- * transcript).
+ * that handler should call my { syscallFromWorker } function, so I can forward
+ * those requests to vatSyscallHandler (after going through the transcript).
  *
  * At some point, you must give me a way to send deliveries to the worker, by
- * calling setDeliverToWorker. This usually happens after the worker
- * connection is established.
+ * calling setDeliverToWorker. This usually happens after the worker connection
+ * is established.
  *
  * At the end of the factory, use my getManager(shutdown) method to create,
- * harden, and return the VatManager object. Give me a manager-specific
- * shutdown function which I can include in the VatManager.
- *
+ * harden, and return the VatManager object. Give me a manager-specific shutdown
+ * function which I can include in the VatManager.
  *
  * deliverToWorker is expected to accept a VatDeliveryObject and return a
- * VatDeliveryResult, or a promise for one. It is allowed to throw or reject,
- * in which case the caller gets a error-bearing VDR, which will probably
- * kill the vat. For remote (subprocess/thread) workers, deliverToWorker
- * should be a function that serializes the VDO and sends it over the wire,
- * and waits for a response, so it might reject if the child process has
- * died. For a local worker, deliverToWorker can be the liveslots 'dispatch'
- * method (which runs synchronously and throws if liveslots has an error).
+ * VatDeliveryResult, or a promise for one. It is allowed to throw or reject, in
+ * which case the caller gets a error-bearing VDR, which will probably kill the
+ * vat. For remote (subprocess/thread) workers, deliverToWorker should be a
+ * function that serializes the VDO and sends it over the wire, and waits for a
+ * response, so it might reject if the child process has died. For a local
+ * worker, deliverToWorker can be the liveslots 'dispatch' method (which runs
+ * synchronously and throws if liveslots has an error).
  *
  * vatSyscallHandler should be the same 'vatSyscallHandler' given to a
  * managerFactory. It is expected to accept a VatSyscallObject and return a
@@ -107,14 +107,15 @@ import {
  * The returned getManager() function will return a VatManager suitable for
  * handing to the kernel, which can use it to send deliveries to the vat.
  *
- * @param {boolean} retainSyscall for unit tests: allow syscalls between deliveries
+ * @param {boolean} retainSyscall for unit tests: allow syscalls between
+ *   deliveries
  * @returns {ManagerKit}
  */
 
 function makeManagerKit(retainSyscall = false) {
   let syscallHandler; // empty between deliveries
 
-  /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
+  /** @type {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} */
   let deliverToWorker;
 
   /**
@@ -126,7 +127,6 @@ function makeManagerKit(retainSyscall = false) {
   }
 
   /**
-   *
    * @param {VatDeliveryObject} delivery
    * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    * @returns {Promise<VatDeliveryResult>} // or Error
@@ -142,7 +142,7 @@ function makeManagerKit(retainSyscall = false) {
     // err.message, null]. Any non-deterministic error (unexpected worker
     // termination) is reported by rejection, causing an Error to bubble all
     // the way up to controller.step/run.
-    /** @type { VatDeliveryResult } */
+    /** @type {VatDeliveryResult} */
     const status = await deliverToWorker(delivery);
     insistVatDeliveryResult(status);
     if (!retainSyscall) {
@@ -153,10 +153,9 @@ function makeManagerKit(retainSyscall = false) {
 
   /**
    * vatSyscallObject is an array that starts with the syscall name ('send',
-   * 'subscribe', etc) followed by all the positional arguments of the
-   * syscall, designed for transport across a manager-worker link (serialized
-   * bytes over a socket or pipe, postMessage to an in-process Worker, or
-   * just direct).
+   * 'subscribe', etc) followed by all the positional arguments of the syscall,
+   * designed for transport across a manager-worker link (serialized bytes over
+   * a socket or pipe, postMessage to an in-process Worker, or just direct).
    *
    * @param {VatSyscallObject} vso
    */
@@ -168,8 +167,7 @@ function makeManagerKit(retainSyscall = false) {
   }
 
   /**
-   *
-   * @param { () => Promise<void>} shutdown
+   * @param {() => Promise<void>} shutdown
    * @param {MakeSnapshot} [makeSnapshot]
    * @returns {VatManager}
    */

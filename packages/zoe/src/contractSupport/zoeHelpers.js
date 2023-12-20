@@ -29,19 +29,17 @@ export const assertIssuerKeywords = (zcf, expected) => {
  */
 
 /**
- * Check whether an update to currentAllocation satisfies
- * proposal.want. Note that this is half of the offer safety
- * check; whether the allocation constitutes a refund is not
- * checked. The update is merged with currentAllocation
- * (update's values prevailing if the keywords are the same)
- * to produce the newAllocation. The return value is 0 for
- * false and 1 for true. When multiples are introduced, any
- * positive return value will mean true.
+ * Check whether an update to currentAllocation satisfies proposal.want. Note
+ * that this is half of the offer safety check; whether the allocation
+ * constitutes a refund is not checked. The update is merged with
+ * currentAllocation (update's values prevailing if the keywords are the same)
+ * to produce the newAllocation. The return value is 0 for false and 1 for true.
+ * When multiples are introduced, any positive return value will mean true.
  *
  * @param {ZCF} zcf
  * @param {ZcfSeatPartial} seat
  * @param {AmountKeywordRecord} update
- * @returns {0|1}
+ * @returns {0 | 1}
  */
 export const satisfies = (zcf, seat, update) => {
   const currentAllocation = seat.getCurrentAllocation();
@@ -101,9 +99,9 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  */
 
 /**
- * Check the seat's proposal against `proposalShape`.
- * If the client submits an offer which does not match
- * these expectations, the seat will be exited (and payments refunded).
+ * Check the seat's proposal against `proposalShape`. If the client submits an
+ * offer which does not match these expectations, the seat will be exited (and
+ * payments refunded).
  *
  * @param {ZCFSeat} seat
  * @param {Pattern} proposalShape
@@ -113,22 +111,22 @@ export const fitProposalShape = (seat, proposalShape) =>
   mustMatch(seat.getProposal(), harden(proposalShape), 'proposal');
 
 /**
- * Check the seat's proposal against an `expected` record that says
- * what "shape" of proposal is acceptable.
+ * Check the seat's proposal against an `expected` record that says what "shape"
+ * of proposal is acceptable.
  *
- * Note that by our current terminology, this function is misnamed because
- * we use
- * ["Shape" to refer to patterns](https://github.com/Agoric/agoric-sdk/blob/master/packages/store/src/types.js#L56-L74),
+ * Note that by our current terminology, this function is misnamed because we
+ * use ["Shape" to refer to
+ * patterns](https://github.com/Agoric/agoric-sdk/blob/master/packages/store/src/types.js#L56-L74),
  * and the `expected` argument is not such a pattern. Rather it is an ad-hoc
  * pattern-like special case record that is different and much less expressive.
  *
- * This ExpectedRecord is like a Proposal, but the amounts in 'want'
- * and 'give' should be null; the exit clause should specify a rule with
- * null contents. If the client submits an offer which does not match
- * these expectations, the seat will be exited (and payments refunded).
+ * This ExpectedRecord is like a Proposal, but the amounts in 'want' and 'give'
+ * should be null; the exit clause should specify a rule with null contents. If
+ * the client submits an offer which does not match these expectations, the seat
+ * will be exited (and payments refunded).
  *
- * @deprecated Use optional `proposalShape` argument to `makeInvitation` with
- * a genuine pattern.
+ * @deprecated Use optional `proposalShape` argument to `makeInvitation` with a
+ *   genuine pattern.
  * @param {ZCFSeat} seat
  * @param {ExpectedRecord} expected
  */
@@ -172,9 +170,8 @@ export const assertNatAssetKind = (zcf, brand) => {
 export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
 
 /**
- * Deposit payments such that their amounts are reallocated to a seat.
- * The `amounts` and `payments` records must have corresponding
- * keywords.
+ * Deposit payments such that their amounts are reallocated to a seat. The
+ * `amounts` and `payments` records must have corresponding keywords.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} recipientSeat
@@ -213,9 +210,9 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
 };
 
 /**
- * Withdraw payments from a seat. Note that withdrawing the amounts of
- * the payments must not and cannot violate offer safety for the seat. The
- * `amounts` and `payments` records must have corresponding keywords.
+ * Withdraw payments from a seat. Note that withdrawing the amounts of the
+ * payments must not and cannot violate offer safety for the seat. The `amounts`
+ * and `payments` records must have corresponding keywords.
  *
  * @param {ZCF} zcf
  * @param {ZCFSeat} seat
@@ -231,13 +228,12 @@ export const withdrawFromSeat = async (zcf, seat, amounts) => {
 };
 
 /**
- * Save all of the issuers in an issuersKeywordRecord to ZCF, using
- * the method `zcf.saveIssuer`. This does not error if any of the keywords
- * already exist. If the keyword is already present, it is ignored.
+ * Save all of the issuers in an issuersKeywordRecord to ZCF, using the method
+ * `zcf.saveIssuer`. This does not error if any of the keywords already exist.
+ * If the keyword is already present, it is ignored.
  *
  * @param {ZCF} zcf
- * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to
- * ZCF
+ * @param {IssuerKeywordRecord} issuerKeywordRecord Issuers to save to ZCF
  */
 export const saveAllIssuers = async (zcf, issuerKeywordRecord = harden({})) => {
   const { issuers } = zcf.getTerms();
@@ -278,40 +274,30 @@ const reverse = (keywordRecord = {}) => {
 
 /**
  * Make an offer to another contract instance (labeled contractB below),
- * withdrawing the payments for the offer from a seat in the current
- * contract instance (contractA) and depositing the payouts in another
- * seat in the current contract instance (contractA).
+ * withdrawing the payments for the offer from a seat in the current contract
+ * instance (contractA) and depositing the payouts in another seat in the
+ * current contract instance (contractA).
  *
- * @param {ZCF} zcf
- *   Zoe Contract Facet for contractA
- *
- * @param {ERef<Invitation<Result, Args>>} invitation
- *   Invitation to contractB
- *
- * @param {KeywordKeywordRecord | undefined} keywordMapping
- *   Mapping of keywords used in contractA to keywords to be used in
- *   contractB. Note that the pathway to deposit the payout back to
- *   contractA reverses this mapping.
- *
- * @param {Proposal} proposal
- *   The proposal for the offer to be made to contractB
- *
- * @param {ZCFSeat} fromSeat
- *   The seat in contractA to take the offer payments from.
- *
- * @param {ZCFSeat} [toSeat]
- *   The seat in contractA to deposit the payout of the offer to.
- *   If `toSeat` is not provided, this defaults to the `fromSeat`.
- *
- * @param {Args} [offerArgs]
- *   Additional contract-specific optional arguments in a record.
- *
- * @returns {Promise<{userSeatPromise: Promise<UserSeat<Result>>, deposited: Promise<AmountKeywordRecord>}>}
- *   A promise for the userSeat for the offer to the other contract, and a
- *   promise (`deposited`) which resolves when the payout for the offer has been
- *   deposited to the `toSeat`.
- *   Any failures of the invitation will be returned by `userSeatPromise.getOfferResult()`.
- *
+ * @param {ZCF} zcf Zoe Contract Facet for contractA
+ * @param {ERef<Invitation<Result, Args>>} invitation Invitation to contractB
+ * @param {KeywordKeywordRecord | undefined} keywordMapping Mapping of keywords
+ *   used in contractA to keywords to be used in contractB. Note that the
+ *   pathway to deposit the payout back to contractA reverses this mapping.
+ * @param {Proposal} proposal The proposal for the offer to be made to contractB
+ * @param {ZCFSeat} fromSeat The seat in contractA to take the offer payments
+ *   from.
+ * @param {ZCFSeat} [toSeat] The seat in contractA to deposit the payout of the
+ *   offer to. If `toSeat` is not provided, this defaults to the `fromSeat`.
+ * @param {Args} [offerArgs] Additional contract-specific optional arguments in
+ *   a record.
+ * @returns {Promise<{
+ *   userSeatPromise: Promise<UserSeat<Result>>;
+ *   deposited: Promise<AmountKeywordRecord>;
+ * }>}
+ *   A promise for the userSeat for the offer to the other contract, and a promise
+ *   (`deposited`) which resolves when the payout for the offer has been
+ *   deposited to the `toSeat`. Any failures of the invitation will be returned
+ *   by `userSeatPromise.getOfferResult()`.
  * @template {object} Args Offer args
  * @template {object} Result Offer result
  */

@@ -8,14 +8,14 @@ function makeCallbackRegistry(callbacks) {
   const todo = new Set(Object.keys(callbacks));
   return harden({
     /**
-     * Robustly wrap a method with a callbacks[method] function, if defined.  We
+     * Robustly wrap a method with a callbacks[method] function, if defined. We
      * incur no runtime overhead if the given callback method isn't defined.
      *
      * @param {string} method wrap with callbacks[method]
      * @param {(...args: Array<unknown>) => unknown} impl the original
-     * implementation of the method
+     *   implementation of the method
      * @returns {(...args: Array<unknown>) => unknown} the wrapped method if the
-     * callback is defined, or original method if not
+     *   callback is defined, or original method if not
      */
     registerCallback(method, impl) {
       todo.delete(method);
@@ -59,7 +59,7 @@ function makeCallbackRegistry(callbacks) {
      * Declare that all the methods have been registered.
      *
      * @param {string} errorUnusedMsg message to display if there are callback
-     * names that don't correspond to a registration
+     *   names that don't correspond to a registration
      */
     doneRegistering(errorUnusedMsg = `Unrecognized callback names:`) {
       const cbNames = [...todo.keys()];
@@ -72,8 +72,8 @@ function makeCallbackRegistry(callbacks) {
 }
 
 /**
- * @param {*} slogCallbacks
- * @param {Pick<Console, 'debug'|'log'|'info'|'warn'|'error'>} dummyConsole
+ * @param {any} slogCallbacks
+ * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} dummyConsole
  * @returns {KernelSlog}
  */
 export function makeDummySlogger(slogCallbacks, dummyConsole) {
@@ -102,8 +102,8 @@ export function makeDummySlogger(slogCallbacks, dummyConsole) {
 }
 
 /**
- * @param {*} slogCallbacks
- * @param {*} writeObj
+ * @param {any} slogCallbacks
+ * @param {any} writeObj
  * @returns {KernelSlog}
  */
 export function makeSlogger(slogCallbacks, writeObj) {

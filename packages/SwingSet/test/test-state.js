@@ -634,10 +634,9 @@ const { consensusStats: testCrankHasherConsensusStats } =
   testCrankHasherStats.getSerializedStats();
 
 /**
- * Wraps a base sha256 hasher always appending the initial kernel stats
- * before generating the digest.
- * Assumes tests do not perform complex kernelKeeper operations that
- * change the stats.
+ * Wraps a base sha256 hasher always appending the initial kernel stats before
+ * generating the digest. Assumes tests do not perform complex kernelKeeper
+ * operations that change the stats.
  *
  * @param {string} [algorithm]
  */

@@ -5,16 +5,19 @@ import { Transform } from 'node:stream';
 
 /**
  * @typedef {object} BufferLineTransformOptions
- * @property {Buffer | string | number} [break] line break matcher for Buffer.indexOf() (default: 10)
- * @property {BufferEncoding} [breakEncoding] if break is a string, the encoding to use
+ * @property {Buffer | string | number} [break] line break matcher for
+ *   Buffer.indexOf() (default: 10)
+ * @property {BufferEncoding} [breakEncoding] if break is a string, the encoding
+ *   to use
  */
 
 export default class BufferLineTransform extends Transform {
   /**
-   * The BufferLineTransform is reading String or Buffer content from a Readable stream
-   * and writing each line as a Buffer in object mode
+   * The BufferLineTransform is reading String or Buffer content from a Readable
+   * stream and writing each line as a Buffer in object mode
    *
-   * @param {import('node:stream').TransformOptions & BufferLineTransformOptions} [options]
+   * @param {import('node:stream').TransformOptions &
+   *   BufferLineTransformOptions} [options]
    */
   constructor(options) {
     const {

@@ -102,7 +102,6 @@ export const makeZoeSeatAdminFactory = baggage => {
     'ZoeSeatKit',
     ZoeSeatIKit,
     /**
-     *
      * @param {Allocation} initialAllocation
      * @param {ProposalRecord} proposal
      * @param {InstanceAdminHelper} instanceAdminHelper

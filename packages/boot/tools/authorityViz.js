@@ -27,7 +27,6 @@ const styles = {
  * @param {Set<GraphNode>} nodes
  * @param {Map<string, Set<{ id: string; style?: string }>>} neighbors
  * @yields {string}
- *
  * @typedef {{
  *   id: string;
  *   cluster?: string;
@@ -66,8 +65,7 @@ function* fmtGraph(nodes, neighbors) {
 
 /**
  * @param {Record<string, Permit>} manifest
- *
- * @typedef {| true
+ * @typedef {true
  *   | ({
  *       vatParameters?: Record<string, Permit>;
  *       vatPowers?: Record<string, true>;
@@ -87,7 +85,6 @@ function* fmtGraph(nodes, neighbors) {
  * }} PowerSpace
  *
  * @typedef {boolean | VatName} Status
- *
  * @typedef {string} VatName
  */
 const manifest2graph = manifest => {

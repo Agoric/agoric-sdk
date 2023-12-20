@@ -17,14 +17,16 @@ const autoRefundBundleP = makeBundle(
   '@agoric/zoe/src/contracts/automaticRefund.js',
 );
 
-/**  */
-
 /**
  * @template {GovernableStartFn} T governed contract startfn
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
  * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer
- * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
+ * @param {{
+ *   [k: string]: any;
+ *   governedParams?: Record<string, unknown>;
+ *   governedApis?: string[];
+ * }} termsOfGoverned
  * @param {{}} privateArgsOfGoverned
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  */
@@ -43,9 +45,9 @@ export const setUpGovernedContract = async (
 
   /**
    * @type {[
-   * Installation<import('./puppetContractGovernor').start>,
-   * Installation<any>,
-   * Installation<T>,
+   *   Installation<import('./puppetContractGovernor').start>,
+   *   Installation<any>,
+   *   Installation<T>,
    * ]}
    */
   const [governor, autoRefund, governed] = await Promise.all([
@@ -56,7 +58,8 @@ export const setUpGovernedContract = async (
   const installs = { governor, autoRefund, governed };
 
   /**
-   * Contract governor wants a committee invitation. Give it a random invitation.
+   * Contract governor wants a committee invitation. Give it a random
+   * invitation.
    */
   async function getFakeInvitation() {
     const autoRefundFacets = await E(zoe).startInstance(autoRefund);

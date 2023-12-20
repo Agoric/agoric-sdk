@@ -12,18 +12,28 @@ import { E } from '@endo/eventual-send';
 /**
  * Recorders support publishing data to vstorage.
  *
- * `Recorder` is similar to `Publisher` (in that they send out data) but has different signatures:
- * - methods are async because they await remote calls to Marshaller and StorageNode
+ * `Recorder` is similar to `Publisher` (in that they send out data) but has
+ * different signatures:
+ *
+ * - methods are async because they await remote calls to Marshaller and
+ *   StorageNode
  * - method names convey the durability
  * - omits fail()
  * - adds getStorageNode() from its durable state
  *
- * Other names such as StoredPublisher or ChainStoragePublisher were considered, but found to be sometimes confused with *durability*, another trait of this class.
+ * Other names such as StoredPublisher or ChainStoragePublisher were considered,
+ * but found to be sometimes confused with _durability_, another trait of this
+ * class.
  */
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): Awaited<import('@endo/far').FarRef<StorageNode>>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{
+ *   getStorageNode(): Awaited<import('@endo/far').FarRef<StorageNode>>;
+ *   getStoragePath(): Promise<string>;
+ *   write(value: T): Promise<void>;
+ *   writeFinal(value: T): Promise<void>;
+ * }} Recorder
  */
 
 /**
@@ -33,7 +43,9 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {Pick<PublishKit<T>, 'subscriber'> & { recorderP: ERef<Recorder<T>> }} EventualRecorderKit
+ * @typedef {Pick<PublishKit<T>, 'subscriber'> & {
+ *   recorderP: ERef<Recorder<T>>;
+ * }} EventualRecorderKit
  */
 
 /**
@@ -92,7 +104,8 @@ export const prepareRecorder = (baggage, marshaller) => {
         return path;
       },
       /**
-       * Marshalls before writing to storage or publisher to help ensure the two streams match.
+       * Marshalls before writing to storage or publisher to help ensure the two
+       * streams match.
        *
        * @param {unknown} value
        * @returns {Promise<void>}
@@ -135,11 +148,15 @@ harden(prepareRecorder);
 /** @typedef {ReturnType<typeof prepareRecorder>} MakeRecorder */
 
 /**
- * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
+ * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be
+ * held in Exo state.
  *
  * @see {defineERecorderKit}
  *
- * @param {{makeRecorder: MakeRecorder, makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>}} makers
+ * @param {{
+ *   makeRecorder: MakeRecorder;
+ *   makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>;
+ * }} makers
  */
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
@@ -152,7 +169,7 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
     const { subscriber, publisher } = makeDurablePublishKit();
     const recorder = makeRecorder(
       publisher,
-      /** @type { Awaited<import('@endo/far').FarRef<StorageNode>> } */ (
+      /** @type {Awaited<import('@endo/far').FarRef<StorageNode>>} */ (
         storageNode
       ),
       valueShape,
@@ -164,11 +181,15 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
 /** @typedef {ReturnType<typeof defineRecorderKit>} MakeRecorderKit */
 
 /**
- * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
+ * `makeERecorderKit` is for closures that must return a `subscriber`
+ * synchronously but can defer the `recorder`.
  *
  * @see {defineRecorderKit}
  *
- * @param {{makeRecorder: MakeRecorder, makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>}} makers
+ * @param {{
+ *   makeRecorder: MakeRecorder;
+ *   makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>;
+ * }} makers
  */
 export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
@@ -183,7 +204,7 @@ export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
       makeRecorder(
         publisher,
         // @ts-expect-error Casting because it's remote
-        /** @type { import('@endo/far').FarRef<StorageNode> } */ (storageNode),
+        /** @type {import('@endo/far').FarRef<StorageNode>} */ (storageNode),
         valueShape,
       ),
     );
@@ -195,10 +216,10 @@ harden(defineERecorderKit);
 /** @typedef {ReturnType<typeof defineERecorderKit>} MakeERecorderKit */
 
 /**
- * Convenience wrapper to prepare the DurablePublishKit and Recorder kinds.
- * Note that because prepareRecorder() can only be called once per baggage,
- * this should only be used when there is no need for an EventualRecorderKit.
- * When there is, prepare the kinds separately and pass to the kit definers.
+ * Convenience wrapper to prepare the DurablePublishKit and Recorder kinds. Note
+ * that because prepareRecorder() can only be called once per baggage, this
+ * should only be used when there is no need for an EventualRecorderKit. When
+ * there is, prepare the kinds separately and pass to the kit definers.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -217,8 +238,9 @@ export const prepareRecorderKit = (baggage, marshaller) => {
  *
  * NB: this defines two durable kinds. Must be called at most once per baggage.
  *
- * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
- * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
+ * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be
+ * held in Exo state. `makeERecorderKit` is for closures that must return a
+ * `subscriber` synchronously but can defer the `recorder`.
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -260,8 +282,8 @@ export const prepareMockRecorderKitMakers = () => {
 };
 
 /**
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
+ * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160 explictly
+ * specify the type that the Pattern will verify through a match.
  *
  * This is a Pattern but since that's `any`, including in the typedef turns the
  * whole thing to `any`.

@@ -22,8 +22,12 @@ const makeVoterVat = async (log, vats, zoe) => {
 /**
  * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
  * @param {import('@agoric/time').Timestamp} closingTime
- * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time').TimerService }} tools
- * @param {*} quorumRule
+ * @param {{
+ *   electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet;
+ *   installations: Record<string, Installation>;
+ *   timer: import('@agoric/time').TimerService;
+ * }} tools
+ * @param {any} quorumRule
  */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
   const { electorateFacet, installations } = tools;
@@ -225,7 +229,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
-  /** @type {{zoeService: ERef<ZoeService>}} */
+  /** @type {{ zoeService: ERef<ZoeService> }} */
   const { zoeService: zoe } = await E(vats.zoe).buildZoe(
     vatAdminSvc,
     undefined,

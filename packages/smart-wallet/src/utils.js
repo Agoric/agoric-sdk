@@ -9,7 +9,12 @@ const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
-  /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
+  /**
+   * @type {Map<
+   *   import('./offers').OfferId,
+   *   import('./offers').OfferStatus
+   * >}
+   */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
@@ -17,11 +22,21 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /**
    * keyed by description; xxx assumes unique
    *
-   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: Instance }>}
+   * @type {Map<
+   *   import('./offers').OfferId,
+   *   {
+   *     acceptedIn: import('./offers').OfferId;
+   *     description: string;
+   *     instance: Instance;
+   *   }
+   * >}
    */
   const invitationsReceived = new Map();
 
-  /** @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than previous */
+  /**
+   * @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than
+   *   previous
+   */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
       return;
@@ -125,7 +140,8 @@ export const assertHasData = async follower => {
 /**
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord} [subscribers]
+ * @param {import('./types.js').PublicSubscribers
+ *   | import('@agoric/zoe/src/contractSupport').TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

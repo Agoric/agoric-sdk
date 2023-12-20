@@ -2,7 +2,7 @@ import sqlite3ambient from 'better-sqlite3';
 import tmpambient from 'tmp';
 
 /**
- * @param {{ sqlite3?: typeof sqlite3ambient, tmp?: typeof tmpambient }} [io]
+ * @param {{ sqlite3?: typeof sqlite3ambient; tmp?: typeof tmpambient }} [io]
  */
 export const makeTempKVDatabase = io => {
   const { sqlite3 = sqlite3ambient, tmp = tmpambient } = io || {};
@@ -42,7 +42,7 @@ export const makeKVDatabaseTransactionManager = db => {
  * @param {sqlite3ambient.Database} [db]
  */
 export const makeKVStringStore = (kind, db = makeTempKVDatabase()) => {
-  /** @type {Pick<LegacyMap<string, string>, 'get'|'has'|'set'>} */
+  /** @type {Pick<LegacyMap<string, string>, 'get' | 'has' | 'set'>} */
   const serialisingStore = harden({
     get: key => {
       const it = db

@@ -12,7 +12,7 @@ export const stringToNat = s => {
   return nat;
 };
 
-/** @param {{key: string, size: number}[]} queueSizeEntries */
+/** @param {{ key: string; size: number }[]} queueSizeEntries */
 export const parseQueueSizes = queueSizeEntries =>
   Object.fromEntries(
     queueSizeEntries.map(({ key, size }) => {

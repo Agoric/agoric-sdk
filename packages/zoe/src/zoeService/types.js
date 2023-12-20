@@ -5,27 +5,24 @@
 /**
  * @typedef {object} ZoeService
  *
- * Zoe provides a framework for deploying and working with smart
- * contracts. It is accessed as a long-lived and well-trusted service
- * that enforces offer safety for the contracts that use it. Zoe has a
- * single `invitationIssuer` for the entirety of its lifetime. By
- * having a reference to Zoe, a user can get the `invitationIssuer`
- * and thus validate any `invitation` they receive from someone else.
+ *   Zoe provides a framework for deploying and working with smart contracts. It
+ *   is accessed as a long-lived and well-trusted service that enforces offer
+ *   safety for the contracts that use it. Zoe has a single `invitationIssuer`
+ *   for the entirety of its lifetime. By having a reference to Zoe, a user can
+ *   get the `invitationIssuer` and thus validate any `invitation` they receive
+ *   from someone else.
  *
- * Zoe has two different facets: the public Zoe service and the
- * contract facet (ZCF). Each contract instance has a copy of ZCF
- * within its vat. The contract and ZCF never have direct access to
- * the users' payments or the Zoe purses.
- *
+ *   Zoe has two different facets: the public Zoe service and the contract facet
+ *   (ZCF). Each contract instance has a copy of ZCF within its vat. The
+ *   contract and ZCF never have direct access to the users' payments or the Zoe
+ *   purses.
  * @property {GetInvitationIssuer} getInvitationIssuer
  *
- * Zoe has a single `invitationIssuer` for the entirety of its
- * lifetime. By having a reference to Zoe, a user can get the
- * `invitationIssuer` and thus validate any `invitation` they receive
- * from someone else. The mint associated with the invitationIssuer
- * creates the ERTP payments that represent the right to interact with
- * a smart contract in particular ways.
- *
+ *   Zoe has a single `invitationIssuer` for the entirety of its lifetime. By
+ *   having a reference to Zoe, a user can get the `invitationIssuer` and thus
+ *   validate any `invitation` they receive from someone else. The mint
+ *   associated with the invitationIssuer creates the ERTP payments that
+ *   represent the right to interact with a smart contract in particular ways.
  * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
  * @property {import('./utils').StartInstance} startInstance
@@ -38,9 +35,9 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
- * @property {GetInvitationDetails} getInvitationDetails
- * Return an object with the instance, installation, description, invitation
- * handle, and any custom properties specific to the contract.
+ * @property {GetInvitationDetails} getInvitationDetails Return an object with
+ *   the instance, installation, description, invitation handle, and any custom
+ *   properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
@@ -60,7 +57,7 @@
 /**
  * @callback GetConfiguration
  * @returns {{
- *   feeIssuerConfig: FeeIssuerConfig,
+ *   feeIssuerConfig: FeeIssuerConfig;
  * }}
  */
 
@@ -117,9 +114,8 @@
 /**
  * @callback InstallBundle
  *
- * Create an installation by safely evaluating the code and
- * registering it with Zoe. Returns an installation.
- *
+ *   Create an installation by safely evaluating the code and registering it with
+ *   Zoe. Returns an installation.
  * @param {Bundle | SourceBundle} bundle
  * @param {string} [bundleLabel]
  * @returns {Promise<Installation>}
@@ -130,8 +126,7 @@
 /**
  * @callback InstallBundleID
  *
- * Create an installation from a Bundle ID. Returns an installation.
- *
+ *   Create an installation from a Bundle ID. Returns an installation.
  * @param {BundleID} bundleID
  * @param {string} [bundleLabel]
  * @returns {Promise<Installation>}
@@ -140,9 +135,8 @@
 /**
  * @callback GetBundleIDFromInstallation
  *
- * Verify that an alleged Installation is real, and return the Bundle ID it
- * will use for contract code.
- *
+ *   Verify that an alleged Installation is real, and return the Bundle ID it will
+ *   use for contract code.
  * @param {ERef<Installation>} allegedInstallation
  * @returns {Promise<BundleID>}
  */
@@ -153,22 +147,18 @@
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,
  *   offerArgs?: Args,
- *   ) => Promise<UserSeat<Result>>
- * } Offer
+ * ) => Promise<UserSeat<Result>>} Offer
+ *   To redeem an invitation, the user normally provides a proposal (their rules
+ *   for the offer) as well as payments to be escrowed by Zoe. If either the
+ *   proposal or payments would be empty, indicate this by omitting that
+ *   argument or passing undefined, rather than passing an empty record.
  *
- * To redeem an invitation, the user normally provides a proposal (their
- * rules for the offer) as well as payments to be escrowed by Zoe.  If
- * either the proposal or payments would be empty, indicate this by
- * omitting that argument or passing undefined, rather than passing an
- * empty record.
- *
- * The proposal has three parts: `want` and `give` are used by Zoe to
- * enforce offer safety, and `exit` is used to specify the particular
- * payout-liveness policy that Zoe can guarantee. `want` and `give`
- * are objects with keywords as keys and amounts as values.
- * `paymentKeywordRecord` is a record with keywords as keys, and the
- * values are the actual payments to be escrowed. A payment is
- * expected for every rule under `give`.
+ *   The proposal has three parts: `want` and `give` are used by Zoe to enforce
+ *   offer safety, and `exit` is used to specify the particular payout-liveness
+ *   policy that Zoe can guarantee. `want` and `give` are objects with keywords
+ *   as keys and amounts as values. `paymentKeywordRecord` is a record with
+ *   keywords as keys, and the values are the actual payments to be escrowed. A
+ *   payment is expected for every rule under `give`.
  */
 
 /**
@@ -190,53 +180,51 @@
  * UserSeat includes queries for the associated offer's current state and an
  * operation to request that the offer exit, as follows:
  *
- * @see {@link https://docs.agoric.com/zoe/api/zoe.html#userseat-object}}
+ * @see {@link https://docs.agoric.com/zoe/api/zoe.html#userseat-object} }
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
- * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
- * returns a promise for a KeywordPaymentRecord containing all the payouts from
- * this seat. The promise will resolve after the seat has exited.
- * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
- * returns a promise for the Payment corresponding to the indicated keyword.
- * The promise will resolve after the seat has exited.
+ * @property {() => Promise<PaymentPKeywordRecord>} getPayouts returns a promise
+ *   for a KeywordPaymentRecord containing all the payouts from this seat. The
+ *   promise will resolve after the seat has exited.
+ * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout returns a
+ *   promise for the Payment corresponding to the indicated keyword. The promise
+ *   will resolve after the seat has exited.
  * @property {() => Promise<OR>} getOfferResult
- * @property {() => void} [tryExit]
- * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
- * offer-safety guarantee applies no matter how a seat's interaction with a
- * contract ends. Under normal circumstances, the participant might be able to
- * call `tryExit()`, or the contract might do something explicitly. On exiting,
- * the seat holder gets its current `allocation` and the `seat` can no longer
- * interact with the contract.
- * @property {() => Promise<boolean>} hasExited
- * Returns true if the seat has exited, false if it is still active.
- * @property {() => Promise<0|1>} numWantsSatisfied returns 1 if the proposal's
- * want clause was satisfied by the final allocation, otherwise 0. This is
- * numeric to support a planned enhancement called "multiples" which will allow
- * the return value to be any non-negative number. The promise will resolve
- * after the seat has exited.
- * @property {() => Promise<Allocation>} getFinalAllocation
- * return a promise for the final allocation. The promise will resolve after the
- * seat has exited.
- * @property {() => Subscriber<Completion>} getExitSubscriber returns a subscriber that
- * will be notified when the seat has exited or failed.
+ * @property {() => void} [tryExit] Note: Only works if the seat's `proposal`
+ *   has an `OnDemand` `exit` clause. Zoe's offer-safety guarantee applies no
+ *   matter how a seat's interaction with a contract ends. Under normal
+ *   circumstances, the participant might be able to call `tryExit()`, or the
+ *   contract might do something explicitly. On exiting, the seat holder gets
+ *   its current `allocation` and the `seat` can no longer interact with the
+ *   contract.
+ * @property {() => Promise<boolean>} hasExited Returns true if the seat has
+ *   exited, false if it is still active.
+ * @property {() => Promise<0 | 1>} numWantsSatisfied returns 1 if the
+ *   proposal's want clause was satisfied by the final allocation, otherwise 0.
+ *   This is numeric to support a planned enhancement called "multiples" which
+ *   will allow the return value to be any non-negative number. The promise will
+ *   resolve after the seat has exited.
+ * @property {() => Promise<Allocation>} getFinalAllocation return a promise for
+ *   the final allocation. The promise will resolve after the seat has exited.
+ * @property {() => Subscriber<Completion>} getExitSubscriber returns a
+ *   subscriber that will be notified when the seat has exited or failed.
  */
 
 /**
  * @typedef {Partial<ProposalRecord>} Proposal
- *
- * @typedef {{give: AmountKeywordRecord,
- *            want: AmountKeywordRecord,
- *            exit: ExitRule
- *           }} ProposalRecord
+ * @typedef {{
+ *   give: AmountKeywordRecord;
+ *   want: AmountKeywordRecord;
+ *   exit: ExitRule;
+ * }} ProposalRecord
  */
 
 /**
  * @typedef {Record<Keyword, Amount<any>>} AmountKeywordRecord
  *
- * The keys are keywords, and the values are amounts. For example:
- * { Asset: AmountMath.make(assetBrand, 5n), Price:
- * AmountMath.make(priceBrand, 9n) }
+ *   The keys are keywords, and the values are amounts. For example: { Asset:
+ *   AmountMath.make(assetBrand, 5n), Price: AmountMath.make(priceBrand, 9n) }
  */
 
 /**
@@ -256,18 +244,18 @@
 
 /**
  * @typedef {object} AfterDeadlineExitRule
- * @property {{timer: import('@agoric/time').TimerService, deadline: import('@agoric/time').Timestamp}} afterDeadline
+ * @property {{
+ *   timer: import('@agoric/time').TimerService;
+ *   deadline: import('@agoric/time').Timestamp;
+ * }} afterDeadline
  */
 
 /**
  * @typedef {OnDemandExitRule | WaivedExitRule | AfterDeadlineExitRule} ExitRule
- *
- * The possible keys are 'waived', 'onDemand', and 'afterDeadline'.
- * `timer` and `deadline` only are used for the `afterDeadline` key.
- * The possible records are:
- * `{ waived: null }`
- * `{ onDemand: null }`
- * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }
+ *   The possible keys are 'waived', 'onDemand', and 'afterDeadline'. `timer` and
+ *   `deadline` only are used for the `afterDeadline` key. The possible records
+ *   are: `{ waived: null }` `{ onDemand: null }` `{ afterDeadline: { timer
+ *   :Timer<Deadline>, deadline :Deadline } }
  */
 
 /**
@@ -279,17 +267,19 @@
  */
 
 /**
- * @typedef {{bundleCap: import('@agoric/swingset-vat').BundleCap } | {name: string} | {id: BundleID}} ZCFSpec
+ * @typedef {{ bundleCap: import('@agoric/swingset-vat').BundleCap }
+ *   | { name: string }
+ *   | { id: BundleID }} ZCFSpec
  */
 
 /**
- * @typedef {Record<string, any>} SourceBundle
- * Opaque type for a JSONable source bundle
+ * @typedef {Record<string, any>} SourceBundle Opaque type for a JSONable source
+ *   bundle
  */
 
 /**
- * @typedef {Record<Keyword,ERef<Payment<any>>>} PaymentPKeywordRecord
- * @typedef {Record<Keyword,Payment<any>>} PaymentKeywordRecord
+ * @typedef {Record<Keyword, ERef<Payment<any>>>} PaymentPKeywordRecord
+ * @typedef {Record<Keyword, Payment<any>>} PaymentKeywordRecord
  */
 
 /**

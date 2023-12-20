@@ -11,16 +11,12 @@ import { assert, Fail } from '@agoric/assert';
 // clist for the recipient vat.
 
 /**
- * Parse a kernel slot reference string into a kernel slot object:
- *   {
- *      type: STRING, // 'object', 'device', or 'promise'
- *      id: Nat
- *   }
+ * Parse a kernel slot reference string into a kernel slot object: { type:
+ * STRING, // 'object', 'device', or 'promise' id: Nat }
  *
- * @param {unknown} s  The string to be parsed, as described above.
- *
- * @returns {{type: 'object' | 'device' | 'promise', id: bigint}} a kernel slot object corresponding to the parameter.
- *
+ * @param {unknown} s The string to be parsed, as described above.
+ * @returns {{ type: 'object' | 'device' | 'promise'; id: bigint }} a kernel
+ *   slot object corresponding to the parameter.
  * @throws {Error} if the given string is syntactically incorrect.
  */
 export function parseKernelSlot(s) {
@@ -47,11 +43,9 @@ export function parseKernelSlot(s) {
 /**
  * Generate a kernel slot reference string given a type and id.
  *
- * @param {'object' | 'device' | 'promise'} type  The type
- * @param {bigint | number} id    The id, a Nat.
- *
+ * @param {'object' | 'device' | 'promise'} type The type
+ * @param {bigint | number} id The id, a Nat.
  * @returns {string} the corresponding kernel slot reference string.
- *
  * @throws {Error} if type is not one of the above known types.
  */
 export function makeKernelSlot(type, id) {
@@ -71,11 +65,10 @@ export function makeKernelSlot(type, id) {
  * Assert function to ensure that a kernel slot reference string refers to a
  * slot of a given type.
  *
- * @param {'object' | 'device' | 'promise'} type  The kernel slot type desired, a string.
- * @param {string} kernelSlot  The kernel slot reference string being tested
- *
+ * @param {'object' | 'device' | 'promise'} type The kernel slot type desired, a
+ *   string.
+ * @param {string} kernelSlot The kernel slot reference string being tested
  * @throws if kernelSlot is not of the given type or is malformed.
- *
  * @returns {void}
  */
 export function insistKernelType(type, kernelSlot) {

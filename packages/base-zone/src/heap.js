@@ -29,7 +29,8 @@ const detachedHeapStores = Far('heapStores', {
 });
 
 /**
- * Create a heap (in-memory) zone that uses the default exo and store implementations.
+ * Create a heap (in-memory) zone that uses the default exo and store
+ * implementations.
  *
  * @param {string} [baseLabel]
  * @returns {import('./types.js').Zone}

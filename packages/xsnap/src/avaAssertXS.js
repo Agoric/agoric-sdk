@@ -4,14 +4,14 @@
 const { assign, freeze, keys } = Object;
 
 /**
- * deep equal value comparison
- * XXX broken https://github.com/Agoric/agoric-sdk/pull/5398
+ * deep equal value comparison XXX broken
+ * https://github.com/Agoric/agoric-sdk/pull/5398
  *
  * originally based on code from Paul Roub Aug 2014
  * https://stackoverflow.com/a/25456134/7963
  *
- * @type {(x: unknown, y: unknown) => Delta }
- * @typedef { null | { actual: unknown, expected?: unknown }} Delta
+ * @type {(x: unknown, y: unknown) => Delta}
+ * @typedef {null | { actual: unknown; expected?: unknown }} Delta
  */
 function deepDifference(x, y) {
   if (Object.is(x, y)) {
@@ -64,8 +64,7 @@ function deepDifference(x, y) {
  * ref https://testanything.org/tap-specification.html
  *
  * @param {(msg: TapMessage) => void} send
- *
- * @typedef { ReturnType<typeof tapFormat> } TapFormat
+ * @typedef {ReturnType<typeof tapFormat>} TapFormat
  * @typedef {import('./avaXS').TapMessage} TapMessage
  */
 function tapFormat(send) {
@@ -93,13 +92,12 @@ function tapFormat(send) {
   });
 }
 
-/** @type { Harness | null } */
+/** @type {Harness | null} */
 let theHarness = null; // ISSUE: ambient
 
 /**
  * @param {(msg: TapMessage) => void} send
- *
- * @typedef { ReturnType<typeof createHarness>} Harness
+ * @typedef {ReturnType<typeof createHarness>} Harness
  */
 function createHarness(send) {
   let testNum = 0;
@@ -114,16 +112,16 @@ function createHarness(send) {
     get context() {
       return context;
     },
-    /** @type {(label: string, hook: () => Promise<void>) => void } */
+    /** @type {(label: string, hook: () => Promise<void>) => void} */
     before(_label, hook) {
       beforeHooks.push(hook);
     },
-    /** @type { (ok: boolean) => number } */
+    /** @type {(ok: boolean) => number} */
     finish(_ok) {
       testNum += 1;
       return testNum;
     },
-    /** @type { (name: string, thunk: () => Promise<void>) => void } */
+    /** @type {(name: string, thunk: () => Promise<void>) => void} */
     queue(name, thunk) {
       if (name in suitesToRun) {
         throw Error(`duplicate name ${name}`);
@@ -154,10 +152,12 @@ function createHarness(send) {
 }
 
 /**
- * @param {*} exc
+ * @param {any} exc
  * @param {Expectation} expectation
- * @returns {null | { expected: unknown, actual: unknown }}
- * @typedef {{ instanceOf: Function } | { message: string | RegExp } | undefined} Expectation
+ * @returns {null | { expected: unknown; actual: unknown }}
+ * @typedef {{ instanceOf: Function }
+ *   | { message: string | RegExp }
+ *   | undefined} Expectation
  */
 function checkExpectation(exc, expectation) {
   if (!expectation) return null;
@@ -190,7 +190,6 @@ function checkExpectation(exc, expectation) {
  *
  * @param {Harness} htest
  * @param {TapFormat} out
- *
  * @typedef {ReturnType<typeof makeTester>} Tester
  */
 function makeTester(htest, out) {
@@ -259,7 +258,13 @@ function makeTester(htest, out) {
     not(a, b, message = 'should not be identical') {
       assert(!Object.is(a, b), message);
     },
-    /** @type {(actual: unknown, expected: unknown, message?: string) => void } */
+    /**
+     * @type {(
+     *   actual: unknown,
+     *   expected: unknown,
+     *   message?: string,
+     * ) => void}
+     */
     deepEqual(actual, expected, message = 'should be deep equal') {
       const delta = deepDifference(actual, expected);
       assert(delta === null, `${message}: ${JSON.stringify(delta)}`);
@@ -273,7 +278,13 @@ function makeTester(htest, out) {
     like(_a, _b, _message = 'should be like') {
       throw Error('not implemented');
     },
-    /** @type {(fn: () => unknown, e?: Expectation, message?: string) => void } */
+    /**
+     * @type {(
+     *   fn: () => unknown,
+     *   e?: Expectation,
+     *   message?: string,
+     * ) => void}
+     */
     throws(fn, expectation, message = `should throw like ${expectation}`) {
       try {
         fn();
@@ -283,7 +294,7 @@ function makeTester(htest, out) {
         assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
-    /** @type {(fn: () => unknown, message?: string) => void } */
+    /** @type {(fn: () => unknown, message?: string) => void} */
     notThrows(fn, message) {
       try {
         fn();
@@ -293,7 +304,13 @@ function makeTester(htest, out) {
       }
       assert(true, message);
     },
-    /** @type {(thrower: () => Promise<unknown>, expectation?: Expectation, message?: string) => Promise<void> } */
+    /**
+     * @type {(
+     *   thrower: () => Promise<unknown>,
+     *   expectation?: Expectation,
+     *   message?: string,
+     * ) => Promise<void>}
+     */
     async throwsAsync(
       thrower,
       expectation,
@@ -308,7 +325,12 @@ function makeTester(htest, out) {
         assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
-    /** @type {(thrower: () => Promise<unknown>, message?: string) => Promise<void> } */
+    /**
+     * @type {(
+     *   thrower: () => Promise<unknown>,
+     *   message?: string,
+     * ) => Promise<void>}
+     */
     async notThrowsAsync(nonThrower, message) {
       await null;
       try {
@@ -327,7 +349,7 @@ function makeTester(htest, out) {
 /**
  * @param {string} label
  * @param {(t: Tester) => Promise<void>} run
- * @param {Harness?} htestOpt
+ * @param {Harness | null} htestOpt
  */
 const test = (label, run, htestOpt) => {
   const htest = htestOpt || theHarness;
@@ -355,7 +377,7 @@ test.createHarness = createHarness;
 test.todo = _title => {};
 test.failing = (_title, _implementation) => {};
 
-/** @type {(label: string, fn: () => Promise<void>) => void } */
+/** @type {(label: string, fn: () => Promise<void>) => void} */
 test.before = (label, fn) => {
   if (typeof label === 'function') {
     fn = label;

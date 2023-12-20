@@ -32,10 +32,11 @@ const makeVirtualExo = (
   methods,
   options = undefined,
 ) => {
-  const defineKindOptions =
-    /** @type {import('@agoric/vat-data').DefineKindOptions<{ self: typeof methods }>} */ (
-      options
-    );
+  const defineKindOptions = /**
+   * @type {import('@agoric/vat-data').DefineKindOptions<{
+   *   self: typeof methods;
+   * }>}
+   */ (options);
   const makeInstance = defineVirtualExoClass(
     label,
     interfaceGuard,

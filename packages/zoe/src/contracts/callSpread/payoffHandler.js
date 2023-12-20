@@ -16,7 +16,7 @@ import { calculateShares } from './calculateShares.js';
  * callSpread contracts.
  *
  * @param {ZCF<Record<string, any>>} zcf
- * @param {Record<PositionKind,PromiseRecord<ZCFSeat>>} seatPromiseKits
+ * @param {Record<PositionKind, PromiseRecord<ZCFSeat>>} seatPromiseKits
  * @param {ZCFSeat} collateralSeat
  * @returns {PayoffHandler}
  */

@@ -1,13 +1,13 @@
 import { passStyleOf } from '@endo/pass-style';
 
 /**
- * Is `specimen` Passable? This returns true iff `passStyleOf(specimen)`
- * returns a string. This returns `false` iff `passStyleOf(specimen)` throws.
- * Under no normal circumstance should `isPassable(specimen)` throw.
+ * Is `specimen` Passable? This returns true iff `passStyleOf(specimen)` returns
+ * a string. This returns `false` iff `passStyleOf(specimen)` throws. Under no
+ * normal circumstance should `isPassable(specimen)` throw.
  *
- * TODO implement an isPassable that does not rely on try/catch, and
- * move it to @endo/pass-style.
- * This implementation is just a standin until then
+ * TODO implement an isPassable that does not rely on try/catch, and move it to
+ *
+ * @endo/pass-style. This implementation is just a standin until then
  *
  * @param {any} specimen
  * @returns {specimen is Passable}

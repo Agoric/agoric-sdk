@@ -2,8 +2,8 @@
 import { Fail } from '@agoric/assert';
 
 /**
- * Put together information about the issuer in a standard format that
- * is synchronously accessible.
+ * Put together information about the issuer in a standard format that is
+ * synchronously accessible.
  *
  * @template {AssetKind} K
  * @param {Brand<K>} brand

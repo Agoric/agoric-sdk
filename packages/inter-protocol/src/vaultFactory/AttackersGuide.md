@@ -73,4 +73,3 @@ end up with too much or too little.
 The liquidation mechanism is subject to governance. Is the current strategy legible
 (i.e. can Vault users tell how the liquidation will be carried out?) Is the liquidation
 approach destabilizing?
- 

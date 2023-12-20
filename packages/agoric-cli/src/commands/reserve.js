@@ -8,7 +8,7 @@ import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
  * @param {import('anylogger').Logger} _logger
- * @param {*} io
+ * @param {any} io
  */
 export const makeReserveCommand = (_logger, io = {}) => {
   const { stdout = process.stdout, stderr = process.stderr, now } = io;
@@ -23,9 +23,9 @@ export const makeReserveCommand = (_logger, io = {}) => {
     .action(
       /**
        * @param {{
-       *   give: number,
-       *   collateralBrand: string,
-       *   offerId: string,
+       *   give: number;
+       *   collateralBrand: string;
+       *   offerId: string;
        * }} opts
        */
       async ({ collateralBrand, ...opts }) => {

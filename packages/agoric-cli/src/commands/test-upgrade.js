@@ -11,14 +11,14 @@ import { makeWalletUtils, sendAction } from '../lib/wallet.js';
  * Make commands for testing.
  *
  * @param {{
- *   env: Partial<Record<string, string>>,
- *   stdout: Pick<import('stream').Writable,'write'>,
- *   stderr: Pick<import('stream').Writable,'write'>,
- *   now: () => number,
+ *   env: Partial<Record<string, string>>;
+ *   stdout: Pick<import('stream').Writable, 'write'>;
+ *   stderr: Pick<import('stream').Writable, 'write'>;
+ *   now: () => number;
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
- *     typeof import('commander').createCommand,
- *   execFileSync: typeof import('child_process').execFileSync,
- *   setTimeout: typeof setTimeout,
+ *   typeof import('commander').createCommand;
+ *   execFileSync: typeof import('child_process').execFileSync;
+ *   setTimeout: typeof setTimeout;
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */

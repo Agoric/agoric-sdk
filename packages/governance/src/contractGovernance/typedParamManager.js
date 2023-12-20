@@ -10,30 +10,38 @@ const { Fail, quote: q } = assert;
  */
 /**
  * @template {ParamStateRecord} M
- * @typedef {{ [R in keyof M]: M[R]['type']}} ParamTypesMapFromRecord
+ * @typedef {{ [R in keyof M]: M[R]['type'] }} ParamTypesMapFromRecord
  */
 /**
  * @template {ParamTypesMap} M
- * @typedef {{ [T in keyof M]: { type: M[T], value: ParamValueForType<M[T]> } }} ParamRecordsFromTypes
+ * @typedef {{
+ *   [T in keyof M]: { type: M[T]; value: ParamValueForType<M[T]> };
+ * }} ParamRecordsFromTypes
  */
 
 /**
  * @template {ParamTypesMap} M
  * @typedef {{
- *   [K in keyof M as `get${string & K}`]: () => ParamValueForType<M[K]>
+ *   [K in keyof M as `get${string & K}`]: () => ParamValueForType<M[K]>;
  * }} Getters
  */
 
 /**
  * @template {ParamTypesMap} T
  * @typedef {{
- *   [K in keyof T as `update${string & K}`]: (value: ParamValueForType<T[K]>) => void
+ *   [K in keyof T as `update${string & K}`]: (
+ *     value: ParamValueForType<T[K]>,
+ *   ) => void;
  * }} Updaters
  */
 
 /**
  * @template {ParamTypesMap} M
- * @typedef {ParamManagerBase & Getters<M> & Updaters<M> & {readonly: () => Getters<M>} & {updateParams: UpdateParams}} TypedParamManager
+ * @typedef {ParamManagerBase &
+ *   Getters<M> &
+ *   Updaters<M> & { readonly: () => Getters<M> } & {
+ *     updateParams: UpdateParams;
+ *   }} TypedParamManager
  */
 
 /**
@@ -53,7 +61,7 @@ const isAsync = {
  */
 
 /**
- * @typedef {{ type: 'invitation', value: Amount<'set'> }} InvitationParam
+ * @typedef {{ type: 'invitation'; value: Amount<'set'> }} InvitationParam
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -61,15 +69,15 @@ const isAsync = {
 // breaking the ambient typing
 /**
  * @typedef {ST<'amount'>
- * | ST<'brand'>
- * | ST<'installation'>
- * | ST<'instance'>
- * | ST<'nat'>
- * | ST<'ratio'>
- * | ST<'string'>
- * | ST<'timestamp'>
- * | ST<'relativeTime'>
- * | ST<'unknown'>} SyncSpecTuple
+ *   | ST<'brand'>
+ *   | ST<'installation'>
+ *   | ST<'instance'>
+ *   | ST<'nat'>
+ *   | ST<'ratio'>
+ *   | ST<'string'>
+ *   | ST<'timestamp'>
+ *   | ST<'relativeTime'>
+ *   | ST<'unknown'>} SyncSpecTuple
  *
  * @typedef {['invitation', Invitation]} AsyncSpecTuple
  */
@@ -80,7 +88,7 @@ const isAsync = {
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @param {ZCF} zcf
- * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
+ * @returns {TypedParamManager<{ [K in keyof T]: T[K][0] }>}
  */
 export const makeParamManager = (publisherKit, spec, zcf) => {
   const builder = makeParamManagerBuilder(publisherKit, zcf.getZoeService());
@@ -107,14 +115,14 @@ export const makeParamManager = (publisherKit, spec, zcf) => {
 harden(makeParamManager);
 
 /**
- * Used only when the contract has multiple param managers.
- * Exactly one must manage the electorate, which requires the async version.
+ * Used only when the contract has multiple param managers. Exactly one must
+ * manage the electorate, which requires the async version.
  *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
- * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
+ * @returns {TypedParamManager<{ [K in keyof T]: T[K][0] }>}
  */
 export const makeParamManagerSync = (publisherKit, spec) => {
   const builder = makeParamManagerBuilder(publisherKit);
@@ -131,13 +139,14 @@ export const makeParamManagerSync = (publisherKit, spec) => {
 harden(makeParamManagerSync);
 
 /**
- * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
+ * @template {Record<string, Invitation> & { Electorate: Invitation }} I
+ *   Private invitation values
  * @template {ParamTypesMap} M Map of types of custom governed terms
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
- * @returns {TypedParamManager<M & {[K in keyof I]: 'invitation'}>}
+ * @returns {TypedParamManager<M & { [K in keyof I]: 'invitation' }>}
  */
 export const makeParamManagerFromTerms = (
   publisherKit,

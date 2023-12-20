@@ -101,7 +101,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
   /**
    * @typedef {{
-   *   context: SpanContext, name: string, error?: string, attrs?: Record<string, string>
+   *   context: SpanContext;
+   *   name: string;
+   *   error?: string;
+   *   attrs?: Record<string, string>;
    * }} Cause
    */
   /** @type {LegacyMap<any, Cause>} */
@@ -157,7 +160,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
    * @typedef {{
    *   method: string;
    *   args: import('@agoric/swingset-vat').SwingSetCapData;
-   *   result?: string | undefined | null,
+   *   result?: string | undefined | null;
    * }} OldMessage
    */
   /** @typedef {ReturnType<typeof parseMsg>} ParsedMessage */
@@ -376,7 +379,6 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       },
 
       /**
-       *
        * @param {string | string[]} key
        * @param {Record<string, any>} attrs
        * @param {string} [errorMessage]
@@ -699,7 +701,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (isReplaying) {
           break;
         }
-        /** @type {{ksc: import('@agoric/swingset-vat').KernelSyscallObject } & Record<string, unknown>} */
+        /**
+         * @type {{
+         *   ksc: import('@agoric/swingset-vat').KernelSyscallObject;
+         * } & Record<string, unknown>}
+         */
         const { ksc, vsc: _1, ...attrs } = slogAttrs;
         if (!ksc) {
           break;
@@ -709,7 +715,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         /**
          * @param {string} name
          * @param {Record<string, any>} [additionalAttributes]
-         * @param {SpanOptions} [options ]
+         * @param {SpanOptions} [options]
          */
         const makeSyscallSpan = (
           name,

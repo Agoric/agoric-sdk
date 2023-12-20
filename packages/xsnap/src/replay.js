@@ -1,12 +1,11 @@
 /**
- * Replay usage:
- *   node replay.js <folder>...
+ * Replay usage: node replay.js <folder>...
  *
  * In case of more than one folder:
- *  1. Spawn based on 00000-options.json in the first folder
- *  2. For all folders but the last,
- *     replay steps 00001 to the first snapshot step.
- *  3. For the last folder, play steps 00001 to last.
+ *
+ * 1. Spawn based on 00000-options.json in the first folder
+ * 2. For all folders but the last, replay steps 00001 to the first snapshot step.
+ * 3. For the last folder, play steps 00001 to last.
  */
 import childProcessPowers from 'child_process';
 import osPowers from 'os';
@@ -52,8 +51,8 @@ function makeSyncStorage(path, { writeFileSync }) {
 /**
  * @param {string} path
  * @param {{
- *   readdirSync: typeof import('fs').readdirSync,
- *   readFileSync: typeof import('fs').readFileSync,
+ *   readdirSync: typeof import('fs').readdirSync;
+ *   readFileSync: typeof import('fs').readFileSync;
  * }} io
  */
 function makeSyncAccess(path, { readdirSync, readFileSync }) {
@@ -71,25 +70,21 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
 }
 
 /**
- * Start an xsnap subprocess controller that records data
- * flowing to it for replay.
+ * Start an xsnap subprocess controller that records data flowing to it for
+ * replay.
  *
- * @param {XSnapOptions} options used
- *        to create the underlying xsnap subprocess. Note that
- *        options.handleCommand is wrapped in order to capture
- *        data sent to the process.
+ * @param {XSnapOptions} options used to create the underlying xsnap subprocess.
+ *   Note that options.handleCommand is wrapped in order to capture data sent to
+ *   the process.
  * @param {string} folderPath where to store files of the form
- *        00000-options.json
- *        00001-evaluate.dat
- *        00002-issueCommand.dat
- *        00003-reply.dat
+ *   00000-options.json 00001-evaluate.dat 00002-issueCommand.dat
+ *   00003-reply.dat
  * @param {{
- *   writeFileSync: typeof import('fs').writeFileSync,
+ *   writeFileSync: typeof import('fs').writeFileSync;
  * }} io
  * @returns {XSnap}
- *
- * @typedef {ReturnType <typeof import('./xsnap.js').xsnap>} XSnap
- * @typedef { import('./xsnap.js').XSnapOptions } XSnapOptions
+ * @typedef {ReturnType<typeof import('./xsnap.js').xsnap>} XSnap
+ * @typedef {import('./xsnap.js').XSnapOptions} XSnapOptions
  */
 export async function recordXSnap(options, folderPath, { writeFileSync }) {
   const folder = makeSyncStorage(folderPath, { writeFileSync });
@@ -109,7 +104,7 @@ export async function recordXSnap(options, folderPath, { writeFileSync }) {
 
   const { handleCommand: handle = msg => msg } = options;
 
-  /** @param { Uint8Array} msg */
+  /** @param {Uint8Array} msg */
   async function handleCommand(msg) {
     nextFile('command').put(msg);
     const result = await handle(msg);
@@ -179,8 +174,8 @@ export async function recordXSnap(options, folderPath, { writeFileSync }) {
  * @param {XSnapOptions} opts
  * @param {string[]} folders
  * @param {{
- *   readdirSync: typeof import('fs').readdirSync,
- *   readFileSync: typeof import('fs').readFileSync,
+ *   readdirSync: typeof import('fs').readdirSync;
+ *   readFileSync: typeof import('fs').readFileSync;
  * }} io
  */
 export async function replayXSnap(
@@ -289,15 +284,14 @@ export async function replayXSnap(
 }
 
 /**
- *
  * @param {string[]} argv
  * @param {{
- *   spawn: typeof import('child_process').spawn,
- *   fs: Omit<import('./xsnap.js').XSnapOptions['fs'], 'tmpName'>,
- *   tmpName: import('tmp')['tmpName'],
- *   osType: typeof import('os').type,
- *   readdirSync: typeof import('fs').readdirSync,
- *   readFileSync: typeof import('fs').readFileSync,
+ *   spawn: typeof import('child_process').spawn;
+ *   fs: Omit<import('./xsnap.js').XSnapOptions['fs'], 'tmpName'>;
+ *   tmpName: import('tmp')['tmpName'];
+ *   osType: typeof import('os').type;
+ *   readdirSync: typeof import('fs').readdirSync;
+ *   readFileSync: typeof import('fs').readFileSync;
  * }} io
  */
 export async function main(
@@ -308,7 +302,7 @@ export async function main(
   if (!folders) {
     throw Error(`usage: replay folder...`);
   }
-  /** @type { import('./xsnap.js').XSnapOptions } */
+  /** @type {import('./xsnap.js').XSnapOptions} */
   const options = {
     spawn,
     fs: { ...fs, tmpName },

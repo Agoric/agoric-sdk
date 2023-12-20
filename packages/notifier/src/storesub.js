@@ -8,7 +8,8 @@ import { makeSubscriptionKit } from './subscriber.js';
 import { subscribeEach } from './subscribe.js';
 
 /**
- * NB: does not yet survive upgrade https://github.com/Agoric/agoric-sdk/issues/6893
+ * NB: does not yet survive upgrade
+ * https://github.com/Agoric/agoric-sdk/issues/6893
  *
  * @alpha
  * @template T
@@ -30,9 +31,9 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
 };
 
 /**
- * Begin iterating the source, storing serialized iteration values.  If the
- * storageNode's `setValue` operation rejects, no further writes to it will
- * be attempted (but results will remain available from the subscriber).
+ * Begin iterating the source, storing serialized iteration values. If the
+ * storageNode's `setValue` operation rejects, no further writes to it will be
+ * attempted (but results will remain available from the subscriber).
  *
  * Returns a StoredSubscriber that can be used by a client to directly follow
  * the iteration themselves, or obtain information to subscribe to the stored
@@ -76,13 +77,13 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 /**
  * @deprecated use makeStoredSubscriber
  *
- * Begin iterating the source, storing serialized iteration values.  If the
- * storageNode's `setValue` operation rejects, the iteration will be terminated.
+ *   Begin iterating the source, storing serialized iteration values. If the
+ *   storageNode's `setValue` operation rejects, the iteration will be
+ *   terminated.
  *
- * Returns a StoredSubscription that can be used by a client to directly follow
- * the iteration themselves, or obtain information to subscribe to the stored
- * data out-of-band.
- *
+ *   Returns a StoredSubscription that can be used by a client to directly follow
+ *   the iteration themselves, or obtain information to subscribe to the stored
+ *   data out-of-band.
  * @template T
  * @param {Subscription<T>} subscription
  * @param {ERef<StorageNode>} [storageNode]
@@ -168,8 +169,8 @@ harden(makeStoredSubscription);
  */
 
 /**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
- *
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally
+ *   on a durable PublishKit
  * @template [T=unknown]
  * @param {ERef<StorageNode>} [storageNode]
  * @param {ERef<Marshaller>} [marshaller]
@@ -197,14 +198,14 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
 };
 
 /**
- * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally
+ *   on a durable PublishKit
  *
- * Like makePublishKit this makes a `{ publisher, subscriber }` pair for doing efficient
- * distributed pub/sub supporting both "each" and "latest" iteration
- * of published values.
+ *   Like makePublishKit this makes a `{ publisher, subscriber }` pair for doing
+ *   efficient distributed pub/sub supporting both "each" and "latest" iteration
+ *   of published values.
  *
- * What's different is `subscriber` tees records, writing out to storageNode.
- *
+ *   What's different is `subscriber` tees records, writing out to storageNode.
  * @template [T=unknown]
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller

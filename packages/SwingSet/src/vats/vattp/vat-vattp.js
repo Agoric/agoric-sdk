@@ -127,7 +127,8 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     },
 
     /**
-     * @param {string} name  Unique name identifying the remote for "deliverInbound" functions
+     * @param {string} name Unique name identifying the remote for
+     *   "deliverInbound" functions
      */
     addRemote: name => {
       !mailboxes.has(name) || Fail`already have remote ${name}`;

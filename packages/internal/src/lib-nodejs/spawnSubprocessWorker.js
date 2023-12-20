@@ -18,14 +18,14 @@ function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
 }
 
-/** @typedef { import('child_process').IOType } IOType */
-/** @typedef { import('stream').Writable } Writable */
+/** @typedef {import('child_process').IOType} IOType */
+/** @typedef {import('stream').Writable} Writable */
 
 // we send on fd3, and receive on fd4. We pass fd1/2 (stdout/err) through, so
 // console log/err from the child shows up normally. We don't use Node's
 // built-in serialization feature ('ipc') because the child process won't
 // always be Node.
-/** @type { IOType[] } */
+/** @type {IOType[]} */
 const stdio = harden(['inherit', 'inherit', 'inherit', 'pipe', 'pipe']);
 
 export function startSubprocessWorker(
@@ -68,13 +68,15 @@ export function startSubprocessWorker(
   /* @type {typeof fromChild} */
   const wrappedFromChild = {
     on: (...args) =>
-      fromChild.on(.../** @type {Parameters<typeof fromChild['on']>} */ (args)),
+      fromChild.on(
+        .../** @type {Parameters<(typeof fromChild)['on']>} */ (args),
+      ),
   };
   /* @type {typeof toChild} */
   const wrappedToChild = {
     write: (...args) =>
       toChild.write(
-        .../** @type {Parameters<typeof toChild['write']>} */ (args),
+        .../** @type {Parameters<(typeof toChild)['write']>} */ (args),
       ),
   };
 

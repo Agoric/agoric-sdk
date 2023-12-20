@@ -32,7 +32,7 @@ export const createSeatManager = (
   shutdownWithFailure,
   zcfBaggage,
 ) => {
-  /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
+  /** @type {WeakMapStore<ZCFSeat, Allocation>} */
   let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
   /** @type {MapStore<ZCFSeat, Allocation>} */
   const zcfSeatToStagedAllocations = provideDurableMapStore(
@@ -96,11 +96,10 @@ export const createSeatManager = (
 
   /**
    * Get the stagedAllocation. If one does not exist, return the
-   * currentAllocation. We return the currentAllocation in this case
-   * so that downstream users do not have to check whether the
-   * stagedAllocation is defined before adding to it or subtracting
-   * from it. To check whether a stagedAllocation exists, use
-   * `hasStagedAllocation`
+   * currentAllocation. We return the currentAllocation in this case so that
+   * downstream users do not have to check whether the stagedAllocation is
+   * defined before adding to it or subtracting from it. To check whether a
+   * stagedAllocation exists, use `hasStagedAllocation`
    *
    * @param {ZCFSeat} zcfSeat
    * @returns {Allocation}
@@ -308,18 +307,21 @@ export const createSeatManager = (
          * happens atomically. Otherwise, it does not happen at all.
          *
          * The conditions
-         *    * All the mentioned seats are still live,
-         *    * No outstanding stagings for any of the mentioned seats. Stagings
-         *      have been deprecated in favor or atomicRearrange. To prevent
-         *      confusion, for each reallocation, it can only be expressed in
-         *      the old way or the new way, but not a mixture.
-         *    * Offer safety
-         *    * Overall conservation
+         *
+         * - All the mentioned seats are still live,
+         * - No outstanding stagings for any of the mentioned seats. Stagings have
+         *   been deprecated in favor or atomicRearrange. To prevent confusion,
+         *   for each reallocation, it can only be expressed in the old way or
+         *   the new way, but not a mixture.
+         * - Offer safety
+         * - Overall conservation
          *
          * The overall transfer is expressed as an array of `TransferPart`. Each
          * individual `TransferPart` is one of
-         * - A transfer from a `fromSeat` to a `toSeat`. Specify both toAmount
-         *     and fromAmount to change keywords, otherwise only fromAmount is required.
+         *
+         * - A transfer from a `fromSeat` to a `toSeat`. Specify both toAmount and
+         *   fromAmount to change keywords, otherwise only fromAmount is
+         *   required.
          * - A taking from a `fromSeat`'s allocation. See the `fromOnly` helper.
          * - A giving into a `toSeat`'s allocation. See the `toOnly` helper.
          *

@@ -113,8 +113,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
      * Return a quote when triggerWhen is true of the arguments.
      *
      * @param {Amount<'nat'>} amountIn the input value to the calcAmountTrigger
-     * @param {Amount} amountOutLimit the value to compare with the output
-     * of calcAmountTrigger
+     * @param {Amount} amountOutLimit the value to compare with the output of
+     *   calcAmountTrigger
      */
     async function quoteWhenOutTrigger(amountIn, amountOutLimit) {
       amountIn = AmountMath.coerce(actualBrandIn, amountIn);

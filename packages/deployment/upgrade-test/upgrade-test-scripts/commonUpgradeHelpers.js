@@ -201,7 +201,7 @@ const Fail = (template, ...args) => {
  *
  * @param {string} txt
  *
- * adapted from packages/boot/test/bootstrapTests/supports.js
+ *   adapted from packages/boot/test/bootstrapTests/supports.js
  */
 const parseProposalParts = txt => {
   const evals = [

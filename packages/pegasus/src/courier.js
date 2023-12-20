@@ -30,7 +30,6 @@ export const getCourierPK = (key, keyToCourierPK) => {
  * Create the [send, receive] pair.
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
- *
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf
  * @property {ERef<BoardDepositFacet>} board

@@ -17,7 +17,7 @@ import {
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
-  /** @type { ReturnType<typeof spawn> } */
+  /** @type {ReturnType<typeof spawn>} */
   let theProc;
   const { kernelStorage } = initSwingStore();
   const { bundleStore } = kernelStorage;
@@ -39,7 +39,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   });
 
   // just enough methods to not crash
-  /** @type { any } */
+  /** @type {any} */
   const kernelKeeper = {
     provideVatKeeper: () => ({
       getSnapshotInfo: () => undefined,
@@ -59,7 +59,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   const bundle = await bundleSource(fn);
 
   const workerOptions = { type: 'xsnap', bundleIDs };
-  /** @type { ManagerOptions } */
+  /** @type {ManagerOptions} */
   // @ts-expect-error close enough for this test
   const managerOptions = { useTranscript: true, workerOptions };
   const schandler = _vso => ['ok', null];
@@ -74,7 +74,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   await m.deliver(['startVat', kser()], schandler);
 
   const msg = { methargs: kser(['hang', []]) };
-  /** @type { VatDeliveryObject } */
+  /** @type {VatDeliveryObject} */
   const delivery = ['message', 'o+0', msg];
 
   const p = m.deliver(delivery, schandler); // won't resolve until child dies

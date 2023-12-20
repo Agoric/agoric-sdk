@@ -1,8 +1,8 @@
 import { assert, Fail, q } from '@agoric/assert';
 
 /**
- * @typedef {bigint|boolean|null|number|string|symbol|undefined} Primitive
- * @typedef {string|number|symbol} PropertyName
+ * @typedef {bigint | boolean | null | number | string | symbol | undefined} Primitive
+ * @typedef {string | number | symbol} PropertyName
  */
 
 /**

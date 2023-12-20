@@ -84,8 +84,8 @@ export const makeMemoryMappedCircularBuffer = async ({
   );
 
   /**
-   * @type {Uint8Array}
-   * BufferFromFile mmap()s the file into the process address space.
+   * @type {Uint8Array} BufferFromFile mmap()s the file into the process address
+   *   space.
    */
   const fileBuf = BufferFromFile(filename).Uint8Array();
   const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
@@ -107,7 +107,8 @@ export const makeMemoryMappedCircularBuffer = async ({
 
   /**
    * @param {Uint8Array} outbuf
-   * @param {number} [offset] offset relative to the current trailing edge (circStart) of the data
+   * @param {number} [offset] offset relative to the current trailing edge
+   *   (circStart) of the data
    * @returns {IteratorResult<Uint8Array, void>}
    */
   const readCircBuf = (outbuf, offset = 0) => {

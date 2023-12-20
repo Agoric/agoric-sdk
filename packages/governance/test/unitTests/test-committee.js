@@ -39,7 +39,7 @@ const setupContract = async () => {
   // install the contract
   /** @typedef {Installation<import('../../src/committee.js')['start']>} CommitteInstallation */
   /** @typedef {Installation<import('../../src/binaryVoteCounter.js').start>} CounterInstallation */
-  /** @type {[CommitteInstallation, CounterInstallation] } */
+  /** @type {[CommitteInstallation, CounterInstallation]} */
   const [electorateInstallation, counterInstallation] = await Promise.all([
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),

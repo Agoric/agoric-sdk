@@ -6,7 +6,7 @@ import { Far } from '@endo/marshal';
 const { quote: q } = assert;
 
 /**
- * @param {(msg: any)=> void} log
+ * @param {(msg: any) => void} log
  * @param {Issue} issue
  * @param {ERef<CommitteeElectoratePublic>} electoratePublicFacet
  * @param {Record<string, Instance>} instances
@@ -34,13 +34,17 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
 };
 
 /**
- * @param {(msg: any)=> void} log
+ * @param {(msg: any) => void} log
  * @param {ZoeService} zoe
  */
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
-      /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('@agoric/governance/src/committee.js').start>} */
+      /**
+       * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
+       *   typeof import('@agoric/governance/src/committee.js').start
+       * >}
+       */
       const electorateInstance = await E(zoe).getInstance(invitation);
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);

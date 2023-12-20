@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises';
 import { makeAggregateError } from '../utils.js';
 
 /**
- * @param {import("fs").ReadStream | import("fs").WriteStream} stream
+ * @param {import('fs').ReadStream | import('fs').WriteStream} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>

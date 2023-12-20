@@ -79,7 +79,6 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * @param {object} options
  * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
  *   // TODO: why doesn't overloading VatLoader work???
- *
  * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)} VatLoader2
  *
  * @typedef {{

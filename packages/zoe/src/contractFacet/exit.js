@@ -96,8 +96,8 @@ export const makeMakeExiter = baggage => {
   }
 
   /**
-   * Makes the appropriate exitObj, which runs in ZCF and allows the seat's owner
-   * to request the position be exited.
+   * Makes the appropriate exitObj, which runs in ZCF and allows the seat's
+   * owner to request the position be exited.
    *
    * @type {MakeExitObj}
    */

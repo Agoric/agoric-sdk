@@ -26,7 +26,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       bundleHandler,
       nodeOptions,
     );
-    /** @type { import('../types-internal.js').RecordedVatOptions } */
+    /** @type {import('../types-internal.js').RecordedVatOptions} */
     const vatOptions = harden({
       workerOptions,
       name,
@@ -45,12 +45,12 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
   };
 
   /**
-   * Convert an StaticVatOptions (from the config.vats definition)
-   * into a RecordedVatOptions, sampling and populating the current
-   * defaults. Store it.
+   * Convert an StaticVatOptions (from the config.vats definition) into a
+   * RecordedVatOptions, sampling and populating the current defaults. Store
+   * it.
    *
    * @param {string} vatID
-   * @param {*} source
+   * @param {any} source
    * @param {import('../types-external.js').StaticVatOptions} staticOptions
    * @returns {Promise<void>}
    */
@@ -60,12 +60,12 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
   };
 
   /**
-   * Convert an InternalDynamicVatOptions (from the run-queue
-   * 'create-vat' event) into a RecordedVatOptions, sampling and
-   * populating the current defaults. Store it.
+   * Convert an InternalDynamicVatOptions (from the run-queue 'create-vat'
+   * event) into a RecordedVatOptions, sampling and populating the current
+   * defaults. Store it.
    *
    * @param {string} vatID
-   * @param {*} source
+   * @param {any} source
    * @param {import('../types-internal.js').InternalDynamicVatOptions} dynamicOptions
    * @returns {Promise<void>}
    */

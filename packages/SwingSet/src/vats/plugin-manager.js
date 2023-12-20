@@ -12,7 +12,7 @@ import '@agoric/store/exported.js';
  * @typedef {T | PromiseLike<T>} ERef
  */
 
-/** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
+/** @type {{ onReset: (firstTime: Promise<boolean>) => void }} */
 const DEFAULT_RESETTER = Far('resetter', { onReset: _ => {} });
 
 /** @type {{ walk: (pluginRootP: any) => any }} */
@@ -29,9 +29,11 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  * @callback LoadPlugin
  * @param {string} specifier
  * @param {any} [opts=undefined]
- * @param {{ onReset: (firstTime: Promise<boolean>) => void}} [resetter=DEFAULT_RESETTER]
- * @returns {ERef<{ pluginRoot: ERef<any>, actions: { makeStableForwarder:
- * MakeStableForwarder }}>}
+ * @param {{ onReset: (firstTime: Promise<boolean>) => void }} [resetter=DEFAULT_RESETTER]
+ * @returns {ERef<{
+ *   pluginRoot: ERef<any>;
+ *   actions: { makeStableForwarder: MakeStableForwarder };
+ * }>}
  *
  * @callback MakeStableForwarder
  * @param {{ walk: (pluginRootP: Promise<any>) => any }} [walker=DEFAULT_WALKER]
@@ -50,22 +52,25 @@ const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
  */
 
 /**
- * @typedef { Device<ReturnType<typeof
- *   import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode>> } PluginDevice
+ * @typedef {Device<
+ *   ReturnType<
+ *     typeof import('@agoric/swingset-vat/src/devices/plugin/device-plugin.js').buildRootDeviceNode
+ *   >
+ * >} PluginDevice
  */
 
 /**
  * Create a handler that manages a promise interface to external modules.
  *
  * @param {PluginDevice} pluginDevice The bridge to manage
- * @param {{ [prop: string]: any, D: DProxy }} param1
+ * @param {{ [prop: string]: any; D: DProxy }} param1
  * @returns {PluginManager} admin facet for this handler
  */
 export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
   /**
    * @typedef {object} AbortDispatch
    * @property {(epoch: number) => void} reset
-   * @property {(obj: Record<string,any>) => void} dispatch
+   * @property {(obj: Record<string, any>) => void} dispatch
    */
 
   /**
@@ -92,8 +97,8 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
       return D(pluginDevice).getPluginDir();
     },
     /**
-     * Load a module, and call resetter.onReset(pluginRootP) every time
-     * it is instantiated.
+     * Load a module, and call resetter.onReset(pluginRootP) every time it is
+     * instantiated.
      *
      * @type {LoadPlugin}
      */

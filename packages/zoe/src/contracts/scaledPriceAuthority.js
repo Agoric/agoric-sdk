@@ -21,10 +21,11 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  * A contract that scales a source price authority to a target price authority
  * via ratios.
  *
- * No durable state. Because it only transforms there's nothing important to save.
- * However that also means that the contract terms cannot be modified and should
- * a `sourcePriceAuthority` reference sever this contract will break. A future version
- * could allow changing that term through privateArgs or governance.
+ * No durable state. Because it only transforms there's nothing important to
+ * save. However that also means that the contract terms cannot be modified and
+ * should a `sourcePriceAuthority` reference sever this contract will break. A
+ * future version could allow changing that term through privateArgs or
+ * governance.
  *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
  * @param {object} privateArgs

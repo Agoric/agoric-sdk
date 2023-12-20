@@ -22,7 +22,7 @@ const { Fail, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager
- * @param {{[CONTRACT_ELECTORATE]: ParamValueTyped<'invitation'>}} governedParams
+ * @param {{ [CONTRACT_ELECTORATE]: ParamValueTyped<'invitation'> }} governedParams
  */
 const assertElectorateMatches = (paramManager, governedParams) => {
   const managerElectorate =
@@ -45,10 +45,19 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => ParamManagerBuilder} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
+ * @property {(
+ *   name: string,
+ *   value: import('@endo/marshal').CopyRecord<unknown>,
+ * ) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
- * @property {(name: string, value: import('@agoric/time').Timestamp) => ParamManagerBuilder} addTimestamp
- * @property {(name: string, value: import('@agoric/time').RelativeTime) => ParamManagerBuilder} addRelativeTime
+ * @property {(
+ *   name: string,
+ *   value: import('@agoric/time').Timestamp,
+ * ) => ParamManagerBuilder} addTimestamp
+ * @property {(
+ *   name: string,
+ *   value: import('@agoric/time').RelativeTime,
+ * ) => ParamManagerBuilder} addRelativeTime
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
  */
@@ -131,7 +140,13 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
 
   // HANDLERS FOR EACH PARAMETER TYPE /////////////////////////////////////////
 
-  /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Amount,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addAmount = (name, value, builder) => {
     const assertAmount = a => {
       a.brand || Fail`Expected an Amount for ${q(name)}, got: ${a}`;
@@ -141,28 +156,52 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: Brand, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Brand,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addBrand = (name, value, builder) => {
     const assertBrand = makeLooksLikeBrand(name);
     buildCopyParam(name, value, assertBrand, ParamTypes.BRAND);
     return builder;
   };
 
-  /** @type {(name: string, value: Installation<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Installation<unknown>,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addInstallation = (name, value, builder) => {
     const assertInstallation = makeAssertInstallation(name);
     buildCopyParam(name, value, assertInstallation, ParamTypes.INSTALLATION);
     return builder;
   };
 
-  /** @type {(name: string, value: Instance, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Instance,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addInstance = (name, value, builder) => {
     const assertInstance = makeAssertInstance(name);
     buildCopyParam(name, value, assertInstance, ParamTypes.INSTANCE);
     return builder;
   };
 
-  /** @type {(name: string, value: bigint, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: bigint,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addNat = (name, value, builder) => {
     const assertNat = v => {
       assert.typeof(v, 'bigint');
@@ -173,14 +212,26 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: Ratio, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Ratio,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addRatio = (name, value, builder) => {
     const assertBrandedRatio = makeAssertBrandedRatio(name, value);
     buildCopyParam(name, value, assertBrandedRatio, ParamTypes.RATIO);
     return builder;
   };
 
-  /** @type {(name: string, value: import('@endo/marshal').CopyRecord<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: import('@endo/marshal').CopyRecord<unknown>,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addRecord = (name, value, builder) => {
     const assertRecord = v => {
       passStyleOf(v);
@@ -190,26 +241,50 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: string, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: string,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addString = (name, value, builder) => {
     const assertString = v => assert.typeof(v, 'string');
     buildCopyParam(name, value, assertString, ParamTypes.STRING);
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time').Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: import('@agoric/time').Timestamp,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addTimestamp = (name, value, builder) => {
     buildCopyParam(name, value, assertTimestamp, ParamTypes.TIMESTAMP);
     return builder;
   };
 
-  /** @type {(name: string, value: import('@agoric/time').RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: import('@agoric/time').RelativeTime,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addRelativeTime = (name, value, builder) => {
     buildCopyParam(name, value, assertRelativeTime, ParamTypes.RELATIVE_TIME);
     return builder;
   };
 
-  /** @type {(name: string, value: any, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: any,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addUnknown = (name, value, builder) => {
     const assertUnknown = _v => true;
     buildCopyParam(name, value, assertUnknown, ParamTypes.UNKNOWN);
@@ -314,7 +389,13 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return name;
   };
 
-  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /**
+   * @type {(
+   *   name: string,
+   *   value: Invitation,
+   *   builder: ParamManagerBuilder,
+   * ) => ParamManagerBuilder}
+   */
   const addInvitation = (name, value, builder) => {
     assertKeywordName(name);
     value !== null || Fail`param ${q(name)} must be defined`;

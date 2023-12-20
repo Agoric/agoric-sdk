@@ -58,7 +58,7 @@ export const makeSlogSender = async opts => {
 
   const pipeSend = withMutex(
     /**
-     * @template {{type: string}} T
+     * @template {{ type: string }} T
      * @param {T} msg
      */
     msg =>
@@ -103,8 +103,10 @@ export const makeSlogSender = async opts => {
     /**
      * @template {SendWaitCommands} T
      * @param {T} type
-     * @param {Omit<SlogSenderWaitMessagesAndReplies[T]["message"], 'type'>} payload
-     * @returns {Promise<ReplyPayload<SlogSenderWaitMessagesAndReplies[T]["reply"]>>}
+     * @param {Omit<SlogSenderWaitMessagesAndReplies[T]['message'], 'type'>} payload
+     * @returns {Promise<
+     *   ReplyPayload<SlogSenderWaitMessagesAndReplies[T]['reply']>
+     * >}
      */
     async (type, payload) => {
       !sendWaitType || assert.fail('Invalid mutex state');
@@ -115,7 +117,7 @@ export const makeSlogSender = async opts => {
       return pipeSend(msg)
         .then(async () => sendWaitQueue.get())
         .then(
-          /** @param {SlogSenderWaitMessagesAndReplies[T]["reply"]} reply */ ({
+          /** @param {SlogSenderWaitMessagesAndReplies[T]['reply']} reply */ ({
             type: replyType,
             error,
             ...rest
@@ -136,7 +138,7 @@ export const makeSlogSender = async opts => {
 
   cp.on(
     'message',
-    /** @param { SlogSenderPipeWaitReplies } msg */
+    /** @param {SlogSenderPipeWaitReplies} msg */
     msg => {
       // logger.log('received', msg);
       if (

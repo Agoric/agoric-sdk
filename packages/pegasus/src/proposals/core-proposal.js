@@ -56,7 +56,7 @@ harden(startPegasus);
 
 /**
  * @param {Port} port
- * @param {*} pegasus
+ * @param {any} pegasus
  * @param {import('@agoric/vats').NameAdmin} pegasusConnectionsAdmin
  */
 export const addPegasusTransferPort = async (

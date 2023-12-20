@@ -147,7 +147,7 @@ test('communication', async t => {
   });
 
   /**
-   * @type {| undefined
+   * @type {undefined
    *   | IteratorResult<{
    *       brand: Brand;
    *       issuer: ERef<Issuer>;

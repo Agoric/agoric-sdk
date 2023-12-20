@@ -2,9 +2,8 @@ import path from 'path';
 import { Buffer } from 'buffer';
 
 /**
- * This is a polyfill for the `buffer` function from Node's
- * 'stream/consumers' package, which unfortunately only exists in newer versions
- * of Node.
+ * This is a polyfill for the `buffer` function from Node's 'stream/consumers'
+ * package, which unfortunately only exists in newer versions of Node.
  *
  * @param {import('./exporter').AnyIterable<Uint8Array>} inStream
  */

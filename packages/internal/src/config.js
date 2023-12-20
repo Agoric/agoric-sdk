@@ -4,11 +4,13 @@
 /**
  * @file
  *
- * Some of this config info may make more sense in a particular package. However
- * due to https://github.com/Agoric/agoric-sdk/issues/4620 and our lax package
- * dependency graph, sometimes rational placements cause type resolution errors.
+ *   Some of this config info may make more sense in a particular package. However
+ *   due to https://github.com/Agoric/agoric-sdk/issues/4620 and our lax package
+ *   dependency graph, sometimes rational placements cause type resolution
+ *   errors.
  *
- * So as a work-around some constants that need access from more than one package are placed here.
+ *   So as a work-around some constants that need access from more than one
+ *   package are placed here.
  */
 
 /**

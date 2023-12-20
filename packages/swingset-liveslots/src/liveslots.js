@@ -31,16 +31,16 @@ const { details: X } = assert;
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
  *
- * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} forVatID  Vat ID label, for use in debug diagnostics
- * @param {*} vatPowers
+ * @param {any} syscall Kernel syscall interface that the vat will have access
+ *   to
+ * @param {any} forVatID Vat ID label, for use in debug diagnostics
+ * @param {any} vatPowers
  * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
- *                      meterControl }
+ * @param {any} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent,
+ *   gcAndFinalize, meterControl }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
- * @param {*} buildVatNamespace
- *
- * @returns {*} { dispatch }
+ * @param {any} buildVatNamespace
+ * @returns {any} { dispatch }
  */
 function build(
   syscall,
@@ -109,27 +109,26 @@ function build(
    * revoke-object operation executed by our user-level code.
    *
    * Imports: o-NN slots are represented as a Presence. p-NN slots are
-   * represented as an imported Promise, with the resolver held in an
-   * additional table (importedPromisesByPromiseID) to handle a future
-   * incoming resolution message. We retain a weak reference to the Presence,
-   * and use a FinalizationRegistry to learn when the vat has dropped it, so
-   * we can notify the kernel. We retain strong references to unresolved
-   * Promises. When an import is added, the finalizer is added to
-   * `vreffedObjectRegistry`.
+   * represented as an imported Promise, with the resolver held in an additional
+   * table (importedPromisesByPromiseID) to handle a future incoming resolution
+   * message. We retain a weak reference to the Presence, and use a
+   * FinalizationRegistry to learn when the vat has dropped it, so we can notify
+   * the kernel. We retain strong references to unresolved Promises. When an
+   * import is added, the finalizer is added to `vreffedObjectRegistry`.
    *
    * slotToVal is a Map whose keys are slots (strings) and the values are
-   * WeakRefs. If the entry is present but wr.deref()===undefined (the
-   * weakref is dead), treat that as if the entry was not present. The same
-   * slotToVal table is used for both imports and returning exports. The
-   * subset of those which need to be held strongly (exported objects and
-   * promises, imported promises) are kept alive by `exportedRemotables`.
+   * WeakRefs. If the entry is present but wr.deref()===undefined (the weakref
+   * is dead), treat that as if the entry was not present. The same slotToVal
+   * table is used for both imports and returning exports. The subset of those
+   * which need to be held strongly (exported objects and promises, imported
+   * promises) are kept alive by `exportedRemotables`.
    *
-   * valToSlot is a WeakMap whose keys are Remotable/Presence/Promise
-   * objects, and the keys are (string) slot identifiers. This is used
-   * for both exports and returned imports.
+   * valToSlot is a WeakMap whose keys are Remotable/Presence/Promise objects,
+   * and the keys are (string) slot identifiers. This is used for both exports
+   * and returned imports.
    *
-   * We use two weak maps plus the strong `exportedRemotables` set, because
-   * it seems simpler than using four separate maps (import-vs-export times
+   * We use two weak maps plus the strong `exportedRemotables` set, because it
+   * seems simpler than using four separate maps (import-vs-export times
    * strong-vs-weak).
    */
 
@@ -350,8 +349,8 @@ function build(
   }
 
   /**
-   * Remember disavowed Presences which will kill the vat if you try to talk
-   * to them
+   * Remember disavowed Presences which will kill the vat if you try to talk to
+   * them
    */
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
@@ -524,9 +523,9 @@ function build(
   const knownResolutions = new WeakMap();
 
   /**
-   * Determines if a vref from a watched promise or outbound argument
-   * identifies a promise that should be exported, and if so then
-   * adds it to exportedVPIDs and sets up handlers.
+   * Determines if a vref from a watched promise or outbound argument identifies
+   * a promise that should be exported, and if so then adds it to exportedVPIDs
+   * and sets up handlers.
    *
    * @param {any} vref
    * @returns {boolean} whether the vref was added to exportedVPIDs
@@ -1124,7 +1123,6 @@ function build(
   }
 
   /**
-   *
    * @param {string} vpid
    * @param {Promise<unknown>} p
    */
@@ -1534,7 +1532,7 @@ function build(
   }
 
   /**
-   * @param { import('./types').SwingSetCapData } _disconnectObjectCapData
+   * @param {import('./types').SwingSetCapData} _disconnectObjectCapData
    * @returns {Promise<void>}
    */
   async function stopVat(_disconnectObjectCapData) {
@@ -1553,38 +1551,37 @@ function build(
 
   /**
    * This 'dispatch' function is the entry point for the vat as a whole: the
-   * vat-worker supervisor gives us VatDeliveryObjects (like
-   * dispatch.deliver) to execute. Here in liveslots, we invoke user-provided
-   * code during this time, which might cause us to make some syscalls. This
-   * userspace code might use Promises to add more turns to the ready promise
-   * queue, but we never give it direct access to the timer or IO queues
-   * (setImmediate, setInterval, setTimeout), so once the promise queue is
-   * empty, the vat userspace loses "agency" (the ability to initiate further
-   * execution), and waitUntilQuiescent fires. At that point we return
-   * control to the supervisor by resolving our return promise.
+   * vat-worker supervisor gives us VatDeliveryObjects (like dispatch.deliver)
+   * to execute. Here in liveslots, we invoke user-provided code during this
+   * time, which might cause us to make some syscalls. This userspace code might
+   * use Promises to add more turns to the ready promise queue, but we never
+   * give it direct access to the timer or IO queues (setImmediate, setInterval,
+   * setTimeout), so once the promise queue is empty, the vat userspace loses
+   * "agency" (the ability to initiate further execution), and
+   * waitUntilQuiescent fires. At that point we return control to the supervisor
+   * by resolving our return promise.
    *
    * Liveslots specifically guards against userspace reacquiring agency after
-   * our return promise is fired: vats are idle between cranks. Metering of
-   * the worker guards against userspace performing a synchronous infinite
-   * loop (`for (;;) {}`, the dreaded cthulu operator) or an async one
-   * (`function again() { return Promise.resolve().then(again); }`), by
-   * killing the vat after too much work. Userspace errors during delivery
-   * are expressed by calling syscall.resolve to reject the
-   * dispatch.deliver(result=) promise ID, which is unrelated to the Promise
-   * that `dispatch` returns.
+   * our return promise is fired: vats are idle between cranks. Metering of the
+   * worker guards against userspace performing a synchronous infinite loop
+   * (`for (;;) {}`, the dreaded cthulu operator) or an async one (`function
+   * again() { return Promise.resolve().then(again); }`), by killing the vat
+   * after too much work. Userspace errors during delivery are expressed by
+   * calling syscall.resolve to reject the dispatch.deliver(result=) promise ID,
+   * which is unrelated to the Promise that `dispatch` returns.
    *
    * Liveslots does the authority to stall a crank indefinitely, by virtue of
-   * having access to `waitUntilQuiescent` and `FinalizationRegistry` (to
-   * retain agency), and the ability to disable metering (to disable worker
+   * having access to `waitUntilQuiescent` and `FinalizationRegistry` (to retain
+   * agency), and the ability to disable metering (to disable worker
    * termination), but only a buggy liveslots would do this. The kernel is
    * vulnerable to a buggy liveslots never finishing a crank.
    *
    * This `dispatch` function always returns a Promise. It resolves (with
    * nothing) when the crank completes successfully. If it rejects, that
-   * indicates the delivery has failed, and the worker should send an
-   * ["error", ..] `VatDeliveryResult` back to the kernel (which may elect to
-   * terminate the vat). Userspace should not be able to cause the delivery
-   * to fail: only a bug in liveslots should trigger a failure.
+   * indicates the delivery has failed, and the worker should send an ["error",
+   * ..] `VatDeliveryResult` back to the kernel (which may elect to terminate
+   * the vat). Userspace should not be able to cause the delivery to fail: only
+   * a bug in liveslots should trigger a failure.
    *
    * @param {import('./types').VatDeliveryObject} delivery
    * @returns {Promise<void>}
@@ -1634,37 +1631,36 @@ function build(
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
  *
- * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} forVatID  Vat ID label, for use in debug diagostics
- * @param {*} vatPowers
+ * @param {any} syscall Kernel syscall interface that the vat will have access
+ *   to
+ * @param {any} forVatID Vat ID label, for use in debug diagostics
+ * @param {any} vatPowers
  * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
+ * @param {any} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
- * @param {*} [buildVatNamespace]
+ * @param {any} [buildVatNamespace]
+ * @returns {any} { dispatch }
  *
- * @returns {*} { dispatch }
+ *   setBuildRootObject should be called, once, with a function that will create a
+ *   root object for the new vat The caller provided buildRootObject function
+ *   produces and returns the new vat's root object:
  *
- * setBuildRootObject should be called, once, with a function that will
- * create a root object for the new vat The caller provided buildRootObject
- * function produces and returns the new vat's root object:
+ *   buildRootObject(vatPowers, vatParameters)
  *
- * buildRootObject(vatPowers, vatParameters)
+ *   Within the vat, `import { E } from '@endo/eventual-send'` will provide the E
+ *   wrapper. For any object x, E(x) returns a proxy object that converts any
+ *   method invocation into a corresponding eventual send to x. That is,
+ *   E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1, arg2)
  *
- * Within the vat, `import { E } from '@endo/eventual-send'` will
- * provide the E wrapper. For any object x, E(x) returns a proxy object
- * that converts any method invocation into a corresponding eventual send
- * to x. That is, E(x).foo(arg1, arg2) is equivalent to x~.foo(arg1,
- * arg2)
+ *   If x is the presence in this vat of a remote object (that is, an object
+ *   outside the vat), this will result in a message send out of the vat via the
+ *   kernel syscall interface.
  *
- * If x is the presence in this vat of a remote object (that is, an object
- * outside the vat), this will result in a message send out of the vat via
- * the kernel syscall interface.
- *
- * In the same vein, if x is the presence in this vat of a kernel device,
- * vatPowers.D(x) returns a proxy such that a method invocation on it is
- * translated into the corresponding immediate invocation of the device
- * (using, once again, the kernel syscall interface). D(x).foo(args) will
- * perform an immediate syscall.callNow on the device node.
+ *   In the same vein, if x is the presence in this vat of a kernel device,
+ *   vatPowers.D(x) returns a proxy such that a method invocation on it is
+ *   translated into the corresponding immediate invocation of the device
+ *   (using, once again, the kernel syscall interface). D(x).foo(args) will
+ *   perform an immediate syscall.callNow on the device node.
  */
 export function makeLiveSlots(
   syscall,

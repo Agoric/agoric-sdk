@@ -19,8 +19,10 @@ import { prepareVoterKit } from './voterKit.js';
 const { ceilDivide } = natSafeMath;
 
 /**
- * @typedef { ElectorateCreatorFacet & {
- *   getVoterInvitations: () => Promise<Invitation<{ voter: { castBallotFor(handle: any, choice?: any, ): void}}>>[]
+ * @typedef {ElectorateCreatorFacet & {
+ *   getVoterInvitations: () => Promise<
+ *     Invitation<{ voter: { castBallotFor(handle: any, choice?: any): void } }>
+ *   >[];
  * }} CommitteeElectorateCreatorFacet
  */
 
@@ -44,15 +46,23 @@ harden(meta);
  * is used in a way that makes the distribution of voter facets visible.
  *
  * @param {ZCF<{
- *   committeeName: string,
- *   committeeSize: number,
+ *   committeeName: string;
+ *   committeeSize: number;
  * }>} zcf
- * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @param {{ storageNode: ERef<StorageNode>; marshaller: ERef<Marshaller> }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
+ * @returns {{
+ *   creatorFacet: CommitteeElectorateCreatorFacet;
+ *   publicFacet: CommitteeElectoratePublic;
+ * }}
  */
 export const start = (zcf, privateArgs, baggage) => {
-  /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
+  /**
+   * @type {MapStore<
+   *   Handle<'Question'>,
+   *   import('./electorateTools.js').QuestionRecord
+   * >}
+   */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
 
   // CRUCIAL: voteCap carries the ability to cast votes for any voter at

@@ -17,90 +17,89 @@ import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
 
 /**
- * @typedef { import('./kvStore').KVStore } KVStore
+ * @typedef {import('./kvStore').KVStore} KVStore
+ * @typedef {import('./snapStore').SnapStore} SnapStore
+ * @typedef {import('./snapStore').SnapshotResult} SnapshotResult
+ * @typedef {import('./transcriptStore').TranscriptStore} TranscriptStore
+ * @typedef {import('./transcriptStore').TranscriptStoreDebug} TranscriptStoreDebug
  *
- * @typedef { import('./snapStore').SnapStore } SnapStore
- * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
- *
- * @typedef { import('./transcriptStore').TranscriptStore } TranscriptStore
- * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
- *
- * @typedef { import('./bundleStore').BundleStore } BundleStore
- * @typedef { import('./bundleStore').BundleStoreDebug } BundleStoreDebug
- *
- * @typedef { import('./exporter').KVPair } KVPair
- *
+ * @typedef {import('./bundleStore').BundleStore} BundleStore
+ * @typedef {import('./bundleStore').BundleStoreDebug} BundleStoreDebug
+ * @typedef {import('./exporter').KVPair} KVPair
  * @typedef {{
- *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
- *   transcriptStore: TranscriptStore, // a stream-oriented API object to append and read transcript entries
- *   snapStore: SnapStore,
- *   bundleStore: BundleStore,
- *   startCrank: () => void,
- *   establishCrankSavepoint: (savepoint: string) => void,
- *   rollbackCrank: (savepoint: string) => void,
- *   emitCrankHashes: () => { crankhash: string, activityhash: string },
- *   endCrank: () => void,
- *   getActivityhash: () => string,
+ *   kvStore: KVStore; // a key-value API object to load and store data on behalf of the kernel
+ *   transcriptStore: TranscriptStore; // a stream-oriented API object to append and read transcript entries
+ *   snapStore: SnapStore;
+ *   bundleStore: BundleStore;
+ *   startCrank: () => void;
+ *   establishCrankSavepoint: (savepoint: string) => void;
+ *   rollbackCrank: (savepoint: string) => void;
+ *   emitCrankHashes: () => { crankhash: string; activityhash: string };
+ *   endCrank: () => void;
+ *   getActivityhash: () => string;
  * }} SwingStoreKernelStorage
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the host
- *   commit: () => Promise<void>,  // commit changes made since the last commit
- *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
- *   diskUsage?: () => number, // optional stats method
- *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
- *   repairMetadata: (exporter: import('./exporter').SwingStoreExporter) => Promise<void>,
+ *   kvStore: KVStore; // a key-value API object to load and store data on behalf of the host
+ *   commit: () => Promise<void>; // commit changes made since the last commit
+ *   close: () => Promise<void>; // shutdown the store, abandoning any uncommitted changes
+ *   diskUsage?: () => number; // optional stats method
+ *   setExportCallback: (cb: (updates: KVPair[]) => void) => void; // Set a callback invoked by swingStore when new serializable data is available for export
+ *   repairMetadata: (
+ *     exporter: import('./exporter').SwingStoreExporter,
+ *   ) => Promise<void>;
  * }} SwingStoreHostStorage
  */
 
 /**
  * @typedef {{
- *   kvEntries: {},
- *   transcripts: {},
- *   snapshots: {},
+ *   kvEntries: {};
+ *   transcripts: {};
+ *   snapshots: {};
  * }} SwingStoreDebugDump
  *
  * @typedef {{
- *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump,
- *   serialize: () => Buffer,
+ *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump;
+ *   serialize: () => Buffer;
  * }} SwingStoreDebugTools
  *
  * @typedef {{
- *  kernelStorage: SwingStoreKernelStorage,
- *  hostStorage: SwingStoreHostStorage,
- *  debug: SwingStoreDebugTools,
- *  internal: import('./internal.js').SwingStoreInternal,
+ *   kernelStorage: SwingStoreKernelStorage;
+ *   hostStorage: SwingStoreHostStorage;
+ *   debug: SwingStoreDebugTools;
+ *   internal: import('./internal.js').SwingStoreInternal;
  * }} SwingStore
  */
 
 /**
- * A swing store holds the state of a swingset instance.  This "store" is
+ * A swing store holds the state of a swingset instance. This "store" is
  * actually several different stores of different types that travel as a flock
- * and are managed according to a shared transactional model.  Each component
+ * and are managed according to a shared transactional model. Each component
  * store serves a different purpose and satisfies a different set of access
  * constraints and access patterns.
  *
  * The individual stores are:
  *
- * kvStore - a key-value store used to hold the kernel's working state.  Keys
- *   and values are both strings.  Provides random access to a large number of
- *   mostly small data items.  Persistently stored in a sqlite table.
+ * kvStore - a key-value store used to hold the kernel's working state. Keys and
+ * values are both strings. Provides random access to a large number of mostly
+ * small data items. Persistently stored in a sqlite table.
  *
- * transcriptStore - a streaming store used to hold kernel transcripts.  Transcripts
- *   are both written and read (if they are read at all) sequentially, according
- *   to metadata kept in the kvStore.  Persistently stored in a sqllite table.
+ * transcriptStore - a streaming store used to hold kernel transcripts.
+ * Transcripts are both written and read (if they are read at all) sequentially,
+ * according to metadata kept in the kvStore. Persistently stored in a sqllite
+ * table.
  *
  * snapStore - large object store used to hold XS memory image snapshots of
- *   vats.  Objects are stored in a separate table keyed to the vat and delivery
- *   number of the snapshot, with tracking metadata kept in the kvStore.
+ * vats. Objects are stored in a separate table keyed to the vat and delivery
+ * number of the snapshot, with tracking metadata kept in the kvStore.
  *
- * bundleStore - large object store used to hold JavaScript code bundles.
- *   Bundle contents are stored in a separate table keyed by bundleID.
+ * bundleStore - large object store used to hold JavaScript code bundles. Bundle
+ * contents are stored in a separate table keyed by bundleID.
  *
  * All persistent data is kept within a single directory belonging to the swing
- * store.  The individual stores present individual APIs suitable for their
+ * store. The individual stores present individual APIs suitable for their
  * intended uses, but we bundle them all here so that we can isolate a lot of
- * implementation dependencies.  In particular, we think it not unlikely that
+ * implementation dependencies. In particular, we think it not unlikely that
  * additional types of stores may need to be added or that the storage
  * substrates used for one or more of these may change (or be consolidated) as
  * our implementation evolves.
@@ -110,12 +109,12 @@ import { doRepairMetadata } from './repairMetadata.js';
  * for use by the swingset kernel itself, represented by the `hostStorage` and
  * `kernelStorage` properties of the object that `makeSwingStore` returns.
  *
- * The units of data consistency in the swingset are the crank and the block.  A
+ * The units of data consistency in the swingset are the crank and the block. A
  * crank is the execution of a single delivery into the swingset, typically a
- * message delivered to a vat.  A block is a series of cranks (how many is a
+ * message delivered to a vat. A block is a series of cranks (how many is a
  * host-determined parameter) that are considered to either all happen or not as
- * a unit.  Crank-to-crank transactionality is managed via the kernel facet,
- * while block-to-block transactionality is managed by the host facet.  Each
+ * a unit. Crank-to-crank transactionality is managed via the kernel facet,
+ * while block-to-block transactionality is managed by the host facet. Each
  * facet provides commit and abort operations that commit or abort all changes
  * relative the relevant transactional unit.
  */
@@ -123,13 +122,13 @@ import { doRepairMetadata } from './repairMetadata.js';
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string|null} dirPath  Path to a directory in which database files may
- *   be kept.  If this is null, the database will be an in-memory ephemeral
- *   database that evaporates when the process exits, which is useful for testing.
- * @param {boolean} forceReset  If true, initialize the database to an empty
+ * @param {string | null} dirPath Path to a directory in which database files
+ *   may be kept. If this is null, the database will be an in-memory ephemeral
+ *   database that evaporates when the process exits, which is useful for
+ *   testing.
+ * @param {boolean} forceReset If true, initialize the database to an empty
  *   state if it already exists
- * @param {object} options  Configuration options
- *
+ * @param {object} options Configuration options
  * @returns {SwingStore}
  */
 export function makeSwingStore(dirPath, forceReset, options = {}) {
@@ -188,7 +187,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     traceOutput = null;
   }
 
-  /** @type {*} */
+  /** @type {any} */
   let db = sqlite3(
     serialized || filePath,
     // { verbose: console.log },
@@ -512,8 +511,8 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   /**
-   * Return a Buffer with the entire DB state, useful for cloning a
-   * small swingstore in unit tests.
+   * Return a Buffer with the entire DB state, useful for cloning a small
+   * swingstore in unit tests.
    *
    * @returns {Buffer}
    */
@@ -608,19 +607,18 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
 }
 
 /**
- * Create a new swingset store.  If given a directory path string, a persistent
+ * Create a new swingset store. If given a directory path string, a persistent
  * store will be created in that directory; if there is already a store there,
- * it will be reinitialized to an empty state.  If the path is null or
- * undefined, a memory-only ephemeral store will be created that will evaporate
- * on program exit.
+ * it will be reinitialized to an empty state. If the path is null or undefined,
+ * a memory-only ephemeral store will be created that will evaporate on program
+ * exit.
  *
- * @param {string|null} dirPath Path to a directory in which database files may
- *   be kept.  This directory need not actually exist yet (if it doesn't it will
- *   be created) but it is reserved (by the caller) for the exclusive use of
- *   this swing store instance.  If null, an ephemeral (memory only) store will
- *   be created.
- * @param {object?} options  Optional configuration options
- *
+ * @param {string | null} dirPath Path to a directory in which database files
+ *   may be kept. This directory need not actually exist yet (if it doesn't it
+ *   will be created) but it is reserved (by the caller) for the exclusive use
+ *   of this swing store instance. If null, an ephemeral (memory only) store
+ *   will be created.
+ * @param {object | null} options Optional configuration options
  * @returns {SwingStore}
  */
 export function initSwingStore(dirPath = null, options = {}) {
@@ -631,15 +629,14 @@ export function initSwingStore(dirPath = null, options = {}) {
 }
 
 /**
- * Open a persistent swingset store.  If there is no existing store at the given
+ * Open a persistent swingset store. If there is no existing store at the given
  * `dirPath`, a new, empty store will be created.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
+ * @param {string} dirPath Path to a directory in which database files may be
+ *   kept. This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
- * @param {object?} options  Optional configuration options
- *
+ * @param {object | null} options Optional configuration options
  * @returns {SwingStore}
  */
 export function openSwingStore(dirPath, options = {}) {
@@ -650,12 +647,10 @@ export function openSwingStore(dirPath, options = {}) {
 /**
  * Is this directory a compatible swing store?
  *
- * @param {string} dirPath  Path to a directory in which database files might be present.
- *   This directory need not actually exist
- *
- * @returns {boolean}
- *   If the directory is present and contains the files created by initSwingStore
- *   or openSwingStore, returns true. Else returns false.
+ * @param {string} dirPath Path to a directory in which database files might be
+ *   present. This directory need not actually exist
+ * @returns {boolean} If the directory is present and contains the files created
+ *   by initSwingStore or openSwingStore, returns true. Else returns false.
  */
 export function isSwingStore(dirPath) {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;

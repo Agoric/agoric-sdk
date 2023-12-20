@@ -51,11 +51,9 @@ function copyState(schedState) {
  * @typedef {object} Event
  * @property {bigint} time
  * @property {Array<IndexedHandler>} handlers
- *
  * @typedef {object} IndexedHandler
  * @property {number} [index]
  * @property {Waker} handler
- *
  * @typedef {object} Waker
  * @property {(now: bigint) => void} wake
  */
@@ -76,9 +74,9 @@ function copyState(schedState) {
 function makeTimerMap(state = undefined) {
   /**
    * @type {Array<Event>} an array containing events that should be triggered
-   * after specific times.  Multiple events can be stored with the same time
-   * {time, handlers: [handler, ...]}. The array will be kept sorted in
-   * increasing order by timestamp.
+   *   after specific times. Multiple events can be stored with the same time
+   *   {time, handlers: [handler, ...]}. The array will be kept sorted in
+   *   increasing order by timestamp.
    */
   const schedule = state ? copyState(state) : [];
 

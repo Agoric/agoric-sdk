@@ -58,11 +58,12 @@ const blockManagerConsole = anylogger('block-manager');
  * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
  * @property {string[]} [clearStorageSubtrees] chain storage paths identifying
  *   roots of subtrees for which data should be deleted (including overlaps with
- *   exportStorageSubtrees, which are *not* preserved).
- * @property {string[]} [exportStorageSubtrees] chain storage paths identifying roots of subtrees
- *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
- *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
- *   `chainStorageEntries: [ ['c.o', '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
+ *   exportStorageSubtrees, which are _not_ preserved).
+ * @property {string[]} [exportStorageSubtrees] chain storage paths identifying
+ *   roots of subtrees for which data should be exported into bootstrap vat
+ *   parameter `chainStorageEntries` (e.g., `exportStorageSubtrees: ['c.o']`
+ *   might result in vatParameters including `chainStorageEntries: [ ['c.o',
+ *   '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
  */
 
 /**
@@ -73,13 +74,14 @@ const blockManagerConsole = anylogger('block-manager');
 const getHostKey = path => `host.${path}`;
 
 /**
- * @param {Map<*, *>} mailboxStorage
+ * @param {Map<any, any>} mailboxStorage
  * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
+ * @param {string | (() => string | Promise<string>)} vatconfig absolute path or
+ *   thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {{}} env
- * @param {*} options
+ * @param {any} options
  */
 export async function buildSwingset(
   mailboxStorage,
@@ -321,15 +323,14 @@ export async function launch({
   });
   const { kvStore, commit } = hostStorage;
 
-  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
+  /** @typedef {ReturnType<typeof makeQueue<{ context: any; action: any }>>} InboundQueue */
   /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
   /** @type {InboundQueue} */
   const highPriorityQueue = makeQueue(highPriorityQueueStorage);
   /**
-   * In memory queue holding actions that must be consumed entirely
-   * during the block. If it's not drained, we open the gates to
-   * hangover hell.
+   * In memory queue holding actions that must be consumed entirely during the
+   * block. If it's not drained, we open the gates to hangover hell.
    *
    * @type {InboundQueue}
    */
@@ -356,7 +357,7 @@ export async function launch({
     },
   );
 
-  /** @type {{publish: (value: unknown) => Promise<void>} | undefined} */
+  /** @type {{ publish: (value: unknown) => Promise<void> } | undefined} */
   let installationPublisher;
 
   // Artificially create load if set.
@@ -574,9 +575,9 @@ export async function launch({
   }
 
   /**
-   * Process as much as we can from an inbound queue, which contains
-   * first the old actions not previously processed, followed by actions
-   * newly added, running the kernel to completion after each.
+   * Process as much as we can from an inbound queue, which contains first the
+   * old actions not previously processed, followed by actions newly added,
+   * running the kernel to completion after each.
    *
    * @param {InboundQueue} inboundQueue
    * @param {ReturnType<typeof makeRunSwingset>} runSwingset

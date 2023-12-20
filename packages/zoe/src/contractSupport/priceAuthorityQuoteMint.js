@@ -2,7 +2,6 @@ import { AssetKind, prepareIssuerKit } from '@agoric/ertp';
 import { provideDurableMapStore } from '@agoric/vat-data';
 
 /**
- *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {ERef<Mint<'set'>>}
  */

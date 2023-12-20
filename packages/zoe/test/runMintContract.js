@@ -4,7 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 
 /**
  * @param {ZCF} zcf
- * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
   const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);

@@ -37,9 +37,9 @@ const test = anyTest;
 
 /**
  * @typedef {{
- *   zoe: ZoeService,
- *   automaticRefundInstallation: Installation,
- *   autoswapInstallation: Installation,
+ *   zoe: ZoeService;
+ *   automaticRefundInstallation: Installation;
+ *   autoswapInstallation: Installation;
  * }} LibWalletTestContext
  */
 
@@ -807,7 +807,7 @@ test('lib-wallet offer methods', async t => {
   );
   const rawId2 = '456-arbitrary';
   const id2 = `unknown#${rawId2}`;
-  /** @type {{ makeInvitation: () => Invitation}} */
+  /** @type {{ makeInvitation: () => Invitation }} */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     automaticRefundInstance,
   );
@@ -978,7 +978,12 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     ),
   );
 
-  /** @type {{ getLiquidityIssuer: () => Issuer<'nat'>, makeSwapInvitation: () => Invitation }} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1129,7 +1134,12 @@ test('lib-wallet performAction acceptOffer', async t => {
     ),
   );
 
-  /** @type {{ getLiquidityIssuer: () => Issuer<'nat'>, makeSwapInvitation: () => Invitation }} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1268,7 +1278,12 @@ test('addOffer invitationQuery', async t => {
     ),
   );
 
-  /** @type {{ getLiquidityIssuer: () => Issuer<'nat'>, makeSwapInvitation: () => Invitation }} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1396,7 +1411,12 @@ test('addOffer offer.invitation', async t => {
     ),
   );
 
-  /** @type {{ getLiquidityIssuer: () => Issuer<'nat'>, makeSwapInvitation: () => Invitation }} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );

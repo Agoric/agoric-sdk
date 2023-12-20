@@ -26,10 +26,13 @@ import {
 /**
  * @typedef {object} StateSyncImporterOptions
  * @property {string} stateDir the directory containing the SwingStore to export
- * @property {string} exportDir the directory where to place the exported artifacts and manifest
+ * @property {string} exportDir the directory where to place the exported
+ *   artifacts and manifest
  * @property {number} [blockHeight] block height to check for
- * @property {import('./export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode] how to handle export data
- * @property {import('./export-kernel-db.js').SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
+ * @property {import('./export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode]
+ *   how to handle export data
+ * @property {import('./export-kernel-db.js').SwingStoreArtifactMode} [artifactMode]
+ *   the level of historical artifacts to import
  */
 
 /**
@@ -52,7 +55,10 @@ export const validateImporterOptions = options => {
 };
 
 /**
- * @param {Pick<StateSyncImporterOptions, 'artifactMode' | 'exportDataMode' >} options
+ * @param {Pick<
+ *   StateSyncImporterOptions,
+ *   'artifactMode' | 'exportDataMode'
+ * >} options
  * @param {Readonly<import('./export-kernel-db.js').StateSyncManifest>} manifest
  * @returns {import('@agoric/swing-store').ImportSwingStoreOptions}
  */
@@ -101,10 +107,11 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 /**
  * @param {StateSyncImporterOptions} options
  * @param {object} powers
- * @param {Pick<import('fs/promises'), 'readFile'> & Pick<import('fs'), 'createReadStream'>} powers.fs
+ * @param {Pick<import('fs/promises'), 'readFile'> &
+ *   Pick<import('fs'), 'createReadStream'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
- * @param {typeof import('@agoric/swing-store')['importSwingStore']} [powers.importSwingStore]
- * @param {typeof import('@agoric/swing-store')['openSwingStore']} [powers.openSwingStore]
+ * @param {(typeof import('@agoric/swing-store'))['importSwingStore']} [powers.importSwingStore]
+ * @param {(typeof import('@agoric/swing-store'))['openSwingStore']} [powers.openSwingStore]
  * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {Promise<void>}
  */
@@ -236,7 +243,8 @@ export const performStateSyncImport = async (
  * @param {Partial<Record<string, string>>} powers.env
  * @param {string} powers.homedir
  * @param {Console} powers.console
- * @param {Pick<import('fs/promises'), 'readFile' | 'stat'> & Pick<import('fs'), 'createReadStream'>} powers.fs
+ * @param {Pick<import('fs/promises'), 'readFile' | 'stat'> &
+ *   Pick<import('fs'), 'createReadStream'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
  */
 export const main = async (
@@ -262,10 +270,10 @@ export const main = async (
     /** @type {string} */ (processValue.getFlag('export-dir', '.')),
   );
 
-  const artifactMode =
-    /** @type {import('./export-kernel-db.js').SwingStoreArtifactMode | undefined} */ (
-      processValue.getFlag('artifact-mode')
-    );
+  const artifactMode = /**
+   * @type {import('./export-kernel-db.js').SwingStoreArtifactMode
+   *   | undefined}
+   */ (processValue.getFlag('artifact-mode'));
   checkArtifactMode(artifactMode);
 
   const exportDataMode = processValue.getFlag('export-data-mode');

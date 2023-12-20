@@ -49,10 +49,8 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {}} powers
- *
  * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
  *   as from createVatByName
- *
  * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({

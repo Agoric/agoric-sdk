@@ -17,15 +17,19 @@ import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.
 /**
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time').TimerService,
- *   governedContractInstallation: Installation<SF>,
+ *   timer: import('@agoric/time').TimerService;
+ *   governedContractInstallation: Installation<SF>;
  *   governed: {
- *     issuerKeywordRecord?: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam }},
- *   }
+ *     issuerKeywordRecord?: IssuerKeywordRecord;
+ *     terms: {
+ *       governedParams: {
+ *         [CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam;
+ *       };
+ *     };
+ *   };
  * }>} zcf
  * @param {{
- *   governed: Record<string, unknown>
+ *   governed: Record<string, unknown>;
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {

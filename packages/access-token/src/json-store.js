@@ -31,14 +31,12 @@ function safeUnlink(filePath) {
 /**
  * Create a new instance of a RAM-based StorageAPI implementation.
  *
- * StorageAPI is a set of functions { has, getKeys, get, set, delete }
- * that work on string keys and accept string values
- * (cf. packages/SwingSet/docs/state.md#transactions).
+ * StorageAPI is a set of functions { has, getKeys, get, set, delete } that work
+ * on string keys and accept string values (cf.
+ * packages/SwingSet/docs/state.md#transactions).
  *
- * returns an object: {
- *   storage,  // the storage API object itself
- *   state     // the underlying map that holds the state in memory
- * }
+ * returns an object: { storage, // the storage API object itself state // the
+ * underlying map that holds the state in memory }
  */
 function makeStorageInMemory() {
   const state = new Map();
@@ -46,10 +44,8 @@ function makeStorageInMemory() {
   /**
    * Test if the state contains a value for a given key.
    *
-   * @param {string} key  The key that is of interest.
-   *
+   * @param {string} key The key that is of interest.
    * @returns {boolean} true if a value is stored for the key, false if not.
-   *
    * @throws if key is not a string.
    */
   function has(key) {
@@ -66,13 +62,11 @@ function makeStorageInMemory() {
    * Note that this can be slow as it's only intended for use in debugging and
    * test result verification.
    *
-   * @param {string} start  Start of the key range of interest (inclusive).  An empty
-   *    string indicates a range from the beginning of the key set.
-   * @param {string} end  End of the key range of interest (exclusive).  An empty string
-   *    indicates a range through the end of the key set.
-   *
+   * @param {string} start Start of the key range of interest (inclusive). An
+   *   empty string indicates a range from the beginning of the key set.
+   * @param {string} end End of the key range of interest (exclusive). An empty
+   *   string indicates a range through the end of the key set.
    * @yields an iterator for the keys from start <= key < end
-   *
    * @throws if either parameter is not a string.
    */
   function* getKeys(start, end) {
@@ -94,11 +88,9 @@ function makeStorageInMemory() {
   /**
    * Obtain the value stored for a given key.
    *
-   * @param {string} key  The key whose value is sought.
-   *
-   * @returns {string|undefined} the (string) value for the given key, or undefined if there is no
-   *    such value.
-   *
+   * @param {string} key The key whose value is sought.
+   * @returns {string | undefined} the (string) value for the given key, or
+   *   undefined if there is no such value.
    * @throws if key is not a string.
    */
   function get(key) {
@@ -109,12 +101,11 @@ function makeStorageInMemory() {
   }
 
   /**
-   * Store a value for a given key.  The value will replace any prior value if
+   * Store a value for a given key. The value will replace any prior value if
    * there was one.
    *
-   * @param {string} key  The key whose value is being set.
-   * @param {string} value  The value to set the key to.
-   *
+   * @param {string} key The key whose value is being set.
+   * @param {string} value The value to set the key to.
    * @throws if either parameter is not a string.
    */
   function set(key, value) {
@@ -128,11 +119,10 @@ function makeStorageInMemory() {
   }
 
   /**
-   * Remove any stored value for a given key.  It is permissible for there to
-   * be no existing stored value for the key.
+   * Remove any stored value for a given key. It is permissible for there to be
+   * no existing stored value for the key.
    *
-   * @param {string} key  The key whose value is to be deleted
-   *
+   * @param {string} key The key whose value is to be deleted
    * @throws if key is not a string.
    */
   function del(key) {
@@ -156,15 +146,16 @@ function makeStorageInMemory() {
 /**
  * Do the work of `initJSONStore` and `openJSONStore`.
  *
- * @param {string} [dirPath]  Path to a directory in which database files may be kept, or
- *   null.
- * @param {boolean} [forceReset]  If true, initialize the database to an empty state
- * @param {null | import('proper-lockfile').LockOptions['retries']} [lockRetries] If null, do not lock the database.
- *
+ * @param {string} [dirPath] Path to a directory in which database files may be
+ *   kept, or null.
+ * @param {boolean} [forceReset] If true, initialize the database to an empty
+ *   state
+ * @param {null | import('proper-lockfile').LockOptions['retries']} [lockRetries]
+ *   If null, do not lock the database.
  * @returns {Promise<{
- *   storage: JSONStore, // a storage API object to load and store data
- *   commit: () => Promise<void>,  // commit changes made since the last commit
- *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
+ *   storage: JSONStore; // a storage API object to load and store data
+ *   commit: () => Promise<void>; // commit changes made since the last commit
+ *   close: () => Promise<void>; // shutdown the store, abandoning any uncommitted changes
  * }>}
  */
 async function makeJSONStore(
@@ -240,8 +231,8 @@ async function makeJSONStore(
   }
 
   /**
-   * Close the "database", abandoning any changes made since the last commit
-   * (if you want to save them, call commit() first).
+   * Close the "database", abandoning any changes made since the last commit (if
+   * you want to save them, call commit() first).
    */
   async function close() {
     assertNotClosed();
@@ -254,21 +245,18 @@ async function makeJSONStore(
 
 /**
  * Create a swingset store that is an in-memory map, normally backed by JSON
- * serialized to a text file.  If there is an existing store at the given
+ * serialized to a text file. If there is an existing store at the given
  * `dirPath`, it will be reinitialized to an empty state.
  *
- * @param {string} [dirPath]  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
+ * @param {string} [dirPath] Path to a directory in which database files may be
+ *   kept. This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
- *   JSON store instance.  If this is nullish, the JSON store created will
- *   have no backing store and thus be non-persistent.
+ *   JSON store instance. If this is nullish, the JSON store created will have
+ *   no backing store and thus be non-persistent.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ *   returns an object: { storage, // a storage API object to load and store data
+ *   commit, // a function to commit changes made since the last commit close //
+ *   a function to shutdown the store, abandoning any uncommitted // changes }
  */
 export function initJSONStore(dirPath) {
   if (dirPath !== null && dirPath !== undefined && `${dirPath}` !== dirPath) {
@@ -279,20 +267,17 @@ export function initJSONStore(dirPath) {
 
 /**
  * Open a swingset store that is an in-memory map, backed by JSON serialized to
- * a text file.  If there is no existing store at the given `dirPath`, a new,
+ * a text file. If there is no existing store at the given `dirPath`, a new,
  * empty store will be created.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
- *   This directory need not actually exist yet (if it doesn't it will be
+ * @param {string} dirPath Path to a directory in which database files may be
+ *   kept. This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   JSON store instance.
  *
- * returns an object: {
- *   storage, // a storage API object to load and store data
- *   commit,  // a function to commit changes made since the last commit
- *   close    // a function to shutdown the store, abandoning any uncommitted
- *            // changes
- * }
+ *   returns an object: { storage, // a storage API object to load and store data
+ *   commit, // a function to commit changes made since the last commit close //
+ *   a function to shutdown the store, abandoning any uncommitted // changes }
  */
 export function openJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {
@@ -304,18 +289,17 @@ export function openJSONStore(dirPath) {
 /**
  * Produce a representation of all the state found in a JSON store.
  *
- * WARNING: This is a helper function intended for use in testing and
- * debugging.  It extracts *everything*, and does so in the simplest and
- * stupidest possible way, hence it is likely to be a performance and memory
- * hog if you attempt to use it on anything real.
+ * WARNING: This is a helper function intended for use in testing and debugging.
+ * It extracts _everything_, and does so in the simplest and stupidest possible
+ * way, hence it is likely to be a performance and memory hog if you attempt to
+ * use it on anything real.
  *
- * @param {JSONStore} storage  The swing storage whose state is to be extracted.
- *
- * @returns {Record<string, string>} an array representing all the current state in `storage`, one
- *    element of the form [key, value] per key/value pair.
+ * @param {JSONStore} storage The swing storage whose state is to be extracted.
+ * @returns {Record<string, string>} an array representing all the current state
+ *   in `storage`, one element of the form [key, value] per key/value pair.
  */
 export function getAllState(storage) {
-  /** @type { Record<string, string> } */
+  /** @type {Record<string, string>} */
   const stuff = {};
   for (const key of Array.from(storage.getKeys('', ''))) {
     // @ts-expect-error get(key) of key from getKeys() is not undefined
@@ -328,11 +312,12 @@ export function getAllState(storage) {
  * Stuff a bunch of state into a JSON store.
  *
  * WARNING: This is intended to support testing and should not be used as a
- * general store initialization mechanism.  In particular, note that it does
- * not bother to remove any existing state in the store that it is given.
+ * general store initialization mechanism. In particular, note that it does not
+ * bother to remove any existing state in the store that it is given.
  *
- * @param {JSONStore} storage  The storage whose state is to be set.
- * @param {Array<[string, string]>} stuff  An array of key/value pairs, each element of the form [key, value]
+ * @param {JSONStore} storage The storage whose state is to be set.
+ * @param {Array<[string, string]>} stuff An array of key/value pairs, each
+ *   element of the form [key, value]
  */
 export function setAllState(storage, stuff) {
   for (const k of Object.getOwnPropertyNames(stuff)) {
@@ -343,12 +328,10 @@ export function setAllState(storage, stuff) {
 /**
  * Is this directory a compatible JSON store?
  *
- * @param {string} dirPath  Path to a directory in which database files might be present.
- *   This directory need not actually exist
- *
- * @returns {boolean}
- *   If the directory is present and contains the files created by initJSONStore
- *   or openJSONStore, returns true. Else returns false.
+ * @param {string} dirPath Path to a directory in which database files might be
+ *   present. This directory need not actually exist
+ * @returns {boolean} If the directory is present and contains the files created
+ *   by initJSONStore or openJSONStore, returns true. Else returns false.
  */
 export function isJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {

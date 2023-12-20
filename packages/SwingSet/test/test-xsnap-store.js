@@ -31,7 +31,7 @@ const snapSize = {
 
 /**
  * @param {string} name
- * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
  * @param {string} script to execute
  */
 async function bootWorker(name, handleCommand, script) {
@@ -52,7 +52,7 @@ async function bootWorker(name, handleCommand, script) {
 
 /**
  * @param {string} name
- * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
+ * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
   const bootScript = await getBootScript();
@@ -124,11 +124,9 @@ test('create SES worker, save, restore, resume', async t => {
 });
 
 /**
- * The snapshot hashes in this test are, naturally,
- * sensitive to any changes in bundle-ses-boot.umd.js;
- * that is: any changes to the SES shim or to the
- * xsnap-worker supervisor.
- * They are also sensitive to the XS code itself.
+ * The snapshot hashes in this test are, naturally, sensitive to any changes in
+ * bundle-ses-boot.umd.js; that is: any changes to the SES shim or to the
+ * xsnap-worker supervisor. They are also sensitive to the XS code itself.
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
   const ENDO_BRANCH = globalThis.process?.env?.ENDO_BRANCH;

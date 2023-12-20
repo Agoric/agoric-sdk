@@ -568,8 +568,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   /**
    * @typedef {bigint} SeqNum
-   * @type {Array<[SeqNum, any]>}
-   * Ordered by seqnum
+   * @type {Array<[SeqNum, any]>} Ordered by seqnum
    */
   let messagePool = [];
 
@@ -722,7 +721,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    * This function is entered at most the same number of times as the
    * mailboxNotifier announces a new mailbox.
    *
-   * It then delivers the mailbox to inbound.  There are no optimisations.
+   * It then delivers the mailbox to inbound. There are no optimisations.
    *
    * @param {bigint} [lastMailboxUpdate]
    */
@@ -754,7 +753,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     // Reset the backoff period.
     retryBackoff = randomizeDelay(INITIAL_SEND_RETRY_DELAY_MS);
   };
-  /** @param {Error} [e]  */
+  /** @param {Error} [e] */
   const failedSend = (e = undefined) => {
     if (e) {
       console.error(`Error sending`, e);

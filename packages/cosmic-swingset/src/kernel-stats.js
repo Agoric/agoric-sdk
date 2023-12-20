@@ -25,9 +25,9 @@ import v8 from 'node:v8';
 import process from 'node:process';
 
 /**
- * TODO Would be nice somehow to label the vats individually, but it's too
- * high cardinality for us unless we can somehow limit the number of active
- * metrics (many more than 20 vats).
+ * TODO Would be nice somehow to label the vats individually, but it's too high
+ * cardinality for us unless we can somehow limit the number of active metrics
+ * (many more than 20 vats).
  */
 const VAT_ID_IS_TOO_HIGH_CARDINALITY = true;
 
@@ -102,7 +102,12 @@ export function makeDefaultMeterProvider() {
   return new MeterProvider({ views: getMetricsProviderViews() });
 }
 
-/** @param {Omit<NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>, 'views'>} [powers] */
+/**
+ * @param {Omit<
+ *   NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>,
+ *   'views'
+ * >} [powers]
+ */
 export function getTelemetryProviders(powers = {}) {
   return getTelemetryProvidersOriginal({
     ...powers,
@@ -121,8 +126,8 @@ function createHistogram(metricMeter, name) {
 
 /**
  * @param {{
- *   metricMeter: import('@opentelemetry/api').Meter,
- *   attributes?: import('@opentelemetry/api').MetricAttributes,
+ *   metricMeter: import('@opentelemetry/api').Meter;
+ *   attributes?: import('@opentelemetry/api').MetricAttributes;
  * }} param0
  */
 export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
@@ -133,8 +138,7 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
    * This function reuses or creates per-group named metrics.
    *
    * @param {string} name name of the base metric
-   * @param {Attributes} [group] the
-   * attributes to associate with a group
+   * @param {Attributes} [group] the attributes to associate with a group
    * @param {Attributes} [instance] the specific metric attributes
    * @returns {Pick<Histogram, 'record'>} the attribute-aware recorder
    */
@@ -189,7 +193,7 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
    * Return the vat metric group that should be reset when the stats change.
    *
    * @param {string} vatID
-   * @returns {Record<string,string> | undefined}
+   * @returns {Record<string, string> | undefined}
    */
   const getVatGroup = vatID => {
     if (VAT_ID_IS_TOO_HIGH_CARDINALITY) {
@@ -199,8 +203,8 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
   };
 
   /**
-   * Measure some interesting stats.  We currently do a per-vat recording of
-   * time spent in the vat for startup and delivery.
+   * Measure some interesting stats. We currently do a per-vat recording of time
+   * spent in the vat for startup and delivery.
    */
   const slogCallbacks = {
     startup(_method, [vatID], finisher) {
@@ -240,15 +244,14 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
 }
 
 /**
- * Create a metrics manager for the 'inboundQueue' structure, which
- * can be scaped to report current length, and the number of
- * increments and decrements. This must be created with the initial
- * length as extracted from durable storage, but after that we assume
- * that we're told about every up and down, so our RAM-backed shadow
- * 'length' will remain accurate.
+ * Create a metrics manager for the 'inboundQueue' structure, which can be
+ * scaped to report current length, and the number of increments and decrements.
+ * This must be created with the initial length as extracted from durable
+ * storage, but after that we assume that we're told about every up and down, so
+ * our RAM-backed shadow 'length' will remain accurate.
  *
- * Note that the add/remove counts will get reset at restart, but
- * Prometheus/etc tools can tolerate that just fine.
+ * Note that the add/remove counts will get reset at restart, but Prometheus/etc
+ * tools can tolerate that just fine.
  *
  * @param {number} initialLength
  */

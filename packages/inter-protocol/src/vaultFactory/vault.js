@@ -74,7 +74,6 @@ const validTransitions = {
 
 /**
  * @typedef {Phase[keyof typeof Phase]} HolderPhase
- *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{ debt: Amount<'nat'>; interest: Ratio }} debtSnapshot 'debt' at

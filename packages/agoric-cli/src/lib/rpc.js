@@ -15,11 +15,11 @@ export const rpcUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @typedef {{ rpcAddrs: string[]; chainName: string }} MinimalNetworkConfig
  */
 
 /**
- *  @param {string} str
+ * @param {string} str
  * @returns {Promise<MinimalNetworkConfig>}
  */
 const fromAgoricNet = str => {
@@ -101,7 +101,6 @@ export const makeVStorage = (powers, config = networkConfig) => {
       return Buffer.from(value, 'base64').toString();
     },
     /**
-     *
      * @param {string} path
      * @returns {Promise<string>} latest vstorage value at path
      */
@@ -116,7 +115,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
     /**
      * @param {string} path
      * @param {number} [height] default is highest
-     * @returns {Promise<{blockHeight: number, values: string[]}>}
+     * @returns {Promise<{ blockHeight: number; values: string[] }>}
      */
     async readAt(path, height = undefined) {
       const raw = await readStorage(path, { kind: 'data', height });
@@ -186,7 +185,7 @@ export const makeFromBoard = () => {
 /** @typedef {ReturnType<typeof makeFromBoard>} IdMap */
 
 export const storageHelper = {
-  /** @param { string } txt */
+  /** @param {string} txt */
   parseCapData: txt => {
     assert(typeof txt === 'string', typeof txt);
     /** @type {{ value: string }} */
@@ -210,7 +209,7 @@ export const storageHelper = {
   /** @param {string[]} capDataStrings array of stringified capData */
   parseMany: capDataStrings => {
     assert(capDataStrings && capDataStrings.length);
-    /** @type {{ body: string, slots: string[] }[]} */
+    /** @type {{ body: string; slots: string[] }[]} */
     const capDatas = capDataStrings.map(s => JSON.parse(s));
     for (const capData of capDatas) {
       assert(typeof capData === 'object' && capData !== null);
@@ -226,7 +225,9 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
+ * @returns {Promise<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes
+ * >}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   const reverse = {};
@@ -235,7 +236,11 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
-      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
+      /**
+       * @type {Array<
+       *   [string, import('@agoric/vats/tools/board-utils.js').BoardRemote]
+       * >}
+       */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {

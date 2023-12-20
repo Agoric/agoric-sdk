@@ -9,7 +9,8 @@ export {};
 
 /**
  * @typedef {object} LeaderOptions
- * @property {null | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
+ * @property {null
+ *   | ((where: string, err: any, attempt?: number) => Promise<void>)} [retryCallback]
  * @property {(where: string) => Promise<void>} [jitter]
  * @property {(where: string) => Promise<boolean>} [keepPolling]
  */
@@ -25,7 +26,10 @@ export {};
  * @property {(where: string, error: any, attempt?: number) => Promise<void>} retry
  * @property {(where: string) => Promise<void>} jitter
  * @property {() => LeaderOptions} getOptions
- * @property {<T>(where: string, callback: (endpoint: string) => Promise<T>) => Promise<T[]>} mapEndpoints
+ * @property {<T>(
+ *   where: string,
+ *   callback: (endpoint: string) => Promise<T>,
+ * ) => Promise<T[]>} mapEndpoints
  * @property {(spec: ERef<CastingSpec>) => Promise<Follower<CastingChange>>} watchCasting
  */
 
@@ -48,11 +52,15 @@ export {};
 /**
  * @see {ChangeFollower}
  * @template T
- * @typedef {ValueFollowerBase & ({ value: T } | { value: undefined, error: any })} ValueFollowerElement
+ * @typedef {ValueFollowerBase &
+ *   ({ value: T } | { value: undefined; error: any })} ValueFollowerElement
  */
 
 /**
- * @typedef {Pick<import('@endo/marshal').Marshal<unknown>, 'fromCapData' | 'unserialize'>} Unserializer
+ * @typedef {Pick<
+ *   import('@endo/marshal').Marshal<unknown>,
+ *   'fromCapData' | 'unserialize'
+ * >} Unserializer
  */
 
 /**
@@ -64,7 +72,7 @@ export {};
  * @typedef {object} FollowerOptions
  * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
  * @property {(text: string) => any} [decode]
- * @property {'strict'|'optimistic'|'none'} [proof]
+ * @property {'strict' | 'optimistic' | 'none'} [proof]
  * @property {import('@endo/far').FarRef<Crasher>} [crasher]
  */
 

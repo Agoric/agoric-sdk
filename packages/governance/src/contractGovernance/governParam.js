@@ -19,8 +19,8 @@ const { Fail } = assert;
 const CONTRACT_ELECTORATE = 'Electorate';
 
 /**
- * Return a record containing the positive and negative positions for a
- * question on changing the param to the proposedValue.
+ * Return a record containing the positive and negative positions for a question
+ * on changing the param to the proposedValue.
  *
  * @param {Record<string, ParamValue>} changes
  * @returns {ParamChangePositions}
@@ -37,7 +37,7 @@ const makeParamChangePositions = changes => {
  * assert that the parameter described by paramSpec is proposed to be changed in
  * the question described by questionSpec.
  *
- * @param {{ parameterName: string, paramPath: unknown}} paramSpec
+ * @param {{ parameterName: string; paramPath: unknown }} paramSpec
  * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {

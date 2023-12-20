@@ -272,16 +272,16 @@ async function replay(transcriptFile) {
     );
   /**
    * @typedef {{
-   *  manager: import('../src/types-internal.js').VatManager;
-   *  xsnapPID: number | undefined;
-   *  deliveryTimeTotal: number;
-   *  deliveryTimeSinceLastSnapshot: number;
-   *  loadSnapshotID: string | undefined;
-   *  timeOfLastCommand: number;
-   *  keep: boolean;
-   *  firstTranscriptNum: number | null;
-   *  completeStep: () => void;
-   *  stepCompleted: Promise<void>
+   *   manager: import('../src/types-internal.js').VatManager;
+   *   xsnapPID: number | undefined;
+   *   deliveryTimeTotal: number;
+   *   deliveryTimeSinceLastSnapshot: number;
+   *   loadSnapshotID: string | undefined;
+   *   timeOfLastCommand: number;
+   *   keep: boolean;
+   *   firstTranscriptNum: number | null;
+   *   completeStep: () => void;
+   *   stepCompleted: Promise<void>;
    * }} WorkerData
    */
   /** @type {WorkerData[]} */
@@ -293,13 +293,13 @@ async function replay(transcriptFile) {
     let overrideBundles;
     if (argv.useSdkBundles) {
       overrideBundles = await Promise.all([
-        /** @type {Promise<*>} */ (getLockdownBundle()),
-        /** @type {Promise<*>} */ (getSupervisorBundle()),
+        /** @type {Promise<any>} */ (getLockdownBundle()),
+        /** @type {Promise<any>} */ (getSupervisorBundle()),
       ]);
     }
 
     const capturePIDSpawn = /** @type {typeof spawn} */ (
-      /** @param  {Parameters<typeof spawn>} args */
+      /** @param {Parameters<typeof spawn>} args */
       (...args) => {
         const child = spawn(...args);
         workers[workers.length - 1].xsnapPID = child.pid;
@@ -333,7 +333,11 @@ async function replay(transcriptFile) {
   }
 
   // @ts-expect-error missing symbol
-  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
+  /**
+   * @type {Partial<
+   *   Record<ReturnType<typeof getResultKind>, Map<string, number[]>>
+   * >}
+   */
   let syscallResults = {};
 
   const analyzeSyscallResults = () => {
@@ -425,7 +429,11 @@ async function replay(transcriptFile) {
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
     const managerOptions =
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
-        /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
+        /**
+         * @type {Partial<
+         *   import('../src/types-internal.js').ManagerOptions
+         * >}
+         */ ({
           sourcedConsole: console,
           vatParameters,
           useTranscript: true,

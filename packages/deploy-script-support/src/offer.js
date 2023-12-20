@@ -16,8 +16,8 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
  */
 
 /**
- * @param {ERef<any>} walletAdmin - an internal type of the
- * wallet, not defined here
+ * @param {ERef<any>} walletAdmin - an internal type of the wallet, not defined
+ *   here
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Purse>} zoeInvitationPurse
  */

@@ -14,11 +14,9 @@ import { Fail } from '@agoric/assert';
  * Assert function to ensure that something expected to be a vat ID string
  * actually is one.
  *
- * @param {string} s  The (alleged) string to be tested.
- *
- * @throws {Error} if, upon inspection, the parameter is not a string or is not a
- *    well-formed vat ID as described above.
- *
+ * @param {string} s The (alleged) string to be tested.
+ * @throws {Error} if, upon inspection, the parameter is not a string or is not
+ *   a well-formed vat ID as described above.
  * @returns {void}
  */
 export function insistVatID(s) {
@@ -34,8 +32,7 @@ export function insistVatID(s) {
 /**
  * Generate a vat ID string given an index.
  *
- * @param {bigint | number} index  The index.
- *
+ * @param {bigint | number} index The index.
  * @returns {string} a vat ID string of the form "vNN" where NN is the index.
  */
 export function makeVatID(index) {
@@ -46,11 +43,9 @@ export function makeVatID(index) {
  * Assert function to ensure that something expected to be a device ID string
  * actually is one.
  *
- * @param {unknown} s  The (alleged) string to be tested.
- *
- * @throws {Error} if, upon inspection, the parameter is not a string or is not a
- *    well-formed device ID as described above.
- *
+ * @param {unknown} s The (alleged) string to be tested.
+ * @throws {Error} if, upon inspection, the parameter is not a string or is not
+ *   a well-formed device ID as described above.
  * @returns {void}
  */
 export function insistDeviceID(s) {
@@ -68,8 +63,7 @@ export function insistDeviceID(s) {
 /**
  * Generate a device ID string given an index.
  *
- * @param {bigint | number} index  The index.
- *
+ * @param {bigint | number} index The index.
  * @returns {string} a device ID string of the form "dNN" where NN is the index.
  */
 export function makeDeviceID(index) {
@@ -79,13 +73,9 @@ export function makeDeviceID(index) {
 /**
  * Parse a vat or device ID string into its constituent parts.
  *
- * @param {string} s  The string to be parsed.
- *
- * @returns {{ type: 'vat' | 'device', id: bigint}} an object: {
- *    type: STRING, // 'vat' or 'device', accordingly
- *    id: Nat       // the index
- *  }
- *
+ * @param {string} s The string to be parsed.
+ * @returns {{ type: 'vat' | 'device'; id: bigint }} an object: { type: STRING,
+ *   // 'vat' or 'device', accordingly id: Nat // the index }
  * @throws {Error} if the parameter is not a string or is malformed.
  */
 export function parseVatOrDeviceID(s) {

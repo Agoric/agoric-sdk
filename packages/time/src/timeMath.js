@@ -30,9 +30,9 @@ const agreedTimerBrand = (leftBrand, rightBrand) => {
 /**
  * `sharedTimerBrand` is internal to this module, and implements the
  * transitional brand checking and contaigion logic explained in the `TimeMath`
- * comment. It is used to define the binary operators that should follow
- * this logic. It does the error checking between the operands, and returns
- * the brand, if any, that should label the resulting time value.
+ * comment. It is used to define the binary operators that should follow this
+ * logic. It does the error checking between the operands, and returns the
+ * brand, if any, that should label the resulting time value.
  *
  * @param {import('./types').Timestamp | import('./types').RelativeTime} left
  * @param {import('./types').Timestamp | import('./types').RelativeTime} right
@@ -46,8 +46,8 @@ const sharedTimerBrand = (left, right) => {
 
 /**
  * `absLike` is internal to this module, and used to implement the binary
- * operators in the case where the returned time should be a `Timestamp`
- * rather than a `RelativeTime`.
+ * operators in the case where the returned time should be a `Timestamp` rather
+ * than a `RelativeTime`.
  *
  * @param {import('./types').Timestamp | import('./types').RelativeTime} left
  * @param {import('./types').Timestamp | import('./types').RelativeTime} right
@@ -184,8 +184,8 @@ const modRelRel = (rel, step) =>
   relLike(rel, step, relValue(rel) % relValue(step));
 
 /**
- * `compareValues` is internal to this module, and used to implement
- * the time comparison operators.
+ * `compareValues` is internal to this module, and used to implement the time
+ * comparison operators.
  *
  * @param {import('./types').Timestamp | import('./types').RelativeTime} left
  * @param {import('./types').Timestamp | import('./types').RelativeTime} right
@@ -208,32 +208,31 @@ const compareValues = (left, right, v1, v2) => {
 /**
  * The `TimeMath` object provides helper methods to do arithmetic on labeled
  * time values, much like `AmountMath` provides helper methods to do arithmetic
- * on labeled asset/money values. Both check for consistency of labels: a
- * binary operation on two labeled objects ensures that the both carry
- * the same label. If they produce another object from the same domain, it
- * will carry the same label. If the operands have incompatible labels,
- * an error is thrown.
+ * on labeled asset/money values. Both check for consistency of labels: a binary
+ * operation on two labeled objects ensures that the both carry the same label.
+ * If they produce another object from the same domain, it will carry the same
+ * label. If the operands have incompatible labels, an error is thrown.
  *
  * Unlike amount arithmetic, time arithmetic deals in two kinds of time objects:
  * Timestamps, which represent absolute time, and RelativeTime, which represents
- * the duration between two absolute times. Both kinds of time object
- * are labeled by a `TimerBrand`. For a Timestamp object, the value is
- * a bigint in an `absValue` property. For a RelativeTime object, the value
- * is a bigint in a `relValue` property. Thus we have a runtime safety check
- * to ensure that we don't confused the two, even if we have managed to fool
- * the (unsound) static type system.
+ * the duration between two absolute times. Both kinds of time object are
+ * labeled by a `TimerBrand`. For a Timestamp object, the value is a bigint in
+ * an `absValue` property. For a RelativeTime object, the value is a bigint in a
+ * `relValue` property. Thus we have a runtime safety check to ensure that we
+ * don't confused the two, even if we have managed to fool the (unsound) static
+ * type system.
  *
  * As a transitional measure, currently many Timestamps and RelativeTimes are
- * still represented by unlabeled bigints. During this transitional period,
- * we allow this, both statically and dynamically. For a normal binary
- * operation, if both inputs are labeled, then we do the full checking as
- * explained above and return a labeled result. If both inputs are unlabeled
- * bigints, we *assume* that they indicate a time of the right kind
- * (Timestamp vs RelativeTime) and timer brand. Since we don't know what
- * brand was intended, we can only return yet another unlabeled bigint.
+ * still represented by unlabeled bigints. During this transitional period, we
+ * allow this, both statically and dynamically. For a normal binary operation,
+ * if both inputs are labeled, then we do the full checking as explained above
+ * and return a labeled result. If both inputs are unlabeled bigints, we
+ * _assume_ that they indicate a time of the right kind (Timestamp vs
+ * RelativeTime) and timer brand. Since we don't know what brand was intended,
+ * we can only return yet another unlabeled bigint.
  *
  * If one operand is labeled and the other is not, we check the labeled operand,
- * *assume* the unlabeled bigint represents the value needed for the other
+ * _assume_ the unlabeled bigint represents the value needed for the other
  * operand, and return a labeled time object with the brand of the labeled
  * operand.
  *

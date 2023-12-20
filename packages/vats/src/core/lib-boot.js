@@ -10,7 +10,7 @@ import { makePromiseSpace } from './promise-space.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @typedef {| true
+ * @typedef {true
  *   | string
  *   | { [key: string]: BootstrapManifestPermit | undefined }} BootstrapManifestPermit
  */
@@ -33,9 +33,7 @@ const { Fail, quote: q } = assert;
 
 /**
  * @typedef {(powers: any, config?: any) => Promise<void>} BootBehavior
- *
  * @typedef {Record<string, unknown>} ModuleNamespace
- *
  * @typedef {{ utils: typeof import('./utils.js') } & Record<
  *   string,
  *   Record<string, any>

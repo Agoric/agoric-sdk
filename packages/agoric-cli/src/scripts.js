@@ -17,16 +17,13 @@ const PATH_SEP_RE = new RegExp(`${path.sep.replace(/\\/g, '\\\\')}`, 'g');
 export const makeLookup =
   bootP =>
   /**
-   * Recursively look up names in the context of the bootstrap
-   * promise, such as:
+   * Recursively look up names in the context of the bootstrap promise, such as:
    *
-   * ['agoricNames', 'oracleBrand', 'USD']
-   * ['namesByAddress']
-   * ['namesByAddress', 'agoric1...']
-   * ['namesByAddress', 'agoric1...', 'depositFacet']
-   * ['wallet', 'issuer', 'IST']
+   * ['agoricNames', 'oracleBrand', 'USD'] ['namesByAddress'] ['namesByAddress',
+   * 'agoric1...'] ['namesByAddress', 'agoric1...', 'depositFacet'] ['wallet',
+   * 'issuer', 'IST']
    *
-   * @param  {string[]} args
+   * @param {string[]} args
    * @returns {Promise<any>}
    */
   (...args) => {
@@ -56,8 +53,13 @@ export const makeLookup =
 
 /**
  * @param {string[]} scripts
- * @param {{ allowUnsafePlugins: boolean, progname: string, rawArgs: string[], endowments?: Record<string, any> }} opts
- * @param {{ fs: import('fs/promises'), console: Console }} powers
+ * @param {{
+ *   allowUnsafePlugins: boolean;
+ *   progname: string;
+ *   rawArgs: string[];
+ *   endowments?: Record<string, any>;
+ * }} opts
+ * @param {{ fs: import('fs/promises'); console: Console }} powers
  */
 export const makeScriptLoader =
   (

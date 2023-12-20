@@ -15,13 +15,12 @@ const { ownKeys } = Reflect;
 const { quote: q, Fail } = assert;
 
 /**
- * The InstanceRecord stores the installation, customTerms, issuers,
- * and brands for a particular Zoe contract instance. The installation
- * and customTerms are never changed, but new issuers (and their
- * matching brands) may be added by the contract code. Thus, an
- * InstanceRecord may be outdated at any particular point. This class
- * manages the creation and updating of an InstanceRecord and provides
- * functions for getting the latest data.
+ * The InstanceRecord stores the installation, customTerms, issuers, and brands
+ * for a particular Zoe contract instance. The installation and customTerms are
+ * never changed, but new issuers (and their matching brands) may be added by
+ * the contract code. Thus, an InstanceRecord may be outdated at any particular
+ * point. This class manages the creation and updating of an InstanceRecord and
+ * provides functions for getting the latest data.
  */
 
 /**

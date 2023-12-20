@@ -41,8 +41,8 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * Shared state for tests using scenario2 chain in ../
  *
  * @param {object} io
- * @param {*} io.pspawnMake promise-style spawn of 'make' with cwd set
- * @param {*} io.pspawnAgd promise-style spawn of 'agd' with cwd set
+ * @param {any} io.pspawnMake promise-style spawn of 'make' with cwd set
+ * @param {any} io.pspawnAgd promise-style spawn of 'agd' with cwd set
  * @param {typeof console.log} io.log
  */
 export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
@@ -92,15 +92,16 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
  * Wallet utilities for scenario2.
  *
  * @param {object} io
- * @param {*} io.runMake from makeScenario2 above
- * @param {*} io.pspawnAgd as to makeScenario2 above
+ * @param {any} io.runMake from makeScenario2 above
+ * @param {any} io.pspawnAgd as to makeScenario2 above
  * @param {(ms: number) => Promise<void>} io.delay
  * @param {typeof console.log} io.log
  */
 export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
   /**
    * @param {string[]} args
-   * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query <...args>`
+   * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query
+   *   <...args>`
    * @throws if agd exits non-0 or gives empty output
    */
   const query = async args => {

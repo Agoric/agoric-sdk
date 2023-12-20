@@ -5,12 +5,11 @@ import { AmountMath } from '@agoric/ertp';
 import '../internal-types.js';
 
 /**
- * Iterate over the amounts and sum, storing the sums in a
- * map by brand.
+ * Iterate over the amounts and sum, storing the sums in a map by brand.
  *
- * @param  {Amount[]} amounts - an array of amounts
+ * @param {Amount[]} amounts - an array of amounts
  * @returns {MapStore<Brand, Amount>} sumsByBrand - a map of Brand keys and
- * Amount values. The amounts are the sums.
+ *   Amount values. The amounts are the sums.
  */
 const sumByBrand = amounts => {
   /** @type {MapStore<Brand, Amount>} */
@@ -30,8 +29,8 @@ const sumByBrand = amounts => {
 /**
  * Assert that the left sums by brand equal the right sums by brand
  *
- * @param  {MapStore<Brand, Amount>} leftSumsByBrand - a map of brands to sums
- * @param  {MapStore<Brand, Amount>} rightSumsByBrand - a map of brands to sums
+ * @param {MapStore<Brand, Amount>} leftSumsByBrand - a map of brands to sums
+ * @param {MapStore<Brand, Amount>} rightSumsByBrand - a map of brands to sums
  */
 const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   // We cannot assume that all of the brand keys present in
@@ -43,11 +42,11 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   // only if the sum for the brand in the other map is empty.
 
   /**
-   * A helper that either gets the sums for the specified brand, or if
-   * the brand is absent in the map, returns an empty amount.
+   * A helper that either gets the sums for the specified brand, or if the brand
+   * is absent in the map, returns an empty amount.
    *
    * @param {Brand} brand
-   * @returns {{ leftSum: Amount, rightSum: Amount }}
+   * @returns {{ leftSum: Amount; rightSum: Amount }}
    */
   const getSums = brand => {
     let leftSum;
@@ -81,13 +80,13 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
 };
 
 /**
- * `assertRightsConserved` checks that the total amount per brand is
- * equal to the total amount per brand in the proposed reallocation
+ * `assertRightsConserved` checks that the total amount per brand is equal to
+ * the total amount per brand in the proposed reallocation
  *
  * @param {Amount[]} previousAmounts - an array of the amounts before the
- * proposed reallocation
- * @param {Amount[]} newAmounts - an array of the amounts in the
- * proposed reallocation
+ *   proposed reallocation
+ * @param {Amount[]} newAmounts - an array of the amounts in the proposed
+ *   reallocation
  * @returns {void}
  */
 function assertRightsConserved(previousAmounts, newAmounts) {

@@ -24,21 +24,19 @@ import { makeProcessValue } from './helpers/process-value.js';
 export const ExportManifestFileName = 'export-manifest.json';
 
 /**
- * @typedef {'none'  // No artifacts included
- *  | import("@agoric/swing-store").ArtifactMode
- * } SwingStoreArtifactMode
+ * @typedef {'none' // No artifacts included
+ *   | import('@agoric/swing-store').ArtifactMode} SwingStoreArtifactMode
  */
 
 /**
- * @typedef {'skip'      // Do not include any "export data" (artifacts only)
+ * @typedef {'skip' // Do not include any "export data" (artifacts only)
  *   | 'repair-metadata' // Add missing artifact metadata (import only)
- *   | 'all'             // Include all export data, create new swing-store on import
- * } SwingStoreExportDataMode
+ *   | 'all'; // Include all export data, create new swing-store on import} SwingStoreExportDataMode
  */
 
 /**
  * @param {SwingStoreArtifactMode | undefined} artifactMode
- * @returns {import("@agoric/swing-store").ArtifactMode}
+ * @returns {import('@agoric/swing-store').ArtifactMode}
  */
 export const getEffectiveArtifactMode = artifactMode => {
   switch (artifactMode) {
@@ -56,7 +54,11 @@ export const getEffectiveArtifactMode = artifactMode => {
   }
 };
 
-/** @type {(artifactMode: string | undefined) => asserts artifactMode is SwingStoreArtifactMode | undefined} */
+/**
+ * @type {(
+ *   artifactMode: string | undefined,
+ * ) => asserts artifactMode is SwingStoreArtifactMode | undefined}
+ */
 export const checkArtifactMode = getEffectiveArtifactMode;
 
 /**
@@ -86,18 +88,17 @@ export const checkExportDataMode = (mode, isImport = false) => {
  * A state-sync manifest is a representation of the information contained in a
  * swingStore export for a given block.
  *
- * The `data` field is the name of a file containing the swingStore's KV
- *   "export data".
- * The `artifacts` field is a list of [artifactName, fileName] pairs
- *   (where the content of each artifact is stored in the corresponding file).
- * For more details, see packages/swing-store/docs/data-export.md
+ * The `data` field is the name of a file containing the swingStore's KV "export
+ * data". The `artifacts` field is a list of [artifactName, fileName] pairs
+ * (where the content of each artifact is stored in the corresponding file). For
+ * more details, see packages/swing-store/docs/data-export.md
  *
  * @typedef {object} StateSyncManifest
  * @property {number} blockHeight the block height corresponding to this export
  * @property {SwingStoreArtifactMode} [artifactMode]
  * @property {string} [data] file name containing the swingStore "export data"
- * @property {Array<[artifactName: string, fileName: string]>} artifacts
- *   List of swingStore export artifacts which can be validated by the export data
+ * @property {Array<[artifactName: string, fileName: string]>} artifacts List of
+ *   swingStore export artifacts which can be validated by the export data
  */
 
 /**
@@ -111,10 +112,13 @@ export const checkExportDataMode = (mode, isImport = false) => {
 /**
  * @typedef {object} StateSyncExporterOptions
  * @property {string} stateDir the directory containing the SwingStore to export
- * @property {string} exportDir the directory in which to place the exported artifacts and manifest
+ * @property {string} exportDir the directory in which to place the exported
+ *   artifacts and manifest
  * @property {number} [blockHeight] block height to check for
- * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to include in the export
- * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic artifact for the export data in the export
+ * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to
+ *   include in the export
+ * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic
+ *   artifact for the export data in the export
  */
 
 /**
@@ -143,7 +147,7 @@ export const validateExporterOptions = options => {
  * @param {object} powers
  * @param {Pick<import('fs/promises'), 'open' | 'writeFile'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
- * @param {typeof import('@agoric/swing-store')['makeSwingStoreExporter']} [powers.makeSwingStoreExporter]
+ * @param {(typeof import('@agoric/swing-store'))['makeSwingStoreExporter']} [powers.makeSwingStoreExporter]
  * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {StateSyncExporter}
  */
@@ -270,8 +274,8 @@ export const initiateSwingStoreExport = (
 };
 
 /**
- * @typedef {{type: 'started', blockHeight: number}} ExportMessageStarted
- * @typedef {{type: 'done', error?: Error}} ExportMessageDone
+ * @typedef {{ type: 'started'; blockHeight: number }} ExportMessageStarted
+ * @typedef {{ type: 'done'; error?: Error }} ExportMessageDone
  * @typedef {ExportMessageStarted | ExportMessageDone} ExportMessage
  */
 
@@ -377,7 +381,7 @@ export const main = async (
 /**
  * @param {StateSyncExporterOptions} options
  * @param {object} powers
- * @param {typeof import('child_process')['fork']} powers.fork
+ * @param {(typeof import('child_process'))['fork']} powers.fork
  * @param {boolean} [powers.verbose]
  * @returns {StateSyncExporter}
  */

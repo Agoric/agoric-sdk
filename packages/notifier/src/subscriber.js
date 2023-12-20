@@ -21,8 +21,8 @@ const makeSubscription = topic => {
     subscribeAfter: async publishCount => E(topic).subscribeAfter(publishCount),
 
     /**
-     * Use this to distribute a Subscription efficiently over the network,
-     * by obtaining this from the Subscription to be replicated, and applying
+     * Use this to distribute a Subscription efficiently over the network, by
+     * obtaining this from the Subscription to be replicated, and applying
      * `makeSubscription` to it at the new site to get an equivalent local
      * Subscription at that site.
      */
@@ -37,19 +37,21 @@ export { makeSubscription };
 
 /**
  * @deprecated Producers should use
- * ```js
- * const { publisher, subscriber } = makePublishKit();
- * const topic = makePinnedHistoryTopic(subscriber);
- * ```
- * instead, which makes it clearer that all the subscriber's history is
- * retained, preventing GC.  Potentially remote consumers use
- * ```js
- * for await (const value of subscribeEach(topic)) { ... }
+ *
+ *   ```js
+ *   const { publisher, subscriber } = makePublishKit();
+ *   const topic = makePinnedHistoryTopic(subscriber);
+ *   ```
+ *
+ *   instead, which makes it clearer that all the subscriber's history is
+ *   retained, preventing GC. Potentially remote consumers use
+ *
+ *   ```js
+ *   for await (const value of subscribeEach(topic)) { ... }
  * ```
  *
- * Makes a `{ publication, subscription }` for doing lossless efficient
- * distributed pub/sub.
- *
+ *   Makes a `{ publication, subscription }` for doing lossless efficient
+ *   distributed pub/sub.
  * @template T
  * @returns {SubscriptionRecord<T>}
  */

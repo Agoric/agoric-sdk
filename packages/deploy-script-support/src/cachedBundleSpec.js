@@ -2,7 +2,11 @@ const { Fail } = assert;
 
 /**
  * @param {string} cacheDir
- * @param {{ now: typeof Date.now, fs: import('fs').promises, pathResolve: typeof import('path').resolve }} param1
+ * @param {{
+ *   now: typeof Date.now;
+ *   fs: import('fs').promises;
+ *   pathResolve: typeof import('path').resolve;
+ * }} param1
  */
 export const makeCacheAndGetBundleSpec =
   (cacheDir, { now, fs, pathResolve }) =>

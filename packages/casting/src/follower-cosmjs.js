@@ -15,7 +15,11 @@ const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
-/** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
+/**
+ * @template T @typedef
+ *   {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>}
+ *   ValueFollower
+ */
 
 // Copied from https://github.com/cosmos/cosmjs/pull/1328/files until release
 /**
@@ -23,9 +27,9 @@ const textDecoder = new TextDecoder();
  *   readonly value: Uint8Array;
  *   readonly height: number;
  * }} QueryStoreResponse
- * The response of an ABCI query to Tendermint.
- * This is a subset of `tendermint34.AbciQueryResponse` in order
- * to abstract away Tendermint versions.
+ *   The response of an ABCI query to Tendermint. This is a subset of
+ *   `tendermint34.AbciQueryResponse` in order to abstract away Tendermint
+ *   versions.
  */
 
 /**
@@ -160,7 +164,11 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<QueryStoreResponse>} tryGetPrefixedData
+   * @param {(
+   *   endpoint: string,
+   *   storeName: string,
+   *   storeSubkey: Uint8Array,
+   * ) => Promise<QueryStoreResponse>} tryGetPrefixedData
    * @returns {Promise<QueryStoreResponse>}
    */
   const retryGetPrefixedData = async tryGetPrefixedData => {
@@ -235,7 +243,8 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {number} [blockHeight] desired height, or the latest height if not set
+   * @param {number} [blockHeight] desired height, or the latest height if not
+   *   set
    * @returns {Promise<QueryStoreResponse>}
    */
   const tryGetDataAtHeight = async blockHeight => {
@@ -271,7 +280,8 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {number} [blockHeight] desired height, or the latest height if not set
+   * @param {number} [blockHeight] desired height, or the latest height if not
+   *   set
    */
   const getDataAtHeight = async blockHeight => {
     await null;

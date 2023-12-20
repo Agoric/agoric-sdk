@@ -16,10 +16,10 @@ const FIRST_DEVICE_IMPORTED_PROMISE_ID = 30n;
 /**
  * Establish a device's state.
  *
- * @param {*} kvStore  The storage in which the persistent state will be kept
- * @param {string} deviceID  The device ID string of the device in question
+ * @param {any} kvStore The storage in which the persistent state will be kept
+ * @param {string} deviceID The device ID string of the device in question
  *
- * TODO move into makeDeviceKeeper?
+ *   TODO move into makeDeviceKeeper?
  */
 export function initializeDeviceState(kvStore, deviceID) {
   kvStore.set(`${deviceID}.o.nextID`, `${FIRST_DEVICE_IMPORTED_OBJECT_ID}`);
@@ -30,18 +30,21 @@ export function initializeDeviceState(kvStore, deviceID) {
 /**
  * Produce a device keeper for a device.
  *
- * @param {*} kvStore  The storage in which the persistent state will be kept
- * @param {string} deviceID  The device ID string of the device in question
- * @param {{ addKernelDeviceNode: (deviceID: string) => string,
- *          incrementRefCount: (kernelSlot: string,
- *                              tag: string?,
- *                              options: {
- *                                isExport?: boolean,
- *                                onlyRecognizable?: boolean,
- *                              },
- *                             ) => void,
- *         }} tools
- * @returns {*} an object to hold and access the kernel's state for the given device
+ * @param {any} kvStore The storage in which the persistent state will be kept
+ * @param {string} deviceID The device ID string of the device in question
+ * @param {{
+ *   addKernelDeviceNode: (deviceID: string) => string;
+ *   incrementRefCount: (
+ *     kernelSlot: string,
+ *     tag: string?,
+ *     options: {
+ *       isExport?: boolean;
+ *       onlyRecognizable?: boolean;
+ *     },
+ *   ) => void;
+ * }} tools
+ * @returns {any} an object to hold and access the kernel's state for the given
+ *   device
  */
 export function makeDeviceKeeper(kvStore, deviceID, tools) {
   insistDeviceID(deviceID);
@@ -65,12 +68,10 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * Provide the kernel slot corresponding to a given device slot, including
    * creating the kernel slot if it doesn't already exist.
    *
-   * @param {string} devSlot  The device slot of interest
-   *
+   * @param {string} devSlot The device slot of interest
    * @returns {string} the kernel slot that devSlot maps to
-   *
-   * @throws {Error} if devSlot is not a kind of thing that can be exported by devices
-   *    or is otherwise invalid.
+   * @throws {Error} if devSlot is not a kind of thing that can be exported by
+   *   devices or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
     typeof devSlot === 'string' || Fail`non-string devSlot: ${devSlot}`;
@@ -108,12 +109,10 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    * Provide the device slot corresponding to a given kernel slot, including
    * creating the device slot if it doesn't already exist.
    *
-   * @param {string} kernelSlot  The kernel slot of interest
-   *
+   * @param {string} kernelSlot The kernel slot of interest
    * @returns {string} the device slot kernelSlot maps to
-   *
-   * @throws {Error} if kernelSlot is not a kind of thing that can be imported by
-   *    devices or is otherwise invalid.
+   * @throws {Error} if kernelSlot is not a kind of thing that can be imported
+   *   by devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
     typeof kernelSlot === 'string' || Fail`non-string kernelSlot`;
@@ -172,9 +171,9 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
   /**
    * Set this device's state.
    *
-   * @param {any} value The value to set the state to.  This should be serializable.
-   *    (NOTE: the intent is that the structure here will eventually be more
-   *    codified than it is now).
+   * @param {any} value The value to set the state to. This should be
+   *   serializable. (NOTE: the intent is that the structure here will
+   *   eventually be more codified than it is now).
    */
   function setDeviceState(value) {
     kvStore.set(`${deviceID}.deviceState`, JSON.stringify(value));
@@ -183,7 +182,8 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
   /**
    * Produce a dump of this device's state for debugging purposes.
    *
-   * @returns {Array<[string, string, string]>} an array of this device's state information
+   * @returns {Array<[string, string, string]>} an array of this device's state
+   *   information
    */
   function dumpState() {
     /** @type {Array<[string, string, string]>} */

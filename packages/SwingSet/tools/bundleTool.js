@@ -25,7 +25,7 @@ const providedCaches = new Map();
  * destination, return it.
  *
  * @param {string} dest
- * @param {{ format?: string, dev?: boolean }} options
+ * @param {{ format?: string; dev?: boolean }} options
  * @param {(id: string) => Promise<any>} loadModule
  * @param {number} [pid]
  */

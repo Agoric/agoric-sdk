@@ -40,7 +40,6 @@ function makeDRTranslator(deviceID, kernelKeeper) {
   const { mapDeviceSlotToKernelSlot } = deviceKeeper;
 
   /**
-   *
    * @param {DeviceInvocationResult} deviceInvocationResult
    * @returns {KernelSyscallResult}
    */
@@ -69,7 +68,7 @@ function makeDRTranslator(deviceID, kernelKeeper) {
  *
  * @param {string} deviceID
  * @param {string} deviceName
- * @param {*} kernelKeeper
+ * @param {any} kernelKeeper
  * @returns {(dsc: DeviceSyscallObject) => KernelSyscallObject}
  */
 export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {

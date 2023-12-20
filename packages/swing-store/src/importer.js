@@ -6,21 +6,24 @@ import { validateArtifactMode } from './internal.js';
 import { assertComplete } from './assertComplete.js';
 
 /**
- * @typedef { object } ImportSwingStoreOptions
- * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should the importer use and require?
+ * @typedef {object} ImportSwingStoreOptions
+ * @property {import('./internal.js').ArtifactMode} [artifactMode] What
+ *   artifacts should the importer use and require?
  */
 
 /**
  * Function used to populate a swingStore from an object implementing the
  * exporter API. The exporter API may be provided by a swingStore instance, or
  * implemented by a host to restore data that was previously exported. The
- * returned swingStore is not suitable for execution, and thus only contains
- * the host facet for committing the populated swingStore.
+ * returned swingStore is not suitable for execution, and thus only contains the
+ * host facet for committing the populated swingStore.
  *
  * @param {import('./exporter').SwingStoreExporter} exporter
  * @param {string | null} [dirPath]
  * @param {ImportSwingStoreOptions} [options]
- * @returns {Promise<Pick<import('./swingStore').SwingStore, 'hostStorage' | 'debug'>>}
+ * @returns {Promise<
+ *   Pick<import('./swingStore').SwingStore, 'hostStorage' | 'debug'>
+ * >}
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath && typeof dirPath !== 'string') {

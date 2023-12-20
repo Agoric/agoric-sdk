@@ -1,27 +1,31 @@
 /**
- * @typedef { 'unranked' | 'order' | 'plurality' } ChoiceMethod
- * * UNRANKED: "unranked voting" means that the voter specifies some number of
- *    positions, and is endorsing them equally.
- * * ORDER: The voter assigns ordinal numbers to some of the positions. The
- *    positions will be treated as an ordered list with no gaps.
+ * @typedef {'unranked' | 'order' | 'plurality'} ChoiceMethod
  *
- * When voters are limited to choosing a single candidate, either UNRANKED or
- * ORDER would work. UNRANKED has a simpler representation so we use that.
+ *   - UNRANKED: "unranked voting" means that the voter specifies some number of
+ *       positions, and is endorsing them equally.
+ *   - ORDER: The voter assigns ordinal numbers to some of the positions. The
+ *       positions will be treated as an ordered list with no gaps.
+ *
+ *   When voters are limited to choosing a single candidate, either UNRANKED or
+ *   ORDER would work. UNRANKED has a simpler representation so we use that.
  */
 
 /**
- * @typedef { 'param_change' | 'election' | 'survey' | 'api_invocation' |
- *   'offer_filter' } ElectionType
- * param_change is very specific. Survey means multiple answers are possible,
- * Election means some candidates are going to "win". It's not clear these are
- * orthogonal. The important distinction is that param_change has a structured
- * issue, while the others have a issue presented as a string.
+ * @typedef {'param_change'
+ *   | 'election'
+ *   | 'survey'
+ *   | 'api_invocation'
+ *   | 'offer_filter'} ElectionType
+ *   param_change is very specific. Survey means multiple answers are possible,
+ *   Election means some candidates are going to "win". It's not clear these are
+ *   orthogonal. The important distinction is that param_change has a structured
+ *   issue, while the others have a issue presented as a string.
  */
 
 /** @typedef {import('./constants.js').ParamType} ParamType */
 
 /**
- * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule
+ * @typedef {'majority' | 'all' | 'no_quorum'} QuorumRule
  */
 
 /**
@@ -30,9 +34,16 @@
  */
 
 /**
- * @typedef { Amount | Brand | Installation | Instance | bigint |
- *   Ratio | string | import('@agoric/time').TimestampRecord |
- *   import('@agoric/time').RelativeTimeRecord | unknown } ParamValue
+ * @typedef {Amount
+ *   | Brand
+ *   | Installation
+ *   | Instance
+ *   | bigint
+ *   | Ratio
+ *   | string
+ *   | import('@agoric/time').TimestampRecord
+ *   | import('@agoric/time').RelativeTimeRecord
+ *   | unknown} ParamValue
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -40,47 +51,65 @@
 // breaking the ambient typing
 /**
  * @template {ParamType} T
- * @typedef {T extends 'amount' ? Amount<any> :
- * T extends 'brand' ? Brand :
- * T extends 'installation' ? Installation:
- * T extends 'instance' ? Instance :
- * T extends 'invitation' ? Amount<'set'> : // XXX this is the getter value but not the setter
- * T extends 'nat' ? bigint :
- * T extends 'ratio' ? Ratio :
- * T extends 'string' ? string :
- * T extends 'timestamp' ? import('@agoric/time').Timestamp :
- * T extends 'relativeTime' ? import('@agoric/time').RelativeTime :
- * T extends 'unknown' ? unknown :
- * never
- * } ParamValueForType
+ * @typedef {T extends 'amount'
+ *   ? Amount<any>
+ *   : T extends 'brand'
+ *   ? Brand
+ *   : T extends 'installation'
+ *   ? Installation
+ *   : T extends 'instance'
+ *   ? Instance
+ *   : T extends 'invitation'
+ *   ? Amount<'set'> // XXX this is the getter value but not the setter
+ *   : T extends 'nat'
+ *   ? bigint
+ *   : T extends 'ratio'
+ *   ? Ratio
+ *   : T extends 'string'
+ *   ? string
+ *   : T extends 'timestamp'
+ *   ? import('@agoric/time').Timestamp
+ *   : T extends 'relativeTime'
+ *   ? import('@agoric/time').RelativeTime
+ *   : T extends 'unknown'
+ *   ? unknown
+ *   : never} ParamValueForType
  */
 
 /**
  * @template {ParamType} [T=ParamType]
- * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped<T>
+ * @typedef {{ type: T; value: ParamValueForType<T> }} ParamValueTyped<T>
  */
 
 /**
  * Terms a contract must provide in order to be governed.
  *
- * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
+ * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T
+ *   Governed parameters of contract
  * @typedef {{
- *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor.js')['start']>,
- *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
- *     Electorate: 'invitation'
- *   }>
+ *   electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<
+ *     import('./contractGovernor.js')['start']
+ *   >;
+ *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<
+ *     T & {
+ *       Electorate: 'invitation';
+ *     }
+ *   >;
  * }} GovernanceTerms<T>
  */
 
 /**
- * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
- *   OfferFilterIssue } Issue
+ * @typedef {SimpleIssue
+ *   | ParamChangeIssue<unknown>
+ *   | ApiInvocationIssue
+ *   | OfferFilterIssue} Issue
  */
 
 /**
- * @typedef {object} QuestionTerms - QuestionSpec plus the Electorate Instance and
- *   a numerical threshold for the quorum. (The voteCounter doesn't know the
- *   size of the electorate, so the Electorate has to say what limit to enforce.)
+ * @typedef {object} QuestionTerms - QuestionSpec plus the Electorate Instance
+ *   and a numerical threshold for the quorum. (The voteCounter doesn't know the
+ *   size of the electorate, so the Electorate has to say what limit to
+ *   enforce.)
  * @property {QuestionSpec} questionSpec
  * @property {number} quorumThreshold
  * @property {Instance} electorate
@@ -92,21 +121,27 @@
  */
 
 /**
- * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
- *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
+ * @typedef {TextPosition
+ *   | ChangeParamsPosition
+ *   | NoChangeParamsPosition
+ *   | InvokeApiPosition
+ *   | DontInvokeApiPosition
+ *   | OfferFilterPosition
+ *   | NoChangeOfferFilterPosition
+ *   | InvokeApiPosition} Position
  */
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
- *   { outcome: 'win', position: Position } |
- *   { outcome: 'fail', reason: 'No quorum' }
+ *   | { outcome: 'win'; position: Position }
+ *   | { outcome: 'fail'; reason: 'No quorum' }
  * )} OutcomeRecord
  */
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
- *  { outcome: 'win', positions: Position[] } |
- *  { outcome: 'fail', reason: 'No quorum' }
+ *   | { outcome: 'win'; positions: Position[] }
+ *   | { outcome: 'fail'; reason: 'No quorum' }
  * )} MultiOutcomeRecord
  */
 
@@ -134,7 +169,7 @@
 
 /**
  * @typedef {QuestionSpec & QuestionDetailsExtraProperties} QuestionDetails
- *    complete question details: questionSpec plus counter and questionHandle
+ *   complete question details: questionSpec plus counter and questionHandle
  */
 
 /**
@@ -159,8 +194,8 @@
 /**
  * @typedef {object} CompleteWeightedBallot
  * @property {Handle<'Question'>} questionHandle
- * @property {[Position,bigint][]} weighted - list of positions with
- *   weights. VoteCounter may limit weights to a range or require uniqueness.
+ * @property {[Position, bigint][]} weighted - list of positions with weights.
+ *   VoteCounter may limit weights to a range or require uniqueness.
  */
 
 // not yet in use
@@ -197,12 +232,12 @@
  */
 
 /**
- * @typedef {object} VoteCounterCreatorFacet - a facet that the Electorate should
- *   hold tightly. submitVote() is the core capability that allows the holder to
- *   specify the identity and choice of a voter. The voteCounter is making that
- *   available to the Electorate, which should wrap and attenuate it so each
- *   voter gets only the ability to cast their own vote at a weight specified by
- *   the electorate.
+ * @typedef {object} VoteCounterCreatorFacet - a facet that the Electorate
+ *   should hold tightly. submitVote() is the core capability that allows the
+ *   holder to specify the identity and choice of a voter. The voteCounter is
+ *   making that available to the Electorate, which should wrap and attenuate it
+ *   so each voter gets only the ability to cast their own vote at a weight
+ *   specified by the electorate.
  * @property {SubmitVote} submitVote
  */
 
@@ -225,8 +260,8 @@
  */
 
 /**
- * @typedef {object} VoteCounterCloseFacet
- *   TEST ONLY: Should not be allowed to escape from contracts
+ * @typedef {object} VoteCounterCloseFacet TEST ONLY: Should not be allowed to
+ *   escape from contracts
  * @property {() => void} closeVoting
  */
 
@@ -248,7 +283,7 @@
  * @callback BuildVoteCounter
  * @param {QuestionSpec} questionSpec
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
- *    converts that to a number that the counter can enforce.
+ *   converts that to a number that the counter can enforce.
  * @param {Instance} instance
  * @param {ERef<Publisher<OutcomeRecord>>} publisher
  * @returns {VoteCounterFacets}
@@ -258,7 +293,7 @@
  * @callback BuildMultiVoteCounter
  * @param {QuestionSpec} questionSpec
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
- *    converts that to a number that the counter can enforce.
+ *   converts that to a number that the counter can enforce.
  * @param {Instance} instance
  * @param {ERef<Publisher<MultiOutcomeRecord>>} publisher
  * @returns {MultiVoteCounterFacets}
@@ -298,8 +333,10 @@
  */
 
 /**
- * @typedef { ElectoratePublic & {makeVoterInvitation: () => ERef<Invitation>} } ClaimsElectoratePublic
- * @typedef { ElectoratePublic & {getName: () => string} } CommitteeElectoratePublic
+ * @typedef {ElectoratePublic & {
+ *   makeVoterInvitation: () => ERef<Invitation>;
+ * }} ClaimsElectoratePublic
+ * @typedef {ElectoratePublic & { getName: () => string }} CommitteeElectoratePublic
  */
 
 /**
@@ -309,9 +346,10 @@
 
 /**
  * @typedef {object} ElectorateCreatorFacet
- * @property {AddQuestion} addQuestion can be used directly when the creator doesn't need any
- *  reassurance. When someone needs to connect addQuestion to the Electorate
- *  instance, getPoserInvitation() lets them get addQuestion with assurance.
+ * @property {AddQuestion} addQuestion can be used directly when the creator
+ *   doesn't need any reassurance. When someone needs to connect addQuestion to
+ *   the Electorate instance, getPoserInvitation() lets them get addQuestion
+ *   with assurance.
  * @property {() => Promise<Invitation>} getPoserInvitation
  * @property {() => Subscriber<QuestionDetails>} getQuestionSubscriber
  * @property {() => ElectoratePublic} getPublicFacet
@@ -345,7 +383,9 @@
  * @typedef {object} AddQuestionReturn
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
- * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('./binaryVoteCounter.js').start>} instance
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<
+ *   typeof import('./binaryVoteCounter.js').start
+ * >} instance
  * @property {import('@agoric/time').Timestamp} deadline
  * @property {Handle<'Question'>} questionHandle
  */
@@ -359,15 +399,14 @@
 
 /**
  * @callback CreateQuestion
- *
  * @param {string} name - The name of the parameter to change
  * @param {ParamValue} proposedValue - the proposed value for the named
  *   parameter
  * @param {Installation} voteCounterInstallation - the voteCounter to
  *   instantiate to count votes. Expected to be a binaryVoteCounter. Other
  *   voteCounters might be added here, or might require separate governors.
- *   under management so users can trace it back and see that it would use
- *   this electionManager to manage parameters
+ *   under management so users can trace it back and see that it would use this
+ *   electionManager to manage parameters
  * @param {Instance} contractInstance - include the instance of the contract
  * @param {ClosingRule} closingRule - deadline and timer for closing voting
  * @returns {Promise<QuestionDetails>}
@@ -377,7 +416,9 @@
  * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {object} ParamChangeIssue
  * @property {ParamChangesSpec<P>} spec
- * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<
+ *   (zcf: ZCF<GovernanceTerms<{}>>) => {}
+ * >} contract
  */
 
 /**
@@ -398,8 +439,8 @@
  */
 
 /**
- * @typedef {object} ParamChangeIssueDetails
- *    details for a question that can change a contract parameter
+ * @typedef {object} ParamChangeIssueDetails details for a question that can
+ *   change a contract parameter
  * @property {ChoiceMethod} method
  * @property {ParamChangeIssue<unknown>} issue
  * @property {ParamChangePositions} positions
@@ -413,11 +454,11 @@
  */
 
 /**
- * @typedef {Record<Keyword, ParamValueTyped>} ParamStateRecord a Record containing
- *   keyword pairs with descriptions of parameters under governance.
+ * @typedef {Record<Keyword, ParamValueTyped>} ParamStateRecord a Record
+ *   containing keyword pairs with descriptions of parameters under governance.
  */
 
-/** @typedef {{current: ParamStateRecord}} GovernanceSubscriptionState */
+/** @typedef {{ current: ParamStateRecord }} GovernanceSubscriptionState */
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
@@ -433,27 +474,30 @@
  * @property {(name: string) => import('@agoric/time').TimestampRecord} getTimestamp
  * @property {(name: string) => import('@agoric/time').RelativeTimeRecord} getRelativeTime
  * @property {(name: string) => any} getUnknown
- * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
- *   most types, the visible value is the same as proposedValue. For Invitations
- *   the visible value is the amount of the invitation.
+ * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue
+ *   - for most types, the visible value is the same as proposedValue. For
+ *       Invitations the visible value is the amount of the invitation.
+ *
  * @property {(name: string) => Promise<Invitation>} getInternalParamValue
  * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  */
 
 /**
  * @callback UpdateParams
- * @param {Record<string,ParamValue>} paramChanges
+ * @param {Record<string, ParamValue>} paramChanges
  * @returns {Promise<void>}
  */
 
 /**
- * These are typed `any` because the builder pattern of paramManager makes it very
- * complicated for the type system to know the set of param-specific functions
- * returned by `.build()`. Instead we let paramManager create the desired methods
- * and use typedParamManager to create a version that includes the static types.
+ * These are typed `any` because the builder pattern of paramManager makes it
+ * very complicated for the type system to know the set of param-specific
+ * functions returned by `.build()`. Instead we let paramManager create the
+ * desired methods and use typedParamManager to create a version that includes
+ * the static types.
  *
  * @typedef {Record<string, any>} ParamManagerGettersAndUpdaters
- * @typedef {ParamManagerBase & ParamManagerGettersAndUpdaters & {updateParams: UpdateParams}} AnyParamManager
+ * @typedef {ParamManagerBase &
+ *   ParamManagerGettersAndUpdaters & { updateParams: UpdateParams }} AnyParamManager
  */
 
 /**
@@ -480,7 +524,8 @@
 
 /**
  * @typedef {object} ChangeParamsPosition
- * @property {Record<string,ParamValue>} changes one or more changes to parameters
+ * @property {Record<string, ParamValue>} changes one or more changes to
+ *   parameters
  */
 
 /**
@@ -537,16 +582,17 @@
  * @template P path for a paramManagerRetriever
  * @typedef {object} ParamChangesSpec<P>
  * @property {P} paramPath
- * @property {Record<string, ParamValue>} changes one or more changes to parameters
+ * @property {Record<string, ParamValue>} changes one or more changes to
+ *   parameters
  */
 
 /**
  * @typedef {object} ContractGovernanceVoteResult
  * @property {Instance} instance - instance of the VoteCounter
  * @property {ERef<QuestionDetails>} details
- * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result
- *    of updating the parameter value. Primarily useful for its behavior on
- *    rejection.
+ * @property {Promise<ParamValue>} outcomeOfUpdate - A promise for the result of
+ *   updating the parameter value. Primarily useful for its behavior on
+ *   rejection.
  */
 
 /**
@@ -555,21 +601,24 @@
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => LimitedCF<SF>} getCreatorFacet facet of the governed contract,
- *   with creator-like powers but without the tightly held ability to change
- *   param values.
+ * @property {() => LimitedCF<SF>} getCreatorFacet facet of the governed
+ *   contract, with creator-like powers but without the tightly held ability to
+ *   change param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
  * @property {() => AdminFacet} getAdminFacet
- * @property {() => GovernedPublicFacet<Awaited<ReturnType<SF>>['publicFacet']>} getPublicFacet - public facet of the governed contract
- * @property {() => Instance} getInstance - instance of the governed
- *   contract
+ * @property {() => GovernedPublicFacet<
+ *   Awaited<ReturnType<SF>>['publicFacet']
+ * >} getPublicFacet
+ *   - public facet of the governed contract
+ *
+ * @property {() => Instance} getInstance - instance of the governed contract
  */
 
 /**
  * @typedef GovernedPublicFacetMethods
  * @property {(key?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
- * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
- *   all the governed parameters
+ * @property {(key?: any) => ERef<ParamStateRecord>} getGovernedParams - get
+ *   descriptions of all the governed parameters
  * @property {(name: string) => Amount} getInvitationAmount
  */
 
@@ -580,19 +629,20 @@
 
 /**
  * @template {GovernableStartFn} SF
- * @typedef {ReturnType<Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']>} LimitedCF
+ * @typedef {ReturnType<
+ *   Awaited<ReturnType<SF>>['creatorFacet']['getLimitedCreatorFacet']
+ * >} LimitedCF
  */
 
 /**
  * @template {{}} CF creator facet
- * @typedef GovernedCreatorFacet
- * What a governed contract must return as its creatorFacet in order to be governed
- * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
- *   and updating governed parameters. Should only be directly accessible to the
- *   contractGovernor
- * @property {() => ERef<CF>} getLimitedCreatorFacet - the creator
- *   facet of the governed contract. Doesn't provide access to any governance
- *   functionality
+ * @typedef GovernedCreatorFacet What a governed contract must return as its
+ *   creatorFacet in order to be governed
+ * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows
+ *   accessing and updating governed parameters. Should only be directly
+ *   accessible to the contractGovernor
+ * @property {() => ERef<CF>} getLimitedCreatorFacet - the creator facet of the
+ *   governed contract. Doesn't provide access to any governance functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
  * @property {() => ERef<GovernedApis>} getGovernedApis
  * @property {() => (string | symbol)[]} getGovernedApiNames
@@ -600,7 +650,7 @@
  */
 
 /**
- * @typedef {{key: string}} StandardParamPath
+ * @typedef {{ key: string }} StandardParamPath
  */
 
 /**
@@ -610,7 +660,6 @@
 
 /**
  * @template [P=StandardParamPath]
- *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time').Timestamp} deadline
@@ -654,8 +703,7 @@
  */
 
 /**
- * @callback CreatedQuestion
- *   Was this question created by this ContractGovernor?
+ * @callback CreatedQuestion Was this question created by this ContractGovernor?
  * @param {Instance} questionInstance
  * @returns {boolean}
  */
@@ -676,26 +724,35 @@
 
 /**
  * @callback AssertContractGovernance
- *
  * @param {ERef<ZoeService>} zoe
- * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
+ * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<
+ *   (zcf: ZCF<GovernanceTerms<{}>>) => {}
+ * >} allegedGoverned
  * @param {Instance} allegedGovernor
- * @param {Installation<import('@agoric/governance/src/contractGovernor.js').start>} contractGovernorInstallation
+ * @param {Installation<
+ *   import('@agoric/governance/src/contractGovernor.js').start
+ * >} contractGovernorInstallation
  * @returns {Promise<GovernancePair>}
  */
 
 /**
  * @callback AssertContractElectorate - assert that the contract uses the
  *   electorate
- *
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
- * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction &
+ *     ((
+ *       zcf?: any,
+ *       pa?: any,
+ *       baggage?: any,
+ *     ) => ERef<{
+ *       creatorFacet: GovernedCreatorFacet<{}>;
+ *       publicFacet: GovernedPublicFacet<{}>;
+ *     }>)} GovernableStartFn
  */
 
 /**
@@ -706,10 +763,13 @@
 /**
  * @see {StartedInstanceKit}
  * @template {ERef<Installation<GovernableStartFn>>} I
- * @typedef GovernorStartedInstallationKit
- * Same result as StartedInstanceKit but:
- * - typed for contractGovernor installation being started by Zoe. (It in turn starts the governed contract.)
- * - parameterized by Installation instead of StartFunction
+ * @typedef GovernorStartedInstallationKit Same result as StartedInstanceKit
+ *   but:
+ *
+ *   - typed for contractGovernor installation being started by Zoe. (It in turn
+ *       starts the governed contract.)
+ *   - parameterized by Installation instead of StartFunction
+ *
  * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<GovernorSF>} instance
  * @property {AdminFacet} adminFacet
  * @property {GovernorCreatorFacet<InstallationStart<Awaited<I>>>} creatorFacet
@@ -719,11 +779,13 @@
 /**
  * @see {StartedInstanceKit}
  * @template {GovernableStartFn} SF
- * @typedef GovernanceFacetKit
- * Akin to StartedInstanceKit but designed for the results of starting governed contracts. Used in bootstrap space.
+ * @typedef GovernanceFacetKit Akin to StartedInstanceKit but designed for the
+ *   results of starting governed contracts. Used in bootstrap space.
  * @property {AdminFacet} adminFacet of the governed contract
- * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
- * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
+ * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed
+ *   contract (without the powers the governor needs)
+ * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing
+ *   contract
  * @property {AdminFacet} governorAdminFacet of the governing contract
  * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
  * @property {Instance} instance

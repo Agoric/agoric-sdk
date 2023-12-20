@@ -11,12 +11,8 @@
  * A package that wanted to export some code for clients to run in their own vat
  * would import or define some functions, then call
  *
- *   const mgr = importManager();
- *   return mgr.addExports(
- *     {
- *        'usefulFn', export1,
- *        'helpfulFn', export2,
- *      });
+ * const mgr = importManager(); return mgr.addExports( { 'usefulFn', export1,
+ * 'helpfulFn', export2, });
  *
  * then it could pass strings like 'usefulFn' to clients, who could import the
  * manager above, then call

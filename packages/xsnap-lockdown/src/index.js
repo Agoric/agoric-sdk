@@ -10,7 +10,7 @@ const read = (name, path) => {
 };
 
 /**
- * @returns { Promise<string> }
+ * @returns {Promise<string>}
  */
 export const getLockdownBundleSHA256 = async () => {
   const path = hashPaths.lockdown;
@@ -18,9 +18,9 @@ export const getLockdownBundleSHA256 = async () => {
 };
 
 /**
- * @param { boolean } debug
- * @typedef {{ moduleFormat: string, source: string, sourceMap: [string] }} Bundle
- * @returns { Promise<Bundle> }
+ * @param {boolean} debug
+ * @typedef {{ moduleFormat: string; source: string; sourceMap: [string] }} Bundle
+ * @returns {Promise<Bundle>}
  */
 const getBundle = async debug => {
   const path = debug ? bundlePaths.lockdownDebug : bundlePaths.lockdown;

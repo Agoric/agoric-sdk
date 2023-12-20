@@ -1,12 +1,12 @@
 const { freeze } = Object;
 
 // a TextDecoder has mutable state; only export the (pure) decode function
-/** @type { TextDecoder['decode'] } */
+/** @type {TextDecoder['decode']} */
 export const decode = (decoder => decoder.decode.bind(decoder))(
   new TextDecoder(),
 );
 
-/** @type { TextEncoder['encode'] } */
+/** @type {TextEncoder['encode']} */
 export const encode = (encoder => encoder.encode.bind(encoder))(
   new TextEncoder(),
 );
@@ -20,7 +20,7 @@ export function loader(url, readFile = undefined) {
   const resolve = ref => new URL(ref, url).pathname;
   return freeze({
     resolve,
-    /**  @param {string} ref */
+    /** @param {string} ref */
     // @ts-expect-error possibly undefined
     asset: async ref => readFile(resolve(ref), 'utf-8'),
   });
@@ -28,12 +28,12 @@ export function loader(url, readFile = undefined) {
 
 /**
  * @param {{
- *   spawn: typeof import('child_process').spawn,
- *   os: string,
- *   fs: import('fs'),
- *   tmpName: import('tmp')['tmpName'],
+ *   spawn: typeof import('child_process').spawn;
+ *   os: string;
+ *   fs: import('fs');
+ *   tmpName: import('tmp')['tmpName'];
  * }} io
- * @returns {import('../src/xsnap.js').XSnapOptions & { messages: string[]}}
+ * @returns {import('../src/xsnap.js').XSnapOptions & { messages: string[] }}
  */
 export function options({ spawn, os, fs, tmpName }) {
   const messages = [];

@@ -9,7 +9,7 @@ import { E, passStyleOf } from '@endo/far';
  * @typedef {object} PetnameManager
  * @property {(petname: Petname, object: T) => Promise<void>} rename
  * @property {(petname: Petname) => T} get
- * @property { () => Array<[Petname, T]>} getAll
+ * @property {() => Array<[Petname, T]>} getAll
  * @property {(petname: Petname, object: T) => Promise<void>} add
  */
 
@@ -55,11 +55,11 @@ export const makeStartInstance = (
   /**
    * @template {Installation} I
    * @param {{
-   * instancePetname: Petname,
-   * installation: I | PromiseLike<I>,
-   * issuerKeywordRecord?: IssuerKeywordRecord,
-   * issuerPetnameKeywordRecord?: Record<Keyword,Petname>,
-   * terms?: object,
+   *   instancePetname: Petname;
+   *   installation: I | PromiseLike<I>;
+   *   issuerKeywordRecord?: IssuerKeywordRecord;
+   *   issuerPetnameKeywordRecord?: Record<Keyword, Petname>;
+   *   terms?: object;
    * }} config
    */
   const startInstance = async config => {

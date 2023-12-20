@@ -31,15 +31,15 @@ import {
 const enableKernelGC = true;
 
 /**
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
- * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
- * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').ManagerType } ManagerType
- * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @typedef {import('../../types-external.js').BundleCap} BundleCap
+ * @typedef {import('../../types-external.js').BundleID} BundleID
+ * @typedef {import('../../types-external.js').EndoZipBase64Bundle} EndoZipBase64Bundle
+ * @typedef {import('../../types-external.js').KernelOptions} KernelOptions
+ * @typedef {import('../../types-external.js').KernelSlog} KernelSlog
+ * @typedef {import('../../types-external.js').ManagerType} ManagerType
+ * @typedef {import('../../types-external.js').SnapStore} SnapStore
+ * @typedef {import('../../types-external.js').TranscriptStore} TranscriptStore
+ * @typedef {import('../../types-external.js').VatKeeper} VatKeeper
  */
 
 // Kernel state lives in a key-value store supporting key retrieval by
@@ -166,7 +166,7 @@ const FIRST_METER_ID = 1n;
 
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {KernelSlog|null} kernelSlog
+ * @param {KernelSlog | null} kernelSlog
  */
 export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
@@ -229,7 +229,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   const ephemeral = harden({
-    /** @type { Map<string, VatKeeper> } */
+    /** @type {Map<string, VatKeeper>} */
     vatKeepers: new Map(),
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
@@ -329,7 +329,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   *
    * @param {string} mt
    * @returns {asserts mt is ManagerType}
    */
@@ -352,7 +351,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   *
    * @returns {number | 'never'}
    */
   function getDefaultReapInterval() {
@@ -413,10 +411,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   /**
    * Store a bundle (by ID) in the kernel DB.
    *
-   * @param {BundleID} bundleID The claimed bundleID: the caller
-   *        (controller.js) must validate it first, we assume it is correct.
-   * @param {EndoZipBase64Bundle} bundle The code bundle, whose format must
-   *        be 'endoZipBase64'.
+   * @param {BundleID} bundleID The claimed bundleID: the caller (controller.js)
+   *   must validate it first, we assume it is correct.
+   * @param {EndoZipBase64Bundle} bundle The code bundle, whose format must be
+   *   'endoZipBase64'.
    */
   function addBundle(bundleID, bundle) {
     assert(!bundleStore.hasBundle(bundleID), 'bundleID already installed');
@@ -522,7 +520,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    * Iterate over non-durable objects exported by a vat.
    *
    * @param {string} vatID
-   * @yields {{kref: string, vref: string}}
+   * @yields {{ kref: string; vref: string }}
    */
   function* enumerateNonDurableObjectExports(vatID) {
     insistVatID(vatID);
@@ -990,7 +988,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     insistMeterID(meterID);
     assert.typeof(delta, 'bigint');
     Nat(delta);
-    /** @type { bigint | string } */
+    /** @type {bigint | string} */
     let remaining = getRequired(`${meterID}.remaining`);
     if (remaining !== 'unlimited') {
       remaining = Nat(BigInt(remaining));
@@ -1007,7 +1005,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getMeter(meterID) {
     insistMeterID(meterID);
-    /** @type { bigint | string } */
+    /** @type {bigint | string} */
     let remaining = getRequired(`${meterID}.remaining`);
     if (remaining !== 'unlimited') {
       remaining = BigInt(remaining);
@@ -1021,7 +1019,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     insistMeterID(meterID);
     assert.typeof(spent, 'bigint');
     Nat(spent);
-    /** @type { bigint | string } */
+    /** @type {bigint | string} */
     const oldRemaining = getRequired(`${meterID}.remaining`);
     if (oldRemaining === 'unlimited') {
       return true;
@@ -1040,7 +1038,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     insistMeterID(meterID);
     assert.typeof(spent, 'bigint');
     Nat(spent);
-    /** @type { bigint | string } */
+    /** @type {bigint | string} */
     let oldRemaining = getRequired(`${meterID}.remaining`);
     if (oldRemaining === 'unlimited') {
       return false;
@@ -1153,16 +1151,18 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   /**
    * Increment the reference count associated with some kernel object.
    *
-   * We track references to promises and objects, but not devices. Promises
-   * have only a "reachable" count, whereas objects track both "reachable"
-   * and "recognizable" counts.
+   * We track references to promises and objects, but not devices. Promises have
+   * only a "reachable" count, whereas objects track both "reachable" and
+   * "recognizable" counts.
    *
-   * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {string?} tag  Debugging note with rough source of the reference.
-   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
-   * 'isExport' means the reference comes from a clist export, which counts
-   * for promises but not objects. 'onlyRecognizable' means the reference
-   * provides only recognition, not reachability
+   * @param {unknown} kernelSlot The kernel slot whose refcount is to be
+   *   incremented.
+   * @param {string | null} tag Debugging note with rough source of the
+   *   reference.
+   * @param {{ isExport?: boolean; onlyRecognizable?: boolean }} options
+   *   'isExport' means the reference comes from a clist export, which counts for
+   *   promises but not objects. 'onlyRecognizable' means the reference provides
+   *   only recognition, not reachability
    */
   function incrementRefCount(kernelSlot, tag, options = {}) {
     const { isExport = false, onlyRecognizable = false } = options;
@@ -1190,13 +1190,15 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    *
    * We track references to promises and objects.
    *
-   * @param {string} kernelSlot  The kernel slot whose refcount is to be decremented.
+   * @param {string} kernelSlot The kernel slot whose refcount is to be
+   *   decremented.
    * @param {string} tag
-   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
-   * 'isExport' means the reference comes from a clist export, which counts
-   * for promises but not objects. 'onlyRecognizable' means the reference
-   * deing deleted only provided recognition, not reachability
-   * @returns {boolean} true if the reference count has been decremented to zero, false if it is still non-zero
+   * @param {{ isExport?: boolean; onlyRecognizable?: boolean }} options
+   *   'isExport' means the reference comes from a clist export, which counts for
+   *   promises but not objects. 'onlyRecognizable' means the reference deing
+   *   deleted only provided recognition, not reachability
+   * @returns {boolean} true if the reference count has been decremented to
+   *   zero, false if it is still non-zero
    * @throws if this tries to decrement the reference count below zero.
    */
   function decrementRefCount(kernelSlot, tag, options = {}) {

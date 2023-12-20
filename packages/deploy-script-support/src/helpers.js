@@ -30,9 +30,8 @@ const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 /**
  * @template {Record<PropertyKey, any>} T
  *
- * Lazily populate the returned object's properties from the properties of a
- * source object.  Each `sourceObject` property value is sampled at most once.
- *
+ *   Lazily populate the returned object's properties from the properties of a
+ *   source object. Each `sourceObject` property value is sampled at most once.
  * @param {T} sourceObject
  * @returns {T}
  */

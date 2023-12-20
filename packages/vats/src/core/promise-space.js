@@ -76,7 +76,7 @@ export const makeStoreHooks = (store, log = noop) => {
  * Note: repeated resolve()s without an intervening reset() are noops.
  *
  * @template {Record<string, unknown>} [T=Record<string, unknown>]
- * @param {| ({ log?: typeof console.log } & (
+ * @param {({ log?: typeof console.log } & (
  *       | { hooks?: PromiseSpaceHooks }
  *       | { store: MapStore<string, any> }
  *     ))

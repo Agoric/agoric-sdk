@@ -11,13 +11,13 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
  */
 
 /**
- * Begin iterating the source, storing serialized iteration values.  If the
- * storageNode's `setValue` operation rejects, no further writes to it will
- * be attempted (but results will remain available from the subscriber).
+ * Begin iterating the source, storing serialized iteration values. If the
+ * storageNode's `setValue` operation rejects, no further writes to it will be
+ * attempted (but results will remain available from the subscriber).
  *
- * Returns a StoredNotifier that can be used by a client to directly follow
- * the iteration themselves, or obtain information to subscribe to the stored
- * data out-of-band.
+ * Returns a StoredNotifier that can be used by a client to directly follow the
+ * iteration themselves, or obtain information to subscribe to the stored data
+ * out-of-band.
  *
  * @template T
  * @param {ERef<Notifier<T>>} notifier

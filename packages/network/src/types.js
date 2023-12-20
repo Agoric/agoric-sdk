@@ -1,6 +1,5 @@
 /**
  * @typedef {string | Buffer | ArrayBuffer} Data
- *
  * @typedef {string} Bytes
  */
 
@@ -96,7 +95,6 @@
  *   c?: ConnectionHandler,
  * ) => Promise<void>} [onClose]
  *   The connection has been closed
- *
  * @typedef {any | null} CloseReason The reason a connection was closed
  */
 
@@ -155,7 +153,6 @@
  *   p: ProtocolHandler,
  * ) => Promise<void>} onRevoke
  *   The port is being completely destroyed
- *
  * @typedef {object} InboundAttempt An inbound connection attempt
  * @property {(desc: AttemptDescription) => Promise<Connection>} accept
  *   Establish the connection
@@ -164,7 +161,6 @@
  * @property {() => Endpoint} getRemoteAddress Return the remote address for
  *   this attempt
  * @property {() => Promise<void>} close Abort the attempt
- *
  * @typedef {object} ProtocolImpl Things the protocol can do for us
  * @property {(prefix: Endpoint) => Promise<Port>} bind Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name

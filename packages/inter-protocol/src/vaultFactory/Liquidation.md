@@ -4,7 +4,7 @@ parameters. Every auction period, each vaultManager checks to see which
 vaults are under-water compared to an oracle price captured before the
 auction start. The collateral from all those illiquid vaults are sent to the
 auction, which attempts to sell them for enough to cover their outstanding
-debt at  a discount to their value. Since they are over-collateralized this
+debt at a discount to their value. Since they are over-collateralized this
 should normally cover the debt and possibly return excess collateral. When
 that is the case (flow 1, below) , we repay the debt, charge a liquidation fee,
 and return excess collateral to the vault holders.
@@ -21,7 +21,6 @@ reinstate as many vaults as can be made whole, declare the rest liquidated,
 and expect the next liquidation opportunity either to find the price has
 recovered, or to send a possibly different set of vaults to the next auction.
 
-
 **Flow 1: Auction raises enough IST to cover debt**
 
 The following steps occur in this order
@@ -36,7 +35,7 @@ The following steps occur in this order
    transferred to the reserve.
 
 - Liquidation penalty is calculated as debt / current oracle price at auction
-  start * liquidation penalty
+  start \* liquidation penalty
 
 3. Excess collateral - if any - is returned to vault holders
 
@@ -61,8 +60,8 @@ remaining (which simply did not receive bidders)
   remaining.
 
 2. Remaining debt is recorded in the reserve as a shortfall
-   
-   *sequence ends; no penalty is taken and vaults receive nothing back*
+
+   _sequence ends; no penalty is taken and vaults receive nothing back_
 
 **Flow 2b: collateral remains but debt is still not covered by IST raised by
 auction end**

@@ -5,7 +5,7 @@ import { assert, details as X, Fail } from '@agoric/assert';
 
 /**
  * @typedef {object} ICS20TransferPacket Packet shape defined at:
- * https://github.com/cosmos/ibc/tree/HEAD/spec/app/ics-020-fungible-token-transfer#data-structures
+ *   https://github.com/cosmos/ibc/tree/HEAD/spec/app/ics-020-fungible-token-transfer#data-structures
  * @property {string} amount The extent of the amount
  * @property {Denom} denom The denomination of the amount
  * @property {string} sender The sender address
@@ -78,7 +78,7 @@ export const parseICS20TransferPacket = async packet => {
 };
 
 /**
- * Convert the amount to a packet to send.  PacketParts.value is limited to
+ * Convert the amount to a packet to send. PacketParts.value is limited to
  * fungible (bigint) amounts.
  *
  * @param {PacketParts} param0
@@ -125,7 +125,7 @@ export const assertICS20TransferPacketAck = async ack => {
 };
 
 /**
- * Create results of the transfer.  Acknowledgement shape defined at:
+ * Create results of the transfer. Acknowledgement shape defined at:
  * https://github.com/cosmos/ibc/tree/HEAD/spec/app/ics-020-fungible-token-transfer#data-structures
  *
  * @param {boolean} success

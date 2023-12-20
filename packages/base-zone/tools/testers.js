@@ -54,7 +54,7 @@ const alreadyExceptionSpec = {
  * @template T
  * @param {import('ava').Assertions} t
  * @param {() => T} fn
- * @param {*} spec
+ * @param {any} spec
  * @returns {T}
  */
 const secondThrows = (t, fn, spec = alreadyExceptionSpec) => {
