@@ -37,12 +37,12 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
-    "@endo/bundle-source": "^2.7.0",
-    "@endo/captp": "^3.1.4",
-    "@endo/far": "^0.2.21",
-    "@endo/init": "^0.5.59",
-    "@endo/nat": "^4.1.30",
-    "@endo/promise-kit": "^0.2.59"
+    "@endo/bundle-source": "^3.0.1",
+    "@endo/captp": "^4.0.1",
+    "@endo/far": "^1.0.1",
+    "@endo/init": "^1.0.1",
+    "@endo/nat": "^5.0.1",
+    "@endo/promise-kit": "^1.0.1"
   },
   "devDependencies": {
     "ava": "^5.3.0",
