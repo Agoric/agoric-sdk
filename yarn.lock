@@ -8073,10 +8073,9 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier-plugin-jsdoc@^1.1.1:
+"prettier-plugin-jsdoc@git+https://github.com/turadg/prettier-plugin-jsdoc.git":
   version "1.1.1"
-  resolved "https://registry.yarnpkg.com/prettier-plugin-jsdoc/-/prettier-plugin-jsdoc-1.1.1.tgz#37cc5e8e4634de338d9a62dcd80c2b78591e1d11"
-  integrity sha512-yA13k0StQ+g0RJBrmo2IldVSp3ANXlJdsNzQNhGtQ0LY7JFC+u01No/1Z9xp0ZhT4u98BXlPAc4SC0iambqy5A==
+  resolved "git+https://github.com/turadg/prettier-plugin-jsdoc.git#d0ab9171881d5126d2104e494a725b4ed80db5ab"
   dependencies:
     binary-searching "^2.0.5"
     comment-parser "^1.4.0"
