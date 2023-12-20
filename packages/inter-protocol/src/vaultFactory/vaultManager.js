@@ -111,7 +111,6 @@ const trace = makeTracer('VM');
  *   latestInterestUpdate: Timestamp;
  * }} AssetState
  *
- *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
  *   getRecordingPeriod: () => RelativeTime;

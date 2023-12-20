@@ -80,6 +80,7 @@ const calcCrc = (data, crcDigits) => {
  *
  *
  *
+ *
  * @typedef {import('@endo/marshal').Passable} Key
  */
 

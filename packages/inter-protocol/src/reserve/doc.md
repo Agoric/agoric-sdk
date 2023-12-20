@@ -1,4 +1,4 @@
-# Reserve 
+# Reserve
 
 ### addIssuer
 
@@ -39,15 +39,14 @@ caller ->> reserveContract: getKeywordForBrand(inBrand)
 reserveContract ->> keywordForBrand: check for inBrand membership
 reserveContract ->> keywordForBrand: get for inBrand object
 reserveContract ->> caller: return keyword
- 
-```
 
+```
 
 ### collateralSeat
 
 ```mermaid
 sequenceDiagram
-participant caller 
+participant caller
 participant reserveCreatorFacet
 participant collateralSeat
 
@@ -55,7 +54,6 @@ caller ->> reserveCreatorFacet: getAllocations()
 reserveCreatorFacet ->> collateralSeat: getCurrentAllocation()
 reserveCreatorFacet ->> caller: return current allocations
 ```
-
 
 ### addCollateralHook + makeAddCollateralInvititation
 
@@ -84,6 +82,7 @@ zoe ->> caller: return status
 ```
 
 ### addLiquidityToAmmPool
+
 ```mermaid
 sequenceDiagram
 

@@ -48,7 +48,6 @@ const trace = makeTracer('VD', true);
  *   rewardPoolAllocation: AmountKeywordRecord;
  * }} MetricsNotification
  *
- *
  * @typedef {Readonly<{}>} ImmutableState
  *
  * @typedef {{}} MutableState
@@ -65,7 +64,6 @@ const trace = makeTracer('VD', true);
  *     import('../reserve/assetReserve.js').ShortfallReporter
  *   >;
  * }} FactoryPowersFacet
- *
  *
  * @typedef {Readonly<{
  *   state: State;

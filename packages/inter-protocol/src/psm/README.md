@@ -6,7 +6,6 @@ anchor to provide additional stability. For flexible economic policies, the fee
 percentage for trading into and out of the stable token are specified
 separately.
 
-
 ## Usage
 
 See the [Smart Wallet integration test](/packages/inter-protocol/test/smartWallet/test-psm-integration.js) for how it's used.
@@ -36,7 +35,6 @@ cli ->> B: spending transaction
 B ->> C: unpack ocap data
 C ->> PSM: route offer
 ```
-
 
 ### GUI
 

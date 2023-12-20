@@ -11,6 +11,7 @@ The authorities are hierarchical. Many authorities can be registered in the pric
 For oracles, there must be two: the negotiable brand and the _oracle_ brand (an inert one).
 
 The intended flow is that:
+
 1. a negotiable brand is created (e.g. ATOM)
 2. a price provider says “i can give you quotes for that” and runs price-feed-proposal. That makes “oracleBrands” (which are inert and have a separate identity so that they don’t have the authority to say they’re the real quote for it).
 3. Some higher authority (eg EC, Stakers) decides that should be the quote source for negotiable brand so it registers it under the real brand identity in the registry (with a new instance of a scaledPriceAuthority ).
