@@ -30,6 +30,7 @@ import {
  *
  * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
  *
+ *
  * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
  */
 

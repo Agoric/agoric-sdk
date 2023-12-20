@@ -35,6 +35,7 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 /**
  * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
  *
+ *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
 

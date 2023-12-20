@@ -20,6 +20,7 @@ const trace = makeTracer('StartWF');
  *   import('@agoric/smart-wallet/src/walletFactory').start
  * >} inst
  *
+ *
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars

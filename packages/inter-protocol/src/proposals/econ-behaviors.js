@@ -23,7 +23,9 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
+ *
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
+ *
  *
  * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
  */
@@ -48,6 +50,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ *
  *
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
