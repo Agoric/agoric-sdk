@@ -510,12 +510,14 @@ export function makeVatWarehouse({
     await evict(lru);
   }
 
-  /** @type {(
-  vatID: string,
-  kd: KernelDeliveryObject,
-  d: VatDeliveryObject,
-  vs: VatSlog,
-) => Promise<VatDeliveryResult>} */
+  /**
+   * @type {(
+   *   vatID: string,
+   *   kd: KernelDeliveryObject,
+   *   d: VatDeliveryObject,
+   *   vs: VatSlog,
+   * ) => Promise<VatDeliveryResult>}
+   */
   async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
 

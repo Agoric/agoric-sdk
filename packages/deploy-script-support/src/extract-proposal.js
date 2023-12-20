@@ -89,10 +89,12 @@ export const extractCoreProposalBundles = async (
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<
-  { bundleID?: string; bundleName?: string },
-  { source: string; bundle?: string }
->} */
+  /**
+   * @type {Map<
+   *   { bundleID?: string; bundleName?: string },
+   *   { source: string; bundle?: string }
+   * >}
+   */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();
@@ -125,10 +127,12 @@ export const extractCoreProposalBundles = async (
       const thisProposalSequence = getSequenceForProposal(i);
       const initPath = findModule(dirname, module);
       const initDir = path.dirname(initPath);
-      /** @type {Record<
-  string,
-  import('./externalTypes.js').ProposalBuilder
->} */
+      /**
+       * @type {Record<
+       *   string,
+       *   import('./externalTypes.js').ProposalBuilder
+       * >}
+       */
       const ns = await import(initPath);
       const install = (srcSpec, bundlePath) => {
         const absoluteSrc = findModule(initDir, srcSpec);

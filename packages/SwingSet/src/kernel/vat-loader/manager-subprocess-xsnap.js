@@ -148,9 +148,11 @@ export function makeXsSubprocessFactory({
       init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
-    /** @type {(
-  item: import('./types.js').Tagged,
-) => Promise<import('./types.js').WorkerResults>} */
+    /**
+     * @type {(
+     *   item: import('./types.js').Tagged,
+     * ) => Promise<import('./types.js').WorkerResults>}
+     */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
@@ -273,9 +275,11 @@ export function makeXsSubprocessFactory({
       ]);
       await closeP;
 
-      /** @type {Partial<
-  import('@agoric/swing-store/src/snapStore.js').SnapshotInfo
->} */
+      /**
+       * @type {Partial<
+       *   import('@agoric/swing-store/src/snapStore.js').SnapshotInfo
+       * >}
+       */
       const reloadSnapshotInfo = {
         snapPos,
         hash: snapshotResults.hash,

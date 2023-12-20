@@ -268,9 +268,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
-        /** @type {(
-  address: string,
-) => Promise<import('./smartWallet').SmartWallet>} */
+        /**
+         * @type {(
+         *   address: string,
+         * ) => Promise<import('./smartWallet').SmartWallet>}
+         */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

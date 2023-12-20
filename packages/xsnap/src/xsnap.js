@@ -238,17 +238,19 @@ export async function xsnap(options) {
     throw Error(`${name} exited`);
   });
 
-  const xsnapProcessStdio = /** @type {[
-  undefined,
-  Readable,
-  Readable,
-  Writable,
-  Readable,
-  undefined,
-  undefined,
-  Readable,
-  Writable,
-]} */ (
+  const xsnapProcessStdio = /**
+   * @type {[
+   *   undefined,
+   *   Readable,
+   *   Readable,
+   *   Writable,
+   *   Readable,
+   *   undefined,
+   *   undefined,
+   *   Readable,
+   *   Writable,
+   * ]}
+   */ (
     /** @type {(Readable | Writable | undefined | null)[]} */ (
       xsnapProcess.stdio
     )

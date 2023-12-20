@@ -47,9 +47,11 @@ test.before(
     // of tests, we can also send the installation to someone
     // else, and they can use it to create a new contract instance
     // using the same code.
-    /** @type {Installation<
-  import('../../../src/contracts/oracle.js').OracleStart
->} */
+    /**
+     * @type {Installation<
+     *   import('../../../src/contracts/oracle.js').OracleStart
+     * >}
+     */
     const installation = await E(zoe).installBundleID('b1-oracle');
 
     const feeAmount = AmountMath.make(link.brand, 1000n);

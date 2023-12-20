@@ -258,11 +258,13 @@ function makeTester(htest, out) {
     not(a, b, message = 'should not be identical') {
       assert(!Object.is(a, b), message);
     },
-    /** @type {(
-  actual: unknown,
-  expected: unknown,
-  message?: string,
-) => void} */
+    /**
+     * @type {(
+     *   actual: unknown,
+     *   expected: unknown,
+     *   message?: string,
+     * ) => void}
+     */
     deepEqual(actual, expected, message = 'should be deep equal') {
       const delta = deepDifference(actual, expected);
       assert(delta === null, `${message}: ${JSON.stringify(delta)}`);
@@ -276,11 +278,13 @@ function makeTester(htest, out) {
     like(_a, _b, _message = 'should be like') {
       throw Error('not implemented');
     },
-    /** @type {(
-  fn: () => unknown,
-  e?: Expectation,
-  message?: string,
-) => void} */
+    /**
+     * @type {(
+     *   fn: () => unknown,
+     *   e?: Expectation,
+     *   message?: string,
+     * ) => void}
+     */
     throws(fn, expectation, message = `should throw like ${expectation}`) {
       try {
         fn();
@@ -300,11 +304,13 @@ function makeTester(htest, out) {
       }
       assert(true, message);
     },
-    /** @type {(
-  thrower: () => Promise<unknown>,
-  expectation?: Expectation,
-  message?: string,
-) => Promise<void>} */
+    /**
+     * @type {(
+     *   thrower: () => Promise<unknown>,
+     *   expectation?: Expectation,
+     *   message?: string,
+     * ) => Promise<void>}
+     */
     async throwsAsync(
       thrower,
       expectation,
@@ -319,10 +325,12 @@ function makeTester(htest, out) {
         assert(!delta, `${message}: ${JSON.stringify(delta)}`);
       }
     },
-    /** @type {(
-  thrower: () => Promise<unknown>,
-  message?: string,
-) => Promise<void>} */
+    /**
+     * @type {(
+     *   thrower: () => Promise<unknown>,
+     *   message?: string,
+     * ) => Promise<void>}
+     */
     async notThrowsAsync(nonThrower, message) {
       await null;
       try {

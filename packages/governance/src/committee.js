@@ -57,10 +57,12 @@ harden(meta);
  * }}
  */
 export const start = (zcf, privateArgs, baggage) => {
-  /** @type {MapStore<
-  Handle<'Question'>,
-  import('./electorateTools.js').QuestionRecord
->} */
+  /**
+   * @type {MapStore<
+   *   Handle<'Question'>,
+   *   import('./electorateTools.js').QuestionRecord
+   * >}
+   */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
 
   // CRUCIAL: voteCap carries the ability to cast votes for any voter at

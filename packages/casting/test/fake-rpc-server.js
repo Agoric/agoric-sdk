@@ -72,9 +72,11 @@ const fakeStatusResult = {
   },
 };
 
-/** @typedef {Partial<
-  import('ava').ExecutionContext<{ cleanups: Array<() => void> }>
-> & { context }} FakeServerTestContext */
+/**
+ * @typedef {Partial<
+ *   import('ava').ExecutionContext<{ cleanups: Array<() => void> }>
+ * > & { context }} FakeServerTestContext
+ */
 /**
  * @param {FakeServerTestContext} t
  * @param {Array<{ any }>} fakeValues

@@ -9,10 +9,12 @@ const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
-  /** @type {Map<
-  import('./offers').OfferId,
-  import('./offers').OfferStatus
->} */
+  /**
+   * @type {Map<
+   *   import('./offers').OfferId,
+   *   import('./offers').OfferStatus
+   * >}
+   */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
@@ -31,8 +33,10 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
    */
   const invitationsReceived = new Map();
 
-  /** @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than
-  previous */
+  /**
+   * @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than
+   *   previous
+   */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
       return;

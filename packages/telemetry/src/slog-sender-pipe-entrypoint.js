@@ -9,9 +9,11 @@ import { makeSlogSender } from './make-slog-sender.js';
 
 const logger = anylogger('slog-sender-pipe-entrypoint');
 
-/** @type {(
-  msg: import('./slog-sender-pipe.js').SlogSenderPipeWaitReplies,
-) => void} */
+/**
+ * @type {(
+ *   msg: import('./slog-sender-pipe.js').SlogSenderPipeWaitReplies,
+ * ) => void}
+ */
 const send = Function.prototype.bind.call(process.send, process);
 
 /**

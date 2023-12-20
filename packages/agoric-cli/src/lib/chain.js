@@ -178,12 +178,14 @@ export const pollTx = async (txhash, opts) => {
       { stdio: ['ignore', 'pipe', 'ignore'] },
     );
     // XXX this type is defined in a .proto file somewhere
-    /** @type {{
-  height: string;
-  txhash: string;
-  code: number;
-  timestamp: string;
-}} */
+    /**
+     * @type {{
+     *   height: string;
+     *   txhash: string;
+     *   code: number;
+     *   timestamp: string;
+     * }}
+     */
     const info = JSON.parse(out.toString());
     return info;
   };

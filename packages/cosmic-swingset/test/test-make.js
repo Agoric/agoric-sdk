@@ -7,9 +7,11 @@ import * as ambientPath from 'path';
 
 import { makeScenario2, pspawn } from './scenario2.js';
 
-/** @type {import('ava').TestFn<
-  Awaited<ReturnType<typeof makeTestContext>>
->} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const makeTestContext = async t => {

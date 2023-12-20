@@ -355,9 +355,9 @@ export {};
  */
 
 /**
- * @typedef {{ meter?: Meter }} OptMeter If a meter is provided, the new
- *   dynamic vat is limited to a fixed amount of computation and allocation that
- *   can occur during any given crank. Peak stack frames are limited as well. In
+ * @typedef {{ meter?: Meter }} OptMeter If a meter is provided, the new dynamic
+ *   vat is limited to a fixed amount of computation and allocation that can
+ *   occur during any given crank. Peak stack frames are limited as well. In
  *   addition, the given meter's "remaining" value will be reduced by the amount
  *   of computation used by each crank. The meter will eventually underflow
  *   unless it is topped up, at which point the vat is terminated. If undefined,
@@ -374,13 +374,13 @@ export {};
  *
  * @typedef {{ vatParameters?: object; upgradeMessage?: string }} VatUpgradeOptions
  * @typedef {{ incarnationNumber: number }} VatUpgradeResults
- * @callback ShutdownWithFailure Called to shut something down because
- *   something went wrong, where the reason is supposed to be an Error that
- *   describes what went wrong. Some valid implementations of
- *   `ShutdownWithFailure` will never return, either because they throw or
- *   because they immediately shutdown the enclosing unit of computation.
- *   However, they also might return, so the caller should follow this call by
- *   their own defensive `throw reason;` if appropriate.
+ * @callback ShutdownWithFailure Called to shut something down because something
+ *   went wrong, where the reason is supposed to be an Error that describes what
+ *   went wrong. Some valid implementations of `ShutdownWithFailure` will never
+ *   return, either because they throw or because they immediately shutdown the
+ *   enclosing unit of computation. However, they also might return, so the
+ *   caller should follow this call by their own defensive `throw reason;` if
+ *   appropriate.
  * @param {Error} reason
  * @returns {void}
  * @typedef {object} VatAdminFacet A powerful object corresponding with a vat
@@ -390,8 +390,8 @@ export {};
  *   or rejected when the vat is terminated. If the vat terminates with a
  *   failure, the promise will be rejected with the reason. If the vat
  *   terminates successfully, the promise will fulfill to the completion value.
- * @property {ShutdownWithFailure} terminateWithFailure Terminate the vat with
- *   a failure reason.
+ * @property {ShutdownWithFailure} terminateWithFailure Terminate the vat with a
+ *   failure reason.
  * @property {(
  *   bundlecap: BundleCap,
  *   options?: VatUpgradeOptions,

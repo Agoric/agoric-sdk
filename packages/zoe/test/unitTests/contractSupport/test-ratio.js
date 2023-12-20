@@ -487,14 +487,16 @@ test('ratio - oneMinus', t => {
 const { brand } = makeIssuerKit('moe');
 
 test('ratio - quantize', t => {
-  /** @type {Array<
-  [
-    numBefore: bigint,
-    denBefore: bigint,
-    numAfter: bigint,
-    denAfter: bigint,
-  ]
->} */
+  /**
+   * @type {Array<
+   *   [
+   *     numBefore: bigint,
+   *     denBefore: bigint,
+   *     numAfter: bigint,
+   *     denAfter: bigint,
+   *   ]
+   * >}
+   */
   const cases = /** @type {const} */ [
     [1n, 1n, 1n, 1n],
     [10n, 10n, 10n, 10n],

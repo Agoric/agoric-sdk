@@ -283,8 +283,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {KeywordKeywordRecord | undefined} keywordMapping Mapping of keywords
  *   used in contractA to keywords to be used in contractB. Note that the
  *   pathway to deposit the payout back to contractA reverses this mapping.
- * @param {Proposal} proposal The proposal for the offer to be made to
- *   contractB
+ * @param {Proposal} proposal The proposal for the offer to be made to contractB
  * @param {ZCFSeat} fromSeat The seat in contractA to take the offer payments
  *   from.
  * @param {ZCFSeat} [toSeat] The seat in contractA to deposit the payout of the

@@ -185,8 +185,10 @@ function abbreviateReplacer(_, arg) {
  * @param {ReturnType<typeof managerPort>} port
  */
 function makeWorker(port) {
-  /** @type {((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>)
-  | null} */
+  /**
+   * @type {((delivery: VatDeliveryObject) => Promise<VatDeliveryResult>)
+   *   | null}
+   */
   let dispatch = null;
 
   /**

@@ -20,9 +20,11 @@ const { Fail } = assert;
  * }} ParamValues
  */
 
-/** @typedef {ReturnType<
-  import('@agoric/inter-protocol/src/auction/params.js').makeAuctioneerParams
->} AuctionParamRecord */
+/**
+ * @typedef {ReturnType<
+ *   import('@agoric/inter-protocol/src/auction/params.js').makeAuctioneerParams
+ * >} AuctionParamRecord
+ */
 /** @typedef {ParamValues<ParamTypesMapFromRecord<AuctionParamRecord>>} AuctionParams */
 
 /**

@@ -1,5 +1,7 @@
-/** @file note this cannot be called test-utils.js due to
-  https://github.com/Agoric/agoric-sdk/issues/7503 */
+/**
+ * @file note this cannot be called test-utils.js due to
+ *   https://github.com/Agoric/agoric-sdk/issues/7503
+ */
 /* global setImmediate */
 
 /**

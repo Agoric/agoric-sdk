@@ -59,9 +59,7 @@ const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(
- *   unitValueIn?: bigint,
- * ) => Promise<
+ * @property {(unitValueIn?: bigint) => Promise<
  *   PriceAggregatorKit & {
  *     instance: import('../../../src/zoeService/utils.js').Instance<
  *       typeof testStartFn
@@ -117,14 +115,18 @@ test.before('setup aggregator and oracles', async t => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-oracle', oracleBundle);
-  /** @type {Installation<
-  import('../../../src/contracts/oracle.js').OracleStart
->} */
+  /**
+   * @type {Installation<
+   *   import('../../../src/contracts/oracle.js').OracleStart
+   * >}
+   */
   const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<
-  import('../../../src/contracts/priceAggregator.js').start
->} */
+  /**
+   * @type {Installation<
+   *   import('../../../src/contracts/priceAggregator.js').start
+   * >}
+   */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$ATOM');

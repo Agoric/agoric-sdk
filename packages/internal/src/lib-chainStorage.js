@@ -188,10 +188,12 @@ export const prepareChainStorageNode = zone => {
           args: [path],
         });
       },
-      /** @type {(
-  name: string,
-  childNodeOptions?: { sequence?: boolean },
-) => StorageNode} */
+      /**
+       * @type {(
+       *   name: string,
+       *   childNodeOptions?: { sequence?: boolean },
+       * ) => StorageNode}
+       */
       makeChildNode(name, childNodeOptions = {}) {
         const { sequence, path, messenger } = this.state;
         assertPathSegment(name);

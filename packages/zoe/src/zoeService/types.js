@@ -184,9 +184,9 @@
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
- * @property {() => Promise<PaymentPKeywordRecord>} getPayouts returns a
- *   promise for a KeywordPaymentRecord containing all the payouts from this
- *   seat. The promise will resolve after the seat has exited.
+ * @property {() => Promise<PaymentPKeywordRecord>} getPayouts returns a promise
+ *   for a KeywordPaymentRecord containing all the payouts from this seat. The
+ *   promise will resolve after the seat has exited.
  * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout returns a
  *   promise for the Payment corresponding to the indicated keyword. The promise
  *   will resolve after the seat has exited.
@@ -205,9 +205,8 @@
  *   This is numeric to support a planned enhancement called "multiples" which
  *   will allow the return value to be any non-negative number. The promise will
  *   resolve after the seat has exited.
- * @property {() => Promise<Allocation>} getFinalAllocation return a promise
- *   for the final allocation. The promise will resolve after the seat has
- *   exited.
+ * @property {() => Promise<Allocation>} getFinalAllocation return a promise for
+ *   the final allocation. The promise will resolve after the seat has exited.
  * @property {() => Subscriber<Completion>} getExitSubscriber returns a
  *   subscriber that will be notified when the seat has exited or failed.
  */
@@ -274,8 +273,8 @@
  */
 
 /**
- * @typedef {Record<string, any>} SourceBundle Opaque type for a JSONable
- *   source bundle
+ * @typedef {Record<string, any>} SourceBundle Opaque type for a JSONable source
+ *   bundle
  */
 
 /**

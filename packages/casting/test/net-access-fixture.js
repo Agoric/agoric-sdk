@@ -152,8 +152,8 @@ const normalizeID = argsKey => {
 /**
  * Wrap `fetch` to capture JSON RPC IO traffic.
  *
- * @param {typeof window.fetch} fetch returns wraped fetch along with a .web
- *   map for use with {@link replayIO}
+ * @param {typeof window.fetch} fetch returns wraped fetch along with a .web map
+ *   for use with {@link replayIO}
  */
 export const captureIO = fetch => {
   const web = new Map();

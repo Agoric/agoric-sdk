@@ -158,10 +158,12 @@ const facetHelpers = (zcf, paramManager) => {
    * @param {LCF} limitedCreatorFacet
    */
   const makeVirtualGovernorFacet = limitedCreatorFacet => {
-    /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<
-  unknown,
-  GovernedCreatorFacet<limitedCreatorFacet>
->} */
+    /**
+     * @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<
+     *   unknown,
+     *   GovernedCreatorFacet<limitedCreatorFacet>
+     * >}
+     */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),

@@ -222,9 +222,11 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller, index = -1) => {
       data.size || Fail`no data in storage`;
-      /** @type {ReturnType<
-  typeof import('@endo/marshal').makeMarshal
->['fromCapData']} */
+      /**
+       * @type {ReturnType<
+       *   typeof import('@endo/marshal').makeMarshal
+       * >['fromCapData']}
+       */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(data, path, fromCapData, index);

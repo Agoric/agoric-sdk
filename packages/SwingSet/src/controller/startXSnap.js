@@ -27,9 +27,11 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   TODO: transition to direct snapshot stream, and remove this option
  */
 
-/** @typedef {StartXSnapInitFromBundlesDetails
-  | StartXSnapInitFromSnapshotStreamDetails
-  | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails */
+/**
+ * @typedef {StartXSnapInitFromBundlesDetails
+ *   | StartXSnapInitFromSnapshotStreamDetails
+ *   | StartXSnapInitFromSnapStoreDetails} StartXSnapInitDetails
+ */
 
 /** @typedef {ReturnType<typeof makeStartXSnap>} StartXSnap */
 

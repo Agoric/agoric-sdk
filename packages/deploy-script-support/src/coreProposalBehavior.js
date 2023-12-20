@@ -77,9 +77,11 @@ export const makeCoreProposalBehavior = ({
   };
 
   const makeRestoreRef = (vatAdminSvc, zoe) => {
-    /** @type {(
-  ref: import('./externalTypes.js').ManifestBundleRef,
-) => Promise<Installation<unknown>>} */
+    /**
+     * @type {(
+     *   ref: import('./externalTypes.js').ManifestBundleRef,
+     * ) => Promise<Installation<unknown>>}
+     */
     const defaultRestoreRef = async bundleRef => {
       // extract-proposal.js creates these records, and bundleName is
       // the optional name under which the bundle was installed into
@@ -95,8 +97,10 @@ export const makeCoreProposalBehavior = ({
     return defaultRestoreRef;
   };
 
-  /** @param {ChainBootstrapSpace &
-  BootstrapPowers & { evaluateBundleCap: any }} powers */
+  /**
+   * @param {ChainBootstrapSpace &
+   *   BootstrapPowers & { evaluateBundleCap: any }} powers
+   */
   const coreProposalBehavior = async powers => {
     // NOTE: `powers` is expected to match or be a superset of the above `permits` export,
     // which should therefore be kept in sync with this deconstruction code.

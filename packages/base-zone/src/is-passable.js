@@ -6,6 +6,7 @@ import { passStyleOf } from '@endo/pass-style';
  * normal circumstance should `isPassable(specimen)` throw.
  *
  * TODO implement an isPassable that does not rely on try/catch, and move it to
+ *
  * @endo/pass-style. This implementation is just a standin until then
  *
  * @param {any} specimen

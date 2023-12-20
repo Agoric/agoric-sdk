@@ -19,9 +19,11 @@ const { Fail } = assert;
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-/** @type {import('ava').TestFn<
-  Awaited<ReturnType<makeDefaultTestContext>>
->} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 test.before(async t => {
@@ -132,9 +134,11 @@ const the = async xP => {
 const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;
 
-/** @param {import('ava').ExecutionContext<
-  Awaited<ReturnType<makeDefaultTestContext>>
->} t */
+/**
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >} t
+ */
 const makeScenario = t => {
   /**
    * A player and their user agent (wallet UI, signer)
@@ -527,9 +531,11 @@ test.serial('non-vbank asset: give before deposit', async t => {
     vsGet(`agoricNames.brand`);
     vsGet(`agoricNames.instance`);
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord & {
-  updated: 'offerStatus';
-}} */
+    /**
+     * @type {import('../src/smartWallet.js').UpdateRecord & {
+     *   updated: 'offerStatus';
+     * }}
+     */
     let offerUpdate;
     let ix = -1;
     for (;;) {

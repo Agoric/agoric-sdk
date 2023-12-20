@@ -95,12 +95,14 @@ function makeSupervisorSyscall(syscallToManager) {
   // this will be given to liveslots, it should have distinct methods that
   // return immediate results or throw errors
   const syscallForVat = {
-    /** @type {(
-  target: string,
-  method: string,
-  args: SwingSetCapData,
-  result?: string,
-) => unknown} */
+    /**
+     * @type {(
+     *   target: string,
+     *   method: string,
+     *   args: SwingSetCapData,
+     *   result?: string,
+     * ) => unknown}
+     */
     send: (target, methargs, result) =>
       doSyscall(['send', target, { methargs, result }]),
     subscribe: vpid => doSyscall(['subscribe', vpid]),

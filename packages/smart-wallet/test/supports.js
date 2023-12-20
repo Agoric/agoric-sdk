@@ -92,12 +92,14 @@ const makeFakeBridgeManager = () =>
  */
 export const makeMockTestSpace = async log => {
   const space = /** @type {any} */ (makePromiseSpace(log));
-  const { consume, produce } = /** @type {BootstrapPowers & {
-  consume: {
-    loadVat: (n: 'mints') => MintsVat;
-    loadCriticalVat: (n: 'mints') => MintsVat;
-  };
-}} */ (space);
+  const { consume, produce } = /**
+   * @type {BootstrapPowers & {
+   *   consume: {
+   *     loadVat: (n: 'mints') => MintsVat;
+   *     loadCriticalVat: (n: 'mints') => MintsVat;
+   *   };
+   * }}
+   */ (space);
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);

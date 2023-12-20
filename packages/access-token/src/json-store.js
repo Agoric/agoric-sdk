@@ -330,9 +330,8 @@ export function setAllState(storage, stuff) {
  *
  * @param {string} dirPath Path to a directory in which database files might be
  *   present. This directory need not actually exist
- * @returns {boolean} If the directory is present and contains the files
- *   created by initJSONStore or openJSONStore, returns true. Else returns
- *   false.
+ * @returns {boolean} If the directory is present and contains the files created
+ *   by initJSONStore or openJSONStore, returns true. Else returns false.
  */
 export function isJSONStore(dirPath) {
   if (`${dirPath}` !== dirPath) {

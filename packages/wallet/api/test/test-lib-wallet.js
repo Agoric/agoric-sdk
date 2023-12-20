@@ -978,10 +978,12 @@ test('lib-wallet addOffer for autoswap swap', async t => {
     ),
   );
 
-  /** @type {{
-  getLiquidityIssuer: () => Issuer<'nat'>;
-  makeSwapInvitation: () => Invitation;
-}} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1132,10 +1134,12 @@ test('lib-wallet performAction acceptOffer', async t => {
     ),
   );
 
-  /** @type {{
-  getLiquidityIssuer: () => Issuer<'nat'>;
-  makeSwapInvitation: () => Invitation;
-}} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1274,10 +1278,12 @@ test('addOffer invitationQuery', async t => {
     ),
   );
 
-  /** @type {{
-  getLiquidityIssuer: () => Issuer<'nat'>;
-  makeSwapInvitation: () => Invitation;
-}} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );
@@ -1405,10 +1411,12 @@ test('addOffer offer.invitation', async t => {
     ),
   );
 
-  /** @type {{
-  getLiquidityIssuer: () => Issuer<'nat'>;
-  makeSwapInvitation: () => Invitation;
-}} */
+  /**
+   * @type {{
+   *   getLiquidityIssuer: () => Issuer<'nat'>;
+   *   makeSwapInvitation: () => Invitation;
+   * }}
+   */
   const publicAPI = await E(t.context.zoe).getPublicFacet(
     autoswapInstanceHandle,
   );

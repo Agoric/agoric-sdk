@@ -250,10 +250,12 @@ const getEphemeralKey = facets => facets.publisher;
  *   (undefined when the publish kit has terminated)
  */
 
-/** @type {WeakMap<
-  DurablePublishKitEphemeralKey,
-  DurablePublishKitEphemeralData
->} */
+/**
+ * @type {WeakMap<
+ *   DurablePublishKitEphemeralKey,
+ *   DurablePublishKitEphemeralData
+ * >}
+ */
 const durablePublishKitEphemeralData = new WeakMap();
 
 /**

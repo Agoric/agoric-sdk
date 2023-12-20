@@ -169,10 +169,9 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {{}} DetailsToken A call to the `details` template literal makes
- *   and returns a fresh details token, which is a frozen empty object
- *   associated with the arguments of that `details` template literal
- *   expression.
+ * @typedef {{}} DetailsToken A call to the `details` template literal makes and
+ *   returns a fresh details token, which is a frozen empty object associated
+ *   with the arguments of that `details` template literal expression.
  */
 
 /**
@@ -181,8 +180,8 @@
  */
 
 /**
- * @typedef {object} StringablePayload Holds the payload passed to quote so
- *   that its printed form is visible.
+ * @typedef {object} StringablePayload Holds the payload passed to quote so that
+ *   its printed form is visible.
  * @property {() => string} toString How to print the payload
  */
 

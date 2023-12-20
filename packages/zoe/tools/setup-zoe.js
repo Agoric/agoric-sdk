@@ -38,8 +38,10 @@ export const setUpZoeForTest = async ({
 } = {}) => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
 
-  /** @type {ReturnType<typeof makeFakeVatAdmin>['vatAdminState']
-  | undefined} */
+  /**
+   * @type {ReturnType<typeof makeFakeVatAdmin>['vatAdminState']
+   *   | undefined}
+   */
   let vatAdminState;
   if (!vatAdminSvc) {
     ({ admin: vatAdminSvc, vatAdminState } = makeFakeVatAdmin(

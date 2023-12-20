@@ -649,9 +649,8 @@ export function openSwingStore(dirPath, options = {}) {
  *
  * @param {string} dirPath Path to a directory in which database files might be
  *   present. This directory need not actually exist
- * @returns {boolean} If the directory is present and contains the files
- *   created by initSwingStore or openSwingStore, returns true. Else returns
- *   false.
+ * @returns {boolean} If the directory is present and contains the files created
+ *   by initSwingStore or openSwingStore, returns true. Else returns false.
  */
 export function isSwingStore(dirPath) {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;

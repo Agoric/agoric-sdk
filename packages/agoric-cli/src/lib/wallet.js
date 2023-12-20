@@ -30,10 +30,12 @@ const emptyCurrentRecord = {
 export const getCurrent = async (addr, { readLatestHead }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
-  let current = /** @type {Partial<
-      import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
-    >
-  | undefined} */ (await readLatestHead(`published.wallet.${addr}.current`));
+  let current = /**
+   * @type {Partial<
+   *       import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+   *     >
+   *   | undefined}
+   */ (await readLatestHead(`published.wallet.${addr}.current`));
   if (current === undefined) {
     throw new Error(`undefined current node for ${addr}`);
   }

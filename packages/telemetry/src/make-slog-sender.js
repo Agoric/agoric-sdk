@@ -88,9 +88,11 @@ export const makeSlogSender = async (opts = {}) => {
     slogSenderModules.map(async moduleIdentifier =>
       import(moduleIdentifier)
         .then(
-          /** @param {{
-  makeSlogSender: (opts: {}) => Promise<SlogSender | undefined>;
-}} module */ ({ makeSlogSender: maker }) => {
+          /**
+           * @param {{
+           *   makeSlogSender: (opts: {}) => Promise<SlogSender | undefined>;
+           * }} module
+           */ ({ makeSlogSender: maker }) => {
             if (typeof maker !== 'function') {
               return Promise.reject(
                 Error(`No 'makeSlogSender' function exported by module`),

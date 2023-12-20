@@ -595,9 +595,11 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // can't collect from the dead
     }
-    /** @type {KernelDeliveryDropExports
-  | KernelDeliveryRetireExports
-  | KernelDeliveryRetireImports} */
+    /**
+     * @type {KernelDeliveryDropExports
+     *   | KernelDeliveryRetireExports
+     *   | KernelDeliveryRetireImports}
+     */
     const kd = harden([type, krefs]);
     if (type === 'retireExports') {
       for (const kref of krefs) {

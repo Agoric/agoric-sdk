@@ -333,9 +333,11 @@ async function replay(transcriptFile) {
   }
 
   // @ts-expect-error missing symbol
-  /** @type {Partial<
-  Record<ReturnType<typeof getResultKind>, Map<string, number[]>>
->} */
+  /**
+   * @type {Partial<
+   *   Record<ReturnType<typeof getResultKind>, Map<string, number[]>>
+   * >}
+   */
   let syscallResults = {};
 
   const analyzeSyscallResults = () => {
@@ -427,9 +429,11 @@ async function replay(transcriptFile) {
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
     const managerOptions =
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
-        /** @type {Partial<
-  import('../src/types-internal.js').ManagerOptions
->} */ ({
+        /**
+         * @type {Partial<
+         *   import('../src/types-internal.js').ManagerOptions
+         * >}
+         */ ({
           sourcedConsole: console,
           vatParameters,
           useTranscript: true,

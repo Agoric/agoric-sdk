@@ -2,8 +2,7 @@
 
 /**
  * @typedef {object} PriceQuote
- * @property {Amount<'set'>} quoteAmount Amount whose value is a
- *   PriceQuoteValue
+ * @property {Amount<'set'>} quoteAmount Amount whose value is a PriceQuoteValue
  * @property {ERef<Payment<'set'>>} quotePayment The `quoteAmount` wrapped as a
  *   payment
  */
@@ -55,8 +54,8 @@
  */
 
 /**
- * @typedef {object} PriceAuthority An object that mints PriceQuotes and
- *   handles triggers and notifiers for changes in the price
+ * @typedef {object} PriceAuthority An object that mints PriceQuotes and handles
+ *   triggers and notifiers for changes in the price
  * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set'>>} getQuoteIssuer
  *   Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
  * @property {(

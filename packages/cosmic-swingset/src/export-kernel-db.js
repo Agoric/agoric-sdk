@@ -54,9 +54,11 @@ export const getEffectiveArtifactMode = artifactMode => {
   }
 };
 
-/** @type {(
-  artifactMode: string | undefined,
-) => asserts artifactMode is SwingStoreArtifactMode | undefined} */
+/**
+ * @type {(
+ *   artifactMode: string | undefined,
+ * ) => asserts artifactMode is SwingStoreArtifactMode | undefined}
+ */
 export const checkArtifactMode = getEffectiveArtifactMode;
 
 /**
@@ -95,8 +97,8 @@ export const checkExportDataMode = (mode, isImport = false) => {
  * @property {number} blockHeight the block height corresponding to this export
  * @property {SwingStoreArtifactMode} [artifactMode]
  * @property {string} [data] file name containing the swingStore "export data"
- * @property {Array<[artifactName: string, fileName: string]>} artifacts List
- *   of swingStore export artifacts which can be validated by the export data
+ * @property {Array<[artifactName: string, fileName: string]>} artifacts List of
+ *   swingStore export artifacts which can be validated by the export data
  */
 
 /**

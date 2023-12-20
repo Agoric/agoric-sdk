@@ -23,10 +23,12 @@ const { Fail, quote: q } = assert;
  * @param {Baggage} zoeBaggage
  */
 export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
-  /** @type {WeakMapStore<
-  Installation,
-  { bundleCap: BundleCap; bundleID: BundleID }
->} */
+  /**
+   * @type {WeakMapStore<
+   *   Installation,
+   *   { bundleCap: BundleCap; bundleID: BundleID }
+   * >}
+   */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundleCap',
@@ -49,10 +51,12 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     },
   );
 
-  /** @type {(
-  bundle: SourceBundle,
-  bundleLabel?: string,
-) => Installation<unknown>} */
+  /**
+   * @type {(
+   *   bundle: SourceBundle,
+   *   bundleLabel?: string,
+   * ) => Installation<unknown>}
+   */
   const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',

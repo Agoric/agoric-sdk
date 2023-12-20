@@ -83,8 +83,8 @@ export const subscribe = itP =>
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
- * @param {ERef<PublicationRecord<T>>} nextCellP PublicationRecord
- *   corresponding with the first iteration result
+ * @param {ERef<PublicationRecord<T>>} nextCellP PublicationRecord corresponding
+ *   with the first iteration result
  * @returns {ForkableAsyncIterableIterator<T, T>}
  */
 const makeEachIterator = (topic, nextCellP) => {

@@ -17,9 +17,11 @@ const importConfig = configName =>
     u => new URL(u).pathname,
   );
 
-const test = /** @type {import('ava').TestFn<
-  Awaited<ReturnType<typeof makeTestContext>>
->} } */ (anyTest);
+const test = /**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >} }
+ */ (anyTest);
 
 const PROD_CONFIG_FILES = [
   'decentral-main-vaults-config.json',

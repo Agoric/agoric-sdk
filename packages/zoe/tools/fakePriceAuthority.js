@@ -157,10 +157,12 @@ export async function makeFakePriceAuthority(options) {
   let latestTick;
 
   // clients who are waiting for a specific timestamp
-  /** @type {[
-  when: import('@agoric/time').Timestamp,
-  resolve: (quote: PriceQuote) => void,
-][]} */
+  /**
+   * @type {[
+   *   when: import('@agoric/time').Timestamp,
+   *   resolve: (quote: PriceQuote) => void,
+   * ][]}
+   */
   let timeClients = [];
 
   // Check if a comparison request has been satisfied.

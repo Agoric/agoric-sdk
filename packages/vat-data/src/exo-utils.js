@@ -9,17 +9,25 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
  * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
  */
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>}
-  RemotableBrand */
+/**
+ * @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>}
+ *   RemotableBrand
+ */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 /** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
-/** @template T @typedef
-  {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
-  DefineKindOptions */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>}
-  KindFacet */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>}
-  KindFacets */
+/**
+ * @template T @typedef
+ *   {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
+ *   DefineKindOptions
+ */
+/**
+ * @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>}
+ *   KindFacet
+ */
+/**
+ * @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>}
+ *   KindFacets
+ */
 /** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
 /** @typedef {import('@agoric/swingset-liveslots').InterfaceGuardKit} InterfaceGuardKit */
 

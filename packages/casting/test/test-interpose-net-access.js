@@ -12,9 +12,11 @@ import { QueryClientImpl } from '@agoric/cosmic-proto/vstorage/query.js';
 import { makeHttpClient } from '../src/makeHttpClient.js';
 import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
-/** @type {import('ava').TestFn<
-  Awaited<ReturnType<typeof makeTestContext>>
->} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = /** @type {any} */ (anyTest);
 
 const RECORDING = false;

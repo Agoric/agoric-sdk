@@ -651,14 +651,16 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(
-  offerId: string,
-  invitationAmount: Amount<'set'>,
-  invitationMakers: import('./types').InvitationMakers,
-  publicSubscribers?:
-    | import('./types').PublicSubscribers
-    | import('@agoric/zoe/src/contractSupport').TopicsRecord,
-) => Promise<void>} */
+            /**
+             * @type {(
+             *   offerId: string,
+             *   invitationAmount: Amount<'set'>,
+             *   invitationMakers: import('./types').InvitationMakers,
+             *   publicSubscribers?:
+             *     | import('./types').PublicSubscribers
+             *     | import('@agoric/zoe/src/contractSupport').TopicsRecord,
+             * ) => Promise<void>}
+             */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,

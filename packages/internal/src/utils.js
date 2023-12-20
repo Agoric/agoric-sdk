@@ -303,9 +303,11 @@ export const untilTrue = produce =>
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
 
-/** @type {<T extends Record<string, ERef<any>>>(
-  obj: T,
-) => Promise<{ [K in keyof T]: Awaited<T[K]> }>} */
+/**
+ * @type {<T extends Record<string, ERef<any>>>(
+ *   obj: T,
+ * ) => Promise<{ [K in keyof T]: Awaited<T[K]> }>}
+ */
 export const allValues = async obj => {
   const resolved = await Promise.all(values(obj));
   // @ts-expect-error cast
@@ -325,9 +327,11 @@ export const synchronizedTee = (sourceStream, readerCount) => {
   /** @type {IteratorReturnResult<void> | undefined} */
   let doneResult;
 
-  /** @typedef {IteratorResult<
-  (value: PromiseLike<IteratorResult<T>>) => void
->} QueuePayload */
+  /**
+   * @typedef {IteratorResult<
+   *   (value: PromiseLike<IteratorResult<T>>) => void
+   * >} QueuePayload
+   */
   /** @type {import('@endo/stream').AsyncQueue<QueuePayload>[]} */
   const queues = [];
 
@@ -387,17 +391,21 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     /** @type {AsyncGenerator<T, void, void>} */
     const reader = harden({
       async next() {
-        /** @type {import('@endo/promise-kit').PromiseKit<
-  IteratorResult<T>
->} */
+        /**
+         * @type {import('@endo/promise-kit').PromiseKit<
+         *   IteratorResult<T>
+         * >}
+         */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: false });
         return promise;
       },
       async return() {
-        /** @type {import('@endo/promise-kit').PromiseKit<
-  IteratorResult<T>
->} */
+        /**
+         * @type {import('@endo/promise-kit').PromiseKit<
+         *   IteratorResult<T>
+         * >}
+         */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: true });
         return promise;

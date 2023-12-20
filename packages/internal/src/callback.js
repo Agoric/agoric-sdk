@@ -30,8 +30,10 @@ const ownKeys =
  * @typedef {import('./types').SyncCallback<I>} SyncCallback
  */
 
-/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> &
-  T} Farable */
+/**
+ * @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> &
+ *   T} Farable
+ */
 
 /**
  * @param {unknown} key

@@ -102,10 +102,12 @@ export function makeDefaultMeterProvider() {
   return new MeterProvider({ views: getMetricsProviderViews() });
 }
 
-/** @param {Omit<
-  NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>,
-  'views'
->} [powers] */
+/**
+ * @param {Omit<
+ *   NonNullable<Parameters<typeof getTelemetryProvidersOriginal>[0]>,
+ *   'views'
+ * >} [powers]
+ */
 export function getTelemetryProviders(powers = {}) {
   return getTelemetryProvidersOriginal({
     ...powers,

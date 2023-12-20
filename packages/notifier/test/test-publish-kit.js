@@ -96,10 +96,12 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
 
-  /** @type {Map<
-  PublicationRecord<any>['publishCount'],
-  PublicationRecord<any>
->} */
+  /**
+   * @type {Map<
+   *   PublicationRecord<any>['publishCount'],
+   *   PublicationRecord<any>
+   * >}
+   */
   const cells = new Map();
   const getLatestPromises = () => {
     const promises = [
@@ -251,12 +253,14 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   };
   const { kernelStorage } = initSwingStore();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
-  const initOpts = /** @type {{
-  kernelBundles: Record<
-    string,
-    import('@agoric/swingset-vat/src/types-external.js').Bundle
-  >;
-}} */ ({
+  const initOpts = /**
+   * @type {{
+   *   kernelBundles: Record<
+   *     string,
+   *     import('@agoric/swingset-vat/src/types-external.js').Bundle
+   *   >;
+   * }}
+   */ ({
     kernelBundles,
   });
   const runtimeOpts = { kernelBundle };

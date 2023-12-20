@@ -14,8 +14,10 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
-/** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>}
-  DefineKindOptions */
+/**
+ * @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>}
+ *   DefineKindOptions
+ */
 
 const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
@@ -112,10 +114,12 @@ const LABEL_INSTANCES = (env.DEBUG || '')
  */
 
 const makeDataCache = syscall => {
-  /** @type {(baseRef: string) => {
-  capdatas: any;
-  valueMap: Map<string, any>;
-}} */
+  /**
+   * @type {(baseRef: string) => {
+   *   capdatas: any;
+   *   valueMap: Map<string, any>;
+   * }}
+   */
   const readBacking = baseRef => {
     const rawState = syscall.vatstoreGet(`vom.${baseRef}`);
     assert(rawState);
@@ -123,10 +127,12 @@ const makeDataCache = syscall => {
     const valueMap = new Map(); // populated lazily by each state getter
     return { capdatas, valueMap }; // both mutable
   };
-  /** @type {(
-  baseRef: string,
-  value: { capdatas: any; valueMap: Map<string, any> },
-) => void} */
+  /**
+   * @type {(
+   *   baseRef: string,
+   *   value: { capdatas: any; valueMap: Map<string, any> },
+   * ) => void}
+   */
   const writeBacking = (baseRef, value) => {
     const rawState = JSON.stringify(value.capdatas);
     syscall.vatstoreSet(`vom.${baseRef}`, rawState);
@@ -632,8 +638,8 @@ export const makeVirtualObjectManager = (
    * @param {any} behavior A bag of functions (in the case of a single-faceted
    *   object) or a bag of bags of functions (in the case of a multi-faceted
    *   object) that will become the methods of the object or its facets.
-   * @param {DefineKindOptions<any>} options Additional options to configure
-   *   the virtual object kind being defined. See the documentation of
+   * @param {DefineKindOptions<any>} options Additional options to configure the
+   *   virtual object kind being defined. See the documentation of
    *   DefineKindOptions for the meaning of each option.
    * @param {boolean} isDurable A flag indicating whether or not the newly
    *   defined kind should be a durable kind.
@@ -869,10 +875,12 @@ export const makeVirtualObjectManager = (
     // (capdata) contents of the virtual-object state record.
     // dataCache[baseRef] -> { capdatas, valueMap }
     // valueCD=capdatas[prop], value=valueMap.get(prop)
-    /** @type {import('./cache.js').Cache<{
-  capdatas: any;
-  valueMap: Map<string, any>;
-}>} */
+    /**
+     * @type {import('./cache.js').Cache<{
+     *   capdatas: any;
+     *   valueMap: Map<string, any>;
+     * }>}
+     */
     const dataCache = makeDataCache(syscall);
     allCaches.push(dataCache);
 

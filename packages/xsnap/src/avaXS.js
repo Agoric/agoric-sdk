@@ -20,10 +20,12 @@ import { xsnap } from './xsnap.js';
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.cjs`;
 
-/** @type {(
-  ref: string,
-  readFile: typeof import('fs').promises.readFile,
-) => Promise<string>} */
+/**
+ * @type {(
+ *   ref: string,
+ *   readFile: typeof import('fs').promises.readFile,
+ * ) => Promise<string>}
+ */
 const asset = (ref, readFile) =>
   readFile(new URL(ref, import.meta.url).pathname, 'utf8');
 

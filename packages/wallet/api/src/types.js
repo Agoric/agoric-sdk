@@ -41,8 +41,8 @@
  *   (used by existing deploy scripts).
  * @property {() => Array<[Petname, Purse]>} getPurses Get all the purses (used
  *   by existing deploy scripts).
- * @property {(petname: Petname) => Purse} getPurse Get a purse by petname
- *   (used by existing deploy scripts).
+ * @property {(petname: Petname) => Purse} getPurse Get a purse by petname (used
+ *   by existing deploy scripts).
  * @property {() => Marshaller} getMarshaller
  */
 

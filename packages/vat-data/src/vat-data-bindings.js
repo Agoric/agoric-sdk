@@ -138,11 +138,13 @@ harden(partialAssign);
 
 export const provide =
   // XXX cast because provideLazy is `any` due to broken type import
-  /** @type {<K, V>(
-  baggage: import('@agoric/swingset-liveslots').Baggage,
-  key: K,
-  makeValue: (key: K) => V,
-) => V} */ (provideLazy);
+  /**
+   * @type {<K, V>(
+   *   baggage: import('@agoric/swingset-liveslots').Baggage,
+   *   key: K,
+   *   makeValue: (key: K) => V,
+   * ) => V}
+   */ (provideLazy);
 
 // TODO: Find a good home for this function used by @agoric/vat-data and testing code
 /** @param {import('@agoric/swingset-liveslots').VatData} VatData */

@@ -292,8 +292,10 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-/** @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>}
-  Marshaller */
+/**
+ * @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>}
+ *   Marshaller
+ */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**

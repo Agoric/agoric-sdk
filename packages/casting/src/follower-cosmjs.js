@@ -15,9 +15,11 @@ const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
-/** @template T @typedef
-  {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>}
-  ValueFollower */
+/**
+ * @template T @typedef
+ *   {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>}
+ *   ValueFollower
+ */
 
 // Copied from https://github.com/cosmos/cosmjs/pull/1328/files until release
 /**

@@ -703,8 +703,7 @@
  */
 
 /**
- * @callback CreatedQuestion Was this question created by this
- *   ContractGovernor?
+ * @callback CreatedQuestion Was this question created by this ContractGovernor?
  * @param {Instance} questionInstance
  * @returns {boolean}
  */

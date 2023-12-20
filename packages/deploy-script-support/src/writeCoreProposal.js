@@ -70,9 +70,11 @@ export const makeWriteCoreProposal = (
     };
   };
 
-  let mutex = /** @type {Promise<
-  import('./externalTypes.js').ManifestBundleRef | undefined
->} */ (Promise.resolve());
+  let mutex = /**
+   * @type {Promise<
+   *   import('./externalTypes.js').ManifestBundleRef | undefined
+   * >}
+   */ (Promise.resolve());
   /** @type {WriteCoreProposal} */
   const writeCoreProposal = async (filePrefix, proposalBuilder) => {
     /**

@@ -701,9 +701,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         if (isReplaying) {
           break;
         }
-        /** @type {{
-  ksc: import('@agoric/swingset-vat').KernelSyscallObject;
-} & Record<string, unknown>} */
+        /**
+         * @type {{
+         *   ksc: import('@agoric/swingset-vat').KernelSyscallObject;
+         * } & Record<string, unknown>}
+         */
         const { ksc, vsc: _1, ...attrs } = slogAttrs;
         if (!ksc) {
           break;

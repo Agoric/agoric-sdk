@@ -43,9 +43,11 @@ export {
 } from './exo-utils.js';
 
 /** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
-/** @template T @typedef
-  {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
-  DefineKindOptions */
+/**
+ * @template T @typedef
+ *   {import('@agoric/swingset-liveslots').DefineKindOptions<T>}
+ *   DefineKindOptions
+ */
 
 // Copy this type because aliasing it by `import('@agoric/swingset-liveslots').Baggage`
 // causes this error in typedoc: Expected a symbol for node with kind Identifier

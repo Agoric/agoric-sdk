@@ -26,9 +26,11 @@ export const Natural = str => {
  */
 export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-/** @type {Partial<
-  import('@agoric/vats/tools/board-utils.js').VBankAssetDetail
->} */
+/**
+ * @type {Partial<
+ *   import('@agoric/vats/tools/board-utils.js').VBankAssetDetail
+ * >}
+ */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
