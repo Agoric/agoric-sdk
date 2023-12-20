@@ -2,42 +2,36 @@
 
 type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
 type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
-/**
- * Any passable non-thenable. Often an explanatory string.
- */
+/** Any passable non-thenable. Often an explanatory string. */
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 /**
  * Zoe Contract Facet
  *
- * The Zoe interface specific to a contract instance. The Zoe Contract
- * Facet is an API object used by running contract instances to access
- * the Zoe state for that instance. The Zoe Contract Facet is accessed
- * synchronously from within the contract, and usually is referred to
- * in code as zcf.
+ * The Zoe interface specific to a contract instance. The Zoe Contract Facet is
+ * an API object used by running contract instances to access the Zoe state for
+ * that instance. The Zoe Contract Facet is accessed synchronously from within
+ * the contract, and usually is referred to in code as zcf.
  */
 type ZCF<CT extends unknown = Record<string, unknown>> = {
-  /**
-   * - atomically reallocate amounts among seats.
-   */
+  /** - atomically reallocate amounts among seats. */
   atomicRearrange: (transfers: TransferPart[]) => void;
   /**
    * - reallocate amounts among seats.
+   *
    * @deprecated Use atomicRearrange instead.
    */
   reallocate: Reallocate;
   /**
-   * - check
-   * whether a keyword is valid and unique and could be added in
-   * `saveIssuer`
+   * - check whether a keyword is valid and unique and could be added in
+   *   `saveIssuer`
    */
   assertUniqueKeyword: (keyword: Keyword) => void;
   /**
-   * Informs Zoe about an issuer and returns a promise for acknowledging
-   * when the issuer is added and ready.
+   * Informs Zoe about an issuer and returns a promise for acknowledging when
+   * the issuer is added and ready.
    *
-   * @returns the AmountMath and brand synchronously accessible after
-   * saving
+   * @returns the AmountMath and brand synchronously accessible after saving
    */
   saveIssuer: (
     issuerP: ERef<Issuer>,
@@ -45,14 +39,13 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   ) => Promise<IssuerRecord<any>>;
 
   /**
-   * Make a credible Zoe invitation for a particular smart contract
-   * indicated by the `instance` in the details of the invitation. Zoe
-   * also puts the `installation` and a unique `handle` in the details
-   * of the invitation. The contract must provide a `description` for
-   * the invitation and should include whatever information is necessary
-   * for a potential buyer of the invitation to know what they are
-   * getting in the `customDetails`. `customDetails` will be
-   * placed in the details of the invitation.
+   * Make a credible Zoe invitation for a particular smart contract indicated by
+   * the `instance` in the details of the invitation. Zoe also puts the
+   * `installation` and a unique `handle` in the details of the invitation. The
+   * contract must provide a `description` for the invitation and should include
+   * whatever information is necessary for a potential buyer of the invitation
+   * to know what they are getting in the `customDetails`. `customDetails` will
+   * be placed in the details of the invitation.
    */
   makeInvitation: <Result>(
     offerHandler: OfferHandler<Result>,
@@ -83,25 +76,24 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   getInstance: () => Instance;
 };
 /**
- * The contract can reallocate over seats, which commits the staged
- * allocation for each seat. On commit, the staged allocation becomes
- * the current allocation and the staged allocation is deleted.
+ * The contract can reallocate over seats, which commits the staged allocation
+ * for each seat. On commit, the staged allocation becomes the current
+ * allocation and the staged allocation is deleted.
  *
- * The reallocation will only succeed if the reallocation 1) conserves
- * rights (the amounts specified have the same total value as the
- * current total amount), and 2) is 'offer-safe' for all parties
- * involved. All seats that have staged allocations must be included
- * as arguments to `reallocate`, or an error is thrown. Additionally,
- * an error is thrown if any seats included in `reallocate` do not
- * have a staged allocation.
+ * The reallocation will only succeed if the reallocation 1) conserves rights
+ * (the amounts specified have the same total value as the current total
+ * amount), and 2) is 'offer-safe' for all parties involved. All seats that have
+ * staged allocations must be included as arguments to `reallocate`, or an error
+ * is thrown. Additionally, an error is thrown if any seats included in
+ * `reallocate` do not have a staged allocation.
  *
- * The reallocation is partial, meaning that it applies only to the
- * seats passed in as arguments. By induction, if rights conservation
- * and offer safety hold before, they will hold after a safe
- * reallocation, even though we only re-validate for the seats whose
- * allocations will change. Since rights are conserved for the change,
- * overall rights will be unchanged, and a reallocation can only
- * effect offer safety for seats whose allocations change.
+ * The reallocation is partial, meaning that it applies only to the seats passed
+ * in as arguments. By induction, if rights conservation and offer safety hold
+ * before, they will hold after a safe reallocation, even though we only
+ * re-validate for the seats whose allocations will change. Since rights are
+ * conserved for the change, overall rights will be unchanged, and a
+ * reallocation can only effect offer safety for seats whose allocations
+ * change.
  */
 type Reallocate = (
   seat1: ZCFSeat,
@@ -122,50 +114,45 @@ type ZCFRegisterFeeMint = (
 /**
  * Provide a jig object for testing purposes only.
  *
- * The contract code provides a callback whose return result will
- * be made available to the test that started this contract. The
- * supplied callback will only be called in a testing context,
- * never in production; i.e., it is only called if `testJigSetter`
- * was supplied.
+ * The contract code provides a callback whose return result will be made
+ * available to the test that started this contract. The supplied callback will
+ * only be called in a testing context, never in production; i.e., it is only
+ * called if `testJigSetter` was supplied.
  *
- * If no, `testFn` is supplied, then an empty jig will be used.
- * An additional `zcf` property set to the current ContractFacet
- * will be appended to the returned jig object (overriding any
- * provided by the `testFn`).
+ * If no, `testFn` is supplied, then an empty jig will be used. An additional
+ * `zcf` property set to the current ContractFacet will be appended to the
+ * returned jig object (overriding any provided by the `testFn`).
  */
 type SetTestJig = (testFn: () => Record<string, unknown>) => void;
 type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => IssuerRecord<K>;
   /**
-   * All the amounts in gains must be of this ZCFMint's brand.
-   * The gains' keywords are in the namespace of that seat.
-   * Add the gains to that seat's allocation.
-   * The resulting state must be offer safe. (Currently, increasing assets can
-   * never violate offer safety anyway.)
+   * All the amounts in gains must be of this ZCFMint's brand. The gains'
+   * keywords are in the namespace of that seat. Add the gains to that seat's
+   * allocation. The resulting state must be offer safe. (Currently, increasing
+   * assets can never violate offer safety anyway.)
    *
-   * Mint that amount of assets into the pooled purse.
-   * If a seat is provided, it is returned. Otherwise a new seat is
-   * returned.
+   * Mint that amount of assets into the pooled purse. If a seat is provided, it
+   * is returned. Otherwise a new seat is returned.
    */
   mintGains: (gains: AmountKeywordRecord, zcfSeat?: ZCFSeat) => ZCFSeat;
   /**
-   * All the amounts in losses must be of this ZCFMint's brand.
-   * The losses' keywords are in the namespace of that seat.
-   * Subtract losses from that seat's allocation.
-   * The resulting state must be offer safe.
+   * All the amounts in losses must be of this ZCFMint's brand. The losses'
+   * keywords are in the namespace of that seat. Subtract losses from that
+   * seat's allocation. The resulting state must be offer safe.
    *
    * Burn that amount of assets from the pooled purse.
    */
   burnLosses: (losses: AmountKeywordRecord, zcfSeat: ZCFSeat) => void;
 };
 /**
- * fail called with the reason for this failure, where reason is
- * normally an instanceof Error.
+ * fail called with the reason for this failure, where reason is normally an
+ * instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
 /**
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
+ * The brand is used for filling in an empty amount if the `keyword` is not
+ * present in the allocation
  */
 type ZCFGetAmountAllocated = (
   keyword: Keyword,
@@ -179,30 +166,20 @@ type ZCFSeat = {
   getProposal: () => ProposalRecord;
   getAmountAllocated: ZCFGetAmountAllocated;
   getCurrentAllocation: () => Allocation;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
+  /** @deprecated Use atomicRearrange instead */
   getStagedAllocation: () => Allocation;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
+  /** @deprecated Use atomicRearrange instead */
   hasStagedAllocation: () => boolean;
   isOfferSafe: (newAllocation: Allocation) => boolean;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
+  /** @deprecated Use atomicRearrange instead */
   incrementBy: (
     amountKeywordRecord: AmountKeywordRecord,
   ) => AmountKeywordRecord;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
+  /** @deprecated Use atomicRearrange instead */
   decrementBy: (
     amountKeywordRecord: AmountKeywordRecord,
   ) => AmountKeywordRecord;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
+  /** @deprecated Use atomicRearrange instead */
   clear: () => void;
 };
 type ZcfSeatKit = {

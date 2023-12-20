@@ -1,8 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 /**
- * @file uses .ts syntax to be able to declare types (e.g. of kit.creatorFacet as {})
- * because "there is no JavaScript syntax for passing a a type argument"
- * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
+ * @file uses .ts syntax to be able to declare types (e.g. of kit.creatorFacet
+ *   as {}) because "there is no JavaScript syntax for passing a a type
+ *   argument"
+ *   https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 import { E } from '@endo/eventual-send';
 import { expectType } from 'tsd';

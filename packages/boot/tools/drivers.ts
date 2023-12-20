@@ -119,9 +119,7 @@ export const makeWalletFactoryDriver = async (
   });
 
   return {
-    /**
-     * Skip the provisionPool for tests
-     */
+    /** Skip the provisionPool for tests */
     async provideSmartWallet(
       walletAddress: string,
     ): Promise<ReturnType<typeof makeWalletDriver>> {

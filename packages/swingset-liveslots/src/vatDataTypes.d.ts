@@ -1,9 +1,9 @@
 /**
  * @file Types for vat-data
  *
- * Facet is a single object with methods.
- * Behavior is a description when defining a kind of what facets it will have.
- * For the non-multi defineKind, there is just one facet so it doesn't have a key.
+ *   Facet is a single object with methods. Behavior is a description when
+ *   defining a kind of what facets it will have. For the non-multi defineKind,
+ *   there is just one facet so it doesn't have a key.
  */
 import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type {
@@ -67,71 +67,67 @@ export type DefineKindOptions<C> = {
   /**
    * If provided, the `finish` function will be called after the instance is
    * made and internally registered, but before it is returned. The finish
-   * function is to do any post-intantiation initialization that should be
-   * done before exposing the object to its clients.
+   * function is to do any post-intantiation initialization that should be done
+   * before exposing the object to its clients.
    */
   finish?: (context: C) => void;
 
   /**
    * Meaningful to `makeScalarBigMapStore` and its siblings. These maker
-   * fuctions will make either virtual or durable stores, depending on
-   * this flag. Defaults to off, making virtual but not durable collections.
+   * fuctions will make either virtual or durable stores, depending on this
+   * flag. Defaults to off, making virtual but not durable collections.
    *
    * Generally, durable collections are provided with `provideDurableMapStore`
-   * and its sibling, which use this flag internally. If you do not make
-   * durable collections by other means, you can consider this as
-   * intended for internal use only.
+   * and its sibling, which use this flag internally. If you do not make durable
+   * collections by other means, you can consider this as intended for internal
+   * use only.
    */
   durable?: boolean;
 
   /**
-   * If provided, it describes the shape of all state records of instances
-   * of this kind.
+   * If provided, it describes the shape of all state records of instances of
+   * this kind.
    */
   stateShape?: { [name: string]: Pattern };
 
   /**
-   * Intended for internal use only.
-   * Should the raw methods receive their `context` argument as their first
-   * argument or as their `this` binding? For `defineDurableKind` and its
-   * siblings (including `prepareSingleton`), this defaults to off, meaning that
-   * their behavior methods receive `context` as their first argument.
-   * `prepareExoClass` and its siblings (including `prepareExo`) use
-   * this flag internally to indicate that their methods receive `context`
-   * as their `this` binding.
+   * Intended for internal use only. Should the raw methods receive their
+   * `context` argument as their first argument or as their `this` binding? For
+   * `defineDurableKind` and its siblings (including `prepareSingleton`), this
+   * defaults to off, meaning that their behavior methods receive `context` as
+   * their first argument. `prepareExoClass` and its siblings (including
+   * `prepareExo`) use this flag internally to indicate that their methods
+   * receive `context` as their `this` binding.
    */
   thisfulMethods?: boolean;
 
   /**
-   * Intended for internal use only.
-   * Only applicable if this is a class kind. A class kit kind should use
-   * `interfaceGuardKit` instead.
+   * Intended for internal use only. Only applicable if this is a class kind. A
+   * class kit kind should use `interfaceGuardKit` instead.
    *
    * If an `interfaceGuard` is provided, then the raw methods passed alongside
    * it are wrapped by a function that first checks that this method's guard
    * pattern is satisfied before calling the raw method.
    *
-   * In `defineDurableKind` and its siblings, this defaults to `undefined`.
-   * Exo classes use this internally to protect their raw class methods
-   * using the provided interface.
-   * In absence, an exo is protected anyway, while a bare kind is
-   * not (detected by `!thisfulMethods`),
+   * In `defineDurableKind` and its siblings, this defaults to `undefined`. Exo
+   * classes use this internally to protect their raw class methods using the
+   * provided interface. In absence, an exo is protected anyway, while a bare
+   * kind is not (detected by `!thisfulMethods`),
    */
   interfaceGuard?: InterfaceGuard;
 
   /**
-   * Intended for internal use only.
-   * Only applicable if this is a class kit kind. A class kind should use
-   * `interfaceGuard` instead.
+   * Intended for internal use only. Only applicable if this is a class kit
+   * kind. A class kind should use `interfaceGuard` instead.
    *
    * If an `interfaceGuardKit` is provided, then each member of the
-   * interfaceGuardKit is used to guard the corresponding facet of the
-   * class kit.
+   * interfaceGuardKit is used to guard the corresponding facet of the class
+   * kit.
    *
    * In `defineDurableKindMulti` and its siblings, this defaults to `undefined`.
-   * Exo class kits use this internally to protect their facets.
-   * In absence, an exo is protected anyway, while a bare kind is
-   * not (detected by `!thisfulMethods`),
+   * Exo class kits use this internally to protect their facets. In absence, an
+   * exo is protected anyway, while a bare kind is not (detected by
+   * `!thisfulMethods`),
    */
   interfaceGuardKit?: InterfaceGuardKit;
 };
@@ -200,8 +196,8 @@ export type VatData = {
 // in IDEs where it's used, regardless of type resolution.
 export interface PickFacet {
   /**
-   * When making a multi-facet kind, it's common to pick one facet to
-   * expose. E.g.,
+   * When making a multi-facet kind, it's common to pick one facet to expose.
+   * E.g.,
    *
    *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
    *
