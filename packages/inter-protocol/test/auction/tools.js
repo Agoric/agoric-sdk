@@ -13,9 +13,9 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 /**
  * @typedef {{
  *   autoRefund: Installation<
- *     import('@agoric/zoe/src/contracts/automaticRefund').start
+ *     import('@agoric/zoe/src/contracts/automaticRefund.js').start
  *   >;
- *   auctioneer: Installation<import('../../src/auction/auctioneer').start>;
+ *   auctioneer: Installation<import('../../src/auction/auctioneer.js').start>;
  *   governor: Installation<
  *     import('@agoric/governance/src/contractGovernor.js')['start']
  *   >;

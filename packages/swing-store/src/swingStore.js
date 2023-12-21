@@ -17,18 +17,18 @@ import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
 
 /**
- * @typedef { import('./kvStore').KVStore } KVStore
+ * @typedef { import('./kvStore.js').KVStore } KVStore
  *
- * @typedef { import('./snapStore').SnapStore } SnapStore
- * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
+ * @typedef { import('./snapStore.js').SnapStore } SnapStore
+ * @typedef { import('./snapStore.js').SnapshotResult } SnapshotResult
  *
- * @typedef { import('./transcriptStore').TranscriptStore } TranscriptStore
- * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
+ * @typedef { import('./transcriptStore.js').TranscriptStore } TranscriptStore
+ * @typedef { import('./transcriptStore.js').TranscriptStoreDebug } TranscriptStoreDebug
  *
- * @typedef { import('./bundleStore').BundleStore } BundleStore
- * @typedef { import('./bundleStore').BundleStoreDebug } BundleStoreDebug
+ * @typedef { import('./bundleStore.js').BundleStore } BundleStore
+ * @typedef { import('./bundleStore.js').BundleStoreDebug } BundleStoreDebug
  *
- * @typedef { import('./exporter').KVPair } KVPair
+ * @typedef { import('./exporter.js').KVPair } KVPair
  *
  * @typedef {{
  *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
@@ -49,7 +49,7 @@ import { doRepairMetadata } from './repairMetadata.js';
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
  *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
- *   repairMetadata: (exporter: import('./exporter').SwingStoreExporter) => Promise<void>,
+ *   repairMetadata: (exporter: import('./exporter.js').SwingStoreExporter) => Promise<void>,
  * }} SwingStoreHostStorage
  */
 

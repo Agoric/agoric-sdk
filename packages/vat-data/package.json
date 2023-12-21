@@ -25,8 +25,8 @@
     "@agoric/swingset-liveslots": "^0.10.2"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.59",
-    "@endo/ses-ava": "^0.2.43",
+    "@endo/init": "^1.0.1",
+    "@endo/ses-ava": "^1.0.1",
     "ava": "^5.3.0",
     "tsd": "^0.28.1"
   },

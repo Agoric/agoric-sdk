@@ -54,7 +54,7 @@ const setup = (t, zone, escrowValue = 0n) => {
     },
   });
 
-  /** @type {import('../src/virtual-purse').VirtualPurseController} */
+  /** @type {import('../src/virtual-purse.js').VirtualPurseController} */
   const vpcontroller = zone.exo('TestController', undefined, {
     getBalances(b) {
       t.is(b, brand);

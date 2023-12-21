@@ -75,7 +75,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
- *   import('../econCommitteeCharter')['start']
+ *   import('../econCommitteeCharter.js')['start']
  * >} EconCharterStartResult
  */
 /**

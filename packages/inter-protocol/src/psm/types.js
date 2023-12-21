@@ -1,3 +1,3 @@
 // @jessie-check
 
-/** @typedef {import('./psm').PsmPublicFacet} PsmPublicFacet */
+/** @typedef {import('./psm.js').PsmPublicFacet} PsmPublicFacet */

@@ -81,7 +81,7 @@ export function makeStartXSnap(options) {
     };
   }
 
-  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
+  /** @type { import('@agoric/xsnap/src/xsnap.js').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
     fs: { ...fs, ...fs.promises, tmpName },

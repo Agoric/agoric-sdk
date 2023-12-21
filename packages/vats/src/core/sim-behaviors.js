@@ -39,7 +39,7 @@ export const grantRunBehaviors = async ({
 };
 harden(grantRunBehaviors);
 
-/** @type {import('./lib-boot').BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
   [installSimEgress.name]: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },

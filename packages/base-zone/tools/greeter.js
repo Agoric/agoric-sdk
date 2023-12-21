@@ -44,7 +44,6 @@ export const GreeterWithAdminI = M.interface('GreeterWithAdmin', {
  */
 export const prepareGreeterSingleton = (zone, label, nick) => {
   const myThis = Object.freeze({ state: { nick } });
-  // @ts-expect-error Until https://github.com/endojs/endo/pull/1771
   return zone.exo(label, GreeterWithAdminI, {
     ...bindAllMethodsTo(greetFacet, myThis),
     ...bindAllMethodsTo(adminFacet, myThis),
@@ -55,7 +54,6 @@ export const prepareGreeterSingleton = (zone, label, nick) => {
  * @param {import('../src/types.js').Zone} zone
  */
 export const prepareGreeter = zone =>
-  // @ts-expect-error Until https://github.com/endojs/endo/pull/1771
   zone.exoClass('Greeter', GreeterWithAdminI, nick => ({ nick }), {
     ...greetFacet,
     ...adminFacet,

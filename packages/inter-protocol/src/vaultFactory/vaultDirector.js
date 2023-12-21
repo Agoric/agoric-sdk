@@ -69,7 +69,7 @@ const trace = makeTracer('VD', true);
  *   state: State;
  * }>} MethodContext
  *
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').TypedParamManager<
  *     import('./params.js').VaultDirectorParams
  *   >} VaultDirectorParamManager
  */

@@ -13,7 +13,7 @@ import {
   normalizedCollRatio,
 } from './storeUtils.js';
 
-/** @typedef {import('./vault').Vault} Vault */
+/** @typedef {import('./vault.js').Vault} Vault */
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
 const trace = makeTracer('PVaults', true);

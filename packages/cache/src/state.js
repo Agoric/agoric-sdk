@@ -30,7 +30,7 @@ export const makeState = (value, priorState = GROUND_STATE) =>
 /**
  * Wrap a state store to have a default value using the GROUND_STATE
  *
- * @param {MapStore<string, import('./state').State>} stateStore
+ * @param {MapStore<string, import('./state.js').State>} stateStore
  */
 export const withGroundState = stateStore => ({
   ...stateStore,

@@ -6,7 +6,7 @@ import { Buffer } from 'buffer';
  * 'stream/consumers' package, which unfortunately only exists in newer versions
  * of Node.
  *
- * @param {import('./exporter').AnyIterable<Uint8Array>} inStream
+ * @param {import('./exporter.js').AnyIterable<Uint8Array>} inStream
  */
 export const buffer = async inStream => {
   const chunks = [];

@@ -160,7 +160,7 @@ const makeCloseOffer = ({ brand }, opts, previousOffer) => {
 /**
  * @param {string} vaultId
  * @param {Promise<
- *   import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord
+ *   import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
  * >} currentP
  * @returns {Promise<string>} offer id in which the vault was made
  */

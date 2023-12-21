@@ -35,7 +35,7 @@ const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *   GovernanceTerms<import('./params.js').VaultDirectorParams> & {
  *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;

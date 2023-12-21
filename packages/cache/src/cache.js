@@ -12,7 +12,7 @@ import { makeScalarStoreCoordinator } from './store.js';
  */
 
 /**
- * @param {ERef<import('./types').Coordinator>} [coordinator]
+ * @param {ERef<import('./types.js').Coordinator>} [coordinator]
  */
 export const makeCache = (coordinator = makeScalarStoreCoordinator()) => {
   /**

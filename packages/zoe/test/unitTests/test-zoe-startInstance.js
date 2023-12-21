@@ -23,24 +23,35 @@ test('bad installation', async t => {
 
 function isEmptyFacet(t, facet) {
   t.is(passStyleOf(facet), 'remotable');
-  t.deepEqual(Object.getOwnPropertyNames(facet), []);
+  t.deepEqual(
+    Object.getOwnPropertyNames(facet).filter(name => !name.startsWith('__')),
+    [],
+  );
 }
 
 function facetHasMethods(t, facet, names) {
   t.is(passStyleOf(facet), 'remotable');
-  t.deepEqual(Object.getOwnPropertyNames(facet), names);
+  t.deepEqual(
+    Object.getOwnPropertyNames(facet).filter(name => !name.startsWith('__')),
+    names,
+  );
 }
 
 test('no issuerKeywordRecord, no terms', async t => {
   const result = await setupZCFTest();
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result.startInstanceResult).sort(), [
-    'adminFacet',
-    'creatorFacet',
-    'creatorInvitation',
-    'instance',
-    'publicFacet',
-  ]);
+  t.deepEqual(
+    Object.getOwnPropertyNames(result.startInstanceResult)
+      .filter(name => !name.startsWith('__'))
+      .sort(),
+    [
+      'adminFacet',
+      'creatorFacet',
+      'creatorInvitation',
+      'instance',
+      'publicFacet',
+    ],
+  );
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
   facetHasMethods(t, result.startInstanceResult.publicFacet, [
@@ -54,21 +65,27 @@ test('promise for installation', async t => {
 
   const result = await startInstanceResult;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
-    'adminFacet',
-    'creatorFacet',
-    'creatorInvitation',
-    'instance',
-    'publicFacet',
-  ]);
+  t.deepEqual(
+    Object.getOwnPropertyNames(result)
+      .filter(name => !name.startsWith('__'))
+      .sort(),
+    [
+      'adminFacet',
+      'creatorFacet',
+      'creatorInvitation',
+      'instance',
+      'publicFacet',
+    ],
+  );
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
   facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getStringMethodNames(result.adminFacet), [
-    'getVatShutdownPromise',
-    'restartContract',
-    'upgradeContract',
-  ]);
+  t.deepEqual(
+    getStringMethodNames(result.adminFacet).filter(
+      name => !name.startsWith('__'),
+    ),
+    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
+  );
 });
 
 test('terms, issuerKeywordRecord switched', async t => {

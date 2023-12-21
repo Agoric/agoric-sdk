@@ -28,12 +28,12 @@
  *
  * @property {InstallBundle} install
  * @property {InstallBundleID} installBundleID
- * @property {import('./utils').StartInstance} startInstance
+ * @property {import('./utils.js').StartInstance} startInstance
  * @property {Offer} offer
- * @property {import('./utils').GetPublicFacet} getPublicFacet
+ * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
- * @property {import('./utils').GetTerms} getTerms
+ * @property {import('./utils.js').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
@@ -66,19 +66,19 @@
 
 /**
  * @callback GetIssuers
- * @param {import('./utils').Instance<any>} instance
+ * @param {import('./utils.js').Instance<any>} instance
  * @returns {Promise<IssuerKeywordRecord>}
  */
 
 /**
  * @callback GetBrands
- * @param {import('./utils').Instance<any>} instance
+ * @param {import('./utils.js').Instance<any>} instance
  * @returns {Promise<BrandKeywordRecord>}
  */
 
 /**
  * @callback GetOfferFilter
- * @param {import('./utils').Instance<any>} instance
+ * @param {import('./utils.js').Instance<any>} instance
  * @returns {string[]}
  */
 
@@ -90,14 +90,14 @@
 
 /**
  * @callback GetInstallationForInstance
- * @param {import('./utils').Instance<any>} instance
+ * @param {import('./utils.js').Instance<any>} instance
  * @returns {Promise<Installation>}
  */
 
 /**
  * @callback GetInstance
  * @param {ERef<Invitation>} invitation
- * @returns {Promise<import('./utils').Instance<any>>}
+ * @returns {Promise<import('./utils.js').Instance<any>>}
  */
 
 /**
@@ -271,7 +271,7 @@
  */
 
 /**
- * @typedef {import('./utils').Instance<any>} Instance
+ * @typedef {import('./utils.js').Instance<any>} Instance
  */
 
 /**
@@ -295,7 +295,7 @@
 /**
  * @typedef {object} InvitationDetails
  * @property {Installation} installation
- * @property {import('./utils').Instance<any>} instance
+ * @property {import('./utils.js').Instance<any>} instance
  * @property {InvitationHandle} handle
  * @property {string} description
  * @property {Record<string, any>} [customDetails]
@@ -303,12 +303,12 @@
 
 /**
  * @template [SF=any] contract start function
- * @typedef {import('./utils').Installation<SF>} Installation
+ * @typedef {import('./utils.js').Installation<SF>} Installation
  */
 
 /**
  * @template {Installation} I
- * @typedef {import('./utils').InstallationStart<I>} InstallationStart
+ * @typedef {import('./utils.js').InstallationStart<I>} InstallationStart
  */
 
 /**
