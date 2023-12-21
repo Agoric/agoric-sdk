@@ -712,6 +712,7 @@ export function makeCollectionManager(
       addAllToMap,
       set,
       delete: del,
+      clear: raw.clear, // -- warner: hack to enable one-fell-swoop gc
     };
 
     let collection;
@@ -857,7 +858,7 @@ export function makeCollectionManager(
   }
 
   function collectionToWeakMapStore(collection) {
-    const { has, get, init, set, delete: del, addAllToMap } = collection;
+    const { has, get, init, set, delete: del, addAllToMap, clear } = collection;
     const weakMapStore = {
       has,
       get,
@@ -865,6 +866,7 @@ export function makeCollectionManager(
       set,
       delete: del,
       addAll: addAllToMap,
+      clear,
     };
     return Far('weakMapStore', weakMapStore);
   }
