@@ -42,6 +42,7 @@ export const makeExoUtils = VatData => {
   } = VatData;
 
   /**
+   * @deprecated Use Exos/ExoClasses instead of Kinds
    * @param {Baggage} baggage
    * @param {string} kindName
    * @returns {DurableKindHandle}
@@ -325,8 +326,8 @@ export const makeExoUtils = VatData => {
     prepareExoClass,
     prepareExoClassKit,
     prepareExo,
-    prepareSingleton,
 
+    prepareSingleton,
     provideKindHandle,
     prepareKind,
     prepareKindMulti,
