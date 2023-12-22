@@ -494,7 +494,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                 },
                 fail: _reason => {
                   trace('fail', _reason);
-                  facets.helper.observeQuoteNotifier();
+
+                  // set this to empty and wait a while before restarting
+                  state.updatingOracleQuote = makeRatioFromAmounts(
+                    makeEmpty(bidBrand),
+                    AmountMath.make(collateralBrand, 1n),
+                  );
                 },
                 finish: _done => {
                   trace('finish', _done);
@@ -668,8 +673,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { facets, state } = this;
 
           trace(`capturing oracle price `, state.updatingOracleQuote);
-          state.capturedPriceForRound = state.updatingOracleQuote;
-          void facets.helper.publishBookData();
+          if (!AmountMath.isEmpty(state.updatingOracleQuote.numerator)) {
+            state.capturedPriceForRound = state.updatingOracleQuote;
+            void facets.helper.publishBookData();
+          } else {
+            // if the price has feed has died, try restarting it.
+            facets.helper.observeQuoteNotifier();
+          }
         },
 
         setStartingRate(rate) {
