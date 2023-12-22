@@ -63,6 +63,8 @@ import { doRepairMetadata } from './repairMetadata.js';
  * @typedef {{
  *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump,
  *   serialize: () => Buffer,
+ *   setUseTranscriptCompression: (mode: boolean) => void,
+ *   compressSpan: (vatID: string, startPos: number, endPos: number, incarnation: number) => void,
  * }} SwingStoreDebugTools
  *
  * @typedef {{
@@ -597,6 +599,8 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     serialize,
     dump,
     getDatabase,
+    setUseTranscriptCompression: transcriptStore.setUseTranscriptCompression,
+    compressSpan: transcriptStore.compressSpan,
   };
 
   return harden({

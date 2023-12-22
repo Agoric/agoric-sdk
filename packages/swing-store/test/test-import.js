@@ -119,12 +119,16 @@ const importTest = test.macro(async (t, mode) => {
   ts = ts.concat(['load-snapshot', 'delivery3']); // 8,9
 
   let tsStart;
+  let tsCompressedStarts;
   if (artifactMode === 'archival' || artifactMode === 'debug') {
     tsStart = 0;
+    tsCompressedStarts = [0, 2, 5];
   } else if (artifactMode === 'replay') {
     tsStart = 2;
+    tsCompressedStarts = [2, 5];
   } else {
     tsStart = 8;
+    tsCompressedStarts = [];
   }
 
   const expectedTranscript = convertTranscript(ts, tsStart);
@@ -158,6 +162,23 @@ const importTest = test.macro(async (t, mode) => {
   t.deepEqual(
     spanRows.map(sr => sr.startPos),
     [0, 2, 5, 8],
+  );
+
+  // and confirm compressed and uncompressed transcript items
+  const itemRows = [
+    ...db.prepare('SELECT * FROM transcriptItems ORDER BY position').iterate(),
+  ];
+  t.deepEqual(itemRows, [
+    { vatID: 'v1', position: 8, item: 'load-snapshot', incarnation: 1 },
+    { vatID: 'v1', position: 9, item: 'delivery3', incarnation: 1 },
+  ]);
+  const compressedSpanRows = [
+    // prettier-ignore
+    ...db.prepare('SELECT * FROM transcriptCompressedSpans ORDER BY startPos').iterate(),
+  ];
+  t.deepEqual(
+    compressedSpanRows.map(sr => sr.startPos),
+    tsCompressedStarts,
   );
 
   // and a new export should include all metadata, regardless of import mode
