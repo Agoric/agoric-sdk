@@ -41,6 +41,7 @@
     "@endo/marshal": "^1.0.1",
     "@endo/promise-kit": "^1.0.1",
     "@endo/stream": "^1.0.1",
+    "agoric": "workspace:*",
     "import-meta-resolve": "^2.2.1"
   },
   "devDependencies": {
