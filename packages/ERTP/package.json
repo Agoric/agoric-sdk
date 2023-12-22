@@ -68,9 +68,9 @@
     "exclude": [
       "swingsetTests",
       "# fast-check unsupported",
-      "test/unitTests/test-amountProperties.js",
-      "test/unitTests/test-inputValidation.js",
-      "test/unitTests/test-issuerObj.js"
+      "test/unitTests/amountProperties.test.js",
+      "test/unitTests/inputValidation.test.js",
+      "test/unitTests/issuerObj.test.js"
     ]
   },
   "ava": {
