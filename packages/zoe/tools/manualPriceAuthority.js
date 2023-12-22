@@ -18,7 +18,7 @@ import {
  * @param {Ratio} options.initialPrice
  * @param {import('@agoric/time').TimerService} options.timer
  * @param {IssuerKit<'set'>} [options.quoteIssuerKit]
- * @returns {PriceAuthority & { setPrice: (Ratio) => void }}
+ * @returns {PriceAuthority & { setPrice: (Ratio) => void; disable: () => void }}
  */
 export function makeManualPriceAuthority(options) {
   const {
@@ -32,6 +32,7 @@ export function makeManualPriceAuthority(options) {
 
   /** @type {Ratio} */
   let currentPrice = initialPrice;
+  let disabled = false;
 
   const { notifier, updater } = makeNotifierKit();
   updater.updateState(currentPrice);
@@ -52,6 +53,9 @@ export function makeManualPriceAuthority(options) {
   };
 
   function createQuote(priceQuery) {
+    if (disabled) {
+      throw Error('disabled');
+    }
     const quote = priceQuery(calcAmountOut, calcAmountIn);
     if (!quote) {
       return undefined;
@@ -85,6 +89,10 @@ export function makeManualPriceAuthority(options) {
       currentPrice = newPrice;
       updater.updateState(currentPrice);
       fireTriggers(createQuote);
+    },
+    disable: () => {
+      disabled = true;
+      updater.updateState(false);
     },
     ...priceAuthority,
   });

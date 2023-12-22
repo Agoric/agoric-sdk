@@ -468,6 +468,44 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           });
           return state.bookDataKit.recorder.write(bookData);
         },
+        observeQuoteNotifier() {
+          const { state, facets } = this;
+          const { collateralBrand, bidBrand, priceAuthority } = state;
+          assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
+
+          trace('observing');
+
+          void E.when(
+            E(collateralBrand).getDisplayInfo(),
+            ({ decimalPlaces = DEFAULT_DECIMALS }) => {
+              // TODO(#6946) use this to keep a current price that can be published in state.
+              const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+                AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
+                bidBrand,
+              );
+              void observeNotifier(quoteNotifier, {
+                updateState: quote => {
+                  trace(
+                    `BOOK notifier ${priceFrom(quote).numerator.value}/${
+                      priceFrom(quote).denominator.value
+                    }`,
+                  );
+                  state.updatingOracleQuote = priceFrom(quote);
+                },
+                fail: _reason => {
+                  trace('fail', _reason);
+                  facets.helper.observeQuoteNotifier();
+                },
+                finish: _done => {
+                  trace('finish', _done);
+                  facets.helper.observeQuoteNotifier();
+                },
+              });
+            },
+          );
+
+          void facets.helper.publishBookData();
+        },
       },
       self: {
         /**
@@ -729,37 +767,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
       finish: ({ state, facets }) => {
         const { collateralBrand, bidBrand, priceAuthority } = state;
         assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
-        void E.when(
-          E(collateralBrand).getDisplayInfo(),
-          ({ decimalPlaces = DEFAULT_DECIMALS }) => {
-            // TODO(#6946) use this to keep a current price that can be published in state.
-            const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-              AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
-              bidBrand,
-            );
-            void observeNotifier(quoteNotifier, {
-              updateState: quote => {
-                trace(
-                  `BOOK notifier ${priceFrom(quote).numerator.value}/${
-                    priceFrom(quote).denominator.value
-                  }`,
-                );
-                state.updatingOracleQuote = priceFrom(quote);
-              },
-              fail: reason => {
-                throw Error(
-                  `auction observer of ${collateralBrand} failed: ${reason}`,
-                );
-              },
-              finish: done => {
-                throw Error(
-                  `auction observer for ${collateralBrand} died: ${done}`,
-                );
-              },
-            });
-          },
-        );
-        void facets.helper.publishBookData();
+
+        facets.helper.observeQuoteNotifier();
       },
       stateShape: AuctionBookStateShape,
     },
