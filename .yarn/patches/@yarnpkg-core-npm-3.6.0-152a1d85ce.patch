@@ -1,0 +1,16 @@
+diff --git a/lib/miscUtils.js b/lib/miscUtils.js
+index 15f03713c8d6786f27f13d5c33ba67a68172e463..79335e4619eed3d2424b80d4578868ddae29791c 100644
+--- a/lib/miscUtils.js
++++ b/lib/miscUtils.js
+@@ -259,7 +259,10 @@ exports.DefaultStream = DefaultStream;
+ // Webpack has this annoying tendency to replace dynamic requires by a stub
+ // code that simply throws when called. It's all fine and dandy in the context
+ // of a web application, but is quite annoying when working with Node projects!
+-const realRequire = eval(`require`);
++// const realRequire = eval(`require`);
++// XXX compatibility with SES, which errors above:
++//   "require is not defined in ES module scope, you can use import instead"
++const realRequire = require;
+ function dynamicRequireNode(path) {
+     return realRequire(fslib_1.npath.fromPortablePath(path));
+ }

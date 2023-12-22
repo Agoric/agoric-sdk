@@ -67,6 +67,8 @@
     "@endo/patterns": "^1.0.1",
     "@endo/promise-kit": "^1.0.1",
     "@iarna/toml": "^2.2.3",
+    "@yarnpkg/cli": "^3.7.0",
+    "@yarnpkg/core": "^3.6.0",
     "anylogger": "^0.21.0",
     "chalk": "^5.2.0",
     "commander": "^10.0.0",

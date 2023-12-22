@@ -95,6 +95,7 @@
     "protobufjs@^6.8.8": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
     "protobufjs@~6.11.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
     "protobufjs@~6.11.2": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
-    "protobufjs@^6.10.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch"
+    "protobufjs@^6.10.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "@yarnpkg/core@^3.6.0": "patch:@yarnpkg/core@npm%3A3.6.0#./.yarn/patches/@yarnpkg-core-npm-3.6.0-152a1d85ce.patch"
   }
 }

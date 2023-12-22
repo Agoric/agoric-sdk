@@ -3,7 +3,7 @@
 import { basename } from 'path';
 import { listWorkspaces } from '../src/lib/yarn.js';
 
-const workspaces = listWorkspaces();
+const workspaces = await listWorkspaces();
 
 const packageNames = workspaces.map(w => w.name);
 
