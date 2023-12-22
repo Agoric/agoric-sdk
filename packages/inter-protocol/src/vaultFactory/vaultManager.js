@@ -69,6 +69,38 @@ const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
+/**
+ * Watch a notifier that isn't expected to fail or finish unless the vat hosting
+ * the notifier is upgraded. This watcher supports that by providing a
+ * straightforward way to get a replacement if the notifier breaks.
+ *
+ * @template T notifier topic
+ * @template {any[]} [A=unknown[]] arbitrary arguments
+ * @param {ERef<LatestTopic<T>>} notifierP
+ * @param {import('@agoric/swingset-liveslots').PromiseWatcher<T, A>} watcher
+ * @param {A} args
+ */
+export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
+  await undefined;
+
+  let updateCount;
+  for (;;) {
+    let value;
+    try {
+      ({ value, updateCount } = await E(notifierP).getUpdateSince(updateCount));
+      watcher.onFulfilled && watcher.onFulfilled(value, ...args);
+    } catch (e) {
+      watcher.onRejected && watcher.onRejected(e, ...args);
+      break;
+    }
+    if (updateCount === undefined) {
+      watcher.onRejected &&
+        watcher.onRejected(Error('stream finished'), ...args);
+      break;
+    }
+  }
+};
+
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 /** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
 
@@ -355,13 +387,7 @@ export const prepareVaultManagerKit = (
         start() {
           const { state, facets } = this;
           trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
-          const {
-            collateralBrand,
-            collateralUnit,
-            debtBrand,
-            storageNode,
-            unsettledVaults,
-          } = state;
+          const { collateralBrand, unsettledVaults } = state;
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
@@ -394,7 +420,17 @@ export const prepareVaultManagerKit = (
             },
           });
 
-          trace('helper.start() making quoteNotifier from', priceAuthority);
+          void facets.helper.observeQuoteNotifier();
+
+          trace('helper.start() done');
+        },
+        observeQuoteNotifier() {
+          const { state, facets } = this;
+
+          const { collateralBrand, collateralUnit, debtBrand, storageNode } =
+            state;
+          const ephemera = collateralEphemera(collateralBrand);
+
           const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
             collateralUnit,
             debtBrand,
@@ -404,20 +440,22 @@ export const prepareVaultManagerKit = (
             E(storageNode).makeChildNode('quotes'),
             marshaller,
           );
-          trace('helper.start() awaiting observe storedQuotesNotifier');
+          trace(
+            'helper.start() awaiting observe storedQuotesNotifier',
+            collateralBrand,
+          );
           // NB: upon restart, there may not be a price for a while. If manager
-          // operations are permitted, ones the depend on price information will
-          // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
-          void observeNotifier(quoteNotifier, {
-            updateState(value) {
-              trace('storing new quote', value.quoteAmount.value);
+          // operations are permitted, ones that depend on price information
+          // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
+          const quoteWatcher = harden({
+            onFulfilled(value) {
               ephemera.storedCollateralQuote = value;
             },
-            fail(reason) {
-              console.error('quoteNotifier failed to iterate', reason);
+            onRejected() {
+              facets.helper.observeQuoteNotifier();
             },
           });
-          trace('helper.start() done');
+          void watchQuoteNotifier(quoteNotifier, quoteWatcher);
         },
         /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
@@ -788,7 +826,7 @@ export const prepareVaultManagerKit = (
           const { collateralBrand } = this.state;
           const { storedCollateralQuote } = collateralEphemera(collateralBrand);
           if (!storedCollateralQuote)
-            throw Fail`maxDebtFor called before a collateral quote was available`;
+            throw Fail`maxDebtFor called before a collateral quote was available for ${collateralBrand}`;
           // use the lower price to prevent vault adjustments that put them imminently underwater
           const collateralPrice = minimumPrice(
             storedCollateralQuote,

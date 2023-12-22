@@ -9,6 +9,8 @@ export const defaultProposalBuilder = async () => {
     'feeDistributor',
     // skip so vaultManager can have prices upon restart; these have been tested as restartable
     'scaledPriceAuthority-ATOM',
+    // If this is killed, and the above is left alive, quoteNotifier throws
+    'ATOM-USD_price_feed',
   ];
 
   return harden({
