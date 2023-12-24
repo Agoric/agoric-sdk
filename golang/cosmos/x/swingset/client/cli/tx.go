@@ -229,7 +229,7 @@ func NewCmdSubmitCoreEvalProposal() *cobra.Command {
 Specify at least one pair of permit.json and code.js files`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args)%2 != 0 {
-				return fmt.Errorf("must specify an even number of permit.json and code.js files")
+				return fmt.Errorf("must specify paired permit.json and code.js files")
 			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)

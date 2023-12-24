@@ -23,7 +23,7 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			return queryState(ctx, path[1:], req, k, legacyQuerierCdc)
 
 		default:
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
+			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown vbank query path")
 		}
 	}
 }
