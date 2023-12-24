@@ -708,6 +708,19 @@ export default function makeKernelKeeper(
     return owner;
   }
 
+  function retireKernelObjects(koids) {
+    Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
+    const newActions = [];
+    for (const koid of koids) {
+      const importers = getImporters(koid);
+      for (const vatID of importers) {
+        newActions.push(`${vatID} retireImport ${koid}`);
+      }
+      deleteKernelObject(koid);
+    }
+    addGCActions(newActions);
+  }
+
   function orphanKernelObject(kref, oldVat) {
     const ownerKey = `${kref}.owner`;
     const ownerVat = kvStore.get(ownerKey);
@@ -1823,6 +1836,7 @@ export default function makeKernelKeeper(
     kernelObjectExists,
     getImporters,
     orphanKernelObject,
+    retireKernelObjects,
     deleteKernelObject,
     pinObject,
 
