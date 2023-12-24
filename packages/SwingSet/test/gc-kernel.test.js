@@ -1157,12 +1157,8 @@ test('terminated vat', async t => {
   c.queueToVatRoot('bootstrap', 'drop', [], 'panic');
   await c.run();
 
-  // TODO: however, for some reason neither Node.js nor XS actually drops
-  // 'doomedExport1Presence', despite it clearly going out of scope. I don't
-  // know why. Until we can find way to make it drop, this check is commented
-  // out.
   [refcounts, owners] = getRefCountsAndOwners();
-  // t.is(refcounts[doomedExport1Kref], undefined);
+  t.is(refcounts[doomedExport1Kref], undefined);
   t.falsy(owners[doomedExport1Kref]);
 
   t.is(refcounts[doomedExport2Kref], undefined);
