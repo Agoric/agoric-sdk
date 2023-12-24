@@ -56,7 +56,8 @@
   "homepage": "https://github.com/Agoric/agoric#readme",
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.js",
+      "test/**/*.test.ts"
     ],
     "require": [
       "@endo/init/debug.js"

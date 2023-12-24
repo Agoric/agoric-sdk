@@ -43,6 +43,10 @@
   "ava": {
     "require": [
       "@endo/init/debug.js"
+    ],
+    "files": [
+      "test/**/*.test.js",
+      "test/**/*.test.ts"
     ]
   },
   "files": [

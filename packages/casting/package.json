@@ -54,7 +54,8 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.js",
+      "test/**/*.test.ts"
     ],
     "timeout": "20m",
     "workerThreads": false
