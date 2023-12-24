@@ -95,7 +95,7 @@ export const MAKE_DEFAULT_DECODER = () => {
 /**
  * Unserialize the JSONable data.
  *
- * @type {() => import('./types').Unserializer}
+ * @type {() => import('./types.js').Unserializer}
  */
 export const MAKE_DEFAULT_UNSERIALIZER = () => {
   const ifaceAllegedPrefix = 'Alleged: ';

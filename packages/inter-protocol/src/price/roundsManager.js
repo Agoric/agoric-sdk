@@ -1,7 +1,7 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { TimeMath } from '@agoric/time';
+import { TimeMath, TimestampShape } from '@agoric/time';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   calculateMedian,
@@ -98,19 +98,25 @@ export const prepareRoundsManagerKit = baggage =>
     'RoundsManager',
     {
       helper: UnguardedHelperI,
-      contract: M.interface(
-        'contract',
-        {
-          authenticateQuote: M.call(M.any()).returns(M.any()),
-          makeCreateQuote: M.call().optional(M.any()).returns(M.any()),
-          eligibleForSpecificRound: M.call(M.any()).returns(M.boolean()),
-          getRoundData: M.call(M.any()).returns(M.promise()),
-          getRoundStatus: M.call(M.any()).returns(M.record()),
-          oracleRoundStateSuggestRound: M.call(M.any()).returns(M.record()),
-        },
-        // TODO(6571) stop sloppy
-        { sloppy: true },
-      ),
+      contract: M.interface('contract', {
+        authenticateQuote: M.call([M.record()]).returns(M.any()),
+        makeCreateQuote: M.call()
+          .optional({
+            overrideValueOut: M.number(),
+            timestamp: TimestampShape,
+          })
+          .returns(M.any()),
+        eligibleForSpecificRound: M.call(
+          M.any(),
+          M.bigint(),
+          TimestampShape,
+        ).returns(M.boolean()),
+        getRoundData: M.call(M.any()).returns(M.promise()),
+        getRoundStatus: M.call(M.bigint()).returns(M.record()),
+        oracleRoundStateSuggestRound: M.call(M.any(), TimestampShape).returns(
+          M.record(),
+        ),
+      }),
       oracle: M.interface('oracle', {
         handlePush: M.call(M.record(), M.record()).returns(M.promise()),
       }),

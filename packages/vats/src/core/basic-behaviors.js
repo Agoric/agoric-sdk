@@ -697,7 +697,7 @@ export const addBankAssets = async ({
 };
 harden(addBankAssets);
 
-/** @type {import('./lib-boot').BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {

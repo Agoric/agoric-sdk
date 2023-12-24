@@ -56,7 +56,7 @@ const prepareSpecializedNameAdmin = zone => {
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?
 
-        /** @type {import('./types').MyAddressNameAdmin} */
+        /** @type {import('./types.js').MyAddressNameAdmin} */
         // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
         // @ts-ignore cast
         const myAdmin = nameAdmin.lookupAdmin(address);

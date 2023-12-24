@@ -255,7 +255,7 @@ export function makeVatWarehouse({
   // console.debug('makeVatWarehouse', { warehousePolicy });
 
   /**
-   * @typedef { ReturnType<typeof import('./vatTranslator').makeVatTranslators> } VatTranslators
+   * @typedef { ReturnType<typeof import('./vatTranslator.js').makeVatTranslators> } VatTranslators
    * @typedef {{
    *   manager: VatManager,
    *   translators: VatTranslators,

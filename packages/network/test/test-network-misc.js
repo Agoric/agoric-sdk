@@ -18,10 +18,10 @@ const log = false ? console.log : () => {};
 
 /**
  * @param {any} t
- * @returns {import('../src').ProtocolHandler} A testing handler
+ * @returns {import('../src.js').ProtocolHandler} A testing handler
  */
 const makeProtocolHandler = t => {
-  /** @type {import('../src').ListenHandler} */
+  /** @type {import('../src.js').ListenHandler} */
   let l;
   let lp;
   let nonce = 0;
@@ -109,7 +109,7 @@ test('protocol connection listen', async t => {
 
   const port = await protocol.bind('/net/ordered/ordered/some-portname');
 
-  /** @type {import('../src').ListenHandler} */
+  /** @type {import('../src.js').ListenHandler} */
   const listener = Far('listener', {
     async onListen(p, listenHandler) {
       t.is(p, port, `port is tracked in onListen`);
@@ -193,7 +193,7 @@ test('loopback protocol', async t => {
 
   const port = await protocol.bind('/loopback/foo');
 
-  /** @type {import('../src').ListenHandler} */
+  /** @type {import('../src.js').ListenHandler} */
   const listener = Far('listener', {
     async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
       return harden({

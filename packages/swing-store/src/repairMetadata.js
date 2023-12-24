@@ -25,7 +25,7 @@ import { assertComplete } from './assertComplete.js';
  * `hostStorage.commit()` when they are ready.
  *
  * @param {import('./internal.js').SwingStoreInternal} internal
- * @param {import('./exporter').SwingStoreExporter} exporter
+ * @param {import('./exporter.js').SwingStoreExporter} exporter
  * @returns {Promise<void>}
  */
 export async function doRepairMetadata(internal, exporter) {

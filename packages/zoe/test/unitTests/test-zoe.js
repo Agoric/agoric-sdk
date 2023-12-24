@@ -105,7 +105,7 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
   await t.throwsAsync(() =>
@@ -143,7 +143,7 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message:
-      /In "getPublicFacet" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      /In "getPublicFacet" method of \(ZoeService\): Expected at least 1 arguments: \[\]/,
   });
 });
 
@@ -174,7 +174,7 @@ test(`zoe.getIssuers - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message:
-      /In "getIssuers" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      /In "getIssuers" method of \(ZoeService\): Expected at least 1 arguments: \[\]/,
   });
 });
 
@@ -205,7 +205,7 @@ test(`zoe.getBrands - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message:
-      /In "getBrands" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      /In "getBrands" method of \(ZoeService\): Expected at least 1 arguments: \[\]/,
   });
 });
 
@@ -227,7 +227,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
-  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund.js').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
@@ -261,7 +261,7 @@ test(`zoe.getTerms - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message:
-      /In "getTerms" method of \(ZoeService\): arg 0: .*"\[undefined\]" - Must be a remotable/,
+      /In "getTerms" method of \(ZoeService\): Expected at least 1 arguments: \[\]/,
   });
 });
 

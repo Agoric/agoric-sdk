@@ -11,12 +11,12 @@ import { makeCastingSpec } from './casting-spec.js';
 
 /**
  * @template T
- * @param {ERef<import('./types').CastingSpec>} spec
+ * @param {ERef<import('./types.js').CastingSpec>} spec
  */
 const makeSubscriptionFollower = spec => {
   const transform = value =>
     harden({ value, blockHeight: NaN, currentBlockHeight: NaN });
-  /** @type {import('./types').Follower<import('./types.js').ValueFollowerElement<T>>} */
+  /** @type {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} */
   const follower = Far('subscription/notifier follower', {
     getLatestIterable: async () => {
       const { notifier, subscription } = await spec;
@@ -53,10 +53,10 @@ const makeSubscriptionFollower = spec => {
 
 /**
  * @template T
- * @param {ERef<import('./types').CastingSpec> | string} specP
- * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
- * @param {import('./types').FollowerOptions} [options]
- * @returns {Promise<import('./follower-cosmjs').ValueFollower<T>>}
+ * @param {ERef<import('./types.js').CastingSpec> | string} specP
+ * @param {import('./types.js').LeaderOrMaker} [leaderOrMaker]
+ * @param {import('./types.js').FollowerOptions} [options]
+ * @returns {Promise<import('./follower-cosmjs.js').ValueFollower<T>>}
  */
 export const makeFollower = async (specP, leaderOrMaker, options) => {
   const spec = await makeCastingSpec(specP);

@@ -10,7 +10,7 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
 
 /**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteCommitteeMembers = async (
@@ -51,7 +51,7 @@ export const inviteCommitteeMembers = async (
 
 harden(inviteCommitteeMembers);
 
-/** @param {import('./econ-behaviors').EconomyBootstrapPowers} powers */
+/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
 export const startEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -72,7 +72,7 @@ export const startEconCharter = async ({
     }),
   );
 
-  /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
+  /** @type {Promise<import('./econ-behaviors.js').EconCharterStartResult>} */
   const startResult = E(zoe).startInstance(
     charterInstall,
     undefined,
@@ -88,7 +88,7 @@ harden(startEconCharter);
 /**
  * Introduce charter to governed creator facets.
  *
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
   consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
@@ -126,7 +126,7 @@ export const addGovernorsToEconCharter = async ({
 harden(addGovernorsToEconCharter);
 
 /**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> } }} param1
  */
 export const inviteToEconCharter = async (

@@ -4,7 +4,7 @@ import { assert } from '@agoric/assert';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
 
 /**
  * @typedef {object} OfferHelperConfig

@@ -17,10 +17,10 @@ import { assertComplete } from './assertComplete.js';
  * returned swingStore is not suitable for execution, and thus only contains
  * the host facet for committing the populated swingStore.
  *
- * @param {import('./exporter').SwingStoreExporter} exporter
+ * @param {import('./exporter.js').SwingStoreExporter} exporter
  * @param {string | null} [dirPath]
  * @param {ImportSwingStoreOptions} [options]
- * @returns {Promise<Pick<import('./swingStore').SwingStore, 'hostStorage' | 'debug'>>}
+ * @returns {Promise<Pick<import('./swingStore.js').SwingStore, 'hostStorage' | 'debug'>>}
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath && typeof dirPath !== 'string') {

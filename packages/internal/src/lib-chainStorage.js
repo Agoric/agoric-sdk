@@ -130,7 +130,7 @@ export const prepareChainStorageNode = zone => {
   /**
    * Create a storage node for a given backing storage interface and path.
    *
-   * @param {import('./callback').Callback<(message: StorageMessage) => any>} messenger a callback
+   * @param {import('./callback.js').Callback<(message: StorageMessage) => any>} messenger a callback
    * for sending a storageMessage object to the storage implementation
    * (cf. golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
@@ -145,7 +145,7 @@ export const prepareChainStorageNode = zone => {
     'ChainStorageNode',
     ChainStorageNodeI,
     /**
-     * @param {import('./callback').Callback<(message: StorageMessage) => any>} messenger
+     * @param {import('./callback.js').Callback<(message: StorageMessage) => any>} messenger
      * @param {string} path
      * @param {object} [options]
      * @param {boolean} [options.sequence]
