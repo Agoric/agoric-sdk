@@ -178,16 +178,7 @@ export function makeKernelSyscallHandler(tools) {
 
   function retireExports(koids) {
     Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
-    const newActions = [];
-    for (const koid of koids) {
-      const importers = kernelKeeper.getImporters(koid);
-      for (const vatID of importers) {
-        newActions.push(`${vatID} retireImport ${koid}`);
-      }
-      // TODO: decref and delete any #2069 auxdata
-      kernelKeeper.deleteKernelObject(koid);
-    }
-    kernelKeeper.addGCActions(newActions);
+    kernelKeeper.retireKernelObjects(koids);
     return OKNULL;
   }
 
