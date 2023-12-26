@@ -58,7 +58,7 @@ const test = anyTest;
 
 const trace = makeTracer('Test AuctContract', false);
 
-const defaultParams = {
+const defaultParams = harden({
   StartFrequency: 40n,
   ClockStep: 5n,
   StartingRate: 10500n,
@@ -66,7 +66,7 @@ const defaultParams = {
   DiscountStep: 2000n,
   AuctionStartDelay: 10n,
   PriceLockPeriod: 3n,
-};
+});
 
 const makeTestContext = async () => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
@@ -1205,7 +1205,7 @@ test.serial('add assets to open auction', async t => {
 test.serial('multiple collaterals', async t => {
   const { collateral, bid } = t.context;
 
-  const params = defaultParams;
+  const params = { ...defaultParams };
   params.LowestRate = 2500n;
 
   const driver = await makeAuctionDriver(t, params);
@@ -1438,7 +1438,7 @@ test.serial('time jumps forward', async t => {
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);
   t.is(schedules.liveAuctionSchedule?.startTime.absValue, 1530n);
-  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1550n);
+  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1545n);
 });
 
 // serial because dynamicConfig is shared across tests
@@ -1496,7 +1496,8 @@ test.serial('add collateral type during auction', async t => {
   await driver.advanceTo(185n, 'wait');
 
   await scheduleTracker.assertChange({
-    nextDescendingStepTime: { absValue: 190n },
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 210n },
   });
 
   t.true(await E(seat).hasExited());
@@ -1508,8 +1509,9 @@ test.serial('add collateral type during auction', async t => {
   await assertPayouts(t, liqSeat, bid, collateral, 231n, 800n);
 
   await scheduleTracker.assertChange({
-    activeStartTime: null,
-    nextDescendingStepTime: { absValue: 210n },
+    activeStartTime: TimeMath.coerceTimestampRecord(210n, timerBrand),
+    nextStartTime: { absValue: 250n },
+    nextDescendingStepTime: { absValue: 215n },
   });
 });
 
