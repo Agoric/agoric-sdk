@@ -27,7 +27,11 @@ import {
   RatioShape,
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
+import {
+  makeStoredNotifier,
+  observeNotifier,
+  watchPerpetualNotifier,
+} from '@agoric/notifier';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import {
   M,
@@ -355,13 +359,7 @@ export const prepareVaultManagerKit = (
         start() {
           const { state, facets } = this;
           trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
-          const {
-            collateralBrand,
-            collateralUnit,
-            debtBrand,
-            storageNode,
-            unsettledVaults,
-          } = state;
+          const { collateralBrand, unsettledVaults } = state;
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
@@ -394,7 +392,17 @@ export const prepareVaultManagerKit = (
             },
           });
 
-          trace('helper.start() making quoteNotifier from', priceAuthority);
+          void facets.helper.observeQuoteNotifier();
+
+          trace('helper.start() done');
+        },
+        observeQuoteNotifier() {
+          const { state, facets } = this;
+
+          const { collateralBrand, collateralUnit, debtBrand, storageNode } =
+            state;
+          const ephemera = collateralEphemera(collateralBrand);
+
           const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
             collateralUnit,
             debtBrand,
@@ -404,20 +412,22 @@ export const prepareVaultManagerKit = (
             E(storageNode).makeChildNode('quotes'),
             marshaller,
           );
-          trace('helper.start() awaiting observe storedQuotesNotifier');
+          trace(
+            'helper.start() awaiting observe storedQuotesNotifier',
+            collateralBrand,
+          );
           // NB: upon restart, there may not be a price for a while. If manager
-          // operations are permitted, ones the depend on price information will
-          // throw. See https://github.com/Agoric/agoric-sdk/issues/4317
-          void observeNotifier(quoteNotifier, {
-            updateState(value) {
-              trace('storing new quote', value.quoteAmount.value);
+          // operations are permitted, ones that depend on price information
+          // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
+          const quoteWatcher = harden({
+            onFulfilled(value) {
               ephemera.storedCollateralQuote = value;
             },
-            fail(reason) {
-              console.error('quoteNotifier failed to iterate', reason);
+            onRejected() {
+              facets.helper.observeQuoteNotifier();
             },
           });
-          trace('helper.start() done');
+          void watchPerpetualNotifier(quoteNotifier, quoteWatcher);
         },
         /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
@@ -788,7 +798,7 @@ export const prepareVaultManagerKit = (
           const { collateralBrand } = this.state;
           const { storedCollateralQuote } = collateralEphemera(collateralBrand);
           if (!storedCollateralQuote)
-            throw Fail`maxDebtFor called before a collateral quote was available`;
+            throw Fail`maxDebtFor called before a collateral quote was available for ${collateralBrand}`;
           // use the lower price to prevent vault adjustments that put them imminently underwater
           const collateralPrice = minimumPrice(
             storedCollateralQuote,

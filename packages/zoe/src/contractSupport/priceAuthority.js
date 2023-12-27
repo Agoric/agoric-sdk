@@ -272,12 +272,20 @@ export function makeOnewayPriceAuthorityKit(opts) {
           const record = await E(notifier).getUpdateSince(updateCount);
 
           // We create a quote inline.
-          const quote = createQuote(calcAmountOut => ({
-            amountIn,
-            amountOut: calcAmountOut(amountIn),
-          }));
+          let quote;
+          // createQuote can throw if priceAuthority is replaced.
+          // eslint-disable-next-line no-useless-catch
+          try {
+            quote = createQuote(calcAmountOut => ({
+              amountIn,
+              amountOut: calcAmountOut(amountIn),
+            }));
+          } catch (e) {
+            // fall through
+          }
+
           if (!quote) {
-            throw Fail`createQuote returned falsey`;
+            throw Fail`createQuote returned nothing`;
           }
 
           const value = await quote;
