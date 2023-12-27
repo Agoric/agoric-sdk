@@ -243,6 +243,7 @@ __metadata:
     bindings: ^1.2.1
     napi-thread-safe-callback: 0.0.6
     node-addon-api: ^1.7.1
+    node-gyp: ^9.0.0
   languageName: unknown
   linkType: soft
 
