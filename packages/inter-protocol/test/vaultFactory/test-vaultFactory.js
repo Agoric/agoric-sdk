@@ -20,7 +20,6 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
@@ -156,44 +155,25 @@ const setupServices = async (
   const runPayment = await getRunFromFaucet(t, stableInitialLiquidity);
   trace(t, 'faucet', { stableInitialLiquidity, runPayment });
 
-  const { space } = await setupElectorateReserveAndAuction(
-    t,
-    // @ts-expect-error inconsistent types with withAmountUtils
-    run,
-    aeth,
-    priceOrList,
-    quoteInterval,
-    unitAmountIn,
-    { StartFrequency: startFrequency },
-  );
+  const { space, priceAuthorityAdmin, aethPriceAuthority } =
+    await setupElectorateReserveAndAuction(
+      t,
+      // @ts-expect-error inconsistent types with withAmountUtils
+      run,
+      aeth,
+      priceOrList,
+      quoteInterval,
+      unitAmountIn,
+      { StartFrequency: startFrequency },
+    );
 
-  const { consume, produce } = space;
-
-  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
-  // Cheesy hack for easy use of manual price authority
-  const pa = Array.isArray(priceOrList)
-    ? makeScriptedPriceAuthority({
-        actualBrandIn: aeth.brand,
-        actualBrandOut: run.brand,
-        priceList: priceOrList,
-        timer,
-        quoteMint: quoteIssuerKit.mint,
-        unitAmountIn,
-        quoteInterval,
-      })
-    : makeManualPriceAuthority({
-        actualBrandIn: aeth.brand,
-        actualBrandOut: run.brand,
-        initialPrice: priceOrList,
-        timer,
-        quoteIssuerKit,
-      });
-  produce.priceAuthority.resolve(pa);
+  const { consume } = space;
 
   const {
     installation: { produce: iProduce },
   } = space;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
+
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
@@ -267,13 +247,36 @@ const setupServices = async (
 
   return {
     zoe,
+    timer,
     governor: g,
     vaultFactory: v,
     runKit: { issuer: run.issuer, brand: run.brand },
-    priceAuthority,
     reserveKit,
     space,
+    priceAuthorityAdmin,
+    aethPriceAuthority,
   };
+};
+
+const addPriceAuthority = async (collateralIssuerKit, services) => {
+  const { priceAuthorityAdmin, timer, runKit } = services;
+
+  const pa = makeManualPriceAuthority({
+    actualBrandIn: collateralIssuerKit.brand,
+    actualBrandOut: runKit.brand,
+    timer,
+    initialPrice: makeRatio(
+      100n,
+      runKit.brand,
+      100n,
+      collateralIssuerKit.brand,
+    ),
+  });
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    pa,
+    collateralIssuerKit.brand,
+    runKit.brand,
+  );
 };
 
 test('first', async t => {
@@ -1574,6 +1577,7 @@ test('addVaultType: invalid args do not modify state', async t => {
   );
 
   const { vaultFactory } = services.vaultFactory;
+  await addPriceAuthority(chit, services);
 
   const failsForSameReason = async p =>
     p
@@ -1607,6 +1611,7 @@ test('addVaultType: extra, unexpected params', async t => {
   );
 
   const { vaultFactory } = services.vaultFactory;
+  await addPriceAuthority(chit, services);
 
   const params = { ...defaultParamValues(aeth.brand), shoeSize: 10 };
   const extraParams = { ...params, shoeSize: 10 };
@@ -1654,6 +1659,8 @@ test('director notifiers', async t => {
 
   // add a vault type
   const chit = makeIssuerKit('chit');
+  await addPriceAuthority(chit, services);
+
   await E(vaultFactory).addVaultType(
     chit.issuer,
     'Chit',

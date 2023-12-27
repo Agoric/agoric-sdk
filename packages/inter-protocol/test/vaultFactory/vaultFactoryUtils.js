@@ -4,6 +4,8 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
@@ -96,8 +98,18 @@ export const setupElectorateReserveAndAuction = async (
   await setupReserve(space);
   const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
-  // Cheesy hack for easy use of manual price authority
-  const pa = Array.isArray(priceOrList)
+  // priceAuthorityReg is the registry, which contains and multiplexes multiple
+  // individual priceAuthorities, including aethPriceAuthority.
+  // priceAuthorityAdmin supports registering more individual priceAuthorities
+  // with the registry.
+  /**
+   * @type {PriceAuthority & {
+   *   setPrice: (Ratio) => void;
+   *   disable: () => void;
+   * }}
+   */
+  // @ts-expect-error scriptedPriceAuthority doesn't actually match this, but manualPriceAuthority does
+  const aethPriceAuthority = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
         actualBrandIn: aeth.brand,
         actualBrandOut: run.brand,
@@ -114,7 +126,16 @@ export const setupElectorateReserveAndAuction = async (
         timer,
         quoteIssuerKit,
       });
-  space.produce.priceAuthority.resolve(pa);
+  const baggage = makeScalarBigMapStore('baggage');
+  const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
+    providePriceAuthorityRegistry(baggage);
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    aethPriceAuthority,
+    aeth.brand,
+    run.brand,
+  );
+
+  space.produce.priceAuthority.resolve(priceAuthorityReg);
 
   const auctionParams = {
     StartFrequency,
@@ -127,7 +148,12 @@ export const setupElectorateReserveAndAuction = async (
   };
 
   await startAuctioneer(space, { auctionParams });
-  return { space };
+  return {
+    space,
+    priceAuthority: priceAuthorityReg,
+    priceAuthorityAdmin,
+    aethPriceAuthority,
+  };
 };
 
 /**
