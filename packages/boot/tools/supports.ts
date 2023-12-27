@@ -105,23 +105,23 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const getPkgPath = (pkg, fileName = '') =>
     new URL(`../../${pkg}/${fileName}`, import.meta.url).pathname;
 
-  const importSpec = spec =>
-    importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
+  const resolvePathname = (specifier: string) =>
+    importMetaResolve(specifier, import.meta.url).then(
+      u => new URL(u).pathname,
+    );
 
-  const runPackageScript = async (outputDir, scriptPath, env) => {
+  const runPackageScript = async (
+    outputDir: string,
+    scriptPath: string,
+    env: Record<string, string>,
+  ): Promise<Buffer> => {
     console.info('running package script:', scriptPath);
-    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+    const cliEntrypoint = await resolvePathname('agoric/src/entrypoint.js');
+    // TODO export this functionality from the CLI package or refactor elsewhere
+    return childProcess.execFileSync(cliEntrypoint, ['run', scriptPath], {
       cwd: outputDir,
       env,
     });
-    return childProcess.execFileSync(
-      out.toString().trim(),
-      ['run', scriptPath],
-      {
-        cwd: outputDir,
-        env,
-      },
-    );
   };
 
   const loadJSON = async filePath =>
@@ -153,9 +153,8 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     const pkgPath = getPkgPath('builders');
     const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
 
-    const scriptPath = await importSpec(builderPath);
+    const scriptPath = await resolvePathname(builderPath);
 
-    // XXX use '@agoric/inter-protocol'?
     const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
     const built = parseProposalParts(out.toString());
 
