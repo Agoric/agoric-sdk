@@ -17,7 +17,23 @@ import {
 
 const { Fail } = assert;
 
-const OriginalZoeSeatIKit = harden({
+export const coreUserSeatMethods = harden({
+  getProposal: M.call().returns(M.promise()),
+  getPayouts: M.call().returns(M.promise()),
+  getPayout: M.call(KeywordShape).returns(M.promise()),
+  getOfferResult: M.call().returns(M.promise()),
+  hasExited: M.call().returns(M.promise()),
+  numWantsSatisfied: M.call().returns(M.promise()),
+  getFinalAllocation: M.call().returns(M.promise()),
+  getExitSubscriber: M.call().returns(M.any()),
+});
+
+export const ZoeUserSeatShape = M.interface('UserSeat', {
+  ...coreUserSeatMethods,
+  tryExit: M.call().returns(M.promise()),
+});
+
+export const OriginalZoeSeatIKit = harden({
   zoeSeatAdmin: M.interface('ZoeSeatAdmin', {
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
@@ -33,17 +49,7 @@ const OriginalZoeSeatIKit = harden({
       M.promise(),
     ),
   }),
-  userSeat: M.interface('UserSeat', {
-    getProposal: M.call().returns(M.promise()),
-    getPayouts: M.call().returns(M.promise()),
-    getPayout: M.call(KeywordShape).returns(M.promise()),
-    getOfferResult: M.call().returns(M.promise()),
-    hasExited: M.call().returns(M.promise()),
-    tryExit: M.call().returns(M.promise()),
-    numWantsSatisfied: M.call().returns(M.promise()),
-    getFinalAllocation: M.call().returns(M.promise()),
-    getExitSubscriber: M.call().returns(M.any()),
-  }),
+  userSeat: ZoeUserSeatShape,
 });
 
 const assertHasNotExited = (c, msg) => {
