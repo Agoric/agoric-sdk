@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
+import { prepareDurablePublishKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -9,27 +9,17 @@ import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import '../types.js';
 import '../internal-types.js';
 import {
-  AmountKeywordRecordShape,
-  ExitObjectShape,
-  KeywordShape,
-  PaymentPKeywordRecordShape,
-} from '../typeGuards.js';
-import { declareOldZoeSeatAdminKind } from './originalZoeSeat.js';
+  declareOldZoeSeatAdminKind,
+  OriginalZoeSeatIKit,
+  ZoeUserSeatShape,
+  coreUserSeatMethods,
+} from './originalZoeSeat.js';
 
 const { Fail } = assert;
 
-// ZoeSeatAdmin has the implementation of these methods, but ZoeUserSeat is the
-// facet shared with users. The latter transparently forwards to the former.
-const coreUserSeatMethods = harden({
-  getProposal: M.call().returns(M.promise()),
-  getPayouts: M.call().returns(M.promise()),
-  getPayout: M.call(KeywordShape).returns(M.promise()),
-  getOfferResult: M.call().returns(M.promise()),
-  hasExited: M.call().returns(M.promise()),
-  numWantsSatisfied: M.call().returns(M.promise()),
-  getFinalAllocation: M.call().returns(M.promise()),
-  getExitSubscriber: M.call().returns(M.any()),
-});
+// ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat
+// is the facet shared with users. The latter transparently forwards to the
+// former.
 
 const ZoeSeatAdmin = harden({
   userSeatAccess: M.interface('UserSeatAccess', {
@@ -37,28 +27,11 @@ const ZoeSeatAdmin = harden({
     initExitObjectSetter: M.call(M.any()).returns(),
     assertHasNotExited: M.call(M.string()).returns(),
   }),
-  zoeSeatAdmin: M.interface('ZoeSeatAdmin', {
-    replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
-    exit: M.call(M.any()).returns(),
-    fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call({
-      offerResultPromise: M.promise(),
-      exitObj: ExitObjectShape,
-    }).returns(),
-    getExitSubscriber: M.call().returns(SubscriberShape),
-    // The return promise is empty, but doExit relies on settlement as a signal
-    // that the payouts have settled. The exit publisher is notified after that.
-    finalPayouts: M.call(M.eref(PaymentPKeywordRecordShape)).returns(
-      M.promise(),
-    ),
-  }),
+  zoeSeatAdmin: OriginalZoeSeatIKit.zoeSeatAdmin,
 });
 
 const ZoeUserSeat = harden({
-  userSeat: M.interface('UserSeat', {
-    ...coreUserSeatMethods,
-    tryExit: M.call().returns(M.promise()),
-  }),
+  userSeat: ZoeUserSeatShape,
   exitObjSetter: M.interface('exitObjSetter', {
     setExitObject: M.call(M.or(M.remotable(), M.undefined())).returns(),
   }),
