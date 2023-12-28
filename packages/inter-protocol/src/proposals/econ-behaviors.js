@@ -98,7 +98,6 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 export const setupReserve = async ({
   consume: {
     board,
-    feeMintAccess: feeMintAccessP,
     chainStorage,
     chainTimerService,
     diagnostics,
@@ -123,12 +122,10 @@ export const setupReserve = async ({
   trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
 
-  const [poserInvitation, poserInvitationAmount, feeMintAccess] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      feeMintAccessP,
-    ]);
+  const [poserInvitation, poserInvitationAmount] = await Promise.all([
+    poserInvitationP,
+    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+  ]);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
@@ -141,14 +138,13 @@ export const setupReserve = async ({
       governedContractInstallation: reserveInstallation,
       governed: {
         terms: reserveTerms,
-        issuerKeywordRecord: { Central: centralIssuer },
+        issuerKeywordRecord: { Fee: centralIssuer },
         label: 'reserve',
       },
     }),
   );
   const privateArgs = {
     governed: {
-      feeMintAccess,
       initialPoserInvitation: poserInvitation,
       marshaller,
       storageNode,

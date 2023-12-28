@@ -10,6 +10,8 @@ import {
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 const { quote: q } = assert;
 
@@ -27,7 +29,6 @@ const trace = makeTracer('ReserveKit', true);
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {{
- *   feeMint: ZCFMint<'nat'>;
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   storageNode: StorageNode;
  *   zcf: ZCF;
@@ -35,11 +36,15 @@ const trace = makeTracer('ReserveKit', true);
  */
 export const prepareAssetReserveKit = async (
   baggage,
-  { feeMint, makeRecorderKit, storageNode, zcf },
+  { makeRecorderKit, storageNode, zcf },
 ) => {
   trace('prepareAssetReserveKit', [...baggage.keys()]);
-  const feeKit = feeMint.getIssuerRecord();
-  const emptyAmount = AmountMath.makeEmpty(feeKit.brand);
+
+  const [feeIssuer, feeBrand] = await Promise.all([
+    E(zcf.getZoeService()).getFeeIssuer(),
+    E(E(zcf.getZoeService()).getFeeIssuer()).getBrand(),
+  ]);
+  const emptyAmount = AmountMath.makeEmpty(feeBrand);
 
   const makeAssetReserveKitInternal = prepareExoClassKit(
     baggage,
@@ -141,8 +146,9 @@ export const prepareAssetReserveKit = async (
         burnFeesToReduceShortfall(reduction) {
           const { facets, state } = this;
           trace('burnFeesToReduceShortfall', reduction);
-          reduction = AmountMath.coerce(feeKit.brand, reduction);
-          const feeKeyword = state.keywordForBrand.get(feeKit.brand);
+          reduction = AmountMath.coerce(feeBrand, reduction);
+          const feeKeyword = state.keywordForBrand.get(feeBrand);
+          /** @type {Amount<'nat'>} */
           const feeBalance =
             state.collateralSeat.getAmountAllocated(feeKeyword);
           const amountToBurn = AmountMath.min(reduction, feeBalance);
@@ -150,10 +156,19 @@ export const prepareAssetReserveKit = async (
             return;
           }
 
-          feeMint.burnLosses(
-            harden({ [feeKeyword]: amountToBurn }),
-            state.collateralSeat,
+          void E.when(
+            withdrawFromSeat(
+              zcf,
+              state.collateralSeat,
+              harden({ [feeKeyword]: amountToBurn }),
+            ),
+            paymentRecord =>
+              feeIssuer.burn(
+                paymentRecord[feeKeyword],
+                makeNatAmountShape(feeBrand, amountToBurn.value),
+              ),
           );
+
           state.totalFeeBurned = AmountMath.add(
             state.totalFeeBurned,
             amountToBurn,
@@ -171,7 +186,7 @@ export const prepareAssetReserveKit = async (
           const brand = await E(issuer).getBrand();
           trace('addIssuer', { brand, keyword });
           assert(
-            keyword !== 'Fee' && brand !== feeKit.brand,
+            keyword !== 'Fee' && brand !== feeBrand,
             `'Fee' brand is a special case handled by the reserve contract`,
           );
 
@@ -271,8 +286,8 @@ export const prepareAssetReserveKit = async (
     },
     {
       finish: ({ facets: { helper } }) => {
-        // no need to saveIssuer() b/c registerFeeMint did it
-        helper.saveBrandKeyword(feeKit.brand, 'Fee');
+        // no need to saveIssuer() b/c it was registered in the original issuerKeywordRecord
+        helper.saveBrandKeyword(feeBrand, 'Fee');
 
         helper.writeMetrics();
       },

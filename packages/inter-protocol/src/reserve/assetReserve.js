@@ -38,7 +38,6 @@ harden(meta);
  *   }
  * >} zcf
  * @param {{
- *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
  *   marshaller: ERef<Marshaller>;
  *   storageNode: ERef<StorageNode>;
@@ -57,24 +56,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {() => Promise<ZCFMint<'nat'>>} */
-  const takeFeeMint = async () => {
-    if (baggage.has('feeMint')) {
-      return baggage.get('feeMint');
-    }
+  // TODO(cth): delete once it has run on chain. It cleans up after #8323
+  if (baggage.has('feeMint')) {
+    baggage.delete('feeMint');
+  }
 
-    const feeMintTemp = await zcf.registerFeeMint(
-      'Fee',
-      privateArgs.feeMintAccess,
-    );
-    baggage.init('feeMint', feeMintTemp);
-    return feeMintTemp;
-  };
-  trace('awaiting takeFeeMint');
-  const feeMint = await takeFeeMint();
   const storageNode = await privateArgs.storageNode;
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
-    feeMint,
     makeRecorderKit,
     storageNode,
     zcf,

@@ -101,7 +101,6 @@ const SHARED_MAIN_MANIFEST = harden({
       board: 'board',
       chainStorage: true,
       diagnostics: true,
-      feeMintAccess: 'zoe',
       chainTimerService: 'timer',
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
