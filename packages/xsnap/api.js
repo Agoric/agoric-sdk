@@ -43,6 +43,7 @@ export class ErrorSignal extends Error {
     this.code = signal;
   }
 }
+harden(ErrorSignal);
 
 export class ErrorCode extends Error {
   /**
@@ -55,3 +56,4 @@ export class ErrorCode extends Error {
     this.code = code;
   }
 }
+harden(ErrorCode);
