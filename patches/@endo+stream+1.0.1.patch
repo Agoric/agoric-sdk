@@ -1,0 +1,12 @@
+diff --git a/node_modules/@endo/stream/index.js b/node_modules/@endo/stream/index.js
+index 4ab2588..a7e84b9 100644
+--- a/node_modules/@endo/stream/index.js
++++ b/node_modules/@endo/stream/index.js
+@@ -211,6 +211,7 @@ export const mapReader = (reader, transform) => {
+     }
+     return undefined;
+   }
++  harden(transformGenerator);
+   return harden(transformGenerator());
+ };
+ harden(mapReader);

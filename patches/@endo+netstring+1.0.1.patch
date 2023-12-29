@@ -1,0 +1,12 @@
+diff --git a/node_modules/@endo/netstring/reader.js b/node_modules/@endo/netstring/reader.js
+index 57eb731..40b4f2d 100644
+--- a/node_modules/@endo/netstring/reader.js
++++ b/node_modules/@endo/netstring/reader.js
+@@ -132,6 +132,7 @@ async function* makeNetstringIterator(
+ 
+   return undefined;
+ }
++harden(makeNetstringIterator);
+ 
+ /**
+  * @param {Iterable<Uint8Array> | AsyncIterable<Uint8Array>} input

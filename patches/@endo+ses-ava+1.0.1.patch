@@ -1,0 +1,37 @@
+diff --git a/node_modules/@endo/ses-ava/src/ses-ava-test.d.ts.map b/node_modules/@endo/ses-ava/src/ses-ava-test.d.ts.map
+index 6e0f8b2..1a509d4 100644
+--- a/node_modules/@endo/ses-ava/src/ses-ava-test.d.ts.map
++++ b/node_modules/@endo/ses-ava/src/ses-ava-test.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"ses-ava-test.d.ts","sourceRoot":"","sources":["ses-ava-test.js"],"names":[],"mappings":"+BAOuB,OAAO,EAAE,KAAK,IAAI;AAiJzC;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;GA+BG;AACH,8GAYC"}
+\ No newline at end of file
++{"version":3,"file":"ses-ava-test.d.ts","sourceRoot":"","sources":["ses-ava-test.js"],"names":[],"mappings":"+BAOuB,OAAO,EAAE,KAAK,IAAI;AAyJzC;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;GA+BG;AACH,8GAYC"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/ses-ava/src/ses-ava-test.js b/node_modules/@endo/ses-ava/src/ses-ava-test.js
+index 8dbcdf9..3df1895 100644
+--- a/node_modules/@endo/ses-ava/src/ses-ava-test.js
++++ b/node_modules/@endo/ses-ava/src/ses-ava-test.js
+@@ -75,6 +75,14 @@ const overrideList = [
+   'only',
+ ];
+ 
++const hardenWithProto = val => {
++  const proto = Object.getPrototypeOf(val);
++  if (proto != null && !isHardened(proto)) {
++    hardenWithProto(proto);
++  }
++  harden(val);
++};
++
+ /**
+  * @template {import('ava').TestFn} T
+  * @param {T} testerFunc
+@@ -104,7 +112,7 @@ const augmentLogging = (testerFunc, logger) => {
+     const wrapImplFunc = fn => {
+       const wrappedFunc = t => {
+         // `harden` should be functional by the time a test callback is invoked.
+-        harden(t);
++        hardenWithProto(t);
+         // Format source like `test("$rawTitle") "$resolvedTitle"`.
+         const quotedRawTitle = hasRawTitle ? stringify(rawTitle) : '';
+         const quotedResolvedTitle =
