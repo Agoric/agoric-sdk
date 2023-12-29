@@ -25,6 +25,7 @@ export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
     yield key;
   }
 }
+harden(enumeratePrefixedKeys);
 
 // NOTE: awkward naming: the thing that returns a stream of keys is named
 // "enumerate..." while the thing that returns a stream of values is named
@@ -42,12 +43,14 @@ function* enumerateNumericPrefixedKeys(kvStore, prefix) {
     }
   }
 }
+harden(enumerateNumericPrefixedKeys);
 
 export function* getPrefixedValues(kvStore, prefix) {
   for (const key of enumerateNumericPrefixedKeys(kvStore, prefix)) {
     yield kvStore.get(key) || Fail`enumerate ensures get`;
   }
 }
+harden(getPrefixedValues);
 
 export function deletePrefixedKeys(kvStore, prefix) {
   // this is kind of like a deleteRange() would be, but can be implemented

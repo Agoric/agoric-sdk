@@ -229,6 +229,7 @@ async function* concatAsyncIterables(iterables) {
     yield* asyncIterable;
   }
 }
+harden(concatAsyncIterables);
 
 /**
  * TODO: This should be absorbed and zone-ified into the existing publish kit.
