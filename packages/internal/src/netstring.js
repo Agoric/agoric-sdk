@@ -1,4 +1,4 @@
-/* global Buffer */
+/* eslint-env node */
 import { Fail } from '@endo/errors';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/

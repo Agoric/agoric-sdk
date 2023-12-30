@@ -1,5 +1,5 @@
 // @ts-check
-/* global process setTimeout setInterval clearInterval Buffer */
+/* eslint-env node */
 
 import fs from 'fs';
 import path from 'path';

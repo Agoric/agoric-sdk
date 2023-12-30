@@ -1,5 +1,5 @@
 // @ts-check
-/* global process setTimeout setInterval clearInterval */
+/* eslint-env node */
 
 import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';

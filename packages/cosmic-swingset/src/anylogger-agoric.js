@@ -1,3 +1,4 @@
+/* eslint-env node */
 import {
   getEnvironmentOptionsList,
   getEnvironmentOption,

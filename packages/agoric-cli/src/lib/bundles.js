@@ -1,6 +1,5 @@
 // @ts-check
-
-/* global Buffer */
+/* eslint-env node */
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

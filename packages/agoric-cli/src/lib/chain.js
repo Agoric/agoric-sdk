@@ -1,5 +1,5 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
