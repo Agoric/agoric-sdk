@@ -9,7 +9,7 @@ import { subscribeEach } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
-import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import {
   makeRatio,
   makeRatioFromAmounts,
@@ -126,6 +126,7 @@ export const setupServices = async (t, params = defaultParams) => {
 
   void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
+  /** @type {import('@agoric/swingset-liveslots').Baggage} */
   const paBaggage = makeScalarMapStore();
   const { priceAuthority, adminFacet: registry } =
     providePriceAuthorityRegistry(paBaggage);
