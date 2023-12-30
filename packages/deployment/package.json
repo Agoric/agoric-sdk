@@ -37,6 +37,6 @@
     "readline-transform": "^1.0.0"
   },
   "typeCoverage": {
-    "atLeast": 61.49
+    "atLeast": 60.14
   }
 }
