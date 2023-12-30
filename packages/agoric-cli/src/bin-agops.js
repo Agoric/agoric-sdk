@@ -1,8 +1,7 @@
 #!/usr/bin/env node
+/* eslint-env node */
 // @ts-check
 // @jessie-check
-
-/* global fetch, setTimeout */
 
 import '@endo/init/pre.js';
 

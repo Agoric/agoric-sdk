@@ -1,6 +1,5 @@
 #! /usr/bin/env node
 /* eslint-env node */
-
 import '@endo/init';
 
 import fs from 'fs';
