@@ -524,7 +524,6 @@ func NewAgoricApp(
 		return nil
 	})
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, vibcForVtransferKeeper)
-	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vibc.NewReceiver(app.VtransferKeeper))
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -581,9 +580,11 @@ func NewAgoricApp(
 		app.BankKeeper,
 		scopedTransferKeeper,
 	)
+
 	transferApp := transfer.NewAppModule(app.TransferKeeper)
 	var transferStack ibcporttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	vtransferMiddleware := vibc.NewMiddlewareReceiver(app.VtransferKeeper, transferStack)
 	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
@@ -593,6 +594,9 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
+
+	vtransferPortHandler := vtransfer.NewReceiver(vtransferMiddleware, app.TransferKeeper)
+	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferPortHandler)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
