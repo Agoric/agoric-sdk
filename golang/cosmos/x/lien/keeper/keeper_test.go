@@ -112,7 +112,7 @@ func makeTestKit() testKit {
 	sk := stakingkeeper.NewKeeper(cdc, stakingStoreKey, wak, bk, stakingSpace)
 
 	// lien keeper
-	pushAction := func(sdk.Context, vm.Jsonable) error {
+	pushAction := func(sdk.Context, vm.Action) error {
 		return nil
 	}
 	keeper := NewKeeper(cdc, lienStoreKey, wak, bk, sk, pushAction)
