@@ -519,9 +519,14 @@ func NewAgoricApp(
 	app.vibcPort = app.AgdServer.MustRegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
 	vibcForVtransferKeeper := app.VibcKeeper.WithScope(nil, scopedTransferKeeper, func(ctx sdk.Context, action vm.Action) error {
-		// TODO: Send the event to the vm.
+		action = vm.PopulateAction(ctx, action)
+
+		// Prefix the action type.
+		ah := action.GetActionHeader()
+		ah.Type = "VTRANSFER_" + ah.Type
+
 		fmt.Println("@@@ vtransfer action", action)
-		return nil
+		return app.SwingSetKeeper.PushAction(ctx, action)
 	})
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, vibcForVtransferKeeper)
 
