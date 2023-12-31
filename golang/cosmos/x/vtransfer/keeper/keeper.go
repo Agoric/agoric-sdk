@@ -59,7 +59,7 @@ func (k Keeper) WriteAcknowledgement(
 	packet ibcexported.PacketI,
 	ack ibcexported.Acknowledgement,
 ) error {
-	_, err := k.parseContractInvoke(ctx, packet)
+	_, err := k.parseInvokeMemo(ctx, packet)
 	if err != nil {
 		// We can't parse, but that means just to pass it up the middleware stack.
 		return k.Keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
@@ -67,12 +67,8 @@ func (k Keeper) WriteAcknowledgement(
 
 	// AFTER THIS POINT, WE KNOW THAT THE MEMO IS A CONTRACT INVOCATION
 	// Send to VM
-	event := types.IBCMiddlewareEvent{
-		Event:       "writeAcknowledgement",
-		Packet:      packet,
-		PendingAck:  ack.Acknowledgement(),
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+	event := vibckeeper.WriteAcknowledgementEvent{
+		Acknowledgement: ack.Acknowledgement(),
 	}
 
 	if err := k.PushAction(ctx, event); err != nil {
@@ -84,14 +80,14 @@ func (k Keeper) WriteAcknowledgement(
 }
 
 // Check the memo to see if this is a contract invocation.
-func (k Keeper) parseContractInvoke(ctx sdk.Context, packet ibcexported.PacketI) (*types.ContractInvoke, error) {
+func (k Keeper) parseInvokeMemo(ctx sdk.Context, packet ibcexported.PacketI) (*types.InvokeMemo, error) {
 	var transferData transfertypes.FungibleTokenPacketData
 	err := k.cdc.UnmarshalJSON(packet.GetData(), &transferData)
 	if err != nil {
 		return nil, err
 	}
 
-	var invoke types.ContractInvoke
+	var invoke types.InvokeMemo
 	err = json.Unmarshal([]byte(transferData.Memo), &invoke)
 	if err != nil {
 		return nil, err
