@@ -1,8 +1,11 @@
 package types
 
 import (
+	"context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
+	transfer "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	connection "github.com/cosmos/ibc-go/v6/modules/core/03-connection/types"
 	channel "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
@@ -35,4 +38,9 @@ type ConnectionKeeper interface {
 // PortKeeper defines the expected IBC port keeper
 type PortKeeper interface {
 	BindPort(ctx sdk.Context, portID string) *capability.Capability
+}
+
+// TransferKeeper defines the expected IBC transfer keeper
+type TransferKeeper interface {
+	Transfer(goCtx context.Context, msg *transfer.MsgTransfer) (*transfer.MsgTransferResponse, error)
 }

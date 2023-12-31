@@ -10,10 +10,10 @@ import (
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 )
 
-var _ porttypes.Middleware = &IBCMiddleware{}
+var _ porttypes.Middleware = (*IBCMiddleware)(nil)
 
-// IBCMiddleware implements the ICS26 callbacks for the fee middleware given the
-// fee keeper and the underlying application.
+// IBCMiddleware implements the ICS26 callbacks for the middleware given the
+// keeper and the underlying application.
 type IBCMiddleware struct {
 	app             porttypes.IBCModule
 	vtransferKeeper keeper.Keeper
@@ -34,7 +34,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	return im.app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.app, packet, acknowledgement, relayer)
 }
 
 // SendPacket implements the ICS4 Wrapper interface
@@ -47,7 +47,7 @@ func (im IBCMiddleware) SendPacket(
 	timeoutTimestamp uint64,
 	data []byte,
 ) (uint64, error) {
-	return im.vtransferKeeper.Keeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	return im.vtransferKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface
@@ -57,7 +57,7 @@ func (im IBCMiddleware) WriteAcknowledgement(
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	return im.vtransferKeeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+	return im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
 // OnChanCloseInit implements the IBCModule interface
@@ -149,10 +149,10 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	return im.app.OnTimeoutPacket(ctx, packet, relayer)
+	return im.vtransferKeeper.InterceptOnTimeoutPacket(ctx, im.app, packet, relayer)
 }
 
 // GetAppVersion implements the ICS4 Wrapper interface.
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return im.vtransferKeeper.Keeper.GetAppVersion(ctx, portID, channelID)
+	return im.vtransferKeeper.GetAppVersion(ctx, portID, channelID)
 }
