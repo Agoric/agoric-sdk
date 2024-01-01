@@ -240,9 +240,10 @@ func (im IBCModule) OnChanCloseConfirm(
 	return err
 }
 
-type receivePacketEvent struct {
+type ReceivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"receivePacket"`
+	Target           string              `json:"target"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
 }
@@ -260,7 +261,7 @@ func (im IBCModule) OnRecvPacket(
 	// and also "rly tx xfer"-- they both are trying to relay
 	// the same packets.
 
-	event := receivePacketEvent{
+	event := ReceivePacketEvent{
 		Packet:  packet,
 		Relayer: relayer,
 	}
@@ -273,9 +274,10 @@ func (im IBCModule) OnRecvPacket(
 	return nil
 }
 
-type acknowledgementPacketEvent struct {
+type AcknowledgementPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"acknowledgementPacket"`
+	Target           string              `json:"target"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Acknowledgement  []byte              `json:"acknowledgement"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
@@ -287,7 +289,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	event := acknowledgementPacketEvent{
+	event := AcknowledgementPacketEvent{
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
 		Relayer:         relayer,
@@ -301,9 +303,10 @@ func (im IBCModule) OnAcknowledgementPacket(
 	return nil
 }
 
-type timeoutPacketEvent struct {
+type TimeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"timeoutPacket"`
+	Target           string              `json:"target"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
 }
@@ -313,7 +316,7 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	event := timeoutPacketEvent{
+	event := TimeoutPacketEvent{
 		Packet:  packet,
 		Relayer: relayer,
 	}
