@@ -159,6 +159,7 @@ export const createSeatManager = (
         assertNoStagedAllocation(self);
         doExitSeat(self);
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
+        zcfSeatToSeatHandle.delete(self);
       },
       fail(
         reason = Error(
@@ -179,6 +180,7 @@ export const createSeatManager = (
             zcfSeatToSeatHandle.get(self),
             harden(reason),
           );
+          zcfSeatToSeatHandle.delete(self);
         }
         return reason;
       },
