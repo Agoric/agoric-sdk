@@ -1,6 +1,5 @@
 // @ts-check
 // @jessie-check
-/// <reference path="./store-types.d.ts" />
 
 import { Far } from '@endo/far';
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';

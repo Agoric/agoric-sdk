@@ -72,7 +72,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     vats: /** @type {any} */ ({}),
     vatPowers: /** @type {any} */ ({}),
     runBehaviors: /** @type {any} */ ({}),
-    modules: {},
+    modules: /** @type {any} */ ({}),
     ...spaces,
   });
 

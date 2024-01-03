@@ -11,7 +11,6 @@ import {
   makeBoard,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
-import '@agoric/vats/src/core/types-ambient.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
@@ -154,7 +153,7 @@ export const makeMockTestSpace = async log => {
 };
 
 /**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
+ * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord}>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {

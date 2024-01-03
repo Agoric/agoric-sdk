@@ -9,12 +9,15 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
+import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.ts';
 import {
+  type GovernanceDriver,
+  type PriceFeedDriver,
+  type WalletFactoryDriver,
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
-} from '../../tools/drivers.ts';
+} from './drivers.ts';
 
 export type LiquidationSetup = {
   vaults: {
@@ -63,56 +66,20 @@ export const likePayouts = ({ Bid, Collateral }) => ({
   },
 });
 
-export const makeLiquidationTestContext = async t => {
-  console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
-    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
-  });
-
-  const { runUtils, storage } = swingsetTestKit;
-  console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { EV } = runUtils;
-
-  // Wait for ATOM to make it into agoricNames
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
-
-  // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes: AgoricNamesRemotes =
-    makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage);
-  const refreshAgoricNamesRemotes = () => {
-    Object.assign(
-      agoricNamesRemotes,
-      makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
-    );
-  };
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
-  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
-
-  const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
-    storage,
-    agoricNamesRemotes,
-  );
-  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
-
-  const governanceDriver = await makeGovernanceDriver(
-    swingsetTestKit,
-    agoricNamesRemotes,
-    walletFactoryDriver,
-    // TODO read from the config file
-    [
-      'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
-      'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
-      'agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a',
-    ],
-  );
-  console.timeLog('DefaultTestContext', 'governanceDriver');
-
-  const priceFeedDrivers = {} as Record<
-    string,
-    Awaited<ReturnType<typeof makePriceFeedDriver>>
-  >;
+export const makeLiquidationTestKit = async ({
+  swingsetTestKit,
+  agoricNamesRemotes,
+  walletFactoryDriver,
+  governanceDriver,
+  t,
+}: {
+  swingsetTestKit: SwingsetTestKit;
+  agoricNamesRemotes: AgoricNamesRemotes;
+  walletFactoryDriver: WalletFactoryDriver;
+  governanceDriver: GovernanceDriver;
+  t: Pick<ExecutionContext, 'like'>;
+}) => {
+  const priceFeedDrivers = {} as Record<string, PriceFeedDriver>;
 
   console.timeLog('DefaultTestContext', 'priceFeedDriver');
 
@@ -130,21 +97,22 @@ export const makeLiquidationTestContext = async t => {
     const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
     const { advanceTimeBy, readLatest } = swingsetTestKit;
 
-    !priceFeedDrivers[collateralBrandKey] ||
-      Fail`setup for ${collateralBrandKey} already ran`;
-    priceFeedDrivers[collateralBrandKey] = await makePriceFeedDriver(
-      collateralBrandKey,
-      agoricNamesRemotes,
-      walletFactoryDriver,
-      // TODO read from the config file
-      [
-        'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-        'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-        'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-        'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
-        'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
-      ],
-    );
+    await null;
+    if (!priceFeedDrivers[collateralBrandKey]) {
+      priceFeedDrivers[collateralBrandKey] = await makePriceFeedDriver(
+        collateralBrandKey,
+        agoricNamesRemotes,
+        walletFactoryDriver,
+        // TODO read from the config file
+        [
+          'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
+          'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+          'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+          'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
+          'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+        ],
+      );
+    }
 
     // price feed logic treats zero time as "unset" so advance to nonzero
     await advanceTimeBy(1, 'seconds');
@@ -247,6 +215,7 @@ export const makeLiquidationTestContext = async t => {
     collateralBrandKey: string,
     managerIndex: number,
     setup: LiquidationSetup,
+    base: number = 0,
   ) => {
     await setupStartingState({
       collateralBrandKey,
@@ -258,7 +227,7 @@ export const makeLiquidationTestContext = async t => {
       await walletFactoryDriver.provideSmartWallet('agoric1minter');
 
     for (let i = 0; i < setup.vaults.length; i += 1) {
-      const offerId = `open-${collateralBrandKey}-vault${i}`;
+      const offerId = `open-${collateralBrandKey}-vault${base + i}`;
       await minter.executeOfferMaker(Offers.vaults.OpenVault, {
         offerId,
         collateralBrandKey,
@@ -327,15 +296,71 @@ export const makeLiquidationTestContext = async t => {
   };
 
   return {
-    ...swingsetTestKit,
-    agoricNamesRemotes,
     check,
-    governanceDriver,
     priceFeedDrivers,
-    refreshAgoricNamesRemotes,
-    walletFactoryDriver,
     setupVaults,
     placeBids,
+  };
+};
+
+export const makeLiquidationTestContext = async t => {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
+  console.time('DefaultTestContext');
+
+  const { runUtils, storage } = swingsetTestKit;
+  console.timeLog('DefaultTestContext', 'swingsetTestKit');
+  const { EV } = runUtils;
+
+  // Wait for ATOM to make it into agoricNames
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes: AgoricNamesRemotes =
+    makeAgoricNamesRemotesFromFakeStorage(storage);
+  const refreshAgoricNamesRemotes = () => {
+    Object.assign(
+      agoricNamesRemotes,
+      makeAgoricNamesRemotesFromFakeStorage(storage),
+    );
+  };
+  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
+  console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
+
+  const walletFactoryDriver = await makeWalletFactoryDriver(
+    runUtils,
+    storage,
+    agoricNamesRemotes,
+  );
+  console.timeLog('DefaultTestContext', 'walletFactoryDriver');
+
+  const governanceDriver = await makeGovernanceDriver(
+    swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    // TODO read from the config file
+    [
+      'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+      'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+      'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
+    ],
+  );
+  console.timeLog('DefaultTestContext', 'governanceDriver');
+
+  const liquidationTestKit = await makeLiquidationTestKit({
+    swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    governanceDriver,
+    t,
+  });
+  return {
+    ...swingsetTestKit,
+    ...liquidationTestKit,
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver,
+    governanceDriver,
   };
 };
 

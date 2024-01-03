@@ -93,8 +93,8 @@ github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBA
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.3 h1:RrKcZClqKav60DA4XEEskEwSsNB3l4ENkBVR66jORvQ=
 github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.3/go.mod h1:BcCbhKv7ieM0KEddnYXvQZR+pZykTKReJJYf7YC7qhw=
-github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.2 h1:zwYWlYI1le3ctFlgnOX0tFDnTa5jCxKaLfFfNbTJuOg=
-github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.2/go.mod h1:T0VCPrAAeps81/pnD8b0+oBCMDxrkrD48W1t/XYYUeI=
+github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.3 h1:kEcWMDCGVHOrk9FBvHPCgpVK4uCjHtoKDbRQqj5T4Og=
+github.com/agoric-labs/cosmos-sdk v0.45.16-alpha.agoric.3/go.mod h1:T0VCPrAAeps81/pnD8b0+oBCMDxrkrD48W1t/XYYUeI=
 github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1 h1:2jvHI/2d+psWAZy6FQ0vXJCHUtfU3ZbbW+pQFL04arQ=
 github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1/go.mod h1:E45NqnlpxGnpfTWL/xauN7MRwEE28T4Dd4uraToOaKg=
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=

@@ -734,6 +734,7 @@ test('extra give wantMintedInvitation', async t => {
 const makeMockBankManager = t => {
   /** @type {BankManager} */
   const bankManager = Far('mock BankManager', {
+    __getInterfaceGuard__: () => undefined,
     getAssetSubscription: () => assert.fail('not impl'),
     getModuleAccountAddress: () => assert.fail('not impl'),
     getRewardDistributorDepositFacet: () =>
@@ -750,7 +751,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} */
+  /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =

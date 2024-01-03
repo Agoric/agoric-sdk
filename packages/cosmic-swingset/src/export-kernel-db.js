@@ -14,7 +14,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Fail, q } from '@agoric/assert';
 import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-import { openSwingStore, makeSwingStoreExporter } from '@agoric/swing-store';
+import { makeSwingStoreExporter } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
@@ -144,7 +144,6 @@ export const validateExporterOptions = options => {
  * @param {Pick<import('fs/promises'), 'open' | 'writeFile'>} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['makeSwingStoreExporter']} [powers.makeSwingStoreExporter]
- * @param {typeof import('@agoric/swing-store')['openSwingStore']} [powers.openSwingStore]
  * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {StateSyncExporter}
  */
@@ -154,7 +153,6 @@ export const initiateSwingStoreExport = (
     fs: { open, writeFile },
     pathResolve,
     makeSwingStoreExporter: makeExporter = makeSwingStoreExporter,
-    openSwingStore: openDB = openSwingStore,
     log = console.log,
   },
 ) => {
@@ -183,10 +181,7 @@ export const initiateSwingStoreExport = (
     });
     cleanup.push(async () => swingStoreExporter.close());
 
-    const { hostStorage } = openDB(stateDir);
-
-    savedBlockHeight = Number(hostStorage.kvStore.get('host.height')) || 0;
-    await hostStorage.close();
+    savedBlockHeight = Number(swingStoreExporter.getHostKV('host.height')) || 0;
 
     if (blockHeight) {
       blockHeight === savedBlockHeight ||

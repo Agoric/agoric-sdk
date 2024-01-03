@@ -16,16 +16,16 @@ import (
 // In addition to the methods declared in authtypes.AccountI, additional
 // expectations are enforced dynamically through casting and reflection:
 //
-//	- non-module accounts are expected to obey the GenesisAccount interface,
-//	i.e. to have a Validate() method;
+//   - non-module accounts are expected to obey the GenesisAccount interface,
+//     i.e. to have a Validate() method;
 //
-//	- UnpackInterfacesMessage is needed for unpacking accounts embedded
-//	in an Any message;
+//   - UnpackInterfacesMessage is needed for unpacking accounts embedded
+//     in an Any message;
 //
-//	- MarshalYAML() is used for String rendering;
+//   - MarshalYAML() is used for String rendering;
 //
-//	- protobuf Messages are expected to implement a number of "XXX"-prefixed
-//	methods not visible in the Message interface.
+//   - protobuf Messages are expected to implement a number of "XXX"-prefixed
+//     methods not visible in the Message interface.
 //
 // Declaring the expected methods here allows them to implicitly fall through
 // to an embedded omniAccount.
@@ -116,7 +116,7 @@ func (uva unlockedVestingAccount) GetOriginalVesting() sdk.Coins {
 	return sdk.NewCoins()
 }
 
-//GetDelegatedFree implements the vestexported.VestingAccount interface.
+// GetDelegatedFree implements the vestexported.VestingAccount interface.
 func (uva unlockedVestingAccount) GetDelegatedFree() sdk.Coins {
 	return uva.lien.Delegated
 }
@@ -170,6 +170,11 @@ func (fca fakeClawbackAccount) Clawback(ctx sdk.Context, action vestexported.Cla
 func (fca fakeClawbackAccount) PostReward(ctx sdk.Context, reward sdk.Coins, action vestexported.RewardAction) error {
 	// perform no action here, but lienAccount can divert lien
 	return nil
+}
+
+// ReturnGrants implements the vestexported.ClawbackVestingAccountI interface.
+func (fca fakeClawbackAccount) ReturnGrants(ctx sdk.Context, action vestexported.ReturnGrantAction) error {
+	return action.TakeGrants(ctx, fca.omniGrantAccount) // XXX or just fail here
 }
 
 // LienAccount wraps an omniClawbackAccount to implement lien encumbrance.

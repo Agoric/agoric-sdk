@@ -37,7 +37,7 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timeAuthority: import('@agoric/time/src/types').TimerService,
+ * timeAuthority: import('@agoric/time').TimerService,
  * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf

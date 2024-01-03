@@ -3,11 +3,11 @@ import { Far } from '@endo/far';
 import { TimeMath } from '../src/timeMath.js';
 
 /**
- * @typedef {import('../src/types').TimerBrand} TimerBrand
- * @typedef {import('../src/types').Timestamp} Timestamp
- * @typedef {import('../src/types').RelativeTime} RelativeTime
- * @typedef {import('../src/types').TimestampValue} TimestampValue
- * @typedef {import('../src/types').TimeMathType} TimeMathType
+ * @typedef {import('../src/types.js').TimerBrand} TimerBrand
+ * @typedef {import('../src/types.js').Timestamp} Timestamp
+ * @typedef {import('../src/types.js').RelativeTime} RelativeTime
+ * @typedef {import('../src/types.js').TimestampValue} TimestampValue
+ * @typedef {import('../src/types.js').TimeMathType} TimeMathType
  *
  */
 

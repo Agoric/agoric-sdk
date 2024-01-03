@@ -32,7 +32,7 @@ const publicMixinAPI = harden({
 
 /**
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<any>} paramManager
+ * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
   const { governedParams } = zcf.getTerms();
@@ -55,7 +55,7 @@ harden(validateElectorate);
  *
  * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
- * @param {import('./contractGovernance/typedParamManager').TypedParamManager<T>} paramManager
+ * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<T>} paramManager
  */
 const facetHelpers = (zcf, paramManager) => {
   // validate async to wait for params to be finished
@@ -245,7 +245,7 @@ const facetHelpers = (zcf, paramManager) => {
  * parameter values, and the governance guarantees only hold if they're not used
  * directly by the governed contract.
  *
- * @template {import('./contractGovernance/typedParamManager').ParamTypesMap} M
+ * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} M
  *   Map of types of custom governed terms
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {Invitation} initialPoserInvitation

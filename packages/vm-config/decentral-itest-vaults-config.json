@@ -105,6 +105,34 @@
       ]
     },
     {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/3914BDEF46F429A26917E4D8D434620EC4817DC6B6E68FB327E190902F1E9242",
+            "decimalPlaces": 18,
+            "keyword": "DAI_axl",
+            "proposedName": "DAI"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/3D5291C23D776C3AA7A7ABB34C7B023193ECD2BC42EA19D3165B2CF9652117E7",
+            "decimalPlaces": 18,
+            "keyword": "DAI_grv",
+            "proposedName": "DAI"
+          }
+        }
+      ]
+    },
+    {
       "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
@@ -112,7 +140,7 @@
           "contractTerms": {
             "POLL_INTERVAL": 30,
             "maxSubmissionCount": 1000,
-            "minSubmissionCount": 1,
+            "minSubmissionCount": 3,
             "restartDelay": 1,
             "timeout": 10,
             "minSubmissionValue": 1,
@@ -120,8 +148,11 @@
           },
           "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
           "oracleAddresses": [
-            "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
-            "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang"
+            "agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr",
+            "agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8",
+            "agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78",
+            "agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p",
+            "agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj"
           ],
           "IN_BRAND_LOOKUP": [
             "agoricNames",

@@ -78,11 +78,11 @@ export const makeSlogSender = async opts => {
   /**
    * @typedef {{
    *   init: {
-   *     message: import('./slog-sender-pipe-entrypoint').InitMessage;
+   *     message: import('./slog-sender-pipe-entrypoint.js').InitMessage;
    *     reply: SlogSenderInitReply;
    *   };
    *   flush: {
-   *     message: import('./slog-sender-pipe-entrypoint').FlushMessage;
+   *     message: import('./slog-sender-pipe-entrypoint.js').FlushMessage;
    *     reply: SlogSenderFlushReply;
    *   };
    * }} SlogSenderWaitMessagesAndReplies

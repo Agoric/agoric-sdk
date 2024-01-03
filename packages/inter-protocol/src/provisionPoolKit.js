@@ -24,7 +24,7 @@ import { Far, deeplyFulfilled } from '@endo/marshal';
 const { details: X, quote: q, Fail } = assert;
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils').Instance<
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
  *   import('@agoric/inter-protocol/src/psm/psm.js').start
  * >} PsmInstance
  */
@@ -34,7 +34,7 @@ const { details: X, quote: q, Fail } = assert;
  * @property {ERef<BankManager>} bankManager
  * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
  * @property {ERef<
- *   import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']
+ *   import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']
  * >} walletFactory
  */
 

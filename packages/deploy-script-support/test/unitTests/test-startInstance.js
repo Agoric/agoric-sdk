@@ -9,7 +9,7 @@ import { E } from '@endo/far';
 
 import { makeStartInstance } from '../../src/startInstance.js';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
 
 test('startInstance', async t => {
   const MOOLA_BRAND_PETNAME = 'moola';

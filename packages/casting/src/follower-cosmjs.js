@@ -90,8 +90,8 @@ const proofs = ['strict', 'none', 'optimistic'];
 /**
  * @template T
  * @param {any} sourceP
- * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
- * @param {import('./types').FollowerOptions} [options]
+ * @param {import('./types.js').LeaderOrMaker} [leaderOrMaker]
+ * @param {import('./types.js').FollowerOptions} [options]
  * @returns {ValueFollower<T>}
  */
 export const makeCosmjsFollower = (

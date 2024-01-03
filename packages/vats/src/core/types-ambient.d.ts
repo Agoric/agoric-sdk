@@ -316,7 +316,7 @@ type ChainBootstrapSpaceT = {
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
   chainStorage: StorageNode | null;
-  chainTimerService: import('@agoric/time/src/types').TimerService;
+  chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
@@ -397,7 +397,7 @@ type BootstrapPowers = BootstrapSpace & {
   vatPowers: { [prop: string]: any; D: DProxy };
   vatParameters: BootstrapVatParams;
   runBehaviors: (manifest: unknown) => Promise<unknown>;
-  modules: Record<string, Record<string, any>>;
+  modules: import('./boot-chain.js').BootstrapModules;
 };
 
 type BootstrapSpace = WellKnownSpaces &

@@ -1,7 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import '@agoric/vats/src/core/types-ambient.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
@@ -67,7 +66,7 @@ test('null swap', async t => {
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
   const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -124,7 +123,7 @@ test('want stable', async t => {
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
-  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -169,7 +168,7 @@ test('want stable (insufficient funds)', async t => {
   await wallet.getDepositFacet().receive(payment);
 
   t.log('Execute the swap');
-  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').AgoricContractInvitationSpec} */
   const invitationSpec = {
     source: 'agoricContract',
     instancePath: ['psm-IST-AUSD'],
@@ -266,7 +265,7 @@ test('govern offerFilter', async t => {
 
   // The purse has the invitation to get the makers ///////////
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
     instance: econCharter,
@@ -307,7 +306,7 @@ test('govern offerFilter', async t => {
   t.is(voteInvitationDetail.description, 'Voter0');
   t.is(voteInvitationDetail.instance, economicCommittee);
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getCommitteeInvMakersSpec = {
     source: 'purse',
     instance: economicCommittee,
@@ -336,7 +335,7 @@ test('govern offerFilter', async t => {
 
   // Call for a vote ////////////////////////////////
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 'acceptEcInvitationOID',

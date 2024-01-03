@@ -1,12 +1,12 @@
 // @ts-check
 import { E } from '@endo/far';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
 
 /**
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
- * @param {ERef<import('./startInstance').IssuerManager>} issuerManager
+ * @param {ERef<import('./startInstance.js').IssuerManager>} issuerManager
  */
 export const makeSaveIssuer = (walletAdmin, issuerManager) => {
   /**

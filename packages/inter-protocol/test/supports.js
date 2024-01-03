@@ -55,7 +55,7 @@ harden(setUpZoeForTest);
 
 /**
  * @param {any} t
- * @param {import('@agoric/time/src/types').TimerService} [optTimer]
+ * @param {import('@agoric/time').TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
@@ -187,7 +187,7 @@ export const subscriptionKey = subscription => {
 
 /**
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
  * }>} hasTopics
  * @param {string} subscriberName
  */
@@ -222,7 +222,7 @@ export const headValueLegacy = async subscription => {
 /**
  * @param {import('ava').ExecutionContext} t
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord;
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
  * }>} hasTopics
  * @param {string} topicName
  * @param {string} path

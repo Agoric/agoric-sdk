@@ -9,7 +9,7 @@ const trace = makeTracer('WUTIL', false);
 
 /** @param {Brand<'set'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
-  /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
+  /** @type {Map<import('./offers.js').OfferId, import('./offers.js').OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
@@ -17,11 +17,11 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /**
    * keyed by description; xxx assumes unique
    *
-   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: Instance }>}
+   * @type {Map<import('./offers.js').OfferId, { acceptedIn: import('./offers.js').OfferId, description: string, instance: Instance }>}
    */
   const invitationsReceived = new Map();
 
-  /** @param {import('./smartWallet').UpdateRecord | {}} updateRecord newer than previous */
+  /** @param {import('./smartWallet.js').UpdateRecord | {}} updateRecord newer than previous */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
       return;
@@ -93,7 +93,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<Subscriber<import('./smartWallet').UpdateRecord>>} updates
+ * @param {ERef<Subscriber<import('./smartWallet.js').UpdateRecord>>} updates
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceUpdates = (updates, invitationBrand) => {
@@ -125,7 +125,7 @@ export const assertHasData = async follower => {
 /**
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord} [subscribers]
+ * @param {import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

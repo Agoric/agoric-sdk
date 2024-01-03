@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -56,20 +57,18 @@ func GetCmdDeliver() *cobra.Command {
 			}
 
 			jsonIn := args[0]
-			if jsonIn[0] == '@' {
-				fname := args[0][1:]
+			if strings.HasPrefix(jsonIn, "@") {
+				var jsonBytes []byte
+				fname := jsonIn[1:]
 				if fname == "-" {
-					// Reading from stdin.
-					if _, err := fmt.Scanln(&jsonIn); err != nil {
-						return err
-					}
+					jsonBytes, err = io.ReadAll(os.Stdin)
 				} else {
-					jsonBytes, err := os.ReadFile(fname)
-					if err != nil {
-						return err
-					}
-					jsonIn = string(jsonBytes)
+					jsonBytes, err = os.ReadFile(fname)
 				}
+				if err != nil {
+					return err
+				}
+				jsonIn = string(jsonBytes)
 			}
 			msgs, err := types.UnmarshalMessagesJSON(jsonIn)
 			if err != nil {
@@ -102,20 +101,18 @@ func GetCmdInstallBundle() *cobra.Command {
 			}
 
 			jsonIn := args[0]
-			if jsonIn[0] == '@' {
-				fname := args[0][1:]
+			if strings.HasPrefix(jsonIn, "@") {
+				var jsonBytes []byte
+				fname := jsonIn[1:]
 				if fname == "-" {
-					// Reading from stdin.
-					if _, err := fmt.Scanln(&jsonIn); err != nil {
-						return err
-					}
+					jsonBytes, err = io.ReadAll(os.Stdin)
 				} else {
-					jsonBytes, err := os.ReadFile(fname)
-					if err != nil {
-						return err
-					}
-					jsonIn = string(jsonBytes)
+					jsonBytes, err = os.ReadFile(fname)
 				}
+				if err != nil {
+					return err
+				}
+				jsonIn = string(jsonBytes)
 			}
 
 			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress())
@@ -160,6 +157,8 @@ func GetCmdProvisionOne() *cobra.Command {
 				return err
 			}
 
+			nickname := args[0]
+
 			addr, err := sdk.AccAddressFromBech32(args[1])
 			if err != nil {
 				return err
@@ -170,7 +169,7 @@ func GetCmdProvisionOne() *cobra.Command {
 				powerFlags = strings.Split(args[2], ",")
 			}
 
-			msg := types.NewMsgProvision(args[0], addr, powerFlags, cctx.GetFromAddress())
+			msg := types.NewMsgProvision(nickname, addr, powerFlags, cctx.GetFromAddress())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
@@ -230,7 +229,7 @@ func NewCmdSubmitCoreEvalProposal() *cobra.Command {
 Specify at least one pair of permit.json and code.js files`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args)%2 != 0 {
-				return fmt.Errorf("must specify an even number of permit.json and code.js files")
+				return fmt.Errorf("must specify paired permit.json and code.js files")
 			}
 
 			clientCtx, err := client.GetClientTxContext(cmd)

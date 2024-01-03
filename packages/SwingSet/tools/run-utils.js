@@ -1,32 +1,29 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import { Fail, q } from '@agoric/assert';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
-import type { E } from '@endo/eventual-send';
-
-import type { SwingsetController } from '../src/controller/controller.js';
 
 const sink = () => {};
 
-export const makeRunUtils = (
-  controller: SwingsetController,
-  log = (..._) => {},
-) => {
+/**
+ * @param {import('../src/controller/controller.js').SwingsetController} controller
+ * @param {(...args: any[]) => void} [log]
+ */
+export const makeRunUtils = (controller, log = (..._) => {}) => {
   let cranksRun = 0;
 
   const mutex = makeQueue();
 
   mutex.put(controller.run());
 
-  const runThunk = async <T extends () => any>(
-    thunk: T,
-  ): Promise<ReturnType<T>> => {
-    try {
-      // this promise for the last lock may fail
-      await mutex.get();
-    } catch {
-      // noop because the result will resolve for the previous runMethod return
-    }
+  /**
+   * @template {() => any} T
+   * @param {T} thunk
+   * @returns {Promise<ReturnType<T>>}
+   */
+  const runThunk = async thunk => {
+    // this promise for the last lock may fail
+    // sink because the result will resolve for the previous runMethod return
+    await mutex.get().catch(sink);
 
     const thunkResult = await thunk();
 
@@ -60,10 +57,12 @@ export const makeRunUtils = (
     }
   };
 
-  type EVProxy = typeof E & {
-    sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
-    vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
-  };
+  /**
+   * @typedef {import('@endo/eventual-send').EProxy & {
+   *  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+   *  vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
+   * }} EVProxy
+   */
 
   // IMPORTANT WARNING TO USERS OF `EV`
   //
@@ -109,48 +108,56 @@ export const makeRunUtils = (
   // promise that can remain pending indefinitely, possibly to be settled by a
   // future message delivery.
 
+  /** @type {EVProxy} */
   // @ts-expect-error cast, approximate
-  const EV: EVProxy = presence =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) => {
-        const boundMethod = (...args) =>
-          queueAndRun(() =>
-            controller.queueToVatObject(presence, method, args),
-          );
-        return harden(boundMethod);
-      },
-    });
-  EV.vat = vatName =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) => {
-        const boundMethod = (...args) =>
-          queueAndRun(() => controller.queueToVatRoot(vatName, method, args));
-        return harden(boundMethod);
-      },
-    });
-  // @ts-expect-error xxx
-  EV.sendOnly = presence =>
-    new Proxy(harden({}), {
-      get: (_t, method, _rx) => {
-        const boundMethod = (...args) =>
-          queueAndRun(
-            () => controller.queueToVatObject(presence, method, args),
-            true,
-          );
-        return harden(boundMethod);
-      },
-    });
-  // @ts-expect-error xxx
-  EV.get = presence =>
-    new Proxy(harden({}), {
-      get: (_t, pathElement, _rx) =>
-        queueAndRun(() =>
-          controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
-            presence,
-            [pathElement],
-          ]),
-        ),
-    });
+  const EV = Object.assign(
+    presence =>
+      new Proxy(harden({}), {
+        get: (_t, method, _rx) => {
+          const boundMethod = (...args) =>
+            queueAndRun(() =>
+              controller.queueToVatObject(presence, method, args),
+            );
+          return harden(boundMethod);
+        },
+      }),
+    {
+      vat: vatName =>
+        new Proxy(harden({}), {
+          get: (_t, method, _rx) => {
+            const boundMethod = (...args) =>
+              queueAndRun(() =>
+                controller.queueToVatRoot(vatName, method, args),
+              );
+            return harden(boundMethod);
+          },
+        }),
+      sendOnly: presence =>
+        new Proxy(harden({}), {
+          get: (_t, method, _rx) => {
+            const boundMethod = (...args) =>
+              queueAndRun(
+                () => controller.queueToVatObject(presence, method, args),
+                true,
+              );
+            return harden(boundMethod);
+          },
+        }),
+      get: presence =>
+        new Proxy(harden({}), {
+          get: (_t, pathElement, _rx) =>
+            queueAndRun(() =>
+              controller.queueToVatRoot('bootstrap', 'awaitVatObject', [
+                presence,
+                [pathElement],
+              ]),
+            ),
+        }),
+    },
+  );
   return harden({ runThunk, EV });
 };
-export type RunUtils = ReturnType<typeof makeRunUtils>;
+
+/**
+ * @typedef {ReturnType<typeof makeRunUtils>} RunUtils
+ */

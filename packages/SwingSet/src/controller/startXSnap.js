@@ -41,6 +41,8 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
  *   overrideBundles?: import('../types-external.js').Bundle[],
+ *   profileVats?: string[],
+ *   debugVats?: string[],
  * }} options
  */
 export function makeStartXSnap(options) {
@@ -54,6 +56,8 @@ export function makeStartXSnap(options) {
     snapStore,
     workerTraceRootPath,
     overrideBundles,
+    profileVats = [],
+    debugVats = [],
     debug = false,
   } = options;
 
@@ -77,7 +81,7 @@ export function makeStartXSnap(options) {
     };
   }
 
-  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
+  /** @type { import('@agoric/xsnap/src/xsnap.js').XSnapOptions } */
   const xsnapOpts = {
     os: osType(),
     fs: { ...fs, ...fs.promises, tmpName },
@@ -123,6 +127,7 @@ export function makeStartXSnap(options) {
    * @param {string} name
    * @param {object} details
    * @param {import('../types-external.js').BundleID[]} details.bundleIDs
+   * @param {string} details.vatID
    * @param {(request: Uint8Array) => Promise<Uint8Array>} details.handleCommand
    * @param {boolean} [details.metered]
    * @param {StartXSnapInitDetails} [details.init]
@@ -131,11 +136,18 @@ export function makeStartXSnap(options) {
     name,
     {
       bundleIDs,
+      vatID,
       handleCommand,
       metered,
       init: initDetails = { from: 'bundles' },
     },
   ) {
+    if (profileVats.includes(vatID)) {
+      Fail`startXSnap: not yet supporting profiling for vat ${vatID}`;
+    }
+    if (debugVats.includes(vatID)) {
+      Fail`startXSnap: not yet supporting debugging for vat ${vatID}`;
+    }
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     const snapshotLoadOpts = getSnapshotLoadOptions(initDetails);
     await null;

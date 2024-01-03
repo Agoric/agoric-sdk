@@ -22,7 +22,7 @@ import {
   setUpInstallations,
 } from './tools.js';
 
-/** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
+/** @typedef {import('@agoric/time').TimerService} TimerService */
 
 test('schedule start to finish', async t => {
   const { zcf, zoe } = await setupZCFTest();

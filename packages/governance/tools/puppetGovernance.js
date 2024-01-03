@@ -43,7 +43,7 @@ export const setUpGovernedContract = async (
 
   /**
    * @type {[
-   * Installation<import('./puppetContractGovernor').start>,
+   * Installation<import('./puppetContractGovernor.js').start>,
    * Installation<any>,
    * Installation<T>,
    * ]}

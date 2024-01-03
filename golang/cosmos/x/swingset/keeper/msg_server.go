@@ -45,13 +45,11 @@ func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionM
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// msg.Nums and msg.Messages must be zipped into an array of [num, message] pairs.
 	messages := make([][]interface{}, len(msg.Messages))
 	for i, message := range msg.Messages {
-		messages[i] = make([]interface{}, 2)
-		messages[i][0] = msg.Nums[i]
-		messages[i][1] = message
+		messages[i] = []interface{}{msg.Nums[i], message}
 	}
-
 	action := &deliverInboundAction{
 		Type:        "DELIVER_INBOUND",
 		Peer:        msg.Submitter.String(),
@@ -80,6 +78,11 @@ type walletAction struct {
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
 	action := &walletAction{
 		Type:        "WALLET_ACTION",
 		Owner:       msg.Owner.String(),
@@ -89,7 +92,7 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -108,6 +111,11 @@ type walletSpendAction struct {
 func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
 	action := &walletSpendAction{
 		Type:        "WALLET_SPEND_ACTION",
 		Owner:       msg.Owner.String(),
@@ -116,7 +124,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
 		return nil, err
 	}
@@ -125,9 +133,46 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 
 type provisionAction struct {
 	*types.MsgProvision
-	Type        string `json:"type"` // PLEASE_PROVISION
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	Type          string `json:"type"` // PLEASE_PROVISION
+	BlockHeight   int64  `json:"blockHeight"`
+	BlockTime     int64  `json:"blockTime"`
+	AutoProvision bool   `json:"autoProvision"`
+}
+
+// provisionIfNeeded generates a provision action if no smart wallet is already
+// provisioned for the account. This assumes that all messages for
+// non-provisioned smart wallets allowed by the admission AnteHandler should
+// auto-provision the smart wallet.
+func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress) error {
+	// We need to generate a provision action until the smart wallet has
+	// been fully provisioned by the controller. This is because a provision is
+	// not guaranteed to succeed (e.g. lack of provision pool funds)
+	walletState := keeper.GetSmartWalletState(ctx, owner)
+	if walletState == types.SmartWalletStateProvisioned {
+		return nil
+	}
+
+	msg := &types.MsgProvision{
+		Address:    owner,
+		Submitter:  owner,
+		PowerFlags: []string{types.PowerFlagSmartWallet},
+	}
+
+	action := &provisionAction{
+		MsgProvision:  msg,
+		Type:          "PLEASE_PROVISION",
+		BlockHeight:   ctx.BlockHeight(),
+		BlockTime:     ctx.BlockTime().Unix(),
+		AutoProvision: true,
+	}
+
+	err := keeper.routeAction(ctx, msg, action)
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {

@@ -15,7 +15,7 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  *
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time').TimerService} TimerService
  */
 
 /** @type {ContractMeta} */

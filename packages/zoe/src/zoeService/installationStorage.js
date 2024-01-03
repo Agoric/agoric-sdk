@@ -84,8 +84,12 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
         InstanceHandleShape,
         M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
       ),
-    ).returns(M.promise()),
-    installBundleID: M.call(M.string()).returns(M.promise()),
+    )
+      .optional(M.string())
+      .returns(M.promise()),
+    installBundleID: M.call(M.string())
+      .optional(M.string())
+      .returns(M.promise()),
     unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(
       UnwrappedInstallationShape,
     ),
