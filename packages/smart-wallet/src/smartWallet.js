@@ -1,5 +1,3 @@
-// backported types are out of sync
-// @ts-nocheck
 import { E } from '@endo/far';
 import {
   AmountShape,
@@ -137,18 +135,15 @@ const trace = makeTracer('SmrtWlt');
  *   brand: Brand,
  *   displayInfo: DisplayInfo,
  *   issuer: Issuer,
- *   petname: import('./types').Petname
+ *   petname: import('./types.js').Petname
  * }} BrandDescriptor
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
 
-// imports
-/** @typedef {import('./types').RemotePurse} RemotePurse */
-
 /**
  * @typedef {{
  *   address: string,
- *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
  *   currentStorageNode: StorageNode,
  *   invitationPurse: Purse<'set'>,
  *   walletStorageNode: StorageNode,
@@ -174,10 +169,10 @@ const trace = makeTracer('SmrtWlt');
  *
  * @typedef {Readonly<UniqueParams & {
  *   paymentQueues: MapStore<Brand, Array<Payment>>,
- *   offerToInvitationMakers: MapStore<string, import('./types').InvitationMakers>,
+ *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
- *   purseBalances: MapStore<RemotePurse, Amount>,
+ *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
  *   liveOffers: MapStore<OfferId, import('./offers.js').OfferStatus>,
@@ -196,7 +191,7 @@ const trace = makeTracer('SmrtWlt');
  * TODO: consider moving to nameHub.js?
  *
  * @param {unknown} target - passable Key
- * @param {ERef<NameHub>} nameHub
+ * @param {ERef<import('@agoric/vats').NameHub>} nameHub
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
@@ -440,7 +435,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           !used || Fail`cannot re-use offer id ${id}`;
         },
         /**
-         * @param {RemotePurse} purse
+         * @param {Purse} purse
          * @param {Amount<any>} balance
          */
         updateBalance(purse, balance) {
@@ -479,7 +474,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
-        /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
+        /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
           const { facets } = this;
 
@@ -518,7 +513,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * to facilitate a transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
+         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -583,8 +578,6 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { zoe, agoricNames } = shared;
           const { invitationBrand, invitationIssuer } = shared;
 
-          await null;
-
           const invitationFromSpec = makeInvitationsHelper(
             zoe,
             agoricNames,
@@ -593,26 +586,33 @@ export const prepareSmartWallet = (baggage, shared) => {
             state.offerToInvitationMakers.get,
           );
 
+          const watcherPromises = [];
           for (const seatId of liveOfferSeats.keys()) {
             facets.helper.logWalletInfo(`repairing ${seatId}`);
             const offerSpec = liveOffers.get(seatId);
             const seat = liveOfferSeats.get(seatId);
 
             const invitation = invitationFromSpec(offerSpec.invitationSpec);
-            const invitationAmount =
-              E(invitationIssuer).getAmountOf(invitation);
-            const watcher = makeOfferWatcher(
-              facets.helper,
-              facets.deposit,
-              offerSpec,
-              address,
-              invitationAmount,
-              seat,
+            watcherPromises.push(
+              E.when(
+                E(invitationIssuer).getAmountOf(invitation),
+                invitationAmount => {
+                  const watcher = makeOfferWatcher(
+                    facets.helper,
+                    facets.deposit,
+                    offerSpec,
+                    address,
+                    invitationAmount,
+                    seat,
+                  );
+                  return watchOfferOutcomes(watcher, seat);
+                },
+              ),
             );
-
-            void watchOfferOutcomes(watcher, seat);
             trace(`Repaired seat ${seatId} for wallet ${address}`);
           }
+
+          await Promise.all(watcherPromises);
         },
 
         /** @param {import('./offers.js').OfferStatus} offerStatus */
@@ -1053,7 +1053,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         const { invitationPurse } = state;
         const { helper } = facets;
 
-        // @ts-expect-error RemotePurse cast
         void helper.watchPurse(invitationPurse);
       },
     },
