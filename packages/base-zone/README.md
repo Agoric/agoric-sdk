@@ -6,4 +6,4 @@ allows library code to be agnostic to whether its objects are backed purely by
 the JS heap (ephemeral), pageable out to disk (virtual) or can be revived after
 a vat upgrade (durable).
 
-This library is used internally by [`@agoric/zone`](../zone/README.md); refer to it for more details.  Unless you are an author of a new Zone backing store type, or want to use `makeHeapZone` without introducing build dependencies on `@agoric/vat-data`, you should instead use `@agoric/zone`.
+This library is used internally by [@agoric/zone](../zone/README.md); refer to it for more details.  Unless you are an author of a new Zone backing store type, or want to use `makeHeapZone` without introducing build dependencies on [@agoric/vat-data](../vat-data/README.md), you should instead use [@agoric/zone](../zone/README.md).
