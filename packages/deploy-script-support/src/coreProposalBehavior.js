@@ -9,6 +9,12 @@ const t = 'makeCoreProposalBehavior';
  */
 
 /**
+ * @typedef {import('./externalTypes.js').ManifestBundleRef} ManifestBundleRef
+ * @typedef {[methodName: string, ...args: unknown[]]} FlatMethargs
+ * @typedef {Record<string, Record<string, unknown>>} Manifest
+ */
+
+/**
  * These permits are expected to be the minimum powers required by the
  * `coreProposalBehavior` function returned from `makeCoreProposalBehavior`.
  * They are merged with all of the manifest getter's permits to produce the
@@ -30,13 +36,13 @@ export const permits = {
  * for catching bugs.  Thus, this maker must not reference any other modules or
  * definitions.
  *
- * @param {object} opts
- * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
- * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
- * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
- * @param {typeof import('@endo/far').E} opts.E
- * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
+ * @param {object} inputs
+ * @param {ManifestBundleRef} inputs.manifestBundleRef
+ * @param {FlatMethargs} inputs.getManifestCall
+ * @param {Manifest} [inputs.overrideManifest]
+ * @param {typeof import('@endo/far').E} inputs.E
+ * @param {(...args: unknown[]) => void} [inputs.log]
+ * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [inputs.restoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
@@ -167,9 +173,20 @@ export const makeCoreProposalBehavior = ({
   return coreProposalBehavior;
 };
 
-export const makeEnactCoreProposalsFromBundleRef =
-  ({ makeCoreProposalArgs, E }) =>
-  async powers => {
+/**
+ * @param {object} inputs
+ * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, overrideManifest?: Manifest }>} inputs.makeCoreProposalArgs
+ * @param {typeof import('@endo/far').E} inputs.E
+ */
+export const makeEnactCoreProposalsFromBundleRef = ({
+  makeCoreProposalArgs,
+  E,
+}) => {
+  /**
+   * @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers
+   * @returns {Promise<void>}
+   */
+  const enactCoreProposals = async powers => {
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
@@ -182,3 +199,5 @@ export const makeEnactCoreProposalsFromBundleRef =
       }),
     );
   };
+  return enactCoreProposals;
+};
