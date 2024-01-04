@@ -204,7 +204,7 @@ export const extractCoreProposalBundles = async (
         exportedGetManifest in behaviors,
         `behavior ${behaviorSource} missing ${exportedGetManifest}`,
       );
-      const { manifest: overrideManifest } = await behaviors[
+      const { manifest: customManifest } = await behaviors[
         exportedGetManifest
       ](harden({ restoreRef: () => null }), ...manifestArgs);
 
@@ -227,7 +227,7 @@ export const extractCoreProposalBundles = async (
       return harden({
         ref: behaviorBundleHandle,
         call: getManifestCall,
-        overrideManifest,
+        customManifest,
         bundleSpecs: bundleSpecEntries,
       });
     }),
@@ -240,10 +240,10 @@ export const extractCoreProposalBundles = async (
   harden(bundles);
 
   // Extract the manifest references and calls.
-  const makeCPArgs = extracted.map(({ ref, call, overrideManifest }) => ({
+  const makeCPArgs = extracted.map(({ ref, call, customManifest }) => ({
     ref,
     call,
-    overrideManifest,
+    customManifest,
   }));
   harden(makeCPArgs);
 
