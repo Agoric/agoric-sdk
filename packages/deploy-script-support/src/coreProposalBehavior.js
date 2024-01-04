@@ -33,19 +33,19 @@ export const permits = {
  * @param {object} opts
  * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
  * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
- * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
+ * @param {Record<string, Record<string, unknown>>} [opts.customManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
+ * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.customRestoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
   manifestBundleRef,
   getManifestCall: [manifestGetterName, ...manifestGetterArgs],
-  overrideManifest,
+  customManifest,
   E,
   log = console.info,
-  restoreRef: customRestoreRef,
+  customRestoreRef,
 }) => {
   const { entries, fromEntries } = Object;
 
@@ -156,7 +156,7 @@ export const makeCoreProposalBehavior = ({
       // Remember that `powers` may be arbitrarily broad.
       allPowers: powers,
       behaviors: proposalNS,
-      manifest: overrideManifest || manifest,
+      manifest: customManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
         return { options };
@@ -175,7 +175,7 @@ export const makeEnactCoreProposalsFromBundleRef =
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
-          overrideManifest,
+          customManifest: overrideManifest,
           E,
         });
         return coreProposalBehavior(powers);
