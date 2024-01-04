@@ -45,7 +45,7 @@ export const makeCoreProposalBehavior = ({
   overrideManifest,
   E,
   log = console.info,
-  restoreRef: overrideRestoreRef,
+  restoreRef: customRestoreRef,
 }) => {
   const { entries, fromEntries } = Object;
 
@@ -127,7 +127,7 @@ export const makeCoreProposalBehavior = ({
       manifestGetterName,
       bundleExports: Object.keys(proposalNS),
     });
-    const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
+    const restoreRef = customRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
