@@ -171,11 +171,11 @@ export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
   async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+      makeCoreProposalArgs.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
-          customManifest: overrideManifest,
+          customManifest,
           E,
         });
         return coreProposalBehavior(powers);
