@@ -51,15 +51,15 @@ export const makeWriteCoreProposal = (
   const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
-      getManifestCall: [exportedGetManifest, ...manifestArgs],
+      getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = proposal;
 
-    const manifestNs = await import(pathResolve(sourceSpec));
+    const proposalNS = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await manifestNs[exportedGetManifest](
-      { restoreRef: x => `restoreRef:${x}` },
-      ...manifestArgs,
+    const { manifest } = await proposalNS[manifestGetterName](
+      harden({ restoreRef: x => `restoreRef:${x}` }),
+      ...manifestGetterArgs,
     );
 
     const mergedPermits = mergePermits(manifest);
