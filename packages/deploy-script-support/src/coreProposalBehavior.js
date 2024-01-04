@@ -168,10 +168,10 @@ export const makeCoreProposalBehavior = ({
 };
 
 export const makeEnactCoreProposalsFromBundleRef =
-  ({ makeCoreProposalArgs, E }) =>
+  ({ metadataRecords, E }) =>
   async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, customManifest }) => {
+      metadataRecords.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
