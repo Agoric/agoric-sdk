@@ -14,7 +14,7 @@ import {
  * @typedef {string | { module: string, entrypoint: string, args?: Array<unknown> }} ConfigProposal
  */
 
-const { details: X, Fail } = assert;
+const { Fail } = assert;
 
 const req = createRequire(import.meta.url);
 
@@ -24,8 +24,8 @@ const req = createRequire(import.meta.url);
  * @typedef {string} FilePath
  */
 const pathResolve = (...paths) => {
-  const fileName = paths.pop();
-  assert(fileName, '>=1 paths required');
+  const fileName = /** @type {string} */ (paths.pop());
+  fileName || Fail`base name required`;
   try {
     return req.resolve(fileName, {
       paths,
@@ -132,11 +132,8 @@ export const extractCoreProposalBundles = async (
           absolutePaths.bundle = absoluteBundle;
           const oldSource = bundleToSource.get(absoluteBundle);
           if (oldSource) {
-            assert.equal(
-              oldSource,
-              absoluteSrc,
-              X`${bundlePath} already installed from ${oldSource}, now ${absoluteSrc}`,
-            );
+            oldSource === absoluteSrc ||
+              Fail`${bundlePath} already installed from ${oldSource}, now ${absoluteSrc}`;
           } else {
             bundleToSource.set(absoluteBundle, absoluteSrc);
           }
