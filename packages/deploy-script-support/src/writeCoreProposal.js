@@ -98,7 +98,7 @@ export const makeWriteCoreProposal = (
      *
      * @param {string} entrypoint
      * @param {string} [bundlePath]
-     * @param [opts]
+     * @param {unknown} [opts]
      * @returns {Promise<import('./externalTypes.js').ManifestBundleRef>}
      */
     const install = async (entrypoint, bundlePath, opts) => {
