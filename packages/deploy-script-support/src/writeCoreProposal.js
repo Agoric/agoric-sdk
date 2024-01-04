@@ -152,8 +152,9 @@ const manifestBundleRef = ${stringify(manifestBundleRef)};
 const getManifestCall = harden(${stringify(getManifestCall, true)});
 const customManifest = ${stringify(customManifest, true)};
 
-// Make the behavior the completion value.
-(${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
+// Make a behavior function and "export" it by way of script completion value.
+const behavior = (${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
+behavior;
 `;
 
     const trimmed = defangAndTrim(code);
