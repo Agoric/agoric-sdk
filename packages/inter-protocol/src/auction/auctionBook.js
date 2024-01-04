@@ -471,14 +471,16 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         observeQuoteNotifier() {
           const { state, facets } = this;
           const { collateralBrand, bidBrand, priceAuthority } = state;
-          assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
 
+          const emptyBidRatio = makeRatioFromAmounts(
+            makeEmpty(bidBrand),
+            AmountMath.make(collateralBrand, 1n),
+          );
           trace('observing');
 
           void E.when(
             E(collateralBrand).getDisplayInfo(),
             ({ decimalPlaces = DEFAULT_DECIMALS }) => {
-              // TODO(#6946) use this to keep a current price that can be published in state.
               const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
                 AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
                 bidBrand,
@@ -492,18 +494,22 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                   );
                   state.updatingOracleQuote = priceFrom(quote);
                 },
-                fail: _reason => {
-                  trace('fail', _reason);
-
-                  // set this to empty and wait a while before restarting
-                  state.updatingOracleQuote = makeRatioFromAmounts(
-                    makeEmpty(bidBrand),
-                    AmountMath.make(collateralBrand, 1n),
+                fail: reason => {
+                  trace(
+                    `Failure from quoteNotifier (${reason}) setting to empty`,
                   );
+
+                  // set quote to empty and wait a while before restarting
+                  state.updatingOracleQuote = emptyBidRatio;
                 },
                 finish: _done => {
-                  trace('finish', _done);
-                  facets.helper.observeQuoteNotifier();
+                  trace(
+                    'quoteNotifier invoked finish(). setting quote to empty',
+                    _done,
+                  );
+
+                  // set quote to empty and wait a while before restarting
+                  state.updatingOracleQuote = emptyBidRatio;
                 },
               });
             },
@@ -673,13 +679,14 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { facets, state } = this;
 
           trace(`capturing oracle price `, state.updatingOracleQuote);
-          if (!AmountMath.isEmpty(state.updatingOracleQuote.numerator)) {
-            state.capturedPriceForRound = state.updatingOracleQuote;
-            void facets.helper.publishBookData();
-          } else {
+          if (AmountMath.isEmpty(state.updatingOracleQuote.numerator)) {
             // if the price has feed has died, try restarting it.
             facets.helper.observeQuoteNotifier();
+            return;
           }
+
+          state.capturedPriceForRound = state.updatingOracleQuote;
+          void facets.helper.publishBookData();
         },
 
         setStartingRate(rate) {

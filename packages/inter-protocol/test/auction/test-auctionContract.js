@@ -146,7 +146,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
   /**
    * @type {MapStore<
    *   Brand,
-   *   { setPrice: (r: Ratio) => void; disable: () => void }
+   *   import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority
    * >}
    */
   const priceAuthorities = makeScalarMapStore();
