@@ -253,9 +253,11 @@ export const extractCoreProposalBundles = async (
 
 const makeCoreProposalArgs = harden(${stringify(makeCPArgs, true)});
 
-const makeCoreProposalBehavior = ${makeCoreProposalBehavior};
-
-(${makeEnactCoreProposals})({ makeCoreProposalArgs, E });
+// Make an enactCoreProposals function and "export" it by way of script completion value.
+((
+  makeCoreProposalBehavior = ${makeCoreProposalBehavior},
+  makeEnactCoreProposals = ${makeEnactCoreProposals},
+) => makeEnactCoreProposals({ makeCoreProposalArgs, E }))();
 `;
 
   // console.debug('created bundles from proposals:', coreProposals, bundles);
