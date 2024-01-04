@@ -175,7 +175,7 @@ export const makeCoreProposalBehavior = ({
 
 /**
  * @param {object} inputs
- * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, overrideManifest?: Manifest }>} inputs.makeCoreProposalArgs
+ * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, customManifest?: Manifest }>} inputs.makeCoreProposalArgs
  * @param {typeof import('@endo/far').E} inputs.E
  */
 export const makeEnactCoreProposalsFromBundleRef = ({
@@ -188,11 +188,11 @@ export const makeEnactCoreProposalsFromBundleRef = ({
    */
   const enactCoreProposals = async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+      makeCoreProposalArgs.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
-          customManifest: overrideManifest,
+          customManifest,
           E,
         });
         return coreProposalBehavior(powers);
