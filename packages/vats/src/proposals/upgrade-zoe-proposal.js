@@ -13,7 +13,7 @@ import { E } from '@endo/far';
  * @param {object} options
  * @param {{ zoeRef: VatSourceRef; zcfRef: VatSourceRef }} options.options
  */
-export const nullUpgradeZoe = async (
+export const upgradeZoe = async (
   { consume: { vatAdminSvc, vatStore } },
   options,
 ) => {
@@ -30,7 +30,7 @@ export const nullUpgradeZoe = async (
 
 export const getManifestForUpgradingZoe = (_powers, { zoeRef }) => ({
   manifest: {
-    [nullUpgradeZoe.name]: {
+    [upgradeZoe.name]: {
       consume: {
         vatAdminSvc: 'vatAdminSvc',
         vatStore: 'vatStore',

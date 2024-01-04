@@ -137,6 +137,7 @@
  * @property {(strings: Array<string>) => void} setOfferFilter
  * @property {() => Array<string>} getOfferFilter
  * @property {(seatHandle: SeatHandle) => Subscriber<AmountKeywordRecord>} getExitSubscriber
+ * @property {() => void} repairContractCompletionWatcher
  */
 
 /**

@@ -1,5 +1,7 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
+
+import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/kmarshal';
 
@@ -51,6 +53,18 @@ test('zoe vat upgrade trauma', async t => {
   const messageToObject = async (presence, method, ...args) => {
     const kpid = c.queueToVatObject(presence, method, args);
     return awaitRun(kpid);
+  };
+
+  const restartVatAdminVat = async controller => {
+    const vaBundle = await bundleSource(
+      new URL(
+        '../../../../SwingSet/src/vats/vat-admin/vat-vat-admin.js',
+        import.meta.url,
+      ).pathname,
+    );
+    const bundleID = await controller.validateAndInstallBundle(vaBundle);
+    controller.upgradeStaticVat('vatAdmin', true, bundleID, {});
+    await controller.run();
   };
 
   /**
@@ -227,13 +241,16 @@ test('zoe vat upgrade trauma', async t => {
     pausedFlows.push({ result, remainingSteps: flow.slice(i) });
   }
 
+  // Null-upgrade vatAdmin.
+  await restartVatAdminVat(c);
+
   // Null-upgrade Zoe.
-  const { incarnationNumber } = await messageToVat(
+  const { incarnationNumber: zoeIncarnationNumber } = await messageToVat(
     'bootstrap',
     'upgradeVat',
     zoeVatConfig,
   );
-  t.is(incarnationNumber, 1, 'Zoe vat must be upgraded');
+  t.is(zoeIncarnationNumber, 1, 'Zoe vat must be upgraded');
 
   // Verify a complete run in the new Zoe.
   await doSteps('post-upgrade', flow);
@@ -241,6 +258,6 @@ test('zoe vat upgrade trauma', async t => {
   // Verify completion of each paused flow.
   for (const { result, remainingSteps } of pausedFlows) {
     const [beforeStepName] = remainingSteps[0];
-    await doSteps(`resumed-${beforeStepName}`, flow, result);
+    await doSteps(`resumed-${beforeStepName}`, remainingSteps, result);
   }
 });
