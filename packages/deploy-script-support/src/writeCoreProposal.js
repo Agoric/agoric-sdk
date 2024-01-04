@@ -137,7 +137,7 @@ export const makeWriteCoreProposal = (
     // console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const { permits: proposalPermit, manifest: overrideManifest } =
+    const { permits: proposalPermit, manifest: customManifest } =
       await mergeProposalPermit(proposal, permits);
 
     // Get an install
@@ -150,10 +150,10 @@ export const makeWriteCoreProposal = (
 
 const manifestBundleRef = ${stringify(manifestBundleRef)};
 const getManifestCall = harden(${stringify(getManifestCall, true)});
-const overrideManifest = ${stringify(overrideManifest, true)};
+const customManifest = ${stringify(customManifest, true)};
 
 // Make the behavior the completion value.
-(${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, overrideManifest, E });
+(${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
 `;
 
     const trimmed = defangAndTrim(code);
