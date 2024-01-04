@@ -184,20 +184,17 @@ export const makeCoreProposalBehavior = ({
 
 /**
  * @param {object} inputs
- * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, customManifest?: Manifest }>} inputs.makeCoreProposalArgs
+ * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, customManifest?: Manifest }>} inputs.metadataRecords
  * @param {typeof import('@endo/far').E} inputs.E
  */
-export const makeEnactCoreProposalsFromBundleRef = ({
-  makeCoreProposalArgs,
-  E,
-}) => {
+export const makeEnactCoreProposalsFromBundleRef = ({ metadataRecords, E }) => {
   /**
    * @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} powers
    * @returns {Promise<void>}
    */
   const enactCoreProposals = async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, customManifest }) => {
+      metadataRecords.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
