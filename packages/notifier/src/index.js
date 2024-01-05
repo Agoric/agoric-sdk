@@ -20,7 +20,6 @@ export {
   observeNotifier,
   observeIterator,
   observeIteration,
-  watchPerpetualNotifier,
   // deprecated, consider removing
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';

@@ -103,35 +103,3 @@ export const observeIteration = (asyncIterableP, iterationObserver) => {
  */
 export const observeNotifier = (notifierP, iterationObserver) =>
   observeIteration(subscribeLatest(notifierP), iterationObserver);
-
-/**
- * Watch an ephemeral notifier, and recover if it fails due to upgrade or other
- * reasons. Since it's expected to be a perpetual notifier, the watcher's
- * onRejected will also be called if the notifier calls finish().
- *
- * @template T notifier topic
- * @template {any[]} [A=unknown[]] arbitrary arguments
- * @param {ERef<LatestTopic<T>>} notifierP
- * @param {import('@agoric/swingset-liveslots').PromiseWatcher<T, A>} watcher
- * @param {A} args
- */
-export const watchPerpetualNotifier = async (notifierP, watcher, ...args) => {
-  await undefined;
-
-  let updateCount;
-  for (;;) {
-    let value;
-    try {
-      ({ value, updateCount } = await E(notifierP).getUpdateSince(updateCount));
-      watcher.onFulfilled && watcher.onFulfilled(value, ...args);
-    } catch (e) {
-      watcher.onRejected && watcher.onRejected(e, ...args);
-      break;
-    }
-    if (updateCount === undefined) {
-      watcher.onRejected &&
-        watcher.onRejected(Error('stream finished'), ...args);
-      break;
-    }
-  }
-};

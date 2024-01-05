@@ -27,11 +27,7 @@ import {
   RatioShape,
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import {
-  makeStoredNotifier,
-  observeNotifier,
-  watchPerpetualNotifier,
-} from '@agoric/notifier';
+import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import {
   M,
@@ -72,6 +68,38 @@ import { calculateDistributionPlan } from './proceeds.js';
 const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
+
+/**
+ * Watch a notifier that isn't expected to fail or finish unless the vat hosting
+ * the notifier is upgraded. This watcher supports that by providing a
+ * straightforward way to get a replacement if the notifier breaks.
+ *
+ * @template T notifier topic
+ * @template {any[]} [A=unknown[]] arbitrary arguments
+ * @param {ERef<LatestTopic<T>>} notifierP
+ * @param {import('@agoric/swingset-liveslots').PromiseWatcher<T, A>} watcher
+ * @param {A} args
+ */
+export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
+  await undefined;
+
+  let updateCount;
+  for (;;) {
+    let value;
+    try {
+      ({ value, updateCount } = await E(notifierP).getUpdateSince(updateCount));
+      watcher.onFulfilled && watcher.onFulfilled(value, ...args);
+    } catch (e) {
+      watcher.onRejected && watcher.onRejected(e, ...args);
+      break;
+    }
+    if (updateCount === undefined) {
+      watcher.onRejected &&
+        watcher.onRejected(Error('stream finished'), ...args);
+      break;
+    }
+  }
+};
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 /** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
@@ -427,7 +455,7 @@ export const prepareVaultManagerKit = (
               facets.helper.observeQuoteNotifier();
             },
           });
-          void watchPerpetualNotifier(quoteNotifier, quoteWatcher);
+          void watchQuoteNotifier(quoteNotifier, quoteWatcher);
         },
         /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
