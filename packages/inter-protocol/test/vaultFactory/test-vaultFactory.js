@@ -155,7 +155,7 @@ const setupServices = async (
   const runPayment = await getRunFromFaucet(t, stableInitialLiquidity);
   trace(t, 'faucet', { stableInitialLiquidity, runPayment });
 
-  const { space, priceAuthorityAdmin, aethPriceAuthority } =
+  const { space, priceAuthorityAdmin, aethTestPriceAuthority } =
     await setupElectorateReserveAndAuction(
       t,
       // @ts-expect-error inconsistent types with withAmountUtils
@@ -254,7 +254,7 @@ const setupServices = async (
     reserveKit,
     space,
     priceAuthorityAdmin,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
   };
 };
 

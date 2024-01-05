@@ -102,14 +102,9 @@ export const setupElectorateReserveAndAuction = async (
   // individual priceAuthorities, including aethPriceAuthority.
   // priceAuthorityAdmin supports registering more individual priceAuthorities
   // with the registry.
-  /**
-   * @type {PriceAuthority & {
-   *   setPrice: (Ratio) => void;
-   *   disable: () => void;
-   * }}
-   */
+  /** @type {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} */
   // @ts-expect-error scriptedPriceAuthority doesn't actually match this, but manualPriceAuthority does
-  const aethPriceAuthority = Array.isArray(priceOrList)
+  const aethTestPriceAuthority = Array.isArray(priceOrList)
     ? makeScriptedPriceAuthority({
         actualBrandIn: aeth.brand,
         actualBrandOut: run.brand,
@@ -130,7 +125,7 @@ export const setupElectorateReserveAndAuction = async (
   const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
     providePriceAuthorityRegistry(baggage);
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     aeth.brand,
     run.brand,
   );
@@ -152,7 +147,7 @@ export const setupElectorateReserveAndAuction = async (
     space,
     priceAuthority: priceAuthorityReg,
     priceAuthorityAdmin,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
   };
 };
 

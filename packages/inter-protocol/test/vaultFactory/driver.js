@@ -220,10 +220,10 @@ const setupServices = async (t, initialPrice, priceBase) => {
   t.context.consume = consume;
 
   // priceAuthorityReg is the registry, which contains and multiplexes multiple
-  // individual priceAuthorities, including aethPriceAuthority.
+  // individual priceAuthorities, including aethManualPA.
   // priceAuthorityAdmin supports registering more individual priceAuthorities
   // with the registry.
-  const aethPriceAuthority = makeManualPriceAuthority({
+  const aethManualPA = makeManualPriceAuthority({
     actualBrandIn: aeth.brand,
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
@@ -234,7 +234,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
   const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
     providePriceAuthorityRegistry(baggage);
   await E(priceAuthorityAdmin).registerPriceAuthority(
-    aethPriceAuthority,
+    aethManualPA,
     aeth.brand,
     run.brand,
   );
@@ -307,7 +307,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
     },
     priceAuthority: priceAuthorityReg,
     priceAuthorityAdmin,
-    aethPriceAuthority,
+    aethManualPA,
   };
 };
 
@@ -326,7 +326,7 @@ export const makeManagerDriver = async (
   const { zoe, aeth, run } = t.context;
   const {
     vaultFactory: { lender, vaultFactory, vfPublic },
-    aethPriceAuthority,
+    aethManualPA,
     timer,
   } = services;
   const publicTopics = await E(lender).getPublicTopics();
@@ -512,8 +512,7 @@ export const makeManagerDriver = async (
       });
     },
     /** @param {Amount<'nat'>} p */
-    setPrice: p =>
-      aethPriceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    setPrice: p => aethManualPA.setPrice(makeRatioFromAmounts(p, priceBase)),
     // XXX the paramPath should be implied by the object `setGovernedParam` is being called on.
     // e.g. the manager driver should know the paramPath is `{ key: { collateralBrand: aeth.brand } }`
     // and the director driver should `{ key: 'governedParams }`

@@ -151,7 +151,7 @@ const setupServices = async (
   } = t.context;
   t.context.timer = timer;
 
-  const { space, priceAuthorityAdmin, aethPriceAuthority } =
+  const { space, priceAuthorityAdmin, aethTestPriceAuthority } =
     await setupElectorateReserveAndAuction(
       t,
       // @ts-expect-error inconsistent types with withAmountUtils
@@ -256,7 +256,7 @@ const setupServices = async (
     reserveKit,
     auctioneerKit,
     priceAuthorityAdmin,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
   };
 };
 
@@ -378,7 +378,7 @@ test('price drop', async t => {
 
   const {
     vaultFactory: { vaultFactory, aethCollateralManager },
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
   } = services;
@@ -439,9 +439,11 @@ test('price drop', async t => {
     aeth.make(400n),
     'vault holds 11 Collateral',
   );
-  trace(t, 'pa2', aethPriceAuthority);
+  trace(t, 'pa2', { aethPriceAuthority: aethTestPriceAuthority });
 
-  await aethPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  await aethTestPriceAuthority.setPrice(
+    makeRatio(40n, run.brand, 10n, aeth.brand),
+  );
   trace(t, 'price dropped a little');
   notification = await E(vaultNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
@@ -541,7 +543,7 @@ test('price falls precipitously', async t => {
   const {
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
 
@@ -585,7 +587,7 @@ test('price falls precipitously', async t => {
     'vault holds 4 Collateral',
   );
 
-  aethPriceAuthority.setPrice(makeRatio(130n, run.brand, 1n, aeth.brand));
+  aethTestPriceAuthority.setPrice(makeRatio(130n, run.brand, 1n, aeth.brand));
   await eventLoopIteration();
 
   const { startTime, time } = await startAuctionClock(
@@ -691,7 +693,7 @@ test('liquidate two loans', async t => {
 
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
   } = services;
@@ -864,7 +866,7 @@ test('liquidate two loans', async t => {
     totalCollateral: { value: 800n },
   });
 
-  await E(aethPriceAuthority).setPrice(
+  await E(aethTestPriceAuthority).setPrice(
     makeRatio(70n, run.brand, 10n, aeth.brand),
   );
   trace(t, 'changed price to 7 RUN/Aeth');
@@ -1047,7 +1049,7 @@ test('sell goods at auction', async t => {
 
   const {
     auctioneerKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -1173,7 +1175,9 @@ test('sell goods at auction', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   // price falls
-  await aethPriceAuthority.setPrice(makeRatio(70n, run.brand, 10n, aeth.brand));
+  await aethTestPriceAuthority.setPrice(
+    makeRatio(70n, run.brand, 10n, aeth.brand),
+  );
   await eventLoopIteration();
 
   // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
@@ -1219,7 +1223,7 @@ test('collect fees from loan', async t => {
 
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
   } = services;
@@ -1353,12 +1357,14 @@ test('collect fees from loan', async t => {
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
   trace(t, 'alice reduce collateral');
 
-  await E(aethPriceAuthority).setPrice(
+  await E(aethTestPriceAuthority).setPrice(
     makeRatio(7n, run.brand, 1n, aeth.brand),
   );
   trace(t, 'changed price to 7');
 
-  await aethPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  await aethTestPriceAuthority.setPrice(
+    makeRatio(40n, run.brand, 10n, aeth.brand),
+  );
   trace(t, 'price dropped a little');
   notification = await E(aliceNotifier).getUpdateSince();
   t.is(notification.value.vaultState, Phase.ACTIVE);
@@ -1471,7 +1477,7 @@ test('Auction sells all collateral w/shortfall', async t => {
 
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
   } = services;
@@ -1597,7 +1603,7 @@ test('Auction sells all collateral w/shortfall', async t => {
     totalCollateral: { value: 700n },
   });
 
-  await E(aethPriceAuthority).setPrice(
+  await E(aethTestPriceAuthority).setPrice(
     makeRatio(70n, run.brand, 10n, aeth.brand),
   );
   trace(t, 'changed price to 7 RUN/Aeth');
@@ -1686,7 +1692,7 @@ test('liquidation Margin matters', async t => {
 
   const {
     auctioneerKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -1740,7 +1746,7 @@ test('liquidation Margin matters', async t => {
   const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
 
   // price falls to 10.00. notice that no liquidation takes place.
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(1000n, run.brand, 100n, aeth.brand),
   );
   await eventLoopIteration();
@@ -1753,7 +1759,7 @@ test('liquidation Margin matters', async t => {
   t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
 
   // price falls to 9.99. Now it liquidates.
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(999n, run.brand, 100n, aeth.brand),
   );
   await eventLoopIteration();
@@ -1794,7 +1800,7 @@ test('reinstate vault', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -1916,7 +1922,7 @@ test('reinstate vault', async t => {
   const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
 
   // price falls
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(400n, run.brand, 100n, aeth.brand),
   );
   await eventLoopIteration();
@@ -2009,7 +2015,7 @@ test('auction locks low price', async t => {
   const {
     reserveKit: { reserveCreatorFacet },
     auctioneerKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
   trace('addIssuer awaited');
@@ -2017,7 +2023,7 @@ test('auction locks low price', async t => {
   const wanted = 500n;
 
   // Lock in a low price (zero)
-  aethPriceAuthority.setPrice(
+  aethTestPriceAuthority.setPrice(
     makeRatio(0n, run.brand, baseCollateral, aeth.brand),
   );
   await eventLoopIteration();
@@ -2052,7 +2058,7 @@ test('auction locks low price', async t => {
   );
 
   // Bump back up to a high price
-  aethPriceAuthority.setPrice(
+  aethTestPriceAuthority.setPrice(
     makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
   );
 
@@ -2099,7 +2105,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit: auctKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -2222,7 +2228,7 @@ test('Bug 7422 vault reinstated with no assets', async t => {
   );
 
   // price falls
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(999n, run.brand, 1000n, aeth.brand),
   );
   await eventLoopIteration();
@@ -2335,7 +2341,7 @@ test('Bug 7346 excess collateral to holder', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit: auctKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -2473,7 +2479,7 @@ test('Bug 7346 excess collateral to holder', async t => {
 
   // price falls
   const newPrice = makeRatio(9990n, run.brand, 1000n, aeth.brand);
-  await aethPriceAuthority.setPrice(newPrice);
+  await aethTestPriceAuthority.setPrice(newPrice);
   await eventLoopIteration();
 
   const { startTime } = await startAuctionClock(auctKit, manualTimer);
@@ -2600,7 +2606,7 @@ test('refund to one of two loans', async t => {
 
   const {
     vaultFactory: { vaultFactory, aethCollateralManager },
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
   } = services;
@@ -2660,7 +2666,9 @@ test('refund to one of two loans', async t => {
   t.truthy(AmountMath.isEqual(lentAmount, aliceWantMinted));
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.make(400n));
 
-  await aethPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  await aethTestPriceAuthority.setPrice(
+    makeRatio(40n, run.brand, 10n, aeth.brand),
+  );
   aliceNotification = await E(aliceVaultNotifier).getUpdateSince();
   t.is(aliceNotification.value.vaultState, Phase.ACTIVE);
 
@@ -2787,7 +2795,7 @@ test('Bug 7784 reconstitute both', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit: auctKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -2902,7 +2910,7 @@ test('Bug 7784 reconstitute both', async t => {
   );
 
   // price falls
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(9990n, run.brand, 1000n, aeth.brand),
   );
   await eventLoopIteration();
@@ -3006,7 +3014,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit: auctKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -3163,7 +3171,7 @@ test('Bug 7796 missing lockedPrice', async t => {
   trace('ADVANCING', now);
   // price falls
   const newPrice = makeRatio(9990n, run.brand, 1000n, aeth.brand);
-  await aethPriceAuthority.setPrice(newPrice);
+  await aethTestPriceAuthority.setPrice(newPrice);
   await eventLoopIteration();
 
   now = await setClockAndAdvanceNTimes(
@@ -3284,7 +3292,7 @@ test('Bug 7851 & no bidders', async t => {
   const {
     vaultFactory: { aethVaultManager, aethCollateralManager },
     auctioneerKit: auctKit,
-    aethPriceAuthority,
+    aethTestPriceAuthority,
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
   } = services;
   await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
@@ -3361,7 +3369,7 @@ test('Bug 7851 & no bidders', async t => {
   });
 
   // price falls
-  await aethPriceAuthority.setPrice(
+  await aethTestPriceAuthority.setPrice(
     makeRatio(9990n, run.brand, 1000n, aeth.brand),
   );
   await eventLoopIteration();
