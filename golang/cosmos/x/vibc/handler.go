@@ -25,8 +25,8 @@ func NewHandler(keeper Keeper, bankKeeper types.BankKeeper) sdk.Handler {
 }
 
 type sendPacketAction struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"sendPacket"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"sendPacket"`
 	*MsgSendPacket
 }
 
@@ -45,7 +45,7 @@ func handleMsgSendPacket(
 		)
 	}
 
-	action := &sendPacketAction{
+	action := sendPacketAction{
 		MsgSendPacket: msg,
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)

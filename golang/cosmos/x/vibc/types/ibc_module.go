@@ -42,9 +42,10 @@ func NewIBCModule(impl IBCModuleImpl) IBCModule {
 	}
 }
 
-type channelOpenInitEvent struct {
+type ChannelOpenInitEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string                    `json:"event" default:"channelOpenInit"`
+	Target           string                    `json:"target,omitempty"`
 	Order            string                    `json:"order"`
 	ConnectionHops   []string                  `json:"connectionHops"`
 	PortID           string                    `json:"portID"`
@@ -65,7 +66,7 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	event := channelOpenInitEvent{
+	event := ChannelOpenInitEvent{
 		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
@@ -93,9 +94,10 @@ func (im IBCModule) OnChanOpenInit(
 	return "", nil
 }
 
-type channelOpenTryEvent struct {
+type ChannelOpenTryEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string                    `json:"event" default:"channelOpenTry"`
+	Target           string                    `json:"target,omitempty"`
 	Order            string                    `json:"order"`
 	ConnectionHops   []string                  `json:"connectionHops"`
 	PortID           string                    `json:"portID"`
@@ -115,7 +117,7 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	event := channelOpenTryEvent{
+	event := ChannelOpenTryEvent{
 		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
@@ -145,7 +147,7 @@ func (im IBCModule) OnChanOpenTry(
 	return "", nil
 }
 
-type channelOpenAckEvent struct {
+type ChannelOpenAckEvent struct {
 	*vm.ActionHeader    `actionType:"IBC_EVENT"`
 	Event               string                    `json:"event" default:"channelOpenAck"`
 	PortID              string                    `json:"portID"`
@@ -167,7 +169,7 @@ func (im IBCModule) OnChanOpenAck(
 	channel, _ := im.impl.GetChannel(ctx, portID, channelID)
 
 	channel.Counterparty.ChannelId = counterpartyChannelID
-	event := channelOpenAckEvent{
+	event := ChannelOpenAckEvent{
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
@@ -178,9 +180,10 @@ func (im IBCModule) OnChanOpenAck(
 	return im.impl.PushAction(ctx, event)
 }
 
-type channelOpenConfirmEvent struct {
+type ChannelOpenConfirmEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelOpenConfirm"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -190,7 +193,7 @@ func (im IBCModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	event := channelOpenConfirmEvent{
+	event := ChannelOpenConfirmEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
@@ -198,9 +201,10 @@ func (im IBCModule) OnChanOpenConfirm(
 	return im.impl.PushAction(ctx, event)
 }
 
-type channelCloseInitEvent struct {
+type ChannelCloseInitEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelCloseInit"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -210,7 +214,7 @@ func (im IBCModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	event := channelCloseInitEvent{
+	event := ChannelCloseInitEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
@@ -219,9 +223,10 @@ func (im IBCModule) OnChanCloseInit(
 	return err
 }
 
-type channelCloseConfirmEvent struct {
+type ChannelCloseConfirmEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelCloseConfirm"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -231,7 +236,7 @@ func (im IBCModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	event := channelCloseConfirmEvent{
+	event := ChannelCloseConfirmEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
@@ -243,7 +248,7 @@ func (im IBCModule) OnChanCloseConfirm(
 type ReceivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"receivePacket"`
-	Target           string              `json:"target"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
 }
@@ -277,7 +282,7 @@ func (im IBCModule) OnRecvPacket(
 type AcknowledgementPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"acknowledgementPacket"`
-	Target           string              `json:"target"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Acknowledgement  []byte              `json:"acknowledgement"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
@@ -306,7 +311,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 type TimeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"timeoutPacket"`
-	Target           string              `json:"target"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Relayer          sdk.AccAddress      `json:"relayer"`
 }
