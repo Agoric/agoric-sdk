@@ -250,7 +250,7 @@ func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, re
 func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sdk.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
-	pushAction := func(ctx sdk.Context, action vm.Jsonable) error {
+	pushAction := func(ctx sdk.Context, action vm.Action) error {
 		return nil
 	}
 
@@ -517,16 +517,16 @@ func Test_EndBlock_Events(t *testing.T) {
 	}}
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
-			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr1 }},
-			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{ Address: addr2 }},
-			addr3: &authtypes.BaseAccount{ Address: addr3 },
+			addr1: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{Address: addr1}},
+			addr2: &authtypes.ModuleAccount{BaseAccount: &authtypes.BaseAccount{Address: addr2}},
+			addr3: &authtypes.BaseAccount{Address: addr3},
 		},
 	}
 	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
 	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec()})
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
@@ -630,7 +630,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(nil, bank)
 	msgsSent := []string{}
-	keeper.PushAction = func(ctx sdk.Context, action vm.Jsonable) error {
+	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
 		if err != nil {
 			return err
@@ -746,7 +746,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 	}
 }
 
-type mockAuthKeeper struct{
+type mockAuthKeeper struct {
 	accounts map[string]authtypes.AccountI
 	modAddrs map[string]string
 }
@@ -754,11 +754,11 @@ type mockAuthKeeper struct{
 func (ma mockAuthKeeper) GetModuleAccount(ctx sdk.Context, name string) authtypes.ModuleAccountI {
 	addr, ok := ma.modAddrs[name]
 	if !ok {
-			return nil
+		return nil
 	}
 	acct, ok := ma.accounts[addr]
 	if !ok {
-			panic("missing module account")
+		panic("missing module account")
 	}
 	return acct.(authtypes.ModuleAccountI)
 }
@@ -778,7 +778,7 @@ func Test_Module_Account(t *testing.T) {
 	acct := &mockAuthKeeper{
 		accounts: map[string]authtypes.AccountI{
 			moduleBech32: authtypes.NewEmptyModuleAccount("vbank/reserve"),
-			addr1: authtypes.NewBaseAccountWithAddress(sdk.MustAccAddressFromBech32(addr1)),
+			addr1:        authtypes.NewBaseAccountWithAddress(sdk.MustAccAddressFromBech32(addr1)),
 		},
 		modAddrs: map[string]string{
 			"vbank/reserve": moduleBech32,
