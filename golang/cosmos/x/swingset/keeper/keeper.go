@@ -110,6 +110,16 @@ func NewKeeper(
 	}
 }
 
+func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
+	action = vm.PopulateAction(ctx, action)
+	ah := action.GetActionHeader()
+	if len(ah.Type) == 0 {
+		return nil, fmt.Errorf("action %q cannot have an empty ActionHeader.Type", action)
+	}
+
+	return action, nil
+}
+
 // pushAction appends an action to the controller's specified inbound queue.
 // The queue is kept in the kvstore so that changes are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
@@ -118,7 +128,11 @@ func NewKeeper(
 //
 // The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
-func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Jsonable) error {
+func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Action) error {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return err
+	}
 	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
 	if !txHashOk {
 		txHash = "unknown"
@@ -143,12 +157,12 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.J
 }
 
 // PushAction appends an action to the controller's actionQueue.
-func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathActionQueue, action)
 }
 
 // PushAction appends an action to the controller's highPriorityQueue.
-func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
 }
 
@@ -234,7 +248,11 @@ func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
 // until the response.  It is orthogonal to PushAction, and should only be used
 // by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
 // COMMIT_BLOCK).
-func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error) {
+func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return "", err
+	}
 	bz, err := json.Marshal(action)
 	if err != nil {
 		return "", err

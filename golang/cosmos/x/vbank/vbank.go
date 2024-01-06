@@ -68,15 +68,15 @@ func (vbu vbankManyBalanceUpdates) Swap(i int, j int) {
 }
 
 type vbankBalanceUpdate struct {
-	Nonce   uint64                  `json:"nonce"`
-	Type    string                  `json:"type"`
-	Updated vbankManyBalanceUpdates `json:"updated"`
+	vm.ActionHeader `actionType:"VBANK_BALANCE_UPDATE"`
+	Nonce           uint64                  `json:"nonce"`
+	Updated         vbankManyBalanceUpdates `json:"updated"`
 }
 
 // getBalanceUpdate returns a bridge message containing the current bank balance
 // for the given addresses each for the specified denominations. Coins are used
 // only to track the set of denoms, not for the particular nonzero amounts.
-func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Jsonable {
+func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string]sdk.Coins) vm.Action {
 	nentries := len(addressToUpdate)
 	if nentries == 0 {
 		return nil
@@ -84,7 +84,6 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 
 	nonce := keeper.GetNextSequence(ctx)
 	event := vbankBalanceUpdate{
-		Type:    "VBANK_BALANCE_UPDATE",
 		Nonce:   nonce,
 		Updated: make([]vbankSingleBalanceUpdate, 0, nentries),
 	}
@@ -111,7 +110,9 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 
 	// Ensure we have a deterministic order of updates.
 	sort.Sort(event.Updated)
-	return event
+
+	// Populate the event default fields (even though event does not embed vm.ActionHeader)
+	return vm.PopulateAction(ctx, event)
 }
 
 func marshal(event vm.Jsonable) ([]byte, error) {
@@ -243,7 +244,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 	return
 }
 
-func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (am AppModule) PushAction(ctx sdk.Context, action vm.Action) error {
 	// vbank actions are not triggered by a swingset message in a transaction, so we need to
 	// synthesize unique context information.
 	// We use a fixed placeholder value for the txHash context, and can simply use `0` for the
