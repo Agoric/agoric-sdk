@@ -19,6 +19,10 @@ function fatal() {
   exit 1
 }
 
+function findsha1() {
+  find ${1+"$@"} -print0 | xargs -0 sha1sum | sort +1 || true
+}
+
 GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}
 NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
 
@@ -45,7 +49,7 @@ fi
 
 NEED_NODEJS=$BUILD_ONLY
 case $@ in
-*" start" | *" start "*)
+start | *" start" | *" start "*)
   # We're starting the daemon, so we need Node.js.
   NEED_NODEJS=true
   ;;
@@ -96,6 +100,7 @@ fi
   $BUILD_ONLY || exec 1>&2
 
   cd "$thisdir/.."
+  test -d "$STAMPS" || echo "Creating $STAMPS" 1>&2
   mkdir -p "$STAMPS"
 
   if $NEED_NODEJS; then
@@ -109,14 +114,8 @@ fi
       yarn "$@"
     }
 
-    # Check if any package.json is newer than the installation stamp.
-    stamp=$STAMPS/yarn-installed
-    if test -e "$stamp"; then
-      print=( -newer "$stamp" )
-    else
-      print=()
-    fi
-    print+=( -print )
+    # Check if any package.json sums are different.
+    sum=$STAMPS/yarn-installed.sum
 
     # Find the current list of package.jsons.
     files=( package.json )
@@ -125,13 +124,14 @@ fi
     done < <(lazy_yarn -s workspaces info |
       sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
 
-    src=$(find "${files[@]}" "${print[@]}" | head -1 || true)
-    test -z "$src" || {
-      echo "At least $src is newer than node_modules"
-      rm -f "$STAMPS/yarn-built"
+    findsha1 "${files[@]}" > "$sum.new" || true
+    diff -u "$sum" "$sum.new" || {
+      echo "$sum has changed"
+      rm -f "$sum" "$STAMPS/yarn-built"
       lazy_yarn install
-      date > "$stamp"
+      mv "$sum.new" "$sum"
     }
+    rm -f "$sum.new"
 
     stamp=$STAMPS/yarn-built
     test -e "$stamp" || {
@@ -141,17 +141,14 @@ fi
     }
   fi
 
-  stamp=$GOLANG_DAEMON
-  if test -e "$stamp"; then
-    print=( -newer "$stamp" )
-  else
-    print=()
-  fi
-  print+=( -print )
-  src=$(find "$GOLANG_DIR" \( ! -name '*_test.go' -name '*.go' -o -name '*.cc' -o -name 'go.*' \) "${print[@]}" | head -1 || true)
-  test -z "$src" || {
-    echo "At least $src is newer than $stamp"
-
+  sum=$STAMPS/golang-built.sum
+  findsha1 "$GOLANG_DIR" \( \
+    ! -name '*_test.go' -name '*.go' \
+    -o -name '*.cc' \
+    -o -name 'go.*' \) > "$sum.new" || true
+  diff -u "$sum" "$sum.new" || {
+    echo "$GOLANG_DIR $sum has changed"
+    rm -f "$sum"
     (
       # Run this build in another subshell in case we had to modify the path.
       case $(go version 2>/dev/null) in
@@ -181,7 +178,9 @@ fi
       cd "$GOLANG_DIR"
       make
     )
+    mv "$sum.new" "$sum"
   }
+  rm -f "$sum.new"
 )
 
 # the xsnap binary lives in a platform-specific directory
