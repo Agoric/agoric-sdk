@@ -1,18 +1,19 @@
 // @ts-check
 import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
+import { makeTagged } from '@endo/pass-style';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  */
-export const prepareWhenableKit = zone => {
+export const prepareWhenableKits = zone => {
   /** WeakMap<object, any> */
   const whenable0ToEphemeral = new WeakMap();
 
   /**
    * Get the current incarnation's promise kit associated with a whenable0.
    *
-   * @param {import('./types.js').Whenable['whenable0']} whenable0
+   * @param {import('./types.js').Whenable['payload']['whenable0']} whenable0
    * @returns {import('@endo/promise-kit').PromiseKit<any>}
    */
   const findCurrentKit = whenable0 => {
@@ -29,7 +30,7 @@ export const prepareWhenableKit = zone => {
 
   /**
    * @param {'resolve' | 'reject'} kind
-   * @param {import('./types.js').Whenable['whenable0']} whenable0
+   * @param {import('./types.js').Whenable['payload']['whenable0']} whenable0
    * @param {unknown} value
    */
   const settle = (kind, whenable0, value) => {
@@ -88,14 +89,24 @@ export const prepareWhenableKit = zone => {
    */
   const makeWhenableKit = () => {
     const { settler, whenable0 } = rawMakeWhenableKit();
-    const whenable = { whenable0 };
+    const whenable = makeTagged('Whenable', harden({ whenable0 }));
+    return harden({ settler, whenable });
+  };
+
+  /**
+   * @template T
+   * @returns {import('./types.js').WhenablePromiseKit<T>}
+   */
+  const makeWhenablePromiseKit = () => {
+    const { settler, whenable0 } = rawMakeWhenableKit();
+    const whenable = makeTagged('Whenable', harden({ whenable0 }));
+
     /**
      * It would be nice to fully type this, but TypeScript gives:
      * TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
      * @type {unknown}
      */
     const whenablePromiseLike = {
-      whenable0,
       then(onFulfilled, onRejected) {
         // This promise behaviour is ephemeral.  If you want a persistent
         // subscription, you must use `when(p, watcher)`.
@@ -114,7 +125,7 @@ export const prepareWhenableKit = zone => {
     const promise = /** @type {Promise<T>} */ (whenablePromiseLike);
     return harden({ settler, whenable, promise });
   };
-  return makeWhenableKit;
+  return { makeWhenableKit, makeWhenablePromiseKit };
 };
 
-harden(prepareWhenableKit);
+harden(prepareWhenableKits);

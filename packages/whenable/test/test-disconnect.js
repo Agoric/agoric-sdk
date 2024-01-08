@@ -2,6 +2,7 @@
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { makeTagged } from '@endo/pass-style';
 import { prepareWhenableModule } from '../src/module.js';
 
 /**
@@ -60,7 +61,9 @@ const testRetryOnDisconnect = zone => async t => {
       t.log(`testing (plan=${plan}, watchWhenable=${watchWhenable})`);
 
       /** @type {import('../src/types.js').Whenable} */
-      const whenable = harden({ whenable0: makeTestWhenable0(plan) });
+      const whenable = makeTagged('Whenable', {
+        whenable0: makeTestWhenable0(plan),
+      });
 
       let resultP;
       if (watchWhenable) {
