@@ -9,7 +9,8 @@
       ],
       [
         "@agoric/builders/scripts/vats/init-network.js",
-        "@agoric/builders/scripts/vats/init-localchain.js"
+        "@agoric/builders/scripts/vats/init-localchain.js",
+        "@agoric/builders/scripts/vats/init-transfer.js"
       ],
       [
         "@agoric/builders/scripts/vats/init-orchestration.js"
