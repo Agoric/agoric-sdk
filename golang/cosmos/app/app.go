@@ -331,7 +331,8 @@ func NewAgoricApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, packetforwardtypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
-		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vlocalchain.StoreKey, vbank.StoreKey,
+		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
+		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -528,7 +529,7 @@ func NewAgoricApp(
 		fmt.Println("@@@ vtransfer action", action)
 		return app.SwingSetKeeper.PushAction(ctx, action)
 	})
-	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, vibcForVtransferKeeper)
+	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, keys[vtransfer.StoreKey], vibcForVtransferKeeper)
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -600,8 +601,7 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
 
-	vtransferPortHandler := vtransfer.NewReceiver(vtransferMiddleware, app.TransferKeeper)
-	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferPortHandler)
+	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferMiddleware)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
@@ -1000,6 +1000,7 @@ type cosmosInitAction struct {
 	VbankPort       int `json:"vbankPort"`
 	VibcPort        int `json:"vibcPort"`
 	VlocalchainPort int `json:"vlocalchainPort"`
+	VtransferPort   int `json:"vtransferPort"`
 }
 
 // Name returns the name of the App
@@ -1035,6 +1036,7 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 		VbankPort:       app.vbankPort,
 		VibcPort:        app.vibcPort,
 		VlocalchainPort: app.vlocalchainPort,
+		VtransferPort:   app.vtransferPort,
 	}
 	// This uses `BlockingSend` as a friendly wrapper for `sendToController`
 	//
