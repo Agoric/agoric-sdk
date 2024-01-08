@@ -155,6 +155,7 @@ export const setupElectorateReserveAndAuction = async (
   await setupReserve(space);
   // const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
+  /** @type {import('@agoric/vat-data').Baggage} */
   const paBaggage = makeScalarMapStore();
   const { priceAuthority, adminFacet: registry } =
     providePriceAuthorityRegistry(paBaggage);

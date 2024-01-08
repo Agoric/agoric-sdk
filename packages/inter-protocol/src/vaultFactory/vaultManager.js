@@ -425,7 +425,7 @@ export const prepareVaultManagerKit = (
           trace('helper.start() done');
         },
         observeQuoteNotifier() {
-          const { state, facets } = this;
+          const { state } = this;
 
           const { collateralBrand, collateralUnit, debtBrand, storageNode } =
             state;
@@ -452,7 +452,15 @@ export const prepareVaultManagerKit = (
               ephemera.storedCollateralQuote = value;
             },
             onRejected() {
-              facets.helper.observeQuoteNotifier();
+              // NOTE: drastic action, if the quoteNotifier fails, we don't know
+              // the value of the asset, nor do we know how long we'll be in
+              // ignorance. Best choice is to disable actions that require
+              // prices and restart when we have a new price. If we restart the
+              // notifier immediately, we'll trigger an infinite loop, so try
+              // to restart each time we get a request.
+
+              // @ts-expect-error reset value
+              ephemera.storedCollateralQuote = null;
             },
           });
           void watchQuoteNotifier(quoteNotifier, quoteWatcher);
@@ -823,10 +831,15 @@ export const prepareVaultManagerKit = (
          * @param {Amount<'nat'>} collateralAmount
          */
         maxDebtFor(collateralAmount) {
-          const { collateralBrand } = this.state;
+          const { state, facets } = this;
+          const { collateralBrand } = state;
           const { storedCollateralQuote } = collateralEphemera(collateralBrand);
-          if (!storedCollateralQuote)
+          if (!storedCollateralQuote) {
+            facets.helper.observeQuoteNotifier();
+
+            // it might take an arbitrary amount of time to get a new quote
             throw Fail`maxDebtFor called before a collateral quote was available for ${collateralBrand}`;
+          }
           // use the lower price to prevent vault adjustments that put them imminently underwater
           const collateralPrice = minimumPrice(
             storedCollateralQuote,
@@ -1063,11 +1076,17 @@ export const prepareVaultManagerKit = (
         },
 
         getCollateralQuote() {
+          const { state, facets } = this;
           const { storedCollateralQuote } = collateralEphemera(
-            this.state.collateralBrand,
+            state.collateralBrand,
           );
-          if (!storedCollateralQuote)
+          if (!storedCollateralQuote) {
+            facets.helper.observeQuoteNotifier();
+
+            // it might take an arbitrary amount of time to get a new quote
             throw Fail`getCollateralQuote called before a collateral quote was available`;
+          }
+
           return storedCollateralQuote;
         },
 
@@ -1080,8 +1099,13 @@ export const prepareVaultManagerKit = (
           const { storedCollateralQuote } = collateralEphemera(
             state.collateralBrand,
           );
-          if (!storedCollateralQuote)
+          if (!storedCollateralQuote) {
+            facets.helper.observeQuoteNotifier();
+
+            // it might take an arbitrary amount of time to get a new quote
             throw Fail`lockOraclePrices called before a collateral quote was available for ${state.collateralBrand}`;
+          }
+
           trace(
             `lockOraclePrices`,
             getAmountIn(storedCollateralQuote),
@@ -1112,6 +1136,15 @@ export const prepareVaultManagerKit = (
             // NB: this message should not log repeatedly.
             console.error(
               'Skipping liquidation because no quote is locked yet (may happen with new manager)',
+            );
+            return;
+          }
+
+          const { storedCollateralQuote: collateralQuoteBefore } =
+            collateralEphemera(this.state.collateralBrand);
+          if (!collateralQuoteBefore) {
+            console.error(
+              'Skipping liquidation because collateralQuote is missing',
             );
             return;
           }
@@ -1179,7 +1212,10 @@ export const prepareVaultManagerKit = (
             const { plan, vaultsInPlan } = helper.planProceedsDistribution(
               proceeds,
               totalDebt,
-              storedCollateralQuote,
+              // If a quote was available at the start of liquidation, but is no
+              // longer, using the earlier price is better than failing to
+              // distribute proceeds
+              storedCollateralQuote || collateralQuoteBefore,
               vaultData,
               totalCollateral,
             );
