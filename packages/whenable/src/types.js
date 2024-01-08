@@ -7,16 +7,27 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {{ whenable0: { shorten(): Promise<T | Whenable<T>>} }} Whenable
+ * @typedef {import('@endo/pass-style').CopyTagged<
+ *   'Whenable',
+ *   { whenable0: { shorten(): Promise<T | Whenable<T>>} }
+ * >} Whenable
  */
 
 /**
  * @template [T=any]
  * @typedef {{
- *   whenable: import('./types.js').Whenable<T>,
+ *   whenable: Whenable<T>,
+ *   settler: Settler<T>,
+ * }} WhenableKit
+ */
+
+/**
+ * @template [T=any]
+ * @typedef {{
+ *   whenable: Whenable<T>,
  *   settler: Settler<T>,
  *   promise: Promise<T>
- * }} WhenableKit
+ * }} WhenablePromiseKit
  */
 
 /**

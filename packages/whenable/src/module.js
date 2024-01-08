@@ -1,7 +1,7 @@
 // @ts-check
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { prepareWhen } from './when.js';
-import { prepareWhenableKit } from './whenable.js';
+import { prepareWhenableKits } from './whenable.js';
 import { prepareWatch } from './watch.js';
 
 /**
@@ -11,9 +11,9 @@ import { prepareWatch } from './watch.js';
  */
 export const prepareWhenableModule = (zone, powers) => {
   const { rejectionMeansRetry = isUpgradeDisconnection } = powers || {};
-  const makeWhenableKit = prepareWhenableKit(zone);
-  const when = prepareWhen(zone, makeWhenableKit, rejectionMeansRetry);
+  const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
+  const when = prepareWhen(zone, makeWhenablePromiseKit, rejectionMeansRetry);
   const watch = prepareWatch(zone, makeWhenableKit, rejectionMeansRetry);
-  return harden({ watch, when, makeWhenableKit });
+  return harden({ watch, when, makeWhenableKit, makeWhenablePromiseKit });
 };
 harden(prepareWhenableModule);

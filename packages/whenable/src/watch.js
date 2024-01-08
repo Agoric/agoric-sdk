@@ -3,8 +3,8 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { prepareWhenableKit } from './whenable.js';
-import { getFirstWhenable } from './whenable-utils.js';
+import { prepareWhenableKits } from './whenable.js';
+import { getWhenable0, getFirstWhenable } from './whenable-utils.js';
 
 const { Fail } = assert;
 
@@ -61,7 +61,7 @@ if (!watchPromise) {
  */
 const watchWhenable = (specimen, watcher) => {
   let promise;
-  const whenable0 = specimen && specimen.whenable0;
+  const whenable0 = getWhenable0(specimen);
   if (whenable0) {
     promise = E(whenable0).shorten();
   } else {
@@ -80,7 +80,7 @@ export const prepareWatch = (
   makeWhenableKit,
   rejectionMeansRetry = () => false,
 ) => {
-  const makeKit = makeWhenableKit || prepareWhenableKit(zone);
+  const makeKit = makeWhenableKit || prepareWhenableKits(zone).makeWhenableKit;
 
   /**
    * @param {import('./types.js').Settler} settler
@@ -120,7 +120,7 @@ export const prepareWatch = (
        */
       onFulfilled(value) {
         const { watcher, settler } = this.state;
-        if (value && value.whenable0) {
+        if (getWhenable0(value)) {
           // We've been shortened, so reflect our state accordingly, and go again.
           this.state.whenable = value;
           watchWhenable(this.state.whenable, this.self);

@@ -1,20 +1,21 @@
 // @ts-check
 import { E } from '@endo/far';
 
-import { prepareWhenableKit } from './whenable.js';
-import { getFirstWhenable } from './whenable-utils.js';
+import { prepareWhenableKits } from './whenable.js';
+import { getFirstWhenable, getWhenable0 } from './whenable-utils.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {() => import('./types.js').WhenableKit<any>} makeWhenableKit
+ * @param {() => import('./types.js').WhenablePromiseKit<any>} makeWhenablePromiseKit
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
 export const prepareWhen = (
   zone,
-  makeWhenableKit,
+  makeWhenablePromiseKit,
   rejectionMeansRetry = () => false,
 ) => {
-  const makeKit = makeWhenableKit || prepareWhenableKit(zone);
+  const makeKit =
+    makeWhenablePromiseKit || prepareWhenableKits(zone).makeWhenablePromiseKit;
 
   /**
    * @param {any} specimenP
@@ -36,7 +37,7 @@ export const prepareWhen = (
             throw e;
           });
         // Advance to the next whenable.
-        whenable0 = specimen && specimen.whenable0;
+        whenable0 = getWhenable0(specimen);
       }
       settler.resolve(specimen);
     }).catch(e => settler.reject(e));
