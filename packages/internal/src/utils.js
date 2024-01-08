@@ -1,16 +1,15 @@
 // @ts-check
 // @jessie-check
 
-import { E } from '@endo/far';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
-import { isPromise, makePromiseKit } from '@endo/promise-kit';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate, makeSet } from 'jessie.js';
 
 const { fromEntries, keys, values } = Object;
 const { ownKeys } = Reflect;
 
-const { details: X, quote: q, Fail } = assert;
+const { quote: q, Fail } = assert;
 
 export const BASIS_POINTS = 10_000n;
 
@@ -43,70 +42,6 @@ export const fromUniqueEntries = allEntries => {
 harden(fromUniqueEntries);
 
 export { objectMap } from '@endo/patterns';
-
-/**
- * @param {Array<string | symbol>} leftNames
- * @param {Array<string | symbol>} rightNames
- */
-export const listDifference = (leftNames, rightNames) => {
-  const rightSet = makeSet(rightNames);
-  return leftNames.filter(name => !rightSet.has(name));
-};
-harden(listDifference);
-
-/**
- * @param {Error} innerErr
- * @param {string|number} label
- * @param {ErrorConstructor} [ErrorConstructor]
- * @returns {never}
- */
-export const throwLabeled = (innerErr, label, ErrorConstructor = undefined) => {
-  if (typeof label === 'number') {
-    label = `[${label}]`;
-  }
-  const outerErr = assert.error(
-    `${label}: ${innerErr.message}`,
-    ErrorConstructor,
-  );
-  assert.note(outerErr, X`Caused by ${innerErr}`);
-  throw outerErr;
-};
-harden(throwLabeled);
-
-/**
- * @template A,R
- * @param {(...args: A[]) => R} func
- * @param {A[]} args
- * @param {string|number} [label]
- * @returns {R}
- */
-export const applyLabelingError = (func, args, label = undefined) => {
-  if (label === undefined) {
-    return func(...args);
-  }
-  let result;
-  try {
-    result = func(...args);
-  } catch (err) {
-    throwLabeled(err, label);
-  }
-  if (isPromise(result)) {
-    // If result is a rejected promise, this will return a promise with a
-    // different rejection reason. But this confuses TypeScript because it types
-    // that case as `Promise<never>` which is cool for a promise that will never
-    // fulfill.  But TypeScript doesn't understand that this will only happen
-    // when `result` was a rejected promise. In only this case `R` should
-    // already allow `Promise<never>` as a subtype.
-    /** @type {unknown} */
-    const relabeled = E.when(result, undefined, reason =>
-      throwLabeled(reason, label),
-    );
-    return /** @type {R} */ (relabeled);
-  } else {
-    return result;
-  }
-};
-harden(applyLabelingError);
 
 /**
  * @template T
