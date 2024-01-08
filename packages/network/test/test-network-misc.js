@@ -1,15 +1,17 @@
 // @ts-check
 // eslint-disable-next-line import/order
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, Far } from '@endo/far';
-import { when } from '@agoric/whenable';
+import { prepareWhenableModule, when } from '@agoric/whenable';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import {
   parse,
   unparse,
-  makeEchoConnectionHandler,
+  prepareEchoConnectionHandler,
   makeLoopbackProtocolHandler,
   makeNetworkProtocol,
   makeRouter,
@@ -20,186 +22,294 @@ import '../src/types.js';
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => { };
 
-/**
- * @param {any} t
- * @returns {ProtocolHandler} A testing handler
- */
-const makeProtocolHandler = t => {
-  /** @type {ListenHandler} */
-  let l;
-  let lp;
-  let nonce = 0;
-  return Far('ProtocolHandler', {
-    async onCreate(_protocol, _impl) {
-      log('created', _protocol, _impl);
+const prepareProtocolHandler = (zone, t) => {
+  const makeProtocolHandler = zone.exoClass(
+    'ProtocolHandler',
+    undefined,
+    () => {
+      let l;
+      let lp;
+      const nonce = 0;
+      return {
+        l,
+        lp,
+        nonce,
+      };
     },
-    async generatePortID() {
-      nonce += 1;
-      return `${nonce}`;
+    {
+      async onCreate(_protocol, _impl) {
+        log('created', _protocol, _impl);
+      },
+      async generatePortID() {
+        this.state.nonce += 1;
+        return `${this.state.nonce}`;
+      },
+      async onBind(port, localAddr) {
+        t.assert(port, `port is supplied to onBind`);
+        t.assert(localAddr, `local address is supplied to onBind`);
+      },
+      async onConnect(port, localAddr, remoteAddr) {
+        t.assert(port, `port is tracked in onConnect`);
+        t.assert(localAddr, `local address is supplied to onConnect`);
+        t.assert(remoteAddr, `remote address is supplied to onConnect`);
+        if (!this.state.lp) {
+          const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+          return { handler: makeEchoConnectionHandler() };
+        }
+        const ch = await when(
+          this.state.l.onAccept(
+            this.state.lp,
+            localAddr,
+            remoteAddr,
+            this.state.l,
+          ),
+        );
+        return { localAddr, handler: ch };
+      },
+      async onListen(port, localAddr, listenHandler) {
+        t.assert(port, `port is tracked in onListen`);
+        t.assert(localAddr, `local address is supplied to onListen`);
+        t.assert(listenHandler, `listen handler is tracked in onListen`);
+        this.state.lp = port;
+        this.state.l = listenHandler;
+        log('listening', port.getLocalAddress(), listenHandler);
+      },
+      async onListenRemove(port, localAddr, listenHandler) {
+        t.assert(port, `port is tracked in onListen`);
+        t.assert(localAddr, `local address is supplied to onListen`);
+        t.is(
+          listenHandler,
+          this.state.lp && this.state.l,
+          `listenHandler is tracked in onListenRemove`,
+        );
+        this.state.lp = undefined;
+        log('port done listening', port.getLocalAddress());
+      },
+      async onRevoke(port, localAddr) {
+        t.assert(port, `port is tracked in onRevoke`);
+        t.assert(localAddr, `local address is supplied to onRevoke`);
+        log('port done revoking', port.getLocalAddress());
+      },
     },
-    async onBind(port, localAddr) {
-      t.assert(port, `port is supplied to onBind`);
-      t.assert(localAddr, `local address is supplied to onBind`);
-    },
-    async onConnect(port, localAddr, remoteAddr) {
-      t.assert(port, `port is tracked in onConnect`);
-      t.assert(localAddr, `local address is supplied to onConnect`);
-      t.assert(remoteAddr, `remote address is supplied to onConnect`);
-      if (!lp) {
-        return { handler: makeEchoConnectionHandler() };
-      }
-      const ch = await when(l.onAccept(lp, localAddr, remoteAddr, l));
-      return { localAddr, handler: ch };
-    },
-    async onListen(port, localAddr, listenHandler) {
-      t.assert(port, `port is tracked in onListen`);
-      t.assert(localAddr, `local address is supplied to onListen`);
-      t.assert(listenHandler, `listen handler is tracked in onListen`);
-      lp = port;
-      l = listenHandler;
-      log('listening', port.getLocalAddress(), listenHandler);
-    },
-    async onListenRemove(port, localAddr, listenHandler) {
-      t.assert(port, `port is tracked in onListen`);
-      t.assert(localAddr, `local address is supplied to onListen`);
-      t.is(
-        listenHandler,
-        lp && l,
-        `listenHandler is tracked in onListenRemove`,
-      );
-      lp = undefined;
-      log('port done listening', port.getLocalAddress());
-    },
-    async onRevoke(port, localAddr) {
-      t.assert(port, `port is tracked in onRevoke`);
-      t.assert(localAddr, `local address is supplied to onRevoke`);
-      log('port done revoking', port.getLocalAddress());
-    },
-  });
+  );
+
+  return makeProtocolHandler;
+};
+
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
+const provideBaggage = key => {
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.mapStore(`${key} baggage`);
 };
 
 test('handled protocol', async t => {
-  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
+  const zone = makeDurableZone(provideBaggage('network - ibc'));
+  const makeProtocolHandler = prepareProtocolHandler(zone, t);
+  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
+  const { makeWhenableKit } = prepareWhenableModule(zone);
 
-  const closed = makePromiseKit();
   const port = await when(protocol.bind('/ibc/*/ordered'));
-  await port.connect(
-    '/ibc/*/ordered/echo',
-    Far('ProtocolHandler', {
-      async onOpen(connection, localAddr, remoteAddr) {
-        t.is(localAddr, '/ibc/*/ordered');
-        t.is(remoteAddr, '/ibc/*/ordered/echo');
-        const ack = await E(connection).send('ping');
-        // log(ack);
-        t.is(`${ack}`, 'ping', 'received pong');
-        void connection.close();
+
+  const { whenable, settler } = makeWhenableKit();
+
+  /**
+   * @param {import('@agoric/base-zone').Zone} zone
+   * @param t
+   */
+  const prepareTestProtocolHandler = (zone, t) => {
+    const makeTestProtocolHandler = zone.exoClass(
+      'TestProtocolHandler',
+      undefined,
+      () => ({ settler }),
+      {
+        async onOpen(connection, localAddr, remoteAddr) {
+          t.is(localAddr, '/ibc/*/ordered');
+          t.is(remoteAddr, '/ibc/*/ordered/echo');
+          const ack = await E(connection).send('ping');
+          // log(ack);
+          t.is(`${ack}`, 'ping', 'received pong');
+          void connection.close();
+        },
+        async onClose(_connection, reason) {
+          t.is(reason, undefined, 'no close reason');
+          this.state.settler.resolve(null);
+        },
+        async onReceive(_connection, bytes) {
+          t.is(`${bytes}`, 'ping');
+          return 'pong';
+        },
       },
-      async onClose(_connection, reason) {
-        t.is(reason, undefined, 'no close reason');
-        closed.resolve(null);
-      },
-      async onReceive(_connection, bytes) {
-        t.is(`${bytes}`, 'ping');
-        return 'pong';
-      },
-    }),
-  );
-  await closed.promise;
+    );
+
+    return makeTestProtocolHandler;
+  };
+
+  const makeTestProtocolHandler = prepareTestProtocolHandler(zone, t);
+
+  await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
+  await whenable.whenable0.shorten();
   port.revoke();
 });
 
 test('protocol connection listen', async t => {
-  const protocol = makeNetworkProtocol(makeProtocolHandler(t));
-
-  const closed = makePromiseKit();
+  const zone = makeDurableZone(provideBaggage('network'));
+  const makeProtocolHandler = prepareProtocolHandler(zone, t);
+  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
+  const { makeWhenableKit } = prepareWhenableModule(zone);
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
+  const { whenable, settler } = makeWhenableKit();
 
-  /** @type {ListenHandler} */
-  const listener = Far('listener', {
-    async onListen(p, listenHandler) {
-      t.is(p, port, `port is tracked in onListen`);
-      t.assert(listenHandler, `listenHandler is tracked in onListen`);
-    },
-    async onAccept(p, localAddr, remoteAddr, listenHandler) {
-      t.assert(localAddr, `local address is passed to onAccept`);
-      t.assert(remoteAddr, `remote address is passed to onAccept`);
-      t.is(p, port, `port is tracked in onAccept`);
-      t.is(listenHandler, listener, `listenHandler is tracked in onAccept`);
-      let handler;
-      return Far('connectionHandler', {
-        async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
-          t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
-          handler = connectionHandler;
-          const ack = await when(connection.send('ping'));
-          t.is(`${ack}`, 'ping', 'received pong');
-          await when(connection.close());
+  /**
+   * @param {import('@agoric/base-zone').Zone} zone
+   * @param t
+   */
+  const prepareListenHandler = (zone, t) => {
+    const makeListenHandler = zone.exoClass(
+      'ListenHandler',
+      undefined,
+      () => ({ port }),
+      {
+        async onListen(p, listenHandler) {
+          t.is(p, this.state.port, `port is tracked in onListen`);
+          t.assert(listenHandler, `listenHandler is tracked in onListen`);
         },
-        async onClose(c, reason, connectionHandler) {
+        async onAccept(p, localAddr, remoteAddr, listenHandler) {
+          t.assert(localAddr, `local address is passed to onAccept`);
+          t.assert(remoteAddr, `remote address is passed to onAccept`);
+          t.is(p, this.state.port, `port is tracked in onAccept`);
           t.is(
-            connectionHandler,
-            handler,
-            `connectionHandler is tracked in onClose`,
+            listenHandler,
+            this.self,
+            `listenHandler is tracked in onAccept`,
           );
-          handler = undefined;
-          t.assert(c, 'connection is passed to onClose');
-          t.is(reason, undefined, 'no close reason');
-          closed.resolve(null);
+          let handler;
+
+          const prepareConnectionHandler = zone => {
+            const makeConnectionHandler = zone.exoClass(
+              'connectionHandler',
+              undefined,
+              () => ({ settler }),
+              {
+                async onOpen(
+                  connection,
+                  _localAddr,
+                  _remoteAddr,
+                  connectionHandler,
+                ) {
+                  t.assert(
+                    connectionHandler,
+                    `connectionHandler is tracked in onOpen`,
+                  );
+                  handler = connectionHandler;
+                  const ack = await when(connection.send('ping'));
+                  t.is(`${ack}`, 'ping', 'received pong');
+                  await when(connection.close());
+                },
+                async onClose(c, reason, connectionHandler) {
+                  t.is(
+                    connectionHandler,
+                    handler,
+                    `connectionHandler is tracked in onClose`,
+                  );
+                  handler = undefined;
+                  t.assert(c, 'connection is passed to onClose');
+                  t.is(reason, undefined, 'no close reason');
+                  this.state.settler.resolve(null);
+                },
+                async onReceive(c, packet, connectionHandler) {
+                  t.is(
+                    connectionHandler,
+                    handler,
+                    `connectionHandler is tracked in onReceive`,
+                  );
+                  t.assert(c, 'connection is passed to onReceive');
+                  t.is(`${packet}`, 'ping', 'expected ping');
+                  return 'pong';
+                },
+              },
+            );
+            return makeConnectionHandler;
+          };
+          const makeConnectionHandler = prepareConnectionHandler(zone);
+          return makeConnectionHandler();
         },
-        async onReceive(c, packet, connectionHandler) {
+        async onError(p, rej, listenHandler) {
+          t.is(p, port, `port is tracked in onError`);
+          t.is(listenHandler, this.self, `listenHandler is tracked in onError`);
+          t.not(rej, rej, 'unexpected error');
+        },
+        async onRemove(p, listenHandler) {
           t.is(
-            connectionHandler,
-            handler,
-            `connectionHandler is tracked in onReceive`,
+            listenHandler,
+            this.self,
+            `listenHandler is tracked in onRemove`,
           );
-          t.assert(c, 'connection is passed to onReceive');
-          t.is(`${packet}`, 'ping', 'expected ping');
-          return 'pong';
+          t.is(p, this.state.port, `port is passed to onReset`);
         },
-      });
-    },
-    async onError(p, rej, listenHandler) {
-      t.is(p, port, `port is tracked in onError`);
-      t.is(listenHandler, listener, `listenHandler is tracked in onError`);
-      t.not(rej, rej, 'unexpected error');
-    },
-    async onRemove(p, listenHandler) {
-      t.is(listenHandler, listener, `listenHandler is tracked in onRemove`);
-      t.is(p, port, `port is passed to onReset`);
-    },
-  });
+      },
+    );
+
+    return makeListenHandler;
+  };
+
+  const makeListenHandler = prepareListenHandler(zone, t);
+  const listener = makeListenHandler();
 
   await port.addListener(listener);
 
   const port2 = await when(protocol.bind('/net/ordered'));
+  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
   const connectionHandler = makeEchoConnectionHandler();
-  await when(
-    port2.connect(
-      '/net/ordered/ordered/some-portname',
-      Far('connectionHandlerWithOpen', {
-        ...connectionHandler,
+
+  /**
+   * @param {import('@agoric/base-zone').Zone} zone
+   * @param t
+   */
+  const prepareHandlerWithOpen = zone => {
+    const makeHandlerWithOpen = zone.exoClass(
+      'connectionHandlerWithOpen',
+      undefined,
+      () => ({}),
+      {
+        async onReceive(_connection, bytes, _connectionHandler) {
+          return connectionHandler.onReceive(
+            _connection,
+            bytes,
+            _connectionHandler,
+          );
+        },
+        async onClose(_connection, _reason, _connectionHandler) {
+          connectionHandler.onClose(_connection, _reason, _connectionHandler);
+        },
         async onOpen(connection, localAddr, remoteAddr, c) {
-          if (connectionHandler.onOpen) {
-            await when(
-              connectionHandler.onOpen(connection, localAddr, remoteAddr, c),
-            );
-          }
           void connection.send('ping');
         },
-      }),
-    ),
+      },
+    );
+
+    return makeHandlerWithOpen;
+  };
+
+  const makeHandlerWithOpen = prepareHandlerWithOpen(zone);
+
+  await when(
+    port2.connect('/net/ordered/ordered/some-portname', makeHandlerWithOpen()),
   );
 
-  await closed.promise;
+  await whenable.whenable0.shorten();
 
   await when(port.removeListener(listener));
   await when(port.revoke());
 });
 
 test('loopback protocol', async t => {
-  const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
-
-  const closed = makePromiseKit();
+  const zone = makeDurableZone(provideBaggage('network'));
+  const makeProtocolHandler = prepareProtocolHandler(zone, t);
+  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
+  const { makeWhenableKit } = prepareWhenableModule(zone);
+  const { whenable, settler } = makeWhenableKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
 
