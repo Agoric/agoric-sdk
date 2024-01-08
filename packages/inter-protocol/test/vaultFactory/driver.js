@@ -16,7 +16,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 import { NonNullish } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
-import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
 
 import {

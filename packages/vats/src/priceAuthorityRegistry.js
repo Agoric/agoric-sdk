@@ -6,9 +6,9 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
-import { PriceAuthorityI } from '../src/contractSupport/priceAuthority.js';
+import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.js';
 
 const { Fail } = assert;
 
@@ -19,17 +19,19 @@ const { Fail } = assert;
 
 /**
  * @typedef {object} PriceAuthorityRegistryAdmin
- * @property {(pa: ERef<PriceAuthority>,
- *             brandIn: Brand,
- *             brandOut: Brand,
- *             force?: boolean) => Promise<Deleter>} registerPriceAuthority
- * Add a unique price authority for a given pair
+ * @property {(
+ *   pa: ERef<PriceAuthority>,
+ *   brandIn: Brand,
+ *   brandOut: Brand,
+ *   force?: boolean,
+ * ) => Promise<Deleter>} registerPriceAuthority
+ *   Add a unique price authority for a given pair
  */
 
 /**
  * @typedef {object} PriceAuthorityRegistry A price authority that is a facade
- * for other backing price authorities registered for a given asset and price
- * brand
+ *   for other backing price authorities registered for a given asset and price
+ *   brand
  * @property {PriceAuthority} priceAuthority
  * @property {PriceAuthorityRegistryAdmin} adminFacet
  */
@@ -43,10 +45,10 @@ const { Fail } = assert;
 export const providePriceAuthorityRegistry = baggage => {
   /**
    * @typedef {object} PriceAuthorityRecord A record indicating a registered
-   * price authority.  We put a box around the priceAuthority to ensure the
-   * deleter doesn't delete the wrong thing.
+   *   price authority. We put a box around the priceAuthority to ensure the
+   *   deleter doesn't delete the wrong thing.
    * @property {ERef<PriceAuthority>} priceAuthority the sub-authority for a
-   * given input and output brand pair
+   *   given input and output brand pair
    */
 
   /** @type {MapStore<Brand, MapStore<Brand, PriceAuthorityRecord>>} */
@@ -74,10 +76,12 @@ export const providePriceAuthorityRegistry = baggage => {
     /**
      * Return a quote when relation is true of the arguments.
      *
-     * @param {Amount<'nat'>} amountIn monitor the amountOut corresponding to this amountIn
-     * @param {Amount<'nat'>} amountOutLimit the value to compare with the monitored amountOut
+     * @param {Amount<'nat'>} amountIn monitor the amountOut corresponding to
+     *   this amountIn
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the
+     *   monitored amountOut
      * @returns {Promise<PriceQuote>} resolve with a quote when `amountOut
-     * relation amountOutLimit` is true
+     *   relation amountOutLimit` is true
      */
     async (amountIn, amountOutLimit) => {
       const pa = paFor(amountIn.brand, amountOutLimit.brand);
@@ -94,10 +98,12 @@ export const providePriceAuthorityRegistry = baggage => {
     /**
      * Return a mutable quote when relation is true of the arguments.
      *
-     * @param {Amount} amountIn monitor the amountOut corresponding to this amountIn
-     * @param {Amount} amountOutLimit the value to compare with the monitored amountOut
+     * @param {Amount} amountIn monitor the amountOut corresponding to this
+     *   amountIn
+     * @param {Amount} amountOutLimit the value to compare with the monitored
+     *   amountOut
      * @returns {Promise<MutableQuote>} resolve with a quote when `amountOut
-     * relation amountOutLimit` is true
+     *   relation amountOutLimit` is true
      */
     async (amountIn, amountOutLimit) => {
       const pa = paFor(amountIn.brand, amountOutLimit.brand);
