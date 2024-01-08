@@ -1,5 +1,5 @@
 // @ts-check
-export {};
+export { };
 
 /**
  * @template T
