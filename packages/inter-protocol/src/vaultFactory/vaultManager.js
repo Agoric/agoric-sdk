@@ -202,7 +202,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  * @type {(brand: Brand) => {
  *   prioritizedVaults: ReturnType<typeof makePrioritizedVaults>;
  *   storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>;
- *   storedCollateralQuote: PriceQuote;
+ *   storedCollateralQuote: PriceQuote | null;
  * }}
  */
 // any b/c will be filled after start()
@@ -459,7 +459,6 @@ export const prepareVaultManagerKit = (
               // notifier immediately, we'll trigger an infinite loop, so try
               // to restart each time we get a request.
 
-              // @ts-expect-error reset value
               ephemera.storedCollateralQuote = null;
             },
           });
