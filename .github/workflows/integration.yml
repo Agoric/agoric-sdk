@@ -49,11 +49,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -117,11 +112,6 @@ jobs:
         with:
           submodules: 'true'
           path: ./agoric-sdk
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./agoric-sdk/.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
@@ -237,11 +227,6 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v3
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
@@ -270,29 +255,6 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
-  set-integration-result-in-progress:
-    needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
-      - name: Update integration-test-result check to in-progress
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
-            const res = await github.rest.checks.update({
-              ...context.repo,
-              check_run_id: runId,
-              status: "in_progress",
-            })
-            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
-            console.log(`Updated check ${runId} to in-progress`)
-
   finalize-integration-result:
     needs:
       - pre_check
@@ -312,26 +274,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
-      - name: Publish integration-test-result
+      - name: Final integration-test-result
         if: always()
         uses: actions/github-script@v6
         with:
           script: |
-            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
             const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
             const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
             const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
               'success' : 'failure';
-            const res = await github.rest.checks.update({
-              ...context.repo,
-              check_run_id: runId,
-              conclusion,
-            })
-            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
-            console.log(`Updated check ${runId} to ${conclusion}`)
+            console.log(`Finishing with ${conclusion}`)
+            if (conclusion === 'failure') {
+              core.setFailed('Integration tests failed')
+            }
