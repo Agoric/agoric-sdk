@@ -15,28 +15,6 @@ on:
   merge_group:
 
 jobs:
-  wait-integration-pre-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create integration-test-result check
-        id: create-check
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const head_sha = context.eventName === 'pull_request' ?
-            context.payload.pull_request.head.sha : context.sha
-            const res = await github.rest.checks.create({
-              ...context.repo,
-              head_sha,
-              name: "integration-test-result",
-            })
-            core.debug('check create response: ${JSON.stringify(res, null, 2)}')
-            console.log('created integration-test-result', res.data.html_url)
-            return res.data.id
-    outputs:
-      run_id: ${{ steps.create-check.outputs.result }}
-
   merge-strategy:
     runs-on: ubuntu-latest
     if: >-
