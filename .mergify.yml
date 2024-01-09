@@ -17,7 +17,8 @@ pull_request_rules:
           - '#commits-behind=0'
           - label=bypass:linear-history
       - or:
-          - check-success=wait-integration-pre-checks
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -35,7 +36,8 @@ pull_request_rules:
       - base=master
       - label=automerge:rebase
       - or:
-          - check-success=wait-integration-pre-checks
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -54,7 +56,8 @@ pull_request_rules:
       - base=master
       - label=automerge:squash
       - or:
-          - check-success=wait-integration-pre-checks
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought

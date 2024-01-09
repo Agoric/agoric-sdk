@@ -8,7 +8,7 @@ The current `master` and only the latest `agoric-upgrade-*` tagged release and p
 
 At Agoric, we believe that strong security requires strong collaboration with security researchers. If you believe that you have found a security bug in our code, we encourage you to report it. To report a bug, you can:
 
-* Submit a report to the [Agoric HackerOne vulnerability rewards program](hackerone.com/agoric), where it may be eligible for a reward. 
+* Submit a report to the [Agoric HackerOne vulnerability rewards program](https://hackerone.com/agoric), where it may be eligible for a reward. 
 
 * Send an email to [security@agoric.com](mailto:security@agoric.com).
 
