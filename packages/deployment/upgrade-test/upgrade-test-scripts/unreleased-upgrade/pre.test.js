@@ -10,7 +10,7 @@ test.before(async () => {
   await waitForBlock(5);
 });
 
-test.skip(`Ensure Zoe Vat is at 0`, async t => {
+test(`Ensure Zoe Vat is at 0`, async t => {
   const incarnation = await getIncarnation('zoe');
   t.is(incarnation, 0);
 });
