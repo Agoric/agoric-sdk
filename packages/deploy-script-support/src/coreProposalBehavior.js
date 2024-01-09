@@ -158,13 +158,16 @@ export const makeCoreProposalBehavior = ({
     );
 
     // Publish the installations for our dependencies.
-    const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
-    await Promise.all(
-      entries(installations || {}).map(([key, value]) => {
-        produceInstallations[key].resolve(value);
-        return E(installAdmin).update(key, value);
-      }),
-    );
+    const installationEntries = entries(installations || {});
+    if (installationEntries.length > 0) {
+      const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
+      await Promise.all(
+        installationEntries.map(([key, value]) => {
+          produceInstallations[key].resolve(value);
+          return E(installAdmin).update(key, value);
+        }),
+      );
+    }
 
     // Evaluate the manifest.
     return runModuleBehaviors({
