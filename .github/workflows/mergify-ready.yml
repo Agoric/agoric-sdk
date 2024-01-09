@@ -15,6 +15,12 @@ on:
   merge_group:
 
 jobs:
+  wait-integration-pre-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash
+        run: echo "TODO remove this vestigial job"
+
   merge-strategy:
     runs-on: ubuntu-latest
     if: >-
