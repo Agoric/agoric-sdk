@@ -250,10 +250,15 @@ export const extractCoreProposalBundles = async (
 const metadataRecords = harden(${stringify(metadataRecords, true)});
 
 // Make an enactCoreProposals function and "export" it by way of script completion value.
-((
+// It is constructed by an IIFE to ensure the absence of global bindings for
+// makeCoreProposalBehavior and makeEnactCoreProposals (the latter referencing the former),
+// which may not be necessary but preserves behavior pre-dating
+// https://github.com/Agoric/agoric-sdk/pull/8712 .
+const enactCoreProposals = ((
   makeCoreProposalBehavior = ${makeCoreProposalBehavior},
   makeEnactCoreProposals = ${makeEnactCoreProposals},
 ) => makeEnactCoreProposals({ metadataRecords, E }))();
+enactCoreProposals;
 `;
 
   // console.debug('created bundles from proposals:', coreProposals, bundles);
