@@ -55,8 +55,10 @@ xcode-select --install
 
 From a new checkout of this repository, run:
 
-* `yarn install`
-* `yarn build`
+```sh
+yarn install
+yarn build
+```
 
 When the `yarn install` is done, the top-level `node_modules/` will contain
 all the shared dependencies, and each subproject's `node_modules/` should
