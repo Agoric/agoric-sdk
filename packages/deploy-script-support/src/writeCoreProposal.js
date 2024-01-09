@@ -153,6 +153,9 @@ const getManifestCall = harden(${stringify(getManifestCall, true)});
 const customManifest = ${stringify(customManifest, true)};
 
 // Make a behavior function and "export" it by way of script completion value.
+// It is constructed by an anonymous invocation to ensure the absence of a global binding
+// for makeCoreProposalBehavior, which may not be necessary but preserves behavior pre-dating
+// https://github.com/Agoric/agoric-sdk/pull/8712 .
 const behavior = (${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
 behavior;
 `;
