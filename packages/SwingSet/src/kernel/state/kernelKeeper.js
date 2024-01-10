@@ -548,6 +548,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
     }
   }
+  harden(enumerateNonDurableObjectExports);
 
   /**
    * Allocate a new koid.
@@ -936,6 +937,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
     }
   }
+  harden(enumeratePromisesByDecider);
 
   function addSubscriberToPromise(kernelSlot, vatID) {
     insistKernelType('promise', kernelSlot);
