@@ -32,15 +32,15 @@ export const makeWriteCoreProposal = (
   const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
-      getManifestCall: [exportedGetManifest, ...manifestArgs],
+      getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = proposal;
 
-    const manifestNs = await import(pathResolve(sourceSpec));
+    const proposalNS = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await manifestNs[exportedGetManifest](
-      { restoreRef: x => `restoreRef:${x}` },
-      ...manifestArgs,
+    const { manifest } = await proposalNS[manifestGetterName](
+      harden({ restoreRef: x => `restoreRef:${x}` }),
+      ...manifestGetterArgs,
     );
 
     const mergedPermits = mergePermits(manifest);
@@ -100,7 +100,7 @@ export const makeWriteCoreProposal = (
     // console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const { permits: proposalPermit, manifest: overrideManifest } =
+    const { permits: proposalPermit, manifest: customManifest } =
       await mergeProposalPermit(proposal, permits);
 
     // Get an install
@@ -113,10 +113,14 @@ export const makeWriteCoreProposal = (
 
 const manifestBundleRef = ${stringify(manifestBundleRef)};
 const getManifestCall = harden(${stringify(getManifestCall, true)});
-const overrideManifest = ${stringify(overrideManifest, true)};
+const customManifest = ${stringify(customManifest, true)};
 
-// Make the behavior the completion value.
-(${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, overrideManifest, E });
+// Make a behavior function and "export" it by way of script completion value.
+// It is constructed by an anonymous invocation to ensure the absence of a global binding
+// for makeCoreProposalBehavior, which may not be necessary but preserves behavior pre-dating
+// https://github.com/Agoric/agoric-sdk/pull/8712 .
+const behavior = (${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
+behavior;
 `;
 
     const trimmed = defangAndTrim(code);

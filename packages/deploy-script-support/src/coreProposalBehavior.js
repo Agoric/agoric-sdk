@@ -33,19 +33,19 @@ export const permits = {
  * @param {object} opts
  * @param {import('./externalTypes.js').ManifestBundleRef} opts.manifestBundleRef
  * @param {[methodName: string, ...args: unknown[]]} opts.getManifestCall
- * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
+ * @param {Record<string, Record<string, unknown>>} [opts.customManifest]
  * @param {typeof import('@endo/far').E} opts.E
  * @param {(...args: unknown[]) => void} [opts.log]
- * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.restoreRef]
+ * @param {(ref: import('./externalTypes.js').ManifestBundleRef) => Promise<import('@agoric/zoe/src/zoeService/utils.js').Installation<unknown>>} [opts.customRestoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
   manifestBundleRef,
   getManifestCall: [manifestGetterName, ...manifestGetterArgs],
-  overrideManifest,
+  customManifest,
   E,
   log = console.info,
-  restoreRef: overrideRestoreRef,
+  customRestoreRef,
 }) => {
   const { entries, fromEntries } = Object;
 
@@ -127,7 +127,7 @@ export const makeCoreProposalBehavior = ({
       manifestGetterName,
       bundleExports: Object.keys(proposalNS),
     });
-    const restoreRef = overrideRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
+    const restoreRef = customRestoreRef || makeRestoreRef(vatAdminSvc, zoe);
     const {
       manifest,
       options: rawOptions,
@@ -143,20 +143,23 @@ export const makeCoreProposalBehavior = ({
     );
 
     // Publish the installations for our dependencies.
-    const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
-    await Promise.all(
-      entries(installations || {}).map(([key, value]) => {
-        produceInstallations[key].resolve(value);
-        return E(installAdmin).update(key, value);
-      }),
-    );
+    const installationEntries = entries(installations || {});
+    if (installationEntries.length > 0) {
+      const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
+      await Promise.all(
+        installationEntries.map(([key, value]) => {
+          produceInstallations[key].resolve(value);
+          return E(installAdmin).update(key, value);
+        }),
+      );
+    }
 
     // Evaluate the manifest.
     return runModuleBehaviors({
       // Remember that `powers` may be arbitrarily broad.
       allPowers: powers,
       behaviors: proposalNS,
-      manifest: overrideManifest || manifest,
+      manifest: customManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
         return { options };
@@ -168,14 +171,14 @@ export const makeCoreProposalBehavior = ({
 };
 
 export const makeEnactCoreProposalsFromBundleRef =
-  ({ makeCoreProposalArgs, E }) =>
+  ({ metadataRecords, E }) =>
   async powers => {
     await Promise.all(
-      makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+      metadataRecords.map(async ({ ref, call, customManifest }) => {
         const coreProposalBehavior = makeCoreProposalBehavior({
           manifestBundleRef: ref,
           getManifestCall: call,
-          overrideManifest,
+          customManifest,
           E,
         });
         return coreProposalBehavior(powers);
