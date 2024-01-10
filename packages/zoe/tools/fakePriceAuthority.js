@@ -259,6 +259,7 @@ export async function makeFakePriceAuthority(options) {
       record = await ticker.getUpdateSince(record.updateCount);
     }
   }
+  harden(generateQuotes);
 
   /** @type {PriceAuthority} */
   const priceAuthority = Far('fake price authority', {
