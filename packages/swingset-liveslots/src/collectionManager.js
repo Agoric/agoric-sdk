@@ -518,7 +518,7 @@ export function makeCollectionManager(
           yield [yieldKeys ? key : undefined, yieldValues ? value : undefined];
         }
       }
-
+      harden(iter);
       return iter();
     }
 
@@ -528,6 +528,7 @@ export function makeCollectionManager(
           yield entry[0];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -592,6 +593,7 @@ export function makeCollectionManager(
           yield entry[1];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -601,6 +603,7 @@ export function makeCollectionManager(
           yield entry;
         }
       }
+      harden(iter);
       return iter();
     }
 
