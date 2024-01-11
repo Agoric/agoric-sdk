@@ -1,8 +1,0 @@
-{
-  "consume": {
-    "vatStore": true,
-    "vatAdminSvc": true,
-    "zoe": true,
-    "chainStorage": true
-  }
-}

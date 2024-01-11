@@ -231,15 +231,17 @@ jobs:
         # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: cd packages/deployment && make docker-build-sdk
-      - name: docker build upgrade test
-        run: |
-          cd packages/deployment/upgrade-test && \
-            docker build \
-              --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
-              -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
-      - name: docker run upgrade final stage
-        run: docker run --env "DEST=0" docker-upgrade-test:latest
+        run: make docker-build-sdk
+        working-directory: packages/deployment
+      - name: setup a3p-integration
+        run: yarn install
+        working-directory: a3p-integration
+      - name: build proposals tests
+        run: yarn synthetic-chain append
+        working-directory: a3p-integration
+      - name: run proposals tests
+        run: yarn synthetic-chain test
+        working-directory: a3p-integration
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
