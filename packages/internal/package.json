@@ -15,13 +15,13 @@
     "test:nyc": "exit 0",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:eslint": "eslint .",
-    "lint:types": "tsc"
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:eslint": "yarn run --top-level eslint .",
+    "lint:types": "yarn run --top-level tsc"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/base-zone": "^0.1.0",
+    "@agoric/assert": "workspace:*",
+    "@agoric/base-zone": "workspace:*",
     "@endo/far": "^1.0.1",
     "@endo/init": "^1.0.1",
     "@endo/marshal": "^1.0.1",

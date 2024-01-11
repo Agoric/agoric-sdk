@@ -8,7 +8,7 @@
     "packages/wallet/api"
   ],
   "type": "module",
-  "packageManager": "yarn@1.22.19",
+  "packageManager": "yarn@3.7.0",
   "devDependencies": {
     "@endo/eslint-plugin": "^2.0.0",
     "@jessie.js/eslint-plugin": "^0.4.0",
@@ -64,7 +64,6 @@
   },
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
-    "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "docs": "typedoc --tsconfig tsconfig.build.json",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
@@ -72,12 +71,12 @@
     "format": "yarn prettier --write .github golang packages",
     "lint:format": "yarn prettier --check .github golang packages",
     "lint-fix": "yarn lerna run --no-bail lint-fix",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "yarn run run-s --continue-on-error 'lint:*'",
     "lint:packages": "yarn lerna run --no-bail lint",
     "test": "yarn lerna run --no-bail test",
     "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
-    "build": "yarn workspaces run build",
+    "build": "yarn workspaces foreach --verbose run build",
     "postinstall": "patch-package",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
@@ -90,5 +89,13 @@
   },
   "dependencies": {
     "patch-package": "^6.5.1"
+  },
+  "resolutions": {
+    "protobufjs@^6.11.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "protobufjs@^6.8.8": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "protobufjs@~6.11.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "protobufjs@~6.11.2": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "protobufjs@^6.10.3": "patch:protobufjs@npm%3A6.11.3#./.yarn/patches/protobufjs-npm-6.11.3-566fb31188.patch",
+    "@yarnpkg/core@^3.6.0": "patch:@yarnpkg/core@npm%3A3.6.0#./.yarn/patches/@yarnpkg-core-npm-3.6.0-152a1d85ce.patch"
   }
 }

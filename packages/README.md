@@ -11,7 +11,7 @@ To create a new package:
 * populate a new `packages/foo/package.json`, using other packages as a template
 * update `agoric-cli/src/sdk-package-names.js`
 * run `yarn install`, and commit the resulting changes to `yarn.lock`
-* check the output of `yarn workspaces info` to make sure there are no
+* check the output of `yarn workspaces list` to make sure there are no
   `mismatchedWorkspaceDependencies`, adjust the new package's dependencies
   until they are correctly satisfied by the other local packages
 * edit `.github/workflows/test-all-packages.yml` to add a clause that tests

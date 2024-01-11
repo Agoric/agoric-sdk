@@ -2,11 +2,13 @@
 import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init/pre.js';
 import 'esm';
+// eslint-disable-next-line import/order -- Yarn fails to load after lockdown
+import '../src/lib/yarn.js';
 import '@endo/init/debug.js';
+
 import test from 'ava';
 import fs from 'fs';
 import anylogger from 'anylogger';
-
 import main from '../src/main.js';
 
 test('sanity', async t => {

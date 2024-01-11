@@ -16,14 +16,14 @@
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "run-s --continue-on-error lint:*",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint": "yarn run --top-level run-s --continue-on-error 'lint:*'",
+    "lint:types": "yarn run --top-level tsc",
+    "lint:eslint": "yarn run --top-level eslint ."
   },
   "dependencies": {
+    "@agoric/assert": "workspace:*",
     "@endo/far": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
-    "@agoric/assert": "^0.6.0"
+    "@endo/marshal": "^1.0.1"
   },
   "devDependencies": {
     "ava": "^5.3.0"
