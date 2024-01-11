@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import { $, execaCommand } from 'execa';
 
 const BINARY = 'agd';

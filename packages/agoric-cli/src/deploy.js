@@ -1,5 +1,5 @@
 // @ts-check
-/* global process setTimeout setInterval clearInterval */
+/* eslint-env node */
 
 import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';

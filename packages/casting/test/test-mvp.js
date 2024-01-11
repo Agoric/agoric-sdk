@@ -1,5 +1,5 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
@@ -201,7 +201,7 @@ test('yields error on bad capdata without terminating', async t => {
   const castingSpec = makeCastingSpec(':mailbox.agoric1foobarbaz');
   const follower = await makeFollower(castingSpec, leader, so);
   let i = 0;
-  // eslint-disable-next-line no-unreachable-loop
+
   for await (const { value, error } of iterateEach(follower)) {
     if (i === 0) {
       t.log(`value from follower, should be undefined:`, value);

@@ -1,5 +1,5 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';

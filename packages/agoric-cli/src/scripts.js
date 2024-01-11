@@ -1,5 +1,5 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';

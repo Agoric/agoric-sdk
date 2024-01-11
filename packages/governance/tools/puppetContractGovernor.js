@@ -3,7 +3,6 @@ import '../src/types-ambient.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-// eslint-disable-next-line no-unused-vars
 import { Fail } from '@agoric/assert';
 // eslint-disable-next-line no-unused-vars -- used by typedef
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';

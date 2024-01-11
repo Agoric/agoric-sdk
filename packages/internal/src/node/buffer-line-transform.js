@@ -1,4 +1,4 @@
-/* global Buffer */
+/* eslint-env node */
 /* eslint-disable no-underscore-dangle */
 
 import { Transform } from 'node:stream';

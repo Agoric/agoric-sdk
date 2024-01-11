@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 // @ts-check
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init/unsafe-fast.js';

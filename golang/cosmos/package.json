@@ -18,7 +18,7 @@
     "prepack": "git rev-parse --short HEAD > git-revision.txt && rm -rf build",
     "postpack": "git clean -f git-revision.txt",
     "build": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix",
+    "lint-fix": "yarn lint:eslint --report-unused-disable-directives --fix",
     "lint": "exit 0"
   },
   "dependencies": {

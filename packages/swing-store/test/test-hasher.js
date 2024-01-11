@@ -1,6 +1,5 @@
 import test from 'ava';
 
-// eslint-disable-next-line import/order
 import { createSHA256 } from '../src/hasher.js';
 
 test('createSHA256', t => {

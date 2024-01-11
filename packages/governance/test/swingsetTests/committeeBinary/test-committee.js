@@ -1,5 +1,5 @@
 /* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
-// eslint-disable-next-line import/no-extraneous-dependencies
+
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';

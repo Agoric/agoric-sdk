@@ -15,7 +15,7 @@
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint .",
-    "lint-fix": "yarn lint:eslint --fix"
+    "lint-fix": "yarn lint:eslint --report-unused-disable-directives --fix"
   },
   "repository": {
     "type": "git",

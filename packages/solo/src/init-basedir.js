@@ -1,5 +1,5 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';

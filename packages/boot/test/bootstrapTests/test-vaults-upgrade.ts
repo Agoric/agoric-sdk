@@ -96,9 +96,8 @@ test.serial('re-bootstrap', async t => {
   const wd1 =
     await oldContext.walletFactoryDriver.provideSmartWallet('agoric1a');
   t.true(wd1.isNew);
-  // eslint-disable-next-line no-unused-vars
+
   const assertWalletCount = (walletsProvisioned, message) => {
-    // eslint-disable-next-line no-unused-vars
     const metrics = oldContext.readLatest('published.provisionPool.metrics');
     // FIXME make wallet provisioning use the provisionPool
     // disabled while wallet provisioning bypasses provisionPool

@@ -1,4 +1,4 @@
-/* global process setInterval clearInterval */
+/* eslint-env node */
 import opener from 'opener';
 
 import { getAccessToken } from '@agoric/access-token';

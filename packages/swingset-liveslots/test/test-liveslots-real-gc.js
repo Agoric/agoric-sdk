@@ -324,7 +324,6 @@ test.serial(
         },
         two() {},
         drop() {
-          // eslint-disable-next-line no-unused-vars
           ex1 = undefined; // drop the last userspace strongref
         },
       });

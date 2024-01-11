@@ -1,6 +1,6 @@
 // @ts-nocheck
-/* eslint-disable no-empty,no-nested-ternary,no-use-before-define */
-/* eslint-enable @endo/no-polymorphic-call */
+/* eslint-disable no-nested-ternary,no-use-before-define */
+
 /* global globalThis */
 // Adapted from object-inspect@1.12.0 https://github.com/inspect-js/object-inspect
 /*

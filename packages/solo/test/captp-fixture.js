@@ -1,4 +1,4 @@
-/* global process setTimeout */
+/* eslint-env node */
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { spawn } from 'child_process';
 import WebSocket from 'ws';

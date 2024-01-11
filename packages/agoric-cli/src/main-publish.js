@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 // @ts-check
 
 import path from 'path';

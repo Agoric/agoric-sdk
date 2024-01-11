@@ -173,7 +173,7 @@ export async function connectToChain(
   let lastGoodRpcHrefIndex = 0;
   async function retryRpcHref(tryOnce) {
     let rpcHrefIndex = lastGoodRpcHrefIndex;
-    // eslint-disable-next-line no-constant-condition
+
     for await (const _ of forever) {
       const thisRpcHref = rpcHrefs[rpcHrefIndex];
 

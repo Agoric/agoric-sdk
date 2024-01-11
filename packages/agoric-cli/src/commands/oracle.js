@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, setTimeout, process */
+/* eslint-env node */
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Nat } from '@endo/nat';

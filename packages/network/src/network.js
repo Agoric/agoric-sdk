@@ -529,7 +529,6 @@ export function makeLoopbackProtocolHandler(
   const makePortID = makeNonceMaker('port');
 
   return Far('ProtocolHandler', {
-    // eslint-disable-next-line no-empty-function
     async onCreate(_impl, _protocolHandler) {
       // TODO
     },

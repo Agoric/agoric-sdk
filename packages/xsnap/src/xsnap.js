@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* eslint no-await-in-loop: ["off"] */
 

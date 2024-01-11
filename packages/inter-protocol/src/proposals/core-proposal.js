@@ -7,8 +7,8 @@ import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 export * from './econ-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
-export * from './startPSM.js'; // eslint-disable-line import/export
-export * from './startEconCommittee.js'; // eslint-disable-line import/export
+export * from './startPSM.js';
+export * from './startEconCommittee.js';
 
 // XXX all the startInstance() should use startUpgradable()
 // or startGovernedUpgradeable() but that would

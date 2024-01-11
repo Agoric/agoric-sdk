@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
-    "lint-fix": "yarn lint:eslint --fix",
+    "lint-fix": "yarn lint:eslint --report-unused-disable-directives --fix",
     "lint:eslint": "eslint ."
   },
   "repository": {

@@ -1,4 +1,4 @@
-/* global Buffer */
+/* eslint-env node */
 import { Fail } from '@agoric/assert';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/

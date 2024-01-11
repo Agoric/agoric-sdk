@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 import anylogger from 'anylogger';
 import chalk from 'chalk';
 

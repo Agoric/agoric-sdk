@@ -1,9 +1,8 @@
 #!/usr/bin/env node
+/* eslint-env node */
 // @ts-check
 // @jessie-check
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-
-/* global fetch, setTimeout */
 
 import '@endo/init/pre.js';
 

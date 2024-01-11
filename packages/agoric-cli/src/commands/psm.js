@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
+/* eslint-env node */
 import { Command } from 'commander';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { asPercent } from '../lib/format.js';

@@ -1,7 +1,6 @@
 import test from 'ava';
 
 import { waitForBlock } from '../commonUpgradeHelpers.js';
-import { agd } from '../cliHelper.js';
 import { getIncarnation } from './tools/vat-status.js';
 
 test.before(async () => {

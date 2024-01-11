@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 // @ts-check
 
 /** @typedef {import('child_process').ChildProcess} ChildProcess */

@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-/* global process */
+/* eslint-env node */
 /* We make exceptions for test code. This is a test utility. */
 /* eslint no-await-in-loop: ["off"] */
 

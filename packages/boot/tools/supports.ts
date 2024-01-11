@@ -1,5 +1,5 @@
 /* eslint-disable jsdoc/require-param-type, jsdoc/require-param, @jessie.js/safe-await-separator */
-/* global process */
+/* eslint-env node */
 
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';

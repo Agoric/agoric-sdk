@@ -1,4 +1,4 @@
-/* global process setTimeout clearTimeout setInterval clearInterval */
+/* eslint-env node */
 
 import fs from 'fs';
 import path from 'path';

@@ -1,7 +1,7 @@
 // @ts-check
 
 /* global WeakRef FinalizationRegistry */
-/* eslint-disable no-constant-condition */
+
 import fs from 'fs';
 import '@agoric/internal/src/install-ses-debug.js';
 

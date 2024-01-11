@@ -16,7 +16,7 @@
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
     "test:xs-unit": "ava-xs",
     "test:xs-worker": "SWINGSET_WORKER_TYPE=xs-worker ava -c 2 'test/swingsetTests/**/test-*.js'",
-    "lint-fix": "yarn lint:eslint --fix",
+    "lint-fix": "yarn lint:eslint --report-unused-disable-directives --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",
     "lint:types": "tsc"

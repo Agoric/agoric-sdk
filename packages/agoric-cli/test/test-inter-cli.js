@@ -1,5 +1,5 @@
 // @ts-check
-/* global Buffer */
+/* eslint-env node */
 import '@endo/init';
 import test from 'ava';
 import { createCommand, CommanderError } from 'commander';

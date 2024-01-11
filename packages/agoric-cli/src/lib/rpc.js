@@ -1,5 +1,5 @@
 // @ts-check
-/* global Buffer, fetch, process */
+/* eslint-env node */
 
 import { NonNullish } from '@agoric/assert';
 import {

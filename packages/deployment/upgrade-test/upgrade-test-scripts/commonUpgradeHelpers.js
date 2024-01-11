@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import { $ } from 'execa';
 import { promises as fs } from 'fs';
 import * as path from 'path';

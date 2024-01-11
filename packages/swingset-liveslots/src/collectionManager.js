@@ -606,7 +606,7 @@ export function makeCollectionManager(
 
     function countEntries(keyPatt, valuePatt) {
       let count = 0;
-      // eslint-disable-next-line no-use-before-define, no-unused-vars
+      // eslint-disable-next-line no-unused-vars
       for (const k of keys(keyPatt, valuePatt)) {
         count += 1;
       }

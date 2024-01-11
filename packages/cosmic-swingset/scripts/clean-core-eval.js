@@ -1,4 +1,5 @@
 #! /usr/bin/env node
+/* eslint-env node */
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
@@ -61,7 +62,6 @@ export const main = async (argv, { readFile, stdout }) => {
 };
 
 if (isEntrypoint(import.meta.url)) {
-  /* global process */
   void farExports.E.when(
     import('fs/promises'),
     fsp =>

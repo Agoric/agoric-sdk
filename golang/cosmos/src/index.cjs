@@ -1,2 +1,2 @@
-/* global module require */
+/* eslint-env node */
 module.exports = require('bindings')('agcosmosdaemon.node');

@@ -1,4 +1,4 @@
-/* global process AggregateError Buffer */
+/* eslint-env node */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';

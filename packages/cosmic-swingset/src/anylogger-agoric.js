@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 import anylogger from 'anylogger';
 
 // Turn on debugging output with DEBUG=agoric

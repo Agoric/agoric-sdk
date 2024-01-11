@@ -319,7 +319,7 @@ export async function main(
   await replayXSnap(options, folders, { readdirSync, readFileSync });
 }
 
-/* global process */
+/* eslint-env node */
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   main([...process.argv.slice(2)], {
     spawn: childProcessPowers.spawn,

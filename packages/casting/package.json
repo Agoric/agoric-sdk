@@ -13,7 +13,7 @@
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
-    "lint-fix": "yarn lint:eslint --fix",
+    "lint-fix": "yarn lint:eslint --report-unused-disable-directives --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint --ext .js,.ts ."

@@ -378,7 +378,6 @@ export const parseRatio = (
   );
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} specimen
  * @returns {asserts specimen is ParsableNumber}
