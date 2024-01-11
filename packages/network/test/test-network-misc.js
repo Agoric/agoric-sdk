@@ -12,9 +12,9 @@ import {
   parse,
   unparse,
   prepareEchoConnectionHandler,
-  makeLoopbackProtocolHandler,
   makeNetworkProtocol,
   makeRouter,
+  prepareLoopbackProtocolHandler,
 } from '../src/index.js';
 
 import '../src/types.js';
@@ -104,7 +104,7 @@ const provideBaggage = key => {
 };
 
 test('handled protocol', async t => {
-  const zone = makeDurableZone(provideBaggage('network - ibc'));
+  const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
   const makeProtocolHandler = prepareProtocolHandler(zone, t);
   const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
   const { makeWhenableKit } = prepareWhenableModule(zone);
@@ -148,12 +148,12 @@ test('handled protocol', async t => {
   const makeTestProtocolHandler = prepareTestProtocolHandler(zone, t);
 
   await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
-  await whenable.whenable0.shorten();
+  await when(whenable);
   port.revoke();
 });
 
 test('protocol connection listen', async t => {
-  const zone = makeDurableZone(provideBaggage('network'));
+  const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
   const makeProtocolHandler = prepareProtocolHandler(zone, t);
   const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
   const { makeWhenableKit } = prepareWhenableModule(zone);
@@ -305,44 +305,77 @@ test('protocol connection listen', async t => {
 });
 
 test('loopback protocol', async t => {
-  const zone = makeDurableZone(provideBaggage('network'));
-  const makeProtocolHandler = prepareProtocolHandler(zone, t);
-  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
+  const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
+  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone);
+  const protocol = makeNetworkProtocol(zone, makeLoopbackHandler());
   const { makeWhenableKit } = prepareWhenableModule(zone);
   const { whenable, settler } = makeWhenableKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
 
-  /** @type {ListenHandler} */
-  const listener = Far('listener', {
-    async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
-      return Far('connectionHandler', {
+  const prepareConnectionHandler = () => {
+    const makeConnectionHandler = zone.exoClass(
+      'connectionHandler',
+      undefined,
+      () => ({}),
+      {
         async onReceive(c, packet, _connectionHandler) {
           t.is(`${packet}`, 'ping', 'expected ping');
           return 'pingack';
         },
-      });
-    },
-  });
+      },
+    );
+    return makeConnectionHandler;
+  };
+
+  const makeConnectionHandler = prepareConnectionHandler();
+
+  const prepareListenHandler = zone => {
+    const makeListenHandler = zone.exoClass(
+      'listener',
+      undefined,
+      () => ({ port }),
+      {
+        async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
+          return makeConnectionHandler();
+        },
+      },
+    );
+
+    return makeListenHandler;
+  };
+
+  const makeListenHandler = prepareListenHandler(zone);
+  const listener = makeListenHandler();
   await when(port.addListener(listener));
 
   const port2 = await when(protocol.bind('/loopback/bar'));
-  await when(
-    port2.connect(
-      port.getLocalAddress(),
-      Far('opener', {
+  const prepareOpener = (zone, t) => {
+    const openerHandler = zone.exoClass(
+      'opener',
+      undefined,
+      () => ({ settler }),
+      {
         async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
           t.is(localAddr, '/loopback/bar/nonce/1');
           t.is(remoteAddr, '/loopback/foo/nonce/2');
           const pingack = await when(c.send('ping'));
           t.is(pingack, 'pingack', 'expected pingack');
-          closed.resolve(null);
+          this.state.settler.resolve(null);
         },
-      }),
-    ),
+      },
+    );
+
+    return openerHandler;
+  };
+
+  const makeOpenerHandler = prepareOpener(zone, t);
+
+  await when(
+    port2.connect(port.getLocalAddress(), makeOpenerHandler({ settler })),
   );
 
-  await closed.promise;
+  await when(whenable);
 
   await port.removeListener(listener);
 });
