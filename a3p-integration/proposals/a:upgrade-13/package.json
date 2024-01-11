@@ -1,0 +1,21 @@
+{
+  "agoricProposal": {
+    "releaseNotes": "https://github.com/Agoric/agoric-sdk/releases/tag/agoric-upgrade-13",
+    "sdkImageTag": "latest",
+    "planName": "agoric-upgrade-13",
+    "upgradeInfo": {},
+    "type": "Software Upgrade Proposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/synthetic-chain": "^0.0.3",
+    "ava": "^5.3.1",
+    "better-sqlite3": "^9.2.2",
+    "execa": "^7.2.0"
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.0.2"
+}
