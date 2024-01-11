@@ -10,7 +10,7 @@ import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
-import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeNotifierFromAsyncIterable, subscribeEach } from '@agoric/notifier';
