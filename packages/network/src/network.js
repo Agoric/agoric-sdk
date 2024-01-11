@@ -106,6 +106,7 @@ const prepareHalfConnection = zone => {
  * @param addr0
  * @param handler1
  * @param addr1
+ * @param makeConnection
  * @param current
  */
 export const crossoverConnection = (
@@ -114,6 +115,7 @@ export const crossoverConnection = (
   addr0,
   handler1,
   addr1,
+  makeConnection,
   current = zone.detached().weakSetStore('crossoverCurrentConnections'),
 ) => {
   const detached = zone.detached();
@@ -125,8 +127,6 @@ export const crossoverConnection = (
   const handlers = harden([handler0, handler1]);
   /** @type {Endpoint[]} */
   const addrs = harden([addr0, addr1]);
-
-  const makeConnection = prepareHalfConnection(zone);
 
   const makeHalfConnection = (l, r) => {
     conns.init(l, makeConnection({ addrs, handlers, conns, current, l, r }));
@@ -152,8 +152,11 @@ export const crossoverConnection = (
   return [conns.get(0), conns.get(1)];
 };
 
-/** @param {import('@agoric/base-zone').Zone} zone */
-const prepareInboundAttempt = zone => {
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param makeConnection
+ */
+const prepareInboundAttempt = (zone, makeConnection) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
     undefined,
@@ -226,6 +229,7 @@ const prepareInboundAttempt = zone => {
           localAddress,
           rchandler,
           remoteAddress,
+          makeConnection,
           current,
         )[1];
       },
@@ -386,7 +390,8 @@ const preparePort = zone => {
  * @param root0.makePort
  */
 const prepareBinder = zone => {
-  const makeInboundAttempt = prepareInboundAttempt(zone);
+  const makeConnection = prepareHalfConnection(zone);
+  const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection);
   const makePort = preparePort(zone);
   const detached = zone.detached();
 
@@ -513,6 +518,7 @@ const prepareBinder = zone => {
             localAddress,
             rchandler,
             remoteAddress,
+            makeConnection,
             current,
           )[0];
         },
@@ -710,64 +716,83 @@ export function makeNonceMaker(prefix = '', suffix = '') {
 /**
  * Create a protocol handler that just connects to itself.
  *
+ *  @param {import('@agoric/base-zone').Zone} zone
+ * @param zone
  * @param {ProtocolHandler['onInstantiate']} [onInstantiate]
- * @returns {ProtocolHandler} The localhost handler
  */
-export function makeLoopbackProtocolHandler(
+export function prepareLoopbackProtocolHandler(
+  zone,
   onInstantiate = makeNonceMaker('nonce/'),
 ) {
-  /** @type {MapStore<string, [Port, ListenHandler]>} */
-  const listeners = makeScalarMapStore('localAddr');
-
   const makePortID = makeNonceMaker('port');
+  const detached = zone.detached();
 
-  return Far('ProtocolHandler', {
-    // eslint-disable-next-line no-empty-function
-    async onCreate(_impl, _protocolHandler) {
-      // TODO
-    },
-    async generatePortID(_protocolHandler) {
-      return makePortID();
-    },
-    async onBind(_port, _localAddr, _protocolHandler) {
-      // TODO: Maybe handle a bind?
-    },
-    async onConnect(_port, localAddr, remoteAddr, _chandler, protocolHandler) {
-      const [lport, lhandler] = listeners.get(remoteAddr);
-      const rchandler =
-        /** @type {ConnectionHandler} */
-        (await E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler));
-      // console.log(`rchandler is`, rchandler);
-      const remoteInstance = await E(protocolHandler)
-        .onInstantiate(lport, remoteAddr, localAddr, protocolHandler)
-        .catch(rethrowUnlessMissing);
+  const makeLoopbackProtocolHandler = zone.exoClass(
+    'ProtocolHandler',
+    undefined,
+    () => {
+      /** @type {MapStore<string, [Port, ListenHandler]>} */
+      const listeners = detached.mapStore('localAddr');
+
       return {
-        remoteInstance,
-        handler: rchandler,
+        listeners,
       };
     },
-    onInstantiate,
-    async onListen(port, localAddr, listenHandler, _protocolHandler) {
-      // TODO: Implement other listener replacement policies.
-      if (listeners.has(localAddr)) {
-        const lhandler = listeners.get(localAddr)[1];
-        if (lhandler !== listenHandler) {
-          // Last-one-wins.
-          listeners.set(localAddr, [port, listenHandler]);
+    {
+      async onCreate(_impl, _protocolHandler) {
+        // TODO
+      },
+      async generatePortID(_protocolHandler) {
+        return makePortID();
+      },
+      async onBind(_port, _localAddr, _protocolHandler) {
+        // TODO: Maybe handle a bind?
+      },
+      async onConnect(
+        _port,
+        localAddr,
+        remoteAddr,
+        _chandler,
+        protocolHandler,
+      ) {
+        const [lport, lhandler] = this.state.listeners.get(remoteAddr);
+        const rchandler =
+          /** @type {ConnectionHandler} */
+          (await E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler));
+        // console.log(`rchandler is`, rchandler);
+        const remoteInstance = await E(protocolHandler)
+          .onInstantiate(lport, remoteAddr, localAddr, protocolHandler)
+          .catch(rethrowUnlessMissing);
+        return {
+          remoteInstance,
+          handler: rchandler,
+        };
+      },
+      onInstantiate,
+      async onListen(port, localAddr, listenHandler, _protocolHandler) {
+        // TODO: Implement other listener replacement policies.
+        if (this.state.listeners.has(localAddr)) {
+          const lhandler = this.state.listeners.get(localAddr)[1];
+          if (lhandler !== listenHandler) {
+            // Last-one-wins.
+            this.state.listeners.set(localAddr, [port, listenHandler]);
+          }
+        } else {
+          this.state.listeners.init(localAddr, harden([port, listenHandler]));
         }
-      } else {
-        listeners.init(localAddr, harden([port, listenHandler]));
-      }
+      },
+      async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
+        const [lport, lhandler] = this.state.listeners.get(localAddr);
+        lport === port || Fail`Port does not match listener on ${localAddr}`;
+        lhandler === listenHandler ||
+          Fail`Listen handler does not match listener on ${localAddr}`;
+        this.state.listeners.delete(localAddr);
+      },
+      async onRevoke(_port, _localAddr, _protocolHandler) {
+        // TODO: maybe clean up?
+      },
     },
-    async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
-      const [lport, lhandler] = listeners.get(localAddr);
-      lport === port || Fail`Port does not match listener on ${localAddr}`;
-      lhandler === listenHandler ||
-        Fail`Listen handler does not match listener on ${localAddr}`;
-      listeners.delete(localAddr);
-    },
-    async onRevoke(_port, _localAddr, _protocolHandler) {
-      // TODO: maybe clean up?
-    },
-  });
+  );
+
+  return makeLoopbackProtocolHandler;
 }
