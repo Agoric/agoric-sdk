@@ -5,7 +5,7 @@ import path from 'path';
 import { E, Far } from '@endo/far';
 import {
   makeNetworkProtocol,
-  makeLoopbackProtocolHandler,
+  prepareLoopbackProtocolHandler,
 } from '@agoric/network';
 
 import bundleSource from '@endo/bundle-source';
@@ -39,7 +39,8 @@ const makeAsyncIteratorFromSubscription = sub =>
 async function testRemotePeg(t) {
   t.plan(24);
 
-  const { makeWhenableKit, when } = prepareWhenableModule(makeHeapZone());
+  const zone = makeHeapZone();
+  const { makeWhenableKit, when } = prepareWhenableModule(zone);
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -81,7 +82,8 @@ async function testRemotePeg(t) {
    * @type {import('../src/pegasus.js').Pegasus}
    */
   const pegasus = publicAPI;
-  const network = makeNetworkProtocol(makeLoopbackProtocolHandler());
+  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone);
+  const network = makeNetworkProtocol(zone, makeLoopbackHandler());
 
   const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
   const portName = await E(portP).getLocalAddress();
