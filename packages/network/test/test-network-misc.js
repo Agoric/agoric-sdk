@@ -298,7 +298,7 @@ test('protocol connection listen', async t => {
     port2.connect('/net/ordered/ordered/some-portname', makeHandlerWithOpen()),
   );
 
-  await whenable.whenable0.shorten();
+  await when(whenable);
 
   await when(port.removeListener(listener));
   await when(port.revoke());

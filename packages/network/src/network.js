@@ -1,6 +1,4 @@
-import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
+import { E } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
@@ -597,81 +595,6 @@ export const makeNetworkProtocol = (zone, protocolHandler) => {
   // Wire up the local protocol to the handler.
   void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
   return harden(binder);
-};
-
-/**
- * Create a handled Connection.
- *
- * @param {ConnectionHandler} handler
- * @param {Endpoint} localAddr
- * @param {Endpoint} remoteAddr
- * @param {Set<Closable>} [current]
- * @returns {Connection}
- */
-export const makeConnection = (
-  handler,
-  localAddr,
-  remoteAddr,
-  current = new Set(),
-) => {
-  let closed;
-  /** @type {Set<import('@endo/promise-kit').PromiseKit<Bytes>>} */
-  const pendingAcks = new Set();
-  /** @type {Connection} */
-  const connection = Far('Connection', {
-    getLocalAddress() {
-      return localAddr;
-    },
-    getRemoteAddress() {
-      return remoteAddr;
-    },
-    async close() {
-      if (closed) {
-        throw closed;
-      }
-      current.delete(connection);
-      closed = Error('Connection closed');
-      for (const ackDeferred of [...pendingAcks.values()]) {
-        pendingAcks.delete(ackDeferred);
-        ackDeferred.reject(closed);
-      }
-      await E(handler)
-        .onClose(connection, undefined, handler)
-        .catch(rethrowUnlessMissing);
-    },
-    async send(data, opts) {
-      // console.log('send', data, local === srcHandler);
-      if (closed) {
-        throw closed;
-      }
-      const bytes = toBytes(data);
-      const ackDeferred = makePromiseKit();
-      pendingAcks.add(ackDeferred);
-      E(handler)
-        .onReceive(connection, bytes, handler, opts)
-        .catch(err => {
-          rethrowUnlessMissing(err);
-          return '';
-        })
-        .then(
-          ack => {
-            pendingAcks.delete(ackDeferred);
-            ackDeferred.resolve(toBytes(ack));
-          },
-          err => {
-            pendingAcks.delete(ackDeferred);
-            ackDeferred.reject(err);
-          },
-        );
-      return ackDeferred.promise;
-    },
-  });
-
-  current.add(connection);
-  E(handler)
-    .onOpen(connection, localAddr, remoteAddr, handler)
-    .catch(rethrowUnlessMissing);
-  return connection;
 };
 
 /**
