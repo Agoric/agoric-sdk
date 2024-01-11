@@ -93,8 +93,9 @@ test('test revoke defineVirtualExoClassKit', t => {
     message:
       '"In \\"incr\\" method of (Counter up)" may only be applied to a valid instance: "[Alleged: Counter up]"',
   });
+  t.is(downCounter.decr(), 6);
   // @ts-expect-error Does not understand that `revoke` is a function.
-  t.is(revoke(downCounter), false);
+  t.is(revoke(downCounter), true);
   t.throws(() => downCounter.decr(), {
     message:
       '"In \\"decr\\" method of (Counter down)" may only be applied to a valid instance: "[Alleged: Counter down]"',

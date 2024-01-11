@@ -16,6 +16,14 @@ import {
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
+/**
+ * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
+ */
+
+/**
+ * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
+ */
+
 const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
@@ -140,49 +148,6 @@ const makeContextCache = (makeState, makeContext) => {
   const deleteBacking = _baseRef => Fail`never called`;
   return makeCache(readBacking, writeBacking, deleteBacking);
 };
-
-/**
- * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
- */
-
-/**
- * @param {*} contextCache
- * @param {*} getSlotForVal
- * @returns {ContextProvider}
- */
-const makeContextProvider = (contextCache, getSlotForVal) =>
-  harden(rep => contextCache.get(getSlotForVal(rep)));
-
-const makeContextRevoker = (contextCache, getSlotForVal) =>
-  harden(rep => contextCache.delete(getSlotForVal(rep)));
-
-const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
-  /** @type { Record<string, any> } */
-  const contextProviderKit = {};
-  for (const [index, name] of facetNames.entries()) {
-    contextProviderKit[name] = rep => {
-      const vref = getSlotForVal(rep);
-      const { baseRef, facet } = parseVatSlot(vref);
-
-      // Without this check, an attacker (with access to both cohort1.facetA
-      // and cohort2.facetB) could effectively forge access to cohort1.facetB
-      // and cohort2.facetA. They could not forge the identity of those two
-      // objects, but they could invoke all their equivalent methods, by using
-      // e.g. cohort1.facetA.foo.apply(cohort2.facetB, [...args])
-      Number(facet) === index || Fail`illegal cross-facet access`;
-
-      return harden(contextCache.get(baseRef));
-    };
-  }
-  return harden(contextProviderKit);
-};
-
-// TODO BUG The returned function revokes the whole kit, i.e., all vrefs
-// sharing the same baseRef. This makes me wonder whether I need to rethink
-// revocation yet again. Perhaps an entire kit is the correct unit and
-// the api should be reconcieved.
-const makeContextFacetRevoker = (contextCache, getSlotForVal) =>
-  harden(rep => contextCache.delete(parseVatSlot(getSlotForVal(rep)).baseRef));
 
 // The management of single Representatives (i.e. defineKind) is very similar
 // to that of a cohort of facets (i.e. defineKindMulti). In this description,
@@ -981,6 +946,14 @@ export const makeVirtualObjectManager = (
     const contextCache = makeContextCache(makeState, makeContext);
     allCaches.push(contextCache);
 
+    let revokedSet;
+    if (receiveRevoker) {
+      // FIXME This uses a kind-wide heap Set, which is totally non-scalable.
+      // However, this is only a shim anyway until we figure out how to do
+      // the revoking bookkeeping properly.
+      revokedSet = new Set();
+    }
+
     // defendPrototype/defendPrototypeKit accept a contextProvider function,
     // or a contextProviderKit record which maps facet name strings to
     // provider functions. It calls the function during invocation of each
@@ -993,17 +966,49 @@ export const makeVirtualObjectManager = (
 
     let proto;
     if (multifaceted) {
+      /** @type { Record<string, KitContextProvider> } */
+      const contextProviderKit = {};
+      for (const [index, name] of facetNames.entries()) {
+        contextProviderKit[name] = rep => {
+          if (revokedSet && revokedSet.has(rep)) {
+            return undefined;
+          }
+          const vref = getSlotForVal(rep);
+          assert(vref !== undefined);
+          const { baseRef, facet } = parseVatSlot(vref);
+
+          // Without this check, an attacker (with access to both cohort1.
+          // facetA
+          // and cohort2.facetB) could effectively forge access to cohort1.
+          // facetB
+          // and cohort2.facetA. They could not forge the identity of those two
+          // objects, but they could invoke all their equivalent methods, by
+          // using
+          // e.g. cohort1.facetA.foo.apply(cohort2.facetB, [...args])
+          Number(facet) === index || Fail`illegal cross-facet access`;
+
+          return harden(contextCache.get(baseRef));
+        };
+      }
       proto = defendPrototypeKit(
         tag,
-        makeContextProviderKit(contextCache, getSlotForVal, facetNames),
+        harden(contextProviderKit),
         behavior,
         thisfulMethods,
         interfaceGuardKit,
       );
     } else {
+      /** @type {ContextProvider} */
+      const contextProvider = rep => {
+        if (revokedSet && revokedSet.has(rep)) {
+          return undefined;
+        }
+        // @ts-expect-error FIXME ContextProvider can return undefined
+        return harden(contextCache.get(getSlotForVal(rep)));
+      };
       proto = defendPrototype(
         tag,
-        makeContextProvider(contextCache, getSlotForVal),
+        harden(contextProvider),
         behavior,
         thisfulMethods,
         interfaceGuard,
@@ -1088,10 +1093,15 @@ export const makeVirtualObjectManager = (
     };
 
     if (receiveRevoker) {
-      const makeRevoker = multifaceted
-        ? makeContextFacetRevoker
-        : makeContextRevoker;
-      receiveRevoker(makeRevoker(contextCache, getSlotForVal));
+      const revoker = rep => {
+        if (revokedSet.has(rep)) {
+          return false;
+        }
+        // TODO must also return false if it isn't one of ours at all
+        revokedSet.add(rep);
+        return true;
+      };
+      receiveRevoker(harden(revoker));
     }
 
     return makeNewInstance;
