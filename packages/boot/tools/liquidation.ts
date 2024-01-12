@@ -301,11 +301,12 @@ export const makeLiquidationTestKit = async ({
     priceFeedDrivers,
     setupVaults,
     placeBids,
+    setupStartingState,
   };
 };
 
 export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;
