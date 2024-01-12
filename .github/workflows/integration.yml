@@ -237,7 +237,7 @@ jobs:
         run: yarn install
         working-directory: a3p-integration
       - name: build proposals tests
-        run: yarn synthetic-chain append
+        run: yarn synthetic-chain build
         working-directory: a3p-integration
       - name: run proposals tests
         run: yarn synthetic-chain test
