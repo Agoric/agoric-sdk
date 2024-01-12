@@ -348,7 +348,7 @@ type ChainBootstrapSpaceT = {
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: PriceAuthority;
-  priceAuthorityAdmin: import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
+  priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   provisionWalletBridgeManager:

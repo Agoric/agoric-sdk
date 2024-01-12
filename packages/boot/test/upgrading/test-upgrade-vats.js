@@ -424,7 +424,7 @@ test('upgrade vat-priceAuthority', async t => {
     priceAuthorityVatConfig,
   );
 
-  /** @type {import('@agoric/zoe/tools/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
+  /** @type {import('@agoric/vats/src/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
   const registry = await EV(priceAuthorityRoot).getRegistry();
 
   // Ideally we'd also test registering a PA and verifying the same one comes out the def end.
