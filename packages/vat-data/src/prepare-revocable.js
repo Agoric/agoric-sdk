@@ -113,7 +113,8 @@ export const prepareRevocableKit = (
     },
   );
 
-  // @ts-expect-error type parameter confusion
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore parameter confusion
   return makeRevocableKit;
 };
 harden(prepareRevocableKit);
