@@ -11,6 +11,7 @@
  * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js'
  * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js'
  * @import {Timestamp} from '@agoric/time'
+ * @import {TimestampRecord} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
  */
 
@@ -132,3 +133,26 @@
  */
 
 /** @typedef {{ key: 'governedParams' | { collateralBrand: Brand } }} VaultFactoryParamPath */
+
+/**
+ * @typedef {{
+ *   plan: import('./proceeds.js').DistributionPlan;
+ *   vaultsInPlan: Array;
+ * }} PostAuctionParams
+ *
+ * @typedef {{
+ *   plan: import('./proceeds.js').DistributionPlan;
+ *   totalCollateral: Amount<'nat'>;
+ *   totalDebt: Amount<'nat'>;
+ *   auctionSchedule: import('../auction/scheduler.js').FullSchedule;
+ * }} AuctionResultsParams
+ */
+
+/**
+ * @typedef {import('./liquidation.js').VaultData} VaultData
+ *
+ * @typedef {object} LiquidationVisibilityWriters
+ * @property {(vaultData: VaultData) => Promise<void>} writePreAuction
+ * @property {(postAuctionParams: PostAuctionParams) => Promise<void>} writePostAuction
+ * @property {(auctionResultParams: AuctionResultsParams) => Promise<void>} writeAuctionResults
+ */

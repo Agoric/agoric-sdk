@@ -256,6 +256,7 @@ export const makeLiquidationTestKit = async ({
     collateralBrandKey: string,
     buyerWalletAddress: string,
     setup: LiquidationSetup,
+    base = 0, // number of bids made before
   ) => {
     const buyer =
       await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
@@ -275,7 +276,11 @@ export const makeLiquidationTestKit = async ({
     const maxBuy = `10000${collateralBrandKey}`;
 
     for (let i = 0; i < setup.bids.length; i += 1) {
+<<<<<<< HEAD
       const offerId = `${collateralBrandKey}-bid${i + 1}`;
+=======
+      const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
+>>>>>>> 69a90400e (# This is a combination of 22 commits.)
       // bids are long-lasting offers so we can't wait here for completion
       await buyer.sendOfferMaker(Offers.auction.Bid, {
         offerId,
@@ -300,11 +305,12 @@ export const makeLiquidationTestKit = async ({
     priceFeedDrivers,
     setupVaults,
     placeBids,
+    setupStartingState,
   };
 };
 
 export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;
