@@ -12,7 +12,7 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const root = `${dirname}/../../../src/contracts/ownable-counter.js`;
+const root = `${dirname}/ownable-counter.js`;
 
 test('zoe - ownable-counter contract', async t => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
@@ -44,7 +44,7 @@ test('zoe - ownable-counter contract', async t => {
   t.deepEqual(await E(firstCounter)[GET_METHOD_NAMES](), [
     '__getInterfaceGuard__',
     '__getMethodNames__',
-    'getCustomDetails',
+    'getInvitationCustomDetails',
     'incr',
     'makeTransferInvitation',
   ]);
@@ -52,7 +52,7 @@ test('zoe - ownable-counter contract', async t => {
   t.is(await E(firstCounter).incr(), 4n);
   t.is(await E(viewCounter).view(), 4n);
 
-  t.deepEqual(await E(firstCounter).getCustomDetails(), {
+  t.deepEqual(await E(firstCounter).getInvitationCustomDetails(), {
     count: 4n,
   });
 
@@ -61,12 +61,12 @@ test('zoe - ownable-counter contract', async t => {
   t.deepEqual(await E(firstCounter)[GET_METHOD_NAMES](), [
     '__getInterfaceGuard__',
     '__getMethodNames__',
-    'getCustomDetails',
+    'getInvitationCustomDetails',
     'incr',
     'makeTransferInvitation',
   ]);
 
-  await t.throwsAsync(() => E(firstCounter).getCustomDetails(), {
+  await t.throwsAsync(() => E(firstCounter).getInvitationCustomDetails(), {
     message: '"Counter_caretaker" revoked',
   });
   await t.throwsAsync(() => E(firstCounter).incr(), {
@@ -97,14 +97,14 @@ test('zoe - ownable-counter contract', async t => {
   t.is(await E(reviveCounterSeat).hasExited(), true);
 
   t.is(await E(viewCounter).view(), 4n);
-  t.deepEqual(await E(counter2).getCustomDetails(), {
+  t.deepEqual(await E(counter2).getInvitationCustomDetails(), {
     count: 4n,
   });
 
   t.is(await E(counter2).incr(), 5n);
 
   t.is(await E(viewCounter).view(), 5n);
-  t.deepEqual(await E(counter2).getCustomDetails(), {
+  t.deepEqual(await E(counter2).getInvitationCustomDetails(), {
     count: 5n,
   });
 });

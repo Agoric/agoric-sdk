@@ -10,9 +10,18 @@ const TransferProposalShape = M.splitRecord({
   },
 });
 
+/**
+ * @template {any} [U=any]
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {MakeInvitation} makeInvitation
+ * @param {string} uKindName
+ * @param {string} uInterfaceName
+ * @param {(string|symbol)[]} uMethodNames
+ * @returns {(underlying: U) => U}
+ */
 export const prepareOwnable = (
-  zcf,
   baggage,
+  makeInvitation,
   uKindName,
   uInterfaceName,
   uMethodNames,
@@ -37,11 +46,11 @@ export const prepareOwnable = (
             revoker,
           },
         } = this;
-        const customDetails = underlying.getCustomDetails();
+        const customDetails = underlying.getInvitationCustomDetails();
         // eslint-disable-next-line no-use-before-define
         const transferHandler = makeTransferHandler(underlying);
 
-        const invitation = zcf.makeInvitation(
+        const invitation = makeInvitation(
           transferHandler,
           'transfer',
           customDetails,
