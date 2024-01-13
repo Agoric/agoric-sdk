@@ -29,7 +29,7 @@ test('test revoke defineVirtualExoClass', t => {
     baggage,
     'UpCounter',
     UpCounterI,
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
@@ -65,7 +65,7 @@ test('test revoke defineVirtualExoClassKit', t => {
     baggage,
     'Counter',
     { up: UpCounterI, down: DownCounterI },
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       up: {

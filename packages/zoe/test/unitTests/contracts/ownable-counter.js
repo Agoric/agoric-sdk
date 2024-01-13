@@ -1,6 +1,6 @@
 import { M } from '@endo/patterns';
 import { prepareExoClassKit } from '@agoric/vat-data';
-import { prepareOwnable } from '../contractSupport/prepare-ownable.js';
+import { prepareOwnable } from '../../../src/contractSupport/prepare-ownable.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -20,7 +20,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       counter: M.interface('Counter', {
         incr: M.call().returns(M.bigint()),
         // required by makePrepareOwnableClass
-        getCustomDetails: M.call().returns(
+        getInvitationCustomDetails: M.call().returns(
           harden({
             count: M.bigint(),
           }),
@@ -40,7 +40,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           state.count += 1n;
           return state.count;
         },
-        getCustomDetails() {
+        getInvitationCustomDetails() {
           const {
             state: { count },
           } = this;
@@ -61,11 +61,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   const makeOwnableCounter = prepareOwnable(
-    zcf,
     baggage,
+    (...args) => zcf.makeInvitation(...args),
     'Counter',
     'OwnableCounter',
-    ['incr', 'getCustomDetails'],
+    ['incr', 'getInvitationCustomDetails'],
   );
 
   const { counter: underlyingCounter, viewer } =
