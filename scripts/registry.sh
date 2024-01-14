@@ -58,7 +58,7 @@ publish() {
     test -n "$prior" || prior=$(git rev-parse HEAD)
     git checkout -B lerna-publish
 
-    echo "$versions" | "$thisdir/set-versions.sh" "$d"
+    echo "$versions" | "$thisdir/set-versions.sh" .
 
     yarn install
     yarn build
@@ -67,7 +67,7 @@ publish() {
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
     yarn lerna publish --concurrency 1 prerelease --exact \
-      --dist-tag="$DISTTAG" --preid=dev"-$(git rev-parse --short=7 HEAD)" \
+      --dist-tag="$DISTTAG" --preid=dev \
       --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
 
     versions=$("$thisdir/get-versions.sh" . | jq "$versions + .")
