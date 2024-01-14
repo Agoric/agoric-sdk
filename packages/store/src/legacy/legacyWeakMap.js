@@ -1,5 +1,7 @@
-import { q, Fail } from '@agoric/assert';
 import '../types.js';
+
+// TODO, once migrated to endo, import from @endo/errors instead
+const { Fail, quote: q } = assert;
 
 /**
  * See doccomment in the closely related `legacyMap.js` module.
