@@ -3,7 +3,11 @@
     "releaseNotes": "https://github.com/Agoric/agoric-sdk/releases/tag/agoric-upgrade-14",
     "sdkImageTag": "latest",
     "planName": "agoric-upgrade-14",
-    "upgradeInfo": {},
+    "upgradeInfo": {
+      "coreProposals": [
+        "@agoric/vats/scripts/init-network.js"
+      ]
+    },
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
