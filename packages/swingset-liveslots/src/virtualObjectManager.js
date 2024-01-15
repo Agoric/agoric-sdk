@@ -17,7 +17,7 @@ import {
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
 /**
- * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
+ * @typedef {import('@endo/exo/src/exo-tools.js').ClassContextProvider } ClassContextProvider
  */
 
 /**
@@ -995,7 +995,7 @@ export const makeVirtualObjectManager = (
         interfaceGuardKit,
       );
     } else {
-      /** @type {ContextProvider} */
+      /** @type {ClassContextProvider} */
       const contextProvider = rep => {
         const slot = getSlotForVal(rep);
         assert(slot !== undefined);
