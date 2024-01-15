@@ -121,7 +121,12 @@ export const preparePaymentLedger = (
     amountShape,
   );
 
-  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
+  const { makePayment, revokePayment } = preparePaymentKind(
+    issuerBaggage,
+    name,
+    brand,
+    PaymentI,
+  );
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -198,6 +203,8 @@ export const preparePaymentLedger = (
       paymentRecoverySets.delete(payment);
       recoverySet.delete(payment);
     }
+    // @ts-expect-error The usual type param confusion
+    revokePayment(payment);
   };
 
   /** @type {(left: Amount, right: Amount) => Amount} */

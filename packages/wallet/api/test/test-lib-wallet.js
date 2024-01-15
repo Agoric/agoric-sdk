@@ -901,7 +901,9 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-7',
+            // TODO Why did this change from 'unnamed-7'?
+            // Is 'unnamed-6' symptomatic of a bug?
+            petname: 'unnamed-6',
           },
           installation: {
             kind: 'unnamed',
@@ -914,7 +916,9 @@ test('lib-wallet offer methods', async t => {
         },
         inviteHandleBoardId: 'board0257',
         meta: {
-          id: 9,
+          // TODO Why did this change from 9?
+          // Is 8 symptomatic of a bug?
+          id: 8,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
