@@ -3,7 +3,11 @@
     "releaseNotes": "TBD",
     "sdkImageTag": "latest",
     "planName": "UNRELEASED_UPGRADE",
-    "upgradeInfo": {},
+    "upgradeInfo": {
+      "coreProposals": [
+        "@agoric/builders/scripts/vats/init-network.js"
+      ]
+    },
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
