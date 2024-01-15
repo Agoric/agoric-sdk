@@ -10,6 +10,12 @@ import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
+// Not sure why directly hardening these Module namespace objects does work
+harden({
+  tendermint34: { ...tendermint34 },
+  stargateStar: { ...stargateStar },
+});
+
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q, Fail } = assert;
@@ -357,6 +363,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(allValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -372,6 +379,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(reverseValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -389,6 +397,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(lastValueFromCell);
 
   /**
    * @yields {ValueFollowerElement<T>}
@@ -434,6 +443,7 @@ export const makeCosmjsFollower = (
       lastValue = latest.value;
     }
   }
+  harden(getLatestIterable);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -552,6 +562,7 @@ export const makeCosmjsFollower = (
       cursorData = currentData;
     }
   }
+  harden(getEachIterableAtHeight);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -575,6 +586,7 @@ export const makeCosmjsFollower = (
       cursorBlockHeight = cursorStreamCell.blockHeight - 1;
     }
   }
+  harden(getReverseIterableAtHeight);
 
   /** @type {ValueFollower<T>} */
   return Far('chain follower', {

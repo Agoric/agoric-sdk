@@ -164,6 +164,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     yield* transcriptStore.getExportRecords(true);
     yield* bundleStore.getExportRecords();
   }
+  harden(getExportData);
 
   /**
    * @returns {AsyncIterableIterator<string>}
@@ -174,6 +175,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
   }
+  harden(getArtifactNames);
 
   /**
    * @param {string} name
