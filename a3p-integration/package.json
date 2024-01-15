@@ -1,7 +1,7 @@
 {
     "private": true,
     "agoricSyntheticChain": {
-        "fromTag": "upgrade-12"
+        "fromTag": "upgrade-13"
     },
     "scripts": {
         "build": "echo Use synthetic-chain to build proposal images",
