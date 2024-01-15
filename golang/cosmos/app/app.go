@@ -776,8 +776,8 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	const (
-		upgradeName     = "agoric-upgrade-13"
-		upgradeNameTest = "agorictest-upgrade-13"
+		upgradeName     = "agoric-upgrade-14"
+		upgradeNameTest = "agorictest-upgrade-14"
 	)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
@@ -824,7 +824,7 @@ func NewAgoricApp(
 	return app
 }
 
-// upgrade13Handler performs standard upgrade actions plus custom actions for upgrade-13.
+// upgrade13Handler performs standard upgrade actions plus custom actions for upgrade-14.
 func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
