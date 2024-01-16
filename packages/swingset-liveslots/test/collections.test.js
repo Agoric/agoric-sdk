@@ -190,7 +190,7 @@ function exerciseSetOperations(t, collectionName, testStore) {
   }
 }
 
-test.failing('basic map operations', t => {
+test('basic map operations', t => {
   exerciseMapOperations(
     t,
     'map',
@@ -206,7 +206,7 @@ test('basic weak map operations', t => {
   );
 });
 
-test.failing('basic set operations', t => {
+test('basic set operations', t => {
   exerciseSetOperations(
     t,
     'set',

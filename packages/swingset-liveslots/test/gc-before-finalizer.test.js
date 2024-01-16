@@ -114,12 +114,7 @@ test('presence in COLLECTED state is not dropped yet', async t => {
   ]);
 });
 
-// disabled until #9956 and #9959 are fixed, which interfere with this
-// test
-
-/*
-
-test.failing('presence in COLLECTED state is not retired early', async t => {
+test('presence in COLLECTED state is not retired early', async t => {
   const { syscall, log } = buildSyscall();
   const gcTools = makeMockGC();
 
@@ -160,7 +155,7 @@ test.failing('presence in COLLECTED state is not retired early', async t => {
   let myWeakStore;
 
   function buildRootObject(vatPowers) {
-    const { VatData, WeakSet } = vatPowers;
+    const { VatData } = vatPowers;
     const { makeScalarBigMapStore, makeScalarBigWeakSetStore } = VatData;
     const store = makeScalarBigMapStore();
     myWeakStore = makeScalarBigWeakSetStore();
@@ -193,10 +188,9 @@ test.failing('presence in COLLECTED state is not retired early', async t => {
   t.is(possiblyDeadSet.size, 0);
   t.is(possiblyRetiredSet.size, 0);
 
-  console.log(`-- starting`);
   // step 2: delete vdata ref to weakstore, make myPresence COLLECTED
   await dispatch(makeMessage('o+0', 'dropWeakStore', []));
-  gcTools.kill(myPresence)
+  gcTools.kill(myPresence);
   log.length = 0;
   // weakstore is possiblyDead (NARRATORS VOICE: it's dead). Presence
   // is not, because the finalizer hasn't run.
@@ -206,29 +200,31 @@ test.failing('presence in COLLECTED state is not retired early', async t => {
   // the empty weakref is still there
   t.true(slotToVal.has('o-1'));
 
-
   // step 3: BOYD. It will collect myWeakStore on the first pass,
   // whose deleter should clear all entries, which will add its
   // recognized vrefs to possiblyRetiredSet. The post-pass will check
   // o-1 for reachability with slotToVal.has, and because that says it
   // is reachable, it will not be retired (even though it has no
-  // recognizer by now)
-  console.log(`-- doing first BOYD`);
+  // recognizer by now).
+  //
+  // *If* scanForDeadObjects() were mistakenly using getValForSlot()
+  // *instead of slotToVal.has(), we would see a retireImports here,
+  // *which would be a vat-fatal error, because we haven't seen a
+  // *dropImports yet.
   await dispatch(makeBringOutYourDead());
+  // I tested this manually, by modifying boyd-gc.js *to use
+  // getValForSlot, and observed that this deepEqual(justGC(log), [])
+  // failed: it had an unexpected retireImports
   t.deepEqual(justGC(log), []);
   log.length = 0;
 
   // eventually, the finalizer runs
   gcTools.flushAllFRs();
 
-  console.log(`-- doing second BOYD`);
   // *now* a BOYD will drop+retire
   await dispatch(makeBringOutYourDead());
-  console.log(log);
   t.deepEqual(justGC(log), [
     { type: 'dropImports', slots: ['o-1'] },
     { type: 'retireImports', slots: ['o-1'] },
   ]);
 });
-
-*/
