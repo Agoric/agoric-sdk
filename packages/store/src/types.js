@@ -57,7 +57,7 @@
  */
 
 /**
- * @template {Key & object} [K=Key]
+ * @template {Key} [K=Key]
  * @typedef {object} WeakSetStore
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
@@ -90,7 +90,7 @@
  */
 
 /**
- * @template {Key & object} [K=Key]
+ * @template {Key} [K=Key]
  * @template {Passable} [V=Passable]
  * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any

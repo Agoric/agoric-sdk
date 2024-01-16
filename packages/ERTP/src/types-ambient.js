@@ -341,4 +341,7 @@
 
 /** @typedef {bigint} NatValue */
 
-/** @typedef {Key[]} SetValue */
+/**
+ * @template {Key} [K=Key]
+ * @typedef {K[]} SetValue
+ */

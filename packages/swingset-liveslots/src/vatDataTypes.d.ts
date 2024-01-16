@@ -5,7 +5,6 @@
  * Behavior is a description when defining a kind of what facets it will have.
  * For the non-multi defineKind, there is just one facet so it doesn't have a key.
  */
-import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type {
   MapStore,
   SetStore,
@@ -13,6 +12,8 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import type { RemotableObject } from '@endo/pass-style';
+import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here
@@ -37,7 +38,7 @@ type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
   ? (...args: P) => R
   : never;
 
-export type KindFacet<O> = {
+export type KindFacet<O> = RemotableObject & {
   [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter
 };
 

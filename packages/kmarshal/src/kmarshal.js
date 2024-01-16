@@ -98,7 +98,6 @@ harden(makeStandinPromise);
 /**
  * @param {string} kref
  * @param {string} [iface]
- * @returns {import('@endo/eventual-send').ERef<KCap>}
  */
 export const kslot = (kref, iface = 'undefined') => {
   assert.typeof(kref, 'string');

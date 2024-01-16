@@ -10,5 +10,6 @@
  */
 
 /**
- * @typedef {import('@agoric/time').TimerService & ManualTimerAdmin} ManualTimer
+ * @typedef {import('@agoric/time').TimerServiceI & ManualTimerAdmin} ManualTimer
+ * A local timer implementing both TimerServiceI and manual admin methods
  */

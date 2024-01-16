@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define, no-undef */
-import type { ERef } from '@endo/eventual-send';
+import type { ERef, RemotableBrand } from '@endo/eventual-send';
 
-import type { RankComparison } from '@endo/marshal';
+import type { RankComparison, RemotableObject } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types.js"/>
 
@@ -97,7 +97,7 @@ export type CancelToken = object;
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  */
-export interface TimerService {
+export interface TimerServiceI {
   /**
    * Retrieve the latest timestamp
    */
@@ -171,6 +171,10 @@ export interface TimerService {
    */
   getTimerBrand: () => TimerBrand;
 }
+// XXX copied from Remotable helper return type
+export type TimerService = TimerServiceI &
+  RemotableObject<'TimerService'> &
+  RemotableBrand<{}, TimerServiceI>;
 
 export interface Clock {
   /**

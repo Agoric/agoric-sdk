@@ -87,6 +87,7 @@ test('priceAuthority quoteWanted', async t => {
 
   await E(manualTimer).tick();
   const quote = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
+  /** @type {any} */
   const quoteAmount = quote.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteAmount.timestamp);
   await assertAmountsEqual(t, bucks(400n), quoteAmount.amountOut);
@@ -110,12 +111,15 @@ test('priceAuthority paired quotes', async t => {
   await E(manualTimer).tick();
 
   const quoteOut = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
+  /** @type {any} */
   const quoteOutAmount = quoteOut.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteOutAmount.timestamp);
   await assertAmountsEqual(t, bucks(400n), quoteOutAmount.amountOut);
   await assertAmountsEqual(t, moola(20n), quoteOutAmount.amountIn);
 
   const quoteIn = await E(priceAuthority).quoteGiven(moola(22n), bucksBrand);
+  /** @type {any} */
+  /** @type {any} */
   const quoteInAmount = quoteIn.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteInAmount.timestamp);
   await assertAmountsEqual(t, bucks(20n * 22n), quoteInAmount.amountOut);
