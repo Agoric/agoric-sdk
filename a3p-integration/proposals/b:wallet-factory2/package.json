@@ -1,0 +1,21 @@
+{
+    "agoricProposal": {
+        "type": "/agoric.swingset.CoreEvalProposal",
+        "source": "build",
+        "buildScript": "../packages/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js"
+    },
+    "type": "module",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "@agoric/synthetic-chain": "^0.0.3",
+        "@endo/zip": "^0.2.35",
+        "ava": "^5.3.1",
+        "better-sqlite3": "^8.5.1",
+        "execa": "^7.2.0",
+        "tmp": "^0.2.1"
+    },
+    "scripts": {
+        "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+    },
+    "packageManager": "yarn@4.0.1"
+}

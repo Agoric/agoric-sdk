@@ -356,7 +356,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         .returns(M.promise()),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
-      repairUnwatchedSeats: M.call().returns(),
+      repairUnwatchedSeats: M.call().returns(M.promise()),
       updateStatus: M.call(M.any()).returns(),
       addContinuingOffer: M.call(
         M.or(M.number(), M.string()),
