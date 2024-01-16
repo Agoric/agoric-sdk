@@ -22,7 +22,7 @@ export {};
  * The amount supplied to a trade
  * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
- * @property {import('@agoric/time').TimerService} timer
+ * @property {import('@endo/patterns').RemotableObject & import('@agoric/time').TimerService} timer
  * The service that gave the `timestamp`
  * @property {import('@agoric/time').TimestampRecord} timestamp
  * A timestamp according to `timer` for the quote
