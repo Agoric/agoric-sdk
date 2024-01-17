@@ -1,8 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 
-import { prepareWhenableKits } from './whenable.js';
-import { getFirstWhenable, getWhenable0 } from './whenable-utils.js';
+import { getFirstWhenable, getWhenablePayload } from './whenable-utils.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -14,20 +13,17 @@ export const prepareWhen = (
   makeWhenablePromiseKit,
   rejectionMeansRetry = () => false,
 ) => {
-  const makeKit =
-    makeWhenablePromiseKit || prepareWhenableKits(zone).makeWhenablePromiseKit;
-
   /**
    * @param {any} specimenP
    */
   const when = specimenP => {
-    const { settler, promise } = makeKit();
+    const { settler, promise } = makeWhenablePromiseKit();
     // Ensure we have a presence that won't be disconnected later.
-    getFirstWhenable(specimenP, async (specimen, whenable0) => {
+    getFirstWhenable(specimenP, async (specimen, payload) => {
       // Shorten the whenable chain without a watcher.
       await null;
-      while (whenable0) {
-        specimen = await E(whenable0)
+      while (payload) {
+        specimen = await E(payload.whenable0)
           .shorten()
           .catch(e => {
             if (rejectionMeansRetry(e)) {
@@ -37,7 +33,11 @@ export const prepareWhen = (
             throw e;
           });
         // Advance to the next whenable.
-        whenable0 = getWhenable0(specimen);
+        const nextPayload = getWhenablePayload(specimen);
+        if (!nextPayload) {
+          break;
+        }
+        payload = nextPayload;
       }
       settler.resolve(specimen);
     }).catch(e => settler.reject(e));
