@@ -183,7 +183,7 @@ export {};
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
- * @property {*} [devices]
+ * @property {any} [devices]
  */
 /**
  * @typedef {KernelOptions & SwingSetOptions} SwingSetConfig a swingset config object
@@ -232,7 +232,7 @@ export {};
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {*} BundleCap
+ * @typedef {any} BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter

@@ -4,7 +4,5 @@
     ],
     "entryPoints": [
         "src/index.js",
-        "src/types.js",
-        "src/vatDataTypes.d.ts",
     ]
 }

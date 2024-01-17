@@ -3,14 +3,16 @@
         "../../typedoc.base.json"
     ],
     "entryPoints": [
+        "src/contractFacet/internal-types.js",
+        "src/contractFacet/types-ambient.d.ts",
         "src/contractSupport/index.js",
         "src/contractSupport/types.js",
-        "src/contractFacet/types-ambient.d.ts",
-        "src/contractFacet/types.ts",
+        "src/types.js",
         "src/zoeService/types.js",
         "src/zoeService/utils.d.ts",
         "src/zoeService/zoe.js",
-        "src/types.js",
+        "tools/internal-types.js",
         "tools/manualTimer.js",
+        "tools/types-ambient.js",
     ]
 }
