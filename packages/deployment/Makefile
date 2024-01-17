@@ -2,7 +2,7 @@ REPOSITORY = ghcr.io/agoric/cosmic-swingset
 REPOSITORY_SDK = ghcr.io/agoric/agoric-sdk
 SS := ../cosmic-swingset/
 
-TAG := latest
+TAG := unreleased
 GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
 	dirty=`git diff --quiet 2>/dev/null || echo -dirty`; \
 	echo "$$hash$$dirty")
