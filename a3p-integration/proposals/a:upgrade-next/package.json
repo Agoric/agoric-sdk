@@ -1,7 +1,7 @@
 {
   "agoricProposal": {
     "releaseNotes": "TBD",
-    "sdkImageTag": "latest",
+    "sdkImageTag": "unreleased",
     "planName": "UNRELEASED_UPGRADE",
     "upgradeInfo": {
       "coreProposals": [
