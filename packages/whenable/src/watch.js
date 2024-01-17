@@ -42,30 +42,34 @@ const callMeMaybe = (that, prop, postArgs) => {
 };
 
 /**
+ * Shim the promise watcher behaviour when VatData.watchPromise is not available.
+ *
+ * @param {PromiseLike<any>} p
+ * @param {PromiseWatcher} watcher
+ * @param {...unknown[]} watcherArgs
+ * @returns {void}
+ */
+const watchPromiseShim = (p, watcher, ...watcherArgs) => {
+  const onFulfilled = callMeMaybe(watcher, 'onFulfilled', watcherArgs);
+  const onRejected = callMeMaybe(watcher, 'onRejected', watcherArgs);
+  onFulfilled ||
+    onRejected ||
+    Fail`promise watcher must implement at least one handler method`;
+  void E.when(p, onFulfilled, onRejected);
+};
+
+/**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {() => import('./types.js').WhenableKit<any>} makeWhenableKit
- * @param {(p: PromiseLike<any>, watcher: PromiseWatcher,
- *   ...args: unknown[]) => void} [watchPromise]
+ * @param {typeof watchPromiseShim} [watchPromise]
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
 export const prepareWatch = (
   zone,
   makeWhenableKit,
-  watchPromise,
+  watchPromise = watchPromiseShim,
   rejectionMeansRetry = () => false,
 ) => {
-  if (!watchPromise) {
-    // Shim the promise watcher behaviour when VatData.watchPromise is not available.
-    watchPromise = (p, watcher, ...args) => {
-      const onFulfilled = callMeMaybe(watcher, 'onFulfilled', args);
-      const onRejected = callMeMaybe(watcher, 'onRejected', args);
-      onFulfilled ||
-        onRejected ||
-        Fail`promise watcher must implement at least one handler method`;
-      void E.when(p, onFulfilled, onRejected);
-    };
-  }
-
   /**
    * @param {any} specimen
    * @param {PromiseWatcher} watcher
