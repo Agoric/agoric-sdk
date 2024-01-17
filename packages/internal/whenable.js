@@ -1,7 +1,6 @@
 /* global globalThis */
-
-import { makeHeapZone } from '@agoric/base-zone/heap';
-import { prepareWhenableModule as wrappedPrepareWhenableModule } from '@agoric/whenable';
+import { prepareWhenableModule as rawPrepareWhenableModule } from '@agoric/whenable';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { isUpgradeDisconnection } from './src/upgrade-api.js';
 
 const vatData = /** @type {any} */ (globalThis).VatData;
@@ -16,16 +15,14 @@ const watchPromise = vatData && vatData.watchPromise;
  */
 const rejectionMeansRetry = reason => isUpgradeDisconnection(reason);
 
-/** @type {typeof wrappedPrepareWhenableModule} */
-export const prepareWhenableModule = (zone, powers) =>
-  wrappedPrepareWhenableModule(zone, {
-    rejectionMeansRetry,
-    watchPromise,
-    ...powers,
-  });
-harden(prepareWhenableModule);
+export const defaultPowers = harden({
+  rejectionMeansRetry,
+  watchPromise,
+});
 
-// Heap-based whenable support for migration to durable objects.
-const { watch, when, makeWhenableKit, makeWhenablePromiseKit } =
-  prepareWhenableModule(makeHeapZone());
-export { watch, when, makeWhenableKit, makeWhenablePromiseKit };
+export const prepareWhenableModule = (zone, powers = {}) =>
+  rawPrepareWhenableModule(zone, { ...defaultPowers, ...powers });
+
+export const { E, watch, when, makeWhenableKit } = prepareWhenableModule(
+  makeHeapZone(),
+);
