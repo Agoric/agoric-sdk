@@ -21,8 +21,8 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/far": "^1.0.1",
-    "@endo/marshal": "^1.0.1",
+    "@endo/far": "^1.0.2",
+    "@endo/marshal": "^1.1.0",
     "@agoric/assert": "^0.6.0"
   },
   "devDependencies": {
