@@ -1,13 +1,12 @@
 // @ts-check
 
 import { assert, details as X, Fail } from '@agoric/assert';
+import { M } from '@endo/patterns';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
-import {
-  assertProposalShape,
-  atomicTransfer,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
+import { AmountShape } from '@agoric/ertp';
 
 import '@agoric/network/exported.js';
 import '@agoric/zoe/exported.js';
@@ -20,11 +19,11 @@ import { makeCourierMaker, getCourierPK } from './courier.js';
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
 const DEFAULT_TRANSFER_PROTOCOL = ICS20TransferProtocol;
 
-const TRANSFER_PROPOSAL_SHAPE = {
+const TransferProposalShape = M.splitRecord({
   give: {
-    Transfer: null,
+    Transfer: AmountShape, // TODO get amount shape from brand
   },
-};
+});
 
 /**
  * Make a Pegasus public API.
@@ -481,11 +480,15 @@ const makePegasus = (zcf, board, namesByAddress) => {
        * @type {OfferHandler}
        */
       const offerHandler = zcfSeat => {
-        assertProposalShape(zcfSeat, TRANSFER_PROPOSAL_SHAPE);
         send(zcfSeat, depositAddress, memo, opts);
       };
 
-      return zcf.makeInvitation(offerHandler, `pegasus ${sendDenom} transfer`);
+      return zcf.makeInvitation(
+        offerHandler,
+        `pegasus ${sendDenom} transfer`,
+        undefined,
+        TransferProposalShape,
+      );
     },
   });
 };

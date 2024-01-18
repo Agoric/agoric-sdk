@@ -1,11 +1,12 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { mustMatch, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ, M } from '@endo/patterns';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
+import { AmountKeywordRecordShape } from '../typeGuards.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -200,6 +201,12 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
   const invitation = zcf.makeInvitation(
     reallocateAfterDeposit,
     'temporary seat for deposit',
+    undefined,
+    M.splitRecord({
+      give: AmountKeywordRecordShape,
+      want: {},
+      exit: { onDemand: null },
+    }),
   );
   const proposal = harden({ give: amounts });
   harden(payments);
