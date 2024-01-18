@@ -3,13 +3,12 @@ import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js'
 
 import { E, Far } from '@endo/far';
 import {
-  makeSubscriptionKit,
   makePinnedHistoryTopic,
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeWhenableKit, prepareWhenableModule } from '@agoric/whenable';
+import { prepareWhenableModule } from '@agoric/whenable';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
@@ -23,7 +22,7 @@ const provideBaggage = key => {
   return zone.mapStore(`${key} baggage`);
 };
 
-const preparePlusOneConnectionHandler = zone => {
+const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }) => {
   const makePlusOneConnectionHandler = zone.exoClass(
     'plusOne',
     undefined,
@@ -80,7 +79,8 @@ Far('ibcListener', {}),
     const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
     const baggage = provideBaggage('network - ibc');
     const zone = makeDurableZone(baggage);
-    const { when } = prepareWhenableModule(zone);
+    const powers = prepareWhenableModule(zone);
+    const { when } = powers;
 
     const makeDurablePublishKit = prepareDurablePublishKit(
       baggage,
@@ -116,7 +116,7 @@ Far('ibcListener', {}),
     t.assert(!ev1.done);
     t.deepEqual(ev1.value, ['bindPort', { packet: { source_port: 'port-1' } }]);
 
-    const makePlusOne = preparePlusOneConnectionHandler(zone);
+    const makePlusOne = preparePlusOneConnectionHandler(zone, powers);
     const makeIBCListener = prepareIBCListener(zone, makePlusOne);
 
     const testEcho = async () => {

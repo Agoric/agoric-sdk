@@ -1,7 +1,6 @@
 import { E } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
-import { when } from '@agoric/whenable';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -47,7 +46,7 @@ export function getPrefixes(addr) {
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
  */
-const prepareHalfConnection = (zone, { watch }) => {
+const prepareHalfConnection = (zone, { when }) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
     undefined,
@@ -414,6 +413,7 @@ const prepareBinder = (zone, powers) => {
   const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection);
   const makePort = preparePort(zone);
   const detached = zone.detached();
+  const { when } = powers;
 
   const makeBinderKit = zone.exoClassKit(
     'binder',

@@ -558,20 +558,6 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
               const data = base64ToBytes(data64);
 
               watch(conn.send(data), makeAckWatcher(this.facets.util, packet));
-
-              /*
-              await E(conn)
-                .send(data)
-                .then(ack => {
-                  const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
-                  const ack64 = dataToBase64(realAck);
-                  this.facets.util.downcall('receiveExecuted', {
-                    packet,
-                    ack: ack64,
-                  });
-                })
-                .catch(e => console.error(e));
-              */
               break;
             }
 
