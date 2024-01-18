@@ -5,13 +5,13 @@ export {};
 
 /// <reference types="ses"/>
 /**
- * @import {ERef} from '@endo/far');
- * @import {CopySet, Key} from '@endo/patterns');
+ * @import {CopyBag, CopySet, Key} from '@endo/patterns')
  * @import {LatestTopic, NotifierRecord} from '@agoric/notifier');
  */
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {object} Amount Amounts are descriptions of digital assets,
  *   answering the questions "how much" and "of what kind". Amounts are values
  *   labeled with a brand. AmountMath executes the logic of how amounts are
@@ -21,7 +21,7 @@ export {};
  *   bucks. AmountMath relies heavily on polymorphic MathHelpers, which
  *   manipulate the unbranded portion.
  * @property {Brand<K>} brand
- * @property {AssetValueForKind<K>} value
+ * @property {AssetValueForKind<K, M>} value
  */
 
 /**
@@ -54,14 +54,15 @@ export {};
 
 /**
  * @template {AssetKind} K
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {K extends 'nat'
  *   ? NatValue
  *   : K extends 'set'
- *     ? SetValue
+ *     ? SetValue<M>
  *     : K extends 'copySet'
- *       ? CopySet
+ *       ? CopySet<M>
  *       : K extends 'copyBag'
- *         ? import('@endo/patterns').CopyBag
+ *         ? CopyBag<M>
  *         : never} AssetValueForKind
  */
 
@@ -96,10 +97,10 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {object} Brand The brand identifies the kind of issuer, and has a
- *   function to get the alleged name for the kind of asset described. The
- *   alleged name (such as 'BTC' or 'moola') is provided by the maker of the
- *   issuer and should not be trusted as accurate.
+ * @typedef {import('@endo/marshal').RemotableObject} Brand The brand identifies
+ *   the kind of issuer, and has a function to get the alleged name for the kind
+ *   of asset described. The alleged name (such as 'BTC' or 'moola') is provided
+ *   by the maker of the issuer and should not be trusted as accurate.
  *
  *   Every amount created by a particular AmountMath will share the same brand,
  *   but recipients cannot rely on the brand to verify that a purported amount
@@ -314,12 +315,12 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {object} Payment Payments hold amount of digital assets of the same
- *   brand in transit. Payments can be deposited in purses, split into multiple
- *   payments, combined, and claimed (getting an exclusive payment). Payments
- *   are linear, meaning that either a payment has the same amount of digital
- *   assets it started with, or it is used up entirely. It is impossible to
- *   partially use a payment.
+ * @typedef {import('@endo/marshal').RemotableObject} Payment Payments hold
+ *   amount of digital assets of the same brand in transit. Payments can be
+ *   deposited in purses, split into multiple payments, combined, and claimed
+ *   (getting an exclusive payment). Payments are linear, meaning that either a
+ *   payment has the same amount of digital assets it started with, or it is
+ *   used up entirely. It is impossible to partially use a payment.
  *
  *   Payments are often received from other actors and therefore should not be
  *   trusted themselves. To get the amount of digital assets in a payment, use
