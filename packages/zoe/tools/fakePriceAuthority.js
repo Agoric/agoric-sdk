@@ -117,16 +117,19 @@ export async function makeFakePriceAuthority(options) {
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
+    /** @type {Amount<'set', PriceDescription>} */
     const quoteAmount = AmountMath.make(
       quoteBrand,
-      harden([
-        {
-          amountIn,
-          amountOut: AmountMath.make(actualBrandOut, valueOut),
-          timer,
-          timestamp: quoteTime,
-        },
-      ]),
+      /** @type {[PriceDescription]} */ (
+        harden([
+          {
+            amountIn,
+            amountOut: AmountMath.make(actualBrandOut, valueOut),
+            timer,
+            timestamp: quoteTime,
+          },
+        ])
+      ),
     );
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),

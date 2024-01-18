@@ -3,7 +3,7 @@ export {};
 
 /**
  * @typedef {object} PriceQuote
- * @property {Amount<'set'>} quoteAmount
+ * @property {Amount<'set', PriceDescription>} quoteAmount
  * Amount whose value is a PriceQuoteValue
  * @property {ERef<Payment<'set'>>} quotePayment
  * The `quoteAmount` wrapped as a payment
