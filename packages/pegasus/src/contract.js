@@ -1,4 +1,4 @@
-import { prepareWhen } from '@agoric/whenable';
+import { prepareWhenableModule } from '@agoric/whenable';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makePegasus } from './pegasus.js';
 
@@ -16,7 +16,7 @@ export const prepare = (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const whenZone = zone.subZone('when');
-  const when = prepareWhen(whenZone);
+  const { when } = prepareWhenableModule(whenZone);
 
   const { board, namesByAddress } = privateArgs;
   return {

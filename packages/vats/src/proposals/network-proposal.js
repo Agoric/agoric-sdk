@@ -8,8 +8,8 @@ import {
 
 // NOTE: Heap-based whenable resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
-import { when } from '@agoric/whenable';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { prepareWhenableModule } from '@agoric/whenable';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
@@ -31,6 +31,8 @@ export const registerNetworkProtocols = async (
     makeNonceMaker,
   );
   const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const powers = prepareWhenableModule(zone);
+  const { when } = powers;
 
   // Every vat has a loopback device.
   ps.push(
