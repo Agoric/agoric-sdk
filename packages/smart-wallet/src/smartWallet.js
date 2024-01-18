@@ -410,7 +410,8 @@ export const prepareSmartWallet = (baggage, shared) => {
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
       watchNextBalance: M.call(M.any(), NotifierShape, M.bigint()).returns(),
-      repairUnwatchedSeats: M.call().returns(),
+      repairUnwatchedSeats: M.call().returns(M.promise()),
+      repairUnwatchedPurses: M.call().returns(M.promise()),
       updateStatus: M.call(M.any()).returns(),
       addContinuingOffer: M.call(
         M.or(M.number(), M.string()),
@@ -658,6 +659,22 @@ export const prepareSmartWallet = (baggage, shared) => {
           }
 
           await Promise.all(watcherPromises);
+        },
+        async repairUnwatchedPurses() {
+          const { state, facets } = this;
+          const { helper, self } = facets;
+          const { invitationPurse, address } = state;
+
+          const brandToPurses = getBrandToPurses(walletPurses, self);
+          trace(`Found ${brandToPurses.values()} purse(s) for ${address}`);
+          for (const purses of brandToPurses.values()) {
+            for (const record of purses) {
+              helper.watchPurse(record.purse);
+              trace(`Repaired purse ${record.petname} of ${address}`);
+            }
+          }
+
+          void helper.watchPurse(invitationPurse);
         },
 
         /** @param {import('./offers.js').OfferStatus} offerStatus */
@@ -1087,13 +1104,15 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {object} key
          */
         repairWalletForIncarnation2(key) {
-          const { facets } = this;
+          const { state, facets } = this;
 
           if (key !== shared.secretWalletFactoryKey) {
             return;
           }
 
           void facets.helper.repairUnwatchedSeats();
+          void facets.helper.repairUnwatchedPurses();
+          trace(`repaired wallet ${state.address}`);
         },
       },
     },
