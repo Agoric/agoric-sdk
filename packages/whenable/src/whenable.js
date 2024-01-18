@@ -13,7 +13,7 @@ export const prepareWhenableKits = zone => {
   /**
    * Get the current incarnation's promise kit associated with a whenable0.
    *
-   * @param {import('./types.js').Whenable['payload']['whenable0']} whenable0
+   * @param {import('./types.js').WhenablePayload['whenable0']} whenable0
    * @returns {import('@endo/promise-kit').PromiseKit<any>}
    */
   const findCurrentKit = whenable0 => {
@@ -30,7 +30,7 @@ export const prepareWhenableKits = zone => {
 
   /**
    * @param {'resolve' | 'reject'} kind
-   * @param {import('./types.js').Whenable['payload']['whenable0']} whenable0
+   * @param {import('./types.js').WhenablePayload['whenable0']} whenable0
    * @param {unknown} value
    */
   const settle = (kind, whenable0, value) => {
