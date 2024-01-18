@@ -542,11 +542,13 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           const handler = makeAmountWatcher(purse, helper);
           const startP = E(notifier).getUpdateSince(undefined);
+          // @ts-expect-error import watchPromise's type is unknown
           watchPromise(startP, handler, notifier);
         },
 
         watchNextBalance(handler, notifier, updateCount) {
           const nextP = E(notifier).getUpdateSince(updateCount);
+          // @ts-expect-error import watchPromise's type is unknown
           watchPromise(nextP, handler, notifier);
         },
 
