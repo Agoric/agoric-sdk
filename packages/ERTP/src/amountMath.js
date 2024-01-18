@@ -202,9 +202,10 @@ const AmountMath = {
    * Make an amount from a value by adding the brand.
    *
    * @template {AssetKind} K
+   * @template {Key} [M=any] member kind
    * @param {Brand<K>} brand
-   * @param {AssetValueForKind<K>} allegedValue
-   * @returns {Amount<K>}
+   * @param {AssetValueForKind<K, M>} allegedValue
+   * @returns {Amount<K, M>}
    */
   // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
   make: (brand, allegedValue) => {
