@@ -26,7 +26,7 @@
 /**
  * @callback AssertMakeError
  *
- * The `assert.error` method, recording details for the console.
+ * The `makeError` function, recording details for the console.
  *
  * The optional `optDetails` can be a string.
  * @param {Details} [optDetails] The details of what was asserted
@@ -154,7 +154,7 @@
 
 /**
  * @callback AssertNote
- * The `assert.note` method.
+ * The `errorNote` function.
  *
  * Annotate an error with details, potentially to be used by an
  * augmented console such as the causal console of `console.js`, to
@@ -345,6 +345,7 @@
  *   details: DetailsTag,
  *   Fail: FailTag,
  *   quote: AssertQuote,
+ *   bare: AssertQuote,
  *   makeAssert: MakeAssert,
  * } } Assert
  */

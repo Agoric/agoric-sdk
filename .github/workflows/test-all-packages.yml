@@ -145,9 +145,6 @@ jobs:
       - name: yarn test (notifier)
         if: (success() || failure())
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (same-structure)
-        if: (success() || failure())
-        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
