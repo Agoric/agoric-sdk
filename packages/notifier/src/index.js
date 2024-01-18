@@ -16,7 +16,7 @@ export {
   makeNotifierFromSubscriber,
 } from './notifier.js';
 export { makeSubscription, makeSubscriptionKit } from './subscriber.js';
-export { makePinnedHistoryTopic } from './topic.js'
+export { makePinnedHistoryTopic } from './topic.js';
 export {
   observeNotifier,
   observeIterator,
