@@ -282,6 +282,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     onFulfilled: M.call(updateShape, NotifierShape).returns(),
     onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
   });
+
   const prepareAmountWatcher = () =>
     prepareExoClass(
       baggage,
@@ -420,20 +421,22 @@ export const prepareSmartWallet = (baggage, shared) => {
         M.or(M.record(), M.undefined()),
       ).returns(M.promise()),
       purseForBrand: M.call(BrandShape).returns(M.promise()),
-      logWalletInfo: M.call(M.any()).returns(),
-      logWalletError: M.call(M.any()).returns(),
-      // XXX is there a tighter guard for a bigMapStore than M.any()?
-      getLiveOfferPayments: M.call().returns(M.any()),
+      logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
+      logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
+      getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
     }),
 
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
     }),
     payments: M.interface('payments support', {
-      withdrawGive: M.call(AmountKeywordRecordShape).returns(
-        PaymentPKeywordRecordShape,
-      ),
-      tryReclaimingWithdrawnPayments: M.call(M.string()).returns(M.promise()),
+      withdrawGive: M.call(
+        AmountKeywordRecordShape,
+        M.or(M.number(), M.string()),
+      ).returns(PaymentPKeywordRecordShape),
+      tryReclaimingWithdrawnPayments: M.call(
+        M.or(M.number(), M.string()),
+      ).returns(M.promise()),
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
