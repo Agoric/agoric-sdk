@@ -2,7 +2,7 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { getWhenablePayload, getFirstWhenable } from './whenable-utils.js';
+import { getWhenablePayload, unwrapPromise } from './whenable-utils.js';
 
 const { Fail } = assert;
 
@@ -110,66 +110,75 @@ export const prepareWatch = (
       }
     }
   };
-  const makeReconnectWatcher = zone.exoClass(
+  const makeReconnectWatcher = zone.exoClassKit(
     'ReconnectWatcher',
-    PromiseWatcherI,
+    {
+      watcher: PromiseWatcherI,
+      whenableSetter: M.interface('whenableSetter', {
+        setWhenable: M.call(M.any()).returns(),
+      }),
+    },
     /**
      * @template [T=any]
      * @template [TResult1=T]
      * @template [TResult2=never]
-     * @param {import('./types.js').Whenable<T>} whenable
      * @param {import('./types.js').Settler<TResult1 | TResult2>} settler
      * @param {import('./types.js').Watcher<T, TResult1, TResult2>} [watcher]
      */
-    (whenable, settler, watcher) => {
+    (settler, watcher) => {
       const state = {
-        whenable,
+        whenable: undefined,
         settler,
         watcher,
       };
       return /** @type {Partial<typeof state>} */ (state);
     },
     {
-      /** @type {Required<PromiseWatcher>['onFulfilled']} */
-      onFulfilled(value) {
-        const { watcher, settler } = this.state;
-        if (getWhenablePayload(value)) {
-          // We've been shortened, so reflect our state accordingly, and go again.
-          const whenable = /** @type {import('./types.js').Whenable<any>} */ (
-            value
-          );
+      whenableSetter: {
+        /** @param {any} whenable */
+        setWhenable(whenable) {
           this.state.whenable = whenable;
-          watchWhenable(value, this.self);
-          return undefined;
-        }
-        this.state.watcher = undefined;
-        this.state.settler = undefined;
-        if (!settler) {
-          return undefined;
-        } else if (watcher) {
-          settle(settler, watcher, 'onFulfilled', value);
-        } else {
-          settler.resolve(value);
-        }
+        },
       },
-      /** @type {Required<PromiseWatcher>['onRejected']} */
-      onRejected(reason) {
-        const { watcher, settler } = this.state;
-        if (rejectionMeansRetry(reason)) {
-          watchWhenable(this.state.whenable, this.self);
-          return;
-        }
-        this.state.settler = undefined;
-        this.state.watcher = undefined;
-        if (!watcher) {
-          settler && settler.reject(reason);
-        } else if (!settler) {
-          throw reason; // for host's unhandled rejection handler to catch
-        } else if (watcher.onRejected) {
-          settle(settler, watcher, 'onRejected', reason);
-        } else {
-          settler.reject(reason);
-        }
+      watcher: {
+        /** @type {Required<PromiseWatcher>['onFulfilled']} */
+        onFulfilled(value) {
+          const { watcher, settler } = this.state;
+          if (getWhenablePayload(value)) {
+            // We've been shortened, so reflect our state accordingly, and go again.
+            this.facets.whenableSetter.setWhenable(value);
+            watchWhenable(value, this.facets.watcher);
+            return undefined;
+          }
+          this.state.watcher = undefined;
+          this.state.settler = undefined;
+          if (!settler) {
+            return undefined;
+          } else if (watcher) {
+            settle(settler, watcher, 'onFulfilled', value);
+          } else {
+            settler.resolve(value);
+          }
+        },
+        /** @type {Required<PromiseWatcher>['onRejected']} */
+        onRejected(reason) {
+          const { watcher, settler } = this.state;
+          if (rejectionMeansRetry(reason)) {
+            watchWhenable(this.state.whenable, this.facets.watcher);
+            return;
+          }
+          this.state.settler = undefined;
+          this.state.watcher = undefined;
+          if (!watcher) {
+            settler && settler.reject(reason);
+          } else if (!settler) {
+            throw reason; // for host's unhandled rejection handler to catch
+          } else if (watcher.onRejected) {
+            settle(settler, watcher, 'onRejected', reason);
+          } else {
+            settler.reject(reason);
+          }
+        },
       },
     },
   );
@@ -181,18 +190,23 @@ export const prepareWatch = (
    */
   const watch = (specimenP, watcher) => {
     const { settler, whenable } = makeWhenableKit();
+
+    const { watcher: reconnectWatcher, whenableSetter } = makeReconnectWatcher(
+      settler,
+      watcher,
+    );
+
     // Ensure we have a presence that won't be disconnected later.
-    getFirstWhenable(specimenP, (specimen, whenable0) => {
-      if (!whenable0) {
-        // We're already as short as we can get.
-        settler.resolve(specimen);
+    unwrapPromise(specimenP, (specimen, payload) => {
+      whenableSetter.setWhenable(specimen);
+      // Persistently watch the specimen.
+      if (!payload) {
+        // Specimen is not a whenable.
+        reconnectWatcher.onFulfilled(specimen);
         return;
       }
-
-      // Persistently watch the specimen.
-      const reconnectWatcher = makeReconnectWatcher(specimen, settler, watcher);
       watchWhenable(specimen, reconnectWatcher);
-    }).catch(e => settler.reject(e));
+    }).catch(e => reconnectWatcher.onRejected(e));
 
     return whenable;
   };
