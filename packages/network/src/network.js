@@ -1,6 +1,7 @@
 import { E } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
+import { when } from '@agoric/whenable';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -42,8 +43,11 @@ export function getPrefixes(addr) {
   return ret;
 }
 
-/** @param {import('@agoric/base-zone').Zone} zone */
-const prepareHalfConnection = zone => {
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ */
+const prepareHalfConnection = (zone, { watch }) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
     undefined,
@@ -69,13 +73,33 @@ const prepareHalfConnection = zone => {
         if (this.state.closed) {
           throw this.state.closed;
         }
-        const ack = await E(this.state.handlers[this.state.r])
-          .onReceive(
-            this.state.conns.get(this.state.r),
-            toBytes(packetBytes),
-            this.state.handlers[this.state.r],
-          )
-          .catch(rethrowUnlessMissing);
+
+        // watch(
+        //   E(this.state.handlers[this.state.r])
+        //     .onReceive(
+        //       this.state.conns.get(this.state.r),
+        //       toBytes(packetBytes),
+        //       this.state.handlers[this.state.r],
+        //     )
+        //     .catch(rethrowUnlessMissing),
+        //   {
+        //     onFulfilled: ack => {
+
+        //     },
+        //     onRejected: () => { },
+        //   },
+        // );
+
+        const ack = await when(
+          E(this.state.handlers[this.state.r])
+            .onReceive(
+              this.state.conns.get(this.state.r),
+              toBytes(packetBytes),
+              this.state.handlers[this.state.r],
+            )
+            .catch(rethrowUnlessMissing),
+        );
+
         return toBytes(ack || '');
       },
       async close() {
@@ -383,12 +407,10 @@ const preparePort = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param root0
- * @param root0.makeProtocolImpl
- * @param root0.makePort
+ * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
  */
-const prepareBinder = zone => {
-  const makeConnection = prepareHalfConnection(zone);
+const prepareBinder = (zone, powers) => {
+  const makeConnection = prepareHalfConnection(zone, powers);
   const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection);
   const makePort = preparePort(zone);
   const detached = zone.detached();
@@ -496,12 +518,14 @@ const prepareBinder = zone => {
           } =
             /** @type {Partial<AttemptDescription>} */
             (
-              await E(this.state.protocolHandler).onConnect(
-                port,
-                initialLocalAddr,
-                remoteAddr,
-                lchandler,
-                this.state.protocolHandler,
+              await when(
+                E(this.state.protocolHandler).onConnect(
+                  port,
+                  initialLocalAddr,
+                  remoteAddr,
+                  lchandler,
+                  this.state.protocolHandler,
+                ),
               )
             );
 
@@ -572,7 +596,7 @@ const prepareBinder = zone => {
   return makeBinderKit;
 };
 
-export const makeNetworkProtocol = (zone, protocolHandler) => {
+export const makeNetworkProtocol = (zone, protocolHandler, powers) => {
   const detached = zone.detached();
 
   /** @type {MapStore<string, SetStore<Closable>} */
@@ -584,7 +608,7 @@ export const makeNetworkProtocol = (zone, protocolHandler) => {
   /** @type {MapStore<Endpoint, [Port, ListenHandler]>} */
   const listening = detached.mapStore('listening');
 
-  const makeBinder = prepareBinder(zone);
+  const makeBinder = prepareBinder(zone, powers);
   const { binder, protocolImpl } = makeBinder({
     currentConnections,
     boundPorts,
@@ -628,37 +652,53 @@ export const prepareEchoConnectionHandler = zone => {
   return makeEchoConnectionHandler;
 };
 
-export function makeNonceMaker(prefix = '', suffix = '') {
-  let nonce = 0;
-  return async () => {
-    nonce += 1;
-    return `${prefix}${nonce}${suffix}`;
-  };
-}
+/**
+ *
+ * @param {import('@agoric/base-zone').Zone} zone
+ */
+export const prepareNonceMaker = zone => {
+  const makeNonceMaker = zone.exoClass(
+    'NonceMaker',
+    undefined,
+    (prefix = '', suffix = '') => {
+      return {
+        prefix,
+        suffix,
+        nonce: 0,
+      };
+    },
+    {
+      async get() {
+        this.state.nonce += 1;
+        return `${this.state.prefix}${this.state.nonce}${this.state.suffix}`;
+      },
+    },
+  );
+
+  return makeNonceMaker;
+};
 
 /**
  * Create a protocol handler that just connects to itself.
  *
- *  @param {import('@agoric/base-zone').Zone} zone
- * @param zone
+ * @param {import('@agoric/base-zone').Zone} zone
  * @param {ProtocolHandler['onInstantiate']} [onInstantiate]
+ * @param makeNonceMaker
  */
-export function prepareLoopbackProtocolHandler(
-  zone,
-  onInstantiate = makeNonceMaker('nonce/'),
-) {
-  const makePortID = makeNonceMaker('port');
+export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
+  const makePortID = makeNonceMaker('port').get();
   const detached = zone.detached();
 
   const makeLoopbackProtocolHandler = zone.exoClass(
     'ProtocolHandler',
     undefined,
-    () => {
+    (nonceMaker = makeNonceMaker('nonce/')) => {
       /** @type {MapStore<string, [Port, ListenHandler]>} */
       const listeners = detached.mapStore('localAddr');
 
       return {
         listeners,
+        nonceMaker,
       };
     },
     {
@@ -691,7 +731,9 @@ export function prepareLoopbackProtocolHandler(
           handler: rchandler,
         };
       },
-      onInstantiate,
+      async onInstantiate(_port, _localAddr, _remote, _protocol) {
+        return this.state.nonceMaker.get();
+      },
       async onListen(port, localAddr, listenHandler, _protocolHandler) {
         // TODO: Implement other listener replacement policies.
         if (this.state.listeners.has(localAddr)) {

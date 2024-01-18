@@ -13,7 +13,7 @@ import {
   unparse,
   prepareEchoConnectionHandler,
   makeNetworkProtocol,
-  makeRouter,
+  prepareRouter,
   prepareLoopbackProtocolHandler,
 } from '../src/index.js';
 
@@ -306,8 +306,8 @@ test('protocol connection listen', async t => {
 
 test('loopback protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
-  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone);
-  const protocol = makeNetworkProtocol(zone, makeLoopbackHandler());
+  const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(zone);
+  const protocol = makeNetworkProtocol(zone, makeLoopbackProtocolHandler());
   const { makeWhenableKit } = prepareWhenableModule(zone);
   const { whenable, settler } = makeWhenableKit();
 
@@ -381,6 +381,8 @@ test('loopback protocol', async t => {
 });
 
 test('routing', async t => {
+  const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
+  const makeRouter = prepareRouter(zone);
   const router = makeRouter();
   t.deepEqual(router.getRoutes('/if/local'), [], 'get routes matches none');
   router.register('/if/', 'a');

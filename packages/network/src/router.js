@@ -1,6 +1,5 @@
 // @ts-check
-import { Far, E as defaultE } from '@endo/far';
-import { makeScalarMapStore } from '@agoric/store';
+import { E, E as defaultE } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
@@ -19,46 +18,60 @@ import '@agoric/store/exported.js';
  */
 
 /**
- * Create a slash-delimited router.
- *
- * @template T
- * @returns {Router<T>} a new Router
+ * @param {import('@agoric/base-zone').Zone} zone
  */
-export default function makeRouter() {
-  /** @type {MapStore<string, T>} */
-  const prefixToRoute = makeScalarMapStore('prefix');
-  return Far('Router', {
-    getRoutes(addr) {
-      const parts = addr.split(ENDPOINT_SEPARATOR);
-      /** @type {[string, T][]} */
-      const ret = [];
-      for (let i = parts.length; i > 0; i -= 1) {
-        // Try most specific match.
-        const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
-        if (prefixToRoute.has(prefix)) {
-          ret.push([prefix, prefixToRoute.get(prefix)]);
+export const prepareRouter = zone => {
+  const detached = zone.detached();
+
+  const makeRouter = zone.exoClass(
+    'Router',
+    undefined,
+    () => {
+      /** @type {MapStore<string, T>} */
+      const prefixToRoute = detached.mapStore('prefix');
+
+      return {
+        prefixToRoute,
+      };
+    },
+    {
+      getRoutes(addr) {
+        const parts = addr.split(ENDPOINT_SEPARATOR);
+        /** @type {[string, T][]} */
+        const ret = [];
+        for (let i = parts.length; i > 0; i -= 1) {
+          // Try most specific match.
+          const prefix = parts.slice(0, i).join(ENDPOINT_SEPARATOR);
+          if (this.state.prefixToRoute.has(prefix)) {
+            ret.push([prefix, this.state.prefixToRoute.get(prefix)]);
+          }
+          // Trim off the last value (after the slash).
+          const defaultPrefix = prefix.substr(
+            0,
+            prefix.lastIndexOf(ENDPOINT_SEPARATOR) + 1,
+          );
+          if (this.state.prefixToRoute.has(defaultPrefix)) {
+            ret.push([
+              defaultPrefix,
+              this.state.prefixToRoute.get(defaultPrefix),
+            ]);
+          }
         }
-        // Trim off the last value (after the slash).
-        const defaultPrefix = prefix.substr(
-          0,
-          prefix.lastIndexOf(ENDPOINT_SEPARATOR) + 1,
-        );
-        if (prefixToRoute.has(defaultPrefix)) {
-          ret.push([defaultPrefix, prefixToRoute.get(defaultPrefix)]);
-        }
-      }
-      return harden(ret);
+        return harden(ret);
+      },
+      register(prefix, route) {
+        this.state.prefixToRoute.init(prefix, route);
+      },
+      unregister(prefix, route) {
+        this.state.prefixToRoute.get(prefix) === route ||
+          Fail`Router is not registered at prefix ${prefix}`;
+        this.state.prefixToRoute.delete(prefix);
+      },
     },
-    register(prefix, route) {
-      prefixToRoute.init(prefix, route);
-    },
-    unregister(prefix, route) {
-      prefixToRoute.get(prefix) === route ||
-        Fail`Router is not registered at prefix ${prefix}`;
-      prefixToRoute.delete(prefix);
-    },
-  });
-}
+  );
+
+  return makeRouter;
+};
 
 /**
  * @typedef {object} RouterProtocol
@@ -70,46 +83,57 @@ export default function makeRouter() {
 /**
  * Create a router that behaves like a Protocol.
  *
- * @param {typeof defaultE} [E] Eventual sender
- * @returns {RouterProtocol} The new delegated protocol
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
  */
-export function makeRouterProtocol(E = defaultE) {
-  const router = makeRouter();
-  /** @type {MapStore<string, Protocol>} */
-  const protocols = makeScalarMapStore('prefix');
-  /** @type {MapStore<string, ProtocolHandler>} */
-  const protocolHandlers = makeScalarMapStore('prefix');
+export const prepareRouterProtocol = (zone, powers) => {
+  const detached = zone.detached();
+  const makeRouter = prepareRouter(zone);
 
-  function registerProtocolHandler(paths, protocolHandler) {
-    const protocol = makeNetworkProtocol(protocolHandler);
-    for (const prefix of paths) {
-      router.register(prefix, protocol);
-      protocols.init(prefix, protocol);
-      protocolHandlers.init(prefix, protocolHandler);
-    }
-  }
+  const makeRouterProtocol = zone.exoClass(
+    'RouterProtocol',
+    undefined,
+    (E = defaultE) => {
+      const router = makeRouter();
 
-  // FIXME: Buggy.
-  // Needs to account for multiple paths.
-  function unregisterProtocolHandler(prefix, protocolHandler) {
-    const ph = protocolHandlers.get(prefix);
-    ph === protocolHandler ||
-      Fail`Protocol handler is not registered at prefix ${prefix}`;
-    router.unregister(prefix, ph);
-    protocols.delete(prefix);
-    protocolHandlers.delete(prefix);
-  }
+      /** @type {MapStore<string, Protocol>} */
+      const protocols = detached.mapStore('prefix');
 
-  /** @type {Protocol['bind']} */
-  async function bind(localAddr) {
-    const [route] = router.getRoutes(localAddr);
-    route !== undefined || Fail`No registered router for ${localAddr}`;
-    return E(route[1]).bind(localAddr);
-  }
+      /** @type {MapStore<string, ProtocolHandler>} */
+      const protocolHandlers = detached.mapStore('prefix');
 
-  return Far('RouterProtocol', {
-    bind,
-    registerProtocolHandler,
-    unregisterProtocolHandler,
-  });
-}
+      return {
+        router,
+        protocolHandlers,
+        protocols,
+      };
+    },
+    {
+      registerProtocolHandler(paths, protocolHandler) {
+        const protocol = makeNetworkProtocol(zone, protocolHandler, powers);
+        for (const prefix of paths) {
+          this.state.router.register(prefix, protocol);
+          this.state.protocols.init(prefix, protocol);
+          this.state.protocolHandlers.init(prefix, protocolHandler);
+        }
+      },
+      // FIXME: Buggy.
+      // Needs to account for multiple paths.
+      unregisterProtocolHandler(prefix, protocolHandler) {
+        const ph = this.state.protocolHandlers.get(prefix);
+        ph === protocolHandler ||
+          Fail`Protocol handler is not registered at prefix ${prefix}`;
+        this.state.router.unregister(prefix, ph);
+        this.state.protocols.delete(prefix);
+        this.state.protocolHandlers.delete(prefix);
+      },
+      async bind(localAddr) {
+        const [route] = this.state.router.getRoutes(localAddr);
+        route !== undefined || Fail`No registered router for ${localAddr}`;
+        return E(route[1]).bind(localAddr);
+      },
+    },
+  );
+
+  return makeRouterProtocol;
+};

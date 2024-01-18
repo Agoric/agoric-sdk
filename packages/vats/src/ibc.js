@@ -122,10 +122,9 @@ export const prepareIBCConnectionHandler = zone => {
           localAddr,
           remoteAddr,
         );
-        const connP = E.resolve(conn);
         const channelKey = `${this.state.channelID}:${this.state.portID}`;
 
-        this.state.channelKeyToConnP.init(channelKey, connP);
+        this.state.channelKeyToConnP.init(channelKey, conn);
       },
       /**
        * @param {Connection} _conn
@@ -215,7 +214,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
     'IBCProtocolHandler',
     undefined,
     ibcdev => {
-      /** @type {MapStore<string, Promise<Connection>>} */
+      /** @type {MapStore<string, Connection>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
 
       /** @type {MapStore<string, ConnectingInfo>} */
@@ -396,12 +395,17 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
 
               // See if we allow an inbound attempt for this address pair (without
               // rejecting).
-              const attempt = await this.state.protocolImpl
-                ?.inbound(localAddr, remoteAddr)
-                .then(
-                  ack => console.info('Manual packet', ack, 'acked:', ack),
-                  e => console.warn('Manual packet', e, 'failed:', e),
-                );
+              // const attempt = await this.state.protocolImpl
+              //   ?.inbound(localAddr, remoteAddr)
+              //   .then(
+              //     ack => console.info('Manual packet', ack, 'acked:', ack),
+              //     e => console.warn('Manual packet', e, 'failed:', e),
+              //   );
+
+              const attempt = await this.state.protocolImpl?.inbound(
+                localAddr,
+                remoteAddr,
+              );
 
               // Tell what version string we negotiated.
               const attemptedLocal = await E(attempt).getLocalAddress();
@@ -550,13 +554,24 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
                 destination_channel: channelID,
               } = packet;
               const channelKey = `${channelID}:${portID}`;
-              const connP = this.state.channelKeyToConnP.get(channelKey);
+              const conn = this.state.channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              watch(
-                E(connP).send(data),
-                makeAckWatcher(this.facets.util, packet),
-              );
+              watch(conn.send(data), makeAckWatcher(this.facets.util, packet));
+
+              /*
+              await E(conn)
+                .send(data)
+                .then(ack => {
+                  const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
+                  const ack64 = dataToBase64(realAck);
+                  this.facets.util.downcall('receiveExecuted', {
+                    packet,
+                    ack: ack64,
+                  });
+                })
+                .catch(e => console.error(e));
+              */
               break;
             }
 
@@ -597,9 +612,9 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
               const { portID, channelID } = obj;
               const channelKey = `${channelID}:${portID}`;
               if (this.state.channelKeyToConnP.has(channelKey)) {
-                const connP = this.state.channelKeyToConnP.get(channelKey);
+                const conn = this.state.channelKeyToConnP.get(channelKey);
                 this.state.channelKeyToConnP.delete(channelKey);
-                void E(connP).close();
+                void conn.close();
               }
               break;
             }
