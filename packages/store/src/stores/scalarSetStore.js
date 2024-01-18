@@ -18,7 +18,7 @@ import { makeCurrentKeysKit } from './store-utils.js';
 const { quote: q } = assert;
 
 /**
- * @template K
+ * @template {Key} K
  * @param {Set<K>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {(k: K) => void} [assertKeyOkToDelete]
