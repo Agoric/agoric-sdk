@@ -2,6 +2,7 @@ import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { observeNotifier } from '@agoric/notifier';
 import { deeplyFulfilledObject } from '@agoric/internal';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
@@ -97,6 +98,7 @@ export const startClient = async ({
   vats,
   vatPowers,
   consume: { vatAdminSvc },
+  zone,
 }) => {
   let localBundle;
   let chainBundle;
@@ -112,8 +114,13 @@ export const startClient = async ({
     await E(httpVat).setCommandDevice(cmdDevice, roles);
     D(cmdDevice).registerInboundHandler(httpVat);
   }
+
+  const networkZone = makeDurableZone(
+    zone.detached().mapStore('networkZoneBaggage'),
+  );
+
   const addLocalPresences = async () => {
-    await registerNetworkProtocols(vats, undefined);
+    await registerNetworkProtocols(networkZone, vats, undefined);
 
     await setupCommandDevice(vats.http, devices.command, {
       client: true,
@@ -197,5 +204,6 @@ export const CLIENT_BOOTSTRAP_MANIFEST = harden({
     },
     vatPowers: true,
     consume: { vatAdminSvc: true },
+    zone: true,
   },
 });

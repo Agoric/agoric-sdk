@@ -1,24 +1,37 @@
 import { E, Far } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
-  makeLoopbackProtocolHandler,
-  makeEchoConnectionHandler,
-  makeNonceMaker,
+  prepareEchoConnectionHandler,
+  prepareNonceMaker,
+  prepareLoopbackProtocolHandler,
 } from '@agoric/network';
 
 // NOTE: Heap-based whenable resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
 import { when } from '@agoric/whenable';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
+ * @param {import('@agoric/base-zone').Zone} zone
  * @param {SoloVats | NetVats} vats
  * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */
-export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
+export const registerNetworkProtocols = async (
+  zone,
+  vats,
+  dibcBridgeManager,
+) => {
   const ps = [];
+  const makeNonceMaker = prepareNonceMaker(zone);
+  const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
+    zone,
+    makeNonceMaker,
+  );
+  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+
   // Every vat has a loopback device.
   ps.push(
     E(vats.network).registerProtocolHandler(
@@ -101,6 +114,7 @@ export const setupNetworkProtocols = async (
       provisioning,
     },
     produce: { networkVat },
+    zone,
   },
   options,
 ) => {
@@ -142,7 +156,10 @@ export const setupNetworkProtocols = async (
   // Note: before we add the pegasus transfer port,
   // we need to finish registering handlers for
   // ibc-port etc.
-  await registerNetworkProtocols(vats, dibcBridgeManager);
+  const networkZone = makeDurableZone(
+    zone.detached().mapStore('networkZoneBaggage'),
+  );
+  await registerNetworkProtocols(networkZone, vats, dibcBridgeManager);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
 
@@ -159,6 +176,7 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
       produce: {
         networkVat: 'network',
       },
+      zone: true,
     },
   },
   options: {
