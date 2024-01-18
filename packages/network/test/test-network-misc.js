@@ -3,9 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
-import { makePromiseKit } from '@endo/promise-kit';
-import { E, Far } from '@endo/far';
-import { prepareWhenableModule, when } from '@agoric/whenable';
+import { E } from '@endo/far';
+import { prepareWhenableModule } from '@agoric/whenable';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import {
@@ -15,6 +14,7 @@ import {
   makeNetworkProtocol,
   prepareRouter,
   prepareLoopbackProtocolHandler,
+  prepareNonceMaker,
 } from '../src/index.js';
 
 import '../src/types.js';
@@ -105,9 +105,10 @@ const provideBaggage = key => {
 
 test('handled protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
+  const powers = prepareWhenableModule(zone);
+  const { makeWhenableKit, when } = powers;
   const makeProtocolHandler = prepareProtocolHandler(zone, t);
-  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
-  const { makeWhenableKit } = prepareWhenableModule(zone);
+  const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
 
@@ -154,9 +155,10 @@ test('handled protocol', async t => {
 
 test('protocol connection listen', async t => {
   const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
+  const powers = prepareWhenableModule(zone);
+  const { makeWhenableKit, when } = powers;
   const makeProtocolHandler = prepareProtocolHandler(zone, t);
-  const protocol = makeNetworkProtocol(zone, makeProtocolHandler());
-  const { makeWhenableKit } = prepareWhenableModule(zone);
+  const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
   const { whenable, settler } = makeWhenableKit();
@@ -306,9 +308,18 @@ test('protocol connection listen', async t => {
 
 test('loopback protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
-  const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(zone);
-  const protocol = makeNetworkProtocol(zone, makeLoopbackProtocolHandler());
-  const { makeWhenableKit } = prepareWhenableModule(zone);
+  const powers = prepareWhenableModule(zone);
+  const { makeWhenableKit, when } = powers;
+  const makeNonceMaker = prepareNonceMaker(zone);
+  const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
+    zone,
+    makeNonceMaker,
+  );
+  const protocol = makeNetworkProtocol(
+    zone,
+    makeLoopbackProtocolHandler(),
+    powers,
+  );
   const { whenable, settler } = makeWhenableKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
