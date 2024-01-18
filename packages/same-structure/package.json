@@ -32,7 +32,7 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/store": "^0.9.2",
-    "@endo/marshal": "^1.0.1"
+    "@endo/marshal": "^1.1.0"
   },
   "files": [
     "*.js",
