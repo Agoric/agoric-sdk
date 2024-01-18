@@ -1,10 +1,9 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
-import { isPromise } from '@endo/promise-kit';
 import { assert } from '@agoric/assert';
-
 import { parseVatSlot } from '../src/parseVatSlots.js';
+
 import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
@@ -20,13 +19,13 @@ const {
 
 class FakeFinalizationRegistry {
   // eslint-disable-next-line no-useless-constructor, no-empty-function
-  constructor() { }
+  constructor() {}
 
   // eslint-disable-next-line class-methods-use-this
-  register(_target, _heldValue, _unregisterToken) { }
+  register(_target, _heldValue, _unregisterToken) {}
 
   // eslint-disable-next-line class-methods-use-this
-  unregister(_unregisterToken) { }
+  unregister(_unregisterToken) {}
 }
 
 class FakeWeakRef {
@@ -54,8 +53,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     WeakRef = FakeWeakRef, // VRM uses this
     WeakMap = RealWeakMap,
     WeakSet = RealWeakSet,
-    addToPossiblyDeadSet = () => { },
-    addToPossiblyRetiredSet = () => { },
+    addToPossiblyDeadSet = () => {},
+    addToPossiblyRetiredSet = () => {},
   } = options;
 
   let sortedKeys;
@@ -164,10 +163,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return vrm.allocateNextID('exportID');
   }
 
-  function allocatePromiseID() {
-    return vrm.allocateNextID('promiseID');
-  }
-
   function allocateCollectionID() {
     return vrm.allocateNextID('collectionID');
   }
@@ -200,9 +195,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function convertValToSlot(val) {
     if (!valToSlot.has(val)) {
-      const slot = isPromise(val)
-        ? `p+${allocatePromiseID()}`
-        : `o+${allocateExportID()}`;
+      const slot = `o+${allocateExportID()}`;
       valToSlot.set(val, slot);
       setValForSlot(slot, val);
     }
@@ -267,7 +260,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     valToSlot.delete(val);
   }
 
-  function assertAcceptableSyscallCapdataSize(_capdatas) { }
+  function assertAcceptableSyscallCapdataSize(_capdatas) {}
 
   const maybeExportPromise = _vref => false;
 
@@ -331,7 +324,6 @@ export function makeFakeWatchedPromiseManager(
     maybeExportPromise: fakeStuff.maybeExportPromise,
   });
 }
-
 /**
  * Configure virtual stuff with relaxed durability rules and fake liveslots
  *
@@ -356,7 +348,6 @@ export function makeFakeVirtualStuff(options = {}) {
   vom.initializeKindHandleKind();
   const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
   const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
-  wpm.preparePromiseWatcherTables();
   return { fakeStuff, vrm, vom, cm, wpm };
 }
 
