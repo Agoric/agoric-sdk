@@ -24,7 +24,7 @@ const ALREADY_WHENABLE = harden({});
  * @param {(specimen: Awaited<T>, payload: import('./types').Whenable<any>['payload']) => U} cb
  * @returns {Promise<Awaited<U>>}
  */
-export const unwrapPromise = async (specimenP, cb) => {
+export const getFirstWhenable = async (specimenP, cb) => {
   let payload = getWhenablePayload(specimenP);
 
   // Take exactly 1 turn to find the first whenable, if any.
