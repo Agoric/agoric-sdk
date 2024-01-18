@@ -1,10 +1,10 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
+import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeWalletFactoryDriver } from './drivers.js';
+import { makeSwingsetTestKit } from './supports.js';
 import {
   restartWalletFactoryScript,
   sendInvitationScript,
@@ -21,7 +21,7 @@ const { Fail } = assert;
 const test = anyTest;
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
-const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
+const PLATFORM_CONFIG = '@agoric/vats/decentral-itest-vaults-config.json';
 
 const makeTestContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/wallet', {
@@ -58,7 +58,9 @@ const makeTestContext = async t => {
 test.before(async t => (t.context = await makeTestContext(t)));
 
 /**
- * @param {import('ava').ExecutionContext<Awaited<ReturnType<typeof makeTestContext>>>} t
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >} t
  */
 const makeScenario = async t => {
   const { agoricNamesRemotes } = t.context;
