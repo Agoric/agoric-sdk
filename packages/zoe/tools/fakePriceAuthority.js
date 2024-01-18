@@ -28,7 +28,7 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {ERef<import('@agoric/time').TimerService>} timer
+ * @property {import('@agoric/time').TimerService} timer
  * @property {import('@agoric/time').RelativeTime} [quoteInterval]
  * @property {ERef<Mint<'set'>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]

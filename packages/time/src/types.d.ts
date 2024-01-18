@@ -28,7 +28,7 @@ import type { RankComparison, RemotableObject } from '@endo/marshal';
  * See https://github.com/Agoric/agoric-sdk/issues/5798
  * and https://github.com/Agoric/agoric-sdk/pull/5821
  */
-export type TimerBrand = {
+export type TimerBrand = RemotableObject & {
   isMyTimerService: (timer: TimerService) => ERef<boolean>;
   isMyClock: (clock: Clock) => ERef<boolean>;
 };
