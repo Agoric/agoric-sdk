@@ -65,7 +65,11 @@ export {};
 
 /**
  * @template {Key} [K=Key]
- * @typedef {object} SetStore
+ * @typedef {import('@endo/pass-style').RemotableObject & SetStoreMethods<K>} SetStore
+ */
+/**
+ * @template {Key} [K=Key]
+ * @typedef {object} SetStoreMethods
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
  *   cannot be found in this store.

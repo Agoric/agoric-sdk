@@ -6,6 +6,11 @@ import { watchPromise } from './watch-promise.js';
 // Ensure this is a module.
 export {};
 
+/**
+ * @import {Key} from '@endo/patterns';
+ * @import {Passable} from '@endo/pass-style';
+ */
+
 /** @typedef {'exoClass' | 'exoClassKit' | 'exo' | 'store' | 'zone'} KeyCategories */
 /** @typedef {Record<KeyCategories, (label: string) => string[]>} KeyMakers */
 

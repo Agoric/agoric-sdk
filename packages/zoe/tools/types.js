@@ -64,7 +64,7 @@ export {};
  * An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *
- * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set'>>} getQuoteIssuer
+ * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set', PriceDescription>>} getQuoteIssuer
  * Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
  *
  * @property {(brandIn: Brand,
