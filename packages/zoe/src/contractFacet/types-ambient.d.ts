@@ -40,10 +40,10 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * @returns the AmountMath and brand synchronously accessible after
    * saving
    */
-  saveIssuer: (
-    issuerP: ERef<Issuer>,
+  saveIssuer: <I extends Issuer>(
+    issuerP: ERef<I>,
     keyword: Keyword,
-  ) => Promise<IssuerRecord<any>>;
+  ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>;
 
   /**
    * Make a credible Zoe invitation for a particular smart contract

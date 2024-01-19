@@ -35,9 +35,10 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {import("@endo/patterns").Key} [M=import("@endo/patterns").Key] member kind, for Amounts that have member values
  * @typedef {object} IssuerRecord
  * @property {Brand<K>} brand
- * @property {Issuer<K>} issuer
+ * @property {Issuer<K, M>} issuer
  * @property {K} assetKind
  * @property {DisplayInfo<K>} [displayInfo]
  *

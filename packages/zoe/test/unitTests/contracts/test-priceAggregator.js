@@ -53,7 +53,7 @@ import {
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'set', PriceDescription>>,
  * storageNode: StorageNode,
  * }} privateArgs
  */
@@ -81,7 +81,7 @@ const makePublicationChecker = async (t, aggregatorPublicFacet, timerBrand) => {
   )[Symbol.asyncIterator]();
 
   return {
-    /** @param {{timestamp: bigint, amountOut: any}} spec */
+    /** @param {{timestamp: import('@agoric/time').Timestamp, amountOut: any}} spec */
     async nextMatches({ timestamp, amountOut }) {
       const expectedTimestamp = TimeMath.coerceTimestampRecord(
         timestamp,
@@ -202,8 +202,10 @@ test('median aggregator', async t => {
   } = await E(zoe).getTerms(aggregator.instance);
   const timerBrand = oracleTimer.getTimerBrand();
   const toTS = ts => TimeMath.coerceTimestampRecord(ts, timerBrand);
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const price1000 = await makeFakePriceOracle(1000n);
   const price1300 = await makeFakePriceOracle(1300n);
@@ -363,8 +365,10 @@ test('median aggregator - push only', async t => {
   } = await E(zoe).getTerms(aggregator.instance);
   const toTS = ts =>
     TimeMath.coerceTimestampRecord(ts, oracleTimer.getTimerBrand());
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const pricePush = await makeFakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
@@ -599,8 +603,9 @@ test('quoteAtTime', async t => {
   } = await E(zoe).getTerms(aggregator.instance);
   const toTS = ts =>
     TimeMath.coerceTimestampRecord(ts, oracleTimer.getTimerBrand());
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const price1000 = await makeFakePriceOracle(1000n);
   const price1300 = await makeFakePriceOracle(1300n);
@@ -713,8 +718,9 @@ test('quoteWhen', async t => {
   } = await E(zoe).getTerms(aggregator.instance);
   const toTS = ts =>
     TimeMath.coerceTimestampRecord(ts, oracleTimer.getTimerBrand());
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const price1000 = await makeFakePriceOracle(1000n);
   const price1300 = await makeFakePriceOracle(1300n);
@@ -823,8 +829,9 @@ test('mutableQuoteWhen no replacement', async t => {
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
   const timerBrand = await E(oracleTimer).getTimerBrand();
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const price1000 = await makeFakePriceOracle(1000n);
   const price1300 = await makeFakePriceOracle(1300n);
@@ -941,8 +948,9 @@ test('mutableQuoteWhen with update', async t => {
   } = await E(zoe).getTerms(aggregator.instance);
   const toTS = ts =>
     TimeMath.coerceTimestampRecord(ts, oracleTimer.getTimerBrand());
-  /** @type {Issuer<'set'>} */
-  const quoteIssuer = rawQuoteIssuer;
+  const quoteIssuer = /** @type {Issuer<'set', PriceDescription>} */ (
+    rawQuoteIssuer
+  );
 
   const price1200 = await makeFakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
