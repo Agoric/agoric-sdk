@@ -39,6 +39,7 @@ export const makeWriteCoreProposal = (
   const { bundleSource, pathResolve } = endowments;
 
   let bundlerCache;
+  /** @returns {import('./getBundlerMaker.js').Bundler} */
   const getBundler = () => {
     if (!bundlerCache) {
       bundlerCache = E(getBundlerMaker()).makeBundler({
@@ -120,6 +121,7 @@ export const makeWriteCoreProposal = (
 
     // Await a reference then publish to the board.
     const cmds = [];
+    /** @param {Promise<import('./externalTypes.js').ManifestBundleRef>} refP */
     const publishRef = async refP => {
       const { fileName, ...ref } = await refP;
       if (fileName) {
