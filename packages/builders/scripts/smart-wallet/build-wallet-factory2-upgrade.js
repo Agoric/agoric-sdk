@@ -16,7 +16,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       'getManifestForUpgradeWallet',
       {
         walletRef: publishRef(
-          // @ts-expect-error eslint is confused. The call is correct.
           install('@agoric/smart-wallet/src/walletFactory.js'),
         ),
       },
