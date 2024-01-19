@@ -264,7 +264,7 @@ test('makeFakeStorageKit sequence data', async t => {
 });
 
 const testUnmarshaller = test.macro((t, format) => {
-  /** @type {(val: SlottedRemotable) => string} */
+  /** @type {(val: import('@endo/marshal').RemotableObject & SlottedRemotable) => string} */
   const convertValToSlot = val => val.getBoardId();
   const serializeBodyFormat = /** @type {any} */ (format);
   const m = makeMarshal(convertValToSlot, undefined, { serializeBodyFormat });

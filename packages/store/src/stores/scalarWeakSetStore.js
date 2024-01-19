@@ -8,10 +8,13 @@ import {
 
 const { quote: q, Fail } = assert;
 
-/** @import {StoreOptions, WeakSetStore} from '@agoric/store'; */
+/**
+ * @import {Key} from '@endo/patterns';
+ * @import {StoreOptions, WeakSetStore} from '@agoric/store';
+ */
 
 /**
- * @template K
+ * @template {Key} K
  * @param {WeakSet<K & object>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {(k: K) => void} [assertKeyOkToDelete]

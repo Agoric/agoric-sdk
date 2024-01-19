@@ -226,7 +226,7 @@ export {};
 
 /**
  * @template T
- * @typedef {NotifierInternals<T> &
+ * @typedef {import('@endo/marshal').RemotableObject & NotifierInternals<T> &
  *   ForkableAsyncIterable<T, T> &
  *   SharableNotifier<T>
  * } Notifier an object that can be used to get the current state or updates
@@ -248,8 +248,8 @@ export {};
 
 /**
  * @template T
- * @typedef {object} NotifierRecord the produced notifier/updater pair
- * @property {IterationObserver<T>} updater the (closely-held) notifier producer
+ * @typedef {object} NotifierRecord<T> the produced notifier/updater pair
+ * @property {import('@endo/marshal').RemotableObject & IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
 
