@@ -311,7 +311,6 @@ export const preparePaymentLedger = (
   };
 
   /** @type {() => Purse<K>} */
-  // @ts-expect-error type parameter confusion
   const makeEmptyPurse = preparePurseKind(
     issuerBaggage,
     name,
@@ -325,7 +324,7 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  // @ts-expect-error cast due to callWhen discrepancy
+  // @ts-expect-error XXX callWhen
   const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;

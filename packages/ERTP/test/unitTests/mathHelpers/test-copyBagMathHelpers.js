@@ -6,7 +6,7 @@ import {
 } from '@agoric/store';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
-import { mockBrand } from './mockBrand.js';
+import { mockCopyBagBrand as mockBrand } from './mockBrand.js';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -174,6 +174,7 @@ test('copyBag with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeBag(['a', 'a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeBag(['b']) }),
       ),
     { message: /right element "b" was not in left/ },
@@ -182,6 +183,7 @@ test('copyBag with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeBag(['a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeBag(['b', 'b']) }),
       ),
     { message: /right element "b" was not in left/ },
@@ -198,6 +200,7 @@ test('copyBag with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeBag(['a', 'b']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeBag(['c']) }),
       ),
     { message: /right element "c" was not in left/ },

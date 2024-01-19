@@ -14,7 +14,7 @@ import '../src/types-ambient.js';
   expectType<never>(AmountMath.makeEmpty(brand, AssetKind.SET));
 
   expectType<Amount<'nat'>>(AmountMath.make(brand, 1n));
-  // @ts-expect-error invalid value for brand
+  // @ts-expect-error invalid value for amount
   AmountMath.make(brand, {});
 }
 
@@ -22,10 +22,10 @@ import '../src/types-ambient.js';
   const brand: Brand<'set'> = Far('setbrand');
   expectType<Amount<'set'>>(AmountMath.makeEmpty(brand, 'set'));
   expectType<Amount<'set'>>(AmountMath.make(brand, []));
-  // @ts-expect-error TODO
-  expectType<never>(AmountMath.make(brand, AssetKind.NAT));
 
-  // @ts-expect-error invalid value for brand
+  // @ts-expect-error invalid value for amount
+  AmountMath.make(brand, AssetKind.NAT);
+  // @ts-expect-error invalid value for amount
   AmountMath.make(brand, {});
 }
 

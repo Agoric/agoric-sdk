@@ -3,7 +3,7 @@ import { M } from '@agoric/store';
 
 import { Far } from '@endo/marshal';
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
-import { mockBrand } from './mockBrand.js';
+import { mockNatBrand as mockBrand } from './mockBrand.js';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled

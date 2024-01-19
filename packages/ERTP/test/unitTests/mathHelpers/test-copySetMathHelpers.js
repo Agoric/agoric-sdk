@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { getCopySetKeys, makeCopySet } from '@agoric/store';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
-import { mockBrand } from './mockBrand.js';
+import { mockCopySetBrand as mockBrand } from './mockBrand.js';
 
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
@@ -207,6 +207,7 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
     { message: /value has duplicate(| key)s: "a"/ },
@@ -216,6 +217,7 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
     { message: /value has duplicate(| key)s: "b"/ },
@@ -247,6 +249,7 @@ test('copySet with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
     { message: /value has duplicate(| key)s: "a"/ },
@@ -256,6 +259,7 @@ test('copySet with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
     { message: /value has duplicate(| key)s: "b"/ },
@@ -273,6 +277,7 @@ test('copySet with strings subtract', t => {
     () =>
       m.subtract(
         harden({ brand: mockBrand, value: makeCopySet(['a', 'b']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['c']) }),
       ),
     { message: /right element "c" was not in left/ },

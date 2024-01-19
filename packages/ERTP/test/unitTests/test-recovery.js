@@ -8,6 +8,7 @@ const emptySet = makeCopySet([]);
 
 test('payment recovery from purse recovery set', async t => {
   const { issuer, mint, brand } = makeIssuerKit('precious');
+  /** @param {bigint} num */
   const precious = num => AmountMath.make(brand, num);
   const payment1 = mint.mintPayment(precious(37n));
   const payment2 = mint.mintPayment(precious(41n));
@@ -42,6 +43,7 @@ test('payment recovery from purse recovery set', async t => {
 
 test('payment recovery from mint recovery set', async t => {
   const { issuer, mint, mintRecoveryPurse, brand } = makeIssuerKit('precious');
+  /** @param {bigint} num */
   const precious = num => AmountMath.make(brand, num);
   const mindyPurse = issuer.makeEmptyPurse();
   const bobPurse = issuer.makeEmptyPurse();

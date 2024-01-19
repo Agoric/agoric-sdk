@@ -9,6 +9,7 @@ const { isEqual } = AmountMath;
 test('no lost assets on non-atomic combine failure', async t => {
   const { issuer, mint, brand } = makeIssuerKit('precious');
   const recoveryPurse = issuer.makeEmptyPurse();
+  /** @param {bigint} num */
   const precious = num => AmountMath.make(brand, num);
   const payment1 = mint.mintPayment(precious(39n));
   const payment2 = payment1; // "accidental" aliasing
@@ -26,6 +27,7 @@ test('no lost assets on non-atomic combine failure', async t => {
 test('no lost assets on non-atomic split failure', async t => {
   const { issuer, mint, brand } = makeIssuerKit('precious');
   const recoveryPurse = issuer.makeEmptyPurse();
+  /** @param {bigint} num */
   const precious = num => AmountMath.make(brand, num);
   const srcPayment = mint.mintPayment(precious(78n));
   await t.throwsAsync(() => split(recoveryPurse, srcPayment, precious(100n)), {
