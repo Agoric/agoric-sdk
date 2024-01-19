@@ -7,11 +7,14 @@ import (
 	stdlog "log"
 	"math"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -69,7 +72,7 @@ type inboundQueueRecord struct {
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
@@ -87,7 +90,7 @@ var _ ante.SwingsetKeeper = &Keeper{}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
@@ -304,9 +307,9 @@ func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 	path := getBeansOwingPathForAddress(addr)
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return sdk.ZeroUint()
+		return sdkmath.ZeroUint()
 	}
-	return sdk.NewUintFromString(entry.StringValue())
+	return sdkmath.NewUintFromString(entry.StringValue())
 }
 
 // SetBeansOwing sets the number of beans that the given address owes to the

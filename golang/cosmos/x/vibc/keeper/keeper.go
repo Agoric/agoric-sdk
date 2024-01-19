@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -22,7 +23,7 @@ import (
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
+	storeKey storetypes.StoreKey
 	cdc      codec.Codec
 
 	channelKeeper types.ChannelKeeper
@@ -35,7 +36,7 @@ type Keeper struct {
 
 // NewKeeper creates a new dIBC Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey,
+	cdc codec.Codec, key storetypes.StoreKey,
 	channelKeeper types.ChannelKeeper, portKeeper types.PortKeeper,
 	bankKeeper bankkeeper.Keeper,
 	scopedKeeper capabilitykeeper.ScopedKeeper,

@@ -43,8 +43,10 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(),
-		ante.NewRejectExtensionOptionsDecorator(),
-		ante.NewMempoolFeeDecorator(),
+		ante.NewExtensionOptionsDecorator(nil), // reject all extensions
+		// former ante.NewMempoolFeeDecorator()
+		// replaced as in https://github.com/provenance-io/provenance/pull/1016
+		ante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, nil),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),
@@ -58,7 +60,7 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		NewAdmissionDecorator(opts.AdmissionData),
 		ante.NewIncrementSequenceDecorator(opts.AccountKeeper),
-		ibcante.NewAnteDecorator(opts.IBCKeeper),
+		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
