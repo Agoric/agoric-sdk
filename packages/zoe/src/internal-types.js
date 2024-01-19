@@ -122,9 +122,9 @@
 /**
  * @typedef {object} ZoeInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {(issuerP: ERef<Issuer>,
+ * @property {<I extends Issuer>(issuerP: ERef<I>,
  *             keyword: Keyword
- *            ) => Promise<IssuerRecord>} saveIssuer
+ *            ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat

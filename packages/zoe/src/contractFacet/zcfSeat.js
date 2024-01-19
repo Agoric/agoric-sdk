@@ -206,7 +206,7 @@ export const createSeatManager = (
         assertActive(self);
         const currentAllocation = getCurrentAllocation(self);
         if (currentAllocation[keyword] !== undefined) {
-          // @ts-expect-error cast
+          // @ts-expect-error never checks brand
           return currentAllocation[keyword];
         }
         if (!brand) {

@@ -16,7 +16,7 @@ import { cleanKeywords } from '../cleanProposal.js';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
-  /** @type {WeakMapStore<Brand, ERef<Purse>>} */
+  /** @type {WeakMapStore<Brand, Purse>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */
