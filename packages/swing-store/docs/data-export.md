@@ -229,7 +229,7 @@ SwingStore contains components to accommodate all the various kinds of state tha
 * `kvStore`, a general-purpose string/string key-value table
 * `transcriptStore`: append-only vat deliveries, broken into "spans", delimited by heap snapshot events
 * `snapshotStore`: binary blobs containing JS engine heap state, to limit transcript replay depth
-* `bundleStore`: code bundles that can be imported with `@endo/import-bundle`
+* `bundleStore`: code bundles that can be imported with [@endo/import-bundle](https://www.npmjs.com/package/@endo/import-bundle)
 
 Currently, the SwingStore treats transcript spans, heap snapshots, and bundles as export artifacts, with hashes recorded in the export data for validation (and to remember exactly which artifacts are necessary). The `kvStore` is copied one-to-one into the export data (i.e. we keep a full shadow copy in IAVL), because that is the fastest way to ensure the `kvStore` data is fully available and validated.
 
