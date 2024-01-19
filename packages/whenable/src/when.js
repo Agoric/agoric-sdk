@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 
-import { getFirstWhenable, getWhenablePayload } from './whenable-utils.js';
+import { unwrapPromise, getWhenablePayload } from './whenable-utils.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -19,7 +19,7 @@ export const prepareWhen = (
   const when = specimenP => {
     const { settler, promise } = makeWhenablePromiseKit();
     // Ensure we have a presence that won't be disconnected later.
-    getFirstWhenable(specimenP, async (specimen, payload) => {
+    unwrapPromise(specimenP, async (specimen, payload) => {
       // Shorten the whenable chain without a watcher.
       await null;
       while (payload) {
