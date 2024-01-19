@@ -6,6 +6,28 @@ on:
       should_run:
         description: "'true' if the test should run"
         value: "${{ jobs.check_and_cancel.outcome != 'skipped' && jobs.check_and_cancel.outputs.should_skip != 'true' }}"
+      previous_success:
+        description: "'true' if should not run because of a previous successful run"
+        value: "${{ jobs.check_and_cancel.outcome != 'skipped' && jobs.check_and_cancel.outputs.previous_success == 'true' }}"
+      merge_requested:
+        description: "'true' if pull_request was requested for merge"
+        value: >-
+          ${{
+            github.event_name != 'pull_request' || (
+              (
+                github.event.pull_request.base.ref == 'master' ||
+                startsWith(github.event.pull_request.base.ref, 'release-') ||
+                github.event.pull_request.base.ref == 'beta'
+              ) &&
+              github.event.pull_request.draft == false &&
+              (
+                contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
+                contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+                contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+                github.event.pull_request.auto_merge != null
+              )
+            )
+          }}
 
 jobs:
   check_and_cancel:
@@ -21,7 +43,7 @@ jobs:
         github.event.pull_request.draft == false &&
         (
           contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
-          contains(github.event.pull_request.labels.*.name, 'automerge:merge') ||
+          contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
           contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
           github.event.pull_request.auto_merge != null
         ) && 
@@ -30,6 +52,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_skip: ${{ (steps.step2.outcome == 'skipped' || steps.step2.outputs.concurrent_conclusion == 'success') && steps.step1.outputs.should_skip || 'false' }}
+      previous_success: >-
+        ${{
+          (steps.step2.outcome == 'skipped' && steps.step1.outputs.reason == 'skip_after_successful_duplicate' && 'true') || 
+          (steps.step2.outputs.concurrent_conclusion == 'success' && 'true') ||
+          'false'
+        }}
     steps:
       - id: step1
         uses: fkirc/skip-duplicate-actions@v5

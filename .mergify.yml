@@ -6,64 +6,19 @@ queue_rules:
       # Require integration tests before merging only
       - or:
           - label=bypass:integration
-          - check-failure!=Chain deployment test
-      - or:
-          - label=bypass:integration
-          - check-success=deployment-test
-          - check-neutral=deployment-test
-          - check-skipped=deployment-test
-      - or:
-          - label=bypass:integration
-          - check-failure!=getting-started (link-cli)
-      - or:
-          - label=bypass:integration
-          - check-skipped=getting-started
-          - check-success=getting-started (link-cli)
-          - check-neutral=getting-started (link-cli)
-          - check-skipped=getting-started (link-cli)
-      # FIXME: Enable this section to validate NPM deploys...
-      #- or:
-      #    - label=bypass:integration
-      #    - check-skipped=getting-started
-      #    - check-success=getting-started (local-npm)
-      #    - check-neutral=getting-started (local-npm)
-      #    - check-skipped=getting-started (local-npm)
-  - name: pismo
-    conditions:
-      - base=release-pismo
-      # Require integration tests before merging only
-      - or:
-          - label=bypass:integration
-          - check-failure!=Chain deployment test
-      - or:
-          - label=bypass:integration
-          - check-success=deployment-test
-          - check-neutral=deployment-test
-          - check-skipped=deployment-test
-      - or:
-          - label=bypass:integration
-          - check-failure!=getting-started (link-cli)
-      - or:
-          - label=bypass:integration
-          - check-skipped=getting-started
-          - check-success=getting-started (link-cli)
-          - check-neutral=getting-started (link-cli)
-          - check-skipped=getting-started (link-cli)
-      # FIXME: Enable this section to validate NPM deploys...
-      #- or:
-      #    - label=bypass:integration
-      #    - check-skipped=getting-started
-      #    - check-success=getting-started (local-npm)
-      #    - check-neutral=getting-started (local-npm)
-      #    - check-skipped=getting-started (local-npm)
+          - check-success=integration-test-result
 
 pull_request_rules:
   - name: merge to master
     conditions:
       - base=master
-      - label=automerge:merge
+      - label=automerge:no-update
       - or:
-          - check-success=wait-integration-pre-checks
+          - '#commits-behind=0'
+          - label=bypass:linear-history
+      - or:
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -81,7 +36,8 @@ pull_request_rules:
       - base=master
       - label=automerge:rebase
       - or:
-          - check-success=wait-integration-pre-checks
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -100,7 +56,8 @@ pull_request_rules:
       - base=master
       - label=automerge:squash
       - or:
-          - check-success=wait-integration-pre-checks
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
           - label=bypass:integration
       - or:
           - and: # breakage succeeds like we thought
@@ -112,59 +69,4 @@ pull_request_rules:
     actions:
       queue:
         name: main
-        method: squash
-  - name: merge to release-pismo
-    conditions:
-      - base=release-pismo
-      - label=automerge:merge
-      - or:
-          - check-success=wait-integration-pre-checks
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
-    actions:
-      queue:
-        name: pismo
-        method: merge
-  - name: rebase updates then merge to release-pismo
-    conditions:
-      - base=release-pismo
-      - label=automerge:rebase
-      - or:
-          - check-success=wait-integration-pre-checks
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
-    actions:
-      queue:
-        name: pismo
-        method: merge
-        update_method: rebase
-  - name: squash to release-pismo
-    conditions:
-      - base=release-pismo
-      - label=automerge:squash
-      - or:
-          - check-success=wait-integration-pre-checks
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
-    actions:
-      queue:
-        name: pismo
         method: squash
