@@ -127,7 +127,7 @@
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
  * @property {Issuer<'set'>} invitationIssuer
- * @property {InstallBundle} installBundle
+ * @property {ZoeInstallBundle} installBundle
  * @property {InstallBundleID} installBundleID
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  * @property {import('./utils.js').GetPublicFacet} getPublicFacet

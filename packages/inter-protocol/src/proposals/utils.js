@@ -138,6 +138,7 @@ export const makeInstallCache = async (
   };
 
   const wrapInstall = install => async (mPath, bPath, opts) => {
+    assert(bPath, 'missing bPath in wrapInstall');
     const bundle = await loadBundle(bPath).then(m => m.default);
     assert(
       'endoZipBase64Sha512' in bundle,

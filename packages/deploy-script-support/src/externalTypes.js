@@ -16,7 +16,7 @@ export {};
  */
 
 /**
- * @typedef {{ bundleName: string } | { bundleID: string} } ManifestBundleRef
+ * @typedef {{fileName?: string} & ({ bundleName: string } | { bundleID: string}) } ManifestBundleRef
  */
 
 /**
@@ -26,9 +26,9 @@ export {};
  */
 
 /**
- * @callback InstallBundle
+ * @callback InstallEntrypoint
  * @param {string} srcSpec
- * @param {string} bundlePath
+ * @param {string} [bundlePath]
  * @param {any} [opts]
  * @returns {Promise<ManifestBundleRef>}
  */
@@ -37,8 +37,8 @@ export {};
  * @callback ProposalBuilder
  * @param {{
  *   publishRef: PublishBundleRef,
- *   install: InstallBundle,
- *   wrapInstall?: <T>(f: T) => T }
+ *   install: InstallEntrypoint,
+ *   wrapInstall?: <T extends InstallEntrypoint>(f: T) => T }
  * } powers
  * @param {...any} args
  * @returns {Promise<ProposalResult>}

@@ -26,7 +26,7 @@
  * creates the ERTP payments that represent the right to interact with
  * a smart contract in particular ways.
  *
- * @property {InstallBundle} install
+ * @property {ZoeInstallBundle} install
  * @property {InstallBundleID} installBundleID
  * @property {import('./utils.js').StartInstance} startInstance
  * @property {Offer} offer
@@ -115,7 +115,7 @@
 // TODO remove support for source bundles, leaving only support for hash bundles.
 // https://github.com/Agoric/agoric-sdk/issues/4565
 /**
- * @callback InstallBundle
+ * @callback ZoeInstallBundle
  *
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.

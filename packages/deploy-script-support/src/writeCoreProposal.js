@@ -98,7 +98,7 @@ export const makeWriteCoreProposal = (
      *
      * @param {string} entrypoint
      * @param {string} [bundlePath]
-     * @param {unknown} [opts]
+     * @param {any} [opts]
      * @returns {Promise<import('./externalTypes.js').ManifestBundleRef>}
      */
     const install = async (entrypoint, bundlePath, opts) => {
@@ -120,6 +120,7 @@ export const makeWriteCoreProposal = (
 
     // Await a reference then publish to the board.
     const cmds = [];
+    /** @param {Promise<import('./externalTypes.js').ManifestBundleRef>} refP */
     const publishRef = async refP => {
       const { fileName, ...ref } = await refP;
       if (fileName) {
