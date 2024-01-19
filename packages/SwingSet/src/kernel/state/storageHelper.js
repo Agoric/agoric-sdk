@@ -25,6 +25,7 @@ export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
     yield key;
   }
 }
+harden(enumeratePrefixedKeys);
 
 /**
  * @param {KVStore} kvStore
@@ -45,6 +46,7 @@ function* enumerateNumericPrefixedKeys(kvStore, prefix) {
     }
   }
 }
+harden(enumerateNumericPrefixedKeys);
 
 /**
  * @param {KVStore} kvStore
@@ -55,6 +57,7 @@ export function* getPrefixedValues(kvStore, prefix) {
     yield kvStore.get(key) || Fail`enumerate ensures get`;
   }
 }
+harden(getPrefixedValues);
 
 /**
  * @param {KVStore} kvStore

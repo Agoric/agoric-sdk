@@ -525,6 +525,7 @@ export async function xsnap(options) {
         )}`;
     }
   }
+  harden(makeSnapshotInternal);
 
   /**
    * @param {string} [description]

@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@agoric/synthetic-chain@^0.0.2-0":
-  version "0.0.2-0"
-  resolved "https://registry.yarnpkg.com/@agoric/synthetic-chain/-/synthetic-chain-0.0.2-0.tgz#8658321a7c4bf3026096129f9053f1a0f9247bd7"
-  integrity sha512-VFZE7kbMqEuicqAiShJFa0cHBgNRb/Wmq/gndZ7/ynuPR5RJs5cssvAuj7lvbfMvzir2WgYybxnd4srJ9hSu6A==
+"@agoric/synthetic-chain@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@agoric/synthetic-chain/-/synthetic-chain-0.0.3.tgz#eaa9ea9429a950686e5cc31200f1e30cf7acedfd"
+  integrity sha512-C+2cb3IPoiCKSRNyVAE8mt+BLeZB2AKzAnW0TJK5SgVSBlX+wgcrNMZHpSlrWScFzlsEQJWzqRdzpV2YdVtESg==
   dependencies:
     better-sqlite3 "^9.2.2"
     tsx "^3.12.8"

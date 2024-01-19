@@ -18,6 +18,7 @@ export function* enumerateKeysStartEnd(syscall, start, end, checkF) {
     dbKey = syscall.vatstoreGetNextKey(dbKey);
   }
 }
+harden(enumerateKeysStartEnd);
 
 // return an iterator of all existing keys that start with 'prefix'
 // (excluding the prefix itself)
@@ -32,6 +33,7 @@ export function* enumerateKeysWithPrefix(syscall, prefix) {
     yield key;
   }
 }
+harden(enumerateKeysWithPrefix);
 
 export function prefixedKeysExist(syscall, prefix) {
   const nextKey = syscall.vatstoreGetNextKey(prefix);

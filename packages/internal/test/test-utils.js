@@ -182,6 +182,7 @@ const consumeStreamInto = async (stream, output, maxItems) => {
 const generateStream = async function* generateStream(items) {
   yield* items;
 };
+harden(generateStream);
 
 test('synchronizedTee - consumeAll - 1 reader', async t => {
   const sourceData = [1, 2, 3];
@@ -251,6 +252,7 @@ test('synchronizedTee - consume synchronized', async t => {
       }
     }
   }
+  harden(generate);
   const source = generate();
   const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([

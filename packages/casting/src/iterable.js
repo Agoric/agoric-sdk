@@ -15,6 +15,7 @@ export const mapAsyncIterable = (iterable, transform) => {
       yield transform(value);
     }
   }
+  harden(transformGenerator);
   return transformGenerator();
 };
 

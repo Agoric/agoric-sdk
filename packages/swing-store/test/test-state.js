@@ -47,6 +47,7 @@ function* iterate(kvStore, start, end) {
     prev = next;
   }
 }
+harden(iterate);
 
 function makeExportLog() {
   const exportLog = [];

@@ -59,7 +59,7 @@ const makeScenario = async (
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
-  const runUtils = makeRunUtils(c, t.log);
+  const runUtils = makeRunUtils(c);
   return runUtils;
 };
 

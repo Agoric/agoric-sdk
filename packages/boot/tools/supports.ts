@@ -371,7 +371,7 @@ export const makeSwingsetTestKit = async (
   );
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller, log);
+  const runUtils = makeRunUtils(controller);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,

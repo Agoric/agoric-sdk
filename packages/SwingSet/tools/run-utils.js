@@ -6,11 +6,8 @@ const sink = () => {};
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
- * @param {(...args: any[]) => void} [log]
  */
-export const makeRunUtils = (controller, log = (..._) => {}) => {
-  let cranksRun = 0;
-
+export const makeRunUtils = controller => {
   const mutex = makeQueue();
 
   mutex.put(controller.run());
@@ -27,18 +24,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
     const thunkResult = await thunk();
 
-    const result = controller.run().then(cranks => {
-      cranksRun += cranks;
-      log(`kernel ran ${cranks} cranks`);
-      return thunkResult;
-    });
+    const result = controller.run().then(() => thunkResult);
     mutex.put(result.then(sink, sink));
     return result;
   };
 
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
-    log('queueAndRun at', cranksRun);
-
     const kpid = await runThunk(deliveryThunk);
 
     if (voidResult) {
