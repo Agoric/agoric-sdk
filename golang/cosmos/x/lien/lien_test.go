@@ -97,7 +97,7 @@ func (m *mockLienKeeper) BondDenom(ctx sdk.Context) string {
 func (m *mockLienKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	state := m.GetAccountState(ctx, addr)
 	delegated := state.Bonded.Add(state.Unbonding...)
-	bank := state.Total.Sub(state.Total.Min(delegated))
+	bank := state.Total.Sub(state.Total.Min(delegated)...)
 	return bank
 }
 

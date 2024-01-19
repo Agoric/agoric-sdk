@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
@@ -15,7 +16,7 @@ const stateKey string = "state"
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
@@ -27,7 +28,7 @@ type Keeper struct {
 
 // NewKeeper creates a new vbank Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper types.BankKeeper,
 	rewardDistributorName string,
 	pushAction vm.ActionPusher,

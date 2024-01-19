@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	db "github.com/tendermint/tm-db"
 
@@ -62,7 +63,7 @@ func cutPrefix(s, prefix []byte) (after []byte, found bool) {
 // for the various parts of the state machine
 type Keeper struct {
 	changeManager ChangeManager
-	storeKey      sdk.StoreKey
+	storeKey      storetypes.StoreKey
 }
 
 func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, entry agoric.KVEntry, isLegacy bool) {
@@ -116,7 +117,7 @@ func NewBatchingChangeManager() *BatchingChangeManager {
 	return &bcm
 }
 
-func NewKeeper(storeKey sdk.StoreKey) Keeper {
+func NewKeeper(storeKey storetypes.StoreKey) Keeper {
 	return Keeper{
 		storeKey:      storeKey,
 		changeManager: NewBatchingChangeManager(),

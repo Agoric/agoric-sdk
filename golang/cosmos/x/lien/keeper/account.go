@@ -88,7 +88,7 @@ func (uva unlockedVestingAccount) TrackDelegation(blockTime time.Time, balance, 
 // TrackUndelegation implements the vestexported.VestingAccount interface.
 func (uva unlockedVestingAccount) TrackUndelegation(amount sdk.Coins) {
 	// max(delegated - amount, 0) == delegated - min(delegated, amount)
-	uva.lien.Delegated = uva.lien.Delegated.Sub(uva.lien.Delegated.Min(amount))
+	uva.lien.Delegated = uva.lien.Delegated.Sub(uva.lien.Delegated.Min(amount)...)
 }
 
 // GetVestedCoins implements the vestexported.VestingAccount interface.
@@ -211,12 +211,12 @@ func (la *LienAccount) LienedLockedCoins(ctx sdk.Context) sdk.Coins {
 	liened := la.lien.Coins
 	acc := la.omniClawbackAccount.(authtypes.AccountI)
 	if clawback, ok := acc.(vestexported.ClawbackVestingAccountI); ok {
-		liened = liened.Add(clawback.GetOriginalVesting().Sub(clawback.GetVestedOnly(ctx.BlockTime()))...)
+		liened = liened.Add(clawback.GetOriginalVesting().Sub(clawback.GetVestedOnly(ctx.BlockTime())...)...)
 	}
 	// Since coins can't go negative, even transiently, use the
 	// identity A + B = max(A, B) + min(A, B)
 	//    max(0, A - B) = max(B, A) - B = A - min(A, B)
-	return liened.Sub(liened.Min(delegated))
+	return liened.Sub(liened.Min(delegated)...)
 }
 
 // XXX_MessageName provides the message name for JSON serialization.
