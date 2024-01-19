@@ -14,7 +14,7 @@ import {
  * @typedef {string | { module: string, entrypoint: string, args?: Array<unknown> }} ConfigProposal
  */
 
-const { details: X, Fail } = assert;
+const { Fail } = assert;
 
 const req = createRequire(import.meta.url);
 
@@ -24,8 +24,8 @@ const req = createRequire(import.meta.url);
  * @typedef {string} FilePath
  */
 const pathResolve = (...paths) => {
-  const fileName = paths.pop();
-  assert(fileName, '>=1 paths required');
+  const fileName = /** @type {string} */ (paths.pop());
+  fileName || Fail`base name required`;
   try {
     return req.resolve(fileName, {
       paths,
@@ -41,6 +41,19 @@ const findModule = (initDir, srcSpec) =>
     : req.resolve(srcSpec);
 
 /**
+ * @param {{ bundleID?: string, bundleName?: string }} handle - mutated then hardened
+ * @param {string} sourceSpec - the specifier of a module to load
+ * @param {number} sequence - the sequence number of the proposal
+ * @param {string} piece - the piece of the proposal
+ * @returns {Promise<[string, any]>}
+ */
+const namedHandleToBundleSpec = async (handle, sourceSpec, sequence, piece) => {
+  handle.bundleName = `coreProposal${sequence}_${piece}`;
+  harden(handle);
+  return harden([handle.bundleName, { sourceSpec }]);
+};
+
+/**
  * Format core proposals to be run at bootstrap:
  * SwingSet `bundles` configuration
  * and `code` to execute them, interpolating functions
@@ -54,26 +67,28 @@ const findModule = (initDir, srcSpec) =>
  * @param {ConfigProposal[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
- * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]
- * @param {(i: number) => number} [getSequenceForProposal]
+ * @param {object} [opts]
+ * @param {typeof makeEnactCoreProposalsFromBundleRef} [opts.makeEnactCoreProposals]
+ * @param {(i: number) => number} [opts.getSequenceForProposal]
+ * @param {typeof namedHandleToBundleSpec} [opts.handleToBundleSpec]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
-  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
-  getSequenceForProposal,
+  opts,
 ) => {
-  if (!getSequenceForProposal) {
-    // Deterministic proposal numbers.
-    getSequenceForProposal = i => i;
-  }
+  const {
+    makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
+    getSequenceForProposal = i => i,
+    handleToBundleSpec = namedHandleToBundleSpec,
+  } = opts || {};
 
   dirname = pathResolve(dirname);
   dirname = await fs.promises
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<{ bundleName?: string }, { source: string, bundle?: string }>} */
+  /** @type {Map<{ bundleID?: string, bundleName?: string }, { source: string, bundle?: string }>} */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();
@@ -117,11 +132,8 @@ export const extractCoreProposalBundles = async (
           absolutePaths.bundle = absoluteBundle;
           const oldSource = bundleToSource.get(absoluteBundle);
           if (oldSource) {
-            assert.equal(
-              oldSource,
-              absoluteSrc,
-              X`${bundlePath} already installed from ${oldSource}, now ${absoluteSrc}`,
-            );
+            oldSource === absoluteSrc ||
+              Fail`${bundlePath} already installed from ${oldSource}, now ${absoluteSrc}`;
           } else {
             bundleToSource.set(absoluteBundle, absoluteSrc);
           }
@@ -135,36 +147,46 @@ export const extractCoreProposalBundles = async (
       /** @type {import('./externalTypes.js').PublishBundleRef} */
       const publishRef = async handleP => {
         const handle = await handleP;
+        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+        // @ts-ignore xxx types
         bundleHandleToAbsolutePaths.has(handle) ||
           Fail`${handle} not in installed bundles`;
         return handle;
       };
-      const proposal = await ns[entrypoint]({ publishRef, install }, ...args);
+      const proposal = await ns[entrypoint](
+        {
+          publishRef,
+          // @ts-expect-error not statically verified to return a full obj
+          install,
+        },
+        ...args,
+      );
 
       // Add the proposal bundle handles in sorted order.
-      const bundleSpecEntries = [...thisProposalBundleHandles.keys()]
-        .map(handle => [handle, bundleHandleToAbsolutePaths.get(handle)])
-        .sort(([_hnda, { source: a }], [_hndb, { source: b }]) => {
-          if (a < b) {
-            return -1;
-          }
-          if (a > b) {
-            return 1;
-          }
-          return 0;
-        })
-        .map(([handle, absolutePaths], j) => {
-          // Transform the bundle handle identity into a bundleName reference.
-          handle.bundleName = `coreProposal${thisProposalSequence}_${j}`;
-          harden(handle);
-
-          /** @type {[string, { sourceSpec: string }]} */
-          const specEntry = [
-            handle.bundleName,
-            { sourceSpec: absolutePaths.source },
-          ];
-          return specEntry;
-        });
+      const bundleSpecEntries = await Promise.all(
+        [...thisProposalBundleHandles.keys()]
+          .map(handle => [handle, bundleHandleToAbsolutePaths.get(handle)])
+          .sort(([_hnda, { source: a }], [_hndb, { source: b }]) => {
+            if (a < b) {
+              return -1;
+            }
+            if (a > b) {
+              return 1;
+            }
+            return 0;
+          })
+          .map(async ([handle, absolutePaths], j) => {
+            // Transform the bundle handle identity into a bundleName reference.
+            const specEntry = await handleToBundleSpec(
+              handle,
+              absolutePaths.source,
+              thisProposalSequence,
+              String(j),
+            );
+            harden(handle);
+            return specEntry;
+          }),
+      );
 
       // Now that we've assigned all the bundleNames and hardened the
       // handles, we can extract the behavior bundle.
@@ -172,33 +194,36 @@ export const extractCoreProposalBundles = async (
         harden(proposal),
       );
 
-      const behaviorSource = pathResolve(initDir, sourceSpec);
-      const behaviors = await import(behaviorSource);
-      const [exportedGetManifest, ...manifestArgs] = getManifestCall;
-      const { manifest: overrideManifest } = await behaviors[
-        exportedGetManifest
-      ](harden({ restoreRef: () => null }), ...manifestArgs);
-
-      const behaviorBundleHandle = harden({
-        bundleName: `coreProposal${thisProposalSequence}_behaviors`,
-      });
-      const behaviorAbsolutePaths = harden({
-        source: behaviorSource,
-      });
-      bundleHandleToAbsolutePaths.set(
-        behaviorBundleHandle,
-        behaviorAbsolutePaths,
+      const proposalSource = pathResolve(initDir, sourceSpec);
+      const proposalNS = await import(proposalSource);
+      const [manifestGetterName, ...manifestGetterArgs] = getManifestCall;
+      manifestGetterName in proposalNS ||
+        Fail`proposal ${proposalSource} missing export ${manifestGetterName}`;
+      const { manifest: customManifest } = await proposalNS[manifestGetterName](
+        harden({ restoreRef: () => null }),
+        ...manifestGetterArgs,
       );
 
-      bundleSpecEntries.unshift([
-        behaviorBundleHandle.bundleName,
-        { sourceSpec: behaviorAbsolutePaths.source },
-      ]);
+      const behaviorBundleHandle = {};
+      const specEntry = await handleToBundleSpec(
+        behaviorBundleHandle,
+        proposalSource,
+        thisProposalSequence,
+        'behaviors',
+      );
+      bundleSpecEntries.unshift(specEntry);
+
+      bundleHandleToAbsolutePaths.set(
+        behaviorBundleHandle,
+        harden({
+          source: proposalSource,
+        }),
+      );
 
       return harden({
         ref: behaviorBundleHandle,
         call: getManifestCall,
-        overrideManifest,
+        customManifest,
         bundleSpecs: bundleSpecEntries,
       });
     }),
@@ -211,22 +236,29 @@ export const extractCoreProposalBundles = async (
   harden(bundles);
 
   // Extract the manifest references and calls.
-  const makeCPArgs = extracted.map(({ ref, call, overrideManifest }) => ({
+  const metadataRecords = extracted.map(({ ref, call, customManifest }) => ({
     ref,
     call,
-    overrideManifest,
+    customManifest,
   }));
-  harden(makeCPArgs);
+  harden(metadataRecords);
 
   const code = `\
-// This is generated by @agoric/cosmic-swingset/src/extract-proposal.js - DO NOT EDIT
+// This is generated by @agoric/deploy-script-support/src/extract-proposal.js - DO NOT EDIT
 /* eslint-disable */
 
-const makeCoreProposalArgs = harden(${stringify(makeCPArgs, true)});
+const metadataRecords = harden(${stringify(metadataRecords, true)});
 
-const makeCoreProposalBehavior = ${makeCoreProposalBehavior};
-
-(${makeEnactCoreProposals})({ makeCoreProposalArgs, E });
+// Make an enactCoreProposals function and "export" it by way of script completion value.
+// It is constructed by an IIFE to ensure the absence of global bindings for
+// makeCoreProposalBehavior and makeEnactCoreProposals (the latter referencing the former),
+// which may not be necessary but preserves behavior pre-dating
+// https://github.com/Agoric/agoric-sdk/pull/8712 .
+const enactCoreProposals = ((
+  makeCoreProposalBehavior = ${makeCoreProposalBehavior},
+  makeEnactCoreProposals = ${makeEnactCoreProposals},
+) => makeEnactCoreProposals({ metadataRecords, E }))();
+enactCoreProposals;
 `;
 
   // console.debug('created bundles from proposals:', coreProposals, bundles);
