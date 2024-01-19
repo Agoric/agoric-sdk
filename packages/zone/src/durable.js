@@ -95,6 +95,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
 
   /** @type {import('.').Zone['subZone']} */
   const subZone = (label, options = {}) => {
+    /** @type {import('@agoric/swingset-liveslots').Baggage} */
     const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };

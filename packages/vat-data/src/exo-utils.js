@@ -5,8 +5,9 @@ import { initEmpty } from '@agoric/store';
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
 /**
- * @import {InterfaceGuard} from '@endo/patterns'
- * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots'
+ * @import {InterfaceGuard} from '@endo/patterns';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots';
  */
 
 /**
@@ -206,7 +207,7 @@ export const makeExoUtils = VatData => {
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
    * @param {T & ThisType<{
-   *   self: T,
+   *   self: RemotableObject & T,
    *   state: ReturnType<I>
    * }>} methods
    * @param {DefineKindOptions<{

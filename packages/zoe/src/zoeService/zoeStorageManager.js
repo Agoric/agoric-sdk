@@ -275,8 +275,9 @@ export const makeZoeStorageManager = (
             ownKeys(customDetails).length >= 1
               ? harden({ customDetails })
               : harden({});
+          /** @type {InvitationAmount} */
           const invitationAmount = AmountMath.make(
-            invitationKit.brand,
+            /** @type {Brand<'set'>} */ (invitationKit.brand),
             harden([
               {
                 ...extraProperties,

@@ -301,14 +301,6 @@ export {};
  */
 
 /**
- * @template {AssetKind} K
- * @callback PurseDeposit
- * @param {Payment<K>} payment
- * @param {Pattern} [optAmountShape]
- * @returns {Amount<K>}
- */
-
-/**
  * @template {AssetKind} [K=AssetKind]
  * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {RemotableObject & PurseMethods<K, M>} Purse Purses hold amount of
@@ -331,9 +323,13 @@ export {};
  *   this purse.
  * @property {() => LatestTopic<Amount<K, M>>} getCurrentAmountNotifier Get a
  *   lossy notifier for changes to this purse's balance.
- * @property {PurseDeposit<K>} deposit Deposit all the contents of payment into
- *   this purse, returning the amount. If the optional argument `optAmount` does
- *   not equal the amount of digital assets in the payment, throw an error.
+ * @property {<P extends Payment<K, M>>(
+ *   payment: P,
+ *   optAmountShape?: Pattern,
+ * ) => P extends Payment<K, M> ? Amount<K, M> : never} deposit
+ *   Deposit all the contents of payment into this purse, returning the amount. If
+ *   the optional argument `optAmount` does not equal the amount of digital
+ *   assets in the payment, throw an error.
  *
  *   If payment is a promise, throw an error.
  * @property {() => DepositFacet} getDepositFacet Return an object whose
