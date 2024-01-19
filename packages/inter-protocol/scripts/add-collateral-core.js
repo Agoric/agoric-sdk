@@ -107,6 +107,7 @@ export default async (homeP, endowments) => {
 
   await writeCoreProposal('gov-add-collateral', defaultProposalBuilder);
   await writeCoreProposal('gov-start-psm', opts =>
+    // @ts-expect-error XXX makeInstallCache types
     psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
   );
 };

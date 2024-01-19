@@ -18,6 +18,9 @@ export const start = () => {
     });
   };
 
+  /**
+   * @param {{ zoe: ERef<ZoeService> }} opts
+   */
   const makeBundler = ({ zoe }) => {
     /** @type { Map<string, [string, Uint8Array]>} */
     const nameToContent = new Map();
