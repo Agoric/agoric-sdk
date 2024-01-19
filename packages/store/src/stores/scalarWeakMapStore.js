@@ -5,7 +5,8 @@ import { isCopyMap } from './store-utils.js';
 const { quote: q, Fail } = assert;
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {WeakMap<K & object, V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet

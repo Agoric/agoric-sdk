@@ -7,6 +7,18 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
  */
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
+
+type InvitationAmount = Amount<
+  'set',
+  {
+    customDetails?: any;
+    description: string;
+    handle: any;
+    instance: any;
+    installation: Installation;
+  }
+>;
+
 /**
  * Zoe Contract Facet
  *

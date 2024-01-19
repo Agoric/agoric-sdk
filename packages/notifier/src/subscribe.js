@@ -46,6 +46,7 @@ const reconnectAsNeeded = async (getter, seed = []) => {
       if (isObject(err) && disconnection && disconnection !== err) {
         try {
           assert.note(
+            // @ts-expect-error FIXME takes more than Error
             err,
             X`Attempting to recover from disconnection: ${disconnection}`,
           );

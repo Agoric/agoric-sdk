@@ -5,7 +5,7 @@ import { isCopySet } from './store-utils.js';
 const { quote: q, Fail } = assert;
 
 /**
- * @template K
+ * @template {Key} K
  * @param {WeakSet<K & object>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {(k: K) => void} [assertKeyOkToDelete]
