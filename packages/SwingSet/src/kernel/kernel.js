@@ -549,16 +549,16 @@ export default function buildKernel(
     const { vatID, kpid } = message;
     insistVatID(vatID);
     insistKernelType('promise', kpid);
-    kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
       kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchNotify');
     const { meterID } = vatInfo;
 
     const p = kernelKeeper.getKernelPromise(kpid);
-    kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
     /** @type { KernelDeliveryOneNotify[] } */
@@ -599,6 +599,8 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // can't collect from the dead
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchGCMessage');
     /** @type { KernelDeliveryDropExports | KernelDeliveryRetireExports | KernelDeliveryRetireImports } */
     const kd = harden([type, krefs]);
     if (type === 'retireExports') {
@@ -626,6 +628,8 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // can't collect from the dead
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchBOYD');
     /** @type { KernelDeliveryBringOutYourDead } */
     const kd = harden([type]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
@@ -659,6 +663,8 @@ export default function buildKernel(
       kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchStartVat');
     const { meterID } = vatInfo;
     /** @type { KernelDeliveryStartVat } */
     const kd = harden(['startVat', vatParameters]);
@@ -761,6 +767,8 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // vat is dead, ignore
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchChangeVatOptions');
 
     /** @type { Record<string, unknown> } */
     const optionsForVat = {};
@@ -812,6 +820,8 @@ export default function buildKernel(
     if (!vatInfo) {
       return NO_DELIVERY_CRANK_RESULTS; // vat terminated already
     }
+    kernelKeeper.incStat('dispatches');
+    kernelKeeper.incStat('dispatchUpgradeVat');
     const { meterID } = vatInfo;
     let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
