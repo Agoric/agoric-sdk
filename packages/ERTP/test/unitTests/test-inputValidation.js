@@ -144,7 +144,7 @@ test('brand.isMyIssuer bad issuer', async t => {
     message:
       /In "isMyIssuer" method of \(myTokens brand\): arg 0: .*"not an issuer" - Must be a remotable/,
   });
-  const fakeIssuer = /** @type {Issuer} */ (
+  const fakeIssuer = /** @type {Issuer<'nat'>} */ (
     /** @type {unknown} */ (Far('myTokens issuer', {}))
   );
   const result = await brand.isMyIssuer(fakeIssuer);

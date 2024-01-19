@@ -104,6 +104,7 @@ const start = zcf => {
     const invitationIssuer = zcf.getInvitationIssuer();
     const payment = harden({ Option: option });
     const Option = await E(invitationIssuer).getAmountOf(option);
+    /** @type {any} */
     const spreadAmount = harden({
       Option,
     });

@@ -5,7 +5,7 @@ export {};
  * @typedef {object} PriceQuote
  * @property {Amount<'set', PriceDescription>} quoteAmount
  * Amount whose value is a PriceQuoteValue
- * @property {ERef<Payment<'set'>>} quotePayment
+ * @property {ERef<Payment<'set', PriceDescription>>} quotePayment
  * The `quoteAmount` wrapped as a payment
  */
 
@@ -22,9 +22,9 @@ export {};
  * The amount supplied to a trade
  * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
- * @property {import('@endo/patterns').RemotableObject & import('@agoric/time').TimerService} timer
+ * @property {import('@endo/pass-style').RemotableObject & import('@agoric/time').TimerService} timer
  * The service that gave the `timestamp`
- * @property {import('@agoric/time').TimestampRecord} timestamp
+ * @property {import('@agoric/time').Timestamp} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any} [conditions]
  * Additional conditions for the quote

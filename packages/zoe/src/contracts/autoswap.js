@@ -274,8 +274,10 @@ const start = async zcf => {
     });
 
     // TODO (hibbert) should we burn tokens?
-    const userAllocation = removeLiqSeat.getCurrentAllocation();
-    /** @type {Amount<'nat'>} */
+
+    const userAllocation = /** @type {{Liquidity: Amount<'nat'>}} */ (
+      removeLiqSeat.getCurrentAllocation()
+    );
     const liquidityIn = userAllocation.Liquidity;
     assert(!AmountMath.isEmpty(liquidityIn), 'Pool is empty');
     const liquidityValueIn = liquidityIn.value;

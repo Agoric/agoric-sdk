@@ -3,7 +3,7 @@ import { makeCopyBag } from '@agoric/store';
 import { fc } from '@fast-check/ava';
 
 import { AmountMath as m, AssetKind } from '../../src/index.js';
-import { mockBrand } from './mathHelpers/mockBrand.js';
+import { mockCopyBagBrand as mockBrand } from './mathHelpers/mockBrand.js';
 
 // Perhaps makeCopyBag should coalesce duplicate labels, but for now, it does
 // not.

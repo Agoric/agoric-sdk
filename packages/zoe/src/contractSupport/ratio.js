@@ -70,7 +70,6 @@ export const makeRatio = (
   denominator > 0n ||
     Fail`No infinite ratios! Denominator was 0 ${q(denominatorBrand)}`;
 
-  // @ts-expect-error cast to return type because make() ensures
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),
     denominator: AmountMath.make(denominatorBrand, denominator),
@@ -98,6 +97,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
+ * @returns {Amount<'nat'>}
  */
 const multiplyHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
@@ -107,12 +107,14 @@ const multiplyHelper = (amount, ratio, divideOp) => {
       ratio.denominator.brand,
     )}`;
 
-  return AmountMath.make(
-    ratio.numerator.brand,
-    divideOp(
-      multiply(amount.value, ratio.numerator.value),
-      ratio.denominator.value,
-    ),
+  return /** @type {Amount<'nat'>} */ (
+    AmountMath.make(
+      ratio.numerator.brand,
+      divideOp(
+        multiply(amount.value, ratio.numerator.value),
+        ratio.denominator.value,
+      ),
+    )
   );
 };
 
@@ -135,6 +137,7 @@ export const multiplyBy = (amount, ratio) => {
  * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
+ * @returns {Amount<'nat'>}
  */
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
@@ -144,12 +147,14 @@ const divideHelper = (amount, ratio, divideOp) => {
       ratio.numerator.brand,
     )}`;
 
-  return AmountMath.make(
-    ratio.denominator.brand,
-    divideOp(
-      multiply(amount.value, ratio.denominator.value),
-      ratio.numerator.value,
-    ),
+  return /** @type {Amount<'nat'>} */ (
+    AmountMath.make(
+      ratio.denominator.brand,
+      divideOp(
+        multiply(amount.value, ratio.denominator.value),
+        ratio.numerator.value,
+      ),
+    )
   );
 };
 

@@ -5,23 +5,45 @@ export {};
 
 /// <reference types="ses"/>
 /**
+ * @import {Passable, RemotableObject} from '@endo/pass-style')
  * @import {CopyBag, CopySet, Key} from '@endo/patterns')
  * @import {LatestTopic, NotifierRecord} from '@agoric/notifier');
  */
 
+/** @typedef {{ brand: Brand<'nat'>; value: bigint }} NatAmount */
+/**
+ * @template {Key} K
+ * @typedef {{ brand: Brand<'set'>; value: K[] }} SetAmount
+ */
+/**
+ * @template {Key} K
+ * @typedef {{ brand: Brand<'copySet'>; value: CopySet<K> }} CopySetAmount
+ */
+/**
+ * @template {Key} K
+ * @typedef {{ brand: Brand<'copyBag'>; value: CopyBag<K> }} CopyBagAmount
+ */
+/** @typedef {{ brand: Brand<any>; value: any }} AnyAmount */
+
 /**
  * @template {AssetKind} [K=AssetKind]
- * @template {Key} [M=Key] member kind, for Amounts that have member values
- * @typedef {object} Amount Amounts are descriptions of digital assets,
- *   answering the questions "how much" and "of what kind". Amounts are values
- *   labeled with a brand. AmountMath executes the logic of how amounts are
- *   changed when digital assets are merged, separated, or otherwise
- *   manipulated. For example, a deposit of 2 bucks into a purse that already
- *   has 3 bucks gives a new purse balance of 5 bucks. An empty purse has 0
- *   bucks. AmountMath relies heavily on polymorphic MathHelpers, which
- *   manipulate the unbranded portion.
- * @property {Brand<K>} brand
- * @property {AssetValueForKind<K, M>} value
+ * @template {Key} [M=Key]
+ * @typedef {K extends 'nat'
+ *   ? NatAmount
+ *   : K extends 'set'
+ *     ? SetAmount<M>
+ *     : K extends 'copySet'
+ *       ? CopySetAmount<M>
+ *       : K extends 'copyBag'
+ *         ? CopyBagAmount<M>
+ *         : AnyAmount} Amount
+ *   Amounts are descriptions of digital assets, answering the questions "how
+ *   much" and "of what kind". Amounts are values labeled with a brand.
+ *   AmountMath executes the logic of how amounts are changed when digital
+ *   assets are merged, separated, or otherwise manipulated. For example, a
+ *   deposit of 2 bucks into a purse that already has 3 bucks gives a new purse
+ *   balance of 5 bucks. An empty purse has 0 bucks. AmountMath relies heavily
+ *   on polymorphic MathHelpers, which manipulate the unbranded portion.
  */
 
 /**
@@ -95,23 +117,29 @@ export {};
  *   or AssetKind.SET or AssetKind.COPY_SET (non-fungible)
  */
 
+// XXX hack around JSDoc union handling
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {import('@endo/marshal').RemotableObject} Brand The brand identifies
- *   the kind of issuer, and has a function to get the alleged name for the kind
- *   of asset described. The alleged name (such as 'BTC' or 'moola') is provided
- *   by the maker of the issuer and should not be trusted as accurate.
- *
- *   Every amount created by a particular AmountMath will share the same brand,
- *   but recipients cannot rely on the brand to verify that a purported amount
- *   represents the issuer they intended, since the same brand can be reused by
- *   a misbehaving issuer.
+ * @typedef {object} BrandMethods
  * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
  *   Should be used with `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  * @property {() => DisplayInfo<K>} getDisplayInfo Give information to UI on how
  *   to display the amount.
  * @property {() => Pattern} getAmountShape
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {RemotableObject & BrandMethods<K>} Brand The brand identifies the
+ *   kind of issuer, and has a function to get the alleged name for the kind of
+ *   asset described. The alleged name (such as 'BTC' or 'moola') is provided by
+ *   the maker of the issuer and should not be trusted as accurate.
+ *
+ *   Every amount created by a particular AmountMath will share the same brand,
+ *   but recipients cannot rely on the brand to verify that a purported amount
+ *   represents the issuer they intended, since the same brand can be reused by
+ *   a misbehaving issuer.
  */
 
 // /////////////////////////// Issuer //////////////////////////////////////////
@@ -125,13 +153,14 @@ export {};
  */
 /**
  * @template {AssetKind} K
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @callback IssuerGetAmountOf Get the amount of digital assets in the payment.
  *   Because the payment is not trusted, we cannot call a method on it directly,
  *   and must use the issuer instead.
  *
  *   If the payment is a promise, the operation will proceed upon fulfillment.
- * @param {ERef<Payment>} payment
- * @returns {Promise<Amount<K>>}
+ * @param {ERef<Payment<K, M>>} payment
+ * @returns {Promise<Amount<K, M>>}
  */
 
 /**
@@ -155,6 +184,7 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {object} Issuer The issuer cannot mint a new amount, but it can
  *   create empty purses and payments. The issuer can also transform payments
  *   (splitting payments, combining payments, burning payments, and claiming
@@ -174,7 +204,7 @@ export {};
  *   to display amounts for this issuer.
  * @property {() => Purse<K>} makeEmptyPurse Make an empty purse of this brand.
  * @property {IssuerIsLive} isLive
- * @property {IssuerGetAmountOf<K>} getAmountOf
+ * @property {IssuerGetAmountOf<K, M>} getAmountOf
  * @property {IssuerBurn} burn
  */
 
@@ -191,12 +221,13 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {object} IssuerKit
- * @property {Mint<K>} mint
- * @property {Purse<K>} mintRecoveryPurse Externally useful only if this issuer
- *   uses recovery sets. Can be used to get the recovery set associated with
- *   minted payments that are still live.
- * @property {Issuer<K>} issuer
+ * @property {Mint<K, M>} mint
+ * @property {Purse<K, M>} mintRecoveryPurse Externally useful only if this
+ *   issuer uses recovery sets. Can be used to get the recovery set associated
+ *   with minted payments that are still live.
+ * @property {Issuer<K, M>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
  */
@@ -217,10 +248,11 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {object} Mint Holding a Mint carries the right to issue new digital
  *   assets. These assets all have the same kind, which is called a Brand.
- * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
- * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment Creates a new
+ * @property {() => Issuer<K, M>} getIssuer Gets the Issuer for this mint.
+ * @property {(newAmount: Amount<K>) => Payment<K, M>} mintPayment Creates a new
  *   Payment containing newly minted amount.
  */
 
@@ -271,21 +303,27 @@ export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {object} Purse Purses hold amount of digital assets of the same
- *   brand, but unlike Payments, they are not meant to be sent to others. To
- *   transfer digital assets, a Payment should be withdrawn from a Purse. The
- *   amount of digital assets in a purse can change through the action of
- *   deposit() and withdraw().
- *
- *   The primary use for Purses and Payments is for currency-like and goods-like
- *   digital assets, but they can also be used to represent other kinds of
- *   rights, such as the right to participate in a particular contract.
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
+ * @typedef {RemotableObject & PurseMethods} Purse Purses hold amount of digital
+ *   assets of the same brand, but unlike Payments, they are not meant to be
+ *   sent to others. To transfer digital assets, a Payment should be withdrawn
+ *   from a Purse. The amount of digital assets in a purse can change through
+ *   the action of deposit() and withdraw().
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
+ * @typedef {object} PurseMethods The primary use for Purses and Payments is for
+ *   currency-like and goods-like digital assets, but they can also be used to
+ *   represent other kinds of rights, such as the right to participate in a
+ *   particular contract.
  * @property {() => Brand<K>} getAllegedBrand Get the alleged Brand for this
  *   Purse
- * @property {() => Amount<K>} getCurrentAmount Get the amount contained in this
- *   purse.
- * @property {() => LatestTopic<Amount<K>>} getCurrentAmountNotifier Get a lossy
- *   notifier for changes to this purse's balance.
+ * @property {() => Amount<K, M>} getCurrentAmount Get the amount contained in
+ *   this purse.
+ * @property {() => LatestTopic<Amount<K, M>>} getCurrentAmountNotifier Get a
+ *   lossy notifier for changes to this purse's balance.
  * @property {PurseDeposit<K>} deposit Deposit all the contents of payment into
  *   this purse, returning the amount. If the optional argument `optAmount` does
  *   not equal the amount of digital assets in the payment, throw an error.
@@ -293,9 +331,9 @@ export {};
  *   If payment is a promise, throw an error.
  * @property {() => DepositFacet} getDepositFacet Return an object whose
  *   `receive` method deposits to the current Purse.
- * @property {(amount: Amount<K>) => Payment<K>} withdraw Withdraw amount from
- *   this purse into a new Payment.
- * @property {() => CopySet<Payment<K>>} getRecoverySet The set of payments
+ * @property {(amount: Amount<K, M>) => Payment<K, M>} withdraw Withdraw amount
+ *   from this purse into a new Payment.
+ * @property {() => CopySet<Payment<K, M>>} getRecoverySet The set of payments
  *   withdrawn from this purse that are still live. These are the payments that
  *   can still be recovered in emergencies by, for example, depositing into this
  *   purse. Such a deposit action is like canceling an outstanding check because
@@ -305,22 +343,23 @@ export {};
  *   fails.
  *
  *   Returns an empty set if this issuer does not support recovery sets.
- * @property {() => Amount<K>} recoverAll For use in emergencies, such as coming
- *   back from a traumatic crash and upgrade. This deposits all the payments in
- *   this purse's recovery set into the purse itself, returning the total amount
- *   of assets recovered.
+ * @property {() => Amount<K, M>} recoverAll For use in emergencies, such as
+ *   coming back from a traumatic crash and upgrade. This deposits all the
+ *   payments in this purse's recovery set into the purse itself, returning the
+ *   total amount of assets recovered.
  *
  *   Returns an empty amount if this issuer does not support recovery sets.
  */
 
 /**
  * @template {AssetKind} [K=AssetKind]
- * @typedef {import('@endo/marshal').RemotableObject} Payment Payments hold
- *   amount of digital assets of the same brand in transit. Payments can be
- *   deposited in purses, split into multiple payments, combined, and claimed
- *   (getting an exclusive payment). Payments are linear, meaning that either a
- *   payment has the same amount of digital assets it started with, or it is
- *   used up entirely. It is impossible to partially use a payment.
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
+ * @typedef {RemotableObject & PaymentMethods<K>} Payment Payments hold amount
+ *   of digital assets of the same brand in transit. Payments can be deposited
+ *   in purses, split into multiple payments, combined, and claimed (getting an
+ *   exclusive payment). Payments are linear, meaning that either a payment has
+ *   the same amount of digital assets it started with, or it is used up
+ *   entirely. It is impossible to partially use a payment.
  *
  *   Payments are often received from other actors and therefore should not be
  *   trusted themselves. To get the amount of digital assets in a payment, use
@@ -329,6 +368,11 @@ export {};
  *   Payments can be converted to Purses by getting a trusted issuer and calling
  *   `issuer.makeEmptyPurse()` to create a purse, then
  *   `purse.deposit(payment)`.
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @typedef {object} PaymentMethods
  * @property {() => Brand<K>} getAllegedBrand Get the allegedBrand, indicating
  *   the type of digital asset this payment purports to be, and which issuer to
  *   use. Because payments are not trusted, any method calls on payments should
