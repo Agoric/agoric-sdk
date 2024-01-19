@@ -9,7 +9,7 @@ import { prepareWatch } from './watch.js';
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
  * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
-export const wrappedPrepareWhenableModule = (zone, powers) => {
+export const prepareWhenableModule = (zone, powers) => {
   const { rejectionMeansRetry = _reason => false, watchPromise } = powers || {};
   const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
   const when = prepareWhen(zone, makeWhenablePromiseKit, rejectionMeansRetry);
@@ -21,4 +21,4 @@ export const wrappedPrepareWhenableModule = (zone, powers) => {
   );
   return harden({ watch, when, makeWhenableKit, makeWhenablePromiseKit });
 };
-harden(wrappedPrepareWhenableModule);
+harden(prepareWhenableModule);
