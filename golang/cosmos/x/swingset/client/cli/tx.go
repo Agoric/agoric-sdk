@@ -47,12 +47,14 @@ func GetTxCmd(storeKey string) *cobra.Command {
 // containing mailbox messages.
 func GetCmdDeliver() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deliver {<messages JSON> | @- | @<file path>}",
+		Use:   "deliver {<messages JSON> | @- | @<file>}",
 		Short: "send mailbox messages",
 		Long: `send mailbox messages.
+The argument indicates how to read input JSON ("@-" for standard input,
+"@..." for a file path, and otherwise directly as in "deliver '[...]'").
 Input must represent an array in which the first element is an array of
-[messageNum: integer, messageBody: string] pairs and the second element is
-an "Ack" integer.`,
+[messageNum: integer, messageBody: string] pairs and the second element
+is an "Ack" integer.`,
 		Args: cobra.ExactArgs(1),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -96,9 +98,12 @@ an "Ack" integer.`,
 // InstallBundle message in a transaction.
 func GetCmdInstallBundle() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "install-bundle {<bundle JSON> | @- | @<file path>}",
+		Use:   "install-bundle {<bundle JSON> | @- | @<file>}",
 		Short: "install a bundle",
 		Long: `install a bundle.
+The argument indicates how to read input JSON ("@-" for standard input,
+"@..." for a file path, and otherwise directly as in
+"install-bundle '{...}'").
 Input should be endoZipBase64 JSON, but this is not verified.
 https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 		Args: cobra.ExactArgs(1),
