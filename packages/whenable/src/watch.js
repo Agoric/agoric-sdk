@@ -27,9 +27,10 @@ export const PromiseWatcherI = M.interface('PromiseWatcher', {
  */
 const callMeMaybe = (that, prop, postArgs) => {
   const fn = that[prop];
-  if (typeof fn !== 'function') {
+  if (!fn) {
     return undefined;
   }
+  assert.typeof(fn, 'function');
   /**
    * @param {unknown} arg value or reason
    */
@@ -44,12 +45,13 @@ const callMeMaybe = (that, prop, postArgs) => {
 /**
  * Shim the promise watcher behaviour when VatData.watchPromise is not available.
  *
- * @param {PromiseLike<any>} p
+ * @param {Promise<any>} p
  * @param {PromiseWatcher} watcher
  * @param {...unknown[]} watcherArgs
  * @returns {void}
  */
 const watchPromiseShim = (p, watcher, ...watcherArgs) => {
+  Promise.resolve(p) === p || Fail`watchPromise only watches promises`;
   const onFulfilled = callMeMaybe(watcher, 'onFulfilled', watcherArgs);
   const onRejected = callMeMaybe(watcher, 'onRejected', watcherArgs);
   onFulfilled ||
