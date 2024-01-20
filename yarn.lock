@@ -1565,7 +1565,7 @@
   dependencies:
     "@endo/env-options" "^1.1.1"
 
-"@endo/exo@^1.2.1":
+"@endo/exo@^1.1.0", "@endo/exo@^1.2.1":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@endo/exo/-/exo-1.2.1.tgz#e5364dee02c1d137fa746f4640d2237f658c9b4a"
   integrity sha512-I7kYoUM23NUA6EIpqYZk/5MeW/X4p5TdkFWzCh5iGAhPLiNMiltZfoV2ZOLGXmXS9MLydlH+nHmwq/wWXXn/4A==
