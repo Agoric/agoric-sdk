@@ -70,19 +70,7 @@ test('plural invitation details', async t => {
 
   const bothPayment = await E(invitePurse).withdraw(bothAmount);
 
-  const bothDetails = await E(zoe).getInvitationDetails(bothPayment);
-
-  // This demonstrates the bug that
-  // https://github.com/Agoric/agoric-sdk/pull/8780 fixes.
-  // `bothPayment` is a valid payment that carries the rights to two
-  // invitations. However, this violates the singleton assumption of
-  // `getInvitationDetails`, which just returns one of them,
-  // silently dropping the other.
-  t.deepEqual(bothDetails, {
-    ...i1Detail,
-    description: 'invite2',
-    customDetails: {
-      i: 2,
-    },
+  await t.throwsAsync(() => E(zoe).getInvitationDetails(bothPayment), {
+    message: 'Expected exactly one invitation, not 2',
   });
 });
