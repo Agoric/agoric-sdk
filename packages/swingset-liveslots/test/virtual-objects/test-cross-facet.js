@@ -33,10 +33,12 @@ test('forbid cross-facet prototype attack', t => {
   thing2.mutable.set(2);
 
   t.throws(() => attack1(thing1.mutable, thing2.immutable), {
-    message: /^illegal cross-facet access/,
+    message:
+      '"In \\"set\\" method of (thing mutable)" may only be applied to a valid instance: "[Alleged: thing immutable]"',
   });
   t.throws(() => attack2(thing1.mutable, thing2.immutable), {
-    message: /^illegal cross-facet access/,
+    message:
+      '"In \\"set\\" method of (thing mutable)" may only be applied to a valid instance: "[Alleged: thing immutable]"',
   });
   t.is(thing1.immutable.get(), 1);
   t.is(thing2.immutable.get(), 2);
