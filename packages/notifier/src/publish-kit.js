@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- XXX */
 /// <reference types="ses"/>
 
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
@@ -419,12 +420,15 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
       // accepts new values.
       publisher: {
         publish(value) {
+          // @ts-ignore XXX type resolution losing ThisType from prepareExoClassKit
           advanceDurablePublishKit(this, value);
         },
         finish(finalValue) {
+          // @ts-ignore XXX type resolution losing ThisType from prepareExoClassKit
           advanceDurablePublishKit(this, finalValue, 'finished');
         },
         fail(reason) {
+          // @ts-ignore XXX type resolution losing ThisType from prepareExoClassKit
           advanceDurablePublishKit(this, reason, 'failed');
         },
       },
