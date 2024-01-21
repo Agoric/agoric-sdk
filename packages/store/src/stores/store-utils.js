@@ -1,3 +1,4 @@
+import { throwRedacted as Fail, quote as q } from '@endo/errors';
 import { Far } from '@endo/marshal';
 
 /** @typedef {import('@endo/marshal').RankCompare} RankCompare */

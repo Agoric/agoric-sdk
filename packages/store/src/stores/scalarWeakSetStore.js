@@ -1,6 +1,10 @@
 import { Far, passStyleOf } from '@endo/pass-style';
-import { getCopySetKeys, mustMatch, assertPattern } from '@endo/patterns';
-import { isCopySet } from './store-utils.js';
+import {
+  getCopySetKeys,
+  mustMatch,
+  assertPattern,
+  isCopySet,
+} from '@endo/patterns';
 
 const { quote: q, Fail } = assert;
 
