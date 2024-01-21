@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
-import { objectMap } from '@agoric/internal';
+import { objectMap } from '@endo/common/object-map.js';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';

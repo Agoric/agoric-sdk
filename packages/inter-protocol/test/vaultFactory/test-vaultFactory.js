@@ -1,12 +1,16 @@
 import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/eventual-send';
+import { objectMap } from '@endo/common/object-map.js';
+import { M, matches } from '@endo/patterns';
+import { deeplyFulfilled } from '@endo/marshal';
+
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { M, matches } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
@@ -20,8 +24,6 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
-import { deeplyFulfilled } from '@endo/marshal';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';

@@ -1,14 +1,15 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+
 import {
   canBeDurable,
   makeScalarBigSetStore,
   provideDurableWeakMapStore,
   prepareKindMulti,
   prepareExoClassKit,
-  M,
   provide,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,

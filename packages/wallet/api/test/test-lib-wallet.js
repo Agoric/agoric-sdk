@@ -3,13 +3,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+
 import { makeCache } from '@agoric/cache';
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
-import { M } from '@agoric/store';
-
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';

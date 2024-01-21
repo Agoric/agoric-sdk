@@ -3,8 +3,9 @@
 /* eslint-disable no-lonely-if */
 
 import { assert } from '@agoric/assert';
-import { initEmpty, M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**

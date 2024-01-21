@@ -1,4 +1,5 @@
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';

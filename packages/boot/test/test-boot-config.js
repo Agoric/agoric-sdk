@@ -7,8 +7,9 @@ import { promises as fsPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import path from 'path';
 
+import { mustMatch } from '@endo/patterns';
+
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 

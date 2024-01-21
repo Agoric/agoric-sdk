@@ -1,4 +1,12 @@
 /* eslint-disable consistent-return */
+
+import {
+  redacted as X,
+  throwRedacted as Fail,
+  quote as q,
+  makeError,
+} from '@endo/errors';
+
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
  *
@@ -64,8 +72,6 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
-
-const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -410,12 +416,12 @@ export const prepareVaultManagerKit = (
                 ),
             fail: reason => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${reason}`),
+                makeError(X`Unable to continue without a timer: ${reason}`),
               );
             },
             finish: done => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${done}`),
+                makeError(X`Unable to continue without a timer: ${done}`),
               );
             },
           });

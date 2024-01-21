@@ -13,8 +13,9 @@
  */
 
 import { assert, q, Fail } from '@agoric/assert';
+import { objectMap } from '@endo/common/object-map.js';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
-import { objectMap, WalletName } from '@agoric/internal';
+import { WalletName } from '@agoric/internal';
 import { slotStringUnserialize } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeLegacyMap,
@@ -1683,7 +1684,7 @@ export function makeWalletRoot({
       (kind, lookup) =>
       (...path) => {
         path.length === 1 ||
-          Fail`${assert.quote(
+          Fail`${q(
             kind,
           )} lookup must be called with a single offer ID, not ${path}`;
         return lookup(path[0]);

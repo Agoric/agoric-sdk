@@ -1,8 +1,9 @@
 // book of offers to buy liquidating vaults with prices in terms of
 // discount/markup from the current oracle price.
 
+import { M, mustMatch } from '@endo/patterns';
+
 import { AmountMath } from '@agoric/ertp';
-import { M, mustMatch } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 
 import {

@@ -1,5 +1,5 @@
 // @jessie-check
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 
 export const ManagerType = M.or(
   'xsnap',

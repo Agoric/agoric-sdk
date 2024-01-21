@@ -32,9 +32,11 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
+    "@endo/common": "^1.0.2",
     "@endo/eventual-send": "^1.1.0",
     "@endo/marshal": "^1.1.0",
     "@endo/nat": "^5.0.2",
+    "@endo/patterns": "^1.1.0",
     "@endo/promise-kit": "^1.0.2",
     "import-meta-resolve": "^2.2.1"
   },

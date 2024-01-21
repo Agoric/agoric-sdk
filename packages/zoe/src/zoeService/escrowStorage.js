@@ -1,7 +1,8 @@
-import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
 import { q, Fail } from '@agoric/assert';
-import { objectMap } from '@agoric/internal';
+import { E } from '@endo/eventual-send';
+import { objectMap } from '@endo/common/object-map.js';
+
+import { AmountMath } from '@agoric/ertp';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
 /// <reference path="./types.js" />

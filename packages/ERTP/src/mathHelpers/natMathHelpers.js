@@ -1,10 +1,10 @@
 // @jessie-check
 
+import { throwRedacted as Fail } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 import '../types-ambient.js';
 
-const { Fail } = assert;
 const empty = 0n;
 
 /**

@@ -1,7 +1,8 @@
-import { AmountMath } from '@agoric/ertp';
-import { mustMatch } from '@agoric/store';
-import { InvitationHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
+
+import { AmountMath } from '@agoric/ertp';
+import { InvitationHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.

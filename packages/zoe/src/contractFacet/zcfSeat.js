@@ -1,4 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { throwRedacted as Fail, note as errorNote } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
+
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -7,9 +12,7 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { initEmpty, M } from '@agoric/store';
 
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
@@ -22,8 +25,6 @@ import {
 } from '../typeGuards.js';
 import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
-
-const { Fail } = assert;
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -168,7 +169,7 @@ export const createSeatManager = (
         const { self } = this;
         if (typeof reason === 'string') {
           reason = Error(reason);
-          assert.note(
+          errorNote(
             reason,
             'ZCFSeat.fail was called with a string reason, but requires an Error argument.',
           );

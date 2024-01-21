@@ -1,3 +1,6 @@
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
+
 import {
   AssetKind,
   IssuerShape,
@@ -5,7 +8,6 @@ import {
   prepareIssuerKit,
   hasIssuer,
 } from '@agoric/ertp';
-import { initEmpty, M } from '@agoric/store';
 import {
   provideDurableMapStore,
   provide,

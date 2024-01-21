@@ -1,10 +1,14 @@
+import {
+  redacted as X,
+  throwRedacted as Fail,
+  note as errorNote,
+} from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { isObject } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
 
-const { details: X, Fail } = assert;
 const sink = () => {};
 
 /**
@@ -45,7 +49,7 @@ const reconnectAsNeeded = async (getter, seed = []) => {
       // for which it is a result.
       if (isObject(err) && disconnection && disconnection !== err) {
         try {
-          assert.note(
+          errorNote(
             err,
             X`Attempting to recover from disconnection: ${disconnection}`,
           );

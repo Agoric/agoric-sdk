@@ -8,7 +8,7 @@ import {
   elementsDisjointSubtract,
   coerceToElements,
   elementsCompare,
-} from '@agoric/store';
+} from '@endo/patterns';
 import '../types-ambient.js';
 
 // Operations for arrays with unique objects identifying and providing

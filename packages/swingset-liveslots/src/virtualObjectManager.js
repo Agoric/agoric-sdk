@@ -1,11 +1,17 @@
 /* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
-import { assertPattern, mustMatch } from '@agoric/store';
+import {
+  assert,
+  throwRedacted as Fail,
+  quote as q,
+  bare as b,
+} from '@endo/errors';
+import { assertPattern, mustMatch } from '@endo/patterns';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
+
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
@@ -43,16 +49,6 @@ import {
 const { hasOwn, defineProperty, getOwnPropertyNames, entries, fromEntries } =
   Object;
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
-
-// See https://github.com/Agoric/agoric-sdk/issues/8005
-// Once agoric-sdk is upgraded to depend on endo post
-// https://github.com/endojs/endo/pull/1606 then remove this
-// definition of `b` and say instead
-// ```js
-//   const { quote: q, base: b } = assert;
-// ```
-const b = index => q(Number(index));
 
 // import { kdebug } from './kdebug.js';
 

@@ -1,5 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { getCopySetKeys, keyEQ, makeCopySet } from '@agoric/store';
+import { getCopySetKeys, keyEQ, makeCopySet } from '@endo/patterns';
 
 import { makeIssuerKit, AmountMath } from '../../src/index.js';
 

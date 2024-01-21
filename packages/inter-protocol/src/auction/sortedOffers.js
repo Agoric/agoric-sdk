@@ -1,10 +1,11 @@
 // @jessie-check
 
+import { M, mustMatch } from '@endo/patterns';
+
 import {
   makeRatio,
   ratioToNumber,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
 
 import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';

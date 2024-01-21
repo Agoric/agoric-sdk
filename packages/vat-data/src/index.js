@@ -1,8 +1,9 @@
 // @jessie-check
 
 /// <reference types="ses"/>
+export { M } from '@endo/patterns';
+
 export {
-  M,
   makeScalarMapStore,
   makeScalarWeakMapStore,
   makeScalarSetStore,

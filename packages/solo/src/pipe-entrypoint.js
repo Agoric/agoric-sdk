@@ -3,6 +3,7 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init/unsafe-fast.js';
 
+import { makeError } from '@endo/errors';
 import { parse, stringify } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -51,7 +52,7 @@ const main = async () => {
       break;
     }
     default: {
-      assert.error(`unknown method ${method}`);
+      makeError(`unknown method ${method}`);
     }
   }
 

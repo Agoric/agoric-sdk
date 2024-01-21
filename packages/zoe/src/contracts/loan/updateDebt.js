@@ -1,6 +1,7 @@
+import { redacted as X, note as errorNote } from '@endo/errors';
 import { Far } from '@endo/marshal';
+
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
 
@@ -70,7 +71,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
       }
     },
     fail: reason => {
-      assert.note(
+      errorNote(
         reason,
         X`Period problem: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
       );
@@ -79,7 +80,7 @@ export const makeDebtCalculator = debtCalculatorConfig => {
   });
 
   observeNotifier(periodNotifier, periodObserver).catch(reason => {
-    assert.note(
+    errorNote(
       reason,
       X`Unable to updateDebt originally: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
     );

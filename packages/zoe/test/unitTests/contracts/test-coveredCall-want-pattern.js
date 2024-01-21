@@ -4,7 +4,8 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { M, mustMatch, keyEQ } from '@agoric/store';
+import { M, mustMatch, keyEQ } from '@endo/patterns';
+
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { TimeMath } from '@agoric/time';

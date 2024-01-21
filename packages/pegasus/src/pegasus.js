@@ -1,8 +1,14 @@
 // @ts-check
 
-import { assert, details as X, Fail } from '@agoric/assert';
-import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
+import {
+  assert,
+  redacted as X,
+  throwRedacted as Fail,
+  makeError,
+} from '@endo/errors';
 import { E, Far } from '@endo/far';
+
+import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import {
   assertProposalShape,
   atomicTransfer,
@@ -144,7 +150,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         // handled it correctly and that flow doesn't need to trigger an
         // additional UnhandledRejectionWarning in our vat.
         promise.catch(() => {});
-        reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
+        reject(makeError(X`${receiveDenom} is temporarily unavailable`));
 
         // Allow new transfers to be initiated after this rejection.
         receiveDenomToCourierPK.delete(receiveDenom);
@@ -422,7 +428,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
             abort,
           } = connectionToLocalDenomState.get(c);
           connectionToLocalDenomState.delete(c);
-          const err = assert.error(X`pegasusConnectionHandler closed`);
+          const err = makeError(X`pegasusConnectionHandler closed`);
           receiveDenomPublication.fail(err);
           /** @type {PegasusConnection} */
           const state = harden({

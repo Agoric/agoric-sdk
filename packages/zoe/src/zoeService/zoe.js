@@ -17,8 +17,9 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { M } from '@endo/patterns';
+
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';

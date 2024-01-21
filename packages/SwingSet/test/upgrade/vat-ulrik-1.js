@@ -1,6 +1,6 @@
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { initEmpty } from '@agoric/store';
+import { initEmpty } from '@endo/exo';
 import {
   makeKindHandle,
   defineDurableKind,

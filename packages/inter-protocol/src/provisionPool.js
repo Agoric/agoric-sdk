@@ -1,13 +1,14 @@
 // @jessie-check
 // @ts-check
 
+import { M } from '@endo/patterns';
+
 import {
   handleParamGovernance,
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
 import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
-import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';

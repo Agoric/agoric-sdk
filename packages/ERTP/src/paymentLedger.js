@@ -1,8 +1,15 @@
 // @jessie-check
 
 /* eslint-disable no-use-before-define */
+import {
+  redacted as X,
+  quote as q,
+  throwRedacted as Fail,
+  note as errorNote,
+} from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
+import { mustMatch, M, keyEQ } from '@endo/patterns';
+
 import {
   provideDurableWeakMapStore,
   prepareExo,
@@ -16,8 +23,6 @@ import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-const { details: X, quote: q, Fail } = assert;
 
 /**
  * @param {Brand} brand
@@ -131,7 +136,7 @@ export const preparePaymentLedger = (
       try {
         optShutdownWithFailure(reason);
       } catch (errInShutdown) {
-        assert.note(errInShutdown, X`Caused by: ${reason}`);
+        errorNote(errInShutdown, X`Caused by: ${reason}`);
         throw errInShutdown;
       }
     }

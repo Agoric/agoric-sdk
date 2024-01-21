@@ -1,6 +1,7 @@
+import { objectMap } from '@endo/common/object-map.js';
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { getMethodNames, objectMap } from '@agoric/internal';
+import { getMethodNames } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';

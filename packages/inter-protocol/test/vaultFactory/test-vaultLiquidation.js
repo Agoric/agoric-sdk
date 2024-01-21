@@ -1,8 +1,9 @@
 import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { objectMap } from '@endo/common/object-map.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,

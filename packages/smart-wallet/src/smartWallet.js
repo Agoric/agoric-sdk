@@ -1,3 +1,4 @@
+import { objectMap } from '@endo/common/object-map.js';
 import { E } from '@endo/far';
 import {
   AmountShape,
@@ -10,7 +11,6 @@ import {
 import {
   deeplyFulfilledObject,
   makeTracer,
-  objectMap,
   StorageNodeShape,
 } from '@agoric/internal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';

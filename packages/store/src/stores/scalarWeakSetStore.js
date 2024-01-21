@@ -1,8 +1,11 @@
+import { quote as q, throwRedacted as Fail } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/pass-style';
-import { getCopySetKeys, mustMatch, assertPattern } from '@endo/patterns';
-import { isCopySet } from './store-utils.js';
-
-const { quote: q, Fail } = assert;
+import {
+  getCopySetKeys,
+  mustMatch,
+  assertPattern,
+  isCopySet,
+} from '@endo/patterns';
 
 /**
  * @template K

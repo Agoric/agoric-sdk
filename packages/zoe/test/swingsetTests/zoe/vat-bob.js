@@ -1,7 +1,8 @@
+import { assert, redacted as X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
-import { keyEQ } from '@agoric/store';
+import { keyEQ } from '@endo/patterns';
+
 import { AmountMath, isSetValue } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 

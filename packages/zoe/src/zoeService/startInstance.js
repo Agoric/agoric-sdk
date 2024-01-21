@@ -1,15 +1,16 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/pass-style';
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
+
 import {
-  M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
   prepareExoClass,
   prepareExo,
   watchPromise,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import { defineDurableHandle } from '../makeHandle.js';

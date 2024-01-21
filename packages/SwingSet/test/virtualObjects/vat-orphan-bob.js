@@ -1,5 +1,5 @@
 import { Far } from '@endo/far';
-import { initEmpty } from '@agoric/store';
+import { initEmpty } from '@endo/exo';
 import { defineKind, defineKindMulti } from '@agoric/vat-data';
 
 const { getPrototypeOf } = Object;

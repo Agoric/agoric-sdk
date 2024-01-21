@@ -1,7 +1,8 @@
+import { objectMap } from '@endo/common/object-map.js';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeStoredPublisherKit } from '@agoric/notifier';
-import { objectMap, allValues } from '@agoric/internal';
+import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';

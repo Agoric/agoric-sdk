@@ -2,13 +2,16 @@ import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { M, mustMatch } from '@endo/patterns';
+
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { BASIS_POINTS, makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { M, provideDurableMapStore } from '@agoric/vat-data';
+import { provideDurableMapStore } from '@agoric/vat-data';
 import {
   atomicRearrange,
   ceilDivideBy,
@@ -26,8 +29,6 @@ import {
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';

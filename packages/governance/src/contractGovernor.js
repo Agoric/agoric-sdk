@@ -1,13 +1,12 @@
-import { mustMatch } from '@agoric/store';
+import { throwRedacted as Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { mustMatch } from '@endo/patterns';
 
 import { makeTracer } from '@agoric/internal';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
-
-const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);
 

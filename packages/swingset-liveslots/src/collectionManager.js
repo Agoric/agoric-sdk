@@ -17,8 +17,10 @@ import {
   getRankCover,
   getCopyMapEntries,
   getCopySetKeys,
+  isCopyMap,
+  isCopySet,
 } from '@endo/patterns';
-import { isCopyMap, isCopySet } from '@agoric/store';
+
 import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,

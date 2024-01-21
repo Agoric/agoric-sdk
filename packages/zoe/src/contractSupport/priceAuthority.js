@@ -2,11 +2,12 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { M } from '@endo/patterns';
+
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
 import { TimestampShape } from '@agoric/time';
-import { M } from '@agoric/store';
 
 const { quote: q, Fail } = assert;
 

@@ -1,9 +1,10 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { mustMatch, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
+import { mustMatch, keyEQ } from '@endo/patterns';
+
 import { AssetKind } from '@agoric/ertp';
-import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 

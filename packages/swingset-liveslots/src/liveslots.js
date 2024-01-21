@@ -1,13 +1,20 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import {
+  assert,
+  redacted as X,
+  throwRedacted as Fail,
+  makeError,
+  note as errorNote,
+} from '@endo/errors';
+import { isPromise } from '@endo/promise-kit';
+import { E, HandledPromise } from '@endo/eventual-send';
+import {
   Remotable,
   passStyleOf,
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, Fail } from '@agoric/assert';
-import { isPromise } from '@endo/promise-kit';
-import { E, HandledPromise } from '@endo/eventual-send';
+
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
 import { insistCapData } from './capdata.js';
 import { extractMethod, legibilizeMethod } from './kdebug.js';
@@ -19,8 +26,6 @@ import { makeWatchedPromiseManager } from './watchedPromises.js';
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
-
-const { details: X } = assert;
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -749,8 +754,8 @@ function build(
       try {
         val = vrm.reanimate(baseRef);
       } catch (err) {
-        const wrappedError = assert.error(X`failed to reanimate ${iface}`);
-        assert.note(wrappedError, X`Original error: ${err}`);
+        const wrappedError = makeError(X`failed to reanimate ${iface}`);
+        errorNote(wrappedError, X`Original error: ${err}`);
         throw wrappedError;
       }
       if (facet !== undefined) {
