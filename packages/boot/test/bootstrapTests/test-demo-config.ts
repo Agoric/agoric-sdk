@@ -3,6 +3,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 
 import type { TestFn } from 'ava';
+import type { NameAdmin, NameHub } from '@agoric/vats';
+
 import { makeSwingsetTestKit, keyArrayEqual } from '../../tools/supports.ts';
 
 const { keys } = Object;
@@ -67,9 +69,14 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
   t.is(actual, addr, 'my address');
   keyArrayEqual(t, keys(home).sort(), homeKeys);
-  const namesByAddress = await EV.vat('bootstrap').consumeItem(
-    'namesByAddress',
-  );
+});
+
+test('namesByAddress contains provisioned account', async t => {
+  const { EV } = t.context.runUtils;
+  const addr = 'agoric1234new';
+  const home = await makeHomeFor(addr, EV);
+  const namesByAddress =
+    await EV.vat('bootstrap').consumeItem('namesByAddress');
   await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
 });
 
