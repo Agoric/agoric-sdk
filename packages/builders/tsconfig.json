@@ -1,7 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "checkJs": false,
+    "allowSyntheticDefaultImports": true,
+    "checkJs": true,
+    "maxNodeModuleJsDepth": 2,
   },
   "include": [
     "*.js",

@@ -49,7 +49,7 @@ publish() {
   git config --global user.name "Agoric CI"
   git config --global user.email "noreply@agoric.com"
 
-  versions='{}'
+  VERSIONSHASH=$(echo '{}' | git hash-object -w --stdin)
   for d in ${REGISTRY_PUBLISH_WORKSPACES-} "$thisdir/.."; do
     test -d "$d" || continue
 
@@ -58,7 +58,7 @@ publish() {
     test -n "$prior" || prior=$(git rev-parse HEAD)
     git checkout -B lerna-publish
 
-    echo "$versions" | "$thisdir/set-versions.sh" "$d"
+    (popd >/dev/null && git cat-file blob "$VERSIONSHASH") | "$thisdir/set-versions.sh" .
 
     yarn install
     yarn build
@@ -67,10 +67,16 @@ publish() {
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
     yarn lerna publish --concurrency 1 prerelease --exact \
-      --dist-tag="$DISTTAG" --preid=dev"-$(git rev-parse --short=7 HEAD)" \
+      --dist-tag="$DISTTAG" --preid=dev \
       --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
 
-    versions=$("$thisdir/get-versions.sh" . | jq "$versions + .")
+    # Change any version prefices to an exact match, and merge our versions.
+    VERSIONSHASH=$(jq --argfile versions <(popd >/dev/null && git cat-file blob "$VERSIONSHASH") \
+      '[to_entries[] | { key: .key, value: (.value | sub("^[~^]"; "")) }]
+       | from_entries
+       | . + $versions' \
+       <("$thisdir/get-versions.sh" .) \
+       | (popd >/dev/null && git hash-object -w --stdin))
 
     git commit -am "chore: update versions"
     git checkout "$prior"

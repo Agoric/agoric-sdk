@@ -71,7 +71,7 @@ await E(meter).get(); // -> { remaining: 100_000_999n, threshold: 50n }
 
 ## Notification
 
-The meter's `remaining` value will be deducted over time. When it crosses below `threshold`, the Notifier is updated. This is an instance of `@agoric/notifier`:
+The meter's `remaining` value will be deducted over time. When it crosses below `threshold`, the [@agoric/notifier](../../notifier) Notifier is updated:
 
 ```js
 const notifier = await E(meter).getNotifier();

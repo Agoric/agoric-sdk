@@ -1,5 +1,7 @@
 # Catalog of Zoe Maps/WeakMaps/Stores
 
+Stores are provided by [@agoric/store](../../store) and [@agoric/vat-data](../../vat-data).
+
 ## Zoe Service (one per chain)
 
 ### installations - native WeakSet
