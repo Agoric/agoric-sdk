@@ -69,6 +69,32 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   keyArrayEqual(t, keys(home).sort(), homeKeys);
 });
 
+test('namesByAddress contains provisioned account', async t => {
+  const { EV } = t.context.runUtils;
+  const addr = 'agoric1234new';
+  const home = await makeHomeFor(addr, EV);
+  const namesByAddress =
+    await EV.vat('bootstrap').consumeItem('namesByAddress');
+  await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
+});
+
+test.failing(
+  'namesByAddressAdmin readonly method returns namesByAddress',
+  async t => {
+    const { EV } = t.context.runUtils;
+    const namesByAddressAdmin: NameAdmin = await EV.vat(
+      'bootstrap',
+    ).consumeItem('namesByAddressAdmin');
+    // FAILS: result: promise "[Promise]" - Must be a remotable
+    // interface guard says readonly returns M.remotable()
+    // but readonly method is async
+    const actual = await EV(namesByAddressAdmin).readonly();
+    const namesByAddress: NameHub =
+      await EV.vat('bootstrap').consumeItem('namesByAddress');
+    t.is(actual, namesByAddress);
+  },
+);
+
 test('sim/demo config launches Vaults as expected by loadgen', async t => {
   const { EV } = t.context.runUtils;
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
