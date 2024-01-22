@@ -65,6 +65,12 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
   t.is(actual, addr, 'my address');
   keyArrayEqual(t, keys(home).sort(), homeKeys);
+});
+
+test('namesByAddress contains provisioned account', async t => {
+  const { EV } = t.context.runUtils;
+  const addr = 'agoric1234new';
+  await makeHomeFor(addr, EV);
   const namesByAddress = await EV.vat('bootstrap').consumeItem(
     'namesByAddress',
   );
