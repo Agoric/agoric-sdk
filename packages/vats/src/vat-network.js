@@ -11,5 +11,5 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     powers,
   );
 
-  makeRouterProtocol();
+  return makeRouterProtocol();
 }
