@@ -273,11 +273,12 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   const makeOfferWatcher = prepareOfferWatcher(baggage);
 
-  const NotifierShape = M.remotable();
   const updateShape = {
     value: AmountShape,
     updateCount: M.bigint(),
   };
+
+  const NotifierShape = M.remotable();
   const amountWatcherGuard = M.interface('paymentWatcher', {
     onFulfilled: M.call(updateShape, NotifierShape).returns(),
     onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
@@ -534,16 +535,17 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
-          const purse = await purseRef; // promises don't fit in durable storage
-
           const { helper } = this.facets;
-          // publish purse's balance and changes
+
           // This would seem to fit the observeNotifier() pattern,
           // but purse notifiers are not necessarily durable.
           // If there is an error due to upgrade, retry watchPurse().
-          const notifier = await E(purse).getCurrentAmountNotifier();
 
+          const purse = await purseRef; // promises don't fit in durable storage
           const handler = makeAmountWatcher(purse, helper);
+
+          // publish purse's balance and changes
+          const notifier = await E(purse).getCurrentAmountNotifier();
           const startP = E(notifier).getUpdateSince(undefined);
           // @ts-expect-error import watchPromise's type is unknown
           watchPromise(startP, handler, notifier);
@@ -624,10 +626,10 @@ export const prepareSmartWallet = (baggage, shared) => {
          */
         async repairUnwatchedSeats() {
           const { state, facets } = this;
-          const { address, invitationPurse } = state;
-          const { liveOffers, liveOfferSeats } = state;
-          const { zoe, agoricNames } = shared;
-          const { invitationBrand, invitationIssuer } = shared;
+          const { address, invitationPurse, liveOffers, liveOfferSeats } =
+            state;
+          const { zoe, agoricNames, invitationBrand, invitationIssuer } =
+            shared;
 
           const invitationFromSpec = makeInvitationsHelper(
             zoe,
@@ -674,7 +676,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           trace(`Found ${brandToPurses.values()} purse(s) for ${address}`);
           for (const purses of brandToPurses.values()) {
             for (const record of purses) {
-              helper.watchPurse(record.purse);
+              void helper.watchPurse(record.purse);
               trace(`Repaired purse ${record.petname} of ${address}`);
             }
           }
@@ -968,8 +970,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             await watchOfferOutcomes(watcher, seatRef);
           } catch (err) {
             facets.helper.logWalletError('OFFER ERROR:', err);
-            // Notify the user
 
+            // Notify the user
             if (err.upgradeMessage === 'vat upgraded') {
               // The offer watchers will reconnect. Don't reclaim or exit
               return;
