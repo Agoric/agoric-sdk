@@ -605,7 +605,11 @@ func NewAgoricApp(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
+		// REVIEWER: using innerAk here instead of app.AccountKeeper
+		// since migration method doesn't know how to unwrap the account keeper.
+		// Needs access to some struct fields.
+		// Alternative is to add accessor methods to the AccountKeeper interface.
+		auth.NewAppModule(appCodec, innerAk, nil),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
