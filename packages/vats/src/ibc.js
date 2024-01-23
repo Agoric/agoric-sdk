@@ -72,7 +72,7 @@ const prepareAckWatcher = zone => {
  * @property {Counterparty} counterparty
  * @property {string} version
  *
- * @typedef {import('@agoric/whenable').SerializableWhenableKit<AttemptDescription>} OnConnectP
+ * @typedef {import('@agoric/whenable').WhenableKit<AttemptDescription>} OnConnectP
  *
  * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
  *   localAddr: Endpoint;
@@ -229,10 +229,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
       /**
        * @type {MapStore<
        *   string,
-       *   MapStore<
-       *     number,
-       *     import('@agoric/whenable').SerializableWhenableKit<Bytes>
-       *   >
+       *   MapStore<number, import('@agoric/whenable').WhenableKit<Bytes>>
        * >}
        */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
@@ -322,9 +319,9 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
           const order = match[3] === 'ordered' ? 'ORDERED' : 'UNORDERED';
           const version = match[4];
 
-          const { promise: _, ...serializableKit } = makeWhenableKit();
+          const kit = makeWhenableKit();
 
-          pendingConns.add(serializableKit.settler);
+          pendingConns.add(kit.settler);
           /** @type {Outbound} */
           const ob = {
             portID,
@@ -332,7 +329,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
             connectionHops: hops,
             order,
             version,
-            onConnectP: serializableKit,
+            onConnectP: kit,
             localAddr,
           };
           if (!this.state.srcPortToOutbounds.has(portID)) {
@@ -352,7 +349,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
             version,
           });
 
-          return serializableKit.whenable;
+          return kit.whenable;
         },
         async onListen(_port, localAddr, _listenHandler) {
           console.debug('IBC onListen', localAddr);
@@ -402,9 +399,11 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
               //     e => console.warn('Manual packet', e, 'failed:', e),
               //   );
 
-              const attempt = await this.state.protocolImpl?.inbound(
+              const attempt = await when(
+                /** @type {ProtocolImpl} */(this.state.protocolImpl).inbound(
                 localAddr,
                 remoteAddr,
+              ),
               );
 
               // Tell what version string we negotiated.
@@ -648,7 +647,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
             source_port: portID,
           } = fullPacket;
 
-          /** @type {import('@agoric/whenable').SerializableWhenableKit<Bytes>} */
+          /** @type {import('@agoric/whenable').WhenableKit<Bytes>} */
           const { whenable } = this.facets.util.findAckKit(
             channelID,
             portID,
@@ -673,9 +672,9 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
           if (seqToAck.has(sequence)) {
             return seqToAck.get(sequence);
           }
-          const { promise: _, ...serializableKit } = makeWhenableKit();
-          seqToAck.init(sequence, harden(serializableKit));
-          return serializableKit;
+          const kit = makeWhenableKit();
+          seqToAck.init(sequence, harden(kit));
+          return kit;
         },
       },
     },

@@ -1,5 +1,5 @@
 // @ts-check
-import { E, E as defaultE } from '@endo/far';
+import { E as defaultE } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
@@ -18,6 +18,7 @@ import '@agoric/store/exported.js';
  */
 
 /**
+ * @template T
  * @param {import('@agoric/base-zone').Zone} zone
  */
 export const prepareRouter = zone => {
@@ -85,15 +86,16 @@ export const prepareRouter = zone => {
  *
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {typeof defaultE} [E] Eventual sender
  */
-export const prepareRouterProtocol = (zone, powers) => {
+export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
   const detached = zone.detached();
   const makeRouter = prepareRouter(zone);
 
   const makeRouterProtocol = zone.exoClass(
     'RouterProtocol',
     undefined,
-    (E = defaultE) => {
+    () => {
       const router = makeRouter();
 
       /** @type {MapStore<string, Protocol>} */
