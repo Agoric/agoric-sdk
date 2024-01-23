@@ -115,7 +115,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
     transferProtocol,
     denomTransformer,
   }) => {
-    let checkAbort = () => { };
+    let checkAbort = () => {};
 
     /** @type {Set<Peg>} */
     const pegs = new Set();
@@ -145,7 +145,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
         // If rejected, the rejection is returned to our caller, so we have
         // handled it correctly and that flow doesn't need to trigger an
         // additional UnhandledRejectionWarning in our vat.
-        promise.catch(() => { });
+        promise.catch(() => {});
         reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
 
         // Allow new transfers to be initiated after this rejection.

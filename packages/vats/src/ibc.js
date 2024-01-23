@@ -400,10 +400,10 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
               //   );
 
               const attempt = await when(
-                /** @type {ProtocolImpl} */(this.state.protocolImpl).inbound(
-                localAddr,
-                remoteAddr,
-              ),
+                /** @type {ProtocolImpl} */ (this.state.protocolImpl).inbound(
+                  localAddr,
+                  remoteAddr,
+                ),
               );
 
               // Tell what version string we negotiated.
