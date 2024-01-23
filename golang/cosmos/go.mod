@@ -165,10 +165,6 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-// At least until post-v0.9.0 is released with
-// https://github.com/Zondax/hid/issues/4 resolved.
-replace github.com/zondax/hid => github.com/zondax/hid v0.9.2
-
 replace github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
 replace github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
