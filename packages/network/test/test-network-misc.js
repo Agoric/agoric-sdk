@@ -20,20 +20,17 @@ import {
 import '../src/types.js';
 
 // eslint-disable-next-line no-constant-condition
-const log = false ? console.log : () => {};
+const log = false ? console.log : () => { };
 
-const prepareProtocolHandler = (zone, t) => {
+const prepareProtocolHandler = (zone, t, { when }) => {
   const makeProtocolHandler = zone.exoClass(
     'ProtocolHandler',
     undefined,
     () => {
-      let l;
-      let lp;
-      const nonce = 0;
       return {
-        l,
-        lp,
-        nonce,
+        l: undefined,
+        lp: undefined,
+        nonce: 0,
       };
     },
     {
@@ -107,18 +104,14 @@ test('handled protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
-  const makeProtocolHandler = prepareProtocolHandler(zone, t);
+  const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
   const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
 
   const { whenable, settler } = makeWhenableKit();
 
-  /**
-   * @param {import('@agoric/base-zone').Zone} zone
-   * @param t
-   */
-  const prepareTestProtocolHandler = (zone, t) => {
+  const prepareTestProtocolHandler = () => {
     const makeTestProtocolHandler = zone.exoClass(
       'TestProtocolHandler',
       undefined,
@@ -146,7 +139,7 @@ test('handled protocol', async t => {
     return makeTestProtocolHandler;
   };
 
-  const makeTestProtocolHandler = prepareTestProtocolHandler(zone, t);
+  const makeTestProtocolHandler = prepareTestProtocolHandler();
 
   await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
   await when(whenable);
@@ -157,17 +150,13 @@ test('protocol connection listen', async t => {
   const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
-  const makeProtocolHandler = prepareProtocolHandler(zone, t);
+  const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
   const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
   const { whenable, settler } = makeWhenableKit();
 
-  /**
-   * @param {import('@agoric/base-zone').Zone} zone
-   * @param t
-   */
-  const prepareListenHandler = (zone, t) => {
+  const prepareListenHandler = () => {
     const makeListenHandler = zone.exoClass(
       'ListenHandler',
       undefined,
@@ -188,7 +177,7 @@ test('protocol connection listen', async t => {
           );
           let handler;
 
-          const prepareConnectionHandler = zone => {
+          const prepareConnectionHandler = () => {
             const makeConnectionHandler = zone.exoClass(
               'connectionHandler',
               undefined,
@@ -234,7 +223,7 @@ test('protocol connection listen', async t => {
             );
             return makeConnectionHandler;
           };
-          const makeConnectionHandler = prepareConnectionHandler(zone);
+          const makeConnectionHandler = prepareConnectionHandler();
           return makeConnectionHandler();
         },
         async onError(p, rej, listenHandler) {
@@ -256,7 +245,7 @@ test('protocol connection listen', async t => {
     return makeListenHandler;
   };
 
-  const makeListenHandler = prepareListenHandler(zone, t);
+  const makeListenHandler = prepareListenHandler();
   const listener = makeListenHandler();
 
   await port.addListener(listener);
@@ -265,11 +254,7 @@ test('protocol connection listen', async t => {
   const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
   const connectionHandler = makeEchoConnectionHandler();
 
-  /**
-   * @param {import('@agoric/base-zone').Zone} zone
-   * @param t
-   */
-  const prepareHandlerWithOpen = zone => {
+  const prepareHandlerWithOpen = () => {
     const makeHandlerWithOpen = zone.exoClass(
       'connectionHandlerWithOpen',
       undefined,
@@ -283,9 +268,13 @@ test('protocol connection listen', async t => {
           );
         },
         async onClose(_connection, _reason, _connectionHandler) {
-          connectionHandler.onClose(_connection, _reason, _connectionHandler);
+          return connectionHandler.onClose(
+            _connection,
+            _reason,
+            _connectionHandler,
+          );
         },
-        async onOpen(connection, localAddr, remoteAddr, c) {
+        async onOpen(connection, _localAddr, _remoteAddr, _c) {
           void connection.send('ping');
         },
       },
@@ -294,7 +283,7 @@ test('protocol connection listen', async t => {
     return makeHandlerWithOpen;
   };
 
-  const makeHandlerWithOpen = prepareHandlerWithOpen(zone);
+  const makeHandlerWithOpen = prepareHandlerWithOpen();
 
   await when(
     port2.connect('/net/ordered/ordered/some-portname', makeHandlerWithOpen()),
@@ -341,7 +330,7 @@ test('loopback protocol', async t => {
 
   const makeConnectionHandler = prepareConnectionHandler();
 
-  const prepareListenHandler = zone => {
+  const prepareListenHandler = () => {
     const makeListenHandler = zone.exoClass(
       'listener',
       undefined,
@@ -356,23 +345,23 @@ test('loopback protocol', async t => {
     return makeListenHandler;
   };
 
-  const makeListenHandler = prepareListenHandler(zone);
+  const makeListenHandler = prepareListenHandler();
   const listener = makeListenHandler();
   await when(port.addListener(listener));
 
   const port2 = await when(protocol.bind('/loopback/bar'));
-  const prepareOpener = (zone, t) => {
+  const prepareOpener = () => {
     const openerHandler = zone.exoClass(
       'opener',
       undefined,
-      () => ({ settler }),
+      ({ settler: innerSsettler }) => ({ innerSsettler }),
       {
         async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
           t.is(localAddr, '/loopback/bar/nonce/1');
           t.is(remoteAddr, '/loopback/foo/nonce/2');
           const pingack = await when(c.send('ping'));
           t.is(pingack, 'pingack', 'expected pingack');
-          this.state.settler.resolve(null);
+          this.state.innerSsettler.resolve(null);
         },
       },
     );
@@ -380,7 +369,7 @@ test('loopback protocol', async t => {
     return openerHandler;
   };
 
-  const makeOpenerHandler = prepareOpener(zone, t);
+  const makeOpenerHandler = prepareOpener();
 
   await when(
     port2.connect(port.getLocalAddress(), makeOpenerHandler({ settler })),

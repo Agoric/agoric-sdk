@@ -88,6 +88,7 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
  *   BootstrapSpace & {
  *     vatParameters: BootstrapVatParams;
  *     vats: SwingsetVats & SoloVats;
+ *     zone: import('@agoric/base-zone').Zone;
  *   }} powers
  */
 export const startClient = async ({

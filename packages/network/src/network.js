@@ -387,7 +387,7 @@ const preparePort = zone => {
         const ps = values.map(conn =>
           E(conn)
             .close()
-            .catch(_ => {}),
+            .catch(_ => { }),
         );
         if (this.state.listening.has(this.state.localAddr)) {
           const listener = this.state.listening.get(this.state.localAddr)[1];
@@ -682,8 +682,7 @@ export const prepareNonceMaker = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ProtocolHandler['onInstantiate']} [onInstantiate]
- * @param makeNonceMaker
+ * @param {ReturnType<prepareNonceMaker>} makeNonceMaker
  */
 export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
   const makePortID = makeNonceMaker('port').get();
