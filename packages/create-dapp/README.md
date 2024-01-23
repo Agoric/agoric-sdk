@@ -20,4 +20,4 @@ $ pnpm create @agoric/dapp foo
 
 Each of the above commands are shorthand for installing the `agoric` package, then running `agoric init foo`.
 
-Please see the [Getting Started website](https://agoric.com/documentation/getting-started/) for information.
+Please see the [Getting Started website](https://docs.agoric.com/guides/getting-started/) for information.
