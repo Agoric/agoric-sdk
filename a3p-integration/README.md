@@ -34,3 +34,16 @@ cd agoric-3-proposals
 # build the default entrypoint and tag it so the `append` command finds it
 docker buildx build --tag ghcr.io/agoric/agoric-3-proposals:main .
 ```
+
+## missing "unreleased" image
+
+If you get an error like,
+```
+ERROR: failed to solve: ghcr.io/agoric/agoric-sdk:unreleased: ghcr.io/agoric/agoric-sdk:unreleased: not found
+```
+
+That's probably because you don't have that image built locally. To build it,
+```
+cd packages/deployment
+make docker-build-sdk
+```
