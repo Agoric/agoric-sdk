@@ -235,7 +235,9 @@ jobs:
         run: make docker-build-sdk
         working-directory: packages/deployment
       - name: setup a3p-integration
-        run: yarn install
+        run: |
+          corepack enable
+          yarn install
         working-directory: a3p-integration
       - name: build proposals tests
         run: yarn build
