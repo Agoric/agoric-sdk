@@ -2,7 +2,7 @@
 
 The test runner is `@agoric/synthetic-chain`. This package depends on that so that you can run,
 ```
-yarn synthetic-chain append
+yarn synthetic-chain build
 yarn synthetic-chain test
 yarn synthetic-chain test --debug
 ```
