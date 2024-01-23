@@ -25,7 +25,7 @@
     "dd-trace": "^3.3.0"
   },
   "dependencies": {
-    "agoric": "^0.21.2-u12.0"
+    "agoric": "^0.22.0-u13.0"
   },
   "keywords": [],
   "repository": {
