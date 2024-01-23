@@ -238,10 +238,10 @@ jobs:
         run: yarn install
         working-directory: a3p-integration
       - name: build proposals tests
-        run: yarn synthetic-chain build
+        run: yarn build
         working-directory: a3p-integration
       - name: run proposals tests
-        run: yarn synthetic-chain test
+        run: yarn test
         working-directory: a3p-integration
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
