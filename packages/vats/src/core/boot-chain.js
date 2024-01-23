@@ -29,7 +29,7 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  *   logger: (msg) => void,
  * }} vatPowers
  * @param {{
- *   coreProposalCode?: string,
+ *   coreProposalCodeSteps?: string[];
  * }} vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
