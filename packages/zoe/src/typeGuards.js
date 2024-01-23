@@ -190,7 +190,6 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   getOfferFilter: M.call().returns(M.arrayOf(M.string())),
   getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
   isBlocked: M.call(M.string()).returns(M.boolean()),
-  repairContractCompletionWatcher: M.call().returns(),
 });
 
 export const InstanceStorageManagerIKit = harden({

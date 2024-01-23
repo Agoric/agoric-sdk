@@ -371,7 +371,6 @@ export const makeZCFZygote = async (
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
       zcfBaggage.init('instanceRecHolder', instanceRecHolder);
-      zcfBaggage.init('repairedContractCompletionWatcher', true);
 
       const startFn = start || prepare;
       if (privateArgsShape) {
@@ -424,11 +423,8 @@ export const makeZCFZygote = async (
       instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintKind();
 
-      await null;
-      if (!zcfBaggage.has('repairedContractCompletionWatcher')) {
-        await E(zoeInstanceAdmin).repairContractCompletionWatcher();
-        console.log(`Repaired contract completion watcher`);
-        zcfBaggage.init('repairedContractCompletionWatcher', true);
+      if (privateArgsShape) {
+        mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
 
       // restart an upgradeable contract
