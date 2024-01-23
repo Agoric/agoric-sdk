@@ -4,8 +4,9 @@
         "fromTag": "main"
     },
     "scripts": {
-        "build": "echo Use synthetic-chain to build proposal images",
-        "test": "echo Use synthetic-chain to test proposal images"
+        "build": "./node_modules/.bin/synthetic-chain build",
+        "test": "./node_modules/.bin/synthetic-chain test",
+        "doctor": "./node_modules/.bin/synthetic-chain doctor"
     },
     "dependencies": {
         "@agoric/synthetic-chain": "^0.0.4-3",
