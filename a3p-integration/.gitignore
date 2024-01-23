@@ -1,5 +1,6 @@
 # build in CI
 Dockerfile
+docker-bake.*
 upgrade-test-scripts
 
 # Yarn (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)
