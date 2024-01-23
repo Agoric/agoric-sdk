@@ -1,0 +1,18 @@
+// This file can contain .js-specific Typescript compiler config.
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "checkJs": false, // Disable b/c @endo/init can't pass noImplicitAny
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true,
+    "maxNodeModuleJsDepth": 2,
+  },
+  "include": [
+    "*.js",
+    "*.ts",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts"
+  ]
+}
