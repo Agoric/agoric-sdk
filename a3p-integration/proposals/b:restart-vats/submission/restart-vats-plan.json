@@ -1,0 +1,12 @@
+{
+  "name": "restart-vats",
+  "script": "restart-vats.js",
+  "permit": "restart-vats-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/vats/src/proposals/restart-vats-proposal.js",
+      "bundleID": "b1-896aba5e41da29ccd75e187133d8d647f0092233f9205e90964d278e49039aa65db4a1f30dc44561ddab3a486075b086c12e2c60f4ef7898b0469e0298bd4dc1",
+      "fileName": "/opt/agoric/agoric-sdk/packages/builders/scripts/vats/.agoric/cache/b1-896aba5e41da29ccd75e187133d8d647f0092233f9205e90964d278e49039aa65db4a1f30dc44561ddab3a486075b086c12e2c60f4ef7898b0469e0298bd4dc1.json"
+    }
+  ]
+}

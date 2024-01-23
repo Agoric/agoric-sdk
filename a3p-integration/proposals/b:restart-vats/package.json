@@ -1,0 +1,17 @@
+{
+    "agoricProposal": {
+        "type": "/agoric.swingset.CoreEvalProposal",
+        "source": "build",
+        "buildScript": "../packages/builders/scripts/vats/restart-vats.js"
+    },
+    "type": "module",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "@agoric/synthetic-chain": "^0.0.4-2",
+        "ava": "^5.3.1"
+    },
+    "scripts": {
+        "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+    },
+    "packageManager": "yarn@4.0.2"
+}
