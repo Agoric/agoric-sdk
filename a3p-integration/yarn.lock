@@ -2,14 +2,20 @@
 # yarn lockfile v1
 
 
-"@agoric/synthetic-chain@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@agoric/synthetic-chain/-/synthetic-chain-0.0.3.tgz#eaa9ea9429a950686e5cc31200f1e30cf7acedfd"
-  integrity sha512-C+2cb3IPoiCKSRNyVAE8mt+BLeZB2AKzAnW0TJK5SgVSBlX+wgcrNMZHpSlrWScFzlsEQJWzqRdzpV2YdVtESg==
+"@agoric/synthetic-chain@^0.0.4-0":
+  version "0.0.4-0"
+  resolved "https://registry.yarnpkg.com/@agoric/synthetic-chain/-/synthetic-chain-0.0.4-0.tgz#6bdc4fd6205b0b43e3eeef1784485e125d7fa77a"
+  integrity sha512-5AN5qdU+ZLIROGxzqHyibQ4SeEG0YpCJvOXOh/gCNItrhuizR6Zlj412+laxm/HGMyj4FgSFILI6b25tjMmDTA==
   dependencies:
+    "@endo/zip" "^1.0.0"
     better-sqlite3 "^9.2.2"
     tsx "^3.12.8"
     typescript "^5.3.3"
+
+"@endo/zip@^1.0.0":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@endo/zip/-/zip-1.0.1.tgz#580849f0b0a61038cad3e78da5fb38d55dc12ce0"
+  integrity sha512-OF1zhqjyrpP3lQpkOMGQwvQw/R/CCKtvd9VNFlpIG3vxDdejQAJd2ZlQTJyLI8KRswKOrPX42F5nsoR6ihH9YA==
 
 "@esbuild/aix-ppc64@0.19.11":
   version "0.19.11"
