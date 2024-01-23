@@ -153,6 +153,8 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
+replace github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.12.4
+
 // At least until post-v0.34.14 is released with
 // https://github.com/tendermint/tendermint/issue/6899 resolved.
 replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.27-alpha.agoric.3
