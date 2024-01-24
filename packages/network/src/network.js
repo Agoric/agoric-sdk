@@ -242,15 +242,19 @@ const prepareInboundAttempt = (zone, makeConnection) => {
        * @param {string} [opts.remoteAddress]
        * @param opts.handler
        */
-      async accept({
-        localAddress = this.state.localAddr,
-        remoteAddress = this.state.remoteAddr,
-        handler: rchandler,
-      }) {
+      async accept({ localAddress, remoteAddress, handler: rchandler }) {
         if (this.state.consummated) {
           throw this.state.consummated;
         }
         this.state.consummated = Error(`Already accepted`);
+
+        if (localAddress === undefined) {
+          localAddress = this.state.localAddr;
+        }
+
+        if (remoteAddress === undefined) {
+          remoteAddress = this.state.remoteAddr;
+        }
 
         const [port, listener] = this.state.listening.get(
           this.state.listenPrefix,
