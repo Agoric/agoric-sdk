@@ -13,6 +13,7 @@ export default [
   "@agoric/cosmic-proto",
   "@agoric/cosmic-swingset",
   "@agoric/cosmos",
+  "@agoric/create-dapp",
   "@agoric/deploy-script-support",
   "@agoric/deployment",
   "@agoric/ertp",
