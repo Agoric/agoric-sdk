@@ -51,6 +51,9 @@ const prepareHalfConnection = (zone, { when }) => {
     'Connection',
     undefined,
     ({ addrs, handlers, conns, current, l, r }) => {
+      /** @type {Error | undefined} */
+      let closed;
+
       return {
         addrs,
         handlers,
@@ -58,7 +61,7 @@ const prepareHalfConnection = (zone, { when }) => {
         current,
         l,
         r,
-        closed: undefined,
+        closed,
       };
     },
     {
@@ -141,7 +144,7 @@ export const crossoverConnection = (
 ) => {
   const detached = zone.detached();
 
-  /** @type {MapStore<int, Connection>} */
+  /** @type {MapStore<number, Connection>} */
   const conns = detached.mapStore('addrToConnections');
 
   /** @type {ConnectionHandler[]} */
@@ -181,20 +184,33 @@ const prepareInboundAttempt = (zone, makeConnection) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
     undefined,
+    /**
+     * @param {object} opts
+     * @param {string} opts.localAddr
+     * @param {string} opts.remoteAddr
+     * @param { MapStore<Port, SetStore<Closable>> } opts.currentConnections
+     * @param {string} opts.listenPrefix
+     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
+     */
     ({
       localAddr,
       remoteAddr,
       currentConnections,
       listenPrefix,
       listening,
-    }) => ({
-      localAddr,
-      remoteAddr,
-      consummated: undefined,
-      currentConnections,
-      listenPrefix,
-      listening,
-    }),
+    }) => {
+      /** @type {Error | undefined} */
+      let consummated;
+
+      return {
+        localAddr,
+        remoteAddr,
+        consummated,
+        currentConnections,
+        listenPrefix,
+        listening,
+      };
+    },
     {
       getLocalAddress() {
         // Return address metadata.
@@ -220,6 +236,12 @@ const prepareInboundAttempt = (zone, makeConnection) => {
           .onReject(port, this.state.localAddr, this.state.remoteAddr, listener)
           .catch(rethrowUnlessMissing);
       },
+      /**
+       * @param {object} opts
+       * @param {string} [opts.localAddress]
+       * @param {string} [opts.remoteAddress]
+       * @param opts.handler
+       */
       async accept({
         localAddress = this.state.localAddr,
         remoteAddress = this.state.remoteAddr,
@@ -387,7 +409,7 @@ const preparePort = zone => {
         const ps = values.map(conn =>
           E(conn)
             .close()
-            .catch(_ => {}),
+            .catch(_ => { }),
         );
         if (this.state.listening.has(this.state.localAddr)) {
           const listener = this.state.listening.get(this.state.localAddr)[1];
@@ -599,7 +621,7 @@ const prepareBinder = (zone, powers) => {
 export const makeNetworkProtocol = (zone, protocolHandler, powers) => {
   const detached = zone.detached();
 
-  /** @type {MapStore<string, SetStore<Closable>} */
+  /** @type {MapStore<string, SetStore<Closable>>} */
   const currentConnections = detached.mapStore('portToCurrentConnections');
 
   /** @type {MapStore<string, Port>} */
@@ -630,9 +652,13 @@ export const prepareEchoConnectionHandler = zone => {
   const makeEchoConnectionHandler = zone.exoClass(
     'ConnectionHandler',
     undefined,
-    () => ({
-      closed: undefined,
-    }),
+    () => {
+      /** @type {Error | undefined} */
+      let closed;
+      return {
+        closed,
+      };
+    },
     {
       async onReceive(_connection, bytes, _connectionHandler) {
         if (this.state.closed) {
@@ -685,7 +711,6 @@ export const prepareNonceMaker = zone => {
  * @param {ReturnType<prepareNonceMaker>} makeNonceMaker
  */
 export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
-  const makePortID = makeNonceMaker('port').get();
   const detached = zone.detached();
 
   const makeLoopbackProtocolHandler = zone.exoClass(
@@ -705,7 +730,7 @@ export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
         // TODO
       },
       async generatePortID(_protocolHandler) {
-        return makePortID();
+        return makeNonceMaker('port').get();
       },
       async onBind(_port, _localAddr, _protocolHandler) {
         // TODO: Maybe handle a bind?
