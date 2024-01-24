@@ -180,9 +180,10 @@ const makeDurableZoeKit = ({
         getZcfBundleCap({ id: bundleId }, vatAdminSvc),
         bundleCap => {
           zcfBundleCap = bundleCap;
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
         },
         e => {
-          console.error(`'🚨 unable to update ZCF Bundle: `, e);
+          console.error('🚨 unable to update ZCF Bundle: ', e);
           throw e;
         },
       );
