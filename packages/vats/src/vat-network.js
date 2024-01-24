@@ -12,5 +12,12 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     powers,
   );
 
-  return makeRouterProtocol();
+  const p = makeRouterProtocol();
+
+  return Far('RouterProtocol', {
+    registerProtocolHandler: (...args) => p.registerProtocolHandler(...args),
+    unregisterProtocolHandler: (...args) =>
+      p.unregisterProtocolHandler(...args),
+    bind: (...args) => p.bind(...args),
+  });
 }
