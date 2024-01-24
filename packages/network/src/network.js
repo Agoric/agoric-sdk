@@ -124,15 +124,6 @@ const prepareHalfConnection = (zone, { when }) => {
   return makeHalfConnection;
 };
 
-/**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param handler0
- * @param addr0
- * @param handler1
- * @param addr1
- * @param makeConnection
- * @param current
- */
 export const crossoverConnection = (
   zone,
   handler0,
@@ -176,10 +167,6 @@ export const crossoverConnection = (
   return [conns.get(0), conns.get(1)];
 };
 
-/**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param makeConnection
- */
 const prepareInboundAttempt = (zone, makeConnection) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
@@ -240,7 +227,7 @@ const prepareInboundAttempt = (zone, makeConnection) => {
        * @param {object} opts
        * @param {string} [opts.localAddress]
        * @param {string} [opts.remoteAddress]
-       * @param opts.handler
+       * @param {ConnectionHandler} opts.handler
        */
       async accept({ localAddress, remoteAddress, handler: rchandler }) {
         if (this.state.consummated) {
@@ -413,7 +400,7 @@ const preparePort = zone => {
         const ps = values.map(conn =>
           E(conn)
             .close()
-            .catch(_ => { }),
+            .catch(_ => {}),
         );
         if (this.state.listening.has(this.state.localAddr)) {
           const listener = this.state.listening.get(this.state.localAddr)[1];
