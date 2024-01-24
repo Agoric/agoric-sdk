@@ -5,14 +5,14 @@
   "coreProposals": {
     "steps": [
       [
-        "@agoric/builders/scripts/vats/init-core.js"
+        "@agoric/vats/scripts/init-core.js"
       ],
       [
-        "@agoric/builders/scripts/vats/init-network.js"
+        "@agoric/vats/scripts/init-network.js"
       ],
       [
         {
-          "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/init-core.js",
           "entrypoint": "defaultProposalBuilder",
           "args": [
             {
@@ -25,7 +25,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "defaultProposalBuilder",
           "args": [
             {
@@ -41,7 +41,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "psmProposalBuilder",
           "args": [
             {
@@ -55,7 +55,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "psmProposalBuilder",
           "args": [
             {
@@ -69,7 +69,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "psmProposalBuilder",
           "args": [
             {
@@ -83,7 +83,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "psmProposalBuilder",
           "args": [
             {
@@ -97,7 +97,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/add-collateral-core.js",
           "entrypoint": "psmProposalBuilder",
           "args": [
             {
@@ -111,7 +111,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/price-feed-core.js",
           "entrypoint": "defaultProposalBuilder",
           "args": [
             {
@@ -148,7 +148,7 @@
           ]
         },
         {
-          "module": "@agoric/builders/scripts/inter-protocol/invite-committee-core.js",
+          "module": "@agoric/vats/scripts/inter-protocol/invite-committee-core.js",
           "entrypoint": "defaultProposalBuilder",
           "args": [
             {
