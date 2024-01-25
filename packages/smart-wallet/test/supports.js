@@ -63,7 +63,7 @@ const makeFakeBridgeManager = () =>
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
         fromBridge(_obj) {
-          asssert.fail(`expected fromBridge`);
+          assert.fail(`expected fromBridge`);
         },
         toBridge(obj) {
           if (!handler) {
@@ -134,7 +134,7 @@ export const makeMockTestSpace = async log => {
     Promise.resolve(
       Far(
         'mockBankManager',
-        /** @type {any} */({
+        /** @type {any} */ ({
           getBankForAddress: _a => fakeBankKit.bank,
         }),
       ),
