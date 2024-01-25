@@ -1,8 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
 
-const { details: X } = assert;
-
 /**
  * @param {BootstrapPowers & {
  *   consume: {

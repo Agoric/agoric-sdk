@@ -48,5 +48,5 @@ export const unwrapPromise = async (specimenP, cb) => {
     payload = getWhenablePayload(unwrapped);
   }
 
-  return cb(/** @type {Awaited<T>} */ (unwrapped), payload);
+  return cb(/** @type {Awaited<T>} */(unwrapped), payload);
 };

@@ -1,3 +1,5 @@
+// @ts-check
+
 import { E } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
@@ -400,7 +402,7 @@ const preparePort = zone => {
         const ps = values.map(conn =>
           E(conn)
             .close()
-            .catch(_ => {}),
+            .catch(_ => { }),
         );
         if (this.state.listening.has(this.state.localAddr)) {
           const listener = this.state.listening.get(this.state.localAddr)[1];
@@ -609,29 +611,34 @@ const prepareBinder = (zone, powers) => {
   return makeBinderKit;
 };
 
-export const makeNetworkProtocol = (zone, protocolHandler, powers) => {
-  const detached = zone.detached();
-
-  /** @type {MapStore<string, SetStore<Closable>>} */
-  const currentConnections = detached.mapStore('portToCurrentConnections');
-
-  /** @type {MapStore<string, Port>} */
-  const boundPorts = detached.mapStore('addrToPort');
-
-  /** @type {MapStore<Endpoint, [Port, ListenHandler]>} */
-  const listening = detached.mapStore('listening');
-
+export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinder = prepareBinder(zone, powers);
-  const { binder, protocolImpl } = makeBinder({
-    currentConnections,
-    boundPorts,
-    listening,
-    protocolHandler,
-  });
 
-  // Wire up the local protocol to the handler.
-  void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
-  return harden(binder);
+  const makeNetworkProtocol = protocolHandler => {
+    const detached = zone.detached();
+
+    /** @type {MapStore<Port, SetStore<Closable>>} */
+    const currentConnections = detached.mapStore('portToCurrentConnections');
+
+    /** @type {MapStore<string, Port>} */
+    const boundPorts = detached.mapStore('addrToPort');
+
+    /** @type {MapStore<Endpoint, [Port, ListenHandler]>} */
+    const listening = detached.mapStore('listening');
+
+    const { binder, protocolImpl } = makeBinder({
+      currentConnections,
+      boundPorts,
+      listening,
+      protocolHandler,
+    });
+
+    // Wire up the local protocol to the handler.
+    void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
+    return harden(binder);
+  };
+
+  return makeNetworkProtocol;
 };
 
 /**

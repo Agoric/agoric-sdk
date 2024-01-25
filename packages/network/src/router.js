@@ -1,7 +1,7 @@
 // @ts-check
 import { E as defaultE } from '@endo/far';
 import { Fail } from '@agoric/assert';
-import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
+import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
 
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
@@ -90,7 +90,9 @@ export const prepareRouter = zone => {
  */
 export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
   const detached = zone.detached();
+
   const makeRouter = prepareRouter(zone);
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
 
   const makeRouterProtocol = zone.exoClass(
     'RouterProtocol',
@@ -112,7 +114,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
     },
     {
       registerProtocolHandler(paths, protocolHandler) {
-        const protocol = makeNetworkProtocol(zone, protocolHandler, powers);
+        const protocol = makeNetworkProtocol(protocolHandler);
         for (const prefix of paths) {
           this.state.router.register(prefix, protocol);
           this.state.protocols.init(prefix, protocol);
