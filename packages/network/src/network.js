@@ -402,7 +402,7 @@ const preparePort = zone => {
         const ps = values.map(conn =>
           E(conn)
             .close()
-            .catch(_ => { }),
+            .catch(_ => {}),
         );
         if (this.state.listening.has(this.state.localAddr)) {
           const listener = this.state.listening.get(this.state.localAddr)[1];
