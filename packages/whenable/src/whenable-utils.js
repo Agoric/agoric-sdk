@@ -1,18 +1,25 @@
+// @ts-check
 import { getTag } from '@endo/pass-style';
 
 /**
  * @template T
- * @param {T} specimen
- * @returns {T extends import('./types').Whenable<infer U> ?
- *   import('./types').Whenable<U>['payload'] :
- *   undefined
- * }
+ * @param {any} specimen
+ * @returns {import('./types').WhenablePayload<T> | undefined}
  */
-export const getWhenablePayload = specimen =>
-  typeof specimen === 'object' &&
-  specimen !== null &&
-  getTag(specimen) === 'Whenable' &&
-  specimen.payload;
+export const getWhenablePayload = specimen => {
+  const isWhenable =
+    typeof specimen === 'object' &&
+    specimen !== null &&
+    getTag(specimen) === 'Whenable';
+  if (!isWhenable) {
+    return undefined;
+  }
+
+  const whenable = /** @type {import('./types').Whenable<T>} */ (
+    /** @type {unknown} */ (specimen)
+  );
+  return whenable.payload;
+};
 
 /** A unique object identity just for internal use. */
 const ALREADY_WHENABLE = harden({});
@@ -21,22 +28,25 @@ const ALREADY_WHENABLE = harden({});
  * @template T
  * @template U
  * @param {T} specimenP
- * @param {(specimen: Awaited<T>, payload: import('./types').Whenable<any>['payload']) => U} cb
- * @returns {Promise<Awaited<U>>}
+ * @param {(unwrapped: Awaited<T>, payload?: import('./types').WhenablePayload<any>) => U} cb
+ * @returns {Promise<U>}
  */
 export const unwrapPromise = async (specimenP, cb) => {
   let payload = getWhenablePayload(specimenP);
 
   // Take exactly 1 turn to find the first whenable, if any.
-  let specimen = await (payload ? ALREADY_WHENABLE : specimenP);
-  if (specimen === ALREADY_WHENABLE) {
+  const awaited = await (payload ? ALREADY_WHENABLE : specimenP);
+  /** @type {unknown} */
+  let unwrapped;
+  if (awaited === ALREADY_WHENABLE) {
     // The fact that we have a whenable payload means it's not actually a
     // promise.
-    specimen = specimenP;
+    unwrapped = specimenP;
   } else {
     // Check if the awaited specimen is a whenable.
-    payload = getWhenablePayload(specimen);
+    unwrapped = awaited;
+    payload = getWhenablePayload(unwrapped);
   }
 
-  return cb(specimen, payload);
+  return cb(/** @type {Awaited<T>} */ (unwrapped), payload);
 };

@@ -1,3 +1,4 @@
+// @ts-check
 export {};
 
 /**
@@ -7,9 +8,13 @@ export {};
 
 /**
  * @template [T=any]
+ * @typedef {{ whenable0: { shorten(): Promise<T | Whenable<T>>} }} WhenablePayload
+ */
+
+/**
+ * @template [T=any]
  * @typedef {import('@endo/pass-style').CopyTagged<
- *   'Whenable',
- *   { whenable0: { shorten(): Promise<T | Whenable<T>>} }
+ *   'Whenable', WhenablePayload
  * >} Whenable
  */
 
