@@ -103,7 +103,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     if (process.env.AGORIC_INIT_OPTIONS) {
       const opts = JSON.parse(process.env.AGORIC_INIT_OPTIONS);
       initOptions.push(...opts);
-      initOptions['--dapp-template'] = 'dapp-fungible-faucet';
     }
     t.is(
       await myMain(['init', ...initOptions, 'dapp-foo']),
