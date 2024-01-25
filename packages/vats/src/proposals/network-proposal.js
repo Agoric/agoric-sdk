@@ -1,4 +1,4 @@
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   prepareEchoConnectionHandler,
@@ -13,6 +13,48 @@ import { prepareWhenableModule } from '@agoric/whenable';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<prepareEchoConnectionHandler>} makeEchoConnectionHandler
+ */
+const prepareListenHandler = (zone, makeEchoConnectionHandler) => {
+  const makeListenHandler = zone.exoClass(
+    'listener',
+    undefined,
+    () => {
+      return {
+        handler: makeEchoConnectionHandler(),
+      };
+    },
+    {
+      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+        return harden(this.state.handler);
+      },
+      async onListen(port, _listenHandler) {
+        console.debug(`listening on echo port: ${port}`);
+      },
+    },
+  );
+
+  return makeListenHandler;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param dibcBridgeManager
+ */
+const prepareCallbacks = (zone, dibcBridgeManager) => {
+  return zone.exoClass('callbacks', undefined, () => ({}), {
+    downcall(method, obj) {
+      return E(dibcBridgeManager).toBridge({
+        ...obj,
+        type: 'IBC_METHOD',
+        method,
+      });
+    },
+  });
+};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -31,6 +73,10 @@ export const registerNetworkProtocols = async (
     makeNonceMaker,
   );
   const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const makeListenHandler = prepareListenHandler(
+    zone,
+    makeEchoConnectionHandler,
+  );
   const powers = prepareWhenableModule(zone);
   const { when } = powers;
 
@@ -44,15 +90,8 @@ export const registerNetworkProtocols = async (
   if (dibcBridgeManager) {
     assert('ibc' in vats);
     // We have access to the bridge, and therefore IBC.
-    const callbacks = Far('callbacks', {
-      downcall(method, obj) {
-        return E(dibcBridgeManager).toBridge({
-          ...obj,
-          type: 'IBC_METHOD',
-          method,
-        });
-      },
-    });
+    const makeCallbacks = prepareCallbacks(zone, dibcBridgeManager);
+    const callbacks = makeCallbacks();
     ps.push(
       E(vats.ibc)
         .createHandlers(callbacks)
@@ -77,17 +116,8 @@ export const registerNetworkProtocols = async (
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
   const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
-
-  return E(echoPort).addListener(
-    Far('listener', {
-      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return harden(makeEchoConnectionHandler());
-      },
-      async onListen(port, _listenHandler) {
-        console.debug(`listening on echo port: ${port}`);
-      },
-    }),
-  );
+  const listener = makeListenHandler();
+  return E(echoPort).addListener(listener);
 };
 
 /**
