@@ -12,15 +12,23 @@ import '../exported.js';
  *   namesByAddress: ERef<import('@agoric/vats').NameHub>
  * }}
  */
-export const prepare = (zcf, privateArgs, baggage) => {
+export const start = (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const whenZone = zone.subZone('when');
   const { when } = prepareWhenableModule(whenZone);
 
   const { board, namesByAddress } = privateArgs;
-  return {
-    publicFacet: makePegasus({ zcf, board, namesByAddress, when }),
-  };
+
+  // start requires that the object passed in must be durable. Given that we
+  // haven't made pegasus durable yet, we'll wrap its non-durable methods within
+  // an exo object to workaround this requirement.
+  const publicFacet = zone.exo('PublicFacet', undefined, {
+    ...makePegasus({ zcf, board, namesByAddress, when }),
+  });
+
+  return harden({
+    publicFacet,
+  });
 };
-harden(prepare);
+harden(start);

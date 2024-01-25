@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import {
-  makeNetworkProtocol,
+  prepareNetworkProtocol,
   prepareNonceMaker,
   prepareLoopbackProtocolHandler,
 } from '@agoric/network';
@@ -90,7 +90,8 @@ async function testRemotePeg(t) {
     zone,
     makeNonceMaker,
   );
-  const network = makeNetworkProtocol(zone, makeLoopbackHandler(), powers);
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const network = makeNetworkProtocol(makeLoopbackHandler());
 
   const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
   const portName = await E(portP).getLocalAddress();

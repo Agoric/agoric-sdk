@@ -11,10 +11,10 @@ import {
   parse,
   unparse,
   prepareEchoConnectionHandler,
-  makeNetworkProtocol,
   prepareRouter,
   prepareLoopbackProtocolHandler,
   prepareNonceMaker,
+  prepareNetworkProtocol,
 } from '../src/index.js';
 
 import '../src/types.js';
@@ -104,8 +104,9 @@ test('handled protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
-  const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
+  const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
 
@@ -150,8 +151,9 @@ test('protocol connection listen', async t => {
   const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
-  const protocol = makeNetworkProtocol(zone, makeProtocolHandler(), powers);
+  const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
   const { whenable, settler } = makeWhenableKit();
@@ -304,11 +306,8 @@ test('loopback protocol', async t => {
     zone,
     makeNonceMaker,
   );
-  const protocol = makeNetworkProtocol(
-    zone,
-    makeLoopbackProtocolHandler(),
-    powers,
-  );
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
   const { whenable, settler } = makeWhenableKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
