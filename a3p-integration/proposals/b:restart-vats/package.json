@@ -2,7 +2,7 @@
     "agoricProposal": {
         "type": "/agoric.swingset.CoreEvalProposal",
         "source": "build",
-        "buildScript": "../packages/builders/scripts/vats/restart-vats.js"
+        "buildScript": "../packages/vats/scripts/restart-vats.js"
     },
     "type": "module",
     "license": "Apache-2.0",
