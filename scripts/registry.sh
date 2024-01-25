@@ -107,7 +107,7 @@ integrationTest() {
     persistVar AGORIC_INSTALL_OPTIONS "[\"$DISTTAG\"]"
   }
   persistVar AGORIC_START_OPTIONS '["--rebuild"]'
-  persistVar AGORIC_INIT_OPTIONS "[\"--dapp-branch=$2\"]"
+  persistVar AGORIC_INIT_OPTIONS "[\"--dapp-template=dapp-fungible-faucet\"]"
 
   (
     cd "$thisdir/../packages/agoric-cli"
