@@ -17,6 +17,7 @@ const modules = {
   behaviors: { ...behaviors },
   utils: { ...utils },
 };
+/** @typedef {typeof modules} BootstrapModules */
 
 export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
 
@@ -28,7 +29,7 @@ export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
  *   logger: (msg) => void;
  * }} vatPowers
  * @param {{
- *   coreProposalCode?: string;
+ *   coreProposalCodeSteps?: string[];
  * }} vatParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

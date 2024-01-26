@@ -20,9 +20,9 @@ import type {
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { TimerService } from '@agoric/time/src/types.js';
+import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
-import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.ts';
+import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { SwingsetTestKit } from './supports.ts';
 
 export const makeWalletFactoryDriver = async (
@@ -197,6 +197,8 @@ export const makePriceFeedDriver = async (
     },
   };
 };
+harden(makePriceFeedDriver);
+export type PriceFeedDriver = Awaited<ReturnType<typeof makePriceFeedDriver>>;
 
 export const makeGovernanceDriver = async (
   testKit: SwingsetTestKit,
@@ -315,8 +317,11 @@ export const makeGovernanceDriver = async (
       await enactLatestProposal();
       await testKit.advanceTimeBy(1, 'minutes');
     },
+    ecMembers,
   };
 };
+harden(makeGovernanceDriver);
+export type GovernanceDriver = Awaited<ReturnType<typeof makeGovernanceDriver>>;
 
 export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
   const { EV } = testKit.runUtils;
@@ -401,3 +406,5 @@ export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
     },
   };
 };
+harden(makeZoeDriver);
+export type ZoeDriver = Awaited<ReturnType<typeof makeZoeDriver>>;

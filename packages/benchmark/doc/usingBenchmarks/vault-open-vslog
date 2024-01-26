@@ -1,0 +1,597 @@
+// crank 7216: v46 zcf-b1-94fc8-walletFactory --- Start of benchmark round #1
+deliver: <v46-zcf-b1-94fc8-walletFactory agoric1alice wallet> <- handleBridgeAction({body: "#{"method":"executeOffer","offer":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: BoardRemoteATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: BoardRemoteIST brand","value":"+5000000"}}}}}", slots: ["board05262", "board0257"]}, true): <handleBridgeAction-1/rp round #1>
+send: <v7-board marshaller readonlyMarshaller-1> <- fromCapData({body: "#{"method":"executeOffer","offer":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: BoardRemoteATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: BoardRemoteIST brand","value":"+5000000"}}}}}", slots: ["board05262", "board0257"]}): <fromCapData-1/rp offer round #1>
+
+// crank 7218: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- fromCapData({body: "#{"method":"executeOffer","offer":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: BoardRemoteATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: BoardRemoteIST brand","value":"+5000000"}}}}}", slots: ["board05262", "board0257"]}): <fromCapData-1/rp offer round #1>
+resolve fulfill: <fromCapData-1/rp offer round #1> := {method: "executeOffer", offer: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}}
+
+// crank 7220: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <fromCapData-1/rp offer round #1> := {method: "executeOffer", offer: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}}
+info: wallet agoric1alice starting executeOffer open-vault-1-of-1-round-1
+send: <v14-bank bank agoric1alice> <- getPurse(<v16-zcf-mintHolder-ATOM brand ATOM>): <getPurse-12/rp alice ATOM #1>
+
+// crank 7222: v14 bank
+deliver: <v14-bank bank agoric1alice> <- getPurse(<v16-zcf-mintHolder-ATOM brand ATOM>): <getPurse-12/rp alice ATOM #1>
+send: <v10-bridge bank> <- toBridge({address: "agoric1alice", denom: "ibc/toyatom", type: "VBANK_GET_BALANCE"}): <toBridge-13/rp VBANK_GET_BALANCE>
+
+// crank 7224: v10 bridge
+deliver: <v10-bridge bank> <- toBridge({address: "agoric1alice", denom: "ibc/toyatom", type: "VBANK_GET_BALANCE"}): <toBridge-13/rp VBANK_GET_BALANCE>
+invoke: <bridgeDevice>.callOutbound("bank", {address: "agoric1alice", denom: "ibc/toyatom", type: "VBANK_GET_BALANCE"})
+result: "0"
+resolve fulfill: <toBridge-13/rp VBANK_GET_BALANCE> := "0"
+
+// crank 7226: v14 bank
+fulfilled: <toBridge-13/rp VBANK_GET_BALANCE> := "0"
+send: <v16-zcf-mintHolder-ATOM publicFacet> <- makeEmptyPurse(): <makeEmptyPurse-38/rp ATOM>
+
+// crank 7228: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM publicFacet> <- makeEmptyPurse(): <makeEmptyPurse-38/rp ATOM>
+resolve fulfill: <makeEmptyPurse-38/rp ATOM> := <v16-zcf-mintHolder-ATOM empty purse ATOM -1>
+
+// crank 7230: v14 bank
+fulfilled: <makeEmptyPurse-38/rp ATOM> := <v16-zcf-mintHolder-ATOM empty purse ATOM -1>
+resolve fulfill: <getPurse-12/rp alice ATOM #1> := <v14-bank purse agoric1alice ATOM -1>
+
+// crank 7232: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getPurse-12/rp alice ATOM #1> := <v14-bank purse agoric1alice ATOM -1>
+send: <v14-bank purse agoric1alice ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <withdraw-1/rp ATOM #1>
+
+// crank 7234: v14 bank
+deliver: <v14-bank purse agoric1alice ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <withdraw-1/rp ATOM #1>
+send: <v10-bridge bank> <- toBridge({amount: "1000000", denom: "ibc/toyatom", sender: "agoric1alice", type: "VBANK_GRAB"}): <toBridge-14/rp VBANK_GRAB>
+
+// crank 7236: v10 bridge
+deliver: <v10-bridge bank> <- toBridge({amount: "1000000", denom: "ibc/toyatom", sender: "agoric1alice", type: "VBANK_GRAB"}): <toBridge-14/rp VBANK_GRAB>
+invoke: <bridgeDevice>.callOutbound("bank", {amount: "1000000", denom: "ibc/toyatom", sender: "agoric1alice", type: "VBANK_GRAB"})
+result: {nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}
+resolve fulfill: <toBridge-14/rp VBANK_GRAB> := {nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}
+
+// crank 7238: v14 bank
+fulfilled: <toBridge-14/rp VBANK_GRAB> := {nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}
+send: <v10-bridge bank> <- fromBridge({nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-1/rp VBANK_BALANCE_UPDATE>
+
+// crank 7240: v10 bridge
+deliver: <v10-bridge bank> <- fromBridge({nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-1/rp VBANK_BALANCE_UPDATE>
+send: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-2/rp>
+
+// crank 7242: v14 bank
+deliver: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "1", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-2/rp>
+resolve fulfill: <fromBridge-2/rp> := undefined
+
+// crank 7244: v10 bridge
+fulfilled: <fromBridge-2/rp> := undefined
+resolve fulfill: <fromBridge-1/rp VBANK_BALANCE_UPDATE> := undefined
+
+// crank 7246: v14 bank
+fulfilled: <fromBridge-1/rp VBANK_BALANCE_UPDATE> := undefined
+send: <v16-zcf-mintHolder-ATOM creatorFacet> <- mintPayment({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <mintPayment-1/rp ATOM>
+
+// crank 7248: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM creatorFacet> <- mintPayment({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <mintPayment-1/rp ATOM>
+resolve fulfill: <mintPayment-1/rp ATOM> := <v16-zcf-mintHolder-ATOM payment ATOM -1>
+
+// crank 7250: v14 bank
+fulfilled: <mintPayment-1/rp ATOM> := <v16-zcf-mintHolder-ATOM payment ATOM -1>
+send: <v16-zcf-mintHolder-ATOM empty purse ATOM -1> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM -1>, undefined): <deposit-8/rp>
+
+// crank 7252: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM empty purse ATOM -1> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM -1>, undefined): <deposit-8/rp>
+resolve fulfill: <deposit-8/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}
+
+// crank 7254: v14 bank
+fulfilled: <deposit-8/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}
+send: <v16-zcf-mintHolder-ATOM empty purse ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <withdraw-2/rp ATOM #2>
+
+// crank 7256: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM empty purse ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <withdraw-2/rp ATOM #2>
+resolve fulfill: <withdraw-2/rp ATOM #2> := <v16-zcf-mintHolder-ATOM payment ATOM -2>
+
+// crank 7258: v14 bank
+fulfilled: <withdraw-2/rp ATOM #2> := <v16-zcf-mintHolder-ATOM payment ATOM -2>
+resolve fulfill: <withdraw-1/rp ATOM #1> := <v16-zcf-mintHolder-ATOM payment ATOM -2>
+
+// crank 7260: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <withdraw-1/rp ATOM #1> := <v16-zcf-mintHolder-ATOM payment ATOM -2>
+send: <v6-agoricNames nameHub .> <- lookup("instance", "VaultFactory"): <lookup-30/rp>
+send: <v9-zoe zoeService> <- getPublicFacet(<lookup-30/rp>): <getPublicFacet-7/rp>
+send: <getPublicFacet-7/rp> <- getCollateralManager(<v16-zcf-mintHolder-ATOM brand ATOM>): <getCollateralManager-1/rp>
+send: <getCollateralManager-1/rp> <- makeVaultInvitation(): <makeVaultInvitation-1/rp>
+send: <v9-zoe invitationIssuer> <- getAmountOf(<getAmountOf-28/argp>): <getAmountOf-28/rp>
+
+// crank 7266: v6 agoricNames
+deliver: <v6-agoricNames nameHub .> <- lookup("instance", "VaultFactory"): <lookup-30/rp>
+resolve fulfill: <lookup-30/rp> := <v9-zoe zcf-b1-33517-vaultFactory instance>
+
+// crank 7268: v9 zoe
+deliver: <v9-zoe zoeService> <- getPublicFacet(<lookup-30/rp>): <getPublicFacet-7/rp>
+
+// crank 7270: v9 zoe
+deliver: <v9-zoe invitationIssuer> <- getAmountOf(<getAmountOf-28/argp>): <getAmountOf-28/rp>
+
+// crank 7271: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <lookup-30/rp> := <v9-zoe zcf-b1-33517-vaultFactory instance>
+
+// crank 7272: v9 zoe
+fulfilled: <lookup-30/rp> := <v9-zoe zcf-b1-33517-vaultFactory instance>
+resolve fulfill: <getPublicFacet-7/rp> := <v51-zcf-b1-33517-vaultFactory publicFacet>
+
+// crank 7275: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getPublicFacet-7/rp> := <v51-zcf-b1-33517-vaultFactory publicFacet>
+
+// crank 7276: v51 zcf-b1-33517-vaultFactory
+deliver: <v51-zcf-b1-33517-vaultFactory publicFacet> <- getCollateralManager(<v16-zcf-mintHolder-ATOM brand ATOM>): <getCollateralManager-1/rp>
+resolve fulfill: <getCollateralManager-1/rp> := <v51-zcf-b1-33517-vaultFactory collateralManager>
+
+// crank 7279: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getCollateralManager-1/rp> := <v51-zcf-b1-33517-vaultFactory collateralManager>
+
+// crank 7280: v51 zcf-b1-33517-vaultFactory
+deliver: <v51-zcf-b1-33517-vaultFactory collateralManager> <- makeVaultInvitation(): <makeVaultInvitation-1/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- makeInvitation(<v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, "manager0: MakeVault", {}, {#tag: "match:splitRecord", payload: [{give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: {#tag: "match:nat", payload: []}}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: {#tag: "match:nat", payload: []}}}}]}): <makeInvitation-26/rp>
+
+// crank 7282: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- makeInvitation(<v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, "manager0: MakeVault", {}, {#tag: "match:splitRecord", payload: [{give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: {#tag: "match:nat", payload: []}}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: {#tag: "match:nat", payload: []}}}}]}): <makeInvitation-26/rp>
+resolve fulfill: <makeInvitation-26/rp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+
+// crank 7284: v51 zcf-b1-33517-vaultFactory
+fulfilled: <makeInvitation-26/rp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+resolve fulfill: <makeVaultInvitation-1/rp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+
+// crank 7286: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <makeVaultInvitation-1/rp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+resolve fulfill: <getAmountOf-28/argp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+
+// crank 7288: v9 zoe
+fulfilled: <getAmountOf-28/argp> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+resolve fulfill: <getAmountOf-28/rp> := {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}
+
+// crank 7290: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getAmountOf-28/rp> := {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}
+send: <v9-zoe zoeService> <- offer(<offer-3/arg1p>, {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, {Collateral: <v16-zcf-mintHolder-ATOM payment ATOM -2>}, undefined): <offer-3/rp>
+resolve fulfill: <offer-3/arg1p> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+
+// crank 7292: v9 zoe
+deliver: <v9-zoe zoeService> <- offer(<offer-3/arg1p>, {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, {Collateral: <v16-zcf-mintHolder-ATOM payment ATOM -2>}, undefined): <offer-3/rp>
+
+// crank 7294: v9 zoe
+fulfilled: <offer-3/arg1p> := <v9-zoe zcf-b1-33517-vaultFactory invitation r1>
+send: <v16-zcf-mintHolder-ATOM emptyPurse ATOM -1> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM -2>, {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <deposit-9/rp>
+
+// crank 7296: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM emptyPurse ATOM -1> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM -2>, {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}): <deposit-9/rp>
+resolve fulfill: <deposit-9/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}
+
+// crank 7298: v9 zoe
+fulfilled: <deposit-9/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}
+send: <v51-zcf-b1-33517-vaultFactory handleOfferObj> <- handleOffer(<v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, {initialAllocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 0}}, offerArgs: undefined, proposal: {exit: {onDemand: null}, give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, seatHandle: <v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>}): <handleOffer-3/rp>
+resolve fulfill: <offer-3/rp> := <v9-zoe zcf-b1-33517-vaultFactory offer r1>
+
+// crank 7301: v51 zcf-b1-33517-vaultFactory
+deliver: <v51-zcf-b1-33517-vaultFactory handleOfferObj> <- handleOffer(<v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, {initialAllocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 0}}, offerArgs: undefined, proposal: {exit: {onDemand: null}, give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, seatHandle: <v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>}): <handleOffer-3/rp>
+info: ----- VM.14  12 [object Object] makeVaultKit
+resolve fulfill: <handleOffer-3/rp> := {exitObj: <v51-zcf-b1-33517-vaultFactory offer exitObj r1>, offerResultPromise: <handleOffer-3/r offerResultPromise p>}
+send: <v10-bridge chainStorage.vaultFactory.managers.manager0> <- makeChildNode("vaults"): <makeChildNode-85/rp ? vaults>
+send: <makeChildNode-85/rp ? vaults> <- makeChildNode("vault0"): <makeChildNode-86/rp ? vault0>
+
+// crank 7305: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <offer-3/rp> := <v9-zoe zcf-b1-33517-vaultFactory offer r1>
+info: wallet agoric1alice open-vault-1-of-1-round-1 seated
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [["open-vault-1-of-1-round-1", {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}]], offerToPublicSubscriberPaths: [], offerToUsedInvitation: [], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-66/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- getOfferResult(): <getOfferResult-2/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- numWantsSatisfied(): <numWantsSatisfied-1/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- getPayouts(): <getPayouts-1/rp>
+
+// crank 7310: v9 zoe
+fulfilled: <handleOffer-3/rp> := {exitObj: <v51-zcf-b1-33517-vaultFactory offer exitObj r1>, offerResultPromise: <handleOffer-3/r offerResultPromise p>}
+
+// crank 7311: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.managers.manager0> <- makeChildNode("vaults"): <makeChildNode-85/rp ? vaults>
+resolve fulfill: <makeChildNode-85/rp ? vaults> := <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults r1>
+
+// crank 7314: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [["open-vault-1-of-1-round-1", {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}]], offerToPublicSubscriberPaths: [], offerToUsedInvitation: [], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-66/rp>
+resolve fulfill: <toCapData-66/rp> := {body: "#{"liveOffers":[["open-vault-1-of-1-round-1",{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}}}]],"offerToPublicSubscriberPaths":[],"offerToUsedInvitation":[],"purses":[{"balance":{"brand":"$2.Alleged: Zoe Invitation brand","value":[]},"brand":"$2"}]}", slots: ["board05262", "board0257", "board0074"]}
+
+// crank 7316: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- getOfferResult(): <getOfferResult-2/rp>
+
+// crank 7317: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- numWantsSatisfied(): <numWantsSatisfied-1/rp>
+
+// crank 7318: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory offer r1> <- getPayouts(): <getPayouts-1/rp>
+
+// crank 7319: v51 zcf-b1-33517-vaultFactory
+fulfilled: <makeChildNode-85/rp ? vaults> := <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults r1>
+
+// crank 7320: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults r1> <- makeChildNode("vault0"): <makeChildNode-86/rp ? vault0>
+resolve fulfill: <makeChildNode-86/rp ? vault0> := <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1>
+
+// crank 7322: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-66/rp> := {body: "#{"liveOffers":[["open-vault-1-of-1-round-1",{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}}}]],"offerToPublicSubscriberPaths":[],"offerToUsedInvitation":[],"purses":[{"balance":{"brand":"$2.Alleged: Zoe Invitation brand","value":[]},"brand":"$2"}]}", slots: ["board05262", "board0257", "board0074"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue("{\"body\":\"#{\\\"liveOffers\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}}}]],\\\"offerToPublicSubscriberPaths\\\":[],\\\"offerToUsedInvitation\\\":[],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$2.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$2\\\"}]}\",\"slots\":[\"board05262\",\"board0257\",\"board0074\"]}"): <setValue-159/rp>
+
+// crank 7324: v51 zcf-b1-33517-vaultFactory --- Vault creation round #1
+fulfilled: <makeChildNode-86/rp ? vault0> := <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1>
+info: ----- VM.14  13 [object Object] makeVaultKit made vault [object Object]
+info: ----- Vault.13  2 initVaultKit start: collateral 0 [object Object]
+info: ----- Vault.13  3 initVault 0 [object Object] [object Object]
+info: ----- VM.14  14 handleBalanceChange [object Object]
+info: ----- VM.14  15 [object Object] [object Object]
+info: ----- Store.6  2 To Vault Key  0.19900497512437812
+info: ----- Vault.13  4 initVault updateDebtAccounting fired
+info: ----- VK.12  3 prepareVaultKit makeVaultKit
+info: ----- Vault.13  5 [object Object] updateUiState 0 [object Object]
+send: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- makeNoEscrowSeat({}, {exit: {onDemand: null}, give: {}, want: {}}, <v51-zcf-b1-33517-vaultFactory noEscrowExiter r1>, <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle r1>): <makeNoEscrowSeat-31/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory feeMint Minted> <- mintAndEscrow({brand: <v9-zoe feeIssuer-brand>, value: 5025000}): <mintAndEscrow-2/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- replaceAllocations([{allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-1>}]): <replaceAllocations-3/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- replaceAllocations([{allocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}, seatHandle: <v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>}, {allocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle r1>}, {allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 0}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-1>}, {allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 25000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-2>}]): <replaceAllocations-4/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- exitSeat(<v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>, undefined): <exitSeat-3/rp>
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({debtSnapshot: {debt: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}, interest: {denominator: {brand: <v9-zoe feeIssuer-brand>, value: 100}, numerator: {brand: <v9-zoe feeIssuer-brand>, value: 100}}}, locked: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, vaultState: "active"}): <toCapData-67/rp>
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({collaterals: [<v16-zcf-mintHolder-ATOM brand ATOM>], rewardPoolAllocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 25000}}}): <toCapData-68/rp>
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liquidatingCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, liquidatingDebt: {brand: <v9-zoe feeIssuer-brand>, value: 0}, lockedQuote: null, numActiveVaults: 1, numLiquidatingVaults: 0, numLiquidationsAborted: 0, numLiquidationsCompleted: 0, retainedCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, totalCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, totalCollateralSold: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, totalDebt: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}, totalOverageReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}, totalProceedsReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}, totalShortfallReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}}): <toCapData-69/rp>
+send: <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1> <- getPath(): <getPath-9/rp>
+resolve fulfill: <handleOffer-3/r offerResultPromise p> := {invitationMakers: <v51-zcf-b1-33517-vaultFactory invitationMakers r1>, publicSubscribers: {vault: {description: "Vault holder status", storagePath: <handleOffer-3/r offerResultPromise p storagePath p>, subscriber: <v51-zcf-b1-33517-vaultFactory subscriber r1>}}, vault: <v51-zcf-b1-33517-vaultFactory vault r1>, vaultUpdater: <v51-zcf-b1-33517-vaultFactory vaultUpdater r1>}
+
+// crank 7335: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue("{\"body\":\"#{\\\"liveOffers\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}}}]],\\\"offerToPublicSubscriberPaths\\\":[],\\\"offerToUsedInvitation\\\":[],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$2.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$2\\\"}]}\",\"slots\":[\"board05262\",\"board0257\",\"board0074\"]}"): <setValue-159/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice.current", "{\"body\":\"#{\\\"liveOffers\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}}}]],\\\"offerToPublicSubscriberPaths\\\":[],\\\"offerToUsedInvitation\\\":[],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$2.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$2\\\"}]}\",\"slots\":[\"board05262\",\"board0257\",\"board0074\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-159/rp> := undefined
+
+// crank 7337: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- makeNoEscrowSeat({}, {exit: {onDemand: null}, give: {}, want: {}}, <v51-zcf-b1-33517-vaultFactory noEscrowExiter r1>, <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle r1>): <makeNoEscrowSeat-31/rp>
+resolve fulfill: <makeNoEscrowSeat-31/rp> := <v9-zoe zcf-b1-33517-vaultFactory noEscrowSeat r1>
+
+// crank 7339: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory feeMint Minted> <- mintAndEscrow({brand: <v9-zoe feeIssuer-brand>, value: 5025000}): <mintAndEscrow-2/rp>
+resolve fulfill: <mintAndEscrow-2/rp> := undefined
+
+// crank 7341: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- replaceAllocations([{allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-1>}]): <replaceAllocations-3/rp>
+resolve fulfill: <replaceAllocations-3/rp> := undefined
+
+// crank 7343: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- replaceAllocations([{allocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}, seatHandle: <v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>}, {allocation: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle r1>}, {allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 0}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-1>}, {allocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 25000}}, seatHandle: <v51-zcf-b1-33517-vaultFactory noEscrowSeatHandle-2>}]): <replaceAllocations-4/rp>
+resolve fulfill: <replaceAllocations-4/rp> := undefined
+
+// crank 7345: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory instanceAdmin> <- exitSeat(<v9-zoe zcf-b1-33517-vaultFactory seatHandle r1>, undefined): <exitSeat-3/rp>
+send: <v16-zcf-mintHolder-ATOM emptyPurse ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}): <withdraw-3/rp>
+resolve fulfill: <exitSeat-3/rp> := undefined
+
+// crank 7348: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({debtSnapshot: {debt: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}, interest: {denominator: {brand: <v9-zoe feeIssuer-brand>, value: 100}, numerator: {brand: <v9-zoe feeIssuer-brand>, value: 100}}}, locked: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, vaultState: "active"}): <toCapData-67/rp>
+resolve fulfill: <toCapData-67/rp> := {body: "#{"debtSnapshot":{"debt":{"brand":"$0.Alleged: IST brand","value":"+5025000"},"interest":{"denominator":{"brand":"$0","value":"+100"},"numerator":{"brand":"$0","value":"+100"}}},"locked":{"brand":"$1.Alleged: ATOM brand","value":"+1000000"},"vaultState":"active"}", slots: ["board0257", "board05262"]}
+
+// crank 7350: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({collaterals: [<v16-zcf-mintHolder-ATOM brand ATOM>], rewardPoolAllocation: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 25000}}}): <toCapData-68/rp>
+resolve fulfill: <toCapData-68/rp> := {body: "#{"collaterals":["$0.Alleged: ATOM brand"],"rewardPoolAllocation":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+25000"}}}", slots: ["board05262", "board0257"]}
+
+// crank 7352: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liquidatingCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, liquidatingDebt: {brand: <v9-zoe feeIssuer-brand>, value: 0}, lockedQuote: null, numActiveVaults: 1, numLiquidatingVaults: 0, numLiquidationsAborted: 0, numLiquidationsCompleted: 0, retainedCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, totalCollateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}, totalCollateralSold: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, totalDebt: {brand: <v9-zoe feeIssuer-brand>, value: 5025000}, totalOverageReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}, totalProceedsReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}, totalShortfallReceived: {brand: <v9-zoe feeIssuer-brand>, value: 0}}): <toCapData-69/rp>
+resolve fulfill: <toCapData-69/rp> := {body: "#{"liquidatingCollateral":{"brand":"$0.Alleged: ATOM brand","value":"+0"},"liquidatingDebt":{"brand":"$1.Alleged: IST brand","value":"+0"},"lockedQuote":null,"numActiveVaults":1,"numLiquidatingVaults":0,"numLiquidationsAborted":0,"numLiquidationsCompleted":0,"retainedCollateral":{"brand":"$0","value":"+0"},"totalCollateral":{"brand":"$0","value":"+1000000"},"totalCollateralSold":{"brand":"$0","value":"+0"},"totalDebt":{"brand":"$1","value":"+5025000"},"totalOverageReceived":{"brand":"$1","value":"+0"},"totalProceedsReceived":{"brand":"$1","value":"+0"},"totalShortfallReceived":{"brand":"$1","value":"+0"}}", slots: ["board05262", "board0257"]}
+
+// crank 7354: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1> <- getPath(): <getPath-9/rp>
+resolve fulfill: <getPath-9/rp> := "published.vaultFactory.managers.manager0.vaults.vault0"
+
+// crank 7356: v9 zoe
+fulfilled: <handleOffer-3/r offerResultPromise p> := {invitationMakers: <v51-zcf-b1-33517-vaultFactory invitationMakers r1>, publicSubscribers: {vault: {description: "Vault holder status", storagePath: <handleOffer-3/r offerResultPromise p storagePath p>, subscriber: <v51-zcf-b1-33517-vaultFactory subscriber r1>}}, vault: <v51-zcf-b1-33517-vaultFactory vault r1>, vaultUpdater: <v51-zcf-b1-33517-vaultFactory vaultUpdater r1>}
+resolve fulfill: <getOfferResult-2/rp> := {invitationMakers: <v51-zcf-b1-33517-vaultFactory invitationMakers r1>, publicSubscribers: {vault: {description: "Vault holder status", storagePath: <handleOffer-3/r offerResultPromise p storagePath p>, subscriber: <v51-zcf-b1-33517-vaultFactory subscriber r1>}}, vault: <v51-zcf-b1-33517-vaultFactory vault r1>, vaultUpdater: <v51-zcf-b1-33517-vaultFactory vaultUpdater r1>}
+
+// crank 7358: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-159/rp> := undefined
+
+// crank 7359: v51 zcf-b1-33517-vaultFactory
+fulfilled: <makeNoEscrowSeat-31/rp> := <v9-zoe zcf-b1-33517-vaultFactory noEscrowSeat r1>
+
+// crank 7360: v51 zcf-b1-33517-vaultFactory
+fulfilled: <mintAndEscrow-2/rp> := undefined
+
+// crank 7361: v51 zcf-b1-33517-vaultFactory
+fulfilled: <replaceAllocations-3/rp> := undefined
+
+// crank 7362: v51 zcf-b1-33517-vaultFactory
+fulfilled: <replaceAllocations-4/rp> := undefined
+
+// crank 7363: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM emptyPurse ATOM -1> <- withdraw({brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}): <withdraw-3/rp>
+resolve fulfill: <withdraw-3/rp> := <v16-zcf-mintHolder-ATOM payment ATOM r1>
+
+// crank 7365: v51 zcf-b1-33517-vaultFactory
+fulfilled: <exitSeat-3/rp> := undefined
+
+// crank 7366: v51 zcf-b1-33517-vaultFactory
+fulfilled: <toCapData-67/rp> := {body: "#{"debtSnapshot":{"debt":{"brand":"$0.Alleged: IST brand","value":"+5025000"},"interest":{"denominator":{"brand":"$0","value":"+100"},"numerator":{"brand":"$0","value":"+100"}}},"locked":{"brand":"$1.Alleged: ATOM brand","value":"+1000000"},"vaultState":"active"}", slots: ["board0257", "board05262"]}
+send: <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1> <- setValue("{\"body\":\"#{\\\"debtSnapshot\\\":{\\\"debt\\\":{\\\"brand\\\":\\\"$0.Alleged: IST brand\\\",\\\"value\\\":\\\"+5025000\\\"},\\\"interest\\\":{\\\"denominator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"},\\\"numerator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"}}},\\\"locked\\\":{\\\"brand\\\":\\\"$1.Alleged: ATOM brand\\\",\\\"value\\\":\\\"+1000000\\\"},\\\"vaultState\\\":\\\"active\\\"}\",\"slots\":[\"board0257\",\"board05262\"]}"): <setValue-160/rp>
+
+// crank 7368: v51 zcf-b1-33517-vaultFactory
+fulfilled: <toCapData-68/rp> := {body: "#{"collaterals":["$0.Alleged: ATOM brand"],"rewardPoolAllocation":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+25000"}}}", slots: ["board05262", "board0257"]}
+send: <v10-bridge chainStorage.vaultFactory.metrics> <- setValue("{\"body\":\"#{\\\"collaterals\\\":[\\\"$0.Alleged: ATOM brand\\\"],\\\"rewardPoolAllocation\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+25000\\\"}}}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-161/rp>
+
+// crank 7370: v51 zcf-b1-33517-vaultFactory
+fulfilled: <toCapData-69/rp> := {body: "#{"liquidatingCollateral":{"brand":"$0.Alleged: ATOM brand","value":"+0"},"liquidatingDebt":{"brand":"$1.Alleged: IST brand","value":"+0"},"lockedQuote":null,"numActiveVaults":1,"numLiquidatingVaults":0,"numLiquidationsAborted":0,"numLiquidationsCompleted":0,"retainedCollateral":{"brand":"$0","value":"+0"},"totalCollateral":{"brand":"$0","value":"+1000000"},"totalCollateralSold":{"brand":"$0","value":"+0"},"totalDebt":{"brand":"$1","value":"+5025000"},"totalOverageReceived":{"brand":"$1","value":"+0"},"totalProceedsReceived":{"brand":"$1","value":"+0"},"totalShortfallReceived":{"brand":"$1","value":"+0"}}", slots: ["board05262", "board0257"]}
+send: <v10-bridge chainStorage.vaultFactory.managers.manager0.metrics> <- setValue("{\"body\":\"#{\\\"liquidatingCollateral\\\":{\\\"brand\\\":\\\"$0.Alleged: ATOM brand\\\",\\\"value\\\":\\\"+0\\\"},\\\"liquidatingDebt\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+0\\\"},\\\"lockedQuote\\\":null,\\\"numActiveVaults\\\":1,\\\"numLiquidatingVaults\\\":0,\\\"numLiquidationsAborted\\\":0,\\\"numLiquidationsCompleted\\\":0,\\\"retainedCollateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalCollateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"},\\\"totalCollateralSold\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalDebt\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+5025000\\\"},\\\"totalOverageReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalProceedsReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalShortfallReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"}}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-162/rp>
+
+// crank 7372: v51 zcf-b1-33517-vaultFactory
+fulfilled: <getPath-9/rp> := "published.vaultFactory.managers.manager0.vaults.vault0"
+resolve fulfill: <handleOffer-3/r offerResultPromise p storagePath p> := "published.vaultFactory.managers.manager0.vaults.vault0"
+
+// crank 7374: v46 zcf-b1-94fc8-walletFactory
+fulfilled: 0 <getOfferResult-2/rp> := {invitationMakers: <v51-zcf-b1-33517-vaultFactory invitationMakers r1>, publicSubscribers: {vault: {description: "Vault holder status", storagePath: <handleOffer-3/r offerResultPromise p storagePath p>, subscriber: <v51-zcf-b1-33517-vaultFactory subscriber r1>}}, vault: <v51-zcf-b1-33517-vaultFactory vault r1>, vaultUpdater: <v51-zcf-b1-33517-vaultFactory vaultUpdater r1>}
+fulfilled: 1 <handleOffer-3/r offerResultPromise p storagePath p> := "published.vaultFactory.managers.manager0.vaults.vault0"
+info: wallet agoric1alice open-vault-1-of-1-round-1 offerResult copyRecord [object Object]
+info: wallet agoric1alice offerStatus [object Object]
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-70/rp>
+info: wallet agoric1alice recording pathMap [object Object]
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [["open-vault-1-of-1-round-1", {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}]], offerToPublicSubscriberPaths: [["open-vault-1-of-1-round-1", {vault: "published.vaultFactory.managers.manager0.vaults.vault0"}]], offerToUsedInvitation: [["open-vault-1-of-1-round-1", {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}]], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-71/rp>
+
+// crank 7377: v9 zoe
+fulfilled: <withdraw-3/rp> := <v16-zcf-mintHolder-ATOM payment ATOM r1>
+resolve fulfill: <numWantsSatisfied-1/rp> := 1
+resolve fulfill: <getPayouts-1/rp> := {Collateral: <v16-zcf-mintHolder-ATOM payment ATOM r1>, Minted: <v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>}
+
+// crank 7380: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.managers.manager0.vaults.vault0 r1> <- setValue("{\"body\":\"#{\\\"debtSnapshot\\\":{\\\"debt\\\":{\\\"brand\\\":\\\"$0.Alleged: IST brand\\\",\\\"value\\\":\\\"+5025000\\\"},\\\"interest\\\":{\\\"denominator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"},\\\"numerator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"}}},\\\"locked\\\":{\\\"brand\\\":\\\"$1.Alleged: ATOM brand\\\",\\\"value\\\":\\\"+1000000\\\"},\\\"vaultState\\\":\\\"active\\\"}\",\"slots\":[\"board0257\",\"board05262\"]}"): <setValue-160/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.vaultFactory.managers.manager0.vaults.vault0", "{\"body\":\"#{\\\"debtSnapshot\\\":{\\\"debt\\\":{\\\"brand\\\":\\\"$0.Alleged: IST brand\\\",\\\"value\\\":\\\"+5025000\\\"},\\\"interest\\\":{\\\"denominator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"},\\\"numerator\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+100\\\"}}},\\\"locked\\\":{\\\"brand\\\":\\\"$1.Alleged: ATOM brand\\\",\\\"value\\\":\\\"+1000000\\\"},\\\"vaultState\\\":\\\"active\\\"}\",\"slots\":[\"board0257\",\"board05262\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-160/rp> := undefined
+
+// crank 7382: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.metrics> <- setValue("{\"body\":\"#{\\\"collaterals\\\":[\\\"$0.Alleged: ATOM brand\\\"],\\\"rewardPoolAllocation\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+25000\\\"}}}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-161/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.vaultFactory.metrics", "{\"body\":\"#{\\\"collaterals\\\":[\\\"$0.Alleged: ATOM brand\\\"],\\\"rewardPoolAllocation\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+25000\\\"}}}\",\"slots\":[\"board05262\",\"board0257\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-161/rp> := undefined
+
+// crank 7384: v10 bridge
+deliver: <v10-bridge chainStorage.vaultFactory.managers.manager0.metrics> <- setValue("{\"body\":\"#{\\\"liquidatingCollateral\\\":{\\\"brand\\\":\\\"$0.Alleged: ATOM brand\\\",\\\"value\\\":\\\"+0\\\"},\\\"liquidatingDebt\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+0\\\"},\\\"lockedQuote\\\":null,\\\"numActiveVaults\\\":1,\\\"numLiquidatingVaults\\\":0,\\\"numLiquidationsAborted\\\":0,\\\"numLiquidationsCompleted\\\":0,\\\"retainedCollateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalCollateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"},\\\"totalCollateralSold\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalDebt\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+5025000\\\"},\\\"totalOverageReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalProceedsReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalShortfallReceived\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+0\\\"}}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-162/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [<BIG>], method: "append"})
+result: undefined
+resolve fulfill: <setValue-162/rp> := undefined
+
+// crank 7386: v9 zoe
+fulfilled: <handleOffer-3/r offerResultPromise p storagePath p> := "published.vaultFactory.managers.manager0.vaults.vault0"
+
+// crank 7387: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-70/rp>
+resolve fulfill: <toCapData-70/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+
+// crank 7389: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [["open-vault-1-of-1-round-1", {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}}]], offerToPublicSubscriberPaths: [["open-vault-1-of-1-round-1", {vault: "published.vaultFactory.managers.manager0.vaults.vault0"}]], offerToUsedInvitation: [["open-vault-1-of-1-round-1", {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}]], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-71/rp>
+resolve fulfill: <toCapData-71/rp> := {body: "#{"liveOffers":[["open-vault-1-of-1-round-1",{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}}}]],"offerToPublicSubscriberPaths":[["open-vault-1-of-1-round-1",{"vault":"published.vaultFactory.managers.manager0.vaults.vault0"}]],"offerToUsedInvitation":[["open-vault-1-of-1-round-1",{"brand":"$2.Alleged: Zoe Invitation brand","value":[{"description":"manager0: MakeVault","handle":"$3.Alleged: InvitationHandle","installation":"$4.Alleged: BundleIDInstallation","instance":"$5.Alleged: InstanceHandle"}]}]],"purses":[{"balance":{"brand":"$2","value":[]},"brand":"$2"}]}", slots: ["board05262", "board0257", "board0074", null, "board05815", "board03365"]}
+
+// crank 7391: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <numWantsSatisfied-1/rp> := 1
+info: wallet agoric1alice open-vault-1-of-1-round-1 numSatisfied 1
+info: wallet agoric1alice offerStatus [object Object]
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, numWantsSatisfied: 1, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-72/rp>
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [], offerToPublicSubscriberPaths: [["open-vault-1-of-1-round-1", {vault: "published.vaultFactory.managers.manager0.vaults.vault0"}]], offerToUsedInvitation: [["open-vault-1-of-1-round-1", {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}]], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-73/rp>
+
+// crank 7394: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getPayouts-1/rp> := {Collateral: <v16-zcf-mintHolder-ATOM payment ATOM r1>, Minted: <v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>}
+send: <v16-zcf-mintHolder-ATOM payment ATOM r1> <- getAllegedBrand(): <getAllegedBrand-7/rp>
+send: <v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1> <- getAllegedBrand(): <getAllegedBrand-8/rp>
+
+// crank 7397: v51 zcf-b1-33517-vaultFactory
+fulfilled: <setValue-160/rp> := undefined
+
+// crank 7398: v51 zcf-b1-33517-vaultFactory
+fulfilled: <setValue-161/rp> := undefined
+
+// crank 7399: v51 zcf-b1-33517-vaultFactory
+fulfilled: <setValue-162/rp> := undefined
+
+// crank 7400: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-70/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-163/rp>
+
+// crank 7402: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-71/rp> := {body: "#{"liveOffers":[["open-vault-1-of-1-round-1",{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}}}]],"offerToPublicSubscriberPaths":[["open-vault-1-of-1-round-1",{"vault":"published.vaultFactory.managers.manager0.vaults.vault0"}]],"offerToUsedInvitation":[["open-vault-1-of-1-round-1",{"brand":"$2.Alleged: Zoe Invitation brand","value":[{"description":"manager0: MakeVault","handle":"$3.Alleged: InvitationHandle","installation":"$4.Alleged: BundleIDInstallation","instance":"$5.Alleged: InstanceHandle"}]}]],"purses":[{"balance":{"brand":"$2","value":[]},"brand":"$2"}]}", slots: ["board05262", "board0257", "board0074", null, "board05815", "board03365"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue(<BIG>): <setValue-164/rp>
+
+// crank 7404: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, numWantsSatisfied: 1, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-72/rp>
+resolve fulfill: <toCapData-72/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"numWantsSatisfied":1,"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+
+// crank 7406: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({liveOffers: [], offerToPublicSubscriberPaths: [["open-vault-1-of-1-round-1", {vault: "published.vaultFactory.managers.manager0.vaults.vault0"}]], offerToUsedInvitation: [["open-vault-1-of-1-round-1", {brand: <v9-zoe invitationIssuer-brand>, value: [{description: "manager0: MakeVault", handle: <v9-zoe zcf-b1-33517-vaultFactory invitationHandler r1>, installation: <v9-zoe coreProposal1_6-installation>, instance: <v9-zoe zcf-b1-33517-vaultFactory instance>}]}]], purses: [{balance: {brand: <v9-zoe invitationIssuer-brand>, value: []}, brand: <v9-zoe invitationIssuer-brand>}]}): <toCapData-73/rp>
+resolve fulfill: <toCapData-73/rp> := {body: "#{"liveOffers":[],"offerToPublicSubscriberPaths":[["open-vault-1-of-1-round-1",{"vault":"published.vaultFactory.managers.manager0.vaults.vault0"}]],"offerToUsedInvitation":[["open-vault-1-of-1-round-1",{"brand":"$0.Alleged: Zoe Invitation brand","value":[{"description":"manager0: MakeVault","handle":"$1.Alleged: InvitationHandle","installation":"$2.Alleged: BundleIDInstallation","instance":"$3.Alleged: InstanceHandle"}]}]],"purses":[{"balance":{"brand":"$0","value":[]},"brand":"$0"}]}", slots: ["board0074", null, "board05815", "board03365"]}
+
+// crank 7408: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM payment ATOM r1> <- getAllegedBrand(): <getAllegedBrand-7/rp>
+resolve fulfill: <getAllegedBrand-7/rp> := <v16-zcf-mintHolder-ATOM brand ATOM>
+
+// crank 7410: v9 zoe
+deliver: <v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1> <- getAllegedBrand(): <getAllegedBrand-8/rp>
+resolve fulfill: <getAllegedBrand-8/rp> := <v9-zoe feeIssuer-brand>
+
+// crank 7412: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-163/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice", "{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-163/rp> := undefined
+
+// crank 7414: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue(<BIG>): <setValue-164/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice.current", <BIG>]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-164/rp> := undefined
+
+// crank 7416: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-72/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"numWantsSatisfied":1,"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-165/rp>
+
+// crank 7418: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-73/rp> := {body: "#{"liveOffers":[],"offerToPublicSubscriberPaths":[["open-vault-1-of-1-round-1",{"vault":"published.vaultFactory.managers.manager0.vaults.vault0"}]],"offerToUsedInvitation":[["open-vault-1-of-1-round-1",{"brand":"$0.Alleged: Zoe Invitation brand","value":[{"description":"manager0: MakeVault","handle":"$1.Alleged: InvitationHandle","installation":"$2.Alleged: BundleIDInstallation","instance":"$3.Alleged: InstanceHandle"}]}]],"purses":[{"balance":{"brand":"$0","value":[]},"brand":"$0"}]}", slots: ["board0074", null, "board05815", "board03365"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue("{\"body\":\"#{\\\"liveOffers\\\":[],\\\"offerToPublicSubscriberPaths\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"vault\\\":\\\"published.vaultFactory.managers.manager0.vaults.vault0\\\"}]],\\\"offerToUsedInvitation\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"brand\\\":\\\"$0.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[{\\\"description\\\":\\\"manager0: MakeVault\\\",\\\"handle\\\":\\\"$1.Alleged: InvitationHandle\\\",\\\"installation\\\":\\\"$2.Alleged: BundleIDInstallation\\\",\\\"instance\\\":\\\"$3.Alleged: InstanceHandle\\\"}]}]],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$0\\\"}]}\",\"slots\":[\"board0074\",null,\"board05815\",\"board03365\"]}"): <setValue-166/rp>
+
+// crank 7420: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getAllegedBrand-7/rp> := <v16-zcf-mintHolder-ATOM brand ATOM>
+send: <v14-bank bank agoric1alice> <- getPurse(<v16-zcf-mintHolder-ATOM brand ATOM>): <getPurse-13/rp>
+send: <getPurse-13/rp> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM r1>): <deposit-10/rp>
+
+// crank 7423: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getAllegedBrand-8/rp> := <v9-zoe feeIssuer-brand>
+send: <v14-bank bank agoric1alice> <- getPurse(<v9-zoe feeIssuer-brand>): <getPurse-14/rp>
+send: <getPurse-14/rp> <- deposit(<v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>): <deposit-11/rp>
+
+// crank 7426: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-163/rp> := undefined
+
+// crank 7427: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-164/rp> := undefined
+
+// crank 7428: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-165/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice", "{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-165/rp> := undefined
+
+// crank 7430: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice.current> <- setValue("{\"body\":\"#{\\\"liveOffers\\\":[],\\\"offerToPublicSubscriberPaths\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"vault\\\":\\\"published.vaultFactory.managers.manager0.vaults.vault0\\\"}]],\\\"offerToUsedInvitation\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"brand\\\":\\\"$0.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[{\\\"description\\\":\\\"manager0: MakeVault\\\",\\\"handle\\\":\\\"$1.Alleged: InvitationHandle\\\",\\\"installation\\\":\\\"$2.Alleged: BundleIDInstallation\\\",\\\"instance\\\":\\\"$3.Alleged: InstanceHandle\\\"}]}]],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$0\\\"}]}\",\"slots\":[\"board0074\",null,\"board05815\",\"board03365\"]}"): <setValue-166/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice.current", "{\"body\":\"#{\\\"liveOffers\\\":[],\\\"offerToPublicSubscriberPaths\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"vault\\\":\\\"published.vaultFactory.managers.manager0.vaults.vault0\\\"}]],\\\"offerToUsedInvitation\\\":[[\\\"open-vault-1-of-1-round-1\\\",{\\\"brand\\\":\\\"$0.Alleged: Zoe Invitation brand\\\",\\\"value\\\":[{\\\"description\\\":\\\"manager0: MakeVault\\\",\\\"handle\\\":\\\"$1.Alleged: InvitationHandle\\\",\\\"installation\\\":\\\"$2.Alleged: BundleIDInstallation\\\",\\\"instance\\\":\\\"$3.Alleged: InstanceHandle\\\"}]}]],\\\"purses\\\":[{\\\"balance\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":[]},\\\"brand\\\":\\\"$0\\\"}]}\",\"slots\":[\"board0074\",null,\"board05815\",\"board03365\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-166/rp> := undefined
+
+// crank 7432: v14 bank
+deliver: <v14-bank bank agoric1alice> <- getPurse(<v16-zcf-mintHolder-ATOM brand ATOM>): <getPurse-13/rp>
+resolve fulfill: <getPurse-13/rp> := <v14-bank purse agoric1alice ATOM -1>
+
+// crank 7435: v14 bank
+deliver: <v14-bank bank agoric1alice> <- getPurse(<v9-zoe feeIssuer-brand>): <getPurse-14/rp>
+send: <v10-bridge bank> <- toBridge({address: "agoric1alice", denom: "uist", type: "VBANK_GET_BALANCE"}): <toBridge-15/rp VBANK_GET_BALANCE>
+
+// crank 7437: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-165/rp> := undefined
+
+// crank 7438: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-166/rp> := undefined
+
+// crank 7439: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getPurse-13/rp> := <v14-bank purse agoric1alice ATOM -1>
+
+// crank 7440: v14 bank
+deliver: <v14-bank purse agoric1alice ATOM -1> <- deposit(<v16-zcf-mintHolder-ATOM payment ATOM r1>): <deposit-10/rp>
+send: <v16-zcf-mintHolder-ATOM publicFacet> <- burn(<v16-zcf-mintHolder-ATOM payment ATOM r1>, undefined): <burn-1/rp>
+
+// crank 7442: v10 bridge
+deliver: <v10-bridge bank> <- toBridge({address: "agoric1alice", denom: "uist", type: "VBANK_GET_BALANCE"}): <toBridge-15/rp VBANK_GET_BALANCE>
+invoke: <bridgeDevice>.callOutbound("bank", {address: "agoric1alice", denom: "uist", type: "VBANK_GET_BALANCE"})
+result: "0"
+resolve fulfill: <toBridge-15/rp VBANK_GET_BALANCE> := "0"
+
+// crank 7444: v16 zcf-mintHolder-ATOM
+deliver: <v16-zcf-mintHolder-ATOM publicFacet> <- burn(<v16-zcf-mintHolder-ATOM payment ATOM r1>, undefined): <burn-1/rp>
+resolve fulfill: <burn-1/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}
+
+// crank 7446: v14 bank
+fulfilled: <toBridge-15/rp VBANK_GET_BALANCE> := "0"
+send: <v9-zoe feeIssuer> <- makeEmptyPurse(): <makeEmptyPurse-39/rp>
+
+// crank 7448: v14 bank
+fulfilled: <burn-1/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}
+send: <v10-bridge bank> <- toBridge({amount: "0", denom: "ibc/toyatom", recipient: "agoric1alice", type: "VBANK_GIVE"}): <toBridge-16/rp VBANK_GIVE>
+
+// crank 7450: v9 zoe
+deliver: <v9-zoe feeIssuer> <- makeEmptyPurse(): <makeEmptyPurse-39/rp>
+resolve fulfill: <makeEmptyPurse-39/rp> := <v9-zoe emptyPurse feeIssuer-5 r1>
+
+// crank 7452: v10 bridge
+deliver: <v10-bridge bank> <- toBridge({amount: "0", denom: "ibc/toyatom", recipient: "agoric1alice", type: "VBANK_GIVE"}): <toBridge-16/rp VBANK_GIVE>
+invoke: <bridgeDevice>.callOutbound("bank", {amount: "0", denom: "ibc/toyatom", recipient: "agoric1alice", type: "VBANK_GIVE"})
+result: {nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}
+resolve fulfill: <toBridge-16/rp VBANK_GIVE> := {nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}
+
+// crank 7454: v14 bank
+fulfilled: <makeEmptyPurse-39/rp> := <v9-zoe emptyPurse feeIssuer-5 r1>
+resolve fulfill: <getPurse-14/rp> := <v14-bank purse-2 feeIssuer r1>
+
+// crank 7457: v14 bank
+fulfilled: <toBridge-16/rp VBANK_GIVE> := {nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}
+send: <v10-bridge bank> <- fromBridge({nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-3/rp>
+
+// crank 7459: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <getPurse-14/rp> := <v14-bank purse-2 feeIssuer r1>
+
+// crank 7460: v14 bank
+deliver: <v14-bank purse-2 feeIssuer r1> <- deposit(<v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>): <deposit-11/rp>
+send: <v9-zoe emptyPurse feeIssuer-1> <- deposit(<v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>, undefined): <deposit-12/rp>
+
+// crank 7462: v10 bridge
+deliver: <v10-bridge bank> <- fromBridge({nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-3/rp>
+send: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-4/rp>
+
+// crank 7464: v9 zoe
+deliver: <v9-zoe emptyPurse feeIssuer-1> <- deposit(<v9-zoe zcf-b1-33517-vaultFactory paymentPKeywordRecord r1>, undefined): <deposit-12/rp>
+resolve fulfill: <deposit-12/rp> := {brand: <v9-zoe feeIssuer-brand>, value: 5000000}
+
+// crank 7466: v14 bank
+deliver: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "2", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-4/rp>
+resolve fulfill: <fromBridge-4/rp> := undefined
+
+// crank 7468: v14 bank
+fulfilled: <deposit-12/rp> := {brand: <v9-zoe feeIssuer-brand>, value: 5000000}
+send: <v10-bridge bank> <- toBridge({amount: "5000000", denom: "uist", recipient: "agoric1alice", type: "VBANK_GIVE"}): <toBridge-17/rp VBANK_GIVE>
+
+// crank 7470: v10 bridge
+fulfilled: <fromBridge-4/rp> := undefined
+resolve fulfill: <fromBridge-3/rp> := undefined
+
+// crank 7472: v10 bridge
+deliver: <v10-bridge bank> <- toBridge({amount: "5000000", denom: "uist", recipient: "agoric1alice", type: "VBANK_GIVE"}): <toBridge-17/rp VBANK_GIVE>
+invoke: <bridgeDevice>.callOutbound("bank", {amount: "5000000", denom: "uist", recipient: "agoric1alice", type: "VBANK_GIVE"})
+result: {nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}
+resolve fulfill: <toBridge-17/rp VBANK_GIVE> := {nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}
+
+// crank 7474: v14 bank
+fulfilled: <fromBridge-3/rp> := undefined
+resolve fulfill: <deposit-10/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}
+
+// crank 7476: v14 bank
+fulfilled: <toBridge-17/rp VBANK_GIVE> := {nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}
+send: <v10-bridge bank> <- fromBridge({nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-5/rp>
+
+// crank 7478: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <deposit-10/rp> := {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}
+
+// crank 7479: v10 bridge
+deliver: <v10-bridge bank> <- fromBridge({nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-5/rp>
+send: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-6/rp>
+
+// crank 7481: v14 bank
+deliver: <v1-bootstrap bank.initHandler/arg> <- fromBridge({nonce: "3", type: "VBANK_BALANCE_UPDATE", updated: []}): <fromBridge-6/rp>
+resolve fulfill: <fromBridge-6/rp> := undefined
+
+// crank 7483: v10 bridge
+fulfilled: <fromBridge-6/rp> := undefined
+resolve fulfill: <fromBridge-5/rp> := undefined
+
+// crank 7485: v14 bank
+fulfilled: <fromBridge-5/rp> := undefined
+resolve fulfill: <deposit-11/rp> := {brand: <v9-zoe feeIssuer-brand>, value: 5000000}
+
+// crank 7487: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <deposit-11/rp> := {brand: <v9-zoe feeIssuer-brand>, value: 5000000}
+info: wallet agoric1alice offerStatus [object Object]
+send: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, numWantsSatisfied: 1, payouts: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-74/rp>
+resolve fulfill: <handleBridgeAction-1/rp round #1> := undefined
+
+// crank 7489: v7 board
+deliver: <v7-board marshaller readonlyMarshaller-1> <- toCapData({status: {id: "open-vault-1-of-1-round-1", invitationSpec: {callPipe: [["getCollateralManager", [<v16-zcf-mintHolder-ATOM brand ATOM>]], ["makeVaultInvitation"]], instancePath: ["VaultFactory"], source: "agoricContract"}, numWantsSatisfied: 1, payouts: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 0}, Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}, proposal: {give: {Collateral: {brand: <v16-zcf-mintHolder-ATOM brand ATOM>, value: 1000000}}, want: {Minted: {brand: <v9-zoe feeIssuer-brand>, value: 5000000}}}, result: "UNPUBLISHED"}, updated: "offerStatus"}): <toCapData-74/rp>
+resolve fulfill: <toCapData-74/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"numWantsSatisfied":1,"payouts":{"Collateral":{"brand":"$0","value":"+0"},"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+
+// crank 7491: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <toCapData-74/rp> := {body: "#{"status":{"id":"open-vault-1-of-1-round-1","invitationSpec":{"callPipe":[["getCollateralManager",["$0.Alleged: ATOM brand"]],["makeVaultInvitation"]],"instancePath":["VaultFactory"],"source":"agoricContract"},"numWantsSatisfied":1,"payouts":{"Collateral":{"brand":"$0","value":"+0"},"Minted":{"brand":"$1.Alleged: IST brand","value":"+5000000"}},"proposal":{"give":{"Collateral":{"brand":"$0","value":"+1000000"}},"want":{"Minted":{"brand":"$1","value":"+5000000"}}},"result":"UNPUBLISHED"},"updated":"offerStatus"}", slots: ["board05262", "board0257"]}
+send: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"payouts\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-167/rp>
+
+// crank 7493: v10 bridge
+deliver: <v10-bridge chainStorage.wallet.agoric1alice> <- setValue("{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"payouts\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"): <setValue-167/rp>
+invoke: <bridgeDevice>.callOutbound("storage", {args: [["published.wallet.agoric1alice", "{\"body\":\"#{\\\"status\\\":{\\\"id\\\":\\\"open-vault-1-of-1-round-1\\\",\\\"invitationSpec\\\":{\\\"callPipe\\\":[[\\\"getCollateralManager\\\",[\\\"$0.Alleged: ATOM brand\\\"]],[\\\"makeVaultInvitation\\\"]],\\\"instancePath\\\":[\\\"VaultFactory\\\"],\\\"source\\\":\\\"agoricContract\\\"},\\\"numWantsSatisfied\\\":1,\\\"payouts\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"Minted\\\":{\\\"brand\\\":\\\"$1.Alleged: IST brand\\\",\\\"value\\\":\\\"+5000000\\\"}},\\\"proposal\\\":{\\\"give\\\":{\\\"Collateral\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+1000000\\\"}},\\\"want\\\":{\\\"Minted\\\":{\\\"brand\\\":\\\"$1\\\",\\\"value\\\":\\\"+5000000\\\"}}},\\\"result\\\":\\\"UNPUBLISHED\\\"},\\\"updated\\\":\\\"offerStatus\\\"}\",\"slots\":[\"board05262\",\"board0257\"]}"]], method: "append"})
+result: undefined
+resolve fulfill: <setValue-167/rp> := undefined
+
+// crank 7495: v46 zcf-b1-94fc8-walletFactory
+fulfilled: <setValue-167/rp> := undefined

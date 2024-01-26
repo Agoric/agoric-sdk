@@ -15,7 +15,7 @@ import { createSHA256 } from './hasher.js';
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  */
 /**
- * @typedef { import('./exporter').SwingStoreExporter } SwingStoreExporter
+ * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
  * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
  *
  * @typedef {{
@@ -267,6 +267,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const rawBundle = row.bundle || Fail`bundle ${q(bundleID)} pruned`;
     yield* Readable.from(Buffer.from(rawBundle));
   }
+  harden(exportBundle);
 
   const sqlGetBundleIDs = db.prepare(`
     SELECT bundleID
@@ -286,12 +287,14 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       yield [bundleArtifactName(bundleID), bundleID];
     }
   }
+  harden(getExportRecords);
 
   async function* getArtifactNames() {
     for (const bundleID of sqlGetBundleIDs.iterate()) {
       yield bundleArtifactName(bundleID);
     }
   }
+  harden(getArtifactNames);
 
   function computeSha512(bytes) {
     const hash = createHash('sha512');
@@ -364,6 +367,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   function* getBundleIDs() {
     yield* sqlListBundleIDs.iterate();
   }
+  harden(getBundleIDs);
 
   return harden({
     importBundleRecord,

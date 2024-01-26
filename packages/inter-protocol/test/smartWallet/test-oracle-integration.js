@@ -154,7 +154,7 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 
 let pushPriceCounter = 0;
 /**
- * @param {any} wallet
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
  * @param {string} adminOfferId
  * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
  * @returns {Promise<string>} offer id
@@ -329,6 +329,7 @@ test.serial('errors', async t => {
         'In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
     },
   );
+
   await eventLoopIteration();
 
   // Success, round starts
@@ -374,7 +375,7 @@ test.serial('govern oracles list', async t => {
     'econCommitteeCharter',
   );
   /**
-   * @type {import('@agoric/zoe/src/zoeService/utils').Instance<
+   * @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<
    *   import('@agoric/governance/src/committee.js')['start']
    * >}
    */
@@ -419,7 +420,7 @@ test.serial('govern oracles list', async t => {
 
   // Accept the EC invitation makers ///////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
     const getInvMakersSpec = {
       source: 'purse',
       instance: econCharter,
@@ -482,7 +483,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to addOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',
@@ -538,7 +539,7 @@ test.serial('govern oracles list', async t => {
 
   // Call for a vote to removeOracles ////////////////////////////////
   {
-    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',

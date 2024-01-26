@@ -1,15 +1,14 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference types="@agoric/time/src/types.d.ts" />
-
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
 import { TimestampShape } from '@agoric/time';
 import { M } from '@agoric/store';
+
+const { quote: q, Fail } = assert;
 
 const trace = makeTracer('PA', false);
 
@@ -64,13 +63,13 @@ export const PriceAuthorityI = M.interface('PriceAuthority', {
  * @param {object} opts
  * @param {Issuer<'set'>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
- * @param {ERef<import('@agoric/time/src/types').TimerService>} opts.timer
+ * @param {ERef<import('@agoric/time').TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
  * @param {Brand<'nat'>} opts.actualBrandIn
  * @param {Brand<'nat'>} opts.actualBrandOut
  * @returns {PriceAuthorityKit}
  */
-export function makeOnewayPriceAuthorityKit(opts) {
+export const makeOnewayPriceAuthorityKit = opts => {
   const {
     timer,
     createQuote,
@@ -82,7 +81,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
 
   let haveFirstQuote = false;
 
-  E(notifier)
+  void E(notifier)
     .getUpdateSince()
     .then(_ => (haveFirstQuote = true));
 
@@ -110,7 +109,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
    *
    * @param {CompareAmount} compareAmountsFn
    */
-  const makeQuoteWhenOut = compareAmountsFn =>
+  const makeQuoteWhenOut =
+    compareAmountsFn =>
     /**
      * Return a quote when triggerWhen is true of the arguments.
      *
@@ -118,7 +118,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
      * @param {Amount} amountOutLimit the value to compare with the output
      * of calcAmountTrigger
      */
-    async function quoteWhenOutTrigger(amountIn, amountOutLimit) {
+    async (amountIn, amountOutLimit) => {
       amountIn = AmountMath.coerce(actualBrandIn, amountIn);
       amountOutLimit = AmountMath.coerce(actualBrandOut, amountOutLimit);
 
@@ -171,12 +171,13 @@ export function makeOnewayPriceAuthorityKit(opts) {
    *
    * @param {CompareAmount} compareAmountsFn
    */
-  const makeMutableQuote = compareAmountsFn =>
+  const makeMutableQuote =
+    compareAmountsFn =>
     /**
      * @param {Amount<'nat'>} amountIn
      * @param {Amount<'nat'>} amountOutLimit
      */
-    async function mutableQuoteWhenOutTrigger(amountIn, amountOutLimit) {
+    async (amountIn, amountOutLimit) => {
       AmountMath.coerce(actualBrandIn, amountIn);
       AmountMath.coerce(actualBrandOut, amountOutLimit);
 
@@ -274,12 +275,20 @@ export function makeOnewayPriceAuthorityKit(opts) {
           const record = await E(notifier).getUpdateSince(updateCount);
 
           // We create a quote inline.
-          const quote = createQuote(calcAmountOut => ({
-            amountIn,
-            amountOut: calcAmountOut(amountIn),
-          }));
+          let quote;
+          // createQuote can throw if priceAuthority is replaced.
+          // eslint-disable-next-line no-useless-catch
+          try {
+            quote = createQuote(calcAmountOut => ({
+              amountIn,
+              amountOut: calcAmountOut(amountIn),
+            }));
+          } catch (e) {
+            // fall through
+          }
+
           if (!quote) {
-            throw Fail`createQuote returned falsey`;
+            throw Fail`createQuote returned nothing`;
           }
 
           const value = await quote;
@@ -370,4 +379,4 @@ export function makeOnewayPriceAuthorityKit(opts) {
   });
 
   return { priceAuthority, adminFacet: { fireTriggers } };
-}
+};

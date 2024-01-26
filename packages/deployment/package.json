@@ -20,8 +20,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
-    "@endo/init": "^0.5.59",
-    "@endo/marshal": "^0.8.8",
+    "@endo/init": "^1.0.2",
+    "@endo/marshal": "^1.1.0",
     "better-sqlite3": "^9.1.1",
     "chalk": "^5.2.0",
     "deterministic-json": "^1.0.5",
@@ -37,6 +37,6 @@
     "readline-transform": "^1.0.0"
   },
   "typeCoverage": {
-    "atLeast": 61.49
+    "atLeast": 60.14
   }
 }

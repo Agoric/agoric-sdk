@@ -34,7 +34,7 @@ const bidInvitationShape = harden({
 });
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').TryExitOfferAction } TryExitOfferAction */
 /** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
 /** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
 /** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
@@ -65,12 +65,12 @@ const makeFormatters = assets => {
     r4(100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100);
 
   // XXX real TimeMath.absValue requires real Remotable timerBrand
-  /** @param {import('@agoric/time/src/types.js').Timestamp} ts */
+  /** @param {import('@agoric/time').Timestamp} ts */
   const absValue = ts => (typeof ts === 'bigint' ? ts : ts.absValue);
 
-  /** @param {import('@agoric/time/src/types.js').Timestamp} tr */
+  /** @param {import('@agoric/time').Timestamp} tr */
   const absTime = tr => new Date(Number(absValue(tr)) * 1000).toISOString();
-  /** @param {import('@agoric/time/src/types.js').RelativeTimeRecord} tr */
+  /** @param {import('@agoric/time').RelativeTimeRecord} tr */
   const relTime = tr =>
     new Date(Number(tr.relValue) * 1000).toISOString().slice(11, 19);
 

@@ -16,7 +16,18 @@ import {
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
-const { hasOwn, defineProperty, getOwnPropertyNames, entries } = Object;
+/**
+ * @typedef {import('@endo/exo/src/exo-tools.js').ClassContextProvider } ClassContextProvider
+ *
+ * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
+ */
+
+/**
+ *
+ */
+
+const { hasOwn, defineProperty, getOwnPropertyNames, entries, fromEntries } =
+  Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
 
@@ -139,39 +150,6 @@ const makeContextCache = (makeState, makeContext) => {
   const writeBacking = _baseRef => Fail`never called`;
   const deleteBacking = _baseRef => Fail`never called`;
   return makeCache(readBacking, writeBacking, deleteBacking);
-};
-
-/**
- * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
- */
-
-/**
- * @param {*} contextCache
- * @param {*} getSlotForVal
- * @returns {ContextProvider}
- */
-const makeContextProvider = (contextCache, getSlotForVal) =>
-  harden(rep => contextCache.get(getSlotForVal(rep)));
-
-const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
-  /** @type { Record<string, any> } */
-  const contextProviderKit = {};
-  for (const [index, name] of facetNames.entries()) {
-    contextProviderKit[name] = rep => {
-      const vref = getSlotForVal(rep);
-      const { baseRef, facet } = parseVatSlot(vref);
-
-      // Without this check, an attacker (with access to both cohort1.facetA
-      // and cohort2.facetB) could effectively forge access to cohort1.facetB
-      // and cohort2.facetA. They could not forge the identity of those two
-      // objects, but they could invoke all their equivalent methods, by using
-      // e.g. cohort1.facetA.foo.apply(cohort2.facetB, [...args])
-      Number(facet) === index || Fail`illegal cross-facet access`;
-
-      return harden(contextCache.get(baseRef));
-    };
-  }
-  return harden(contextProviderKit);
 };
 
 // The management of single Representatives (i.e. defineKind) is very similar
@@ -314,7 +292,7 @@ const insistSameCapData = (oldCD, newCD) => {
  * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
- * @param {import('./types').LiveSlotsOptions} [liveSlotsOptions]
+ * @param {import('./types.js').LiveSlotsOptions} [liveSlotsOptions]
  * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
  * Specifying the underlying WeakMap/WeakSet objects to wrap with
  * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently
@@ -891,7 +869,9 @@ export const makeVirtualObjectManager = (
       return harden({
         get() {
           const baseRef = getBaseRef(this);
-          const { valueMap, capdatas } = dataCache.get(baseRef);
+          const record = dataCache.get(baseRef);
+          assert(record !== undefined);
+          const { valueMap, capdatas } = record;
           if (!valueMap.has(prop)) {
             const value = harden(unserialize(capdatas[prop]));
             checkStatePropertyValue(value, prop);
@@ -908,6 +888,7 @@ export const makeVirtualObjectManager = (
             insistDurableCapdata(vrm, prop, capdata, true);
           }
           const record = dataCache.get(baseRef); // mutable
+          assert(record !== undefined);
           const oldSlots = record.capdatas[prop].slots;
           const newSlots = capdata.slots;
           vrm.updateReferenceCounts(oldSlots, newSlots);
@@ -931,7 +912,9 @@ export const makeVirtualObjectManager = (
     const makeState = baseRef => {
       const state = { __proto__: statePrototype };
       if (stateShape === undefined) {
-        for (const prop of ownKeys(dataCache.get(baseRef).capdatas)) {
+        const record = dataCache.get(baseRef);
+        assert(record !== undefined);
+        for (const prop of ownKeys(record.capdatas)) {
           assert(typeof prop === 'string');
           checkStateProperty(prop);
           defineProperty(state, prop, makeFieldDescriptor(prop));
@@ -982,17 +965,47 @@ export const makeVirtualObjectManager = (
 
     let proto;
     if (multifaceted) {
+      /** @type { Record<string, KitContextProvider> } */
+      const contextProviderKit = fromEntries(
+        facetNames.map((name, index) => [
+          name,
+          rep => {
+            const vref = getSlotForVal(rep);
+            assert(vref !== undefined);
+            const { baseRef, facet } = parseVatSlot(vref);
+
+            // Without this check, an attacker (with access to both
+            // cohort1.facetA and cohort2.facetB)
+            // could effectively forge access to
+            // cohort1.facetB and cohort2.facetA.
+            // They could not forge the identity of those two
+            // objects, but they could invoke all their equivalent methods,
+            // by using e.g.
+            // cohort1.facetA.foo.apply(cohort2.facetB, [...args])
+            Number(facet) === index || Fail`illegal cross-facet access`;
+
+            return harden(contextCache.get(baseRef));
+          },
+        ]),
+      );
+
       proto = defendPrototypeKit(
         tag,
-        makeContextProviderKit(contextCache, getSlotForVal, facetNames),
+        harden(contextProviderKit),
         behavior,
         thisfulMethods,
         interfaceGuardKit,
       );
     } else {
+      /** @type {ClassContextProvider} */
+      const contextProvider = rep => {
+        const slot = getSlotForVal(rep);
+        assert(slot !== undefined);
+        return harden(contextCache.get(slot));
+      };
       proto = defendPrototype(
         tag,
-        makeContextProvider(contextCache, getSlotForVal),
+        harden(contextProvider),
         behavior,
         thisfulMethods,
         interfaceGuard,
@@ -1014,6 +1027,7 @@ export const makeVirtualObjectManager = (
     const deleteStoredVO = baseRef => {
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
+      assert(record !== undefined);
       for (const valueCD of Object.values(record.capdatas)) {
         for (const vref of valueCD.slots) {
           doMoreGC = vrm.removeReachableVref(vref) || doMoreGC;
@@ -1072,7 +1086,7 @@ export const makeVirtualObjectManager = (
         val = makeRepresentative(proto, baseRef);
       }
       registerValue(baseRef, val, multifaceted);
-      finish?.(contextCache.get(baseRef));
+      finish && finish(contextCache.get(baseRef));
       return val;
     };
 

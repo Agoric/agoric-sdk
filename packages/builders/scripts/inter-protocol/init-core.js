@@ -192,9 +192,11 @@ export default async (homeP, endowments) => {
   });
   await Promise.all([
     writeCoreProposal('gov-econ-committee', opts =>
+      // @ts-expect-error XXX makeInstallCache types
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
     writeCoreProposal('gov-amm-vaults-etc', opts =>
+      // @ts-expect-error XXX makeInstallCache types
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
   ]);

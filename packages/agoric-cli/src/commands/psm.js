@@ -216,8 +216,6 @@ export const makePsmCommand = logger => {
       };
 
       outputExecuteOfferAction(offer);
-
-      console.warn('Now execute the prepared offer');
     });
 
   psm
@@ -272,8 +270,6 @@ export const makePsmCommand = logger => {
       };
 
       outputExecuteOfferAction(offer);
-
-      console.warn('Now execute the prepared offer');
     });
 
   return psm;

@@ -175,7 +175,7 @@ harden(produceStartUpgradable);
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>;
- *   timer: ERef<import('@agoric/time/src/types').TimerService>;
+ *   timer: ERef<import('@agoric/time').TimerService>;
  *   contractGovernor: ERef<Installation>;
  *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
  * }} govArgs
@@ -697,7 +697,7 @@ export const addBankAssets = async ({
 };
 harden(addBankAssets);
 
-/** @type {import('./lib-boot').BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const BASIC_BOOTSTRAP_PERMITS = {
   bridgeCoreEval: true, // Needs all the powers.
   [makeOracleBrands.name]: {

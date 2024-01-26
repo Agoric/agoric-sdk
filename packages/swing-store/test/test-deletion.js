@@ -6,6 +6,7 @@ import { initSwingStore } from '../src/swingStore.js';
 async function* getSnapshotStream() {
   yield Buffer.from('abc');
 }
+harden(getSnapshotStream);
 
 test('delete snapshots with export callback', async t => {
   const exportLog = [];

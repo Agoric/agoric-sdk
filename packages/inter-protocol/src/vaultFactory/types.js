@@ -1,15 +1,15 @@
 // @jessie-check
 
 /**
- * @typedef {import('./vault').VaultNotification} VaultNotification
+ * @typedef {import('./vault.js').VaultNotification} VaultNotification
  *
- * @typedef {import('./vault').Vault} Vault
+ * @typedef {import('./vault.js').Vault} Vault
  *
- * @typedef {import('./vaultKit').VaultKit} VaultKit
+ * @typedef {import('./vaultKit.js').VaultKit} VaultKit
  *
- * @typedef {import('./vaultManager').VaultManager} VaultManager
+ * @typedef {import('./vaultManager.js').VaultManager} VaultManager
  *
- * @typedef {import('./vaultManager').CollateralManager} CollateralManager
+ * @typedef {import('./vaultManager.js').CollateralManager} CollateralManager
  *
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  *
@@ -19,9 +19,9 @@
  *
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time').Timestamp} Timestamp
  *
- * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time').RelativeTime} RelativeTime
  */
 
 /**
@@ -58,8 +58,8 @@
  * @property {AddVaultType} addVaultType
  * @property {() => Allocation} getRewardAllocation
  * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
- * @property {() => import('@agoric/time/src/types').TimerWaker} makeLiquidationWaker
- * @property {() => import('@agoric/time/src/types').TimerWaker} makePriceLockWaker
+ * @property {() => import('@agoric/time').TimerWaker} makeLiquidationWaker
+ * @property {() => import('@agoric/time').TimerWaker} makePriceLockWaker
  */
 
 /**

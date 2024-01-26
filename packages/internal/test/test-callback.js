@@ -14,15 +14,15 @@ test('near function callbacks', t => {
    */
   const f = (a, b, c) => `${a + b}${c}`;
 
-  /** @type {import('../src/callback').SyncCallback<typeof f>} */
+  /** @type {import('../src/callback.js').SyncCallback<typeof f>} */
   const cb0 = cb.makeSyncFunctionCallback(f);
   t.deepEqual(cb0, { target: f, bound: [], isSync: true });
 
-  /** @type {import('../src/callback').SyncCallback<(b: number, c: string) => string>} */
+  /** @type {import('../src/callback.js').SyncCallback<(b: number, c: string) => string>} */
   const cb1 = cb.makeSyncFunctionCallback(f, 9);
   t.deepEqual(cb1, { target: f, bound: [9], isSync: true });
 
-  /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
+  /** @type {import('../src/callback.js').SyncCallback<(c: string) => string>} */
   const cb2 = cb.makeSyncFunctionCallback(f, 9, 10);
   t.deepEqual(cb2, { target: f, bound: [9, 10], isSync: true });
 
@@ -40,7 +40,7 @@ test('near function callbacks', t => {
   t.is(cb.callSync(cb2, 'go'), '19go');
 
   const cbp2 =
-    /** @type {import('../src/callback').SyncCallback<(...args: unknown[]) => any>} */ ({
+    /** @type {import('../src/callback.js').SyncCallback<(...args: unknown[]) => any>} */ ({
       target: Promise.resolve(f),
       methodName: undefined,
       bound: [9, 10],
@@ -72,15 +72,15 @@ test('near method callbacks', t => {
     },
   };
 
-  /** @type {import('../src/callback').SyncCallback<typeof o.m1>} */
+  /** @type {import('../src/callback.js').SyncCallback<typeof o.m1>} */
   const cb0 = cb.makeSyncMethodCallback(o, 'm1');
   t.deepEqual(cb0, { target: o, methodName: 'm1', bound: [], isSync: true });
 
-  /** @type {import('../src/callback').SyncCallback<(b: number, c: string) => string>} */
+  /** @type {import('../src/callback.js').SyncCallback<(b: number, c: string) => string>} */
   const cb1 = cb.makeSyncMethodCallback(o, 'm1', 9);
   t.deepEqual(cb1, { target: o, methodName: 'm1', bound: [9], isSync: true });
 
-  /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
+  /** @type {import('../src/callback.js').SyncCallback<(c: string) => string>} */
   const cb2 = cb.makeSyncMethodCallback(o, 'm1', 9, 10);
   t.deepEqual(cb2, {
     target: o,
@@ -98,7 +98,7 @@ test('near method callbacks', t => {
     isSync: true,
   });
 
-  /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
+  /** @type {import('../src/callback.js').SyncCallback<(c: string) => string>} */
   const cb4 = cb.makeSyncMethodCallback(o, m2, 9, 10);
   t.deepEqual(cb4, { target: o, methodName: m2, bound: [9, 10], isSync: true });
 
@@ -145,7 +145,7 @@ test('far method callbacks', async t => {
     },
   });
 
-  /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
+  /** @type {import('../src/callback.js').Callback<(c: string) => Promise<string>>} */
   const cbp2 = cb.makeMethodCallback(Promise.resolve(o), 'm1', 9, 10);
   t.like(cbp2, { methodName: 'm1', bound: [9, 10] });
   t.assert(cbp2.target instanceof Promise);
@@ -153,7 +153,7 @@ test('far method callbacks', async t => {
   t.assert(p2r instanceof Promise);
   t.is(await p2r, '19go');
 
-  /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
+  /** @type {import('../src/callback.js').Callback<(c: string) => Promise<string>>} */
   const cbp3 = cb.makeMethodCallback(Promise.resolve(o), m2, 9, 10);
   t.like(cbp3, { methodName: m2, bound: [9, 10] });
   t.assert(cbp3.target instanceof Promise);
@@ -175,7 +175,7 @@ test('far function callbacks', async t => {
    */
   const f = async (a, b, c) => `${a + b}${c}`;
 
-  /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
+  /** @type {import('../src/callback.js').Callback<(c: string) => Promise<string>>} */
   const cbp2 = cb.makeFunctionCallback(Promise.resolve(f), 9, 10);
   t.like(cbp2, { bound: [9, 10] });
   t.assert(cbp2.target instanceof Promise);

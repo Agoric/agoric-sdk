@@ -52,19 +52,19 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/bundle-source": "^2.7.0",
-    "@endo/captp": "^3.1.4",
-    "@endo/eventual-send": "^0.17.5",
-    "@endo/far": "^0.2.21",
-    "@endo/import-bundle": "^0.4.1",
-    "@endo/marshal": "^0.8.8",
-    "@endo/nat": "^4.1.30",
-    "@endo/patterns": "^0.2.5",
-    "@endo/promise-kit": "^0.2.59",
+    "@endo/bundle-source": "^3.0.2",
+    "@endo/captp": "^4.0.2",
+    "@endo/eventual-send": "^1.1.0",
+    "@endo/far": "^1.0.2",
+    "@endo/import-bundle": "^1.0.2",
+    "@endo/marshal": "^1.1.0",
+    "@endo/nat": "^5.0.2",
+    "@endo/patterns": "^1.1.0",
+    "@endo/promise-kit": "^1.0.2",
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.59",
+    "@endo/init": "^1.0.2",
     "@agoric/kmarshal": "^0.1.0",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
@@ -135,6 +135,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 81.5
+    "atLeast": 84.82
   }
 }

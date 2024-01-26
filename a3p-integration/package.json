@@ -1,0 +1,15 @@
+{
+    "private": true,
+    "agoricSyntheticChain": {
+        "fromTag": "main"
+    },
+    "scripts": {
+        "build": "echo Use synthetic-chain to build proposal images",
+        "test": "echo Use synthetic-chain to test proposal images"
+    },
+    "dependencies": {
+        "@agoric/synthetic-chain": "^0.0.3",
+        "tsx": "^4.7.0"
+    },
+    "license": "Apache-2.0"
+}

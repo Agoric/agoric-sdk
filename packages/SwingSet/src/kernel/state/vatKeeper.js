@@ -487,6 +487,7 @@ export function makeVatKeeper(
       deliveryNum += 1;
     }
   }
+  harden(getTranscript);
 
   /**
    * Append an entry to the vat's transcript.

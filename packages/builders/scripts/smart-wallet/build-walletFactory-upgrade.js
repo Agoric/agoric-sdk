@@ -28,7 +28,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
   });
 };
 
-/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
   await writeCoreProposal('upgrade-walletFactory', defaultProposalBuilder);

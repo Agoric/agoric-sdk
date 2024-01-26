@@ -98,17 +98,12 @@ proto-lint: proto-tools
 proto-check-breaking: proto-tools
 	${BIN}/buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
-TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
-COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
-IBCVER = 832044782f10
-t:
-	echo "X$(COSMOSVER)X"
-
-TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
 GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
 IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v4)/proto/ibc/core
+COSMOS_PROTO_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/regen-network/cosmos-proto)
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
+COSMOS_PROTO_TYPES = third_party/proto/cosmos_proto
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
 IBC_CHANNEL_TYPES = third_party/proto/ibc/core/channel/v1
 IBC_CLIENT_TYPES = third_party/proto/ibc/core/client/v1
@@ -116,6 +111,9 @@ SDK_QUERY_TYPES  	= third_party/proto/cosmos/base/query/v1beta1
 SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
 
 proto-update-deps:
+	mkdir -p $(COSMOS_PROTO_TYPES)
+	curl -sSL $(COSMOS_PROTO_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+
 	mkdir -p $(GOGO_PROTO_TYPES)
 	curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
 

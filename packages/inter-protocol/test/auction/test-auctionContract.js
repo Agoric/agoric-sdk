@@ -9,14 +9,14 @@ import { subscribeEach } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
-import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
 import { NonNullish } from '@agoric/assert';
 
@@ -58,7 +58,7 @@ const test = anyTest;
 
 const trace = makeTracer('Test AuctContract', false);
 
-const defaultParams = {
+const defaultParams = harden({
   StartFrequency: 40n,
   ClockStep: 5n,
   StartingRate: 10500n,
@@ -66,7 +66,7 @@ const defaultParams = {
   DiscountStep: 2000n,
   AuctionStartDelay: 10n,
   PriceLockPeriod: 3n,
-};
+});
 
 const makeTestContext = async () => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
@@ -126,6 +126,7 @@ export const setupServices = async (t, params = defaultParams) => {
 
   void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
+  /** @type {import('@agoric/swingset-liveslots').Baggage} */
   const paBaggage = makeScalarMapStore();
   const { priceAuthority, adminFacet: registry } =
     providePriceAuthorityRegistry(paBaggage);
@@ -143,7 +144,12 @@ export const setupServices = async (t, params = defaultParams) => {
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
   const { zoe, bid } = t.context;
-  /** @type {MapStore<Brand, { setPrice: (r: Ratio) => void }>} */
+  /**
+   * @type {MapStore<
+   *   Brand,
+   *   import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority
+   * >}
+   */
   const priceAuthorities = makeScalarMapStore();
 
   const { space, timer, registry } = await setupServices(t, params);
@@ -344,6 +350,19 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     getReserveBalance(keyword) {
       const reserveCF = E.get(reserveKit).creatorFacet;
       return E.get(E(reserveCF).getAllocations())[keyword];
+    },
+    async replacePriceAuthority(brandIn, brandOut, initialPrice) {
+      priceAuthorities.get(brandIn).disable();
+
+      const newPa = makeManualPriceAuthority({
+        actualBrandIn: brandIn,
+        actualBrandOut: brandOut,
+        timer,
+        initialPrice,
+      });
+      priceAuthorities.set(brandIn, newPa);
+
+      await E(registry).registerPriceAuthority(newPa, brandIn, brandOut, true);
     },
   };
 };
@@ -1187,7 +1206,7 @@ test.serial('add assets to open auction', async t => {
 test.serial('multiple collaterals', async t => {
   const { collateral, bid } = t.context;
 
-  const params = defaultParams;
+  const params = { ...defaultParams };
   params.LowestRate = 2500n;
 
   const driver = await makeAuctionDriver(t, params);
@@ -1420,7 +1439,7 @@ test.serial('time jumps forward', async t => {
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);
   t.is(schedules.liveAuctionSchedule?.startTime.absValue, 1530n);
-  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1550n);
+  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1545n);
 });
 
 // serial because dynamicConfig is shared across tests
@@ -1478,7 +1497,8 @@ test.serial('add collateral type during auction', async t => {
   await driver.advanceTo(185n, 'wait');
 
   await scheduleTracker.assertChange({
-    nextDescendingStepTime: { absValue: 190n },
+    activeStartTime: null,
+    nextDescendingStepTime: { absValue: 210n },
   });
 
   t.true(await E(seat).hasExited());
@@ -1490,7 +1510,76 @@ test.serial('add collateral type during auction', async t => {
   await assertPayouts(t, liqSeat, bid, collateral, 231n, 800n);
 
   await scheduleTracker.assertChange({
-    activeStartTime: null,
-    nextDescendingStepTime: { absValue: 210n },
+    activeStartTime: TimeMath.coerceTimestampRecord(210n, timerBrand),
+    nextStartTime: { absValue: 250n },
+    nextDescendingStepTime: { absValue: 215n },
   });
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('replace priceAuthority', async t => {
+  const { collateral, bid } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await driver.setupCollateralAuction(collateral, collateral.make(100n));
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(bid.make(20n), collateral.make(10n)),
+  );
+  await eventLoopIteration();
+
+  // invalidate the old PA that the auction is relying on.
+  await driver.replacePriceAuthority(
+    collateral.brand,
+    bid.brand,
+    makeRatioFromAmounts(bid.make(15n), collateral.make(10n)),
+  );
+  // provide new price via the new authority. The auction must switch to see it
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(bid.make(5n), collateral.make(10n)),
+  );
+
+  const seat = await driver.bidForCollateralSeat(
+    bid.make(125n),
+    collateral.make(100n),
+  );
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+
+  // The driver must be advanced to 167 to stop at lockTime, so the price is
+  // locked, else the goods won't be sold at auction.
+  await driver.advanceTo(167n);
+  await driver.advanceTo(170n);
+  let schedules = await driver.getSchedule();
+  assert(schedules.liveAuctionSchedule);
+  t.is(schedules.liveAuctionSchedule.startTime.absValue, 170n);
+  t.is(schedules.liveAuctionSchedule.endTime.absValue, 185n);
+
+  await driver.advanceTo(175n);
+  await driver.advanceTo(180n);
+  await driver.advanceTo(185n);
+  await driver.advanceTo(200n);
+
+  await eventLoopIteration();
+
+  await driver.advanceTo(207n);
+  await driver.advanceTo(210n);
+  await driver.advanceTo(215n);
+  await driver.advanceTo(220n);
+
+  await driver.advanceTo(230n);
+  await driver.depositCollateral(collateral.make(400n), collateral, {
+    goal: bid.make(200n),
+  });
+
+  await driver.advanceTo(247n);
+  await driver.advanceTo(250n);
+  await driver.advanceTo(255n);
+  await driver.advanceTo(260n);
+  await driver.advanceTo(265n);
+
+  schedules = await driver.getSchedule();
+
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 290n);
+  t.true(await E(seat).hasExited());
+
+  await assertPayouts(t, seat, bid, collateral, 72n, 100n);
 });

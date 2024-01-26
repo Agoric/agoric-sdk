@@ -78,6 +78,13 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  // An object known only to walletFactory and smartWallets. The WalletFactory
+  // only has the self facet for the pre-existing wallets that must be repaired.
+  // Self is too accessible, so use of the repair function requires use of a
+  // secret that clients won't have. This can be removed once the upgrade has
+  // taken place.
+  const upgradeToIncarnation2Key = harden({});
+
   const shared = harden({
     agoricNames,
     invitationBrand,
@@ -86,6 +93,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
+    secretWalletFactoryKey: upgradeToIncarnation2Key,
   });
 
   /**
@@ -110,15 +118,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-       * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[import('../../../src/smartWallet').SmartWallet, boolean]>} wallet
+       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
+       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[import('../../../src/smartWallet.js').SmartWallet, boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let makerCalled = false;
-        /** @type {() => Promise<import('../../../src/smartWallet').SmartWallet>} */
+        /** @type {() => Promise<import('../../../src/smartWallet.js').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

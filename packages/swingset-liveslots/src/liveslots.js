@@ -34,7 +34,7 @@ const { details: X } = assert;
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagnostics
  * @param {*} vatPowers
- * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
+ * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
@@ -1469,7 +1469,7 @@ function build(
   }
 
   /**
-   * @param {import('./types').VatDeliveryObject} delivery
+   * @param {import('./types.js').VatDeliveryObject} delivery
    * @returns {void | Promise<void>}
    */
   function dispatchToUserspace(delivery) {
@@ -1534,7 +1534,7 @@ function build(
   }
 
   /**
-   * @param { import('./types').SwingSetCapData } _disconnectObjectCapData
+   * @param { import('./types.js').SwingSetCapData } _disconnectObjectCapData
    * @returns {Promise<void>}
    */
   async function stopVat(_disconnectObjectCapData) {
@@ -1586,7 +1586,7 @@ function build(
    * terminate the vat). Userspace should not be able to cause the delivery
    * to fail: only a bug in liveslots should trigger a failure.
    *
-   * @param {import('./types').VatDeliveryObject} delivery
+   * @param {import('./types.js').VatDeliveryObject} delivery
    * @returns {Promise<void>}
    */
   async function dispatch(delivery) {
@@ -1637,7 +1637,7 @@ function build(
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
- * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
+ * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]

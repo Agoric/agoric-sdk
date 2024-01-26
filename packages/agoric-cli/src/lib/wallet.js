@@ -23,13 +23,13 @@ const emptyCurrentRecord = {
 /**
  * @param {string} addr
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>}
+ * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
  */
 export const getCurrent = async (addr, { readLatestHead }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
   let current =
-    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord> | undefined} */ (
+    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
       await readLatestHead(`published.wallet.${addr}.current`)
     );
   if (current === undefined) {
@@ -58,7 +58,7 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 /**
  * @param {string} addr
  * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>}
+ * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
  */
 export const getLastUpdate = (addr, { readLatestHead }) => {
   // @ts-expect-error cast
@@ -66,7 +66,7 @@ export const getLastUpdate = (addr, { readLatestHead }) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
  * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
@@ -75,11 +75,11 @@ export const outputAction = (bridgeAction, stdout = process.stdout) => {
   stdout.write('\n');
 };
 
-const sendHint =
+export const sendHint =
   'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
  * @param {{
  *   stdout: Pick<import('stream').Writable,'write'>,
  *   stderr: Pick<import('stream').Writable,'write'>,
@@ -93,19 +93,25 @@ export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
 /**
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
  * @param {Pick<import('stream').Writable,'write'>} [stdout]
+ * @param {Pick<import('stream').Writable,'write'>} [stderr]
  */
-export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
-  /** @type {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} */
+export const outputExecuteOfferAction = (
+  offer,
+  stdout = process.stdout,
+  stderr = process.stderr,
+) => {
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} */
   const spendAction = {
     method: 'executeOffer',
     offer,
   };
   outputAction(spendAction, stdout);
+  stderr.write(sendHint);
 };
 
 /**
  * @deprecated use `.current` node for current state
- * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
+ * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>>} follower
  * @param {Brand<'set'>} [invitationBrand]
  */
 export const coalesceWalletState = async (follower, invitationBrand) => {
@@ -135,8 +141,8 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  * Sign and broadcast a wallet-action.
  *
  * @throws { Error & { code: number } } if transaction fails
- * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
- * @param {import('./rpc').MinimalNetworkConfig & {
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
+ * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   verbose?: boolean,

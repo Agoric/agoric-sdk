@@ -15,9 +15,9 @@
   },
   "devDependencies": {
     "@agoric/vats": "^0.15.1",
-    "@endo/bundle-source": "^2.7.0",
-    "@endo/far": "^0.2.21",
-    "@endo/init": "^0.5.59",
+    "@endo/bundle-source": "^3.0.2",
+    "@endo/far": "^1.0.2",
+    "@endo/init": "^1.0.2",
     "ava": "^5.3.0"
   },
   "dependencies": {
@@ -32,10 +32,10 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/eventual-send": "^0.17.5",
-    "@endo/marshal": "^0.8.8",
-    "@endo/nat": "^4.1.30",
-    "@endo/promise-kit": "^0.2.59",
+    "@endo/eventual-send": "^1.1.0",
+    "@endo/marshal": "^1.1.0",
+    "@endo/nat": "^5.0.2",
+    "@endo/promise-kit": "^1.0.2",
     "import-meta-resolve": "^2.2.1"
   },
   "keywords": [],

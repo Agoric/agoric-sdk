@@ -96,7 +96,7 @@ const main = async (progname, rawArgs, powers) => {
     .option(
       '--hostport <host:port>',
       'host and port to connect to VM',
-      '127.0.0.1:8000',
+      'localhost:8000',
     )
     .option('--no-browser', `just display the URL, don't open a browser`)
     .option(

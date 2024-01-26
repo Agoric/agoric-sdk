@@ -145,6 +145,7 @@ module.exports = {
     {
       files: ['*.ts'],
       rules: {
+        'jsdoc/require-param-type': 'off',
         // TS has this covered and eslint gets it wrong
         'no-undef': 'off',
       },
@@ -154,14 +155,6 @@ module.exports = {
       files: ['*.html'],
       parserOptions: {
         project: false,
-      },
-    },
-    {
-      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
-      rules: {
-        // NOTE: This rule is enabled for the repository in general.  We turn it
-        // off for test code for now.
-        '@jessie.js/safe-await-separator': 'off',
       },
     },
     {

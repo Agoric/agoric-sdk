@@ -2,6 +2,9 @@
  * @file Wallet Factory
  *
  * Contract to make smart wallets.
+ *
+ * Note: The upgrade test uses a slightly modified copy of this file. When the
+ * interface changes here, that will also need to change.
  */
 
 import { makeTracer, WalletName } from '@agoric/internal';
@@ -28,6 +31,9 @@ export const privateArgsShape = harden(
     { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
   ),
 );
+
+const WALLETS_BY_ADDRESS = 'walletsByAddress';
+const UPGRADE_TO_INCARNATION_TWO = 'upgrade to incarnation two';
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
@@ -68,7 +74,7 @@ export const makeAssetRegistry = assetPublisher => {
    *   brand: Brand,
    *   displayInfo: DisplayInfo,
    *   issuer: Issuer,
-   *   petname: import('./types').Petname
+   *   petname: import('./types.js').Petname
    * }} BrandDescriptor
    * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
    */
@@ -119,17 +125,17 @@ export const makeAssetRegistry = assetPublisher => {
  *
  * @typedef {{
  *   getAssetSubscription: () => ERef<
- *     IterableEachTopic<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ *     IterableEachTopic<import('@agoric/vats/src/vat-bank.js').AssetDescriptor>>
  * }} AssetPublisher
  *
  * @typedef {boolean} isRevive
  * @typedef {{
- *   reviveWallet: (address: string) => Promise<import('./smartWallet').SmartWallet>,
+ *   reviveWallet: (address: string) => Promise<import('./smartWallet.js').SmartWallet>,
  *   ackWallet: (address: string) => isRevive,
  * }} WalletReviver
  */
 
-// NB: even though all the wallets share this contract, they
+// NB: even though all the wallets share this contract,
 // 1. they should not rely on that; they may be partitioned later
 // 2. they should never be able to detect behaviors from another wallet
 /**
@@ -142,14 +148,14 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
-  const upgrading = baggage.has('walletsByAddress');
+  const upgrading = baggage.has(WALLETS_BY_ADDRESS);
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager, walletReviver } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
-  const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
+  const walletsByAddress = provideDurableMapStore(baggage, WALLETS_BY_ADDRESS);
   const provider = makeAtomicProvider(walletsByAddress);
 
   const handleWalletAction = makeExo(
@@ -220,6 +226,15 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
+  /**
+   * An object known only to walletFactory and smartWallets. The WalletFactory
+   * only has the self facet for the pre-existing wallets that must be repaired.
+   * Self is too accessible, so use of the repair function requires use of a
+   * secret that clients won't have. This can be removed once the upgrade has
+   * taken place.
+   */
+  const upgradeToIncarnation2Key = harden({});
+
   const shared = harden({
     agoricNames,
     invitationBrand,
@@ -228,6 +243,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
+    secretWalletFactoryKey: upgradeToIncarnation2Key,
   });
 
   /**
@@ -236,6 +252,22 @@ export const prepare = async (zcf, privateArgs, baggage) => {
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
+
+  // One time repair for incarnation 2. We're adding WatchedPromises to allow
+  // wallets to durably monitor offer outcomes, but wallets that already exist
+  // need to be backfilled. This code needs to run once at the beginning of
+  // incarnation 2, and then shouldn't be needed again.
+  if (!baggage.has(UPGRADE_TO_INCARNATION_TWO)) {
+    trace('Wallet Factory upgrading to incarnation 2');
+
+    // This could take a while, depending on how many outstanding wallets exist.
+    // The current plan is that it will run exactly once, and inside an upgrade
+    // handler, between blocks.
+    for (const wallet of walletsByAddress.values()) {
+      wallet.repairWalletForIncarnation2(upgradeToIncarnation2Key);
+    }
+    baggage.init(UPGRADE_TO_INCARNATION_TWO, 'done');
+  }
 
   const creatorFacet = prepareExo(
     baggage,
@@ -250,16 +282,16 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        * @param {string} address
-       * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
-       * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[wallet: import('./smartWallet').SmartWallet, isNew: boolean]>} wallet
+       * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
+       * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
+       * @returns {Promise<[wallet: import('./smartWallet.js').SmartWallet, isNew: boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let isNew = false;
 
-        /** @type {(address: string) => Promise<import('./smartWallet').SmartWallet>} */
+        /** @type {(address: string) => Promise<import('./smartWallet.js').SmartWallet>} */
         const maker = async _address => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

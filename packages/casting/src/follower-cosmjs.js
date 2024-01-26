@@ -10,6 +10,15 @@ import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
+// A lot of cosmjs classes end up hardened through instances shared by this
+// package so preemptively harden them all.
+// However we cannot directly harden a module namespace object (exotic behavior
+// for bindings) so spread the namespace instead
+harden({
+  tendermint34: { ...tendermint34 },
+  stargateStar: { ...stargateStar },
+});
+
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q, Fail } = assert;
@@ -90,8 +99,8 @@ const proofs = ['strict', 'none', 'optimistic'];
 /**
  * @template T
  * @param {any} sourceP
- * @param {import('./types').LeaderOrMaker} [leaderOrMaker]
- * @param {import('./types').FollowerOptions} [options]
+ * @param {import('./types.js').LeaderOrMaker} [leaderOrMaker]
+ * @param {import('./types.js').FollowerOptions} [options]
  * @returns {ValueFollower<T>}
  */
 export const makeCosmjsFollower = (
@@ -357,6 +366,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(allValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -372,6 +382,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(reverseValuesFromCell);
 
   /**
    * @param {import('./types.js').StreamCell<T>} streamCell
@@ -389,6 +400,7 @@ export const makeCosmjsFollower = (
       );
     }
   }
+  harden(lastValueFromCell);
 
   /**
    * @yields {ValueFollowerElement<T>}
@@ -434,6 +446,7 @@ export const makeCosmjsFollower = (
       lastValue = latest.value;
     }
   }
+  harden(getLatestIterable);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -552,6 +565,7 @@ export const makeCosmjsFollower = (
       cursorData = currentData;
     }
   }
+  harden(getEachIterableAtHeight);
 
   /**
    * @param {number} [cursorBlockHeight]
@@ -575,6 +589,7 @@ export const makeCosmjsFollower = (
       cursorBlockHeight = cursorStreamCell.blockHeight - 1;
     }
   }
+  harden(getReverseIterableAtHeight);
 
   /** @type {ValueFollower<T>} */
   return Far('chain follower', {

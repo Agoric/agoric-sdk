@@ -316,7 +316,7 @@ type ChainBootstrapSpaceT = {
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
   chainStorage: StorageNode | null;
-  chainTimerService: import('@agoric/time/src/types').TimerService;
+  chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
@@ -348,7 +348,7 @@ type ChainBootstrapSpaceT = {
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: PriceAuthority;
-  priceAuthorityAdmin: import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
+  priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   provisionWalletBridgeManager:
@@ -397,7 +397,7 @@ type BootstrapPowers = BootstrapSpace & {
   vatPowers: { [prop: string]: any; D: DProxy };
   vatParameters: BootstrapVatParams;
   runBehaviors: (manifest: unknown) => Promise<unknown>;
-  modules: Record<string, Record<string, any>>;
+  modules: import('./boot-chain.js').BootstrapModules;
 };
 
 type BootstrapSpace = WellKnownSpaces &

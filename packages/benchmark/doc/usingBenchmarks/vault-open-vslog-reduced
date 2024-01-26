@@ -1,0 +1,355 @@
+vaultFactory: 18 cranks (3 delivery, 15 notify):
+
+7276 deliver getCollateralManager-1 (sent from walletFactory in 7260)
+  resolve getCollateralManager-1/rp
+7280 deliver makeVaultInvitation-1 (sent from walletFactory in 7260)
+  zoe <- makeInvitation-26
+7284 notify makeInvitation-26/rp (sent in 7260, result from zoe in 7282)
+  resolve makeVaultInvitation-1/rp
+7301 deliver handleOffer-3 (sent from zoe in 7298)
+  resolve handleOffer-3/rp
+  bridge <- makeChildNode-85
+  makeChildNode-85/rp <- makeChildNode-86
+7319 notify makeChildNode-85/rp (sent in 7301, result from bridge in 7311)
+  (no intervat action)
+7324 notify makeChildNode-86/rp (sent in 7301, result from bridge in 7320) // this crank is where most of the magic happens
+  zoe <- makeNoEscrowSeat-31
+  zoe <- mintAndEscrow-2
+  zoe <- replaceAllocations-3
+  zoe <- replaceAllocations-4
+  zoe <- exitSeat-3
+  board <- toCapData-67
+  board <- toCapData-68
+  board <- toCapData-69
+  bridge <- getPath-9
+  resolve handleOffer-3/r/p (promise passed as part of resolution of handleOffer-3/rp)
+7359 notify makeNoEscrowSeat-31/rp (sent in 7324, result from zoe in 7337)
+  (no intervat action)
+7360 notify mintAndEscrow-2/rp (sent in 7324, result from zoe in 7339)
+  (no intervat action)
+7361 notify replaceAllocations-3/rp (sent in 7324, result from zoe in 7341)
+  (no intervat action)
+7362 notify replaceAllocations-4/rp (sent in 7324, result from zoe in 7343)
+  (no intervat action)
+7365 notify exitSeat-3/rp (sent in 7324, result from zoe in 7345)
+  (no intervat action)
+7366 notify toCapData-67/rp (sent in 7324, result from board in 7348)
+  bridge <- setValue-160
+7368 notify toCapData-68/rp (sent in 7324, result from board in 7350)
+  bridge <- setValue-161
+7370 notify toCapData-69/rp (sent in 7324, result from board in 7352)
+  bridge <- setValue-162
+7372 notify getPath-9/rp (sent in 7324, result from bridge in 7354)
+  resolve handleOffer-3/r/p (promise passed as part of resolution of handleOffer-3/r)
+7397 notify setValue-160/rp (sent in 7366, result from bridge in 7380)
+  (no intervat action)
+7398 notify setValue-161/rp (sent in 7368, result from bridge in 7382)
+  (no intervat action)
+7399 notify setValue-162/rp (sent in 7370, result from bridge in 7384)
+  (no intervat action)
+
+----------------------------------------------------------------------
+
+walletFactory: 31 cranks (1 delivery, 30 notify):
+
+7216 deliver handleBridgeAction-1 (sent from benchmark driver) [start of round]
+  board <- fromCapData-1
+7220 notify fromCapdata-1/rp (sent in 7216, result from board in 7218)
+  bank <- getPurse-12
+7232 notify getPurse-12/rp (sent in 7220, result from bank in 7230)
+  bank <- withdraw-1
+7260 notify withdraw-1/rp (sent in 7232, result from bank in 7258)
+  agoricNames <- lookup-30
+  zoe <- getPublicFacet-7
+  getPublicFacet-7/rp <- getCollateralManager-1
+  getCollateralManager-1/rp <- makeVaultInvitation-1
+  zoe <- getAmountOf-28
+7271 notify lookup-30/rp (sent in 7260, result from agoricNames in 7266)
+  (no intervat action)
+7275 notify getPublicFacet-7/rp (sent in 7260, result from zoe in 7272)
+  (no intervat action)
+7279 notify getCollateralManager-1/rp (sent in 7260, result from vaultFactory in 7276)
+  (no intervat action)
+7286 notify makeVaultInvitation-1/rp (sent in 7260, result from  vaultFactory in 7284)
+  resolve getAmountOf-28/argp (promise passed as arg to getAmountOf-28)
+7290 notify getAmountOf-28/rp (sent in 7260, result from zoe in 7288)
+  zoe <- offer-3
+  resolve offer-3/arg1p (promise pass as part of arg to offer-3)
+7305 notify offer-3/rp (sent in 7290, result from zoe in 7298)
+  board <- toCapData-66
+  zoe <- getOfferResult-2
+  zoe <- numWantsSatisfied-1
+  zoe <- getPayouts-1
+7322 notify toCapData-66/rp (sent in 7305, result from board in 7314)
+  bridge <- setValue-159
+7358 notify setValue-159/rp (sent in 7322, result from bridge in 7335)
+  (no intervat action)
+7374 notify getOfferResult-2/rp (sent in 7305, result from zoe in 7356)
+    +notify handleOffer-3/r/p (promise passed as part of getOfferResult-2/rp resolution)
+  board <- toCapData-70
+  board <- toCapData-71
+7391 notify numWantsSatisfied-1/rp (sent in 7305, result from zoe in 7377)
+  board <- toCapData-72
+  board <- toCapData-73
+7394 notify getPayouts-1/rp (sent in 7305, result from zoe in 7377)
+  mintHolder-ATOM <- getAllegedBrand-7
+  zoe <- getAllegedBrand-8
+7400 notify toCapData-70/rp (sent in 7374, result from board in 7387)
+  bridge <- setValue-163
+7402 notify toCapData-71/rp (sent in 7374, result from board in 7389)
+  bridge <- setValue-164
+7416 notify toCapData-72/rp (sent in 7391, result from board in 7404)
+  bridge <- setValue-165
+7418 notify toCapData-73/rp (sent in 7391, result from board in 7406)
+  bridge <- setValue-166
+7420 notify getAllegedBrand-7/rp (sent in 7394, result from mintHolder-ATOM in 7408)
+  getPurse-13/rp <- deposit-10
+7423 notify getAllegedBrand-8/rp (sent in 7394, result from zoe in 7410)
+  bank <- getPurse-14
+  getPurse-14/rp <- deposit-11
+7426 notify setValue-163/rp (sent in 7400, result from bridge in 7412)
+  (no intervat action)
+7427 notify setValue-164/rp (sent in 7402, result from bridge in 7414)
+  (no intervat action)
+7437 notify setValue-165/rp (sent in 7416, result from bridge in 7428)
+  (no intervat action)
+7438 notify setValue-166/rp (sent in 7418, result from bridge in 7430)
+  (no intervat action)
+7439 notify getPurse-13/rp (sent in 7420, result from bank in 7432)
+  (no intervat action)
+7459 notify getPurse-14/rp (sent in 7423, result from bank in 7454)
+  (no intervat action)
+7478 notify deposit-10/rp (sent in 7420, result from bank in 7474)
+  (no intervat action)
+7487 notify deposit-11/rp (sent in 7423, result from bank in 7485)
+  board <- toCapData-74
+  resolve handleBridgeAction-1/rp
+7491 notify toCapData-74/rp (sent in 7487, result from board in 7489)
+  bridge <- setValue-167
+7495 notify setValue-167/rp (sent in 7491, result from bridge in 7493) [end of round]
+  (no intervat action)
+
+----------------------------------------------------------------------
+
+board: 10 cranks (10 delivery, 0 notify)
+
+7218 deliver fromCapData-1 (sent from walletFactory in 7216)
+  resolve fromCapData-1/rp
+7314 deliver toCapData-66 (sent from walletFactory in 7305)
+  resolve toCapData-66/rp
+7348 deliver toCapData-67 (sent from vaultFactory in 7324)
+  resolve toCapData-67/rp
+7350 deliver toCapData-68 (sent from vaultFactory in 7324)
+  resolve toCapData-68/rp
+7352 deliver toCapData-69 (sent from vaultFactory in 7324)
+  resolve toCapData-69/rp
+7387 deliver toCapData-70 (sent from walletFactory in 7374)
+  resolve toCapData-70/rp
+7389 deliver toCapData-71 (sent from walletFactory in 7374)
+  resolve toCapData-71/rp
+7404 deliver toCapData-72 (sent from walletFactory in 7391)
+  resolve toCapData-72/rp
+7406 deliver toCapData-73 (sent from walletFactory in 7391)
+  resolve toCapData-73/rp
+7489 deliver toCapData-74 (sent from walletFactory in 7487)
+  resolve toCapData-74/rp
+
+----------------------------------------------------------------------
+
+bank: 24 cranks (9 delivery, 15 notify)
+
+7222 deliver getPurse-12 (sent from walletFactory in 7220)
+  bridge <- toBridge-13
+7226 notify toBridge-13/rp (sent in 7222, result from bridge in 7224)
+  mintHolder-ATOM <- makeEmptyPurse-38/rp
+7230 notify makeEmptyPurse-38/rp (sent in 7226, result from mintHolder-ATOM in 7228)
+  resolve getPurse-12/rp
+7234 deliver withdraw-1 (sent from walletFactory in 7232)
+  bridge <- toBridge-14
+7238 notify toBridge-14/rp (sent in 7234, result from bridge in 7236)
+  bridge <- fromBridge-1
+7242 deliver fromBridge-2 (sent from bridge in 7240)
+  resolve fromBridge-2/rp
+7246 notify fromBridge-1/rp (sent in 7238, result from bridge in 7244)
+  mintHolder-ATOM <- mintPayment-1
+7250 notify mintPayment-1/rp (sent in 7246, result from mintHolder-ATOM in 7248)
+  mintHolder-ATOM <- deposit-8
+7254 notify deposit-8/rp (sent in 7250, result from mintHolder-ATOM in 7252)
+  mintHolder-ATOM <- withdraw-2
+7258 notify withdraw-2/rp (sent in 7254, result from mintHolde-ATOM in 7256)
+  resolve withdraw-1/rp
+7432 deliver getPurse-13 (sent from walletFactory in 7420)
+  resolve getPurse-13
+7435 deliver getPurse-14 (sent from walletFactory in 7423)
+  bridge <- toBridge-15
+7440 deliver deposit-10 (sent from walletFactory in 7420)
+  mintHolder-ATOM <- burn-1/rp
+7446 notify toBridge-15/rp (sent in 7435, result from bridge in 7442)
+  zoe <- makeEmptyPurse-39
+7448 notify burn-1/rp (sent in 7440, result from mintHolder-ATOM in 7444)
+  bridge <- toBridge-16
+7454 notify makeEmptyPurse-39/rp (sent in 7446, result from zoe in 7450)
+  resolve getPurse-14/rp
+7457 notify toBridge-16/rp (sent in 7448, result from bridge in 7452)
+  bridge <- fromBridge-3
+7460 deliver deposit-11 (sent from walletFactory in 7423)
+  zoe <- deposit-12
+7466 deliver fromBridge-4 (sent from bridge in 7462)
+  resolve fromBridge-4/rp
+7468 notify deposit-12/rp (sent in 7460, result from zoe in 7464)
+  bridge <- toBridge-17
+7474 notify fromBridge-3/rp (sent in 7457, result from bridge in 7470)
+  resolve deposit-10/rp
+7476 notify toBridge-17/rp (sent in 7469, result from bridge in 7472)
+  bridge <- fromBridge-5
+7481 deliver fromBridge-6 (sent from bridge in 7479)
+  resolve fromBridge-6/rp
+7485 notify fromBridge-5/rp (sent in 7476, result from bridge in 7483)
+  resolve deposit-11/rp
+
+----------------------------------------------------------------------
+
+bridge: 23 cranks (20 delivery, 3 notify)
+
+7224 deliver toBridge-13 (sent from bank in 7222)
+  invoke bridgeDevice callOutbound
+  resolve toBridge-13/rp
+7236 deliver toBridge-14 (sent from bank in 7234)
+  invoke bridgeDevice callOutbound
+  resolve toBridge-14/rp
+7240 deliver fromBridge-1 (sent from bank in 7238)
+  bootstrap <- fromBridge-2
+7244 notify fromBridge-2/rp (sent in 7240, result from bank in 7242)
+  resolve fromBridge-1/rp
+7311 deliver makeChildNode-85 (sent from vaultFactory in 7301)
+  resolve makeChildNode-85/rp
+7320 deliver makeChildNode-86 (sent from vaultFactory in 7301)
+  resolve makeChildNode-86/rp
+7335 deliver setValue-159 (sent from walletFactory in 7322)
+  invoke bridgeDevice callOutbound
+  resolve setValue-159/rp
+7354 deliver getPath-9 (sent from vaultFactory in 7324)
+  resolve getPath-9/rp
+7380 deliver setValue-160 (sent from vaultFactory in 7366)
+  invoke bridgeDevice callOutbound
+  resolve setValue-160/rp
+7382 deliver setValue-161 (sent from vaultFactory in 7368)
+  invoke bridgeDevice callOutbound
+  resolve setValue-161/rp
+7384 deliver setValue-162 (sent from vaultFactory in 7370)
+  invoke bridgeDevice callOutbound
+  resolve setValue-162/rp
+7412 deliver setValue-163 (sent from walletFactory in 7400)
+  invoke bridgeDevice callOutbound
+  resolve setValue-163/rp
+7414 deliver setValue-164 (sent from walletFactory in 7402)
+  invoke bridgeDevice callOutbound
+  resolve setValue-164/rp
+7428 deliver setValue-165 (sent from walletFactory in 7416)
+  invoke bridgeDevice callOutbound
+  resolve setValue-165/rp
+7430 deliver setValue-166 (sent from walletFactory in 7418)
+  invoke bridgeDevice callOutbound
+  resolve setValue-166/rp
+7442 deliver toBridge-15 (sent from bank in 7435)
+  invoke bridgeDevice callOutbound
+  resolve toBridge-15/rp
+7452 deliver toBridge-16 (sent from bank in 7448)
+  invoke bridgeDevice callOutbound
+  resolve toBridge-16/rp
+7462 deliver fromBridge-3 (sent from bank 7457)
+  bootstrap <- fromBridge-4
+7470 notify fromBridge-4/rp (sent in 7462, result from bank in 7468)
+  resolve fromBridge-3/rp
+7472 deliver toBridge-17 (sent from bank in 7468)
+  invoke bridgeDevice callOutbound
+  resolve toBridge-17/rp
+7479 deliver fromBridge-5 (sent from bank in 7476)
+  bootstrap <- fromBridge-6
+7483 notify fromBridge-6/rp (sent in 7479, result from bank in 7481)
+  resolve fromBridge-5/rp
+7493 deliver setValue-167 (sent from walletFactory in 7491)
+  invoke bridgeDevice callOutbound
+  resolve setValue-167/rp
+
+----------------------------------------------------------------------
+
+mintHolder-ATOM:, 8 cranks (8 delivery, 0 notify)
+
+7228 deliver makeEmptyPurse-38 (sent from bank in 7226)
+  resolve makeEmptyPurse-38/rp
+7248 deliver mintPayment-1 (sent from bank in 7246)
+  resolve mintPayment-1/rp
+7252 deliver deposit-8 (sent from bank in 7250)
+  resolve deposit-8/rp
+7256 deliver withdraw-2 (sent from bank in 7254)
+  resolve withdraw-2/rp
+7296 deliver deposit-9 (sent from zoe in 7294)
+  resolve deposit-9/rp
+7363 deliver withdraw-3 (sent from zoe in 7345)
+  resolve withdraw-3/rp
+7408 deliver getAllegedBrand-7 (sent from walletFactory in 7394)
+  resolve getAllegedBrand-7/rp
+7444 deliver burn-1 (sent from bank in 7440)
+  resolve burn-1/rp
+
+----------------------------------------------------------------------
+
+agoricNames: 1 crank (1 delivery, 0 notify)
+
+7266 deliver lookup-30 (sent from walletFactory in 7260)
+  resolve lookup-30/rp
+
+----------------------------------------------------------------------
+
+zoe: 23 cranks (15 delivery, 8 notify)
+
+7268 deliver getPublicFacet-7 (sent from walletFactory in 7260)
+  (no intervat action)
+7270 deliver getAmountOf-28 (sent from walletFactory in 7260)
+  (no intervat action)
+7272 notify lookup-30/rp (sent by walletFactory as param to getPublicFacet-7 in 7260, result from agoricNames in 7266)
+  resolve getPublicFacet-7/rp
+7282 deliver makeInvitation-26 (sent from vaultFactory in 7280)
+  resolve makeInvitation-26/rp
+7288 notify getAmountOf-28/argp (sent by walletFactory as param to getAmountOf-28 in 7260, result from walletFactory in 7286)
+  resolve getAmountOf-28/rp
+7292 deliver offer-3 (sent from walletFactory in 7290)
+  (no intervat action)
+7294 notify offer-3/arg1p (sent by walletFactory in param to offer-3 in 7290, result from walletFactory in 7290)
+  mintHolder-ATOM <- deposit-9
+7298 notify deposit-9/rp (sent in 7294, result from mintHolder-ATOM in 7296)
+  vaultFactory <- handleOffer-3
+  resolve offer-3/rp
+7310 notify handleOffer-3/rp (sent in 7298, result from vaultFactory in 7301)
+  (no intervat action)
+7316 deliver getOfferResult-2 (sent from walletFactory in 7305)
+  (no intervat action)
+7317 deliver numWantsSatisfied-1 (sent from walletFactory in 7305)
+  (no intervat action)
+7318 deliver getPayouts-1 (sent from walletFactory in 7305)
+  (no intervat action)
+7337 deliver makeNoEscrowSeat-31 (sent from vaultFactory in 7324)
+  resolve makeNoEscrowSeat-31/rp
+7339 deliver mintAndEscrow-2 (sent from vaultFactory in 7324)
+  resolve mintAndEscrow-2/rp
+7341 deliver replaceAllocations-3 (sent from vaultFactory in 7324)
+  resolve replaceAllocations-3/rp
+7343 deliver replaceAllocations-4 (sent from vaultFactory in 7324)
+  resolve replaceAllocations-4/rp
+7345 deliver exitSeat-3 (sent from vaultFactory in 7324)
+  mintHolder-ATOM <- withdraw-3
+  resolve exitSeat-3/rp
+7356 notify handleOffer-3/r/p (sent from vaultFactory in resolution of handleOffer-3/rp in 7301, rsult from vaultFactory in 7324)
+  resolve getOfferResult-2/rp
+7377 notify withdraw-3/rp (sent in 7345, result from mintHolder-ATOM in 7363)
+  resolve numWantsSatisfied-1/rp
+  resolve getPayouts-1/rp
+7386 notify handleOffer-3/r/p/p (sent from vaultFactory in resolution of handleOffer-3/r/p/p in 7324, result from vaultFactory in 7372)
+  (no intervat action)
+7410 deliver getAllegedBrand-8 (sent from walletFactory in 7394)
+  resolve getAllegedBrand-8/rp
+7450 deliver makeEmptyPurse-39 (sent from bank in 7446)
+  resolve makeEmptyPurse-39/rp
+7464 deliver deposit-12 (sent from bank in 7460)
+  resolve deposit-12/rp

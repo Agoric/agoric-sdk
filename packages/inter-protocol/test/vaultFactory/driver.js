@@ -6,6 +6,7 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
+  makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
@@ -15,6 +16,9 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 import { NonNullish } from '@agoric/assert';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+
 import {
   setupReserve,
   startAuctioneer,
@@ -29,7 +33,7 @@ import {
   withAmountUtils,
 } from '../supports.js';
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
+/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
 
 const trace = makeTracer('VFDriver');
 
@@ -215,15 +219,27 @@ const setupServices = async (t, initialPrice, priceBase) => {
   const { consume, produce } = space;
   t.context.consume = consume;
 
-  // Cheesy hack for easy use of manual price authority
-  const priceAuthority = makeManualPriceAuthority({
+  // priceAuthorityReg is the registry, which contains and multiplexes multiple
+  // individual priceAuthorities, including aethManualPA.
+  // priceAuthorityAdmin supports registering more individual priceAuthorities
+  // with the registry.
+  const aethManualPA = makeManualPriceAuthority({
     actualBrandIn: aeth.brand,
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
     quoteIssuerKit: makeIssuerKit('quote', AssetKind.SET),
   });
-  produce.priceAuthority.resolve(priceAuthority);
+  const baggage = makeScalarBigMapStore('baggage');
+  const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
+    providePriceAuthorityRegistry(baggage);
+  await E(priceAuthorityAdmin).registerPriceAuthority(
+    aethManualPA,
+    aeth.brand,
+    run.brand,
+  );
+
+  produce.priceAuthority.resolve(priceAuthorityReg);
 
   const {
     installation: { produce: iProduce },
@@ -276,6 +292,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
 
   return {
     zoe,
+    timer,
     governor: {
       governorInstance,
       governorPublicFacet: E(zoe).getPublicFacet(governorInstance),
@@ -288,7 +305,9 @@ const setupServices = async (t, initialPrice, priceBase) => {
       vfPublic,
       aethVaultManager,
     },
-    priceAuthority,
+    priceAuthority: priceAuthorityReg,
+    priceAuthorityAdmin,
+    aethManualPA,
   };
 };
 
@@ -307,7 +326,7 @@ export const makeManagerDriver = async (
   const { zoe, aeth, run } = t.context;
   const {
     vaultFactory: { lender, vaultFactory, vfPublic },
-    priceAuthority,
+    aethManualPA,
     timer,
   } = services;
   const publicTopics = await E(lender).getPublicTopics();
@@ -450,6 +469,22 @@ export const makeManagerDriver = async (
     addVaultType: async keyword => {
       /** @type {IssuerKit<'nat'>} */
       const kit = makeIssuerKit(keyword.toLowerCase());
+
+      // for now, this priceAuthority never reports prices, but having one is
+      // sufficient to get a vaultManager running.
+      const pa = makeManualPriceAuthority({
+        actualBrandIn: kit.brand,
+        actualBrandOut: run.brand,
+        timer,
+        initialPrice: makeRatio(100n, run.brand, 100n, kit.brand),
+      });
+
+      await services.priceAuthorityAdmin.registerPriceAuthority(
+        pa,
+        kit.brand,
+        run.brand,
+      );
+
       const manager = await E(vaultFactory).addVaultType(
         kit.issuer,
         keyword,
@@ -477,7 +512,7 @@ export const makeManagerDriver = async (
       });
     },
     /** @param {Amount<'nat'>} p */
-    setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
+    setPrice: p => aethManualPA.setPrice(makeRatioFromAmounts(p, priceBase)),
     // XXX the paramPath should be implied by the object `setGovernedParam` is being called on.
     // e.g. the manager driver should know the paramPath is `{ key: { collateralBrand: aeth.brand } }`
     // and the director driver should `{ key: 'governedParams }`

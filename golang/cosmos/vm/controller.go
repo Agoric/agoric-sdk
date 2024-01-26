@@ -20,12 +20,6 @@ type ControllerAdmissionMsg interface {
 	IsHighPriority(sdk.Context, interface{}) (bool, error)
 }
 
-// Jsonable is a value, j, that can be passed through json.Marshal(j).
-type Jsonable interface{}
-
-// ActionPusher enqueues data for later consumption by the controller.
-type ActionPusher func(ctx sdk.Context, action Jsonable) error
-
 var wrappedEmptySDKContext = sdk.WrapSDKContext(
 	sdk.Context{}.WithContext(context.Background()),
 )

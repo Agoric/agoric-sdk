@@ -145,9 +145,6 @@ jobs:
       - name: yarn test (notifier)
         if: (success() || failure())
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (same-structure)
-        if: (success() || failure())
-        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -220,6 +217,8 @@ jobs:
       - name: yarn test (casting)
         if: (success() || failure())
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (create-dapp)
+        run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

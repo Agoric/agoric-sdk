@@ -33,7 +33,7 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 });
 
 /**
- * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
+ * @typedef {import('./virtual-purse.js').VirtualPurseController} VirtualPurseController
  *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
@@ -229,6 +229,7 @@ async function* concatAsyncIterables(iterables) {
     yield* asyncIterable;
   }
 }
+harden(concatAsyncIterables);
 
 /**
  * TODO: This should be absorbed and zone-ified into the existing publish kit.
