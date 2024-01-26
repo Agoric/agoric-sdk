@@ -35,6 +35,7 @@ import { createSHA256 } from './hasher.js';
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>,
  *   setUseTranscriptCompression: (mode: boolean) => void,
  *   compressSpan: (vatID: string, startPos: number, endPos: number, incarnation: number) => void,
+ *   spanIsCompressed: (vatID: string, startPos: number) => boolean,
  * }} TranscriptStoreInternal
  *
  * @typedef {{
@@ -377,6 +378,16 @@ export function makeTranscriptStore(
 
     return reader();
   }
+
+  const sqlCheckForCompressedSpan = db.prepare(`
+    SELECT count(*) from transcriptCompressedSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlCheckForCompressedSpan.pluck();
+
+  function spanIsCompressed(vatID, startPos) {
+    return sqlCheckForCompressedSpan.get(vatID, startPos) > 0;
+  };
 
   const sqlAddCompressedSpan = db.prepare(`
     INSERT INTO transcriptCompressedSpans (vatID, startPos, endPos, itemsBlob, incarnation)
@@ -980,5 +991,6 @@ export function makeTranscriptStore(
     readFullVatTranscript,
     setUseTranscriptCompression,
     compressSpan,
+    spanIsCompressed,
   });
 }
