@@ -57,7 +57,7 @@ jobs:
       # Prerequisites
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 18.x
+          node-version: 18.18
           keep-endo: 'true'
 
       # Select a branch on dapp to test against by adding text to the body of the
