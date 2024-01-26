@@ -1,5 +1,7 @@
 import { Far } from '@endo/far';
-import { M, defineExoClass } from '@agoric/store';
+import { M } from '@endo/patterns';
+import { defineExoClass } from '@endo/exo';
+
 import {
   defineVirtualExoClass,
   prepareExoClass,

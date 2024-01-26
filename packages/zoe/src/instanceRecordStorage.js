@@ -1,4 +1,6 @@
-import { provide, prepareExoClass, M } from '@agoric/vat-data';
+import { M } from '@endo/patterns';
+
+import { provide, prepareExoClass } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,

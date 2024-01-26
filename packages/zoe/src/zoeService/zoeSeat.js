@@ -1,9 +1,11 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { deeplyFulfilled } from '@endo/marshal';
+import { M } from '@endo/patterns';
+
+import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
+import { prepareExoClassKit } from '@agoric/vat-data';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import '../types.js';

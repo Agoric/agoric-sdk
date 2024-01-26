@@ -1,7 +1,7 @@
 // @jessie-check
 
-import { assert } from '@agoric/assert';
-import { assertPattern } from '@agoric/store';
+import { assert } from '@endo/errors';
+import { assertPattern } from '@endo/patterns';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';

@@ -1,6 +1,7 @@
-import { SubscriberShape } from '@agoric/notifier';
-import { M } from '@agoric/store';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
+import { SubscriberShape } from '@agoric/notifier';
 
 export { SubscriberShape };
 

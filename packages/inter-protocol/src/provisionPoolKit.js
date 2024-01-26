@@ -1,4 +1,8 @@
 // @ts-check
+import { E } from '@endo/far';
+import { Far, deeplyFulfilled } from '@endo/marshal';
+import { M } from '@endo/patterns';
+
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import {
@@ -7,7 +11,6 @@ import {
   subscribeEach,
 } from '@agoric/notifier';
 import {
-  M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
   prepareExoClassKit,
@@ -18,8 +21,6 @@ import {
   makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/far';
-import { Far, deeplyFulfilled } from '@endo/marshal';
 
 const { details: X, quote: q, Fail } = assert;
 

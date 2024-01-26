@@ -3,7 +3,7 @@ import { makeTagged } from '@endo/marshal';
 import {
   getCopyBagEntries,
   makeCopyBagFromElements as makeBag,
-} from '@agoric/store';
+} from '@endo/patterns';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockBrand } from './mockBrand.js';

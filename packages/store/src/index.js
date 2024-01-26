@@ -42,6 +42,8 @@ export {
   assertPattern,
   matches,
   mustMatch,
+  isCopyMap,
+  isCopySet,
 } from '@endo/patterns';
 
 export {
@@ -56,7 +58,7 @@ export { makeScalarSetStore } from './stores/scalarSetStore.js';
 export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
 export { makeScalarMapStore } from './stores/scalarMapStore.js';
 
-export { provideLazy, isCopyMap, isCopySet } from './stores/store-utils.js';
+export { provideLazy } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 

@@ -1,12 +1,11 @@
+import { quote as q, throwRedacted as Fail } from '@endo/errors';
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { M, matches } from '@endo/patterns';
 
-import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
-
-const { quote: q, Fail } = assert;
 
 /**
  * Constants for the kinds of assets we support.

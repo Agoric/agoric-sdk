@@ -1,6 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
+
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints.js';
 import {

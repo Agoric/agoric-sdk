@@ -1,8 +1,8 @@
 // @jessie-check
 
-import { passStyleOf } from '@endo/marshal';
-import { mustMatch } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
+import { mustMatch } from '@endo/patterns';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';

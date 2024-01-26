@@ -1,6 +1,8 @@
 // Must be first to set up globals
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { M } from '@agoric/store';
+
+import { M } from '@endo/patterns';
+
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeCache } from '../src/cache.js';

@@ -1,7 +1,12 @@
 // @ts-check
 import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
-import { assert, details as X, Fail } from '@agoric/assert';
+import {
+  assert,
+  redacted as X,
+  throwRedacted as Fail,
+  note as errorNote,
+} from '@endo/errors';
 
 /**
  * @typedef {object} ICS20TransferPacket Packet shape defined at:
@@ -30,7 +35,7 @@ const safeJSONParseObject = s => {
   try {
     obj = JSON.parse(s);
   } catch (e) {
-    assert.note(e, X`${s} is not valid JSON`);
+    errorNote(e, X`${s} is not valid JSON`);
     throw e;
   }
   if (typeof obj !== 'object') {

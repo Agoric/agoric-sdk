@@ -30,10 +30,12 @@
     "@cosmjs/proto-signing": "^0.30.1",
     "@cosmjs/stargate": "^0.30.1",
     "@cosmjs/tendermint-rpc": "^0.30.1",
+    "@endo/errors": "^1.0.2",
     "@endo/far": "^1.0.2",
     "@endo/init": "^1.0.2",
     "@endo/lockdown": "^1.0.2",
     "@endo/marshal": "^1.1.0",
+    "@endo/patterns": "^1.1.0",
     "@endo/promise-kit": "^1.0.2",
     "node-fetch": "^2.6.0"
   },

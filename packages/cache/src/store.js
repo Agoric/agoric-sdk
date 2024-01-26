@@ -1,6 +1,8 @@
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
-import { matches, makeScalarMapStore } from '@agoric/store';
+import { matches } from '@endo/patterns';
+
+import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';

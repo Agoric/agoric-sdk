@@ -1,4 +1,5 @@
-import { mustMatch, M } from '@agoric/store';
+import { mustMatch, M } from '@endo/patterns';
+
 import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule, OfferHandlerI } from '../typeGuards.js';

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- accomodate different type search depths */
-import { assert } from '@agoric/assert';
+import { throwRedacted as Fail, quote as q } from '@endo/errors';
+import { M } from '@endo/patterns';
+
 import {
-  M,
   prepareExo,
   prepareKind,
   provideDurableWeakMapStore,
@@ -11,8 +12,6 @@ import {
   InstanceHandleShape,
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */

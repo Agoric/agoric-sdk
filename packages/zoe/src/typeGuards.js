@@ -1,5 +1,7 @@
 // @jessie-check
 
+import { M } from '@endo/patterns';
+
 import {
   AmountShape,
   AssetKindShape,
@@ -10,7 +12,6 @@ import {
   PaymentShape,
 } from '@agoric/ertp';
 import { SubscriberShape } from '@agoric/notifier';
-import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
 // keywords have an initial cap

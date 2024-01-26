@@ -9,10 +9,11 @@ import { open as tempOpen } from 'temp';
 import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
-import { makeNotifierKit } from '@agoric/notifier';
+
+import { throwRedacted as Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, Fail } from '@agoric/assert';
+import { makeNotifierKit } from '@agoric/notifier';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
@@ -698,13 +699,13 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
               if (txResult.code) {
                 // eslint-disable-next-line no-use-before-define
                 failedSend(
-                  assert.error(`Error in tx processing: ${txResult.log}`),
+                  makeError(`Error in tx processing: ${txResult.log}`),
                 );
               }
             })
             .catch(err =>
               // eslint-disable-next-line no-use-before-define
-              failedSend(assert.error(`Error in tx processing: ${err}`)),
+              failedSend(makeError(`Error in tx processing: ${err}`)),
             );
 
           // We submitted the transaction to the mempool successfully.

@@ -1,4 +1,4 @@
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
 export const TransferPartShape = M.splitArray(

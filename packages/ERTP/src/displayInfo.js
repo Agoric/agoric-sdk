@@ -1,7 +1,7 @@
 // @jessie-check
 
-import { Fail } from '@agoric/assert';
-import { mustMatch } from '@agoric/store';
+import { throwRedacted as Fail } from '@endo/errors';
+import { mustMatch } from '@endo/patterns';
 
 import { DisplayInfoShape } from './typeGuards.js';
 

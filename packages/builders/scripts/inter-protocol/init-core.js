@@ -4,8 +4,8 @@
  *   chain state) Only works with "local" chain and not sim-chain b/c it needs
  *   governance votes (n/a on sim-chain).
  */
+import { objectMap } from '@endo/common/object-map.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { objectMap } from '@agoric/internal';
 
 import {
   getManifestForInterProtocol,

@@ -1,10 +1,10 @@
 // @jessie-check
 
-import { mustMatch } from '@agoric/store';
+import { throwRedacted as Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { AmountMath } from './amountMath.js';
+import { mustMatch } from '@endo/patterns';
 
-const { Fail } = assert;
+import { AmountMath } from './amountMath.js';
 
 /**
  * @file This file contains safer helper function alternatives to the similarly

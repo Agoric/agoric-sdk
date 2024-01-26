@@ -1,6 +1,8 @@
 import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { initEmpty } from '@endo/exo';
+
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
-import { M, initEmpty } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
 import {

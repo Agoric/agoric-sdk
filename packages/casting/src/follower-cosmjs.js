@@ -1,5 +1,11 @@
 /// <reference types="ses"/>
 
+import {
+  redacted as X,
+  quote as q,
+  throwRedacted as Fail,
+  makeError,
+} from '@endo/errors';
 import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
@@ -21,7 +27,6 @@ harden({
 
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
-const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
@@ -264,7 +269,7 @@ export const makeCosmjsFollower = (
           return;
         }
         crash(
-          assert.error(
+          makeError(
             X`Alleged value ${alleged.value} did not match proof ${proven.value}`,
           ),
         );

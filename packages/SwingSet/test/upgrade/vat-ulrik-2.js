@@ -1,6 +1,7 @@
 import { Far, E } from '@endo/far';
-import { assert } from '@agoric/assert';
-import { initEmpty } from '@agoric/store';
+import { assert } from '@endo/errors';
+import { initEmpty } from '@endo/exo';
+
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
 
 const initialize = (name, imp, value) => {

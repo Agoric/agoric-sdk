@@ -1,4 +1,6 @@
-import { M } from '@agoric/store';
+import { throwRedacted as Fail } from '@endo/errors';
+import { M } from '@endo/patterns';
+
 import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
@@ -6,8 +8,6 @@ import { makeTransientNotifierKit } from './transientNotifier.js';
 // TODO `InterfaceGuard` type parameter
 /** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-const { Fail } = assert;
 
 /**
  * @param {Baggage} issuerBaggage

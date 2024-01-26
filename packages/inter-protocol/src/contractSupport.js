@@ -1,7 +1,8 @@
 // @jessie-check
 
+import { M } from '@endo/patterns';
+
 import { AmountMath } from '@agoric/ertp';
-import { M } from '@agoric/store';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
 const { Fail, quote: q } = assert;

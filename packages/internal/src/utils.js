@@ -1,6 +1,14 @@
 // @ts-check
 // @jessie-check
 
+import {
+  quote as q,
+  throwRedacted as Fail,
+  redacted as X,
+  makeError,
+  note as errorNote,
+} from '@endo/errors';
+
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
@@ -8,8 +16,6 @@ import { asyncGenerate, makeSet } from 'jessie.js';
 
 const { fromEntries, keys, values } = Object;
 const { ownKeys } = Reflect;
-
-const { quote: q, Fail } = assert;
 
 export const BASIS_POINTS = 10_000n;
 
@@ -277,8 +283,8 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     if (doneResult) {
       result = Promise.resolve(doneResult);
     } else if (rejections.length) {
-      const error = assert.error(assert.details`Teed stream threw`);
-      assert.note(error, assert.details`Teed rejections: ${rejections}`);
+      const error = makeError(X`Teed stream threw`);
+      errorNote(error, X`Teed rejections: ${rejections}`);
       result =
         sourceStream.throw?.(error) ||
         Promise.resolve(sourceStream.return?.()).then(() =>

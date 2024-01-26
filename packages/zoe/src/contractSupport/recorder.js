@@ -1,13 +1,14 @@
-import { Fail } from '@agoric/assert';
+import { throwRedacted as Fail } from '@endo/errors';
+import { mustMatch, M } from '@endo/patterns';
+import { E } from '@endo/eventual-send';
+
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
-import { mustMatch } from '@agoric/store';
-import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
+import { makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 
 /**
  * Recorders support publishing data to vstorage.

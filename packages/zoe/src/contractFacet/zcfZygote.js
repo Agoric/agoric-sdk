@@ -1,19 +1,19 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { E } from '@endo/eventual-send';
+import { objectMap } from '@endo/common/object-map.js';
+import { makePromiseKit } from '@endo/promise-kit';
+import { passStyleOf, Remotable } from '@endo/marshal';
+import { assertPattern, mustMatch, M } from '@endo/patterns';
+
 import { AssetKind } from '@agoric/ertp';
-import { assertPattern, mustMatch } from '@agoric/store';
 import {
   canBeDurable,
-  M,
   makeScalarBigMapStore,
   prepareExo,
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
 
-import { objectMap } from '@agoric/internal';
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';

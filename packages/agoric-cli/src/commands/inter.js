@@ -5,11 +5,10 @@
 
 // @ts-check
 import { CommanderError, InvalidArgumentError } from 'commander';
-// TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
+import { objectMap } from '@endo/common/object-map.js';
+import { M, matches } from '@endo/patterns';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { objectMap } from '@agoric/internal';
-import { M, matches } from '@agoric/store';
 
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {

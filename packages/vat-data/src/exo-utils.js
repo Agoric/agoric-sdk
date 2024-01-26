@@ -1,6 +1,6 @@
 // @jessie-check
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- for casting from deprecated types that aren't worth fixing */
-import { initEmpty } from '@agoric/store';
+import { initEmpty } from '@endo/exo';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 

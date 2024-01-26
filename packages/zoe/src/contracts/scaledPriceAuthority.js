@@ -1,4 +1,5 @@
-import { M, prepareExo } from '@agoric/vat-data';
+import { M } from '@endo/patterns';
+import { prepareExo } from '@agoric/vat-data';
 import {
   ceilDivideBy,
   ceilMultiplyBy,

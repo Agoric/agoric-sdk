@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { initEmpty } from '@agoric/store';
+import { initEmpty } from '@endo/exo';
 import { prepareExoClass } from '@agoric/vat-data';
 
 /** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */

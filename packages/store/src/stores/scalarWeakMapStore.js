@@ -1,8 +1,11 @@
+import { quote as q, throwRedacted as Fail } from '@endo/errors';
 import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
-import { getCopyMapEntries, mustMatch, assertPattern } from '@endo/patterns';
-import { isCopyMap } from './store-utils.js';
-
-const { quote: q, Fail } = assert;
+import {
+  getCopyMapEntries,
+  mustMatch,
+  assertPattern,
+  isCopyMap,
+} from '@endo/patterns';
 
 /**
  * @template K,V

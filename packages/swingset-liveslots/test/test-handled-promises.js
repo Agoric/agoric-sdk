@@ -1,8 +1,10 @@
 import test from 'ava';
 
+import { throwRedacted as Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
-import { M, provideLazy as provide } from '@agoric/store';
+import { M } from '@endo/patterns';
+
+import { provideLazy as provide } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.
 // import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';

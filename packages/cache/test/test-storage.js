@@ -2,10 +2,12 @@
 import '@agoric/zoe/tools/prepare-test-env.js';
 
 import test from 'ava';
-import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 
 import { Far, makeMarshal } from '@endo/marshal';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
+
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
+
 import { makeCache } from '../src/cache.js';
 import { makeChainStorageCoordinator } from '../src/store.js';
 
