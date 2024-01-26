@@ -1,33 +1,8 @@
 import { Far } from '@endo/marshal';
-import { M, matches } from '@endo/patterns';
 
 /** @typedef {import('@endo/marshal').RankCompare} RankCompare */
 
 const { Fail, quote: q } = assert;
-
-// TODO: Undate `@endo/patterns` to export the original, and delete the
-// reimplementation here.
-/**
- * Should behave identically to the one in `@endo/patterns`, but reimplemented
- * for now because `@endo/patterns` forgot to export this one. This one is
- * simple enough that I prefer a reimplementation to a deep import.
- *
- * @param {Passable} s
- * @returns {s is CopySet}
- */
-export const isCopySet = s => matches(s, M.set());
-
-// TODO: Undate `@endo/patterns` to export the original, and delete the
-// reimplementation here.
-/**
- * Should behave identically to the one in `@endo/patterns`, but reimplemented
- * for now because `@endo/patterns` forgot to export this one. This one is
- * simple enough that I prefer a reimplementation to a deep import.
- *
- * @param {Passable} m
- * @returns {m is CopyMap}
- */
-export const isCopyMap = m => matches(m, M.map());
 
 /**
  * @template K,V

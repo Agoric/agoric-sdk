@@ -17,23 +17,9 @@ import {
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
 /**
- * @typedef {(
- *   representative: any
- * ) => import('@endo/exo/src/exo-tools.js').ClassContext | undefined} ClassContextProvider
- * Definition only temporarily copied from exo-tools.js to here.
- * TODO Once agoric-sdk is upgraded to depend on an `@endo/exo` incorporating
- * https://github.com/endojs/endo/pull/1966
- * then replace with the following (fixing the implied "@")
+ * @typedef {import('@endo/exo/src/exo-tools.js').ClassContextProvider } ClassContextProvider
  *
- * at-typedef {import('@endo/exo/src/exo-tools.js').ClassContextProvider } ClassContextProvider
- *
- * @typedef {(facet: any) => import('@endo/exo/src/exo-tools.js').KitContext | undefined} KitContextProvider
- * Definition only temporarily copied from exo-tools.js to here.
- * TODO Once agoric-sdk is upgraded to depend on an `@endo/exo` incorporating
- * https://github.com/endojs/endo/pull/1966
- * then replace with the following (fixing the implied "@")
- *
- * at-typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
+ * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
  */
 
 /**
@@ -1005,15 +991,6 @@ export const makeVirtualObjectManager = (
 
       proto = defendPrototypeKit(
         tag,
-        // TODO Once agoric-sdk is upgraded to depend on an `@endo/exo`
-        // incorporating https://github.com/endojs/endo/pull/1966
-        // Then the following at-ts-ignore will no longer be needed.
-        // However, it is an at-ts-ignore rather than an
-        // at-ts-expect-error to be compat with endo both before and
-        // after, until we're safely across the transition.
-        //
-        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-        // @ts-ignore
         harden(contextProviderKit),
         behavior,
         thisfulMethods,
@@ -1028,15 +1005,6 @@ export const makeVirtualObjectManager = (
       };
       proto = defendPrototype(
         tag,
-        // TODO Once agoric-sdk is upgraded to depend on an `@endo/exo`
-        // incorporating https://github.com/endojs/endo/pull/1966
-        // Then the following at-ts-ignore will no longer be needed.
-        // However, it is an at-ts-ignore rather than an
-        // at-ts-expect-error to be compat with endo both before and
-        // after, until we're safely across the transition.
-        //
-        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-        // @ts-ignore
         harden(contextProvider),
         behavior,
         thisfulMethods,
