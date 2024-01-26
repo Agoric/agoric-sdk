@@ -105,7 +105,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       initOptions.push(...opts);
     }
     t.is(
-      await myMain(['init', ...initOptions, 'dapp-foo']),
+      await myMain(['init', '--dapp-template', 'dapp-fungible-faucet', ...initOptions, 'dapp-foo']),
       0,
       'init dapp-foo works',
     );
