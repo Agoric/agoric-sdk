@@ -12,7 +12,7 @@ import {
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
 import type { TestFn } from 'ava';
-import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
+import { type ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 

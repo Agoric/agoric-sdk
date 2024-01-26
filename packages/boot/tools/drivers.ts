@@ -4,13 +4,13 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import {
-  FakeStorageKit,
+  type FakeStorageKit,
   slotToRemotable,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 
 import {
-  AgoricNamesRemotes,
+  type AgoricNamesRemotes,
   boardSlottingMarshaller,
 } from '@agoric/vats/tools/board-utils.js';
 import type {
