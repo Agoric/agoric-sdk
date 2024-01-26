@@ -176,7 +176,7 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
 
 // We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.jim.1
+replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.jim.3
 
 // For testing against a local cosmos-sdk or tendermint
 // replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
