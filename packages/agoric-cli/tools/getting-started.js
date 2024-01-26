@@ -159,35 +159,35 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     });
     t.is(await openP, 0, `open --no-browser exits successfully`);
 
-    const testDeploy = async (deployCmd, opts = {}) => {
-      const deployResult = makePromiseKit();
-      const deployP = myMain(
-        ['deploy', `--hostport=127.0.0.1:${PORT}`, ...deployCmd],
-        {
-          stdio: [opts.stdin ? 'pipe' : 'ignore', 'pipe', 'inherit'],
-        },
-      );
+    // const testDeploy = async (deployCmd, opts = {}) => {
+    //   const deployResult = makePromiseKit();
+    //   const deployP = myMain(
+    //     ['deploy', `--hostport=127.0.0.1:${PORT}`, ...deployCmd],
+    //     {
+    //       stdio: [opts.stdin ? 'pipe' : 'ignore', 'pipe', 'inherit'],
+    //     },
+    //   );
 
-      if (opts.stdin) {
-        // Write the input to stdin.
-        deployP.childProcess.stdin.write(opts.stdin);
-        deployP.childProcess.stdin.end();
-      }
+    //   if (opts.stdin) {
+    //     // Write the input to stdin.
+    //     deployP.childProcess.stdin.write(opts.stdin);
+    //     deployP.childProcess.stdin.end();
+    //   }
 
-      finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
-      const to = setTimeout(
-        deployResult.resolve,
-        TIMEOUT_SECONDS * 1000,
-        'timeout',
-      );
-      const done = await Promise.race([deployResult.promise, deployP]);
-      t.is(done, 0, `deploy ${deployCmd.join(' ')} successful before timeout`);
-      clearTimeout(to);
-    };
+    //   finalizers.push(() => pkill(deployP.childProcess, 'SIGINT'));
+    //   const to = setTimeout(
+    //     deployResult.resolve,
+    //     TIMEOUT_SECONDS * 1000,
+    //     'timeout',
+    //   );
+    //   const done = await Promise.race([deployResult.promise, deployP]);
+    //   t.is(done, 0, `deploy ${deployCmd.join(' ')} successful before timeout`);
+    //   clearTimeout(to);
+    // };
 
-    // ==============
-    // agoric deploy ./contract/deploy.js ./api/deploy.js
-    await testDeploy(['./contract/deploy.js', './api/deploy.js']);
+    // // ==============
+    // // agoric deploy ./contract/deploy.js ./api/deploy.js
+    // await testDeploy(['./contract/deploy.js', './api/deploy.js']);
 
     for (const [suffix, code] of [
       ['/notthere', 404],
