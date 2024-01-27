@@ -208,7 +208,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn start:ui
-    const uiPort = '5173';
     const uiStartP = pspawn(`yarn`, ['start:ui'], {
       stdio: ['ignore', 'inherit', 'inherit'],
       env: { ...process.env },
@@ -230,7 +229,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
           return;
         }
 
-        const req = request('http://localhost:${uiPort}/', _res => {
+        const req = request('http://localhost:5173/', _res => {
           resolve('listening');
         });
         req.setTimeout(2000);
