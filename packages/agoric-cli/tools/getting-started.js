@@ -207,11 +207,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     }
 
     // ==============
-    // cd ui && yarn start
-    const uiStartP = pspawn(`yarn`, ['start'], {
+    // yarn start:ui
+    const uiPort = '5173';
+    const uiStartP = pspawn(`yarn`, ['start:ui'], {
       stdio: ['ignore', 'inherit', 'inherit'],
-      cwd: 'ui',
-      env: { ...process.env, PORT: '3000' },
+      env: { ...process.env },
       detached: true,
     });
     finalizers.push(() => pkill(uiStartP.childProcess, 'SIGINT'));
@@ -230,7 +230,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
           return;
         }
 
-        const req = request('http://localhost:3000/', _res => {
+        const req = request('http://localhost:${uiPort}/', _res => {
           resolve('listening');
         });
         req.setTimeout(2000);
