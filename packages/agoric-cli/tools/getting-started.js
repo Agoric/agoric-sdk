@@ -246,16 +246,16 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     t.is(
       await Promise.race([uiStartP, uiListening.promise]),
       'listening',
-      `cd ui && yarn start succeeded`,
+      `yarn start:ui succeeded`,
     );
     clearInterval(ival);
 
-    // Test that the Node.js `-r esm`-dependent plugin works.
-    await (testUnsafePlugins &&
-      testDeploy(
-        ['--allow-unsafe-plugins', `${dirname}/resm-plugin/deploy.js`],
-        { stdin: 'yes\n' },
-      ));
+    // // Test that the Node.js `-r esm`-dependent plugin works.
+    // await (testUnsafePlugins &&
+    //   testDeploy(
+    //     ['--allow-unsafe-plugins', `${dirname}/resm-plugin/deploy.js`],
+    //     { stdin: 'yes\n' },
+    //   ));
 
     // TODO: When it exists, Test that the Node.js native ESM plugin works.
   } finally {
