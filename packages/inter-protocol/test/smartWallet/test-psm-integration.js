@@ -4,6 +4,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
+import { keyEQ } from '@agoric/store';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
@@ -93,10 +94,17 @@ test('null swap', async t => {
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
 
-  t.deepEqual(currents[0].liveOffers, []);
-  t.deepEqual(currents[1].liveOffers, []);
-  t.deepEqual(currents[2].liveOffers, [['nullSwap', offer]]);
-  t.deepEqual(currents[3].liveOffers, []);
+  const index = currents.findIndex(x => {
+    return (
+      x.liveOffers[0] &&
+      x.liveOffers[0][0] === 'nullSwap' &&
+      keyEQ(x.liveOffers[0][1], offer)
+    );
+  });
+
+  t.deepEqual(currents[index - 1].liveOffers, []);
+  t.deepEqual(currents[index].liveOffers, [['nullSwap', offer]]);
+  t.deepEqual(currents[index + 1].liveOffers, []);
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first

@@ -19,7 +19,7 @@ import followMain from './follow.js';
 import walletMain from './open.js';
 import { makeWalletCommand } from './commands/wallet.js';
 
-const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
+const DEFAULT_DAPP_TEMPLATE = 'dapp-offer-up';
 const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
 const DEFAULT_DAPP_BRANCH = undefined;
 
@@ -96,7 +96,7 @@ const main = async (progname, rawArgs, powers) => {
     .option(
       '--hostport <host:port>',
       'host and port to connect to VM',
-      '127.0.0.1:8000',
+      'localhost:8000',
     )
     .option('--no-browser', `just display the URL, don't open a browser`)
     .option(

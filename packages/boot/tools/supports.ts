@@ -367,7 +367,14 @@ export const makeSwingsetTestKit = async (
     configPath,
     [],
     {},
-    { debugName: 'TESTBOOT', verbose, slogSender, profileVats, debugVats },
+    {
+      callerWillEvaluateCoreProposals: false,
+      debugName: 'TESTBOOT',
+      verbose,
+      slogSender,
+      profileVats,
+      debugVats,
+    },
   );
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 

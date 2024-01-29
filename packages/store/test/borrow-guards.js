@@ -1,5 +1,4 @@
 import { M } from '@endo/patterns';
-import { TimestampShape } from '@agoric/time';
 
 // The purpose of this module is to provide snapshotted (and possibly stale)
 // copies of various patterns and guards from packages that this package
@@ -22,6 +21,14 @@ export const AmountShape = harden({
 
 const AmountKeywordRecordShape = M.recordOf(M.string(), AmountShape);
 const AmountPatternKeywordRecordShape = M.recordOf(M.string(), M.pattern());
+
+const TimerBrandShape = M.remotable('TimerBrand');
+const TimestampValueShape = M.nat();
+const TimestampRecordShape = harden({
+  timerBrand: TimerBrandShape,
+  absValue: TimestampValueShape,
+});
+const TimestampShape = M.or(TimestampRecordShape, TimestampValueShape);
 
 export const FullProposalShape = harden({
   want: AmountPatternKeywordRecordShape,

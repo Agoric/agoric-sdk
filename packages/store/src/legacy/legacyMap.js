@@ -1,6 +1,7 @@
-import { q, Fail } from '@agoric/assert';
-
 import '../types.js';
+
+// TODO, once migrated to endo, import from @endo/errors instead
+const { Fail, quote: q } = assert;
 
 /**
  * This module and its fraternal sibling legacyWeakMap exist only to ease a
