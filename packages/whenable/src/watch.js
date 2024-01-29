@@ -73,7 +73,7 @@ const makeWatchWhenable =
     let promise;
     const payload = getWhenablePayload(specimen);
     if (payload) {
-      promise = E(payload.whenable0).shorten();
+      promise = E(payload.whenableV0).shorten();
     } else {
       promise = E.resolve(specimen);
     }

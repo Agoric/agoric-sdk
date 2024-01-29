@@ -15,8 +15,8 @@ const testRetryOnDisconnect = zone => async t => {
   const { watch, when } = wrappedPrepareWhenableModule(zone, {
     rejectionMeansRetry,
   });
-  const makeTestWhenable0 = zone.exoClass(
-    'TestWhenable0',
+  const makeTestWhenableV0 = zone.exoClass(
+    'TestWhenableV0',
     undefined,
     plan => ({ plan }),
     {
@@ -62,7 +62,7 @@ const testRetryOnDisconnect = zone => async t => {
 
       /** @type {import('../src/types.js').Whenable} */
       const whenable = makeTagged('Whenable', {
-        whenable0: makeTestWhenable0(plan),
+        whenableV0: makeTestWhenableV0(plan),
       });
 
       let resultP;
