@@ -1,6 +1,6 @@
 import { M } from '@endo/patterns';
 import { fromUniqueEntries } from '@agoric/internal';
-import { prepareExoClassKit } from './exo-utils.js';
+import { prepareExoClassKit } from '@agoric/vat-data';
 
 const { Fail, quote: q } = assert;
 
@@ -22,7 +22,7 @@ const { Fail, quote: q } = assert;
  * where the wrapper is a revocable forwarder
  *
  * @template {any} [U=any]
- * @param {import('./exo-utils').Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
  * @param {string} uInterfaceName

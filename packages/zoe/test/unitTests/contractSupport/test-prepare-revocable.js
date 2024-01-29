@@ -1,12 +1,15 @@
-// Modeled on test-revoke-heap-classes.js
+// Modeled on test-heap-classes.js
 
-import { test } from './prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { M } from '@agoric/store';
-import { prepareExoClass, prepareExoClassKit } from '../src/exo-utils.js';
-import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
-import { prepareRevocableKit } from '../src/prepare-revocable.js';
+import {
+  prepareExoClass,
+  prepareExoClassKit,
+  makeScalarBigMapStore,
+} from '@agoric/vat-data';
+import { prepareRevocableKit } from '../../../src/contractSupport/prepare-revocable.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()

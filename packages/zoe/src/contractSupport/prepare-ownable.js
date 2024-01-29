@@ -1,6 +1,7 @@
 import { M } from '@endo/patterns';
-import { prepareExoClass, prepareRevocableKit } from '@agoric/vat-data';
+import { prepareExoClass } from '@agoric/vat-data';
 import { OfferHandlerI } from '../typeGuards.js';
+import { prepareRevocableKit } from './prepare-revocable.js';
 
 const TransferProposalShape = M.splitRecord({
   give: {},
