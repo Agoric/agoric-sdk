@@ -2,7 +2,12 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { environmentOptionsListHas } from '@endo/env-options';
-import { assert, Fail } from '@agoric/assert';
+import {
+  assert,
+  throwRedacted as Fail,
+  quote as q,
+  bare as b,
+} from '@endo/errors';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
@@ -15,9 +20,6 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
-// TODO Why is this here but commented out? If no longer relevant, remove
-// import { kdebug } from './kdebug.js';
-
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
 /**
@@ -26,17 +28,9 @@ import {
  * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
  */
 
-/**
- *
- */
-
 const { hasOwn, defineProperty, getOwnPropertyNames, entries, fromEntries } =
   Object;
 const { ownKeys } = Reflect;
-// TODO https://github.com/Agoric/agoric-sdk/issues/8005
-// TODO https://github.com/endojs/endo/issues/1703
-// @ts-expect-error
-const { quote: q, bare: b } = assert;
 
 // Turn on to give each exo instance its own toStringTag value which exposes
 // the SwingSet vref.
