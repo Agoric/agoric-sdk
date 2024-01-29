@@ -8,45 +8,45 @@ import { makeTagged } from '@endo/pass-style';
  */
 export const prepareWhenableKits = zone => {
   /** WeakMap<object, any> */
-  const whenable0ToEphemeral = new WeakMap();
+  const whenableV0ToEphemeral = new WeakMap();
 
   /**
-   * Get the current incarnation's promise kit associated with a whenable0.
+   * Get the current incarnation's promise kit associated with a whenableV0.
    *
-   * @param {import('./types.js').WhenablePayload['whenable0']} whenable0
+   * @param {import('./types.js').WhenablePayload['whenableV0']} whenableV0
    * @returns {import('@endo/promise-kit').PromiseKit<any>}
    */
-  const findCurrentKit = whenable0 => {
-    let pk = whenable0ToEphemeral.get(whenable0);
+  const findCurrentKit = whenableV0 => {
+    let pk = whenableV0ToEphemeral.get(whenableV0);
     if (pk) {
       return pk;
     }
 
     pk = makePromiseKit();
     pk.promise.catch(() => {}); // silence unhandled rejection
-    whenable0ToEphemeral.set(whenable0, pk);
+    whenableV0ToEphemeral.set(whenableV0, pk);
     return pk;
   };
 
   /**
    * @param {'resolve' | 'reject'} kind
-   * @param {import('./types.js').WhenablePayload['whenable0']} whenable0
+   * @param {import('./types.js').WhenablePayload['whenableV0']} whenableV0
    * @param {unknown} value
    */
-  const settle = (kind, whenable0, value) => {
-    const kit = findCurrentKit(whenable0);
+  const settle = (kind, whenableV0, value) => {
+    const kit = findCurrentKit(whenableV0);
     const cb = kit[kind];
     if (!cb) {
       return;
     }
-    whenable0ToEphemeral.set(whenable0, harden({ promise: kit.promise }));
+    whenableV0ToEphemeral.set(whenableV0, harden({ promise: kit.promise }));
     cb(value);
   };
 
-  const rawMakeWhenableKit = zone.exoClassKit(
-    'Whenable0Kit',
+  const makeWhenableInternalsKit = zone.exoClassKit(
+    'WhenableInternalsKit',
     {
-      whenable0: M.interface('Whenable0', {
+      whenableV0: M.interface('WhenableV0', {
         shorten: M.call().returns(M.promise()),
       }),
       settler: M.interface('Settler', {
@@ -56,12 +56,12 @@ export const prepareWhenableKits = zone => {
     },
     () => ({}),
     {
-      whenable0: {
+      whenableV0: {
         /**
          * @returns {Promise<any>}
          */
         shorten() {
-          return findCurrentKit(this.facets.whenable0).promise;
+          return findCurrentKit(this.facets.whenableV0).promise;
         },
       },
       settler: {
@@ -69,15 +69,15 @@ export const prepareWhenableKits = zone => {
          * @param {any} [value]
          */
         resolve(value) {
-          const { whenable0 } = this.facets;
-          settle('resolve', whenable0, value);
+          const { whenableV0 } = this.facets;
+          settle('resolve', whenableV0, value);
         },
         /**
          * @param {any} [reason]
          */
         reject(reason) {
-          const { whenable0 } = this.facets;
-          settle('reject', whenable0, reason);
+          const { whenableV0 } = this.facets;
+          settle('reject', whenableV0, reason);
         },
       },
     },
@@ -88,8 +88,8 @@ export const prepareWhenableKits = zone => {
    * @returns {import('./types.js').WhenableKit<T>}
    */
   const makeWhenableKit = () => {
-    const { settler, whenable0 } = rawMakeWhenableKit();
-    const whenable = makeTagged('Whenable', harden({ whenable0 }));
+    const { settler, whenableV0 } = makeWhenableInternalsKit();
+    const whenable = makeTagged('Whenable', harden({ whenableV0 }));
     return harden({ settler, whenable });
   };
 
@@ -98,8 +98,8 @@ export const prepareWhenableKits = zone => {
    * @returns {import('./types.js').WhenablePromiseKit<T>}
    */
   const makeWhenablePromiseKit = () => {
-    const { settler, whenable0 } = rawMakeWhenableKit();
-    const whenable = makeTagged('Whenable', harden({ whenable0 }));
+    const { settler, whenableV0 } = makeWhenableInternalsKit();
+    const whenable = makeTagged('Whenable', harden({ whenableV0 }));
 
     /**
      * It would be nice to fully type this, but TypeScript gives:
@@ -110,15 +110,15 @@ export const prepareWhenableKits = zone => {
       then(onFulfilled, onRejected) {
         // This promise behaviour is ephemeral.  If you want a persistent
         // subscription, you must use `when(p, watcher)`.
-        const { promise } = findCurrentKit(whenable0);
+        const { promise } = findCurrentKit(whenableV0);
         return promise.then(onFulfilled, onRejected);
       },
       catch(onRejected) {
-        const { promise } = findCurrentKit(whenable0);
+        const { promise } = findCurrentKit(whenableV0);
         return promise.catch(onRejected);
       },
       finally(onFinally) {
-        const { promise } = findCurrentKit(whenable0);
+        const { promise } = findCurrentKit(whenableV0);
         return promise.finally(onFinally);
       },
     };

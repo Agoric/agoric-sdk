@@ -23,7 +23,7 @@ export const prepareWhen = (
       // Shorten the whenable chain without a watcher.
       await null;
       while (payload) {
-        specimen = await E(payload.whenable0)
+        specimen = await E(payload.whenableV0)
           .shorten()
           .catch(e => {
             if (rejectionMeansRetry(e)) {
