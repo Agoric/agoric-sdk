@@ -13,7 +13,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.0.3",
+    "@agoric/synthetic-chain": "^0.0.4-3",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.2.2",
     "execa": "^7.2.0"
