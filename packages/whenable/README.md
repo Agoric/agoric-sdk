@@ -29,7 +29,7 @@ Here they are: {
 you can change the `await w` into `await when(w)` to convert a chain of whenables to its final settlement, and use the exported `E` to do the same unwrapping implicitly:
 
 ```js
-import { E, when } from '@agoric/whenable/heap.js';
+import { E, when } from '@agoric/internal/whenable.js';
 [...]
 const a = await when(w);
 const b = await E(w).something(...args);
@@ -41,7 +41,7 @@ const b = await E(w).something(...args);
 Use the following to create and resolve a whenable:
 
 ```js
-import { makeWhenableKit } from '@agoric/whenable/heap.js';
+import { makeWhenableKit } from '@agoric/internal/whenable.js';
 [...]
 const { settler, whenable } = makeWhenableKit();
 // Send whenable to a potentially different vat.
@@ -56,7 +56,7 @@ The whenable package supports Zones, which are used to integrate Agoric's vat
 upgrade mechanism.  To create durable whenable functions:
 
 ```js
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareWhenableModule } from '@agoric/internal/whenable.js';
 import { makeDurableZone } from '@agoric/zone';
 
 // Only do the following once at the start of a new vat incarnation:
