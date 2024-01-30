@@ -834,7 +834,10 @@ func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Core proposals that should run during the upgrade block
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
-			CoreProposals: vm.CoreProposalsFromSteps(),
+			CoreProposals: vm.CoreProposalsFromSteps(
+				// Upgrade wallet factory as part of upgrade-14
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
+			),
 		}
 
 		// Always run module migrations
