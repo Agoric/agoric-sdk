@@ -36,7 +36,7 @@ export {};
 /**
  * @template [T=any]
  * @typedef {object} WhenablePayload
- * @property {import('@endo/far').FarRef<WhenableV0<T>>} whenableV0
+ * @property {import('@endo/eventual-send').FarRef<WhenableV0<T>>} whenableV0
  */
 
 /**

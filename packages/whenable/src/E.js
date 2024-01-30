@@ -1,6 +1,11 @@
 // @ts-check
+import { trackTurns } from '@endo/eventual-send/src/track-turns.js';
+import { makeMessageBreakpointTester } from '@endo/eventual-send/src/message-breakpoints.js';
+
 const { details: X, quote: q, Fail } = assert;
 const { assign, create } = Object;
+
+const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
 /** @typedef {(...args: any[]) => any} Callable */
 
@@ -34,10 +39,10 @@ const baseFreezableProxyHandler = {
  *
  * @param {any} recipient Any value passed to E(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {import('./when.js').When} when
+ * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeEProxyHandler = (recipient, HandledPromise, when) =>
+const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -59,8 +64,15 @@ const makeEProxyHandler = (recipient, HandledPromise, when) =>
               );
             }
 
-            return when(
-              HandledPromise.applyMethod(when(recipient), propertyKey, args),
+            if (onSend && onSend.shouldBreakpoint(recipient, propertyKey)) {
+              // eslint-disable-next-line no-debugger
+              debugger; // LOOK UP THE STACK
+              // Stopped at a breakpoint on eventual-send of a method-call message,
+              // so that you can walk back on the stack to see how we came to
+              // make this eventual-send
+            }
+            return unwrap(
+              HandledPromise.applyMethod(unwrap(recipient), propertyKey, args),
             );
           },
           // @ts-expect-error https://github.com/microsoft/TypeScript/issues/50319
@@ -68,7 +80,14 @@ const makeEProxyHandler = (recipient, HandledPromise, when) =>
       );
     },
     apply: (_target, _thisArg, argArray = []) => {
-      return when(HandledPromise.applyFunction(when(recipient), argArray));
+      if (onSend && onSend.shouldBreakpoint(recipient, undefined)) {
+        // eslint-disable-next-line no-debugger
+        debugger; // LOOK UP THE STACK
+        // Stopped at a breakpoint on eventual-send of a function-call message,
+        // so that you can walk back on the stack to see how we came to
+        // make this eventual-send
+      }
+      return unwrap(HandledPromise.applyFunction(unwrap(recipient), argArray));
     },
     has: (_target, _p) => {
       // We just pretend everything exists.
@@ -82,10 +101,10 @@ const makeEProxyHandler = (recipient, HandledPromise, when) =>
  *
  * @param {any} recipient Any value passed to E.sendOnly(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {import('./when.js').When} when
+ * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeESendOnlyProxyHandler = (recipient, HandledPromise, when) =>
+const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -101,8 +120,15 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, when) =>
               Fail`Unexpected receiver for "${q(
                 propertyKey,
               )}" method of E.sendOnly(${q(recipient)})`;
+            if (onSend && onSend.shouldBreakpoint(recipient, propertyKey)) {
+              // eslint-disable-next-line no-debugger
+              debugger; // LOOK UP THE STACK
+              // Stopped at a breakpoint on eventual-send of a method-call message,
+              // so that you can walk back on the stack to see how we came to
+              // make this eventual-send
+            }
             HandledPromise.applyMethodSendOnly(
-              when(recipient),
+              unwrap(recipient),
               propertyKey,
               args,
             );
@@ -113,7 +139,14 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, when) =>
       );
     },
     apply: (_target, _thisArg, argsArray = []) => {
-      HandledPromise.applyFunctionSendOnly(when(recipient), argsArray);
+      if (onSend && onSend.shouldBreakpoint(recipient, undefined)) {
+        // eslint-disable-next-line no-debugger
+        debugger; // LOOK UP THE STACK
+        // Stopped at a breakpoint on eventual-send of a function-call message,
+        // so that you can walk back on the stack to see how we came to
+        // make this eventual-send
+      }
+      HandledPromise.applyFunctionSendOnly(unwrap(recipient), argsArray);
       return undefined;
     },
     has: (_target, _p) => {
@@ -128,21 +161,25 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, when) =>
  *
  * @param {any} x Any value passed to E.get(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {import('./when.js').When} when
+ * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeEGetProxyHandler = (x, HandledPromise, when) =>
+const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
   harden({
     ...baseFreezableProxyHandler,
     has: (_target, _prop) => true,
-    get: (_target, prop) => HandledPromise.get(when(x), prop),
+    get: (_target, prop) => HandledPromise.get(unwrap(x), prop),
   });
 
+/** @param {any} x */
+const resolve = x => HandledPromise.resolve(x);
+
 /**
+ * @template {(x: any) => Promise<any>} [U=(x: any) => Promise<any>]
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {import('./when.js').When} when
+ * @param {U} unwrap
  */
-const makeE = (HandledPromise, when) => {
+const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
   return harden(
     assign(
       /**
@@ -155,7 +192,9 @@ const makeE = (HandledPromise, when) => {
        * @returns {ECallableOrMethods<RemoteFunctions<T>>} method/function call proxy
        */
       x =>
-        harden(new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, when))),
+        harden(
+          new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, unwrap)),
+        ),
       {
         /**
          * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -172,7 +211,7 @@ const makeE = (HandledPromise, when) => {
           harden(
             new Proxy(
               create(null),
-              makeEGetProxyHandler(x, HandledPromise, when),
+              makeEGetProxyHandler(x, HandledPromise, unwrap),
             ),
           ),
 
@@ -185,7 +224,7 @@ const makeE = (HandledPromise, when) => {
          * @returns {Promise<Awaited<T>>} handled promise for x
          * @readonly
          */
-        resolve: x => HandledPromise.resolve(when(x)),
+        resolve: x => HandledPromise.resolve(unwrap(x)),
 
         /**
          * E.sendOnly returns a proxy similar to E, but for which the results
@@ -200,7 +239,7 @@ const makeE = (HandledPromise, when) => {
           harden(
             new Proxy(
               () => {},
-              makeESendOnlyProxyHandler(x, HandledPromise, when),
+              makeESendOnlyProxyHandler(x, HandledPromise, unwrap),
             ),
           ),
 
@@ -218,7 +257,9 @@ const makeE = (HandledPromise, when) => {
          * @readonly
          */
         when: (x, onfulfilled, onrejected) =>
-          when(x).then(onfulfilled, onrejected),
+          unwrap(x).then(
+            ...trackTurns(/** @type {const} */ ([onfulfilled, onrejected])),
+          ),
       },
     ),
   );
@@ -347,11 +388,18 @@ export default makeE;
 
 /**
  * @template T
+ * @typedef {Awaited<T> extends import('./types').Whenable<infer U> ? Unwrap<U> : Awaited<T>} Unwrap
+ */
+
+/**
+ * @template T
  * @typedef {(
  *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
  *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
+ *     : Awaited<T> extends import('./types').Whenable<infer U>
+ *     ? LocalRecord<U>
  *     : T extends PromiseLike<infer U>
  *     ? Awaited<T>
  *     : T

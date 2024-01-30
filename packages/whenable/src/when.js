@@ -1,7 +1,5 @@
 // @ts-check
-import { E as basicE } from '@endo/far';
-
-import { unwrapPromise, getWhenablePayload } from './whenable-utils.js';
+import { unwrapPromise, getWhenablePayload, basicE } from './whenable-utils.js';
 
 /**
  * @param {() => import('./types.js').WhenablePromiseKit<any>} makeWhenablePromiseKit

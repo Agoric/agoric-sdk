@@ -1,8 +1,7 @@
 // @ts-check
-import { E as basicE } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { getWhenablePayload, unwrapPromise } from './whenable-utils.js';
+import { getWhenablePayload, unwrapPromise, basicE } from './whenable-utils.js';
 
 const { Fail } = assert;
 

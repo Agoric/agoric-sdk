@@ -1,5 +1,10 @@
 // @ts-check
+/* global globalThis */
 import { getTag } from '@endo/pass-style';
+
+import makeE from '@endo/eventual-send/src/E.js';
+
+export const basicE = makeE(globalThis.HandledPromise);
 
 /**
  * @template T
