@@ -2,30 +2,16 @@
 
 The test runner is `@agoric/synthetic-chain`. This package depends on that so that you can run,
 ```
-yarn synthetic-chain append
+yarn synthetic-chain build
 yarn synthetic-chain test
 yarn synthetic-chain test --debug
 ```
 
 # Package management
 
-This directory hierarchy, while it contains packages, is not part of the agoric-sdk workspace. This is to isolate it from tooling that expects a public package published to NPM.
+This directory hierarchy, while it contains packages, is not part of the agoric-sdk workspace. This is to isolate it from tooling that expects a public package published to NPM. For example, it doesn't run in the CI jobs for the `/packages` packages.
 
-For each proposal, their package.json is also separate but it can't access the SDK code. Instead you must either source a published version of `@agoric/synthetic-chain` (e.g. a `dev` version published on each master commit) or pack a tarball and source that.
-
-```
-cd packages/synthetic-chain
-yarn pack
-TARBALL=`ls *.tgz`
-cd -
-
-mv packages/synthetic-chain/$TARBALL a3p-integration/proposals/c:myproposal/
-# .tgz are gitignored at the root but a closer .gitignore makes an exception for this package's tarball
-git add a3p-integration/proposals/c:myproposal/$TARBALL
-
-yarn add @agoric/synthetic-chain@file:$TARBALL
-
-```
+For each proposal, their package.json is also separate and can't access the SDK code. There is an issue to automatically build proposals from scripts declared in the proposal package.json: https://github.com/Agoric/agoric-3-proposals/issues/87 . Until that is resolved, use `agoric run` on the proposal and copy the outputs to a `submission` directory within the proposals package, to be checked in.
 
 # Troubleshooting
 
@@ -47,4 +33,17 @@ cd agoric-3-proposals
 
 # build the default entrypoint and tag it so the `append` command finds it
 docker buildx build --tag ghcr.io/agoric/agoric-3-proposals:main .
+```
+
+## missing "unreleased" image
+
+If you get an error like,
+```
+ERROR: failed to solve: ghcr.io/agoric/agoric-sdk:unreleased: ghcr.io/agoric/agoric-sdk:unreleased: not found
+```
+
+That's probably because you don't have that image built locally. To build it,
+```
+cd packages/deployment
+make docker-build-sdk
 ```
