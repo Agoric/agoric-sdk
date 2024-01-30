@@ -91,22 +91,6 @@ const prepareHalfConnection = (zone, { when }) => {
           throw this.state.closed;
         }
 
-        // watch(
-        //   E(this.state.handlers[this.state.r])
-        //     .onReceive(
-        //       this.state.conns.get(this.state.r),
-        //       toBytes(packetBytes),
-        //       this.state.handlers[this.state.r],
-        //     )
-        //     .catch(rethrowUnlessMissing),
-        //   {
-        //     onFulfilled: ack => {
-
-        //     },
-        //     onRejected: () => { },
-        //   },
-        // );
-
         const ack = await when(
           E(this.state.handlers[this.state.r])
             .onReceive(
