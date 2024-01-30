@@ -1,10 +1,8 @@
-import { trackTurns } from './track-turns.js';
-import { makeMessageBreakpointTester } from './message-breakpoints.js';
-
+// @ts-check
 const { details: X, quote: q, Fail } = assert;
 const { assign, create } = Object;
 
-const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
+/** @typedef {(...args: any[]) => any} Callable */
 
 /** @type {ProxyHandler<any>} */
 const baseFreezableProxyHandler = {
@@ -35,10 +33,11 @@ const baseFreezableProxyHandler = {
  * A Proxy handler for E(x).
  *
  * @param {any} recipient Any value passed to E(x)
- * @param {import('./types').HandledPromiseConstructor} HandledPromise
+ * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {import('./when.js').When} when
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeEProxyHandler = (recipient, HandledPromise) =>
+const makeEProxyHandler = (recipient, HandledPromise, when) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -60,29 +59,16 @@ const makeEProxyHandler = (recipient, HandledPromise) =>
               );
             }
 
-            if (onSend && onSend.shouldBreakpoint(recipient, propertyKey)) {
-              // eslint-disable-next-line no-debugger
-              debugger; // LOOK UP THE STACK
-              // Stopped at a breakpoint on eventual-send of a method-call
-              // message,
-              // so that you can walk back on the stack to see how we came to
-              // make this eventual-send
-            }
-            return HandledPromise.applyMethod(recipient, propertyKey, args);
+            return when(
+              HandledPromise.applyMethod(when(recipient), propertyKey, args),
+            );
           },
           // @ts-expect-error https://github.com/microsoft/TypeScript/issues/50319
         }[propertyKey],
       );
     },
     apply: (_target, _thisArg, argArray = []) => {
-      if (onSend && onSend.shouldBreakpoint(recipient, undefined)) {
-        // eslint-disable-next-line no-debugger
-        debugger; // LOOK UP THE STACK
-        // Stopped at a breakpoint on eventual-send of a function-call message,
-        // so that you can walk back on the stack to see how we came to
-        // make this eventual-send
-      }
-      return HandledPromise.applyFunction(recipient, argArray);
+      return when(HandledPromise.applyFunction(when(recipient), argArray));
     },
     has: (_target, _p) => {
       // We just pretend everything exists.
@@ -95,10 +81,11 @@ const makeEProxyHandler = (recipient, HandledPromise) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} recipient Any value passed to E.sendOnly(x)
- * @param {import('./types').HandledPromiseConstructor} HandledPromise
+ * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {import('./when.js').When} when
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeESendOnlyProxyHandler = (recipient, HandledPromise) =>
+const makeESendOnlyProxyHandler = (recipient, HandledPromise, when) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -114,15 +101,11 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise) =>
               Fail`Unexpected receiver for "${q(
                 propertyKey,
               )}" method of E.sendOnly(${q(recipient)})`;
-            if (onSend && onSend.shouldBreakpoint(recipient, propertyKey)) {
-              // eslint-disable-next-line no-debugger
-              debugger; // LOOK UP THE STACK
-              // Stopped at a breakpoint on eventual-send of a method-call
-              // message,
-              // so that you can walk back on the stack to see how we came to
-              // make this eventual-send
-            }
-            HandledPromise.applyMethodSendOnly(recipient, propertyKey, args);
+            HandledPromise.applyMethodSendOnly(
+              when(recipient),
+              propertyKey,
+              args,
+            );
             return undefined;
           },
           // @ts-expect-error https://github.com/microsoft/TypeScript/issues/50319
@@ -130,14 +113,7 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise) =>
       );
     },
     apply: (_target, _thisArg, argsArray = []) => {
-      if (onSend && onSend.shouldBreakpoint(recipient, undefined)) {
-        // eslint-disable-next-line no-debugger
-        debugger; // LOOK UP THE STACK
-        // Stopped at a breakpoint on eventual-send of a function-call message,
-        // so that you can walk back on the stack to see how we came to
-        // make this eventual-send
-      }
-      HandledPromise.applyFunctionSendOnly(recipient, argsArray);
+      HandledPromise.applyFunctionSendOnly(when(recipient), argsArray);
       return undefined;
     },
     has: (_target, _p) => {
@@ -151,20 +127,22 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} x Any value passed to E.get(x)
- * @param {import('./types').HandledPromiseConstructor} HandledPromise
+ * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {import('./when.js').When} when
  * @returns {ProxyHandler} the Proxy handler
  */
-const makeEGetProxyHandler = (x, HandledPromise) =>
+const makeEGetProxyHandler = (x, HandledPromise, when) =>
   harden({
     ...baseFreezableProxyHandler,
     has: (_target, _prop) => true,
-    get: (_target, prop) => HandledPromise.get(x, prop),
+    get: (_target, prop) => HandledPromise.get(when(x), prop),
   });
 
 /**
- * @param {import('./types').HandledPromiseConstructor} HandledPromise
+ * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {import('./when.js').When} when
  */
-const makeE = HandledPromise => {
+const makeE = (HandledPromise, when) => {
   return harden(
     assign(
       /**
@@ -176,7 +154,8 @@ const makeE = HandledPromise => {
        * @param {T} x target for method/function call
        * @returns {ECallableOrMethods<RemoteFunctions<T>>} method/function call proxy
        */
-      x => harden(new Proxy(() => {}, makeEProxyHandler(x, HandledPromise))),
+      x =>
+        harden(new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, when))),
       {
         /**
          * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -191,7 +170,10 @@ const makeE = HandledPromise => {
          */
         get: x =>
           harden(
-            new Proxy(create(null), makeEGetProxyHandler(x, HandledPromise)),
+            new Proxy(
+              create(null),
+              makeEGetProxyHandler(x, HandledPromise, when),
+            ),
           ),
 
         /**
@@ -203,7 +185,7 @@ const makeE = HandledPromise => {
          * @returns {Promise<Awaited<T>>} handled promise for x
          * @readonly
          */
-        resolve: HandledPromise.resolve,
+        resolve: x => HandledPromise.resolve(when(x)),
 
         /**
          * E.sendOnly returns a proxy similar to E, but for which the results
@@ -216,25 +198,27 @@ const makeE = HandledPromise => {
          */
         sendOnly: x =>
           harden(
-            new Proxy(() => {}, makeESendOnlyProxyHandler(x, HandledPromise)),
+            new Proxy(
+              () => {},
+              makeESendOnlyProxyHandler(x, HandledPromise, when),
+            ),
           ),
 
         /**
          * E.when(x, res, rej) is equivalent to
-         * HandledPromise.resolve(x).then(res, rej)
+         * when(x).then(onfulfilled, onrejected)
          *
          * @template T
-         * @template [U = T]
-         * @param {T|PromiseLike<T>} x value to convert to a handled promise
-         * @param {(value: T) => ERef<U>} [onfulfilled]
-         * @param {(reason: any) => ERef<U>} [onrejected]
-         * @returns {Promise<U>}
+         * @template [TResult1=T]
+         * @template [TResult2=never]
+         * @param {ERef<T>} x value to convert to a handled promise
+         * @param {(value: T) => ERef<TResult1>} [onfulfilled]
+         * @param {(reason: any) => ERef<TResult2>} [onrejected]
+         * @returns {Promise<TResult1 | TResult2>}
          * @readonly
          */
         when: (x, onfulfilled, onrejected) =>
-          HandledPromise.resolve(x).then(
-            ...trackTurns([onfulfilled, onrejected]),
-          ),
+          when(x).then(onfulfilled, onrejected),
       },
     ),
   );
@@ -245,20 +229,11 @@ export default makeE;
 /** @typedef {ReturnType<makeE>} EProxy */
 
 /**
- * Creates a type that accepts both near and marshalled references that were
- * returned from `Remotable` or `Far`, and also promises for such references.
- *
- * @template Primary The type of the primary reference.
- * @template [Local=DataOnly<Primary>] The local properties of the object.
- * @typedef {ERef<Local & import('./types').RemotableBrand<Local, Primary>>} FarRef
- */
-
-/**
  * `DataOnly<T>` means to return a record type `T2` consisting only of
  * properties that are *not* functions.
  *
  * @template T The type to be filtered.
- * @typedef {Omit<T, FilteredKeys<T, import('./types').Callable>>} DataOnly
+ * @typedef {Omit<T, FilteredKeys<T, Callable>>} DataOnly
  */
 
 /**
@@ -268,7 +243,7 @@ export default makeE;
  */
 
 /**
- * @template {import('./types').Callable} T
+ * @template {Callable} T
  * @typedef {(
  *   ReturnType<T> extends PromiseLike<infer U>                       // if function returns a promise
  *     ? T                                                            // return the function
@@ -279,7 +254,7 @@ export default makeE;
 /**
  * @template T
  * @typedef {{
- *   readonly [P in keyof T]: T[P] extends import('./types').Callable
+ *   readonly [P in keyof T]: T[P] extends Callable
  *     ? ECallable<T[P]>
  *     : never;
  * }} EMethods
@@ -295,14 +270,14 @@ export default makeE;
  */
 
 /**
- * @template {import('./types').Callable} T
+ * @template {Callable} T
  * @typedef {(...args: Parameters<T>) => Promise<void>} ESendOnlyCallable
  */
 
 /**
  * @template T
  * @typedef {{
- *   readonly [P in keyof T]: T[P] extends import('./types').Callable
+ *   readonly [P in keyof T]: T[P] extends Callable
  *     ? ESendOnlyCallable<T[P]>
  *     : never;
  * }} ESendOnlyMethods
@@ -311,7 +286,7 @@ export default makeE;
 /**
  * @template T
  * @typedef {(
- *   T extends import('./types').Callable
+ *   T extends Callable
  *     ? ESendOnlyCallable<T> & ESendOnlyMethods<Required<T>>
  *     : ESendOnlyMethods<Required<T>>
  * )} ESendOnlyCallableOrMethods
@@ -320,7 +295,7 @@ export default makeE;
 /**
  * @template T
  * @typedef {(
- *   T extends import('./types').Callable
+ *   T extends Callable
  *     ? ECallable<T> & EMethods<Required<T>>
  *     : EMethods<Required<T>>
  * )} ECallableOrMethods
@@ -347,9 +322,9 @@ export default makeE;
  *
  * @template T
  * @typedef {(
- *   T extends import('./types').Callable
+ *   T extends Callable
  *     ? (...args: Parameters<T>) => ReturnType<T>                     // a root callable, no methods
- *     : Pick<T, FilteredKeys<T, import('./types').Callable>>          // any callable methods
+ *     : Pick<T, FilteredKeys<T, Callable>>          // any callable methods
  * )} PickCallable
  */
 
@@ -358,10 +333,12 @@ export default makeE;
  *
  * @template T
  * @typedef {(
- *   T extends import('./types').RemotableBrand<infer L, infer R>     // if a given T is some remote interface R
+ *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>     // if a given T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('./types').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
+ *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
+ *     : Awaited<T> extends import('./types').Whenable<infer U>
+ *     ? RemoteFunctions<U>                                           // then extract the remotable functions of U
  *     : T extends PromiseLike<infer U>                               // otherwise, if T is a promise
  *     ? Awaited<T>                                                   // then return resolved value T
  *     : T                                                            // otherwise, return T
@@ -371,9 +348,9 @@ export default makeE;
 /**
  * @template T
  * @typedef {(
- *   T extends import('./types').RemotableBrand<infer L, infer R>
+ *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
- *     : Awaited<T> extends import('./types').RemotableBrand<infer L, infer R>
+ *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
  *     : T extends PromiseLike<infer U>
  *     ? Awaited<T>
@@ -385,7 +362,7 @@ export default makeE;
  * @template [R = unknown]
  * @typedef {{
  *   promise: Promise<R>;
- *   settler: import('./types').Settler<R>;
+ *   settler: import('@endo/eventual-send').Settler<R>;
  * }} EPromiseKit
  */
 
@@ -395,11 +372,11 @@ export default makeE;
  *
  * @template T
  * @typedef {(
- *   T extends import('./types').Callable
+ *   T extends Callable
  *     ? (...args: Parameters<T>) => ERef<Awaited<EOnly<ReturnType<T>>>>
- *     : T extends Record<PropertyKey, import('./types').Callable>
+ *     : T extends Record<PropertyKey, Callable>
  *     ? {
- *         [K in keyof T]: T[K] extends import('./types').Callable
+ *         [K in keyof T]: T[K] extends Callable
  *           ? (...args: Parameters<T[K]>) => ERef<Awaited<EOnly<ReturnType<T[K]>>>>
  *           : T[K];
  *       }

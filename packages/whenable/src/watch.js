@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@endo/far';
+import { E as basicE } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { getWhenablePayload, unwrapPromise } from './whenable-utils.js';
@@ -57,7 +57,7 @@ const watchPromiseShim = (p, watcher, ...watcherArgs) => {
   onFulfilled ||
     onRejected ||
     Fail`promise watcher must implement at least one handler method`;
-  void E.when(p, onFulfilled, onRejected);
+  void basicE.when(p, onFulfilled, onRejected);
 };
 
 /**
@@ -73,9 +73,9 @@ const makeWatchWhenable =
     let promise;
     const payload = getWhenablePayload(specimen);
     if (payload) {
-      promise = E(payload.whenableV0).shorten();
+      promise = basicE(payload.whenableV0).shorten();
     } else {
-      promise = E.resolve(specimen);
+      promise = basicE.resolve(specimen);
     }
     watchPromise(promise, promiseWatcher);
   };
@@ -204,11 +204,14 @@ export const prepareWatch = (
   );
 
   /**
-   * @template T
-   * @param {any} specimenP
-   * @param {import('./types.js').Watcher<T>} [watcher]
+   * @template [T=any]
+   * @template [TResult1=T]
+   * @template [TResult2=T]
+   * @param {import('./types.js').ERef<T | import('./types.js').Whenable<T>>} specimenP
+   * @param {import('./types.js').Watcher<T, TResult1, TResult2>} [watcher]
    */
   const watch = (specimenP, watcher) => {
+    /** @type {import('./types.js').WhenableKit<TResult1 | TResult2>} */
     const { settler, whenable } = makeWhenableKit();
 
     const { promiseWatcher, whenableSetter } = makeWatcherKit(settler, watcher);

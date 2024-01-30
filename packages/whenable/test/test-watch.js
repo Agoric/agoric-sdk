@@ -15,7 +15,7 @@ const prepareAckWatcher = (zone, t) => {
       return 'fulfilled';
     },
     onRejected(reason) {
-      t.truthy(reason instanceof Error);
+      t.true(reason instanceof Error);
       return 'rejected';
     },
   });

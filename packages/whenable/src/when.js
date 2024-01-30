@@ -1,45 +1,47 @@
 // @ts-check
-import { E } from '@endo/far';
+import { E as basicE } from '@endo/far';
 
 import { unwrapPromise, getWhenablePayload } from './whenable-utils.js';
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
  * @param {() => import('./types.js').WhenablePromiseKit<any>} makeWhenablePromiseKit
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
-export const prepareWhen = (
-  zone,
+export const makeWhen = (
   makeWhenablePromiseKit,
   rejectionMeansRetry = () => false,
 ) => {
   /**
-   * @param {any} specimenP
+   * @template T
+   * @param {import('./types.js').ERef<T | import('./types.js').Whenable<T>>} specimenP
    */
   const when = specimenP => {
+    /** @type {import('./types.js').WhenablePromiseKit<T>} */
     const { settler, promise } = makeWhenablePromiseKit();
     // Ensure we have a presence that won't be disconnected later.
     unwrapPromise(specimenP, async (specimen, payload) => {
       // Shorten the whenable chain without a watcher.
       await null;
+      /** @type {any} */
+      let result = specimen;
       while (payload) {
-        specimen = await E(payload.whenableV0)
+        result = await basicE(payload.whenableV0)
           .shorten()
           .catch(e => {
             if (rejectionMeansRetry(e)) {
               // Shorten the same specimen to try again.
-              return specimen;
+              return result;
             }
             throw e;
           });
         // Advance to the next whenable.
-        const nextPayload = getWhenablePayload(specimen);
+        const nextPayload = getWhenablePayload(result);
         if (!nextPayload) {
           break;
         }
         payload = nextPayload;
       }
-      settler.resolve(specimen);
+      settler.resolve(result);
     }).catch(e => settler.reject(e));
 
     return promise;
@@ -49,6 +51,6 @@ export const prepareWhen = (
   return when;
 };
 
-harden(prepareWhen);
+harden(makeWhen);
 
-/** @typedef {ReturnType<typeof prepareWhen>} When */
+/** @typedef {ReturnType<typeof makeWhen>} When */

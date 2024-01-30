@@ -60,7 +60,7 @@ const testRetryOnDisconnect = zone => async t => {
     for await (const [final, ...plan] of PLANS) {
       t.log(`testing (plan=${plan}, watchWhenable=${watchWhenable})`);
 
-      /** @type {import('../src/types.js').Whenable} */
+      /** @type {import('../src/types.js').Whenable<string>} */
       const whenable = makeTagged('Whenable', {
         whenableV0: makeTestWhenableV0(plan),
       });

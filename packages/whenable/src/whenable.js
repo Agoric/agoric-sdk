@@ -101,28 +101,8 @@ export const prepareWhenableKits = zone => {
     const { settler, whenableV0 } = makeWhenableInternalsKit();
     const whenable = makeTagged('Whenable', harden({ whenableV0 }));
 
-    /**
-     * It would be nice to fully type this, but TypeScript gives:
-     * TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
-     * @type {unknown}
-     */
-    const whenablePromiseLike = {
-      then(onFulfilled, onRejected) {
-        // This promise behaviour is ephemeral.  If you want a persistent
-        // subscription, you must use `when(p, watcher)`.
-        const { promise } = findCurrentKit(whenableV0);
-        return promise.then(onFulfilled, onRejected);
-      },
-      catch(onRejected) {
-        const { promise } = findCurrentKit(whenableV0);
-        return promise.catch(onRejected);
-      },
-      finally(onFinally) {
-        const { promise } = findCurrentKit(whenableV0);
-        return promise.finally(onFinally);
-      },
-    };
-    const promise = /** @type {Promise<T>} */ (whenablePromiseLike);
+    /** @type {{ promise: Promise<T> }} */
+    const { promise } = findCurrentKit(whenableV0);
     return harden({ settler, whenable, promise });
   };
   return { makeWhenableKit, makeWhenablePromiseKit };
