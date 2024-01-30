@@ -72,8 +72,6 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-playground/validator/v10 v10.11.1 // indirect
-	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/golang/glog v1.1.0 // indirect
@@ -165,23 +163,28 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+replace (
+	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 
-replace github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
+	github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
 
-replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	// We need a fork of cosmos-sdk until all of the differences are merged.
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.jim.3
 
-// replace broken goleveldb.
-replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	// Fix upstream GHSA-3vp4-m3rf-835h vulnerability.
+	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
 
-// At least until post-v0.34.14 is released with
-// https://github.com/tendermint/tendermint/issue/6899 resolved.
-replace github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
+	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
-// We need a fork of cosmos-sdk until all of the differences are merged.
-replace github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.jim.3
+	// replace broken goleveldb.
+	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+	// use cometft
+	// Use our fork at least until post-v0.34.14 is released with
+	// https://github.com/tendermint/tendermint/issue/6899 resolved.
+	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
 
 // For testing against a local cosmos-sdk or tendermint
-// replace github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
-
-// replace github.com/tendermint/tendermint => ../../../forks/tendermint
+// github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
+// github.com/tendermint/tendermint => ../../../forks/tendermint
+)
