@@ -10,7 +10,7 @@ const { isFrozen } = Object;
  * abandoned by upgrade.
  *
  * @typedef {{
- *   name: string,
+ *   name: 'vatUpgraded',
  *   upgradeMessage: string,
  *   incarnationNumber: number
  * }} UpgradeDisconnection
