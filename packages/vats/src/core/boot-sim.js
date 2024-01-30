@@ -30,7 +30,7 @@ const modules = harden({ behaviors: { ...behaviors }, utils: { ...utils } });
  *   logger: (msg) => void;
  * }} vatPowers
  * @param {{
- *   coreProposalCode?: string;
+ *   coreProposalCodeSteps?: string[];
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {

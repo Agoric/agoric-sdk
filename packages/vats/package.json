@@ -55,9 +55,8 @@
     "src/",
     "scripts/",
     "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
+    "index.*",
+    "exported.*"
   ],
   "publishConfig": {
     "access": "public"
