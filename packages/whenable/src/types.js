@@ -7,23 +7,36 @@ export {};
  */
 
 /**
+ * @template T
+ * @typedef {import('./E').ERef<T>} ERef
+ */
+
+/**
+ * Creates a type that accepts both near and marshalled references that were
+ * returned from `Remotable` or `Far`, and also promises for such references.
+ *
+ * @template Primary The type of the primary reference.
+ * @template [Local=import('./E').DataOnly<Primary>] The local properties of the object.
+ * @typedef {ERef<Local & import('@endo/eventual-send').RemotableBrand<Local, Primary>>} FarRef
+ */
+
+/**
  * @template [T=any]
  * @typedef {object} WhenableV0 The first version of the whenable implementation
  * object.  CAVEAT: These methods must never be changed or added to, to provide
  * forward/backward compatibility.  Create a new object and bump its version
  * number instead.
  *
- * @property {() => Promise<T | Whenable<T>>} shorten Return a promise that
- * attempts to unwrap all whenables in this promise chain, and return a promise
- * for the final value.  A rejection may indicate a temporary routing failure
- * requiring a retry, otherwise that the decider of the terminal promise
- * rejected it.
+ * @property {() => Promise<T>} shorten Attempt to unwrap all whenables in this
+ * promise chain, returning a promise for the final value.  A rejection may
+ * indicate a temporary routing failure requiring a retry, otherwise that the
+ * decider of the terminal promise rejected it.
  */
 
 /**
  * @template [T=any]
  * @typedef {object} WhenablePayload
- * @property {import('@endo/far').FarRef<WhenableV0<T>>} whenableV0
+ * @property {import('@endo/eventual-send').FarRef<WhenableV0<T>>} whenableV0
  */
 
 /**

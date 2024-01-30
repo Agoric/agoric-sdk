@@ -1,5 +1,11 @@
 // @ts-check
-import { getTag } from '@endo/pass-style';
+import { E as basicE } from '@endo/eventual-send';
+import { getTag, passStyleOf } from '@endo/pass-style';
+
+// TODO: `isPassable` should come from @endo/pass-style
+import { isPassable } from '@agoric/base-zone';
+
+export { basicE };
 
 /**
  * @template T
@@ -8,8 +14,8 @@ import { getTag } from '@endo/pass-style';
  */
 export const getWhenablePayload = specimen => {
   const isWhenable =
-    typeof specimen === 'object' &&
-    specimen !== null &&
+    isPassable(specimen) &&
+    passStyleOf(specimen) === 'tagged' &&
     getTag(specimen) === 'Whenable';
   if (!isWhenable) {
     return undefined;
