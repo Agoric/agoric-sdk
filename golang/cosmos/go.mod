@@ -36,7 +36,7 @@ require (
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
 	github.com/Workiva/go-datastructures v1.0.53 // indirect
-	github.com/aws/aws-sdk-go v1.40.45 // indirect
+	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
@@ -138,7 +138,7 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.5.0 // indirect
-	github.com/ulikunitz/xz v0.5.8 // indirect
+	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/zondax/hid v0.9.2 // indirect
 	github.com/zondax/ledger-go v0.14.3 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
@@ -171,10 +171,16 @@ replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.jim.3
 
+	// https://pkg.go.dev/vuln/GO-2023-2409
+	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
+
 	// Fix upstream GHSA-3vp4-m3rf-835h vulnerability.
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+
+	// https://pkg.go.dev/vuln/GO-2023-1578
+	github.com/hashicorp/go-getter => github.com/hashicorp/go-getter v1.7.0
 
 	// replace broken goleveldb.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
