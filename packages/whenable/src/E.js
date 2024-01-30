@@ -1,6 +1,6 @@
 // @ts-check
-import { trackTurns } from '@endo/eventual-send/src/track-turns.js';
-import { makeMessageBreakpointTester } from '@endo/eventual-send/src/message-breakpoints.js';
+import { trackTurns } from './track-turns.js';
+import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
 const { details: X, quote: q, Fail } = assert;
 const { assign, create } = Object;

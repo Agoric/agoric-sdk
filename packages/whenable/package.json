@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@agoric/base-zone": "^0.1.0",
+    "@endo/env-options": "^1.1.0",
     "@endo/eventual-send": "^1.1.0",
     "@endo/pass-style": "^1.1.0",
     "@endo/patterns": "^1.1.0",
