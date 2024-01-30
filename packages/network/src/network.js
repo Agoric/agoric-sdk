@@ -14,6 +14,7 @@ import '@agoric/store/exported.js';
  */
 export const ENDPOINT_SEPARATOR = '/';
 
+/** @param {unknown} err */
 export const rethrowUnlessMissing = err => {
   // Ugly hack rather than being able to determine if the function
   // exists.
@@ -45,6 +46,16 @@ export function getPrefixes(addr) {
 }
 
 /**
+ * @typedef {object} ConnectionOpts
+ * @property {Endpoint[]} addrs
+ * @property {ConnectionHandler[]} handlers
+ * @property {MapStore<number, Connection>} conns
+ * @property {WeakSetStore<Closable>} current
+ * @property {0|1} l
+ * @property {0|1} r
+ */
+
+/**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
  */
@@ -52,6 +63,7 @@ const prepareHalfConnection = (zone, { when }) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
     undefined,
+    /** @param {ConnectionOpts} opts */
     ({ addrs, handlers, conns, current, l, r }) => {
       /** @type {Error | undefined} */
       let closed;
@@ -73,6 +85,7 @@ const prepareHalfConnection = (zone, { when }) => {
       getRemoteAddress() {
         return this.state.addrs[this.state.r];
       },
+      /** @param {Data} packetBytes */
       async send(packetBytes) {
         if (this.state.closed) {
           throw this.state.closed;
@@ -126,6 +139,15 @@ const prepareHalfConnection = (zone, { when }) => {
   return makeHalfConnection;
 };
 
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {ConnectionHandler} handler0
+ * @param {Endpoint} addr0
+ * @param {ConnectionHandler} handler1
+ * @param {Endpoint} addr1
+ * @param {(opts: ConnectionOpts) => Connection} makeConnection
+ * @param {WeakSetStore<Closable>} current
+ */
 export const crossoverConnection = (
   zone,
   handler0,
@@ -145,6 +167,10 @@ export const crossoverConnection = (
   /** @type {Endpoint[]} */
   const addrs = harden([addr0, addr1]);
 
+  /**
+   * @param {0|1} l
+   * @param {0|1} r
+   */
   const makeHalfConnection = (l, r) => {
     conns.init(l, makeConnection({ addrs, handlers, conns, current, l, r }));
   };
@@ -169,6 +195,10 @@ export const crossoverConnection = (
   return [conns.get(0), conns.get(1)];
 };
 
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {(opts: ConnectionOpts) => Connection} makeConnection
+ */
 const prepareInboundAttempt = (zone, makeConnection) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
@@ -276,16 +306,27 @@ const prepareInboundAttempt = (zone, makeConnection) => {
 };
 
 /** @enum {number} */
-const RevokeState = {
+const RevokeState = /** @type {const} */ ({
   NOT_REVOKED: 0,
   REVOKING: 1,
   REVOKED: 2,
-};
+});
 
+/** @param {import('@agoric/zone').Zone} zone */
 const preparePort = zone => {
   const makePort = zone.exoClass(
     'Port',
     undefined,
+    /**
+     * @param {object} opts
+     * @param {Endpoint} opts.localAddr
+     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
+     * @param {SetStore<Connection>} opts.openConnections
+     * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
+     * @param {MapStore<string, Port>} opts.boundPorts
+     * @param {ProtocolHandler} opts.protocolHandler
+     * @param {ProtocolImpl} opts.protocolImpl
+     */
     ({
       localAddr,
       listening,
@@ -303,6 +344,7 @@ const preparePort = zone => {
         localAddr,
         protocolHandler,
         protocolImpl,
+        /** @type {RevokeState | undefined} */
         revoked: undefined,
       };
     },
@@ -311,6 +353,7 @@ const preparePort = zone => {
         // Works even after revoke().
         return this.state.localAddr;
       },
+      /** @param {ListenHandler} listenHandler */
       async addListener(listenHandler) {
         const revoked = this.state.revoked;
 
@@ -349,6 +392,7 @@ const preparePort = zone => {
           .onListen(this.self, listenHandler)
           .catch(rethrowUnlessMissing);
       },
+      /** @param {ListenHandler} listenHandler */
       async removeListener(listenHandler) {
         this.state.listening.has(this.state.localAddr) ||
           Fail`Port ${this.state.localAddr} is not listening`;
@@ -365,6 +409,10 @@ const preparePort = zone => {
           .onRemove(this.self, listenHandler)
           .catch(rethrowUnlessMissing);
       },
+      /**
+       * @param {Endpoint} remotePort
+       * @param {ConnectionHandler} connectionHandler
+       */
       async connect(remotePort, connectionHandler = {}) {
         const revoked = this.state.revoked;
 
@@ -433,6 +481,13 @@ const prepareBinder = (zone, powers) => {
   const makeBinderKit = zone.exoClassKit(
     'binder',
     undefined,
+    /**
+     * @param {object} opts
+     * @param { MapStore<Port, SetStore<Closable>> } opts.currentConnections
+     * @param {MapStore<string, Port>} opts.boundPorts
+     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
+     * @param {ProtocolHandler} opts.protocolHandler
+     */
     ({ currentConnections, boundPorts, listening, protocolHandler }) => {
       /** @type {SetStore<Connection>} */
       const openConnections = detached.setStore('openConnections');
@@ -444,11 +499,16 @@ const prepareBinder = (zone, powers) => {
         revoked: RevokeState.NOT_REVOKED,
         openConnections,
         protocolHandler,
+        /** @type {Endpoint | undefined} */
         localAddr: undefined,
       };
     },
     {
       protocolImpl: {
+        /**
+         * @param {Endpoint} listenAddr
+         * @param {Endpoint} remoteAddr
+         */
         async inbound(listenAddr, remoteAddr) {
           let lastFailure = Error(`No listeners for ${listenAddr}`);
           for await (const listenPrefix of getPrefixes(listenAddr)) {
@@ -492,10 +552,13 @@ const prepareBinder = (zone, powers) => {
           }
           throw lastFailure;
         },
+        /**
+         * @param {Port} port
+         * @param {Endpoint} remoteAddr
+         * @param {ConnectionHandler} lchandler
+         */
         async outbound(port, remoteAddr, lchandler) {
-          const localAddr =
-            /** @type {string} */
-            (await E(port).getLocalAddress());
+          const localAddr = await E(port).getLocalAddress();
 
           // Allocate a local address.
           const initialLocalInstance = await E(this.state.protocolHandler)
@@ -561,6 +624,7 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binder: {
+        /** @param {string} localAddr */
         async bind(localAddr) {
           // Check if we are underspecified (ends in slash)
           const underspecified = localAddr.endsWith(ENDPOINT_SEPARATOR);
@@ -611,9 +675,17 @@ const prepareBinder = (zone, powers) => {
   return makeBinderKit;
 };
 
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ */
 export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinder = prepareBinder(zone, powers);
 
+  /**
+   * @param {ProtocolHandler} protocolHandler
+   * @returns {Protocol}
+   */
   const makeNetworkProtocol = protocolHandler => {
     const detached = zone.detached();
 
@@ -658,12 +730,22 @@ export const prepareEchoConnectionHandler = zone => {
       };
     },
     {
+      /**
+       * @param {Connection} _connection
+       * @param {Bytes} bytes
+       * @param {ConnectionHandler} _connectionHandler
+       */
       async onReceive(_connection, bytes, _connectionHandler) {
         if (this.state.closed) {
           throw this.state.closed;
         }
         return bytes;
       },
+      /**
+       * @param {Connection} _connection
+       * @param {CloseReason} [_reason]
+       * @param {ConnectionHandler} [_connectionHandler]
+       */
       async onClose(_connection, _reason, _connectionHandler) {
         if (this.state.closed) {
           throw this.state.closed;
@@ -706,7 +788,7 @@ export const prepareNonceMaker = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<prepareNonceMaker>} makeNonceMaker
+ * @param {ReturnType<typeof prepareNonceMaker>} makeNonceMaker
  */
 export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
   const detached = zone.detached();
@@ -768,6 +850,12 @@ export function prepareLoopbackProtocolHandler(zone, makeNonceMaker) {
           this.state.listeners.init(localAddr, harden([port, listenHandler]));
         }
       },
+      /**
+       * @param {Port} port
+       * @param {Endpoint} localAddr
+       * @param {ListenHandler} listenHandler
+       * @param {*} _protocolHandler
+       */
       async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
         const [lport, lhandler] = this.state.listeners.get(localAddr);
         lport === port || Fail`Port does not match listener on ${localAddr}`;
