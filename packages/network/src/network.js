@@ -650,7 +650,7 @@ const prepareBinder = (zone, powers) => {
  * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
  */
 export const prepareNetworkProtocol = (zone, powers) => {
-  const makeBinder = prepareBinder(zone, powers);
+  const makeBinderKit = prepareBinder(zone, powers);
 
   /**
    * @param {ProtocolHandler} protocolHandler
@@ -668,7 +668,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
     /** @type {MapStore<Endpoint, [Port, ListenHandler]>} */
     const listening = detached.mapStore('listening');
 
-    const { binder, protocolImpl } = makeBinder({
+    const { binder, protocolImpl } = makeBinderKit({
       currentConnections,
       boundPorts,
       listening,
