@@ -87,34 +87,28 @@ const prepareHalfConnection = (zone, { when }) => {
       },
       /** @param {Data} packetBytes */
       async send(packetBytes) {
-        if (this.state.closed) {
-          throw this.state.closed;
+        const { closed, handlers, r, conns } = this.state;
+        if (closed) {
+          throw closed;
         }
 
         const ack = await when(
-          E(this.state.handlers[this.state.r])
-            .onReceive(
-              this.state.conns.get(this.state.r),
-              toBytes(packetBytes),
-              this.state.handlers[this.state.r],
-            )
+          E(handlers[r])
+            .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
             .catch(rethrowUnlessMissing),
         );
 
         return toBytes(ack || '');
       },
       async close() {
-        if (this.state.closed) {
-          throw this.state.closed;
+        const { closed, current, conns, l, handlers } = this.state;
+        if (closed) {
+          throw closed;
         }
         this.state.closed = Error('Connection closed');
-        this.state.current.delete(this.state.conns.get(this.state.l));
-        await E(this.state.handlers[this.state.l])
-          .onClose(
-            this.state.conns.get(this.state.l),
-            undefined,
-            this.state.handlers[this.state.l],
-          )
+        current.delete(conns.get(l));
+        await E(this.state.handlers[l])
+          .onClose(conns.get(l), undefined, handlers[l])
           .catch(rethrowUnlessMissing);
       },
     },
@@ -246,23 +240,23 @@ const prepareInboundAttempt = (zone, makeConnection) => {
        * @param {ConnectionHandler} opts.handler
        */
       async accept({ localAddress, remoteAddress, handler: rchandler }) {
-        if (this.state.consummated) {
-          throw this.state.consummated;
+        const { consummated, localAddr, remoteAddr } = this.state;
+        const { listening, listenPrefix, currentConnections } = this.state;
+        if (consummated) {
+          throw consummated;
         }
         this.state.consummated = Error(`Already accepted`);
 
         if (localAddress === undefined) {
-          localAddress = this.state.localAddr;
+          localAddress = localAddr;
         }
 
         if (remoteAddress === undefined) {
-          remoteAddress = this.state.remoteAddr;
+          remoteAddress = remoteAddr;
         }
 
-        const [port, listener] = this.state.listening.get(
-          this.state.listenPrefix,
-        );
-        const current = this.state.currentConnections.get(port);
+        const [port, listener] = listening.get(listenPrefix);
+        const current = currentConnections.get(port);
 
         current.delete(this.self);
 
@@ -339,38 +333,30 @@ const preparePort = zone => {
       },
       /** @param {ListenHandler} listenHandler */
       async addListener(listenHandler) {
-        const revoked = this.state.revoked;
+        const { revoked, listening, localAddr, protocolHandler } = this.state;
 
         !revoked || Fail`Port ${this.state.localAddr} is revoked`;
         listenHandler || Fail`listenHandler is not defined`;
 
-        if (this.state.listening.has(this.state.localAddr)) {
+        if (listening.has(localAddr)) {
           // Last one wins.
-          const [lport, lhandler] = this.state.listening.get(
-            this.state.localAddr,
-          );
+          const [lport, lhandler] = listening.get(localAddr);
           if (lhandler === listenHandler) {
             return;
           }
-          this.state.listening.set(this.state.localAddr, [
-            this.self,
-            listenHandler,
-          ]);
+          listening.set(localAddr, [this.self, listenHandler]);
           E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
-          this.state.listening.init(
-            this.state.localAddr,
-            harden([this.self, listenHandler]),
-          );
+          listening.init(localAddr, harden([this.self, listenHandler]));
         }
 
         // TODO: Check that the listener defines onAccept.
 
-        await E(this.state.protocolHandler).onListen(
+        await E(protocolHandler).onListen(
           this.self,
-          this.state.localAddr,
+          localAddr,
           listenHandler,
-          this.state.protocolHandler,
+          protocolHandler,
         );
         await E(listenHandler)
           .onListen(this.self, listenHandler)
@@ -378,16 +364,16 @@ const preparePort = zone => {
       },
       /** @param {ListenHandler} listenHandler */
       async removeListener(listenHandler) {
-        this.state.listening.has(this.state.localAddr) ||
-          Fail`Port ${this.state.localAddr} is not listening`;
-        this.state.listening.get(this.state.localAddr)[1] === listenHandler ||
-          Fail`Port ${this.state.localAddr} handler to remove is not listening`;
-        this.state.listening.delete(this.state.localAddr);
-        await E(this.state.protocolHandler).onListenRemove(
+        const { listening, localAddr, protocolHandler } = this.state;
+        listening.has(localAddr) || Fail`Port ${localAddr} is not listening`;
+        listening.get(localAddr)[1] === listenHandler ||
+          Fail`Port ${localAddr} handler to remove is not listening`;
+        listening.delete(localAddr);
+        await E(protocolHandler).onListenRemove(
           this.self,
-          this.state.localAddr,
+          localAddr,
           listenHandler,
-          this.state.protocolHandler,
+          protocolHandler,
         );
         await E(listenHandler)
           .onRemove(this.self, listenHandler)
