@@ -877,30 +877,34 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
-        const { blockHeight, isBootstrap, upgradePlan } = action;
+        const { blockHeight, isBootstrap, upgradeDetails } = action;
 
         if (!blockNeedsExecution(blockHeight)) {
           return true;
         }
 
-        let { coreProposals } = parseUpgradePlanInfo(
-          upgradePlan,
-          ActionType.AG_COSMOS_INIT,
-        );
+        const softwareUpgradeCoreProposals = upgradeDetails?.coreProposals;
+
+        const { coreProposals: upgradeInfoCoreProposals } =
+          parseUpgradePlanInfo(upgradeDetails?.plan, ActionType.AG_COSMOS_INIT);
 
         if (isBootstrap) {
           // This only runs for the very first block on the chain.
           await doBootstrap(action);
-
-          // Merge the core proposals from the bootstrap block with the
-          // ones from the upgrade plan.
-          coreProposals = mergeCoreProposals(
-            bootstrapCoreProposals,
-            coreProposals,
-          );
         }
 
-        if (coreProposals) {
+        // Merge the core proposals from the bootstrap block with the
+        // ones from the upgrade.
+        const coreProposals = mergeCoreProposals(
+          bootstrapCoreProposals,
+          softwareUpgradeCoreProposals,
+          upgradeInfoCoreProposals,
+        );
+
+        if (coreProposals.steps.length) {
+          upgradeDetails ||
+            isBootstrap ||
+            Fail`Unexpected core proposals outside of consensus start`;
           await doCoreProposals(action, coreProposals);
         }
         return true;
