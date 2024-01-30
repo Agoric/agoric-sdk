@@ -213,7 +213,7 @@ type GaiaApp struct { // nolint: golint
 	vibcPort         int
 	vstoragePort     int
 
-	upgradePlan *upgradetypes.Plan
+	upgradeDetails *upgradeDetails
 
 	invCheckPeriod uint
 
@@ -828,8 +828,14 @@ func NewAgoricApp(
 func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
-		// Record the plan to send to SwingSet
-		app.upgradePlan = &plan
+		app.upgradeDetails = &upgradeDetails{
+			// Record the plan to send to SwingSet
+			Plan: plan,
+			// Core proposals that should run during the upgrade block
+			// These will be merged with any coreProposals specified in the
+			// upgradeInfo field of the upgrade plan ran as subsequent steps
+			CoreProposals: vm.CoreProposalsFromSteps(),
+		}
 
 		// Always run module migrations
 		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
@@ -864,18 +870,23 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 	ak.SetModuleAccount(ctx, newAcct)
 }
 
+type upgradeDetails struct {
+	Plan          upgradetypes.Plan `json:"plan"`
+	CoreProposals *vm.CoreProposals `json:"coreProposals,omitempty"`
+}
+
 type cosmosInitAction struct {
 	vm.ActionHeader `actionType:"AG_COSMOS_INIT"`
-	ChainID         string             `json:"chainID"`
-	IsBootstrap     bool               `json:"isBootstrap"`
-	Params          swingset.Params    `json:"params"`
-	SupplyCoins     sdk.Coins          `json:"supplyCoins"`
-	UpgradePlan     *upgradetypes.Plan `json:"upgradePlan,omitempty"`
-	LienPort        int                `json:"lienPort"`
-	StoragePort     int                `json:"storagePort"`
-	SwingsetPort    int                `json:"swingsetPort"`
-	VbankPort       int                `json:"vbankPort"`
-	VibcPort        int                `json:"vibcPort"`
+	ChainID         string          `json:"chainID"`
+	IsBootstrap     bool            `json:"isBootstrap"`
+	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
+	Params          swingset.Params `json:"params"`
+	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
+	LienPort        int             `json:"lienPort"`
+	StoragePort     int             `json:"storagePort"`
+	SwingsetPort    int             `json:"swingsetPort"`
+	VbankPort       int             `json:"vbankPort"`
+	VibcPort        int             `json:"vibcPort"`
 }
 
 // Name returns the name of the App
@@ -900,22 +911,22 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		ChainID:      ctx.ChainID(),
-		IsBootstrap:  bootstrap,
-		Params:       app.SwingSetKeeper.GetParams(ctx),
-		SupplyCoins:  sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		UpgradePlan:  app.upgradePlan,
-		LienPort:     app.lienPort,
-		StoragePort:  app.vstoragePort,
-		SwingsetPort: app.swingsetPort,
-		VbankPort:    app.vbankPort,
-		VibcPort:     app.vibcPort,
+		ChainID:        ctx.ChainID(),
+		IsBootstrap:    bootstrap,
+		Params:         app.SwingSetKeeper.GetParams(ctx),
+		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
+		UpgradeDetails: app.upgradeDetails,
+		LienPort:       app.lienPort,
+		StoragePort:    app.vstoragePort,
+		SwingsetPort:   app.swingsetPort,
+		VbankPort:      app.vbankPort,
+		VibcPort:       app.vibcPort,
 	}
 	// This uses `BlockingSend` as a friendly wrapper for `sendToController`
 	//
 	// CAVEAT: we are restarting after an in-consensus halt or just because this
 	// node felt like it.  The controller must be able to handle either case
-	// (inConsensus := action.IsBootstrap || action.UpgradePlan != nil).
+	// (inConsensus := action.IsBootstrap || action.UpgradeDetails != nil).
 	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
