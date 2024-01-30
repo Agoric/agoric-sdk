@@ -15,10 +15,13 @@ export function buildRootObject(_vatPowers, _args, baggage) {
   const protocol = makeRouterProtocol();
 
   return Far('RouterProtocol', {
+    /** @param {Parameters<typeof protocol.registerProtocolHandler>} args */
     registerProtocolHandler: (...args) =>
       protocol.registerProtocolHandler(...args),
+    /** @param {Parameters<typeof protocol.unregisterProtocolHandler>} args */
     unregisterProtocolHandler: (...args) =>
       protocol.unregisterProtocolHandler(...args),
+    /** @param {Parameters<typeof protocol.bind>} args */
     bind: (...args) => protocol.bind(...args),
   });
 }

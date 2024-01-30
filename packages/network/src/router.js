@@ -36,6 +36,7 @@ export const prepareRouter = zone => {
       };
     },
     {
+      /** @param {Endpoint} addr */
       getRoutes(addr) {
         const parts = addr.split(ENDPOINT_SEPARATOR);
         /** @type {[string, T][]} */
@@ -60,9 +61,17 @@ export const prepareRouter = zone => {
         }
         return harden(ret);
       },
+      /**
+       * @param {string} prefix
+       * @param {T} route
+       */
       register(prefix, route) {
         this.state.prefixToRoute.init(prefix, route);
       },
+      /**
+       * @param {string} prefix
+       * @param {T} route
+       */
       unregister(prefix, route) {
         this.state.prefixToRoute.get(prefix) === route ||
           Fail`Router is not registered at prefix ${prefix}`;
@@ -98,6 +107,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
     'RouterProtocol',
     undefined,
     () => {
+      /** @type {Router<Protocol>} */
       const router = makeRouter();
 
       /** @type {MapStore<string, Protocol>} */
@@ -113,6 +123,10 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
       };
     },
     {
+      /**
+       * @param {string[]} paths
+       * @param {ProtocolHandler} protocolHandler
+       */
       registerProtocolHandler(paths, protocolHandler) {
         const protocol = makeNetworkProtocol(protocolHandler);
         for (const prefix of paths) {
@@ -123,14 +137,23 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
       },
       // FIXME: Buggy.
       // Needs to account for multiple paths.
+      /**
+       * @param {string} prefix
+       * @param {ProtocolHandler} protocolHandler
+       */
       unregisterProtocolHandler(prefix, protocolHandler) {
         const ph = this.state.protocolHandlers.get(prefix);
         ph === protocolHandler ||
           Fail`Protocol handler is not registered at prefix ${prefix}`;
+        // TODO: unmap protocol hanlders to their corresponding protocol
+        // e.g. using a map
+        // before unregistering
+        // @ts-expect-error note FIXME above
         this.state.router.unregister(prefix, ph);
         this.state.protocols.delete(prefix);
         this.state.protocolHandlers.delete(prefix);
       },
+      /** @param {Endpoint} localAddr */
       async bind(localAddr) {
         const [route] = this.state.router.getRoutes(localAddr);
         route !== undefined || Fail`No registered router for ${localAddr}`;
