@@ -1,20 +1,18 @@
 import { M } from '@endo/patterns';
-import { prepareExoClassKit } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareOwnable } from '../../../src/contractSupport/prepare-ownable.js';
-
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * @param {ZCF} zcf
  * @param {{ count: bigint}} privateArgs
- * @param {Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
+  const zone = makeDurableZone(baggage, 'rootZone');
   const { count: startCount = 0n } = privateArgs;
   assert.typeof(startCount, 'bigint');
 
-  const makeUnderlyingCounterKit = prepareExoClassKit(
-    baggage,
+  const makeUnderlyingCounterKit = zone.exoClassKit(
     'OwnableCounter',
     {
       counter: M.interface('Counter', {
@@ -61,7 +59,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   const makeOwnableCounter = prepareOwnable(
-    baggage,
+    zone,
     (...args) => zcf.makeInvitation(...args),
     'Counter',
     'OwnableCounter',

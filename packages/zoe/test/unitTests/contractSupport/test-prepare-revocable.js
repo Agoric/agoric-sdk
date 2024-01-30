@@ -3,12 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { M } from '@agoric/store';
-import {
-  prepareExoClass,
-  prepareExoClassKit,
-  makeScalarBigMapStore,
-} from '@agoric/vat-data';
+import { M } from '@endo/patterns';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { prepareRevocableKit } from '../../../src/contractSupport/prepare-revocable.js';
 
 const UpCounterI = M.interface('UpCounter', {
@@ -26,10 +22,9 @@ const DownCounterI = M.interface('DownCounter', {
 });
 
 test('test revoke defineVirtualExoClass', t => {
-  const baggage = makeScalarBigMapStore('fakeRootBaggage');
+  const zone = makeHeapZone('rootZone');
 
-  const makeUnderlyingUpCounter = prepareExoClass(
-    baggage,
+  const makeUnderlyingUpCounter = zone.exoClass(
     'UpCounter',
     UpCounterI,
     /** @param {number} [x] */
@@ -44,7 +39,7 @@ test('test revoke defineVirtualExoClass', t => {
   );
 
   const makeRevocableUpCounterKit = prepareRevocableKit(
-    baggage,
+    zone,
     'UpCounter',
     'UpCounter',
     ['incr'],
@@ -62,10 +57,9 @@ test('test revoke defineVirtualExoClass', t => {
 });
 
 test('test revoke defineVirtualExoClassKit', t => {
-  const baggage = makeScalarBigMapStore('fakeRootBaggage');
+  const zone = makeHeapZone('rootZone');
 
-  const makeUnderlyingCounterKit = prepareExoClassKit(
-    baggage,
+  const makeUnderlyingCounterKit = zone.exoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} [x] */
@@ -89,7 +83,7 @@ test('test revoke defineVirtualExoClassKit', t => {
   );
 
   const makeRevocableUpCounterKit = prepareRevocableKit(
-    baggage,
+    zone,
     'UpCounter',
     'UpCounter',
     ['incr'],

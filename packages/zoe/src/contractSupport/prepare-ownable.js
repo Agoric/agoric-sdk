@@ -1,5 +1,4 @@
 import { M } from '@endo/patterns';
-import { prepareExoClass } from '@agoric/vat-data';
 import { OfferHandlerI } from '../typeGuards.js';
 import { prepareRevocableKit } from './prepare-revocable.js';
 
@@ -13,7 +12,7 @@ const TransferProposalShape = M.splitRecord({
 
 /**
  * @template {any} [U=any]
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/base-zone').Zone} zone
  * @param {MakeInvitation} makeInvitation
  * @param {string} uKindName
  * @param {string} uInterfaceName
@@ -21,14 +20,14 @@ const TransferProposalShape = M.splitRecord({
  * @returns {(underlying: U) => U}
  */
 export const prepareOwnable = (
-  baggage,
+  zone,
   makeInvitation,
   uKindName,
   uInterfaceName,
   uMethodNames,
 ) => {
   const makeRevocableKit = prepareRevocableKit(
-    baggage,
+    zone,
     uKindName,
     uInterfaceName,
     uMethodNames,
@@ -63,8 +62,7 @@ export const prepareOwnable = (
     },
   );
 
-  const makeTransferHandler = prepareExoClass(
-    baggage,
+  const makeTransferHandler = zone.exoClass(
     'TransferHandler',
     OfferHandlerI,
     underlying => ({

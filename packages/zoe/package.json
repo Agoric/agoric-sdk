@@ -44,6 +44,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
+    "@agoric/base-zone": "^0.1.1",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
@@ -52,6 +53,7 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
+    "@agoric/zone": "^0.2.3",
     "@endo/bundle-source": "^3.0.2",
     "@endo/captp": "^4.0.2",
     "@endo/eventual-send": "^1.1.0",
