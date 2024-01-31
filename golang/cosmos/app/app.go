@@ -834,7 +834,9 @@ func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Core proposals that should run during the upgrade block
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
-			CoreProposals: vm.CoreProposalsFromSteps(),
+			CoreProposals: vm.CoreProposalsFromSteps(
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
+			),
 		}
 
 		// Always run module migrations
