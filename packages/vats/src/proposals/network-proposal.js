@@ -10,6 +10,7 @@ import {
 // bootstrap vat can't yet be upgraded.
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareWhenableModule } from '@agoric/whenable';
+import { makeScalarMapStore } from '@agoric/store';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
@@ -144,8 +145,9 @@ export const setupNetworkProtocols = async (
       loadCriticalVat,
       bridgeManager: bridgeManagerP,
       provisioning,
+      vatUpgradeInfo: vatUpgradeInfoP,
     },
-    produce: { networkVat },
+    produce: { networkVat, vatUpgradeInfo: produceVatUpgradeInfo },
     zone,
   },
   options,
@@ -159,6 +161,11 @@ export const setupNetworkProtocols = async (
   };
   // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
+
+  produceVatUpgradeInfo.resolve(makeScalarMapStore('vatUpgradeInfo'));
+  const info = await vatUpgradeInfoP;
+  info.init('ibc', ibcRef);
+  info.init('network', networkRef);
 
   networkVat.reset();
   networkVat.resolve(vats.network);
@@ -204,9 +211,11 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         bridgeManager: 'bridge',
         zoe: 'zoe',
         provisioning: 'provisioning',
+        vatUpgradeInfo: true,
       },
       produce: {
         networkVat: 'network',
+        vatUpgradeInfo: true,
       },
       zone: true,
     },

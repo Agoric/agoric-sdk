@@ -377,6 +377,7 @@ type ChainBootstrapSpaceT = {
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
+  vatUpgradeInfo: MapStore;
   zoe: ZoeService;
 };
 
