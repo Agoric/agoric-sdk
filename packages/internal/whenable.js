@@ -1,11 +1,18 @@
 /* global globalThis */
-import { prepareWhenableModule as rawPrepareWhenableModule } from '@agoric/whenable';
+// @ts-check
+import { prepareWhenableTools as rawPrepareWhenableTools } from '@agoric/whenable';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { isUpgradeDisconnection } from './src/upgrade-api.js';
 
 const vatData = /** @type {any} */ (globalThis).VatData;
 
-/** @type {(p: PromiseLike<any>, watcher: PromiseWatcher, ...args: unknown[]) => void} */
+/**
+ * @type {undefined | ((
+ *   p: PromiseLike<any>,
+ *   watcher: import('@agoric/whenable/src/watch.js').PromiseWatcher,
+ *   ...args: unknown[]
+ * ) => void)}
+ */
 const watchPromise = vatData && vatData.watchPromise;
 
 /**
@@ -20,9 +27,12 @@ export const defaultPowers = harden({
   watchPromise,
 });
 
-export const prepareWhenableModule = (zone, powers = {}) =>
-  rawPrepareWhenableModule(zone, { ...defaultPowers, ...powers });
+/**
+ * @type {typeof rawPrepareWhenableTools}
+ */
+export const prepareWhenableTools = (zone, powers = {}) =>
+  rawPrepareWhenableTools(zone, { ...defaultPowers, ...powers });
 
-export const { E, watch, when, makeWhenableKit } = prepareWhenableModule(
+export const { E, watch, when, makeWhenableKit } = prepareWhenableTools(
   makeHeapZone(),
 );

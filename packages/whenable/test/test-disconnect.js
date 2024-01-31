@@ -3,7 +3,7 @@ import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
-import { wrappedPrepareWhenableModule } from '../src/module.js';
+import { prepareWhenableTools } from '../src/tools.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -12,7 +12,7 @@ import { wrappedPrepareWhenableModule } from '../src/module.js';
 const testRetryOnDisconnect = zone => async t => {
   const rejectionMeansRetry = e => e && e.message === 'disconnected';
 
-  const { watch, when } = wrappedPrepareWhenableModule(zone, {
+  const { watch, when } = prepareWhenableTools(zone, {
     rejectionMeansRetry,
   });
   const makeTestWhenableV0 = zone.exoClass(

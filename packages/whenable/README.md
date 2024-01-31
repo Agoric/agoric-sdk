@@ -55,16 +55,16 @@ settler.resolve('now you know the answer');
 ## Durability
 
 The whenable package supports Zones, which are used to integrate Agoric's vat
-upgrade mechanism.  To create durable whenable functions:
+upgrade mechanism.  To create whenable tools that deal with durable objects:
 
 ```js
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareWhenableTools } from '@agoric/internal/whenable.js';
 import { makeDurableZone } from '@agoric/zone';
 
 // Only do the following once at the start of a new vat incarnation:
 const zone = makeDurableZone(baggage);
-const whenableZone = zone.subZone('WhenableModule');
-const { E, when, watch, makeWhenableKit } = prepareWhenableModule(whenableZone);
+const whenableZone = zone.subZone('WhenableTools');
+const { E, when, watch, makeWhenableKit } = prepareWhenableTools(whenableZone);
 
 // Now the functions have been bound to the durable baggage.
 // Whenables and settlers you create can be saved in durable stores.

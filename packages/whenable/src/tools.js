@@ -1,9 +1,7 @@
-/* global globalThis */
 // @ts-check
 import { makeWhen } from './when.js';
 import { prepareWhenableKits } from './whenable.js';
 import { prepareWatch } from './watch.js';
-import makeE from './E.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -11,8 +9,8 @@ import makeE from './E.js';
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
  * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
-export const wrappedPrepareWhenableModule = (zone, powers) => {
-  const { rejectionMeansRetry = _reason => false, watchPromise } = powers || {};
+export const prepareWhenableTools = (zone, powers) => {
+  const { rejectionMeansRetry = () => false, watchPromise } = powers || {};
   const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
   const when = makeWhen(makeWhenablePromiseKit, rejectionMeansRetry);
   const watch = prepareWatch(
@@ -21,13 +19,6 @@ export const wrappedPrepareWhenableModule = (zone, powers) => {
     watchPromise,
     rejectionMeansRetry,
   );
-  const E = makeE(
-    globalThis.HandledPromise,
-    harden({
-      unwrap: when,
-      additional: { watch },
-    }),
-  );
-  return harden({ E, when, watch, makeWhenableKit });
+  return harden({ when, watch, makeWhenableKit });
 };
-harden(wrappedPrepareWhenableModule);
+harden(prepareWhenableTools);
