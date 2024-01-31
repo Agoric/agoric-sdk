@@ -690,7 +690,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
  */
 export const prepareEchoConnectionHandler = zone => {
   const makeEchoConnectionHandler = zone.exoClass(
-    'ConnectionHandler',
+    'EchoConnectionHandler',
     undefined,
     () => {
       /** @type {Error | undefined} */
