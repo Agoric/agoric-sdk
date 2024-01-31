@@ -26,12 +26,14 @@ Here they are: {
 }
 ```
 
-you can change the `await w` into `await when(w)` to convert a chain of whenables to its final settlement, and use the exported `E` to do the same unwrapping implicitly:
+you can use the exported `E` and change the `await w` into `await E.when(w)` in
+order to convert a chain of whenables to a promise for its final settlement, and
+to do implicit unwrapping of results that are whenables:
 
 ```js
-import { E, when } from '@agoric/internal/whenable.js';
+import { E } from '@agoric/internal/whenable.js';
 [...]
-const a = await when(w);
+const a = await E.when(w);
 const b = await E(w).something(...args);
 // Produces the expected results.
 ```

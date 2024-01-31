@@ -245,7 +245,7 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
 
         /**
          * E.when(x, res, rej) is equivalent to
-         * when(x).then(onfulfilled, onrejected)
+         * unwrapped(x).then(onfulfilled, onrejected)
          *
          * @template T
          * @template [TResult1=T]
@@ -256,10 +256,15 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
          */
-        when: (x, onfulfilled, onrejected) =>
-          unwrap(x).then(
+        when: (x, onfulfilled, onrejected) => {
+          const unwrapped = HandledPromise.resolve(unwrap(x));
+          if (onfulfilled == null && onrejected == null) {
+            return unwrapped;
+          }
+          return unwrapped.then(
             ...trackTurns(/** @type {const} */ ([onfulfilled, onrejected])),
-          ),
+          );
+        },
       },
     ),
   );
