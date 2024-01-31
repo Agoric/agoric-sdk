@@ -248,10 +248,10 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
          * unwrapped(x).then(onfulfilled, onrejected)
          *
          * @template T
-         * @template [TResult1=T]
+         * @template [TResult1=Unwrap<T>]
          * @template [TResult2=never]
          * @param {ERef<T>} x value to convert to a handled promise
-         * @param {(value: T) => ERef<TResult1>} [onfulfilled]
+         * @param {(value: Unwrap<T>) => ERef<TResult1>} [onfulfilled]
          * @param {(reason: any) => ERef<TResult2>} [onrejected]
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
