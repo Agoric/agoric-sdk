@@ -1,7 +1,7 @@
 {
   "agoricProposal": {
     "releaseNotes": "https://github.com/Agoric/agoric-sdk/releases/tag/agoric-upgrade-14",
-    "sdkImageTag": "upgrade-14-dev",
+    "sdkImageTag": "unreleased",
     "planName": "agoric-upgrade-14",
     "upgradeInfo": {},
     "type": "Software Upgrade Proposal"
