@@ -1,6 +1,6 @@
 # Whenables
 
-Native promises are not compatible with Agoric's durable stores, which means that on the Agoric platform, such promises disconnect their clients when their creator vat is upgraded.  Whenables are objects that represent promises that can be stored durably, this package also provides a `when` operator to allow clients to tolerate upgrades of whenable-hosting vats, as well as a `watch` operator to subscribe to a promise or whenable in a way that survives upgrades of both the creator and subscribing client vats.
+Native promises are not compatible with Agoric's durable stores, which means that on the Agoric platform, such promises disconnect their clients when their creator vat is upgraded.  Whenables are objects that represent promises that can be stored durably, this package also provides a `when` operator to allow clients to tolerate upgrades of whenable-hosting vats, as well as a `watch` operator to subscribe to a whenable in a way that survives upgrades of both the creator and subscribing client vats.
 
 ## Whenable Consumer
 

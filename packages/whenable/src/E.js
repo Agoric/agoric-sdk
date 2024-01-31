@@ -40,7 +40,7 @@ const baseFreezableProxyHandler = {
  * @param {any} recipient Any value passed to E(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
- * @returns {ProxyHandler} the Proxy handler
+ * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
   harden({
@@ -48,10 +48,13 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
     get: (_target, propertyKey, receiver) => {
       return harden(
         {
-          // This function purposely checks the `this` value (see above)
-          // In order to be `this` sensitive it is defined using concise method
-          // syntax rather than as an arrow function. To ensure the function
-          // is not constructable, it also avoids the `function` syntax.
+          /**
+           * This function purposely checks the `this` value (see above)
+           * In order to be `this` sensitive it is defined using concise method
+           * syntax rather than as an arrow function. To ensure the function
+           * is not constructable, it also avoids the `function` syntax.
+           * @param  {...any[]} args
+           */
           [propertyKey](...args) {
             if (this !== receiver) {
               // Reject the async function call
@@ -102,7 +105,7 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
  * @param {any} recipient Any value passed to E.sendOnly(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
- * @returns {ProxyHandler} the Proxy handler
+ * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
   harden({
@@ -110,10 +113,13 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
     get: (_target, propertyKey, receiver) => {
       return harden(
         {
-          // This function purposely checks the `this` value (see above)
-          // In order to be `this` sensitive it is defined using concise method
-          // syntax rather than as an arrow function. To ensure the function
-          // is not constructable, it also avoids the `function` syntax.
+          /**
+           * This function purposely checks the `this` value (see above)
+           * In order to be `this` sensitive it is defined using concise method
+           * syntax rather than as an arrow function. To ensure the function
+           * is not constructable, it also avoids the `function` syntax.
+           * @param  {...any[]} args
+           */
           [propertyKey](...args) {
             // Throw since the function returns nothing
             this === receiver ||
@@ -162,7 +168,7 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
  * @param {any} x Any value passed to E.get(x)
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
- * @returns {ProxyHandler} the Proxy handler
+ * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
   harden({
@@ -175,11 +181,17 @@ const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
 const resolve = x => HandledPromise.resolve(x);
 
 /**
+ * @template [A={}]
  * @template {(x: any) => Promise<any>} [U=(x: any) => Promise<any>]
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {U} unwrap
+ * @param {object} powers
+ * @param {U} powers.unwrap
+ * @param {A} powers.additional
  */
-const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
+const makeE = (
+  HandledPromise,
+  { additional = /** @type {A} */ ({}), unwrap = /** @type {U} */ (resolve) },
+) => {
   return harden(
     assign(
       /**
@@ -224,7 +236,7 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
          * @returns {Promise<Awaited<T>>} handled promise for x
          * @readonly
          */
-        resolve: x => HandledPromise.resolve(unwrap(x)),
+        resolve: x => resolve(unwrap(x)),
 
         /**
          * E.sendOnly returns a proxy similar to E, but for which the results
@@ -257,7 +269,7 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
          * @readonly
          */
         when: (x, onfulfilled, onrejected) => {
-          const unwrapped = HandledPromise.resolve(unwrap(x));
+          const unwrapped = resolve(unwrap(x));
           if (onfulfilled == null && onrejected == null) {
             return unwrapped;
           }
@@ -266,6 +278,7 @@ const makeE = (HandledPromise, unwrap = /** @type {U} */ (resolve)) => {
           );
         },
       },
+      additional,
     ),
   );
 };

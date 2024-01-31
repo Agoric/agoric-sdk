@@ -12,7 +12,7 @@ import makeE from './E.js';
  * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
 export const prepareWhenableModule = (zone, powers) => {
-  const { rejectionMeansRetry = _reason => false, watchPromise } = powers || {};
+  const { rejectionMeansRetry = () => false, watchPromise } = powers || {};
   const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
   const when = makeWhen(makeWhenablePromiseKit, rejectionMeansRetry);
   const watch = prepareWatch(
@@ -21,7 +21,13 @@ export const prepareWhenableModule = (zone, powers) => {
     watchPromise,
     rejectionMeansRetry,
   );
-  const E = makeE(globalThis.HandledPromise, when);
-  return harden({ E, watch, when, makeWhenableKit, makeWhenablePromiseKit });
+  const E = makeE(
+    globalThis.HandledPromise,
+    harden({
+      unwrap: when,
+      additional: { watch },
+    }),
+  );
+  return harden({ E, when, watch, makeWhenableKit });
 };
 harden(prepareWhenableModule);
