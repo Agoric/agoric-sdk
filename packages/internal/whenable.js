@@ -23,5 +23,6 @@ export const defaultPowers = harden({
 export const prepareWhenableModule = (zone, powers = {}) =>
   rawPrepareWhenableModule(zone, { ...defaultPowers, ...powers });
 
-export const { E, watch, when, makeWhenableKit, makeWhenablePromiseKit } =
-  prepareWhenableModule(makeHeapZone());
+export const { E, watch, when, makeWhenableKit } = prepareWhenableModule(
+  makeHeapZone(),
+);
