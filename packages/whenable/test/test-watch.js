@@ -2,7 +2,7 @@
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import { prepareWhenableModule } from '../src/module.js';
+import { prepareWhenableTools } from '../src/tools.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -23,7 +23,7 @@ const prepareAckWatcher = (zone, t) => {
 
 const runTests = async t => {
   const zone = makeHeapZone();
-  const { watch, when, makeWhenableKit } = prepareWhenableModule(zone);
+  const { watch, when, makeWhenableKit } = prepareWhenableTools(zone);
   const makeAckWatcher = prepareAckWatcher(zone, t);
 
   const packet = harden({ portId: 'port-1', channelId: 'channel-1' });

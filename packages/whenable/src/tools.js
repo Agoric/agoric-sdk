@@ -11,7 +11,7 @@ import makeE from './E.js';
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
  * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
-export const prepareWhenableModule = (zone, powers) => {
+export const prepareWhenableTools = (zone, powers) => {
   const { rejectionMeansRetry = () => false, watchPromise } = powers || {};
   const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
   const when = makeWhen(makeWhenablePromiseKit, rejectionMeansRetry);
@@ -30,4 +30,4 @@ export const prepareWhenableModule = (zone, powers) => {
   );
   return harden({ E, when, watch, makeWhenableKit });
 };
-harden(prepareWhenableModule);
+harden(prepareWhenableTools);
