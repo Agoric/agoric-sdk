@@ -776,17 +776,17 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	const (
-		upgradeName     = "agoric-upgrade-14"
-		upgradeNameTest = "agorictest-upgrade-14"
+		upgradeName     = "agoric-upgrade-15"
+		upgradeNameTest = "agorictest-upgrade-15"
 	)
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade14Handler(app, upgradeName),
+		upgrade15Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade14Handler(app, upgradeNameTest),
+		upgrade15Handler(app, upgradeNameTest),
 	)
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
@@ -824,8 +824,8 @@ func NewAgoricApp(
 	return app
 }
 
-// upgrade14Handler performs standard upgrade actions plus custom actions for upgrade-14.
-func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade15Handler performs standard upgrade actions plus custom actions for upgrade-15.
+func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 		app.upgradeDetails = &upgradeDetails{
@@ -834,10 +834,7 @@ func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Core proposals that should run during the upgrade block
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
-			CoreProposals: vm.CoreProposalsFromSteps(
-				// Upgrade wallet factory as part of upgrade-14
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
-			),
+			CoreProposals: vm.CoreProposalsFromSteps(),
 		}
 
 		// Always run module migrations
