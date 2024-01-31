@@ -15,7 +15,8 @@ import {
  */
 
 /**
- * @typedef {ConfigProposal[] | {steps: ConfigProposal[][]}} CoreProposals
+ * @typedef {{steps: ConfigProposal[][]}} SequentialCoreProposals
+ * @typedef {ConfigProposal[] | SequentialCoreProposals} CoreProposals
  */
 
 const { Fail } = assert;
@@ -24,7 +25,7 @@ const req = createRequire(import.meta.url);
 
 /**
  * @param  {...(CoreProposals | undefined | null)} args
- * @returns {CoreProposals}
+ * @returns {SequentialCoreProposals}
  */
 export const mergeCoreProposals = (...args) => {
   /** @type {ConfigProposal[][]} */
