@@ -185,7 +185,7 @@ replace (
 	// replace broken goleveldb.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
-	// use cometft
+	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
 	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
