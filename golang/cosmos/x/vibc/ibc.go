@@ -7,11 +7,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v5/modules/core/exported"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -79,29 +79,28 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 
 	switch msg.Method {
 	case "sendPacket":
-		seq, ok := keeper.GetNextSequenceSend(
-			ctx.Context,
-			msg.Packet.SourcePort,
-			msg.Packet.SourceChannel,
-		)
-		if !ok {
-			return "", fmt.Errorf("unknown sequence number")
-		}
-
 		timeoutTimestamp := msg.Packet.TimeoutTimestamp
 		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
 			// Use the relative timeout if no absolute timeout is specifiied.
 			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
-		packet := channeltypes.NewPacket(
-			msg.Packet.Data, seq,
-			msg.Packet.SourcePort, msg.Packet.SourceChannel,
-			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			msg.Packet.TimeoutHeight, timeoutTimestamp,
+		seq, err := keeper.SendPacket(
+			ctx.Context,
+			msg.Packet.SourcePort,
+			msg.Packet.SourceChannel,
+			msg.Packet.TimeoutHeight,
+			timeoutTimestamp,
+			msg.Packet.Data,
 		)
-		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
+			// synthesize the sent packet
+			packet := channeltypes.NewPacket(
+				msg.Packet.Data, seq,
+				msg.Packet.SourcePort, msg.Packet.SourceChannel,
+				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+				msg.Packet.TimeoutHeight, timeoutTimestamp,
+			)
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
 				ret = string(bytes)
