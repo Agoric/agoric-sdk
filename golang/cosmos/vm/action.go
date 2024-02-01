@@ -63,18 +63,18 @@ func SetActionHeaderFromContext(ctx sdk.Context, actionType string, ah *ActionHe
 // `actionType:"..."` tag and the provided ctx, and its own empty/zero-valued
 // fields have been populated as specified by their `default:"..."` tags.
 func PopulateAction(ctx sdk.Context, action Action) Action {
-	oldRv := reflect.Indirect(reflect.ValueOf(action))
-	if oldRv.Kind() != reflect.Struct {
+	oldActionDesc := reflect.Indirect(reflect.ValueOf(action))
+	if oldActionDesc.Kind() != reflect.Struct {
 		return action
 	}
 
 	// Shallow copy to a new value.
-	rp := reflect.New(oldRv.Type())
-	rv := reflect.Indirect(rp)
-	for i := 0; i < rv.NumField(); i++ {
-		oldField := oldRv.Field(i)
-		field := rv.Field(i)
-		fieldType := rv.Type().Field(i)
+	newActionDescPtr := reflect.New(oldActionDesc.Type())
+	newActionDesc := reflect.Indirect(newActionDescPtr)
+	for i := 0; i < newActionDesc.NumField(); i++ {
+		oldField := oldActionDesc.Field(i)
+		field := newActionDesc.Field(i)
+		fieldType := newActionDesc.Type().Field(i)
 		if !field.CanSet() {
 			continue
 		}
@@ -83,34 +83,35 @@ func PopulateAction(ctx sdk.Context, action Action) Action {
 		field.Set(oldField)
 
 		// Populate any ActionHeader struct.
-		var ahp *ActionHeader
+		var headerPtr *ActionHeader
 		if fieldType.Type == actionHeaderType {
-			ahp = field.Addr().Interface().(*ActionHeader)
+			headerPtr = field.Addr().Interface().(*ActionHeader)
 		} else if fieldType.Type == reflect.PtrTo(actionHeaderType) {
 			if field.IsNil() {
-				ahp = &ActionHeader{}
+				headerPtr = &ActionHeader{}
 			} else {
-				ahp = field.Interface().(*ActionHeader)
+				headerPtr = field.Interface().(*ActionHeader)
 			}
 		}
-		if ahp != nil {
+		if headerPtr != nil {
 			actionTypeTag, _ := fieldType.Tag.Lookup("actionType")
-			ah := *ahp
-			SetActionHeaderFromContext(ctx, actionTypeTag, &ah)
+			newHeader := *headerPtr
+			SetActionHeaderFromContext(ctx, actionTypeTag, &newHeader)
 			if field.Kind() == reflect.Ptr {
-				field.Set(reflect.ValueOf(&ah))
+				field.Set(reflect.ValueOf(&newHeader))
 			} else {
-				field.Set(reflect.ValueOf(ah))
+				field.Set(reflect.ValueOf(newHeader))
 			}
 			continue
 		}
 
-		// Still zero value, try default struct field tag.
+		// Skip any field that is already populated or lacks a "default" tag.
 		defaultTag, _ := fieldType.Tag.Lookup("default")
 		if !field.IsZero() || len(defaultTag) == 0 {
 			continue
 		}
 
+		// Populate the field from its "default" tag.
 		switch field.Kind() {
 		case reflect.String:
 			field.SetString(defaultTag)
@@ -128,5 +129,5 @@ func PopulateAction(ctx sdk.Context, action Action) Action {
 			}
 		}
 	}
-	return rv.Interface().(Action)
+	return newActionDesc.Interface().(Action)
 }
