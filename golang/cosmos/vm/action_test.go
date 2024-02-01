@@ -106,21 +106,21 @@ func TestActionContext(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			jstr := func(in interface{}) string {
+			toJson := func(in interface{}) string {
 				bz, err := json.Marshal(in)
 				if err != nil {
 					t.Fatal(err)
 				}
 				return string(bz)
 			}
-			jsonIn := jstr(tc.in)
+			jsonIn := toJson(tc.in)
 			out := vm.PopulateAction(tc.ctx, tc.in)
-			jsonIn2 := jstr(tc.in)
+			jsonIn2 := toJson(tc.in)
 			if jsonIn != jsonIn2 {
 				t.Errorf("unexpected mutated input: %s to %s", jsonIn, jsonIn2)
 			}
-			jsonOut := jstr(out)
-			jsonExpectedOut := jstr(tc.expectedOut)
+			jsonOut := toJson(out)
+			jsonExpectedOut := toJson(tc.expectedOut)
 			if jsonOut != jsonExpectedOut {
 				t.Errorf("expected %s, got %s", jsonExpectedOut, jsonOut)
 			}
