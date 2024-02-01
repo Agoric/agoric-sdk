@@ -22,7 +22,6 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/base-zone": "^0.1.0",
-    "@agoric/whenable": "^0.1.0",
     "@endo/common": "^1.0.2",
     "@endo/far": "^1.0.2",
     "@endo/init": "^1.0.2",
