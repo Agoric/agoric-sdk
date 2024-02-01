@@ -936,6 +936,8 @@ func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			CoreProposalSteps = []vm.CoreProposalStep{
 				// Upgrade Zoe + ZCF
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
+				// Revive KREAd characters
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/revive-kread.js"),
 
 				// upgrade the provisioning vat
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
