@@ -122,7 +122,7 @@ export const prepareRecorder = (baggage, marshaller) => {
         const serialized = JSON.stringify(encoded);
         await E(storageNode).setValue(serialized);
 
-        // below here differs from writeFinal()
+        // below here differs from write()
         this.state.closed = true;
         return publisher.finish(value);
       },
