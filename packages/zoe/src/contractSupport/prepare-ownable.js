@@ -12,40 +12,40 @@ const TransferProposalShape = M.splitRecord({
 
 /**
  * @template {any} [U=any]
+ * @typedef {object} OwnableOptions
+ * @property {string} [uInterfaceName]
+ *   The `interfaceName` of the underlying interface guard.
+ *   Defaults to the uKindName
+ */
+
+/**
+ * @template {any} [U=any]
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {MakeInvitation} makeInvitation
  * @param {string} uKindName
- * @param {string} uInterfaceName
  * @param {(string|symbol)[]} uMethodNames
+ * @param {OwnableOptions} [options]
  * @returns {(underlying: U) => U}
  */
 export const prepareOwnable = (
   zone,
   makeInvitation,
   uKindName,
-  uInterfaceName,
   uMethodNames,
+  options = {},
 ) => {
-  const makeRevocableKit = prepareRevocableKit(
-    zone,
-    uKindName,
+  const { uInterfaceName = uKindName } = options;
+  const makeRevocableKit = prepareRevocableKit(zone, uKindName, uMethodNames, {
     uInterfaceName,
-    uMethodNames,
-    {
+    extraMethodGuards: {
       makeTransferInvitation: M.call().returns(M.promise()),
     },
-    {
+    extraMethods: {
       makeTransferInvitation() {
-        const {
-          state: {
-            // @ts-expect-error `this` typing
-            underlying,
-          },
-          facets: {
-            // @ts-expect-error `this` typing
-            revoker,
-          },
-        } = this;
+        // @ts-expect-error `this` typing
+        const { underlying } = this.state;
+        // @ts-expect-error `this` typing
+        const { revoker } = this.facets;
         const customDetails = underlying.getInvitationCustomDetails();
         // eslint-disable-next-line no-use-before-define
         const transferHandler = makeTransferHandler(underlying);
@@ -60,7 +60,7 @@ export const prepareOwnable = (
         return invitation;
       },
     },
-  );
+  });
 
   const makeTransferHandler = zone.exoClass(
     'TransferHandler',
@@ -70,9 +70,7 @@ export const prepareOwnable = (
     }),
     {
       handle(seat) {
-        const {
-          state: { underlying },
-        } = this;
+        const { underlying } = this.state;
         const { revocable } = makeRevocableKit(underlying);
         seat.exit();
         return revocable;

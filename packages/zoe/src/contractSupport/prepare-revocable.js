@@ -17,6 +17,27 @@ const { Fail, quote: q } = assert;
  */
 
 /**
+ * @template {any} [U=any]
+ * @typedef {object} RevocableKitOptions
+ * @property {string} [uInterfaceName]
+ *   The `interfaceName` of the underlying interface guard.
+ *   Defaults to the uKindName
+ * @property {Record<
+ *   string|symbol,
+ *   import('@endo/patterns').MethodGuard
+ * >} [extraMethodGuards]
+ * For guarding the `extraMethods`, if you include them below. These appear
+ * only on the synthesized interface guard for the revocable caretaker, and
+ * do not necessarily correspond to any method of the underlying.
+ * @property {Record<
+ *   string|symbol,
+ *   (...args) => any
+ * >} [extraMethods]
+ * Extra methods adding behavior only to the revocable caretaker, and
+ * do not necessarily correspond to any methods of the underlying.
+ */
+
+/**
  * Make an exo class kit for wrapping an underlying exo class,
  * where the wrapper is a revocable forwarder
  *
@@ -24,28 +45,23 @@ const { Fail, quote: q } = assert;
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
- * @param {string} uInterfaceName
- *   The `interfaceName` of the underlying interface guard
  * @param {(string|symbol)[]} uMethodNames
- *   The method names of the underlying exo class
- * @param {Record<
- *   string|symbol,
- *   import('@endo/patterns').MethodGuard
- * >} [extraMethodGuards]
- * @param {Record<
- *   string|symbol,
- *   (...args) => any
- * >} [extraMethods]
+ *   The method names of the underlying exo class that should be represented
+ *   by a transparently-forwarding method of the revocable caretaker.
+ * @param {RevocableKitOptions} [options]
  * @returns {(underlying: U) => RevocableKit<U>}
  */
 export const prepareRevocableKit = (
   zone,
   uKindName,
-  uInterfaceName,
   uMethodNames,
-  extraMethodGuards = undefined,
-  extraMethods = undefined,
+  options = {},
 ) => {
+  const {
+    uInterfaceName = uKindName,
+    extraMethodGuards = undefined,
+    extraMethods = undefined,
+  } = options;
   const RevocableIKit = harden({
     revoker: M.interface(`${uInterfaceName}_revoker`, {
       revoke: M.call().returns(M.boolean()),
@@ -87,12 +103,8 @@ export const prepareRevocableKit = (
             {
               // Use concise method syntax for exo methods
               [name](...args) {
-                const {
-                  state: {
-                    // @ts-expect-error normal exo-this typing confusion
-                    underlying,
-                  },
-                } = this;
+                // @ts-expect-error normal exo-this typing confusion
+                const { underlying } = this.state;
                 underlying !== undefined ||
                   Fail`${q(revocableKindName)} revoked`;
                 return underlying[name](...args);

@@ -38,12 +38,9 @@ test('test revoke defineVirtualExoClass', t => {
     },
   );
 
-  const makeRevocableUpCounterKit = prepareRevocableKit(
-    zone,
-    'UpCounter',
-    'UpCounter',
-    ['incr'],
-  );
+  const makeRevocableUpCounterKit = prepareRevocableKit(zone, 'UpCounter', [
+    'incr',
+  ]);
 
   const makeUpCounterKit = x =>
     makeRevocableUpCounterKit(makeUnderlyingUpCounter(x));
@@ -85,20 +82,17 @@ test('test revoke defineVirtualExoClassKit', t => {
   const makeRevocableUpCounterKit = prepareRevocableKit(
     zone,
     'UpCounter',
-    'UpCounter',
     ['incr'],
     {
-      selfRevoke: M.call().returns(M.boolean()),
-    },
-    {
-      selfRevoke() {
-        const {
-          facets: {
-            // @ts-expect-error typing this
-            revoker,
-          },
-        } = this;
-        return revoker.revoke();
+      extraMethodGuards: {
+        selfRevoke: M.call().returns(M.boolean()),
+      },
+      extraMethods: {
+        selfRevoke() {
+          // @ts-expect-error typing this
+          const { revoker } = this.facets;
+          return revoker.revoke();
+        },
       },
     },
   );

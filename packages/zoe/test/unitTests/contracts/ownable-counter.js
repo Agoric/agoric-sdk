@@ -15,7 +15,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeUnderlyingCounterKit = zone.exoClassKit(
     'OwnableCounter',
     {
-      counter: M.interface('Counter', {
+      counter: M.interface('OwnableCounter', {
         incr: M.call().returns(M.bigint()),
         // required by makePrepareOwnableClass
         getInvitationCustomDetails: M.call().returns(
@@ -39,9 +39,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           return state.count;
         },
         getInvitationCustomDetails() {
-          const {
-            state: { count },
-          } = this;
+          const { count } = this.state;
           return harden({
             count,
           });
@@ -49,9 +47,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       viewer: {
         view() {
-          const {
-            state: { count },
-          } = this;
+          const { count } = this.state;
           return count;
         },
       },
@@ -61,7 +57,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeOwnableCounter = prepareOwnable(
     zone,
     (...args) => zcf.makeInvitation(...args),
-    'Counter',
     'OwnableCounter',
     ['incr', 'getInvitationCustomDetails'],
   );
