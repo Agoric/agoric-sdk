@@ -184,13 +184,16 @@ const resolve = x => HandledPromise.resolve(x);
  * @template [A={}]
  * @template {(x: any) => Promise<any>} [U=(x: any) => Promise<any>]
  * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {object} powers
- * @param {U} powers.unwrap
- * @param {A} powers.additional
+ * @param {object} [powers]
+ * @param {U} [powers.unwrap]
+ * @param {A} [powers.additional]
  */
 const makeE = (
   HandledPromise,
-  { additional = /** @type {A} */ ({}), unwrap = /** @type {U} */ (resolve) },
+  {
+    additional = /** @type {A} */ ({}),
+    unwrap = /** @type {U} */ (resolve),
+  } = {},
 ) => {
   return harden(
     assign(

@@ -1,9 +1,7 @@
-/* global globalThis */
 // @ts-check
 import { makeWhen } from './when.js';
 import { prepareWhenableKits } from './whenable.js';
 import { prepareWatch } from './watch.js';
-import makeE from './E.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -21,13 +19,6 @@ export const prepareWhenableTools = (zone, powers) => {
     watchPromise,
     rejectionMeansRetry,
   );
-  const E = makeE(
-    globalThis.HandledPromise,
-    harden({
-      unwrap: when,
-      additional: { watch },
-    }),
-  );
-  return harden({ E, when, watch, makeWhenableKit });
+  return harden({ when, watch, makeWhenableKit });
 };
 harden(prepareWhenableTools);
