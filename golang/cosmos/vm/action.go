@@ -58,8 +58,10 @@ func SetActionHeaderFromContext(ctx sdk.Context, actionType string, ah *ActionHe
 	}
 }
 
-// PopulateAction interprets `default:"..."` tags and specially handles an
-// embedded ActionHeader struct.
+// PopulateAction returns a clone of action in which empty/zero-valued fields
+// in its embedded ActionHeader have been populated using the corresponding
+// `actionType:"..."` tag and the provided ctx, and its own empty/zero-valued
+// fields have been populated as specified by their `default:"..."` tags.
 func PopulateAction(ctx sdk.Context, action Action) Action {
 	oldRv := reflect.Indirect(reflect.ValueOf(action))
 	if oldRv.Kind() != reflect.Struct {
