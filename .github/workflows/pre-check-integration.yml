@@ -17,6 +17,7 @@ on:
               (
                 github.event.pull_request.base.ref == 'master' ||
                 startsWith(github.event.pull_request.base.ref, 'release-') ||
+                startsWith(github.event.pull_request.base.ref, 'dev-') ||
                 github.event.pull_request.base.ref == 'beta'
               ) &&
               github.event.pull_request.draft == false &&
@@ -38,6 +39,7 @@ jobs:
         (
           github.event.pull_request.base.ref == 'master' ||
           startsWith(github.event.pull_request.base.ref, 'release-') ||
+          startsWith(github.event.pull_request.base.ref, 'dev-') ||
           github.event.pull_request.base.ref == 'beta'
         ) &&
         github.event.pull_request.draft == false &&

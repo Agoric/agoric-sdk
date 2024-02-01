@@ -322,7 +322,10 @@ export const makeSwingsetTestKit = async (
     configPath,
     {},
     {},
-    { debugName: 'TESTBOOT' },
+    {
+      callerWillEvaluateCoreProposals: false,
+      debugName: 'TESTBOOT',
+    },
   );
   console.timeLog('makeSwingsetTestKit', 'buildSwingset');
 

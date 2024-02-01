@@ -3,6 +3,7 @@ package vibc
 import (
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -23,10 +24,8 @@ func NewHandler(keeper Keeper) sdk.Handler {
 
 type sendPacketAction struct {
 	*MsgSendPacket
-	Type        string `json:"type"`  // IBC_EVENT
-	Event       string `json:"event"` // sendPacket
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string `json:"event" default:"sendPacket"`
 }
 
 func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*sdk.Result, error) {
@@ -41,10 +40,6 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*s
 
 	action := &sendPacketAction{
 		MsgSendPacket: msg,
-		Type:          "IBC_EVENT",
-		Event:         "sendPacket",
-		BlockHeight:   ctx.BlockHeight(),
-		BlockTime:     ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
