@@ -22,7 +22,13 @@ import '../src/types.js';
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
 
-const prepareProtocolHandler = (zone, t, { when }) => {
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {import('ava').ExecutionContext} t
+ * @param {*} makeConnectionHandler
+ * @param {*} powers
+ */
+const prepareProtocolHandler = (zone, t, makeConnectionHandler, { when }) => {
   const makeProtocolHandler = zone.exoClass(
     'ProtocolHandler',
     undefined,
@@ -50,8 +56,7 @@ const prepareProtocolHandler = (zone, t, { when }) => {
         t.assert(localAddr, `local address is supplied to onConnect`);
         t.assert(remoteAddr, `remote address is supplied to onConnect`);
         if (!this.state.lp) {
-          const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
-          return { handler: makeEchoConnectionHandler() };
+          return { handler: makeConnectionHandler() };
         }
         const ch = await when(
           this.state.l.onAccept(
@@ -105,7 +110,9 @@ test('handled protocol', async t => {
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
+  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const mk = makeEchoConnectionHandler;
+  const makeProtocolHandler = prepareProtocolHandler(zone, t, mk, powers);
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
@@ -152,11 +159,58 @@ test('protocol connection listen', async t => {
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeProtocolHandler = prepareProtocolHandler(zone, t, powers);
+  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const makeProtocolHandler = prepareProtocolHandler(
+    zone,
+    t,
+    makeEchoConnectionHandler,
+    powers,
+  );
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
   const { whenable, settler } = makeWhenableKit();
+
+  const prepareConnectionHandler = () => {
+    let handler;
+
+    const makeConnectionHandler = zone.exoClass(
+      'connectionHandler',
+      undefined,
+      () => ({ settler }),
+      {
+        async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
+          t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
+          handler = connectionHandler;
+          const ack = await when(connection.send('ping'));
+          t.is(`${ack}`, 'ping', 'received pong');
+          await when(connection.close());
+        },
+        async onClose(c, reason, connectionHandler) {
+          t.is(
+            connectionHandler,
+            handler,
+            `connectionHandler is tracked in onClose`,
+          );
+          handler = undefined;
+          t.assert(c, 'connection is passed to onClose');
+          t.is(reason, undefined, 'no close reason');
+          this.state.settler.resolve(null);
+        },
+        async onReceive(c, packet, connectionHandler) {
+          t.is(
+            connectionHandler,
+            handler,
+            `connectionHandler is tracked in onReceive`,
+          );
+          t.assert(c, 'connection is passed to onReceive');
+          t.is(`${packet}`, 'ping', 'expected ping');
+          return 'pong';
+        },
+      },
+    );
+    return makeConnectionHandler;
+  };
 
   const prepareListenHandler = () => {
     const makeListenHandler = zone.exoClass(
@@ -177,54 +231,7 @@ test('protocol connection listen', async t => {
             this.self,
             `listenHandler is tracked in onAccept`,
           );
-          let handler;
 
-          const prepareConnectionHandler = () => {
-            const makeConnectionHandler = zone.exoClass(
-              'connectionHandler',
-              undefined,
-              () => ({ settler }),
-              {
-                async onOpen(
-                  connection,
-                  _localAddr,
-                  _remoteAddr,
-                  connectionHandler,
-                ) {
-                  t.assert(
-                    connectionHandler,
-                    `connectionHandler is tracked in onOpen`,
-                  );
-                  handler = connectionHandler;
-                  const ack = await when(connection.send('ping'));
-                  t.is(`${ack}`, 'ping', 'received pong');
-                  await when(connection.close());
-                },
-                async onClose(c, reason, connectionHandler) {
-                  t.is(
-                    connectionHandler,
-                    handler,
-                    `connectionHandler is tracked in onClose`,
-                  );
-                  handler = undefined;
-                  t.assert(c, 'connection is passed to onClose');
-                  t.is(reason, undefined, 'no close reason');
-                  this.state.settler.resolve(null);
-                },
-                async onReceive(c, packet, connectionHandler) {
-                  t.is(
-                    connectionHandler,
-                    handler,
-                    `connectionHandler is tracked in onReceive`,
-                  );
-                  t.assert(c, 'connection is passed to onReceive');
-                  t.is(`${packet}`, 'ping', 'expected ping');
-                  return 'pong';
-                },
-              },
-            );
-            return makeConnectionHandler;
-          };
           const makeConnectionHandler = prepareConnectionHandler();
           return makeConnectionHandler();
         },
@@ -253,7 +260,6 @@ test('protocol connection listen', async t => {
   await port.addListener(listener);
 
   const port2 = await when(protocol.bind('/net/ordered'));
-  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
   const connectionHandler = makeEchoConnectionHandler();
 
   const prepareHandlerWithOpen = () => {
