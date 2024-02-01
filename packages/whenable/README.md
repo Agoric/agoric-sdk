@@ -9,8 +9,8 @@ If your vat is a consumer of promises that are unexpectedly fulfilling to a When
 ```js
 import { E } from '@endo/far';
 
-const a = await w;
-const b = await E(w).something(...args);
+const a = await w1;
+const b = await E(w2).something(...args);
 console.log('Here they are:', { a, b });
 ```
 
@@ -26,24 +26,26 @@ Here they are: {
 }
 ```
 
-you can use the exported `E` and change the `await w` into `await E.when(w)` in
-order to convert a chain of whenables to a promise for its final settlement, and
-to do implicit unwrapping of results that are whenables:
+On Agoric, you can use `V` exported from `@agoric/vat-data/whenable.js`, which
+converts a chain of promises and whenables to a promise for its final
+fulfilment, by unwrapping any intermediate whenables:
 
 ```js
-import { E } from '@agoric/internal/whenable.js';
+import { V as E } from '@agoric/vat-data/whenable.js';
 [...]
-const a = await E.when(w);
-const b = await E(w).something(...args);
+const a = await E.when(w1);
+const b = await E(w2).something(...args);
 // Produces the expected results.
 ```
 
 ## Whenable Producer
 
-Use the following to create and resolve a whenable:
+On Agoric, use the following to create and resolve a whenable:
 
 ```js
-import { makeWhenableKit } from '@agoric/whenable/heap.js';
+// CAVEAT: `V` uses internal ephemeral promises, so while it is convenient,
+// it cannot be used by upgradable vats.  See "Durability" below:
+import { V as E, makeWhenableKit } from '@agoric/vat-data/whenable.js';
 [...]
 const { settler, whenable } = makeWhenableKit();
 // Send whenable to a potentially different vat.
@@ -55,16 +57,21 @@ settler.resolve('now you know the answer');
 ## Durability
 
 The whenable package supports Zones, which are used to integrate Agoric's vat
-upgrade mechanism.  To create whenable tools that deal with durable objects:
+upgrade mechanism and `watchPromise`.  To create whenable tools that deal with
+durable objects:
 
 ```js
-import { prepareWhenableTools } from '@agoric/internal/whenable.js';
+// NOTE: Cannot use `V` as it has non-durable internal state when unwrapping
+// whenables.  Instead, use the default whenable-exposing `E` with the `watch`
+// operator.
+import { E } from '@endo/far';
+import { prepareWhenableTools } from '@agoric/vat-data/whenable.js';
 import { makeDurableZone } from '@agoric/zone';
 
 // Only do the following once at the start of a new vat incarnation:
 const zone = makeDurableZone(baggage);
 const whenableZone = zone.subZone('WhenableTools');
-const { E, when, watch, makeWhenableKit } = prepareWhenableTools(whenableZone);
+const { watch, makeWhenableKit } = prepareWhenableTools(whenableZone);
 
 // Now the functions have been bound to the durable baggage.
 // Whenables and settlers you create can be saved in durable stores.

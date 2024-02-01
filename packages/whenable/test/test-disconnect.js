@@ -5,11 +5,8 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
 import { prepareWhenableTools } from '../src/tools.js';
 
-/**
- * @param {import('@agoric/base-zone').Zone} zone
- * @returns {import('ava').ImplementationFn<[]>}
- */
-const testRetryOnDisconnect = zone => async t => {
+test('retry on disconnection', async t => {
+  const zone = makeHeapZone();
   const rejectionMeansRetry = e => e && e.message === 'disconnected';
 
   const { watch, when } = prepareWhenableTools(zone, {
@@ -108,6 +105,4 @@ const testRetryOnDisconnect = zone => async t => {
       }
     }
   }
-};
-
-test('retry on disconnection', testRetryOnDisconnect(makeHeapZone()));
+});

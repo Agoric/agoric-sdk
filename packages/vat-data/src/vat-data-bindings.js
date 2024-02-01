@@ -12,20 +12,20 @@ if ('VatData' in globalThis) {
   // XXX this module has been known to get imported (transitively) in cases that
   // never use it so we make a version that will satisfy module resolution but
   // fail at runtime.
-  const unvailable = () => Fail`VatData unavailable`;
+  const unavailable = () => Fail`VatData unavailable`;
   VatDataGlobal = {
-    defineKind: unvailable,
-    defineKindMulti: unvailable,
-    defineDurableKind: unvailable,
-    defineDurableKindMulti: unvailable,
-    makeKindHandle: unvailable,
-    providePromiseWatcher: unvailable,
-    watchPromise: unvailable,
-    makeScalarBigMapStore: unvailable,
-    makeScalarBigWeakMapStore: unvailable,
-    makeScalarBigSetStore: unvailable,
-    makeScalarBigWeakSetStore: unvailable,
-    canBeDurable: unvailable,
+    defineKind: unavailable,
+    defineKindMulti: unavailable,
+    defineDurableKind: unavailable,
+    defineDurableKindMulti: unavailable,
+    makeKindHandle: unavailable,
+    providePromiseWatcher: unavailable,
+    watchPromise: unavailable,
+    makeScalarBigMapStore: unavailable,
+    makeScalarBigWeakMapStore: unavailable,
+    makeScalarBigSetStore: unavailable,
+    makeScalarBigWeakSetStore: unavailable,
+    canBeDurable: unavailable,
   };
 }
 
