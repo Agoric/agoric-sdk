@@ -21,7 +21,7 @@ const { Fail, quote: q } = assert;
  * @typedef {object} RevocableKitOptions
  * @property {string} [uInterfaceName]
  *   The `interfaceName` of the underlying interface guard.
- *   Defaults to the uKindName
+ *   Defaults to the `uKindName`.
  * @property {Record<
  *   string|symbol,
  *   import('@endo/patterns').MethodGuard
@@ -47,7 +47,7 @@ const { Fail, quote: q } = assert;
  *   The `kindName` of the underlying exo class
  * @param {(string|symbol)[]} uMethodNames
  *   The method names of the underlying exo class that should be represented
- *   by a transparently-forwarding method of the revocable caretaker.
+ *   by transparently-forwarding methods of the revocable caretaker.
  * @param {RevocableKitOptions} [options]
  * @returns {(underlying: U) => RevocableKit<U>}
  */
