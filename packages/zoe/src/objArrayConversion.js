@@ -6,21 +6,6 @@ import { assert, Fail, q } from '@agoric/assert';
  */
 
 /**
- * @template T
- * @template {PropertyName} U
- * @param {T[]} array
- * @param {U[]} keys
- */
-export const arrayToObj = (array, keys) => {
-  array.length === keys.length || Fail`array and keys must be of equal length`;
-  const obj =
-    /** @type {Record<U, T>} */
-    ({});
-  keys.forEach((key, i) => (obj[key] = array[i]));
-  return harden(obj);
-};
-
-/**
  * Assert all values from `part` appear in `whole`.
  *
  * @param {string[]} whole
