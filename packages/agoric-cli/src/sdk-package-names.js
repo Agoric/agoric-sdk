@@ -24,6 +24,7 @@ export default [
   "@agoric/kmarshal",
   "@agoric/network",
   "@agoric/notifier",
+  "@agoric/orchestration",
   "@agoric/pegasus",
   "@agoric/smart-wallet",
   "@agoric/solo",
