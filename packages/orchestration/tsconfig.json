@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "maxNodeModuleJsDepth": 1,
+  },
+  "include": [
+    "build",
+    "index.js",
+    "src",
+    "test",
+  ],
+}
