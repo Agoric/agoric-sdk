@@ -34,6 +34,7 @@ const prepareProtocolHandler = (zone, t, makeConnectionHandler, { when }) => {
     undefined,
     () => {
       return {
+        /** @type {ListenHandler | undefined } */
         l: undefined,
         lp: undefined,
         nonce: 0,
@@ -58,6 +59,7 @@ const prepareProtocolHandler = (zone, t, makeConnectionHandler, { when }) => {
         if (!this.state.lp) {
           return { handler: makeConnectionHandler() };
         }
+        assert(this.state.l);
         const ch = await when(
           this.state.l.onAccept(
             this.state.lp,
@@ -311,6 +313,7 @@ test('loopback protocol', async t => {
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     makeNonceMaker,
+    when,
   );
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
