@@ -30,15 +30,34 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "devDependencies": {
     "@agoric/zoe": "^0.26.2",
-    "ava": "^5.3.0"
+    "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
+    "@endo/far": "^1.0.4",
+    "ava": "^5.3.0",
+    "cosmjs-types": "^0.9.0"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.js",
+      "test/**/*.test.ts"
+    ],
+    "nodeArguments": [
+      "--loader=tsx",
+      "--no-warnings"
+    ],
     "require": [
       "@endo/init/debug.js"
-    ]
+    ],
+    "timeout": "20m",
+    "workerThreads": false
   },
   "files": [
     "*.js",
+    "*.ts",
     "src"
   ],
   "publishConfig": {
