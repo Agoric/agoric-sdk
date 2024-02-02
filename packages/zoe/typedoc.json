@@ -7,6 +7,8 @@
         "src/contractFacet/types-ambient.d.ts",
         "src/contractSupport/index.js",
         "src/contractSupport/types.js",
+        "src/contractSupport/prepare-revocable.js",
+        "src/contractSupport/prepare-ownable.js",
         "src/types.js",
         "src/zoeService/types.js",
         "src/zoeService/utils.d.ts",
