@@ -69,17 +69,18 @@ export const registerNetworkProtocols = async (
 ) => {
   const ps = [];
   const makeNonceMaker = prepareNonceMaker(zone);
+  const powers = prepareWhenableModule(zone);
+  const { when } = powers;
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     makeNonceMaker,
+    when,
   );
   const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
   const makeListenHandler = prepareListenHandler(
     zone,
     makeEchoConnectionHandler,
   );
-  const powers = prepareWhenableModule(zone);
-  const { when } = powers;
 
   // Every vat has a loopback device.
   ps.push(
