@@ -11,7 +11,6 @@ const TransferProposalShape = M.splitRecord({
 });
 
 /**
- * @template {any} [U=any]
  * @typedef {object} OwnableOptions
  * @property {string} [uInterfaceName]
  *   The `interfaceName` of the underlying interface guard.
