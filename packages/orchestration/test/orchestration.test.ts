@@ -64,13 +64,16 @@ test('4a. Delegate tokens held by ICA on remote chain', async t => {
     await E(cosmosChain).createInterchainAccount();
 
   const walletAddress = await E(ica1).getWalletAddress();
-  const encodedMsg = MsgDelegate.encode(
-    MsgDelegate.fromPartial({
-      amount: coin(1000, 'uatom'),
-      validatorAddress: 'cosmos1abc',
-      delegatorAddress: walletAddress,
-    }),
-  );
+  const encodedMsg = {
+    typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
+    value: MsgDelegate.encode(
+      MsgDelegate.fromPartial({
+        amount: coin(1000, 'uatom'),
+        validatorAddress: 'cosmos1abc',
+        delegatorAddress: walletAddress,
+      }),
+    ),
+  };
 
   const result = await E(ica1).sendMessages([encodedMsg]);
   t.truthy(result, 'returns sequence number');
@@ -85,13 +88,18 @@ const codecs = {
   ) {
     // this could be optimized by passing the immutable address along with the object
     const delegatorAddress = await E(delegator).getWalletAddress();
-    const encodedMsg = msgDelegate.encode(
-      MsgDelegate.fromPartial({
-        ...partial,
-        delegatorAddress,
-      }),
-    );
-    return encodedMsg.finish();
+    const encodedMsg = msgDelegate
+      .encode(
+        MsgDelegate.fromPartial({
+          ...partial,
+          delegatorAddress,
+        }),
+      )
+      .finish();
+    return {
+      typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
+      value: encodedMsg,
+    };
   },
 };
 
@@ -102,7 +110,7 @@ test('4a. Delegate tokens held by ICA on remote chain (alt without address)', as
     await E(cosmosChain).createInterchainAccount();
 
   // ask validator 'cosmos1valoperabc'
-  const encodedMsg = codecs.encode(MsgDelegate, ica1, {
+  const encodedMsg = await codecs.encode(MsgDelegate, ica1, {
     amount: coin(1000, 'uatom'),
     validatorAddress: 'cosmos1valoperabc',
   });
@@ -111,15 +119,20 @@ test('4a. Delegate tokens held by ICA on remote chain (alt without address)', as
   t.truthy(result);
 });
 
-const makeMsgSend = (fromAddress: string, toAddress: string, amount: Coin[]) =>
-  MsgSend.encode(
+const makeMsgSend = (
+  fromAddress: string,
+  toAddress: string,
+  amount: Coin[],
+) => ({
+  typeUrl: '/cosmos.bank.v1beta1.MsgSend',
+  value: MsgSend.encode(
     MsgSend.fromPartial({
       fromAddress,
       toAddress,
       amount,
     }),
-  ).finish();
-;
+  ).finish(),
+});
 
 test('XXX. Send tokens from ICA to another account on same Host chain', async t => {
   const receiver = 'cosmos345';
