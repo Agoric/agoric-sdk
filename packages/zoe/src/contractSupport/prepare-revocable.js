@@ -1,5 +1,5 @@
 import { M } from '@endo/patterns';
-import { fromUniqueEntries } from '@agoric/internal';
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 
 const { Fail, quote: q } = assert;
 
