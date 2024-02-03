@@ -1,83 +1,33 @@
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import {
-  prepareEchoConnectionHandler,
-  prepareNonceMaker,
-  prepareLoopbackProtocolHandler,
-} from '@agoric/network';
 
 // NOTE: Heap-based whenable resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareWhenableModule } from '@agoric/whenable';
 import { makeScalarMapStore } from '@agoric/store';
+import { prepareWhen } from '@agoric/whenable/src/when.js';
+import { makeHeapZone } from '@agoric/zone';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<prepareEchoConnectionHandler>} makeEchoConnectionHandler
- */
-const prepareListenHandler = (zone, makeEchoConnectionHandler) => {
-  const makeListenHandler = zone.exoClass(
-    'listener',
-    undefined,
-    () => {
-      return {
-        handler: makeEchoConnectionHandler(),
-      };
-    },
-    {
-      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return harden(this.state.handler);
-      },
-      async onListen(port, _listenHandler) {
-        console.debug(`listening on echo port: ${port}`);
-      },
-    },
-  );
-
-  return makeListenHandler;
-};
-
-/**
- * @param {import('@agoric/base-zone').Zone} zone
  * @param {SoloVats | NetVats} vats
  * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */
-export const registerNetworkProtocols = async (
-  zone,
-  vats,
-  dibcBridgeManager,
-) => {
+export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   const ps = [];
-  const makeNonceMaker = prepareNonceMaker(zone);
-  const powers = prepareWhenableModule(zone);
-  const { when } = powers;
-  const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
-    zone,
-    makeNonceMaker,
-    when,
-  );
-  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
-  const makeListenHandler = prepareListenHandler(
-    zone,
-    makeEchoConnectionHandler,
-  );
 
+  const loopbackHandler = await E(vats.network).makeLoopbackProtocolHandler();
   // Every vat has a loopback device.
-  ps.push(
-    E(vats.network).registerProtocolHandler(
-      ['/local'],
-      makeLoopbackProtocolHandler(),
-    ),
-  );
+  ps.push(E(vats.network).registerProtocolHandler(['/local'], loopbackHandler));
+
   if (dibcBridgeManager) {
     assert('ibc' in vats);
     // We have access to the bridge, and therefore IBC.
-    const makeCallbacks = prepareCallbacks(zone, dibcBridgeManager);
-    const callbacks = makeCallbacks();
+    const settledBridgeManager = await dibcBridgeManager;
+    const callbacks = await E(vats.ibc).makeCallbacks(settledBridgeManager);
     ps.push(
       E(vats.ibc)
         .createHandlers(callbacks)
@@ -93,17 +43,12 @@ export const registerNetworkProtocols = async (
         ),
     );
   } else {
-    const loHandler = makeLoopbackProtocolHandler(
-      makeNonceMaker('ibc-channel/channel-'),
+    const loHandler = await E(vats.network).makeLoopbackProtocolHandler(
+      'ibc-channel/channel-',
     );
     ps.push(E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler));
   }
   await Promise.all(ps);
-
-  // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
-  const listener = makeListenHandler();
-  return E(echoPort).addListener(listener);
 };
 
 /**
@@ -133,7 +78,6 @@ export const setupNetworkProtocols = async (
       vatUpgradeInfo: vatUpgradeInfoP,
     },
     produce: { networkVat, vatUpgradeInfo: produceVatUpgradeInfo },
-    zone,
   },
   options,
 ) => {
@@ -180,10 +124,15 @@ export const setupNetworkProtocols = async (
   // Note: before we add the pegasus transfer port,
   // we need to finish registering handlers for
   // ibc-port etc.
-  const networkZone = makeDurableZone(
-    zone.detached().mapStore('networkZoneBaggage'),
-  );
-  await registerNetworkProtocols(networkZone, vats, dibcBridgeManager);
+  await registerNetworkProtocols(vats, dibcBridgeManager);
+
+  // IOU a bit of explanation XXX@@@
+  const powers = prepareWhenableModule(makeHeapZone());
+  const { when } = powers;
+  // Add an echo listener on our ibc-port network (whether real or virtual).
+  const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
+  const { listener } = await E(vats.network).makeEchoConnectionKit();
+  await E(echoPort).addListener(listener);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
 
