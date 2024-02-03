@@ -703,9 +703,9 @@ export const prepareNetworkProtocol = (zone, powers) => {
  *
  * @param {import('@agoric/base-zone').Zone} zone
  */
-export const prepareEchoConnectionHandler = zone => {
-  const makeEchoConnectionHandler = zone.exoClass(
-    'EchoConnectionHandler',
+export const prepareEchoConnectionKit = zone => {
+  const makeEchoConnectionKit = zone.exoClassKit(
+    'EchoConnectionKit',
     undefined,
     () => {
       /** @type {Error | undefined} */
@@ -715,58 +715,42 @@ export const prepareEchoConnectionHandler = zone => {
       };
     },
     {
-      /**
-       * @param {Connection} _connection
-       * @param {Bytes} bytes
-       * @param {ConnectionHandler} _connectionHandler
-       */
-      async onReceive(_connection, bytes, _connectionHandler) {
-        if (this.state.closed) {
-          throw this.state.closed;
-        }
-        return bytes;
+      handler: {
+        /**
+         * @param {Connection} _connection
+         * @param {Bytes} bytes
+         * @param {ConnectionHandler} _connectionHandler
+         */
+        async onReceive(_connection, bytes, _connectionHandler) {
+          if (this.state.closed) {
+            throw this.state.closed;
+          }
+          return bytes;
+        },
+        /**
+         * @param {Connection} _connection
+         * @param {CloseReason} [_reason]
+         * @param {ConnectionHandler} [_connectionHandler]
+         */
+        async onClose(_connection, _reason, _connectionHandler) {
+          if (this.state.closed) {
+            throw this.state.closed;
+          }
+          this.state.closed = Error('Connection closed');
+        },
       },
-      /**
-       * @param {Connection} _connection
-       * @param {CloseReason} [_reason]
-       * @param {ConnectionHandler} [_connectionHandler]
-       */
-      async onClose(_connection, _reason, _connectionHandler) {
-        if (this.state.closed) {
-          throw this.state.closed;
-        }
-        this.state.closed = Error('Connection closed');
-      },
-    },
-  );
-
-  return makeEchoConnectionHandler;
-};
-
-/**
- *
- * @param {import('@agoric/base-zone').Zone} zone
- */
-export const prepareNonceMaker = zone => {
-  const makeNonceMaker = zone.exoClass(
-    'NonceMaker',
-    undefined,
-    (prefix = '', suffix = '') => {
-      return {
-        prefix,
-        suffix,
-        nonce: 0,
-      };
-    },
-    {
-      async get() {
-        this.state.nonce += 1;
-        return `${this.state.prefix}${this.state.nonce}${this.state.suffix}`;
+      listener: {
+        async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+          return harden(this.facets.handler);
+        },
+        async onListen(port, _listenHandler) {
+          console.debug(`listening on echo port: ${port}`);
+        },
       },
     },
   );
 
-  return makeNonceMaker;
+  return makeEchoConnectionKit;
 };
 
 /**

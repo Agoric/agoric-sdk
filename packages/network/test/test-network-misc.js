@@ -10,7 +10,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   parse,
   unparse,
-  prepareEchoConnectionHandler,
+  prepareEchoConnectionKit,
   prepareRouter,
   prepareLoopbackProtocolHandler,
   prepareNonceMaker,
@@ -112,7 +112,7 @@ test('handled protocol', async t => {
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const mk = makeEchoConnectionHandler;
   const makeProtocolHandler = prepareProtocolHandler(zone, t, mk, powers);
   const protocol = makeNetworkProtocol(makeProtocolHandler());
@@ -161,7 +161,7 @@ test('protocol connection listen', async t => {
   const powers = prepareWhenableModule(zone);
   const { makeWhenableKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeEchoConnectionHandler = prepareEchoConnectionHandler(zone);
+  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
     zone,
     t,
