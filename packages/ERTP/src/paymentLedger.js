@@ -200,10 +200,6 @@ export const preparePaymentLedger = (
     }
   };
 
-  /** @type {(left: Amount, right: Amount) => Amount} */
-  const add = (left, right) => AmountMath.add(left, right, brand);
-  /** @type {(left: Amount, right: Amount) => Amount} */
-  const subtract = (left, right) => AmountMath.subtract(left, right, brand);
   /** @type {(allegedAmount: Amount) => Amount} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean} */
@@ -239,17 +235,13 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   deposit
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
+   * @param {import('./amountStore.js').AmountStore} balanceStore
    * @param {Payment} srcPayment
    * @param {Pattern} [optAmountShape]
    * @returns {Amount}
    */
   const depositInternal = (
-    currentBalance,
-    updatePurseBalance,
+    balanceStore,
     srcPayment,
     optAmountShape = undefined,
   ) => {
@@ -261,13 +253,12 @@ export const preparePaymentLedger = (
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
     assertAmountConsistent(srcPaymentBalance, optAmountShape);
-    const newPurseBalance = add(srcPaymentBalance, currentBalance);
     try {
       // COMMIT POINT
       // Move the assets in `srcPayment` into this purse, using up the
       // source payment, such that total assets are conserved.
       deletePayment(srcPayment);
-      updatePurseBalance(newPurseBalance);
+      balanceStore.increment(srcPaymentBalance);
     } catch (err) {
       shutdownLedgerWithFailure(err);
       throw err;
@@ -278,30 +269,19 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {Amount} currentBalance - the current balance of the purse before a
-   *   withdrawal
-   * @param {(newPurseBalance: Amount) => void} updatePurseBalance - commit the
-   *   purse balance
+   * @param {import('./amountStore.js').AmountStore} balanceStore
    * @param {Amount} amount - the amount to be withdrawn
    * @param {SetStore<Payment>} recoverySet
    * @returns {Payment}
    */
-  const withdrawInternal = (
-    currentBalance,
-    updatePurseBalance,
-    amount,
-    recoverySet,
-  ) => {
+  const withdrawInternal = (balanceStore, amount, recoverySet) => {
     amount = coerce(amount);
-    AmountMath.isGTE(currentBalance, amount) ||
-      Fail`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`;
-    const newPurseBalance = subtract(currentBalance, amount);
-
     const payment = makePayment();
     try {
       // COMMIT POINT Move the withdrawn assets from this purse into
       // payment. Total assets must remain conserved.
-      updatePurseBalance(newPurseBalance);
+      balanceStore.decrement(amount) ||
+        Fail`Withdrawal of ${amount} failed because the purse only contained ${balanceStore.getAmount()}`;
       initPayment(payment, amount, recoverySet);
     } catch (err) {
       shutdownLedgerWithFailure(err);
