@@ -14,6 +14,7 @@ import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 
 import '../src/types.js';
+import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
@@ -90,22 +91,37 @@ test('network - ibc', async t => {
 
   const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
   const events = subscribeEach(pinnedHistoryTopic)[Symbol.asyncIterator]();
-  const callbacks = zone.exo('ibcCallbacks', undefined, {
-    downcall: (method, params) => {
+
+  let hndlr;
+  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  const bridgeHandler = zone.exo('IBC Bridge Manager', undefined, {
+    toBridge: async obj => {
+      const { method, type, ...params } = obj;
       publisher.publish([method, params]);
+      t.is(type, 'IBC_METHOD');
       if (method === 'sendPacket') {
         const { packet } = params;
         return { ...packet, sequence: '39' };
       }
       return undefined;
     },
+    fromBridge: async obj => {
+      if (!hndlr) throw Error('no handler!');
+      await E(hndlr).fromBridge(obj);
+    },
+    initHandler: h => {
+      if (hndlr) throw Error('already init');
+      hndlr = h;
+    },
+    setHandler: h => {
+      if (!hndlr) throw Error('must init first');
+      hndlr = h;
+    },
   });
 
-  const { protocolHandler, bridgeHandler } =
-    await E(ibcVat).createHandlers(callbacks);
-  await E(networkVat).registerProtocolHandler(
-    ['/ibc-port', '/ibc-hop'],
-    protocolHandler,
+  await registerNetworkProtocols(
+    { network: networkVat, ibc: ibcVat, provisioning: undefined },
+    bridgeHandler,
   );
 
   // Actually test the ibc port binding.
