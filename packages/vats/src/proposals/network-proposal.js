@@ -43,22 +43,6 @@ const prepareListenHandler = (zone, makeEchoConnectionHandler) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param dibcBridgeManager
- */
-const prepareCallbacks = (zone, dibcBridgeManager) => {
-  return zone.exoClass('callbacks', undefined, () => ({}), {
-    downcall(method, obj) {
-      return E(dibcBridgeManager).toBridge({
-        ...obj,
-        type: 'IBC_METHOD',
-        method,
-      });
-    },
-  });
-};
-
-/**
- * @param {import('@agoric/base-zone').Zone} zone
  * @param {SoloVats | NetVats} vats
  * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */

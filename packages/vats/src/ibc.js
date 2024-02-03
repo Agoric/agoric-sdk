@@ -697,3 +697,23 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
 };
 
 harden(prepareIBCProtocol);
+
+/** @param {import('@agoric/base-zone').Zone} zone */
+export const prepareCallbacks = zone => {
+  return zone.exoClass(
+    'callbacks',
+    undefined,
+    /** @param {import('@agoric/vats').ScopedBridgeManager} dibcBridgeManager */
+    dibcBridgeManager => ({ dibcBridgeManager }),
+    {
+      downcall(method, obj) {
+        const { dibcBridgeManager } = this.state;
+        return E(dibcBridgeManager).toBridge({
+          ...obj,
+          type: 'IBC_METHOD',
+          method,
+        });
+      },
+    },
+  );
+};
