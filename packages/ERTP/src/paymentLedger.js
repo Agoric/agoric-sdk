@@ -277,11 +277,11 @@ export const preparePaymentLedger = (
   const withdrawInternal = (balanceStore, amount, recoverySet) => {
     amount = coerce(amount);
     const payment = makePayment();
+    // COMMIT POINT Move the withdrawn assets from this purse into
+    // payment. Total assets must remain conserved.
+    balanceStore.decrement(amount) ||
+      Fail`Withdrawal of ${amount} failed because the purse only contained ${balanceStore.getAmount()}`;
     try {
-      // COMMIT POINT Move the withdrawn assets from this purse into
-      // payment. Total assets must remain conserved.
-      balanceStore.decrement(amount) ||
-        Fail`Withdrawal of ${amount} failed because the purse only contained ${balanceStore.getAmount()}`;
       initPayment(payment, amount, recoverySet);
     } catch (err) {
       shutdownLedgerWithFailure(err);
