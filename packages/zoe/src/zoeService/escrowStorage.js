@@ -108,8 +108,10 @@ export const provideEscrowStorage = baggage => {
     const deposits = await deeplyFulfilledObject(depositPs);
 
     const initialAllocation = harden({
-      ...deposits,
       ...objectMap(want, amount => AmountMath.makeEmptyFromAmount(amount)),
+      // Deposits should win in case of overlapping give/want keywords
+      // (which are not allowed as of 2024-01).
+      ...deposits,
     });
 
     return initialAllocation;
