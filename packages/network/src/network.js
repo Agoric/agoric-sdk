@@ -773,22 +773,24 @@ export const prepareNonceMaker = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<typeof prepareNonceMaker>} makeNonceMaker
  * @param {import('@agoric/whenable').When} when
  */
-export function prepareLoopbackProtocolHandler(zone, makeNonceMaker, when) {
+export function prepareLoopbackProtocolHandler(zone, when) {
   const detached = zone.detached();
 
   const makeLoopbackProtocolHandler = zone.exoClass(
     'ProtocolHandler',
     undefined,
-    (nonceMaker = makeNonceMaker('nonce/')) => {
+    /** @param {string} [instancePrefix] */
+    (instancePrefix = 'nonce/') => {
       /** @type {MapStore<string, [Port, ListenHandler]>} */
       const listeners = detached.mapStore('localAddr');
 
       return {
         listeners,
-        nonceMaker,
+        portNonce: 0n,
+        instancePrefix,
+        instanceNonce: 0n,
       };
     },
     {
@@ -796,7 +798,8 @@ export function prepareLoopbackProtocolHandler(zone, makeNonceMaker, when) {
         // TODO
       },
       async generatePortID(_protocolHandler) {
-        return makeNonceMaker('port').get();
+        this.state.portNonce += 1n;
+        return `port${this.state.portNonce}`;
       },
       async onBind(_port, _localAddr, _protocolHandler) {
         // TODO: Maybe handle a bind?
@@ -827,7 +830,9 @@ export function prepareLoopbackProtocolHandler(zone, makeNonceMaker, when) {
         };
       },
       async onInstantiate(_port, _localAddr, _remote, _protocol) {
-        return this.state.nonceMaker.get();
+        const { instancePrefix } = this.state;
+        this.state.instanceNonce += 1n;
+        return `${instancePrefix}${this.state.instanceNonce}`;
       },
       async onListen(port, localAddr, listenHandler, _protocolHandler) {
         // TODO: Implement other listener replacement policies.
