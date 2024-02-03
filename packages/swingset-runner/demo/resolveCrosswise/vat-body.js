@@ -13,7 +13,7 @@ export function buildRootObject() {
   let r;
   return Far('root', {
     genPromise() {
-      [p, r] = makePR();
+      void ([p, r] = makePR());
       return p;
     },
     usePromise(pa) {
