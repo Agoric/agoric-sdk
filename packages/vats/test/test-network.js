@@ -23,7 +23,7 @@ const provideBaggage = key => {
   return zone.mapStore(`${key} baggage`);
 };
 
-const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }) => {
+const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }, log) => {
   const makePlusOneConnectionHandler = zone.exoClass(
     'plusOne',
     undefined,
@@ -34,6 +34,7 @@ const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }) => {
     },
     {
       async onReceive(_c, packetBytes) {
+        log('Receiving Data', packetBytes);
         const { whenable, settler } = makeWhenableKit();
         settler.resolve(`${packetBytes}1`);
         return whenable;
@@ -126,31 +127,36 @@ test('network - ibc', async t => {
 
   // Actually test the ibc port binding.
   // TODO: Do more tests on the returned Port object.
+  t.log('Opening a Listening Port');
   const p = await when(E(networkVat).bind('/ibc-port/'));
   const ev1 = await events.next();
   t.assert(!ev1.done);
   t.deepEqual(ev1.value, ['bindPort', { packet: { source_port: 'port-1' } }]);
 
-  const makePlusOne = preparePlusOneConnectionHandler(zone, powers);
+  const makePlusOne = preparePlusOneConnectionHandler(zone, powers, t.log);
   const makeIBCListener = prepareIBCListener(zone, makePlusOne);
 
   const testEcho = async () => {
     await E(p).addListener(makeIBCListener({ publisher }));
 
+    t.log('Accepting an Inbound Connection');
     const c = await when(E(p).connect('/ibc-port/port-1/unordered/foo'));
 
+    t.log('Sending Data - echo');
     const ack = await when(E(c).send('hello198'));
     t.is(ack, 'hello1981', 'expected echo');
 
+    t.log('Closing the Connection');
     await when(E(c).close());
   };
 
   await testEcho();
 
   const testIBCOutbound = async () => {
-    const cP = E(p).connect(
-      '/ibc-hop/connection-11/ibc-port/port-98/unordered/bar',
-    );
+    t.log('Connecting to a Remote Port');
+    const [hopName, portName, version] = ['connection-11', 'port-98', 'bar'];
+    const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/unordered/${version}`;
+    const cP = E(p).connect(remoteEndpoint);
 
     const evopen = await events.next();
     t.assert(!evopen.done);
@@ -184,7 +190,7 @@ test('network - ibc', async t => {
     });
 
     const c = await when(cP);
-    // console.log('@@@transfer', await E(c).send('some-transfer-message'));
+    t.log('Sending Data - transfer');
     const ack = E(c).send('some-transfer-message');
 
     const ev3 = await events.next();
