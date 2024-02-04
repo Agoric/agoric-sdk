@@ -27,8 +27,8 @@ Here they are: {
 ```
 
 On Agoric, you can use `V` exported from `@agoric/vat-data/whenable.js`, which
-converts a chain of whenables to a promise for its final settlement, with
-implicit unwrapping of results that are whenables:
+converts a chain of promises and whenables to a promise for its final
+fulfilment, by unwrapping any intermediate whenables:
 
 ```js
 import { V as E } from '@agoric/vat-data/whenable.js';
