@@ -17,6 +17,13 @@ const { Fail, quote: q } = assert;
  */
 
 /**
+ * @template [U=any]
+ * @typedef {object} RevocableKitThis
+ * @property {RevocableKit<U>} facets
+ * @property {{ underlying: U }} state
+ */
+
+/**
  * @template {any} [U=any]
  * @typedef {object} RevocableKitOptions
  * @property {string} [uInterfaceName]
@@ -31,7 +38,7 @@ const { Fail, quote: q } = assert;
  * do not necessarily correspond to any method of the underlying.
  * @property {Record<
  *   string|symbol,
- *   (...args) => any
+ *   (this: RevocableKitThis<U>, ...args: any[]) => any
  * >} [extraMethods]
  * Extra methods adding behavior only to the revocable caretaker, and
  * do not necessarily correspond to any methods of the underlying.

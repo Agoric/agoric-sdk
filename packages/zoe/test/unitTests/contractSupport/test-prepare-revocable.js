@@ -89,7 +89,6 @@ test('test revoke defineVirtualExoClassKit', t => {
       },
       extraMethods: {
         selfRevoke() {
-          // @ts-expect-error typing this
           const { revoker } = this.facets;
           return revoker.revoke();
         },

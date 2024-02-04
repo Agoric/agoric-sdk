@@ -51,9 +51,7 @@ export const prepareOwnable = (
     },
     extraMethods: {
       makeTransferInvitation() {
-        // @ts-expect-error `this` typing
         const { underlying } = this.state;
-        // @ts-expect-error `this` typing
         const { revoker } = this.facets;
         const customDetails = underlying.getInvitationCustomDetails();
         // eslint-disable-next-line no-use-before-define
