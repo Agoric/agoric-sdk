@@ -14,6 +14,9 @@ export * from './make-slog-sender.js';
  * }} SlogSender
  */
 /**
+ * @typedef {(opts: import('./index.js').MakeSlogSenderOptions) => SlogSender | undefined} MakeSlogSender
+ */
+/**
  * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
  * @typedef {object} MakeSlogSenderCommonOptions
  * @property {Record<string, string | undefined>} [env]

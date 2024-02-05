@@ -1,3 +1,4 @@
+// @ts-check
 /// <reference types="ses" />
 
 // https://github.com/Agoric/agoric-sdk/issues/3742#issuecomment-1028451575
@@ -70,6 +71,13 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   return arenaSize;
 };
 
+/**
+ * @param {{
+ *   circularBufferSize?: number,
+ *   stateDir?: string,
+ *   circularBufferFilename?: string
+ * }} opts
+ */
 export const makeMemoryMappedCircularBuffer = async ({
   circularBufferSize = DEFAULT_CBUF_SIZE,
   stateDir = '/tmp',
@@ -227,6 +235,11 @@ export const makeMemoryMappedCircularBuffer = async ({
   return { readCircBuf, writeCircBuf, writeJSON };
 };
 
+/**
+ * Loaded dynamically by makeSlogSender()
+ *
+ * @type {import('./index.js').MakeSlogSender}
+ */
 export const makeSlogSender = async opts => {
   const { writeJSON } = await makeMemoryMappedCircularBuffer(opts);
   return Object.assign(writeJSON, {
