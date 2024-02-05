@@ -64,11 +64,15 @@ publish() {
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
+    yarn lerna run build:types
+
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
     yarn lerna publish --concurrency 1 prerelease --exact \
       --dist-tag="$DISTTAG" --preid=dev \
       --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
+
+    yarn lerna run clean:types
 
     # Change any version prefices to an exact match, and merge our versions.
     VERSIONSHASH=$(jq --argfile versions <(popd >/dev/null && git cat-file blob "$VERSIONSHASH") \
