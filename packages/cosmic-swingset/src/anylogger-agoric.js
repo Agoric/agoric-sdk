@@ -1,4 +1,7 @@
-import { getEnvironmentOptionsList } from '@endo/env-options';
+import {
+  getEnvironmentOptionsList,
+  getEnvironmentOption,
+} from '@endo/env-options';
 import anylogger from 'anylogger';
 
 // Turn on debugging output with DEBUG=agoric
@@ -9,8 +12,10 @@ const isVatLogNameColon = nameColon =>
   ['SwingSet:ls:', 'SwingSet:vat:'].some(sel => nameColon.startsWith(sel));
 
 // Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
-
-let selectedLevel = 'info';
+let selectedLevel =
+  DEBUG_LIST.length || getEnvironmentOption('DEBUG', 'unset') === 'unset'
+    ? 'log'
+    : 'info';
 for (const selector of DEBUG_LIST) {
   const parts = selector.split(':');
   if (parts[0] !== 'agoric') {
@@ -22,33 +27,29 @@ for (const selector of DEBUG_LIST) {
     selectedLevel = 'debug';
   }
 }
-const defaultLevel = anylogger.levels[selectedLevel];
+const selectedCode = anylogger.levels[selectedLevel];
+const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
 
 const oldExt = anylogger.ext;
 anylogger.ext = (l, o) => {
   l = oldExt(l, o);
-  l.enabledFor = lvl => defaultLevel >= anylogger.levels[lvl];
+  l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
 
   const prefix = l.name.replace(/:/g, ': ');
 
   const nameColon = `${l.name}:`;
   const logBelongsToVat = isVatLogNameColon(nameColon);
 
-  const logMatchesSelector = DEBUG_LIST.some(selector => {
-    const selectorColon = `${selector}:`;
-    if (!logBelongsToVat) {
-      return true;
-    }
-
-    // If this is a vat log, then it is enabled if it matches the selector.
-    return nameColon.startsWith(selectorColon);
-  });
+  // If this is a vat log, then it is enabled by a selector in DEBUG_LIST.
+  const logMatchesSelector =
+    !logBelongsToVat ||
+    DEBUG_LIST.some(selector => {
+      const selectorColon = `${selector}:`;
+      return nameColon.startsWith(selectorColon);
+    });
 
   for (const [level, code] of Object.entries(anylogger.levels)) {
-    if (!logMatchesSelector || code > defaultLevel) {
-      // Disable printing.
-      l[level] = () => {};
-    } else {
+    if (logMatchesSelector && globalCode >= code) {
       // Enable the printing with a prefix.
       const doLog = l[level];
       if (doLog) {
@@ -60,6 +61,9 @@ anylogger.ext = (l, o) => {
       } else {
         l[level] = () => {};
       }
+    } else {
+      // Disable printing.
+      l[level] = () => {};
     }
   }
   return l;

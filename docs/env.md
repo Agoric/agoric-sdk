@@ -58,7 +58,9 @@ for a given context, in order of increasing severity:
 4. `console.warn`
 5. `console.error`
 
-If not set, then default (`console.info` and above) logging is enabled.
+If `$DEBUG` is unset or non-empty, then default (`console.log` and above) logging is enabled.  (`console.debug` logging is disabled.)
+
+If `$DEBUG` is set to an empty string, then quiet (`console.info` and above) logging is enabled.
 (`console.log` and `console.debug` logging is disabled.)
 
 Otherwise, set to a comma-separated list of strings.
