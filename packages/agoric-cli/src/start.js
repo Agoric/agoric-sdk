@@ -71,10 +71,10 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const pspawnEnv = { ...process.env };
   if (opts.verbose > 1) {
     // Loudly verbose logs (nondeterministic).
-    pspawnEnv.DEBUG = 'agoric,SwingSet:vat,SwingSet:ls';
+    pspawnEnv.DEBUG = 'agoric:debug,SwingSet:vat,SwingSet:ls';
   } else if (opts.verbose) {
     // Verbose vat logs (nondeterministic).
-    pspawnEnv.DEBUG = 'SwingSet:vat,SwingSet:ls';
+    pspawnEnv.DEBUG = 'agoric:info,SwingSet:vat,SwingSet:ls';
   }
 
   const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
@@ -184,7 +184,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     if (!opts.dockerTag) {
@@ -274,7 +274,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${portNum}`;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     let chainSpawn;
@@ -481,7 +481,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     let soloSpawn;
@@ -704,7 +704,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const serverDir = `${SERVERS_ROOT_DIR}/${profileName}-${port}`;
 
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>
@@ -731,7 +731,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     await null;
     if (popts.reset) {
-      rmVerbose(serverDir);
+      await rmVerbose(serverDir);
     }
 
     const setupRun = (...bonusArgs) =>

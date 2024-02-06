@@ -33,6 +33,7 @@
     "@agoric/telemetry": "^0.6.2",
     "@agoric/vm-config": "^0.1.0",
     "@endo/bundle-source": "^3.0.2",
+    "@endo/env-options": "^1.1.0",
     "@endo/far": "^1.0.2",
     "@endo/import-bundle": "^1.0.2",
     "@endo/init": "^1.0.2",

@@ -371,10 +371,13 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
-  if (process.env.DEBUG === undefined) {
-    verbosity = [];
-  } else if (process.env.DEBUG.includes('agoric')) {
+  const DEBUG_LIST = (process.env.DEBUG || '').split(',');
+  if (
+    DEBUG_LIST.find(selector => ['agoric:debug', 'agoric'].includes(selector))
+  ) {
     verbosity = ['-vv'];
+  } else if (DEBUG_LIST.includes('agoric:info') || process.env.DEBUG === '') {
+    verbosity = [];
   } else {
     verbosity = ['-v'];
   }

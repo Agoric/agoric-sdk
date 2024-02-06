@@ -20,6 +20,8 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/store": "^0.9.2",
+    "@endo/env-options": "^1.1.0",
+    "@endo/errors": "^1.0.2",
     "@endo/eventual-send": "^1.1.0",
     "@endo/exo": "^1.1.0",
     "@endo/far": "^1.0.2",
