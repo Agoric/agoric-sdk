@@ -225,14 +225,25 @@ export const makeMemoryMappedCircularBuffer = async ({
     );
   };
 
-  const writeJSON = (obj, jsonObj = serializeSlogObj(obj)) => {
+  return { readCircBuf, writeCircBuf };
+};
+
+/**
+ *
+ * @param {Pick<Awaited<ReturnType<typeof makeMemoryMappedCircularBuffer>>, 'writeCircBuf'>} circBuf
+ */
+export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
+  const writeJSON = obj => {
+    const jsonObj = serializeSlogObj(obj);
     // Prepend a newline so that the file can be more easily manipulated.
     const data = new TextEncoder().encode(`\n${jsonObj}`);
     // console.log('have obj', obj, data);
     writeCircBuf(data);
   };
-
-  return { readCircBuf, writeCircBuf, writeJSON };
+  return Object.assign(writeJSON, {
+    forceFlush: async () => {},
+    usesJsonObject: true,
+  });
 };
 
 /**
@@ -241,9 +252,6 @@ export const makeMemoryMappedCircularBuffer = async ({
  * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async opts => {
-  const { writeJSON } = await makeMemoryMappedCircularBuffer(opts);
-  return Object.assign(writeJSON, {
-    forceFlush: async () => {},
-    usesJsonObject: true,
-  });
+  const { writeCircBuf } = await makeMemoryMappedCircularBuffer(opts);
+  return makeSlogSenderFromBuffer({ writeCircBuf });
 };
