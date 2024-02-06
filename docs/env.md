@@ -104,7 +104,7 @@ Lifetime: until chain is mature enough not to need any pretend tokens
 
 ## LOCKDOWN_*
 
-For the envoronment variables beginning with `LOCKDOWN_` , see [`lockdown` Options](https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md).
+For the environment variables beginning with `LOCKDOWN_` , see [`lockdown` Options](https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md).
 
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
