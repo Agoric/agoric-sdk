@@ -1,0 +1,137 @@
+diff --git a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
+index 5c73cc2..c920c8b 100644
+--- a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
++++ b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;AAktDO,0CAHI,GAAG,mDAIyB;AAOhC,8CAHI,GAAG,2DAKb;AAUM,uDAHI,OAAO,YAAY,EAAE,aAAa,GAChC,OAAO,YAAY,EAAE,oBAAoB,CAKrD;AAsBM,mDAA+D;AAE/D,oDACyC;AA4CzC,4CAHI,GAAG,yDAKb;AAUM,mDAHI,OAAO,YAAY,EAAE,WAAW,GAC9B,OAAO,YAAY,EAAE,kBAAkB,CAKnD;AAiEM,+CAHI,GAAG,mHAKb;AAWM,2QAGN;AASM,uDAHI,OAAO,YAAY,EAAE,cAAc,GACjC,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B"}
+\ No newline at end of file
++{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;AAktDO,0CAHI,GAAG,mDAIyB;AAOhC,8CAHI,GAAG,2DAKb;AAyBM,uDAHI,OAAO,YAAY,EAAE,aAAa,GAChC,OAAO,YAAY,EAAE,oBAAoB,CAWrD;AAsBM,mDAA+D;AAE/D,oDACyC;AAmDzC,4CAHI,GAAG,yDAKb;AAwBM,mDAHI,OAAO,YAAY,EAAE,WAAW,GAC9B,OAAO,YAAY,EAAE,kBAAkB,CAWnD;AAiEM,+CAHI,GAAG,mHAKb;AAyBM,2QASN;AASM,uDAHI,OAAO,YAAY,EAAE,cAAc,GACjC,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/src/patterns/patternMatchers.js b/node_modules/@endo/patterns/src/patterns/patternMatchers.js
+index 55bb8de..29ab37e 100644
+--- a/node_modules/@endo/patterns/src/patterns/patternMatchers.js
++++ b/node_modules/@endo/patterns/src/patterns/patternMatchers.js
+@@ -1757,14 +1757,35 @@ export const assertAwaitArgGuard = specimen => {
+ };
+ harden(assertAwaitArgGuard);
+ 
++const LegacyAwaitArgGuardShape = M.splitRecord(
++  {
++    klass: 'awaitArg',
++  },
++  undefined,
++  AwaitArgGuardPayloadShape,
++);
++
+ /**
+  * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Note that technically, tolerating the old LegacyAwaitArgGuardShape
++ * is an exploitable bug, in that a record that matches this
++ * shape is also a valid parameter pattern that should allow
++ * an argument that matches that pattern, i.e., a copyRecord argument that
++ * at least contains a `klass: 'awaitArgGuard'` property.
+  *
+  * @param {import('./types.js').AwaitArgGuard} awaitArgGuard
+  * @returns {import('./types.js').AwaitArgGuardPayload}
+  */
+ export const getAwaitArgGuardPayload = awaitArgGuard => {
++  if (matches(awaitArgGuard, LegacyAwaitArgGuardShape)) {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    const { klass: _, ...payload } = awaitArgGuard;
++    // @ts-expect-error Legacy adaptor can be ill typed
++    return payload;
++  }
+   assertAwaitArgGuard(awaitArgGuard);
+   return awaitArgGuard.payload;
+ };
+@@ -1794,6 +1815,13 @@ export const isRawGuard = specimen => matches(specimen, RawGuardShape);
+ export const assertRawGuard = specimen =>
+   mustMatch(specimen, RawGuardShape, 'rawGuard');
+ 
++// Unlike LegacyAwaitArgGuardShape, LegacyMethodGuardShape,
++// and LegacyInterfaceGuardShape, there is no need for a
++// LegacyRawGuardShape, because raw guards were introduced at
++// https://github.com/endojs/endo/pull/1831 , which was merged well after
++// https://github.com/endojs/endo/pull/1712 > Thus, there was never a
++// `klass:` form of the raw guard.
++
+ /**
+  * @returns {import('./types.js').RawGuard}
+  */
+@@ -1841,14 +1869,34 @@ export const assertMethodGuard = specimen => {
+ };
+ harden(assertMethodGuard);
+ 
++const LegacyMethodGuardShape = M.splitRecord(
++  {
++    klass: 'methodGuard',
++  },
++  undefined,
++  MethodGuardPayloadShape,
++);
++
+ /**
+  * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Unlike LegacyAwaitArgGuardShape, tolerating LegacyMethodGuardShape
++ * does not seem like a currently exploitable bug, because there is not
++ * currently any context where either a methodGuard or a copyRecord would
++ * both be meaningful.
+  *
+  * @param {import('./types.js').MethodGuard} methodGuard
+  * @returns {import('./types.js').MethodGuardPayload}
+  */
+ export const getMethodGuardPayload = methodGuard => {
++  if (matches(methodGuard, LegacyMethodGuardShape)) {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    const { klass: _, ...payload } = methodGuard;
++    // @ts-expect-error Legacy adaptor can be ill typed
++    return harden(payload);
++  }
+   assertMethodGuard(methodGuard);
+   return methodGuard.payload;
+ };
+@@ -1921,15 +1969,35 @@ export const assertInterfaceGuard = specimen => {
+ };
+ harden(assertInterfaceGuard);
+ 
++const LegacyInterfaceGuardShape = M.splitRecord(
++  {
++    klass: 'Interface',
++  },
++  undefined,
++  InterfaceGuardPayloadShape,
++);
++
+ /**
+  * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Unlike LegacyAwaitArgGuardShape, tolerating LegacyInterfaceGuardShape
++ * does not seem like a currently exploitable bug, because there is not
++ * currently any context where either an interfaceGuard or a copyRecord would
++ * both be meaningful.
+  *
+  * @template {Record<PropertyKey, import('./types.js').MethodGuard>} [T=Record<PropertyKey, import('./types.js').MethodGuard>]
+  * @param {import('./types.js').InterfaceGuard<T>} interfaceGuard
+  * @returns {import('./types.js').InterfaceGuardPayload<T>}
+  */
+ export const getInterfaceGuardPayload = interfaceGuard => {
++  if (matches(interfaceGuard, LegacyInterfaceGuardShape)) {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    const { klass: _, ...payload } = interfaceGuard;
++    // @ts-expect-error Legacy adaptor can be ill typed
++    return harden(payload);
++  }
+   assertInterfaceGuard(interfaceGuard);
+   return interfaceGuard.payload;
+ };
