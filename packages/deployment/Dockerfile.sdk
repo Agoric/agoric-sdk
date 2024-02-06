@@ -63,6 +63,9 @@ RUN \
 
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
+RUN mkdir golang/tmp && \
+  mv golang/cosmos/package.json golang/cosmos/build golang/cosmos/index.cjs golang/tmp/ && \
+  rm -rf golang/cosmos && mv golang/tmp golang/cosmos
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
 # RUN yarn install --frozen-lockfile --production --network-timeout 100000
 
