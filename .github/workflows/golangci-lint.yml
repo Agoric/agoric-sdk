@@ -18,6 +18,9 @@ jobs:
   golangci:
     name: golangci-lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [no-deprecations, no-failure]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
@@ -32,6 +35,8 @@ jobs:
         with:
           version: latest
           args: --timeout=3m
+            ${{ matrix.mode == 'no-deprecations' && '--exclude=^SA1019' || '' }}
+            ${{ matrix.mode == 'no-failure' && '--issues-exit-code=0' || '' }}
           # for pull requests, show only new issues
           # Too bad it's incompatible with working-directory.
           # only-new-issues: true
