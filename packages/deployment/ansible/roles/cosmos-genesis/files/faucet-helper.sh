@@ -30,7 +30,7 @@ show-faucet-address)
 esac
 
 networkName=$(basename "$thisdir")
-if netconfig=$(curl "https://$networkName.agoric.net/network-config"); then
+if netconfig=$(curl -s "https://$networkName.agoric.net/network-config"); then
   chainName=$(echo "$netconfig" | jq -r .chainName)
   read -r -a origRpcAddrs <<<"$(echo "$netconfig" | jq -r .rpcAddrs[])"
 else
