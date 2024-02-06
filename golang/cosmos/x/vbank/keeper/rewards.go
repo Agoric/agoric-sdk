@@ -75,7 +75,7 @@ func (k Keeper) DistributeRewards(ctx sdk.Context) error {
 		}
 	}
 
-	state.RewardPool = state.RewardPool.Sub(xfer)
+	state.RewardPool = state.RewardPool.Sub(xfer...)
 	k.SetState(ctx, state)
 	return nil
 }
