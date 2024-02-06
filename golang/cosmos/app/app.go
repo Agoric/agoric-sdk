@@ -847,6 +847,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 		CoreProposalSteps := []vm.CoreProposalStep{
 			// First, upgrade wallet factory
 			vm.CoreProposalStepForModules("@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js"),
+			// Then, upgrade Zoe and ZCF
+			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
 			// vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/init-network.js"),
 		}
 
