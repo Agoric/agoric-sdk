@@ -10,10 +10,11 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v5/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v5/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibcexported "github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
@@ -58,12 +59,6 @@ func (k Keeper) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) s
 	return k.bankKeeper.GetBalance(ctx, addr, denom)
 }
 
-// GetNextSequenceSend defines a wrapper function for the channel Keeper's function
-// in order to expose it to the vibc IBC handler.
-func (k Keeper) GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool) {
-	return k.channelKeeper.GetNextSequenceSend(ctx, portID, channelID)
-}
-
 // GetChannel defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool) {
@@ -99,15 +94,20 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 
 // SendPacket defines a wrapper function for the channel Keeper's function
 // in order to expose it to the vibc IBC handler.
-func (k Keeper) SendPacket(ctx sdk.Context, packet ibcexported.PacketI) error {
-	portID := packet.GetSourcePort()
-	channelID := packet.GetSourceChannel()
-	capName := host.ChannelCapabilityPath(portID, channelID)
+func (k Keeper) SendPacket(
+	ctx sdk.Context,
+	sourcePort string,
+	sourceChannel string,
+	timeoutHeight clienttypes.Height,
+	timeoutTimestamp uint64,
+	data []byte,
+) (uint64, error) {
+	capName := host.ChannelCapabilityPath(sourcePort, sourceChannel)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return 0, sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
-	return k.channelKeeper.SendPacket(ctx, chanCap, packet)
+	return k.channelKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 var _ ibcexported.Acknowledgement = (*rawAcknowledgement)(nil)
