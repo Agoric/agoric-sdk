@@ -3,10 +3,8 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
 // NOTE: Heap-based whenable resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareWhenableModule } from '@agoric/whenable';
 import { makeScalarMapStore } from '@agoric/store';
-import { prepareWhen } from '@agoric/whenable/src/when.js';
 import { makeHeapZone } from '@agoric/zone';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
