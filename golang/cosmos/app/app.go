@@ -782,11 +782,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade13Handler(app, upgradeName),
+		upgrade14Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade13Handler(app, upgradeNameTest),
+		upgrade14Handler(app, upgradeNameTest),
 	)
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
@@ -824,15 +824,16 @@ func NewAgoricApp(
 	return app
 }
 
-// upgrade13Handler performs standard upgrade actions plus custom actions for upgrade-14.
-func upgrade13Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade14Handler performs standard upgrade actions plus custom actions for upgrade-14.
+func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
 		// Each CoreProposalStep runs sequentially, and can be constructed from
 		// one or more modules executing in parallel within the step.
 		CoreProposalSteps := []vm.CoreProposalStep{
-			// vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/init-network.js"),
+			// First, upgrade wallet factory
+			vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
 		}
 
 		app.upgradeDetails = &upgradeDetails{

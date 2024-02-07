@@ -3,11 +3,7 @@
     "releaseNotes": "https://github.com/Agoric/agoric-sdk/releases/tag/agoric-upgrade-14",
     "sdkImageTag": "unreleased",
     "planName": "agoric-upgrade-14",
-    "upgradeInfo": {
-      "coreProposals": [
-        "@agoric/vats/scripts/build-wallet-factory2-upgrade.js"
-      ]
-    },
+    "upgradeInfo": {},
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
