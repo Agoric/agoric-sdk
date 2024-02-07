@@ -22,11 +22,18 @@ function fatal() {
 function diffsha1() {
   stamp=$1
   shift
-  find ${1+"$@"} -exec sha1sum {} \; | sort +1 > "$stamp.new" || true
-  if test ! -s "$stamp.new"; then
-    echo "No new dependencies found for $stamp" 1>&2
+  if ! (true > "$stamp.new") 2>/dev/null; then
+    # echo "Cannot write to $stamp.new" 1>&2
     return 0
   fi
+  find ${1+"$@"} > "$stamp.new.files"
+  if test ! -s "$stamp.new.files"; then
+    # echo "No new dependencies found for $stamp" 1>&2
+    rm -f "$stamp.new.files"
+    return 0
+  fi
+  xargs sha1sum <"$stamp.new.files" | sort +1 > "$stamp.new" || true
+  rm -f "$stamp.new.files"
   diff -u "$stamp" "$stamp.new" || return 1
   return 0
 }
@@ -120,6 +127,45 @@ fi
   test -d "$STAMPS" || echo "Creating $STAMPS" 1>&2
   mkdir -p "$STAMPS"
 
+  sum=$STAMPS/golang-built.sum
+  diffsha1 "$sum" "$GOLANG_DIR" \( \
+    ! -name '*_test.go' -name '*.go' \
+    -o -name '*.cc' \
+    -o -name 'go.*' \) || { echo "$GOLANG_DIR $sum has changed"; $do_not_build; } || {
+    rm -f "$sum"
+    (
+      # Run this build in another subshell in case we had to modify the path.
+      case $(go version 2>/dev/null) in
+      "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
+      *)
+        # Auto-download the Golang version we need, if allowed.
+        $SKIP_DOWNLOAD || {
+          export HOME=${DAEMON_HOME-$HOME}
+          mkdir -p "$HOME/bin"
+
+          # shellcheck disable=SC2030
+          PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
+          test -x "$HOME/bin/gvm" || {
+            curl -L "$GVM_URL" > "$HOME/bin/gvm"
+            chmod +x "$HOME/bin/gvm"
+          }
+          gvm "$GOLANG_VERSION" -s
+        }
+        ;;
+      esac
+      # Ensure minimum patch versions of Go environment
+      cd "$GOLANG_DIR"
+      if goversion=$(go version 2>/dev/null); then
+        goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
+        [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
+        golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
+        make compile-go
+      fi
+    )
+  }
+  test -f "$sum" || mv -f "$sum.new" "$sum"
+  rm -f "$sum.new"
+
   if $need_nodejs; then
     lazy_yarn() {
       yarn --version 2>/dev/null 1>&2 || {
@@ -154,46 +200,9 @@ fi
       lazy_yarn build
       date > "$stamp"
     }
+
+    (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
   fi
-
-  sum=$STAMPS/golang-built.sum
-  diffsha1 "$sum" "$GOLANG_DIR" \( \
-    ! -name '*_test.go' -name '*.go' \
-    -o -name '*.cc' \
-    -o -name 'go.*' \) || { echo "$GOLANG_DIR $sum has changed"; $do_not_build; } || {
-    rm -f "$sum"
-    (
-      # Run this build in another subshell in case we had to modify the path.
-      case $(go version 2>/dev/null) in
-      "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
-      *)
-        # Auto-download the Golang version we need, if allowed.
-        $SKIP_DOWNLOAD || {
-          export HOME=${DAEMON_HOME-$HOME}
-          mkdir -p "$HOME/bin"
-
-          # shellcheck disable=SC2030
-          PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
-          test -x "$HOME/bin/gvm" || {
-            curl -L "$GVM_URL" > "$HOME/bin/gvm"
-            chmod +x "$HOME/bin/gvm"
-          }
-          gvm "$GOLANG_VERSION" -s
-        }
-        ;;
-      esac
-      # Ensure minimum patch versions of Go environment
-      goversion=$(go version 2>/dev/null)
-      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
-      [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
-      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
-      # Build the daemon.
-      cd "$GOLANG_DIR"
-      make
-    )
-  }
-  test -f "$sum" || mv -f "$sum.new" "$sum"
-  rm -f "$sum.new"
 )
 
 # the xsnap binary lives in a platform-specific directory
