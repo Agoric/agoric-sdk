@@ -32,10 +32,14 @@ const I_ARENA_START = 4 * BigUint64Array.BYTES_PER_ELEMENT;
 
 const RECORD_HEADER_SIZE = BigUint64Array.BYTES_PER_ELEMENT;
 
+/**
+ * Initializes a circular buffer with the given size, creating the buffer file if it doesn't exist or is not large enough.
+ *
+ * @param {string} bufferFile - the file path for the circular buffer
+ * @param {number} circularBufferSize - the size of the circular buffer
+ * @returns {Promise<bigint>} the size of the initialized circular buffer
+ */
 const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
-  if (!circularBufferSize) {
-    return undefined;
-  }
   // If the file doesn't exist, or is not large enough, create it.
   const stbuf = await fsp.stat(bufferFile).catch(e => {
     if (e.code === 'ENOENT') {
