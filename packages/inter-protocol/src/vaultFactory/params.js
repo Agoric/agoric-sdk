@@ -163,6 +163,7 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
+
 /**
  * Stop-gap which restores initial param values UNTIL
  * https://github.com/Agoric/agoric-sdk/issues/5200
@@ -171,8 +172,14 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
+ * @param {MapStore<Brand, VaultManagerParamValues>} managerParamValues - sets
+ *   of parameters keyed by Brand. override stored initial values
  */
-export const provideVaultParamManagers = (baggage, marshaller) => {
+export const provideVaultParamManagers = (
+  baggage,
+  marshaller,
+  managerParamValues,
+) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
@@ -197,10 +204,14 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
     return manager;
   };
 
-  // restore from baggage
-  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // restore from baggage, unless `managerParamValues` overrides.
   for (const [brand, args] of managerArgs.entries()) {
-    makeManager(brand, args);
+    if (managerParamValues.has(brand)) {
+      const values = managerParamValues.get(brand);
+      makeManager(brand, { ...args, initialParamValues: values });
+    } else {
+      makeManager(brand, args);
+    }
   }
 
   return {

@@ -81,6 +81,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     storageNode,
     auctioneerInstance,
+    managerParams,
   } = privateArgs;
 
   trace('awaiting debtMint');
@@ -95,7 +96,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { timerService } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const auctioneerPublicFacet = await E(zoe).getPublicFacet(auctioneerInstance);
+  const auctioneerPublicFacet = E(zoe).getPublicFacet(auctioneerInstance);
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
@@ -138,6 +139,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     makeRecorderKit,
     makeERecorderKit,
+    managerParams,
   );
 
   // cannot await because it would make remote calls during vat restart
