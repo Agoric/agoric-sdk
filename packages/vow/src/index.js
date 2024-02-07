@@ -4,5 +4,3 @@ export { default as makeE } from './E.js';
 
 // eslint-disable-next-line import/export
 export * from './types.js';
-
-/** @typedef {import('./when.js').When} When */
