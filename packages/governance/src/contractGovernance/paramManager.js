@@ -220,10 +220,10 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     if (!zoe) {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
-    const { instance, installation } = await E(zoe).getInvitationDetails(i);
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore typedefs say they're guaranteed truthy but just to be safe
-    assert(instance && installation, 'must be an invitation');
+
+    // local check on isLive() gives better report than .getInvitationDetails()
+    const isLive = await E(E(zoe).getInvitationIssuer()).isLive(i);
+    isLive || Fail`Invitation passed to paramManager is not live ${i}`;
   };
 
   /**

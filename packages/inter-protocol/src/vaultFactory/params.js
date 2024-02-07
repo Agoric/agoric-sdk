@@ -171,8 +171,13 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
+ * @param {any} managerParamValues
  */
-export const provideVaultParamManagers = (baggage, marshaller) => {
+export const provideVaultParamManagers = (
+  baggage,
+  marshaller,
+  managerParamValues,
+) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
@@ -200,7 +205,12 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
   // restore from baggage
   // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
   for (const [brand, args] of managerArgs.entries()) {
-    makeManager(brand, args);
+    console.log(`VF Params: Restoring for ${brand}, with ${args}`);
+    if (managerParamValues[brand]) {
+      makeManager(brand, managerParamValues[brand]);
+    } else {
+      makeManager(brand, args);
+    }
   }
 
   return {
