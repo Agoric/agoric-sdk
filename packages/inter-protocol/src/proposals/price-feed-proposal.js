@@ -147,7 +147,7 @@ export const createPriceFeed = async (
           ),
         err =>
           console.error(
-            `🚨 failed to update priceAggregator instance for ${AGORIC_INSTANCE_NAME}`,
+            `🚨 failed to update priceAggregator installation for ${AGORIC_INSTANCE_NAME}`,
             err,
           ),
       );
