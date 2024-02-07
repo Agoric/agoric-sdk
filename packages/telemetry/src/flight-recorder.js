@@ -14,8 +14,8 @@
 // no coherency problem, and the speed is unaffected by disk write speeds.
 
 import BufferFromFile from 'bufferfromfile';
-import { promises as fsPromises } from 'fs';
-import path from 'path';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 const { Fail } = assert;
@@ -37,7 +37,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
     return undefined;
   }
   // If the file doesn't exist, or is not large enough, create it.
-  const stbuf = await fsPromises.stat(bufferFile).catch(e => {
+  const stbuf = await fsp.stat(bufferFile).catch(e => {
     if (e.code === 'ENOENT') {
       return undefined;
     }
@@ -58,8 +58,8 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   header.setBigUint64(I_CIRC_START, 0n);
   header.setBigUint64(I_CIRC_END, 0n);
 
-  await fsPromises.mkdir(path.dirname(bufferFile), { recursive: true });
-  await fsPromises.writeFile(bufferFile, headerBuf);
+  await fsp.mkdir(path.dirname(bufferFile), { recursive: true });
+  await fsp.writeFile(bufferFile, headerBuf);
 
   if (stbuf && stbuf.size >= circularBufferSize) {
     // File is big enough.
@@ -67,7 +67,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   }
 
   // Increase the file size.
-  await fsPromises.truncate(bufferFile, circularBufferSize);
+  await fsp.truncate(bufferFile, circularBufferSize);
   return arenaSize;
 };
 
