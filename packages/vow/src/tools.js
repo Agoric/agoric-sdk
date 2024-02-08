@@ -1,6 +1,6 @@
 // @ts-check
 import { makeWhen } from './when.js';
-import { prepareWhenableKits } from './whenable.js';
+import { prepareVowKits } from './vow.js';
 import { prepareWatch } from './watch.js';
 
 /**
@@ -9,16 +9,16 @@ import { prepareWatch } from './watch.js';
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
  * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
-export const prepareWhenableTools = (zone, powers) => {
+export const prepareVowTools = (zone, powers) => {
   const { rejectionMeansRetry = () => false, watchPromise } = powers || {};
-  const { makeWhenableKit, makeWhenablePromiseKit } = prepareWhenableKits(zone);
-  const when = makeWhen(makeWhenablePromiseKit, rejectionMeansRetry);
+  const { makeVowKit, makeVowPromiseKit } = prepareVowKits(zone);
+  const when = makeWhen(makeVowPromiseKit, rejectionMeansRetry);
   const watch = prepareWatch(
     zone,
-    makeWhenableKit,
+    makeVowKit,
     watchPromise,
     rejectionMeansRetry,
   );
-  return harden({ when, watch, makeWhenableKit });
+  return harden({ when, watch, makeVowKit });
 };
-harden(prepareWhenableTools);
+harden(prepareVowTools);

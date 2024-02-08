@@ -3,17 +3,17 @@ import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
-import { prepareWhenableTools } from '../src/tools.js';
+import { prepareVowTools } from '../src/tools.js';
 
 test('retry on disconnection', async t => {
   const zone = makeHeapZone();
   const rejectionMeansRetry = e => e && e.message === 'disconnected';
 
-  const { watch, when } = prepareWhenableTools(zone, {
+  const { watch, when } = prepareVowTools(zone, {
     rejectionMeansRetry,
   });
-  const makeTestWhenableV0 = zone.exoClass(
-    'TestWhenableV0',
+  const makeTestVowV0 = zone.exoClass(
+    'TestVowV0',
     undefined,
     plan => ({ plan }),
     {
@@ -52,19 +52,19 @@ test('retry on disconnection', async t => {
     [2, 'disco', 'disco', 'sad'],
   ];
 
-  for await (const watchWhenable of [false, true]) {
-    t.log('testing watchWhenable', watchWhenable);
+  for await (const watchVow of [false, true]) {
+    t.log('testing watchVow', watchVow);
     for await (const [final, ...plan] of PLANS) {
-      t.log(`testing (plan=${plan}, watchWhenable=${watchWhenable})`);
+      t.log(`testing (plan=${plan}, watchVow=${watchVow})`);
 
-      /** @type {import('../src/types.js').Whenable<string>} */
-      const whenable = makeTagged('Whenable', {
-        whenableV0: makeTestWhenableV0(plan),
+      /** @type {import('../src/types.js').Vow<string>} */
+      const vow = makeTagged('Vow', {
+        vowV0: makeTestVowV0(plan),
       });
 
       let resultP;
-      if (watchWhenable) {
-        const resultW = watch(whenable, {
+      if (watchVow) {
+        const resultW = watch(vow, {
           onFulfilled(value) {
             t.is(plan[final], 'happy');
             t.is(value, 'resolved');
@@ -79,7 +79,7 @@ test('retry on disconnection', async t => {
         t.is('then' in resultW, false, 'watch resultW.then is undefined');
         resultP = when(resultW);
       } else {
-        resultP = when(whenable).catch(e => ['rejected', e]);
+        resultP = when(vow).catch(e => ['rejected', e]);
       }
 
       switch (plan[final]) {
@@ -87,7 +87,7 @@ test('retry on disconnection', async t => {
           t.is(
             await resultP,
             'resolved',
-            `resolve expected (plan=${plan}, watchWhenable=${watchWhenable})`,
+            `resolve expected (plan=${plan}, watchVow=${watchVow})`,
           );
           break;
         }
@@ -95,7 +95,7 @@ test('retry on disconnection', async t => {
           t.like(
             await resultP,
             ['rejected', Error('dejected')],
-            `reject expected (plan=${plan}, watchWhenable=${watchWhenable})`,
+            `reject expected (plan=${plan}, watchVow=${watchVow})`,
           );
           break;
         }

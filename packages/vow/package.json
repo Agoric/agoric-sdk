@@ -1,5 +1,5 @@
 {
-  "name": "@agoric/whenable",
+  "name": "@agoric/vow",
   "version": "0.1.0",
   "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
   "type": "module",

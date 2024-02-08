@@ -399,7 +399,7 @@ export default makeE;
  *     ? PickCallable<R>                                              // then return the callable properties of R
  *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('./types').Whenable<infer U>
+ *     : Awaited<T> extends import('./types').Vow<infer U>
  *     ? RemoteFunctions<U>                                           // then extract the remotable functions of U
  *     : T extends PromiseLike<infer U>                               // otherwise, if T is a promise
  *     ? Awaited<T>                                                   // then return resolved value T
@@ -409,7 +409,7 @@ export default makeE;
 
 /**
  * @template T
- * @typedef {Awaited<T> extends import('./types').Whenable<infer U> ? Unwrap<U> : Awaited<T>} Unwrap
+ * @typedef {Awaited<T> extends import('./types').Vow<infer U> ? Unwrap<U> : Awaited<T>} Unwrap
  */
 
 /**
@@ -419,7 +419,7 @@ export default makeE;
  *     ? L
  *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
- *     : Awaited<T> extends import('./types').Whenable<infer U>
+ *     : Awaited<T> extends import('./types').Vow<infer U>
  *     ? LocalRecord<U>
  *     : T extends PromiseLike<infer U>
  *     ? Awaited<T>

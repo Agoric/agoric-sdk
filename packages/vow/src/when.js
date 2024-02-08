@@ -1,29 +1,29 @@
 // @ts-check
-import { unwrapPromise, getWhenablePayload, basicE } from './whenable-utils.js';
+import { unwrapPromise, getVowPayload, basicE } from './vow-utils.js';
 
 /**
- * @param {() => import('./types.js').WhenablePromiseKit<any>} makeWhenablePromiseKit
+ * @param {() => import('./types.js').VowPromiseKit<any>} makeVowPromiseKit
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
 export const makeWhen = (
-  makeWhenablePromiseKit,
+  makeVowPromiseKit,
   rejectionMeansRetry = () => false,
 ) => {
   /**
    * @template T
-   * @param {import('./types.js').ERef<T | import('./types.js').Whenable<T>>} specimenP
+   * @param {import('./types.js').ERef<T | import('./types.js').Vow<T>>} specimenP
    */
   const when = specimenP => {
-    /** @type {import('./types.js').WhenablePromiseKit<T>} */
-    const { settler, promise } = makeWhenablePromiseKit();
+    /** @type {import('./types.js').VowPromiseKit<T>} */
+    const { settler, promise } = makeVowPromiseKit();
     // Ensure we have a presence that won't be disconnected later.
     unwrapPromise(specimenP, async (specimen, payload) => {
-      // Shorten the whenable chain without a watcher.
+      // Shorten the vow chain without a watcher.
       await null;
       /** @type {any} */
       let result = specimen;
       while (payload) {
-        result = await basicE(payload.whenableV0)
+        result = await basicE(payload.vowV0)
           .shorten()
           .catch(e => {
             if (rejectionMeansRetry(e)) {
@@ -32,8 +32,8 @@ export const makeWhen = (
             }
             throw e;
           });
-        // Advance to the next whenable.
-        const nextPayload = getWhenablePayload(result);
+        // Advance to the next vow.
+        const nextPayload = getVowPayload(result);
         if (!nextPayload) {
           break;
         }

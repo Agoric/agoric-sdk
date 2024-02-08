@@ -2,7 +2,7 @@
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import { prepareWhenableTools } from '../src/tools.js';
+import { prepareVowTools } from '../src/tools.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -23,7 +23,7 @@ const prepareAckWatcher = (zone, t) => {
 
 const runTests = async t => {
   const zone = makeHeapZone();
-  const { watch, when, makeWhenableKit } = prepareWhenableTools(zone);
+  const { watch, when, makeVowKit } = prepareVowTools(zone);
   const makeAckWatcher = prepareAckWatcher(zone, t);
 
   const packet = harden({ portId: 'port-1', channelId: 'channel-1' });
@@ -34,22 +34,22 @@ const runTests = async t => {
   const connErrorP = Promise.reject(Error('disconnected'));
   t.is(await when(watch(connErrorP, makeAckWatcher(packet))), 'rejected');
 
-  const { whenable, settler } = makeWhenableKit();
-  const connWhenableP = Promise.resolve(whenable);
+  const { vow, settler } = makeVowKit();
+  const connVowP = Promise.resolve(vow);
   settler.resolve('ack');
-  t.is(await when(watch(connWhenableP, makeAckWatcher(packet))), 'fulfilled');
-  t.is(await when(watch(whenable, makeAckWatcher(packet))), 'fulfilled');
+  t.is(await when(watch(connVowP, makeAckWatcher(packet))), 'fulfilled');
+  t.is(await when(watch(vow, makeAckWatcher(packet))), 'fulfilled');
 
-  const { whenable: whenable2, settler: settler2 } = makeWhenableKit();
-  const connWhenable2P = Promise.resolve(whenable2);
-  settler2.resolve(whenable);
-  t.is(await when(watch(connWhenable2P, makeAckWatcher(packet))), 'fulfilled');
+  const { vow: vow2, settler: settler2 } = makeVowKit();
+  const connVow2P = Promise.resolve(vow2);
+  settler2.resolve(vow);
+  t.is(await when(watch(connVow2P, makeAckWatcher(packet))), 'fulfilled');
 
-  const { whenable: whenable3, settler: settler3 } = makeWhenableKit();
-  const connWhenable3P = Promise.resolve(whenable3);
+  const { vow: vow3, settler: settler3 } = makeVowKit();
+  const connVow3P = Promise.resolve(vow3);
   settler3.reject(Error('disco2'));
-  settler3.resolve(whenable2);
-  t.is(await when(watch(connWhenable3P, makeAckWatcher(packet))), 'rejected');
+  settler3.resolve(vow2);
+  t.is(await when(watch(connVow3P, makeAckWatcher(packet))), 'rejected');
 };
 
 test('ack watcher - shim', runTests);
