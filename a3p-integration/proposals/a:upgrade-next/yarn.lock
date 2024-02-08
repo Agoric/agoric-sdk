@@ -5,16 +5,25 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.0.3":
-  version: 0.0.3
-  resolution: "@agoric/synthetic-chain@npm:0.0.3"
+"@agoric/synthetic-chain@npm:^0.0.4-3":
+  version: 0.0.4-3
+  resolution: "@agoric/synthetic-chain@npm:0.0.4-3"
   dependencies:
+    "@endo/zip": "npm:^1.0.0"
     better-sqlite3: "npm:^9.2.2"
+    execa: "npm:^8.0.1"
     tsx: "npm:^3.12.8"
     typescript: "npm:^5.3.3"
   bin:
     synthetic-chain: cli.ts
-  checksum: 72e5196f1697649eb63eae0041b6e59395fd22c69b1be9a2339a861c397d0b7aba868c4d44052c515c1afa63fb192ec3778997567728836a0456e62747462374
+  checksum: e467635d8786137d0b9634f28a57fe490b212994f19e34c6785a6bca5f3a6c74e7ae186db7a70f9ae60177da4131e695117f77b141d3f5b2a2cb2a3d59087f36
+  languageName: node
+  linkType: hard
+
+"@endo/zip@npm:^1.0.0":
+  version: 1.0.1
+  resolution: "@endo/zip@npm:1.0.1"
+  checksum: 1074bdc10287f4c94b3423e130da88f9c6ba09c999483c1164b3eed061350a060d2dbe377cfa3b8d4a86b3f1c3aed5cbf0cdd78ee2bf2cb9b837caa2ebbf712f
   languageName: node
   linkType: hard
 
@@ -960,20 +969,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"execa@npm:^7.2.0":
-  version: 7.2.0
-  resolution: "execa@npm:7.2.0"
+"execa@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "execa@npm:8.0.1"
   dependencies:
     cross-spawn: "npm:^7.0.3"
-    get-stream: "npm:^6.0.1"
-    human-signals: "npm:^4.3.0"
+    get-stream: "npm:^8.0.1"
+    human-signals: "npm:^5.0.0"
     is-stream: "npm:^3.0.0"
     merge-stream: "npm:^2.0.0"
     npm-run-path: "npm:^5.1.0"
     onetime: "npm:^6.0.0"
-    signal-exit: "npm:^3.0.7"
+    signal-exit: "npm:^4.1.0"
     strip-final-newline: "npm:^3.0.0"
-  checksum: 098cd6a1bc26d509e5402c43f4971736450b84d058391820c6f237aeec6436963e006fd8423c9722f148c53da86aa50045929c7278b5522197dff802d10f9885
+  checksum: 2c52d8775f5bf103ce8eec9c7ab3059909ba350a5164744e9947ed14a53f51687c040a250bda833f906d1283aa8803975b84e6c8f7a7c42f99dc8ef80250d1af
   languageName: node
   linkType: hard
 
@@ -1117,10 +1126,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-stream@npm:^6.0.1":
-  version: 6.0.1
-  resolution: "get-stream@npm:6.0.1"
-  checksum: 49825d57d3fd6964228e6200a58169464b8e8970489b3acdc24906c782fb7f01f9f56f8e6653c4a50713771d6658f7cfe051e5eb8c12e334138c9c918b296341
+"get-stream@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "get-stream@npm:8.0.1"
+  checksum: 5c2181e98202b9dae0bb4a849979291043e5892eb40312b47f0c22b9414fc9b28a3b6063d2375705eb24abc41ecf97894d9a51f64ff021511b504477b27b4290
   languageName: node
   linkType: hard
 
@@ -1211,10 +1220,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"human-signals@npm:^4.3.0":
-  version: 4.3.1
-  resolution: "human-signals@npm:4.3.1"
-  checksum: 40498b33fe139f5cc4ef5d2f95eb1803d6318ac1b1c63eaf14eeed5484d26332c828de4a5a05676b6c83d7b9e57727c59addb4b1dea19cb8d71e83689e5b336c
+"human-signals@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "human-signals@npm:5.0.0"
+  checksum: 5a9359073fe17a8b58e5a085e9a39a950366d9f00217c4ff5878bd312e09d80f460536ea6a3f260b5943a01fe55c158d1cea3fc7bee3d0520aeef04f6d915c82
   languageName: node
   linkType: hard
 
@@ -2066,10 +2075,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.0.3"
+    "@agoric/synthetic-chain": "npm:^0.0.4-3"
     ava: "npm:^5.3.1"
-    better-sqlite3: "npm:^9.2.2"
-    execa: "npm:^7.2.0"
   languageName: unknown
   linkType: soft
 
@@ -2132,14 +2139,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"signal-exit@npm:^3.0.7":
-  version: 3.0.7
-  resolution: "signal-exit@npm:3.0.7"
-  checksum: 25d272fa73e146048565e08f3309d5b942c1979a6f4a58a8c59d5fa299728e9c2fcd1a759ec870863b1fd38653670240cd420dad2ad9330c71f36608a6a1c912
-  languageName: node
-  linkType: hard
-
-"signal-exit@npm:^4.0.1":
+"signal-exit@npm:^4.0.1, signal-exit@npm:^4.1.0":
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83

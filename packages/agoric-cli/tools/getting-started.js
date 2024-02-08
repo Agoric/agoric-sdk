@@ -64,7 +64,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env, DEBUG: 'agoric' },
+      env: { ...process.env, DEBUG: 'agoric:debug' },
       detached: true,
       ...opts,
     });

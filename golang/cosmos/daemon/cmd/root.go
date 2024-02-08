@@ -19,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -29,6 +30,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	tmcfg "github.com/tendermint/tendermint/config"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -81,13 +83,20 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
+			customTMConfig := initTendermintConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
 		},
 	}
 
 	initRootCmd(sender, rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
+}
+
+func initTendermintConfig() *tmcfg.Config {
+	cfg := tmcfg.DefaultConfig()
+	// customize config here
+	return cfg
 }
 
 // initAppConfig helps to override default appConfig template and configs.
@@ -122,7 +131,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
 		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
-		AddGenesisAccountCmd(gaia.DefaultNodeHome),
+		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
@@ -156,7 +165,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 const (
 	// FlagSplitVm is the command-line flag for subcommands that can use a
 	// split-process Agoric VM.  The default is to use an embedded VM.
-	FlagSplitVm = "split-vm"
+	FlagSplitVm      = "split-vm"
 	EmbeddedVmEnvVar = "AGD_EMBEDDED_VM"
 )
 
@@ -283,6 +292,10 @@ func (ac appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
+	snapshotOptions := snapshottypes.NewSnapshotOptions(
+		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
+	)
 
 	return gaia.NewAgoricApp(
 		ac.sender,
@@ -299,9 +312,7 @@ func (ac appCreator) newApp(
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 	)
 }
 

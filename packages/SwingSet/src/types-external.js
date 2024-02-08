@@ -60,7 +60,6 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
- * @typedef {import('@agoric/internal/src/upgrade-api.js').DisconnectionObject} DisconnectionObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult

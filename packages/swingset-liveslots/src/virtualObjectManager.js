@@ -1,7 +1,13 @@
 /* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { environmentOptionsListHas } from '@endo/env-options';
+import {
+  assert,
+  throwRedacted as Fail,
+  quote as q,
+  bare as b,
+} from '@endo/errors';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
@@ -22,29 +28,9 @@ import {
  * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
  */
 
-/**
- *
- */
-
 const { hasOwn, defineProperty, getOwnPropertyNames, entries, fromEntries } =
   Object;
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
-
-// See https://github.com/Agoric/agoric-sdk/issues/8005
-// Once agoric-sdk is upgraded to depend on endo post
-// https://github.com/endojs/endo/pull/1606 then remove this
-// definition of `b` and say instead
-// ```js
-//   const { quote: q, base: b } = assert;
-// ```
-const b = index => q(Number(index));
-
-// import { kdebug } from './kdebug.js';
-
-// TODO Use environment-options.js currently in ses/src after factoring it out
-// to a new package.
-const env = (globalThis.process || {}).env || {};
 
 // Turn on to give each exo instance its own toStringTag value which exposes
 // the SwingSet vref.
@@ -53,9 +39,7 @@ const env = (globalThis.process || {}).env || {};
 // confidential object-creation activity, so this must not be something
 // that unprivileged vat code (including unprivileged contracts) can do
 // for themselves.
-const LABEL_INSTANCES = (env.DEBUG || '')
-  .split(':')
-  .includes('label-instances');
+const LABEL_INSTANCES = environmentOptionsListHas('DEBUG', 'label-instances');
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})

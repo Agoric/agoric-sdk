@@ -1,0 +1,546 @@
+diff --git a/node_modules/@endo/patterns/index.d.ts b/node_modules/@endo/patterns/index.d.ts
+index e4eafce..b44325a 100644
+--- a/node_modules/@endo/patterns/index.d.ts
++++ b/node_modules/@endo/patterns/index.d.ts
+@@ -7,5 +7,6 @@ export { isKey, assertKey, assertScalarKey, isCopySet, assertCopySet, makeCopySe
+ export { bagCompare, setCompare, compareKeys, keyLT, keyLTE, keyEQ, keyGTE, keyGT } from "./src/keys/compareKeys.js";
+ export { elementsIsSuperset, elementsIsDisjoint, elementsCompare, elementsUnion, elementsDisjointUnion, elementsIntersection, elementsDisjointSubtract, setIsSuperset, setIsDisjoint, setUnion, setDisjointUnion, setIntersection, setDisjointSubtract } from "./src/keys/merge-set-operators.js";
+ export { bagIsSuperbag, bagUnion, bagIntersection, bagDisjointSubtract } from "./src/keys/merge-bag-operators.js";
+-export { M, getRankCover, isPattern, assertPattern, matches, mustMatch, isAwaitArgGuard, assertAwaitArgGuard, getAwaitArgGuardPayload, isRawGuard, assertRawGuard, assertMethodGuard, getMethodGuardPayload, getInterfaceMethodKeys, assertInterfaceGuard, getInterfaceGuardPayload, kindOf } from "./src/patterns/patternMatchers.js";
++export { M, getRankCover, isPattern, assertPattern, matches, mustMatch, isAwaitArgGuard, assertAwaitArgGuard, isRawGuard, assertRawGuard, assertMethodGuard, assertInterfaceGuard, kindOf } from "./src/patterns/patternMatchers.js";
++export { getAwaitArgGuardPayload, getMethodGuardPayload, getInterfaceGuardPayload, getInterfaceMethodKeys } from "./src/patterns/getGuardPayloads.js";
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/index.js b/node_modules/@endo/patterns/index.js
+index 9dd42f7..b32e6ea 100644
+--- a/node_modules/@endo/patterns/index.js
++++ b/node_modules/@endo/patterns/index.js
+@@ -60,17 +60,20 @@ export {
+   mustMatch,
+   isAwaitArgGuard,
+   assertAwaitArgGuard,
+-  getAwaitArgGuardPayload,
+   isRawGuard,
+   assertRawGuard,
+   assertMethodGuard,
+-  getMethodGuardPayload,
+-  getInterfaceMethodKeys,
+   assertInterfaceGuard,
+-  getInterfaceGuardPayload,
+   kindOf,
+ } from './src/patterns/patternMatchers.js';
+ 
++export {
++  getAwaitArgGuardPayload,
++  getMethodGuardPayload,
++  getInterfaceGuardPayload,
++  getInterfaceMethodKeys,
++} from './src/patterns/getGuardPayloads.js';
++
+ // eslint-disable-next-line import/export
+ export * from './src/types.js';
+ 
+diff --git a/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts
+new file mode 100644
+index 0000000..ba6c674
+--- /dev/null
++++ b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts
+@@ -0,0 +1,5 @@
++export function getAwaitArgGuardPayload(awaitArgGuard: import('./types.js').AwaitArgGuard): import('./types.js').AwaitArgGuardPayload;
++export function getMethodGuardPayload(methodGuard: import('./types.js').MethodGuard): import('./types.js').MethodGuardPayload;
++export function getInterfaceGuardPayload<T extends Record<PropertyKey, import("../types.js").MethodGuard> = Record<PropertyKey, import("../types.js").MethodGuard>>(interfaceGuard: import("./types.js").InterfaceGuard<T>): import("./types.js").InterfaceGuardPayload<T>;
++export function getInterfaceMethodKeys(interfaceGuard: import('./types.js').InterfaceGuard): (string | symbol)[];
++//# sourceMappingURL=getGuardPayloads.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts.map b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts.map
+new file mode 100644
+index 0000000..a17ec75
+--- /dev/null
++++ b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"getGuardPayloads.d.ts","sourceRoot":"","sources":["getGuardPayloads.js"],"names":[],"mappings":"AA+DO,uDAHI,OAAO,YAAY,EAAE,aAAa,GAChC,OAAO,YAAY,EAAE,oBAAoB,CAWrD;AA2EM,mDAHI,OAAO,YAAY,EAAE,WAAW,GAC9B,OAAO,YAAY,EAAE,kBAAkB,CAsCnD;AAyDM,2QAoBN;AASM,uDAHI,OAAO,YAAY,EAAE,cAAc,GACjC,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/src/patterns/getGuardPayloads.js b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.js
+new file mode 100644
+index 0000000..9b3d681
+--- /dev/null
++++ b/node_modules/@endo/patterns/src/patterns/getGuardPayloads.js
+@@ -0,0 +1,281 @@
++import { objectMap } from '@endo/common/object-map.js';
++import {
++  ArgGuardListShape,
++  AwaitArgGuardShape,
++  InterfaceGuardPayloadShape,
++  InterfaceGuardShape,
++  M,
++  MethodGuardPayloadShape,
++  MethodGuardShape,
++  RawGuardShape,
++  SyncValueGuardListShape,
++  SyncValueGuardShape,
++  assertAwaitArgGuard,
++  matches,
++  mustMatch,
++} from './patternMatchers.js';
++import { getCopyMapKeys, makeCopyMap } from '../keys/checkKey.js';
++
++// The get*GuardPayload functions exist to adapt to the worlds both
++// before and after https://github.com/endojs/endo/pull/1712 . When
++// given something that would be the expected guard in either world,
++// it returns a *GuardPayload that is valid in the current world. Thus
++// it helps new consumers of these guards cope with old code that
++// would construct and send these guards.
++
++// Because the main use case for this legacy adaptation is in @endo/exo
++// or packages that depend on it, the tests for this legacy adaptation
++// are found in the @endo/exo `test-legacy-guard-tolerance.js`.
++
++// Unlike LegacyAwaitArgGuardShape, LegacyMethodGuardShape,
++// and LegacyInterfaceGuardShape, there is no need for a
++// LegacyRawGuardShape, because raw guards were introduced at
++// https://github.com/endojs/endo/pull/1831 , which was merged well after
++// https://github.com/endojs/endo/pull/1712 . Thus, there was never a
++// `klass:` form of the raw guard.
++
++// TODO At such a time that we decide we no longer need to support code
++// preceding https://github.com/endojs/endo/pull/1712 or guard data
++// generated by that code, all the adaptation complexity in this file
++// should be deleted.
++
++// TODO manually maintain correspondence with AwaitArgGuardPayloadShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyAwaitArgGuardShape = harden({
++  klass: 'awaitArg',
++  argGuard: M.pattern(),
++});
++
++/**
++ * By using this abstraction rather than accessing the properties directly,
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Note that technically, tolerating the old LegacyAwaitArgGuardShape
++ * is an exploitable bug, in that a record that matches this
++ * shape is also a valid parameter pattern that should allow
++ * an argument that matches that pattern, i.e., a copyRecord argument that
++ * at least contains a `klass: 'awaitArgGuard'` property.
++ *
++ * @param {import('./types.js').AwaitArgGuard} awaitArgGuard
++ * @returns {import('./types.js').AwaitArgGuardPayload}
++ */
++export const getAwaitArgGuardPayload = awaitArgGuard => {
++  if (matches(awaitArgGuard, LegacyAwaitArgGuardShape)) {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    const { klass: _, ...payload } = awaitArgGuard;
++    // @ts-expect-error Legacy adaptor can be ill typed
++    return payload;
++  }
++  assertAwaitArgGuard(awaitArgGuard);
++  return awaitArgGuard.payload;
++};
++harden(getAwaitArgGuardPayload);
++
++// TODO manually maintain correspondence with SyncMethodGuardPayloadShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacySyncMethodGuardShape = M.splitRecord(
++  {
++    klass: 'methodGuard',
++    callKind: 'sync',
++    argGuards: SyncValueGuardListShape,
++    returnGuard: SyncValueGuardShape,
++  },
++  {
++    optionalArgGuards: SyncValueGuardListShape,
++    restArgGuard: SyncValueGuardShape,
++  },
++);
++
++// TODO manually maintain correspondence with ArgGuardShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyArgGuardShape = M.or(
++  RawGuardShape,
++  AwaitArgGuardShape,
++  LegacyAwaitArgGuardShape,
++  M.pattern(),
++);
++// TODO manually maintain correspondence with ArgGuardListShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyArgGuardListShape = M.arrayOf(LegacyArgGuardShape);
++
++// TODO manually maintain correspondence with AsyncMethodGuardPayloadShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyAsyncMethodGuardShape = M.splitRecord(
++  {
++    klass: 'methodGuard',
++    callKind: 'async',
++    argGuards: LegacyArgGuardListShape,
++    returnGuard: SyncValueGuardShape,
++  },
++  {
++    optionalArgGuards: ArgGuardListShape,
++    restArgGuard: SyncValueGuardShape,
++  },
++);
++
++// TODO manually maintain correspondence with MethodGuardPayloadShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyMethodGuardShape = M.or(
++  LegacySyncMethodGuardShape,
++  LegacyAsyncMethodGuardShape,
++);
++
++const adaptLegacyArgGuard = argGuard =>
++  matches(argGuard, LegacyAwaitArgGuardShape)
++    ? M.await(getAwaitArgGuardPayload(argGuard).argGuard)
++    : argGuard;
++
++/**
++ * By using this abstraction rather than accessing the properties directly,
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Unlike LegacyAwaitArgGuardShape, tolerating LegacyMethodGuardShape
++ * does not seem like a currently exploitable bug, because there is not
++ * currently any context where either a methodGuard or a copyRecord would
++ * both be meaningful.
++ *
++ * @param {import('./types.js').MethodGuard} methodGuard
++ * @returns {import('./types.js').MethodGuardPayload}
++ */
++export const getMethodGuardPayload = methodGuard => {
++  if (matches(methodGuard, MethodGuardShape)) {
++    return methodGuard.payload;
++  }
++  mustMatch(methodGuard, LegacyMethodGuardShape, 'legacyMethodGuard');
++  const {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    klass: _,
++    // @ts-expect-error Legacy adaptor can be ill typed
++    callKind,
++    // @ts-expect-error Legacy adaptor can be ill typed
++    returnGuard,
++    // @ts-expect-error Legacy adaptor can be ill typed
++    restArgGuard,
++  } = methodGuard;
++  let {
++    // @ts-expect-error Legacy adaptor can be ill typed
++    argGuards,
++    // @ts-expect-error Legacy adaptor can be ill typed
++    optionalArgGuards,
++  } = methodGuard;
++  if (callKind === 'async') {
++    argGuards = argGuards.map(adaptLegacyArgGuard);
++    optionalArgGuards =
++      optionalArgGuards && optionalArgGuards.map(adaptLegacyArgGuard);
++  }
++  const payload = harden({
++    callKind,
++    argGuards,
++    optionalArgGuards,
++    restArgGuard,
++    returnGuard,
++  });
++  // ensure the adaptation succeeded.
++  mustMatch(payload, MethodGuardPayloadShape, 'internalMethodGuardAdaptor');
++  return payload;
++};
++harden(getMethodGuardPayload);
++
++// TODO manually maintain correspondence with InterfaceGuardPayloadShape
++// because this one needs to be stable and accommodate nested legacy,
++// when that's an issue.
++const LegacyInterfaceGuardShape = M.splitRecord(
++  {
++    klass: 'Interface',
++    interfaceName: M.string(),
++    methodGuards: M.recordOf(
++      M.string(),
++      M.or(MethodGuardShape, LegacyMethodGuardShape),
++    ),
++  },
++  {
++    defaultGuards: M.or(M.undefined(), 'passable', 'raw'),
++    sloppy: M.boolean(),
++    // There is no need to accommodate LegacyMethodGuardShape in
++    // this position, since `symbolMethodGuards happened
++    // after https://github.com/endojs/endo/pull/1712
++    symbolMethodGuards: M.mapOf(M.symbol(), MethodGuardShape),
++  },
++);
++
++const adaptMethodGuard = methodGuard => {
++  if (matches(methodGuard, LegacyMethodGuardShape)) {
++    const {
++      callKind,
++      argGuards,
++      optionalArgGuards = [],
++      restArgGuard = M.any(),
++      returnGuard,
++    } = getMethodGuardPayload(methodGuard);
++    const mCall = callKind === 'sync' ? M.call : M.callWhen;
++    return mCall(...argGuards)
++      .optional(...optionalArgGuards)
++      .rest(restArgGuard)
++      .returns(returnGuard);
++  }
++  return methodGuard;
++};
++
++/**
++ * By using this abstraction rather than accessing the properties directly,
++ * we smooth the transition to https://github.com/endojs/endo/pull/1712,
++ * tolerating both the legacy and current guard shapes.
++ *
++ * Unlike LegacyAwaitArgGuardShape, tolerating LegacyInterfaceGuardShape
++ * does not seem like a currently exploitable bug, because there is not
++ * currently any context where either an interfaceGuard or a copyRecord would
++ * both be meaningful.
++ *
++ * @template {Record<PropertyKey, import('./types.js').MethodGuard>} [T=Record<PropertyKey, import('./types.js').MethodGuard>]
++ * @param {import('./types.js').InterfaceGuard<T>} interfaceGuard
++ * @returns {import('./types.js').InterfaceGuardPayload<T>}
++ */
++export const getInterfaceGuardPayload = interfaceGuard => {
++  if (matches(interfaceGuard, InterfaceGuardShape)) {
++    return interfaceGuard.payload;
++  }
++  mustMatch(interfaceGuard, LegacyInterfaceGuardShape, 'legacyInterfaceGuard');
++  // @ts-expect-error Legacy adaptor can be ill typed
++  // eslint-disable-next-line prefer-const
++  let { klass: _, interfaceName, methodGuards, ...rest } = interfaceGuard;
++  methodGuards = objectMap(methodGuards, adaptMethodGuard);
++  const payload = harden({
++    interfaceName,
++    methodGuards,
++    ...rest,
++  });
++  mustMatch(
++    payload,
++    InterfaceGuardPayloadShape,
++    'internalInterfaceGuardAdaptor',
++  );
++  return payload;
++};
++harden(getInterfaceGuardPayload);
++
++const emptyCopyMap = makeCopyMap([]);
++
++/**
++ * @param {import('./types.js').InterfaceGuard} interfaceGuard
++ * @returns {(string | symbol)[]}
++ */
++export const getInterfaceMethodKeys = interfaceGuard => {
++  const { methodGuards, symbolMethodGuards = emptyCopyMap } =
++    getInterfaceGuardPayload(interfaceGuard);
++  /** @type {(string | symbol)[]} */
++  // TODO at-ts-expect-error works locally but not from @endo/exo
++  // @ts-ignore inference is too weak to see this is ok
++  return harden([
++    ...Reflect.ownKeys(methodGuards),
++    ...getCopyMapKeys(symbolMethodGuards),
++  ]);
++};
++harden(getInterfaceMethodKeys);
+diff --git a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts
+index 1856e0d..4ff7185 100644
+--- a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts
++++ b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts
+@@ -17,14 +17,19 @@ export const isPattern: (patt: any) => boolean;
+ export const getRankCover: import("../types.js").GetRankCover;
+ export const M: import("../types.js").MatcherNamespace;
+ export const kindOf: (specimen: any, check?: import("@endo/marshal").Checker | undefined) => import("./types.js").Kind | undefined;
++export const AwaitArgGuardShape: import("../types.js").Matcher;
+ export function isAwaitArgGuard(specimen: any): specimen is import("../types.js").AwaitArgGuard;
+ export function assertAwaitArgGuard(specimen: any): asserts specimen is import("../types.js").AwaitArgGuard;
+-export function getAwaitArgGuardPayload(awaitArgGuard: import('./types.js').AwaitArgGuard): import('./types.js').AwaitArgGuardPayload;
++export const RawGuardShape: import("../types.js").Matcher;
+ export function isRawGuard(specimen: any): boolean;
+ export function assertRawGuard(specimen: any): void;
++export const SyncValueGuardShape: import("../types.js").Matcher;
++export const SyncValueGuardListShape: import("../types.js").Matcher;
++export const ArgGuardListShape: import("../types.js").Matcher;
++export const MethodGuardPayloadShape: import("../types.js").Matcher;
++export const MethodGuardShape: import("../types.js").Matcher;
+ export function assertMethodGuard(specimen: any): asserts specimen is import("../types.js").MethodGuard;
+-export function getMethodGuardPayload(methodGuard: import('./types.js').MethodGuard): import('./types.js').MethodGuardPayload;
++export const InterfaceGuardPayloadShape: import("../types.js").Matcher;
++export const InterfaceGuardShape: import("../types.js").Matcher;
+ export function assertInterfaceGuard(specimen: any): asserts specimen is import("./types.js").InterfaceGuard<Record<PropertyKey, import("../types.js").MethodGuard>>;
+-export function getInterfaceGuardPayload<T extends Record<PropertyKey, import("../types.js").MethodGuard> = Record<PropertyKey, import("../types.js").MethodGuard>>(interfaceGuard: import("./types.js").InterfaceGuard<T>): import("./types.js").InterfaceGuardPayload<T>;
+-export function getInterfaceMethodKeys(interfaceGuard: import('./types.js').InterfaceGuard): (string | symbol)[];
+ //# sourceMappingURL=patternMatchers.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
+index 5c73cc2..0de80e3 100644
+--- a/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
++++ b/node_modules/@endo/patterns/src/patterns/patternMatchers.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;AAktDO,0CAHI,GAAG,mDAIyB;AAOhC,8CAHI,GAAG,2DAKb;AAUM,uDAHI,OAAO,YAAY,EAAE,aAAa,GAChC,OAAO,YAAY,EAAE,oBAAoB,CAKrD;AAsBM,mDAA+D;AAE/D,oDACyC;AA4CzC,4CAHI,GAAG,yDAKb;AAUM,mDAHI,OAAO,YAAY,EAAE,WAAW,GAC9B,OAAO,YAAY,EAAE,kBAAkB,CAKnD;AAiEM,+CAHI,GAAG,mHAKb;AAWM,2QAGN;AASM,uDAHI,OAAO,YAAY,EAAE,cAAc,GACjC,CAAC,MAAM,GAAG,MAAM,CAAC,EAAE,CAY/B"}
+\ No newline at end of file
++{"version":3,"file":"patternMatchers.d.ts","sourceRoot":"","sources":["patternMatchers.js"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;AA2sDA,+DAAgE;AAMzD,0CAHI,GAAG,mDAIyB;AAOhC,8CAHI,GAAG,2DAKb;AAoBD,0DAAsD;AAE/C,mDAA+D;AAE/D,oDACyC;AAUhD,gEAAoE;AAEpE,oEAAsE;AAGtE,8DAA0D;AAkB1D,oEAGE;AAEF,6DAA4D;AAMrD,4CAHI,GAAG,yDAKb;AA+CD,uEAUE;AAEF,gEAAkE;AAM3D,+CAHI,GAAG,mHAKb"}
+\ No newline at end of file
+diff --git a/node_modules/@endo/patterns/src/patterns/patternMatchers.js b/node_modules/@endo/patterns/src/patterns/patternMatchers.js
+index 55bb8de..db77c8c 100644
+--- a/node_modules/@endo/patterns/src/patterns/patternMatchers.js
++++ b/node_modules/@endo/patterns/src/patterns/patternMatchers.js
+@@ -30,7 +30,6 @@ import {
+   checkCopyBag,
+   getCopyMapEntryArray,
+   makeCopyMap,
+-  getCopyMapKeys,
+ } from '../keys/checkKey.js';
+ import { generateCollectionPairEntries } from '../keys/keycollection-operators.js';
+ 
+@@ -1738,7 +1737,7 @@ const AwaitArgGuardPayloadShape = harden({
+   argGuard: M.pattern(),
+ });
+ 
+-const AwaitArgGuardShape = M.kind('guard:awaitArgGuard');
++export const AwaitArgGuardShape = M.kind('guard:awaitArgGuard');
+ 
+ /**
+  * @param {any} specimen
+@@ -1757,19 +1756,6 @@ export const assertAwaitArgGuard = specimen => {
+ };
+ harden(assertAwaitArgGuard);
+ 
+-/**
+- * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
+- *
+- * @param {import('./types.js').AwaitArgGuard} awaitArgGuard
+- * @returns {import('./types.js').AwaitArgGuardPayload}
+- */
+-export const getAwaitArgGuardPayload = awaitArgGuard => {
+-  assertAwaitArgGuard(awaitArgGuard);
+-  return awaitArgGuard.payload;
+-};
+-harden(getAwaitArgGuardPayload);
+-
+ /**
+  * @param {import('./types.js').Pattern} argPattern
+  * @returns {import('./types.js').AwaitArgGuard}
+@@ -1787,7 +1773,7 @@ const makeAwaitArgGuard = argPattern => {
+ 
+ const RawGuardPayloadShape = M.record();
+ 
+-const RawGuardShape = M.kind('guard:rawGuard');
++export const RawGuardShape = M.kind('guard:rawGuard');
+ 
+ export const isRawGuard = specimen => matches(specimen, RawGuardShape);
+ 
+@@ -1802,12 +1788,12 @@ const makeRawGuard = () => makeTagged('guard:rawGuard', {});
+ // M.call(...)
+ // M.callWhen(...)
+ 
+-const SyncValueGuardShape = M.or(RawGuardShape, M.pattern());
++export const SyncValueGuardShape = M.or(RawGuardShape, M.pattern());
+ 
+-const SyncValueGuardListShape = M.arrayOf(SyncValueGuardShape);
++export const SyncValueGuardListShape = M.arrayOf(SyncValueGuardShape);
+ 
+ const ArgGuardShape = M.or(RawGuardShape, AwaitArgGuardShape, M.pattern());
+-const ArgGuardListShape = M.arrayOf(ArgGuardShape);
++export const ArgGuardListShape = M.arrayOf(ArgGuardShape);
+ 
+ const SyncMethodGuardPayloadShape = harden({
+   callKind: 'sync',
+@@ -1825,12 +1811,12 @@ const AsyncMethodGuardPayloadShape = harden({
+   returnGuard: SyncValueGuardShape,
+ });
+ 
+-const MethodGuardPayloadShape = M.or(
++export const MethodGuardPayloadShape = M.or(
+   SyncMethodGuardPayloadShape,
+   AsyncMethodGuardPayloadShape,
+ );
+ 
+-const MethodGuardShape = M.kind('guard:methodGuard');
++export const MethodGuardShape = M.kind('guard:methodGuard');
+ 
+ /**
+  * @param {any} specimen
+@@ -1841,19 +1827,6 @@ export const assertMethodGuard = specimen => {
+ };
+ harden(assertMethodGuard);
+ 
+-/**
+- * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
+- *
+- * @param {import('./types.js').MethodGuard} methodGuard
+- * @returns {import('./types.js').MethodGuardPayload}
+- */
+-export const getMethodGuardPayload = methodGuard => {
+-  assertMethodGuard(methodGuard);
+-  return methodGuard.payload;
+-};
+-harden(getMethodGuardPayload);
+-
+ /**
+  * @param {'sync'|'async'} callKind
+  * @param {import('./types.js').ArgGuard[]} argGuards
+@@ -1898,7 +1871,7 @@ const makeMethodGuardMaker = (
+     },
+   });
+ 
+-const InterfaceGuardPayloadShape = M.splitRecord(
++export const InterfaceGuardPayloadShape = M.splitRecord(
+   {
+     interfaceName: M.string(),
+     methodGuards: M.recordOf(M.string(), MethodGuardShape),
+@@ -1910,7 +1883,7 @@ const InterfaceGuardPayloadShape = M.splitRecord(
+   },
+ );
+ 
+-const InterfaceGuardShape = M.kind('guard:interfaceGuard');
++export const InterfaceGuardShape = M.kind('guard:interfaceGuard');
+ 
+ /**
+  * @param {any} specimen
+@@ -1921,39 +1894,6 @@ export const assertInterfaceGuard = specimen => {
+ };
+ harden(assertInterfaceGuard);
+ 
+-/**
+- * By using this abstraction rather than accessing the properties directly,
+- * we smooth the transition to https://github.com/endojs/endo/pull/1712
+- *
+- * @template {Record<PropertyKey, import('./types.js').MethodGuard>} [T=Record<PropertyKey, import('./types.js').MethodGuard>]
+- * @param {import('./types.js').InterfaceGuard<T>} interfaceGuard
+- * @returns {import('./types.js').InterfaceGuardPayload<T>}
+- */
+-export const getInterfaceGuardPayload = interfaceGuard => {
+-  assertInterfaceGuard(interfaceGuard);
+-  return interfaceGuard.payload;
+-};
+-harden(getInterfaceGuardPayload);
+-
+-const emptyCopyMap = makeCopyMap([]);
+-
+-/**
+- * @param {import('./types.js').InterfaceGuard} interfaceGuard
+- * @returns {(string | symbol)[]}
+- */
+-export const getInterfaceMethodKeys = interfaceGuard => {
+-  const { methodGuards, symbolMethodGuards = emptyCopyMap } =
+-    getInterfaceGuardPayload(interfaceGuard);
+-  /** @type {(string | symbol)[]} */
+-  // TODO at-ts-expect-error works locally but not from @endo/exo
+-  // @ts-ignore inference is too weak to see this is ok
+-  return harden([
+-    ...Reflect.ownKeys(methodGuards),
+-    ...getCopyMapKeys(symbolMethodGuards),
+-  ]);
+-};
+-harden(getInterfaceMethodKeys);
+-
+ /**
+  * @template {Record<PropertyKey, import('./types.js').MethodGuard>} [M = Record<PropertyKey, import('./types.js').MethodGuard>]
+  * @param {string} interfaceName
