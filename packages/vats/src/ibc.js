@@ -72,7 +72,7 @@ const prepareAckWatcher = zone => {
  * @property {Counterparty} counterparty
  * @property {string} version
  *
- * @typedef {import('@agoric/whenable').WhenableKit<AttemptDescription>} OnConnectP
+ * @typedef {import('@agoric/vow').VowKit<AttemptDescription>} OnConnectP
  *
  * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
  *   localAddr: Endpoint;
@@ -132,7 +132,7 @@ export const prepareIBCConnectionHandler = zone => {
        * @param {ConnectionHandler} _handler
        * @param {object} root0
        * @param {bigint} [root0.relativeTimeoutNs]
-       * @returns {PromiseWhenable<Bytes>} Acknowledgement data
+       * @returns {PromiseVow<Bytes>} Acknowledgement data
        */
       async onReceive(
         _conn,
@@ -179,9 +179,9 @@ export const prepareIBCConnectionHandler = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
+export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
   const makeAckWatcher = prepareAckWatcher(zone);
   const makeIBCConnectionHandler = prepareIBCConnectionHandler(zone);
 
@@ -229,17 +229,12 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
       /**
        * @type {MapStore<
        *   string,
-       *   MapStore<number, import('@agoric/whenable').WhenableKit<Bytes>>
+       *   MapStore<number, import('@agoric/vow').VowKit<Bytes>>
        * >}
        */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
-      /**
-       * @type {MapStore<
-       *   string,
-       *   SetStore<import('@agoric/whenable').Settler>
-       * >}
-       */
+      /** @type {MapStore<string, SetStore<import('@agoric/vow').Settler>>} */
       const portToPendingConns = detached.mapStore('portToPendingConns');
 
       return {
@@ -319,7 +314,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
           const order = match[3] === 'ordered' ? 'ORDERED' : 'UNORDERED';
           const version = match[4];
 
-          const kit = makeWhenableKit();
+          const kit = makeVowKit();
 
           pendingConns.add(kit.settler);
           /** @type {Outbound} */
@@ -349,7 +344,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
             version,
           });
 
-          return kit.whenable;
+          return kit.vow;
         },
         async onListen(_port, localAddr, _listenHandler) {
           console.debug('IBC onListen', localAddr);
@@ -400,10 +395,10 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
               //   );
 
               const attempt = await when(
-                /** @type {ProtocolImpl} */ (this.state.protocolImpl).inbound(
-                  localAddr,
-                  remoteAddr,
-                ),
+                /** @type {ProtocolImpl} */(this.state.protocolImpl).inbound(
+                localAddr,
+                remoteAddr,
+              ),
               );
 
               // Tell what version string we negotiated.
@@ -628,7 +623,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
          *
          * @param {IBCPacket} packet
          * @param {bigint} [relativeTimeoutNs]
-         * @returns {PromiseWhenable<Bytes>} Acknowledgement data
+         * @returns {PromiseVow<Bytes>} Acknowledgement data
          */
         async ibcSendPacket(
           packet,
@@ -647,13 +642,13 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
             source_port: portID,
           } = fullPacket;
 
-          /** @type {import('@agoric/whenable').WhenableKit<Bytes>} */
-          const { whenable } = this.facets.util.findAckKit(
+          /** @type {import('@agoric/vow').VowKit<Bytes>} */
+          const { vow } = this.facets.util.findAckKit(
             channelID,
             portID,
             sequence,
           );
-          return whenable;
+          return vow;
         },
         /** @param {string} localAddr */
         localAddrToPortID(localAddr) {
@@ -672,7 +667,7 @@ export const prepareIBCProtocol = (zone, { makeWhenableKit, watch, when }) => {
           if (seqToAck.has(sequence)) {
             return seqToAck.get(sequence);
           }
-          const kit = makeWhenableKit();
+          const kit = makeVowKit();
           seqToAck.init(sequence, harden(kit));
           return kit;
         },

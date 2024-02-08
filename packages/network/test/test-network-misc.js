@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import {
@@ -113,8 +113,8 @@ const provideBaggage = key => {
 
 test('handled protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
-  const powers = prepareWhenableModule(zone);
-  const { makeWhenableKit, when } = powers;
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
@@ -127,7 +127,7 @@ test('handled protocol', async t => {
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
 
-  const { whenable, settler } = makeWhenableKit();
+  const { vow, settler } = makeVowKit();
 
   const prepareTestProtocolHandler = () => {
     const makeTestProtocolHandler = zone.exoClass(
@@ -160,14 +160,14 @@ test('handled protocol', async t => {
   const makeTestProtocolHandler = prepareTestProtocolHandler();
 
   await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
-  await when(whenable);
+  await when(vow);
   port.revoke();
 });
 
 test('protocol connection listen', async t => {
   const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
-  const powers = prepareWhenableModule(zone);
-  const { makeWhenableKit, when } = powers;
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
@@ -179,7 +179,7 @@ test('protocol connection listen', async t => {
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
-  const { whenable, settler } = makeWhenableKit();
+  const { vow, settler } = makeVowKit();
 
   const prepareConnectionHandler = () => {
     let handler;
@@ -299,7 +299,7 @@ test('protocol connection listen', async t => {
     port2.connect('/net/ordered/ordered/some-portname', makeHandlerWithOpen()),
   );
 
-  await when(whenable);
+  await when(vow);
 
   await when(port.removeListener(listener));
   await when(port.revoke());
@@ -307,15 +307,15 @@ test('protocol connection listen', async t => {
 
 test('loopback protocol', async t => {
   const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
-  const powers = prepareWhenableModule(zone);
-  const { makeWhenableKit, when } = powers;
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     when,
   );
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
-  const { whenable, settler } = makeWhenableKit();
+  const { vow, settler } = makeVowKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
 
@@ -381,7 +381,7 @@ test('loopback protocol', async t => {
     port2.connect(port.getLocalAddress(), makeOpenerHandler({ settler })),
   );
 
-  await when(whenable);
+  await when(vow);
 
   await port.removeListener(listener);
 });

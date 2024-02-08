@@ -57,7 +57,7 @@ export function getPrefixes(addr) {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
 const prepareHalfConnection = (zone, { when }) => {
   const makeHalfConnection = zone.exoClass(
@@ -180,7 +180,7 @@ export const crossoverConnection = (
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
- * @param {import('@agoric/whenable').When} when
+ * @param {import('@agoric/vow').When} when
  */
 const prepareInboundAttempt = (zone, makeConnection, when) => {
   const makeInboundAttempt = zone.exoClass(
@@ -299,7 +299,7 @@ const RevokeState = /** @type {const} */ ({
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {import('@agoric/whenable').When} when
+ * @param {import('@agoric/vow').When} when
  */
 const preparePort = (zone, when) => {
   const makePort = zone.exoClass(
@@ -449,7 +449,7 @@ const preparePort = (zone, when) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
 const prepareBinder = (zone, powers) => {
   const makeConnection = prepareHalfConnection(zone, powers);
@@ -661,7 +661,7 @@ const prepareBinder = (zone, powers) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
 export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinderKit = prepareBinder(zone, powers);
@@ -757,7 +757,7 @@ export const prepareEchoConnectionKit = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('@agoric/whenable').When} when
+ * @param {import('@agoric/vow').When} when
  */
 export function prepareLoopbackProtocolHandler(zone, when) {
   const detached = zone.detached();

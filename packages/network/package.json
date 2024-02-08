@@ -24,7 +24,7 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/store": "^0.9.2",
-    "@agoric/whenable": "^0.1.0",
+    "@agoric/vat-data": "^0.5.2",
     "@endo/base64": "^1.0.1",
     "@endo/far": "^1.0.2",
     "@endo/promise-kit": "^1.0.2"

@@ -1,4 +1,4 @@
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makePegasus } from './pegasus.js';
 
@@ -16,7 +16,7 @@ export const start = (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const whenZone = zone.subZone('when');
-  const { when } = prepareWhenableModule(whenZone);
+  const { when } = prepareVowTools(whenZone);
 
   const { board, namesByAddress } = privateArgs;
 

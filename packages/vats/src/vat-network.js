@@ -5,12 +5,12 @@ import {
   prepareLoopbackProtocolHandler,
   prepareRouterProtocol,
 } from '@agoric/network';
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _args, baggage) {
   const zone = makeDurableZone(baggage);
-  const powers = prepareWhenableModule(zone.subZone('whenable'));
+  const powers = prepareVowTools(zone.subZone('vow'));
   const { when } = powers;
   const makeRouterProtocol = prepareRouterProtocol(
     zone.subZone('network'),

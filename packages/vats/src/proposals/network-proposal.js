@@ -1,6 +1,6 @@
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeHeapZone } from '@agoric/zone';
 
@@ -123,9 +123,9 @@ export const setupNetworkProtocols = async (
   // ibc-port etc.
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
-  // Heap-based whenable resolution is used for this module because the
+  // Heap-based vow resolution is used for this module because the
   // bootstrap vat can't yet be upgraded.
-  const powers = prepareWhenableModule(makeHeapZone());
+  const powers = prepareVowTools(makeHeapZone());
 
   const { when } = powers;
   // Add an echo listener on our ibc-port network (whether real or virtual).

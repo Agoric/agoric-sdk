@@ -85,7 +85,7 @@ export const prepareRouter = zone => {
 
 /**
  * @typedef {object} RouterProtocol
- * @property {(prefix: string) => PromiseWhenable<Port>} bind
+ * @property {(prefix: string) => PromiseVow<Port>} bind
  * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
@@ -94,7 +94,7 @@ export const prepareRouter = zone => {
  * Create a router that behaves like a Protocol.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/whenable').prepareWhenableModule>} powers
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  * @param {typeof defaultE} [E] Eventual sender
  */
 export const prepareRouterProtocol = (zone, powers, E = defaultE) => {

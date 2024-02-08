@@ -13,7 +13,7 @@ import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -41,8 +41,8 @@ async function testRemotePeg(t) {
   t.plan(24);
 
   const zone = makeHeapZone();
-  const powers = prepareWhenableModule(zone);
-  const { makeWhenableKit, when } = powers;
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -111,7 +111,7 @@ async function testRemotePeg(t) {
               gaiaConnection = c;
             },
             async onReceive(_c, packetBytes) {
-              const { settler, whenable } = makeWhenableKit();
+              const { settler, vow } = makeVowKit();
               const packet = JSON.parse(packetBytes);
               if (packet.memo) {
                 t.deepEqual(
@@ -140,7 +140,7 @@ async function testRemotePeg(t) {
                 );
                 settler.resolve(JSON.stringify({ result: 'AQ==' }));
               }
-              return whenable;
+              return vow;
             },
           });
         },

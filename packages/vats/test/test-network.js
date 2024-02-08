@@ -8,7 +8,7 @@ import {
   subscribeEach,
 } from '@agoric/notifier';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareWhenableModule } from '@agoric/whenable';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
@@ -23,7 +23,7 @@ const provideBaggage = key => {
   return zone.mapStore(`${key} baggage`);
 };
 
-const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }, log) => {
+const preparePlusOneConnectionHandler = (zone, { makeVowKit }, log) => {
   const makePlusOneConnectionHandler = zone.exoClass(
     'plusOne',
     undefined,
@@ -35,9 +35,9 @@ const preparePlusOneConnectionHandler = (zone, { makeWhenableKit }, log) => {
     {
       async onReceive(_c, packetBytes) {
         log('Receiving Data', packetBytes);
-        const { whenable, settler } = makeWhenableKit();
+        const { vow, settler } = makeVowKit();
         settler.resolve(`${packetBytes}1`);
-        return whenable;
+        return vow;
       },
       async onOpen(_c, localAddr, remoteAddr, _connectionHandler) {
         this.state.publisher.publish([
@@ -80,7 +80,7 @@ test('network - ibc', async t => {
   const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
   const baggage = provideBaggage('network - ibc');
   const zone = makeDurableZone(baggage);
-  const powers = prepareWhenableModule(zone);
+  const powers = prepareVowTools(zone);
   const { when } = powers;
 
   const makeDurablePublishKit = prepareDurablePublishKit(
