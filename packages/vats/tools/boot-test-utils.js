@@ -31,7 +31,7 @@ export const vatRoots = {
   zoe: zoeRoot,
 };
 
-export const noop = () => {};
+export const noop = () => { };
 
 /** @type {DProxy} */
 export const mockDProxy = d => d;
@@ -73,6 +73,7 @@ export const makeMock = log =>
 
       network: Far('network', {
         registerProtocolHandler: noop,
+        makeLoopbackProtocolHandler: noop,
         bind: () => Far('network - listener', { addListener: noop }),
       }),
     },
