@@ -3,7 +3,7 @@ export {};
 
 /**
  * @template T
- * @typedef {PromiseLike<T | Whenable<T>>} PromiseWhenable
+ * @typedef {PromiseLike<T | Vow<T>>} PromiseVow
  */
 
 /**
@@ -22,12 +22,12 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {object} WhenableV0 The first version of the whenable implementation
+ * @typedef {object} VowV0 The first version of the vow implementation
  * object.  CAVEAT: These methods must never be changed or added to, to provide
  * forward/backward compatibility.  Create a new object and bump its version
  * number instead.
  *
- * @property {() => Promise<T>} shorten Attempt to unwrap all whenables in this
+ * @property {() => Promise<T>} shorten Attempt to unwrap all vows in this
  * promise chain, returning a promise for the final value.  A rejection may
  * indicate a temporary routing failure requiring a retry, otherwise that the
  * decider of the terminal promise rejected it.
@@ -35,37 +35,37 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {object} WhenablePayload
- * @property {import('@endo/eventual-send').FarRef<WhenableV0<T>>} whenableV0
+ * @typedef {object} VowPayload
+ * @property {import('@endo/eventual-send').FarRef<VowV0<T>>} vowV0
  */
 
 /**
  * @template [T=any]
  * @typedef {import('@endo/pass-style').CopyTagged<
- *   'Whenable', WhenablePayload<T>
- * >} Whenable
+ *   'Vow', VowPayload<T>
+ * >} Vow
  */
 
 /**
  * @template [T=any]
  * @typedef {{
- *   whenable: Whenable<T>,
+ *   vow: Vow<T>,
  *   settler: Settler<T>,
- * }} WhenableKit
+ * }} VowKit
  */
 
 /**
  * @template [T=any]
  * @typedef {{
- *   whenable: Whenable<T>,
+ *   vow: Vow<T>,
  *   settler: Settler<T>,
  *   promise: Promise<T>
- * }} WhenablePromiseKit
+ * }} VowPromiseKit
  */
 
 /**
  * @template [T=any]
- * @typedef {{ resolve(value?: T | PromiseWhenable<T>): void, reject(reason?: any): void }} Settler
+ * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} Settler
  */
 
 /**
@@ -73,6 +73,6 @@ export {};
  * @template [TResult1=T]
  * @template [TResult2=T]
  * @typedef {object} Watcher
- * @property {(value: T) => Whenable<TResult1> | PromiseWhenable<TResult1> | TResult1} [onFulfilled]
- * @property {(reason: any) => Whenable<TResult2> | PromiseWhenable<TResult2> | TResult2} [onRejected]
+ * @property {(value: T) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
+ * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */

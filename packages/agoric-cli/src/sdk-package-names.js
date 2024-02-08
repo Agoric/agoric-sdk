@@ -44,7 +44,7 @@ export default [
   "@agoric/vm-config",
   "@agoric/wallet",
   "@agoric/wallet-backend",
-  "@agoric/whenable",
+  "@agoric/vow",
   "@agoric/xsnap",
   "@agoric/xsnap-lockdown",
   "@agoric/zoe",

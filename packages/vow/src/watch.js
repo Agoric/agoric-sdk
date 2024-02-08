@@ -1,7 +1,7 @@
 // @ts-check
 import { M } from '@endo/patterns';
 
-import { getWhenablePayload, unwrapPromise, basicE } from './whenable-utils.js';
+import { getVowPayload, unwrapPromise, basicE } from './vow-utils.js';
 
 const { Fail } = assert;
 
@@ -62,7 +62,7 @@ const watchPromiseShim = (p, watcher, ...watcherArgs) => {
 /**
  * @param {typeof watchPromiseShim} watchPromise
  */
-const makeWatchWhenable =
+const makeWatchVow =
   watchPromise =>
   /**
    * @param {any} specimen
@@ -70,9 +70,9 @@ const makeWatchWhenable =
    */
   (specimen, promiseWatcher) => {
     let promise;
-    const payload = getWhenablePayload(specimen);
+    const payload = getVowPayload(specimen);
     if (payload) {
-      promise = basicE(payload.whenableV0).shorten();
+      promise = basicE(payload.vowV0).shorten();
     } else {
       promise = basicE.resolve(specimen);
     }
@@ -107,15 +107,15 @@ const settle = (settler, watcher, wcb, value) => {
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {(reason: any) => boolean} rejectionMeansRetry
- * @param {ReturnType<typeof makeWatchWhenable>} watchWhenable
+ * @param {ReturnType<typeof makeWatchVow>} watchVow
  */
-const prepareWatcherKit = (zone, rejectionMeansRetry, watchWhenable) =>
+const prepareWatcherKit = (zone, rejectionMeansRetry, watchVow) =>
   zone.exoClassKit(
     'PromiseWatcher',
     {
       promiseWatcher: PromiseWatcherI,
-      whenableSetter: M.interface('whenableSetter', {
-        setWhenable: M.call(M.any()).returns(),
+      vowSetter: M.interface('vowSetter', {
+        setVow: M.call(M.any()).returns(),
       }),
     },
     /**
@@ -127,27 +127,27 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchWhenable) =>
      */
     (settler, watcher) => {
       const state = {
-        whenable: undefined,
+        vow: undefined,
         settler,
         watcher,
       };
       return /** @type {Partial<typeof state>} */ (state);
     },
     {
-      whenableSetter: {
-        /** @param {any} whenable */
-        setWhenable(whenable) {
-          this.state.whenable = whenable;
+      vowSetter: {
+        /** @param {any} vow */
+        setVow(vow) {
+          this.state.vow = vow;
         },
       },
       promiseWatcher: {
         /** @type {Required<PromiseWatcher>['onFulfilled']} */
         onFulfilled(value) {
           const { watcher, settler } = this.state;
-          if (getWhenablePayload(value)) {
+          if (getVowPayload(value)) {
             // We've been shortened, so reflect our state accordingly, and go again.
-            this.facets.whenableSetter.setWhenable(value);
-            watchWhenable(value, this.facets.promiseWatcher);
+            this.facets.vowSetter.setVow(value);
+            watchVow(value, this.facets.promiseWatcher);
             return undefined;
           }
           this.state.watcher = undefined;
@@ -164,7 +164,7 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchWhenable) =>
         onRejected(reason) {
           const { watcher, settler } = this.state;
           if (rejectionMeansRetry(reason)) {
-            watchWhenable(this.state.whenable, this.facets.promiseWatcher);
+            watchVow(this.state.vow, this.facets.promiseWatcher);
             return;
           }
           this.state.settler = undefined;
@@ -185,49 +185,45 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchWhenable) =>
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {() => import('./types.js').WhenableKit<any>} makeWhenableKit
+ * @param {() => import('./types.js').VowKit<any>} makeVowKit
  * @param {typeof watchPromiseShim} [watchPromise]
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
 export const prepareWatch = (
   zone,
-  makeWhenableKit,
+  makeVowKit,
   watchPromise = watchPromiseShim,
   rejectionMeansRetry = _reason => false,
 ) => {
-  const watchWhenable = makeWatchWhenable(watchPromise);
-  const makeWatcherKit = prepareWatcherKit(
-    zone,
-    rejectionMeansRetry,
-    watchWhenable,
-  );
+  const watchVow = makeWatchVow(watchPromise);
+  const makeWatcherKit = prepareWatcherKit(zone, rejectionMeansRetry, watchVow);
 
   /**
    * @template [T=any]
    * @template [TResult1=T]
    * @template [TResult2=T]
-   * @param {import('./types.js').ERef<T | import('./types.js').Whenable<T>>} specimenP
+   * @param {import('./types.js').ERef<T | import('./types.js').Vow<T>>} specimenP
    * @param {import('./types.js').Watcher<T, TResult1, TResult2>} [watcher]
    */
   const watch = (specimenP, watcher) => {
-    /** @type {import('./types.js').WhenableKit<TResult1 | TResult2>} */
-    const { settler, whenable } = makeWhenableKit();
+    /** @type {import('./types.js').VowKit<TResult1 | TResult2>} */
+    const { settler, vow } = makeVowKit();
 
-    const { promiseWatcher, whenableSetter } = makeWatcherKit(settler, watcher);
+    const { promiseWatcher, vowSetter } = makeWatcherKit(settler, watcher);
 
     // Ensure we have a presence that won't be disconnected later.
     unwrapPromise(specimenP, (specimen, payload) => {
-      whenableSetter.setWhenable(specimen);
+      vowSetter.setVow(specimen);
       // Persistently watch the specimen.
       if (!payload) {
-        // Specimen is not a whenable.
+        // Specimen is not a vow.
         promiseWatcher.onFulfilled(specimen);
         return;
       }
-      watchWhenable(specimen, promiseWatcher);
+      watchVow(specimen, promiseWatcher);
     }).catch(e => promiseWatcher.onRejected(e));
 
-    return whenable;
+    return vow;
   };
   harden(watch);
 

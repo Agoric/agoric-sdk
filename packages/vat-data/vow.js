@@ -1,9 +1,6 @@
 /* global globalThis */
 // @ts-check
-import {
-  makeE,
-  prepareWhenableTools as rawPrepareWhenableTools,
-} from '@agoric/whenable';
+import { makeE, prepareVowTools as rawPrepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
@@ -12,10 +9,10 @@ const vatData = globalThis.VatData;
 
 /**
  * Manually-extracted watchPromise so we don't accidentally get the 'unavailable'
- * version.  If it is `undefined`, `@agoric/whenable` will shim it.
+ * version.  If it is `undefined`, `@agoric/vow` will shim it.
  * @type {undefined | ((
  *   p: Promise<any>,
- *   watcher: import('@agoric/whenable/src/watch.js').PromiseWatcher,
+ *   watcher: import('@agoric/vow/src/watch.js').PromiseWatcher,
  *   ...args: unknown[]
  * ) => void)}
  */
@@ -34,17 +31,15 @@ export const defaultPowers = harden({
 });
 
 /**
- * @type {typeof rawPrepareWhenableTools}
+ * @type {typeof rawPrepareVowTools}
  */
-export const prepareWhenableTools = (zone, powers = {}) =>
-  rawPrepareWhenableTools(zone, { ...defaultPowers, ...powers });
+export const prepareVowTools = (zone, powers = {}) =>
+  rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
 
-export const { watch, when, makeWhenableKit } = prepareWhenableTools(
-  makeHeapZone(),
-);
+export const { watch, when, makeVowKit } = prepareVowTools(makeHeapZone());
 
 /**
- * An whenable-shortening E.  CAVEAT: This produces long-lived ephemeral
+ * An vow-shortening E.  CAVEAT: This produces long-lived ephemeral
  * promises that encapsulate the shortening behaviour, and so provides no way
  * for `watch` to durably shorten.  Use the standard `import('@endo/far').E` if
  * you need to `watch` its resulting promises.
