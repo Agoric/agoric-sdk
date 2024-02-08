@@ -834,6 +834,8 @@ func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 		CoreProposalSteps := []vm.CoreProposalStep{
 			// First, upgrade wallet factory
 			vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
+			// Then, upgrade Zoe and ZCF
+			vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
 		}
 
 		app.upgradeDetails = &upgradeDetails{
