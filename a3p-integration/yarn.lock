@@ -5,22 +5,23 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.0.4-3":
-  version: 0.0.4-3
-  resolution: "@agoric/synthetic-chain@npm:0.0.4-3"
+"@agoric/synthetic-chain@npm:^0.0.5-2":
+  version: 0.0.5-2
+  resolution: "@agoric/synthetic-chain@npm:0.0.5-2"
   dependencies:
-    "@endo/zip": "npm:^1.0.0"
-    better-sqlite3: "npm:^9.2.2"
+    "@endo/zip": "npm:^1.0.1"
+    better-sqlite3: "npm:^9.4.0"
+    chalk: "npm:^5.3.0"
     execa: "npm:^8.0.1"
-    tsx: "npm:^3.12.8"
+    tsx: "npm:^3.14.0"
     typescript: "npm:^5.3.3"
   bin:
     synthetic-chain: cli.ts
-  checksum: e467635d8786137d0b9634f28a57fe490b212994f19e34c6785a6bca5f3a6c74e7ae186db7a70f9ae60177da4131e695117f77b141d3f5b2a2cb2a3d59087f36
+  checksum: a4b5caa6fdf6d0f78a99392e7ee198eec4be2e284bd1ea5a02d38d197105f05f918a9448616ca1f2fde72173550d04d30900c486af8ffe166a704c1bdaee69f7
   languageName: node
   linkType: hard
 
-"@endo/zip@npm:^1.0.0":
+"@endo/zip@npm:^1.0.1":
   version: 1.0.1
   resolution: "@endo/zip@npm:1.0.1"
   checksum: 1074bdc10287f4c94b3423e130da88f9c6ba09c999483c1164b3eed061350a060d2dbe377cfa3b8d4a86b3f1c3aed5cbf0cdd78ee2bf2cb9b837caa2ebbf712f
@@ -455,14 +456,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^9.2.2":
-  version: 9.3.0
-  resolution: "better-sqlite3@npm:9.3.0"
+"better-sqlite3@npm:^9.4.0":
+  version: 9.4.0
+  resolution: "better-sqlite3@npm:9.4.0"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 08943620079dd3f7de7e12a7cb63b9a6ca5b399ca3e06363f120b2589c86cadef2eca56558243bfaf930fb28b4d956ab0b3910bc8b09a35276670efe7b7c516c
+  checksum: 42b2edfa46d62763514b87122245a3513a5ff20f05fef4fb49fec33f3de0a51a29025596178f57c634b8013f16bbdf8169a308fb3e3b8d126d715788d72d1e74
   languageName: node
   linkType: hard
 
@@ -529,6 +530,13 @@ __metadata:
     tar: "npm:^6.1.11"
     unique-filename: "npm:^3.0.0"
   checksum: 7992665305cc251a984f4fdbab1449d50e88c635bc43bf2785530c61d239c61b349e5734461baa461caaee65f040ab14e2d58e694f479c0810cffd181ba5eabc
+  languageName: node
+  linkType: hard
+
+"chalk@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "chalk@npm:5.3.0"
+  checksum: 8297d436b2c0f95801103ff2ef67268d362021b8210daf8ddbe349695333eb3610a71122172ff3b0272f1ef2cf7cc2c41fdaa4715f52e49ffe04c56340feed09
   languageName: node
   linkType: hard
 
@@ -1480,7 +1488,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.0.4-3"
+    "@agoric/synthetic-chain": "npm:^0.0.5-2"
     tsx: "npm:^4.7.0"
   languageName: unknown
   linkType: soft
@@ -1707,7 +1715,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^3.12.8":
+"tsx@npm:^3.14.0":
   version: 3.14.0
   resolution: "tsx@npm:3.14.0"
   dependencies:
