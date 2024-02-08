@@ -57,13 +57,18 @@ const makeDurableZoeKit = ({
   let zcfBundleCap;
 
   const saveBundleCap = () => {
-    E.when(
+    void E.when(
       Promise.all([vatAdminSvc, getZcfBundleCap(zcfSpec, vatAdminSvc)]),
       ([vatAdminService, bundleCap]) => {
         zcfBundleCap = bundleCap;
 
-        zoeBaggage.init('vatAdminSvc', vatAdminService);
-        zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        if (!zoeBaggage.has('vatAdminSvc')) {
+          zoeBaggage.init('vatAdminSvc', vatAdminService);
+          zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        } else {
+          zoeBaggage.set('vatAdminSvc', vatAdminService);
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
+        }
       },
     );
   };
@@ -176,13 +181,14 @@ const makeDurableZoeKit = ({
 
   const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
     updateZcfBundleId(bundleId) {
-      E.when(
+      void E.when(
         getZcfBundleCap({ id: bundleId }, vatAdminSvc),
         bundleCap => {
           zcfBundleCap = bundleCap;
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
         },
         e => {
-          console.error(`'🚨 unable to update ZCF Bundle: `, e);
+          console.error('🚨 unable to update ZCF Bundle: ', e);
           throw e;
         },
       );
