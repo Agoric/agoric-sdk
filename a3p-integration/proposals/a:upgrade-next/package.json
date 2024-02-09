@@ -13,11 +13,11 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.0.4-3",
+    "@agoric/synthetic-chain": "^0.0.5-3",
     "ava": "^5.3.1"
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.0.2"
+  "packageManager": "yarn@4.1.0"
 }
