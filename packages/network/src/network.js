@@ -80,10 +80,12 @@ const prepareHalfConnection = (zone, { when }) => {
     },
     {
       getLocalAddress() {
-        return this.state.addrs[this.state.l];
+        const { addrs, l } = this.state;
+        return addrs[l];
       },
       getRemoteAddress() {
-        return this.state.addrs[this.state.r];
+        const { addrs, r } = this.state;
+        return addrs[r];
       },
       /** @param {Data} packetBytes */
       async send(packetBytes) {
@@ -222,25 +224,21 @@ const prepareInboundAttempt = (zone, makeConnection, when) => {
         return this.state.remoteAddr;
       },
       async close() {
-        if (this.state.consummated) {
-          throw this.state.consummated;
+        const { consummated, localAddr, remoteAddr } = this.state;
+        const { listening, listenPrefix, currentConnections } = this.state;
+
+        if (consummated) {
+          throw consummated;
         }
         this.state.consummated = Error(`Already closed`);
 
-        const [port, listener] = this.state.listening.get(
-          this.state.listenPrefix,
-        );
+        const [port, listener] = listening.get(listenPrefix);
 
-        const current = this.state.currentConnections.get(port);
+        const current = currentConnections.get(port);
         current.delete(this.self);
 
         await when(
-          E(listener).onReject(
-            port,
-            this.state.localAddr,
-            this.state.remoteAddr,
-            listener,
-          ),
+          E(listener).onReject(port, localAddr, remoteAddr, listener),
         ).catch(rethrowUnlessMissing);
       },
       /**
@@ -398,48 +396,47 @@ const preparePort = (zone, when) => {
        * @param {ConnectionHandler} connectionHandler
        */
       async connect(remotePort, connectionHandler = {}) {
-        const revoked = this.state.revoked;
+        const { revoked, localAddr, protocolImpl, openConnections } =
+          this.state;
 
-        !revoked || Fail`Port ${this.state.localAddr} is revoked`;
+        !revoked || Fail`Port ${localAddr} is revoked`;
         /** @type {Endpoint} */
         const dst = harden(remotePort);
         // eslint-disable-next-line no-use-before-define
         const conn = await when(
-          this.state.protocolImpl.outbound(this.self, dst, connectionHandler),
+          protocolImpl.outbound(this.self, dst, connectionHandler),
         );
         if (revoked) {
           void E(conn).close();
         } else {
-          this.state.openConnections.add(conn);
+          openConnections.add(conn);
         }
         return conn;
       },
       async revoke() {
-        this.state.revoked !== RevokeState.REVOKED ||
-          Fail`Port ${this.state.localAddr} is already revoked`;
+        const { revoked, localAddr } = this.state;
+        const { protocolHandler, currentConnections, listening, boundPorts } =
+          this.state;
+
+        revoked !== RevokeState.REVOKED ||
+          Fail`Port ${localAddr} is already revoked`;
         this.state.revoked = RevokeState.REVOKING;
         await when(
-          E(this.state.protocolHandler).onRevoke(
-            this.self,
-            this.state.localAddr,
-            this.state.protocolHandler,
-          ),
+          E(protocolHandler).onRevoke(this.self, localAddr, protocolHandler),
         );
         this.state.revoked = RevokeState.REVOKED;
 
         // Clean up everything we did.
-        const values = [
-          ...this.state.currentConnections.get(this.self).values(),
-        ];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
-        if (this.state.listening.has(this.state.localAddr)) {
-          const listener = this.state.listening.get(this.state.localAddr)[1];
+        const values = [...currentConnections.get(this.self).values()];
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
+        if (listening.has(localAddr)) {
+          const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
         }
         await Promise.all(ps);
-        this.state.currentConnections.delete(this.self);
-        this.state.boundPorts.delete(this.state.localAddr);
-        return `Port ${this.state.localAddr} revoked`;
+        currentConnections.delete(this.self);
+        boundPorts.delete(localAddr);
+        return `Port ${localAddr} revoked`;
       },
     },
   );
@@ -490,22 +487,24 @@ const prepareBinder = (zone, powers) => {
          * @param {Endpoint} remoteAddr
          */
         async inbound(listenAddr, remoteAddr) {
+          const { listening, protocolHandler, currentConnections } = this.state;
+
           let lastFailure = Error(`No listeners for ${listenAddr}`);
           for await (const listenPrefix of getPrefixes(listenAddr)) {
-            if (!this.state.listening.has(listenPrefix)) {
+            if (!listening.has(listenPrefix)) {
               continue;
             }
-            const [port, _] = this.state.listening.get(listenPrefix);
+            const [port, _] = listening.get(listenPrefix);
             let localAddr;
 
             await (async () => {
               // See if our protocol is willing to receive this connection.
               const localInstance = await when(
-                E(this.state.protocolHandler).onInstantiate(
+                E(protocolHandler).onInstantiate(
                   port,
                   listenPrefix,
                   remoteAddr,
-                  this.state.protocolHandler,
+                  protocolHandler,
                 ),
               ).catch(rethrowUnlessMissing);
               localAddr = localInstance
@@ -518,13 +517,13 @@ const prepareBinder = (zone, powers) => {
               continue;
             }
             // We have a legitimate inbound attempt.
-            const current = this.state.currentConnections.get(port);
+            const current = currentConnections.get(port);
             const inboundAttempt = makeInboundAttempt({
               localAddr,
               remoteAddr,
-              currentConnections: this.state.currentConnections,
+              currentConnections,
               listenPrefix,
-              listening: this.state.listening,
+              listening,
             });
 
             current.add(inboundAttempt);
@@ -538,15 +537,17 @@ const prepareBinder = (zone, powers) => {
          * @param {ConnectionHandler} lchandler
          */
         async outbound(port, remoteAddr, lchandler) {
+          const { protocolHandler, currentConnections } = this.state;
+
           const localAddr = await E(port).getLocalAddress();
 
           // Allocate a local address.
           const initialLocalInstance = await when(
-            E(this.state.protocolHandler).onInstantiate(
+            E(protocolHandler).onInstantiate(
               port,
               localAddr,
               remoteAddr,
-              this.state.protocolHandler,
+              protocolHandler,
             ),
           ).catch(rethrowUnlessMissing);
           const initialLocalAddr = initialLocalInstance
@@ -576,12 +577,12 @@ const prepareBinder = (zone, powers) => {
             /** @type {Partial<AttemptDescription>} */
             (
               await when(
-                E(this.state.protocolHandler).onConnect(
+                E(protocolHandler).onConnect(
                   port,
                   initialLocalAddr,
                   remoteAddr,
                   lchandler,
-                  this.state.protocolHandler,
+                  protocolHandler,
                 ),
               )
             );
@@ -590,7 +591,7 @@ const prepareBinder = (zone, powers) => {
             throw lastFailure;
           }
 
-          const current = this.state.currentConnections.get(port);
+          const current = currentConnections.get(port);
           return crossoverConnection(
             zone,
             lchandler,
@@ -605,17 +606,22 @@ const prepareBinder = (zone, powers) => {
       binder: {
         /** @param {string} localAddr */
         async bind(localAddr) {
+          const {
+            protocolHandler,
+            boundPorts,
+            listening,
+            openConnections,
+            currentConnections,
+          } = this.state;
+
           // Check if we are underspecified (ends in slash)
           const underspecified = localAddr.endsWith(ENDPOINT_SEPARATOR);
           for await (const _ of whileTrue(() => underspecified)) {
             const portID = await when(
-              E(this.state.protocolHandler).generatePortID(
-                localAddr,
-                this.state.protocolHandler,
-              ),
+              E(protocolHandler).generatePortID(localAddr, protocolHandler),
             );
             const newAddr = `${localAddr}${portID}`;
-            if (!this.state.boundPorts.has(newAddr)) {
+            if (!boundPorts.has(newAddr)) {
               localAddr = newAddr;
               break;
             }
@@ -623,33 +629,26 @@ const prepareBinder = (zone, powers) => {
 
           this.state.localAddr = localAddr;
 
-          if (this.state.boundPorts.has(localAddr)) {
-            return this.state.boundPorts.get(localAddr);
+          if (boundPorts.has(localAddr)) {
+            return boundPorts.get(localAddr);
           }
 
           const port = makePort({
             localAddr,
-            listening: this.state.listening,
-            openConnections: this.state.openConnections,
-            currentConnections: this.state.currentConnections,
-            boundPorts: this.state.boundPorts,
-            protocolHandler: this.state.protocolHandler,
+            listening,
+            openConnections,
+            currentConnections,
+            boundPorts,
+            protocolHandler,
             // @ts-expect-error XXX TODO bind
             protocolImpl: this.facets.protocolImpl,
           });
 
           await when(
-            E(this.state.protocolHandler).onBind(
-              port,
-              localAddr,
-              this.state.protocolHandler,
-            ),
+            E(protocolHandler).onBind(port, localAddr, protocolHandler),
           );
-          this.state.boundPorts.init(localAddr, harden(port));
-          this.state.currentConnections.init(
-            port,
-            detached.setStore('connections'),
-          );
+          boundPorts.init(localAddr, harden(port));
+          currentConnections.init(port, detached.setStore('connections'));
           return port;
         },
       },
@@ -722,8 +721,10 @@ export const prepareEchoConnectionKit = zone => {
          * @param {ConnectionHandler} _connectionHandler
          */
         async onReceive(_connection, bytes, _connectionHandler) {
-          if (this.state.closed) {
-            throw this.state.closed;
+          const { closed } = this.state;
+
+          if (closed) {
+            throw closed;
           }
           return bytes;
         },
@@ -733,9 +734,12 @@ export const prepareEchoConnectionKit = zone => {
          * @param {ConnectionHandler} [_connectionHandler]
          */
         async onClose(_connection, _reason, _connectionHandler) {
-          if (this.state.closed) {
-            throw this.state.closed;
+          const { closed } = this.state;
+
+          if (closed) {
+            throw closed;
           }
+
           this.state.closed = Error('Connection closed');
         },
       },
@@ -795,7 +799,8 @@ export function prepareLoopbackProtocolHandler(zone, when) {
         _chandler,
         protocolHandler,
       ) {
-        const [lport, lhandler] = this.state.listeners.get(remoteAddr);
+        const { listeners } = this.state;
+        const [lport, lhandler] = listeners.get(remoteAddr);
         const rchandler = await when(
           E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler),
         );
@@ -819,15 +824,17 @@ export function prepareLoopbackProtocolHandler(zone, when) {
         return `${instancePrefix}${this.state.instanceNonce}`;
       },
       async onListen(port, localAddr, listenHandler, _protocolHandler) {
+        const { listeners } = this.state;
+
         // TODO: Implement other listener replacement policies.
-        if (this.state.listeners.has(localAddr)) {
-          const lhandler = this.state.listeners.get(localAddr)[1];
+        if (listeners.has(localAddr)) {
+          const lhandler = listeners.get(localAddr)[1];
           if (lhandler !== listenHandler) {
             // Last-one-wins.
-            this.state.listeners.set(localAddr, [port, listenHandler]);
+            listeners.set(localAddr, [port, listenHandler]);
           }
         } else {
-          this.state.listeners.init(localAddr, harden([port, listenHandler]));
+          listeners.init(localAddr, harden([port, listenHandler]));
         }
       },
       /**
@@ -837,11 +844,12 @@ export function prepareLoopbackProtocolHandler(zone, when) {
        * @param {*} _protocolHandler
        */
       async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
-        const [lport, lhandler] = this.state.listeners.get(localAddr);
+        const { listeners } = this.state;
+        const [lport, lhandler] = listeners.get(localAddr);
         lport === port || Fail`Port does not match listener on ${localAddr}`;
         lhandler === listenHandler ||
           Fail`Listen handler does not match listener on ${localAddr}`;
-        this.state.listeners.delete(localAddr);
+        listeners.delete(localAddr);
       },
       async onRevoke(_port, _localAddr, _protocolHandler) {
         // TODO: maybe clean up?
