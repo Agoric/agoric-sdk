@@ -4,7 +4,3 @@
 # The effects of this step are not persisted in further proposal layers.
 
 yarn ava
-
-npm install --global tsx
-
-./testRepairs.ts
