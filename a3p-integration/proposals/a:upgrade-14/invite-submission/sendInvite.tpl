@@ -1,5 +1,4 @@
-// to be replaced before execution
-const addr = 'XX_ADDRESS_XX';
+const addr = ${this.address};
 
 // verify that a pre-existing wallet has an invitation purse that is still monitored
 const sendInvitation = async powers => {
