@@ -602,6 +602,9 @@ const prepareBinder = (zone, powers) => {
             current,
           )[0];
         },
+        async bind(localAddr) {
+          return this.facets.binder.bind(localAddr);
+        },
       },
       binder: {
         /** @param {string} localAddr */
@@ -689,9 +692,8 @@ export const prepareNetworkProtocol = (zone, powers) => {
     });
 
     // Wire up the local protocol to the handler.
-    // @ts-expect-error XXX missing bind. TODO
     void E(protocolHandler).onCreate(protocolImpl, protocolHandler);
-    return harden(binder);
+    return binder;
   };
 
   return makeNetworkProtocol;
