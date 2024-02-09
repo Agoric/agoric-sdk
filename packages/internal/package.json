@@ -35,7 +35,7 @@
   "devDependencies": {
     "@endo/init": "^1.0.2",
     "ava": "^5.3.0",
-    "tsd": "^0.28.1"
+    "tsd": "^0.30.4"
   },
   "ava": {
     "require": [

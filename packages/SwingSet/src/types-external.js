@@ -134,12 +134,14 @@ export {};
  *                                  dynamic?: boolean,
  *                                  description?: string,
  *                                  name?: string,
- *                                  vatSourceBundle?: *,
+ *                                  vatSourceBundle?: unknown,
  *                                  managerType?: string,
- *                                  vatParameters?: *) => VatSlog,
+ *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
- * @typedef { * } VatSlog
+ * @typedef {{
+ *   delivery: (crankNum: bigint, deliveryNum: bigint, kd: KernelDeliveryObject, vd: VatDeliveryObject) => SlogFinishDelivery,
+ * }} VatSlog
  *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
