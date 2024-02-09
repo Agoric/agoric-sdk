@@ -428,7 +428,7 @@ const preparePort = (zone, when) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
