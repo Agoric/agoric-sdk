@@ -643,7 +643,6 @@ const prepareBinder = (zone, powers) => {
             currentConnections,
             boundPorts,
             protocolHandler,
-            // @ts-expect-error XXX TODO bind
             protocolImpl: this.facets.protocolImpl,
           });
 
