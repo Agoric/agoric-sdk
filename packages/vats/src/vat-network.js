@@ -12,12 +12,14 @@ export function buildRootObject(_vatPowers, _args, baggage) {
   const zone = makeDurableZone(baggage);
   const powers = prepareVowTools(zone.subZone('vow'));
   const { when } = powers;
+
   const makeRouterProtocol = prepareRouterProtocol(
     zone.subZone('network'),
     powers,
   );
-
-  const protocol = makeRouterProtocol();
+  const protocol = zone.makeOnce('RouterProtocol', _key =>
+    makeRouterProtocol(),
+  );
 
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
