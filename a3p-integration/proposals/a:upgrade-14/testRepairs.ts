@@ -40,11 +40,10 @@ const step = async (name: string, fn: Function) => {
   await fn();
 };
 
-const replaceAddressInFile = async (string, fileName, replacement) => {
-  const scriptBuffer = await readFile(`${SUBMISSION_DIR}/${fileName}.tpl`);
-
-  const newScript = scriptBuffer.toString().replace(string, replacement);
-  await writeFile(`${SUBMISSION_DIR}/${fileName}.js`, newScript);
+const replacePatternInFile = async (fileName, pattern, replacement) => {
+  const scriptBuffer = await readFile(`${fileName}.template.js`);
+  const newScript = scriptBuffer.toString().replace(pattern, replacement);
+  await writeFile(`${fileName}.js`, newScript);
 };
 
 await step('verify smartWallet repairs', async () => {
@@ -53,7 +52,11 @@ await step('verify smartWallet repairs', async () => {
   const from = agd.lookup(proposer);
 
   const gov1Address = await getUser('gov1');
-  await replaceAddressInFile('XX_ADDRESS_XX', 'sendInvite', gov1Address);
+  await replacePatternInFile(
+    `${SUBMISSION_DIR}/sendInvite`,
+    'XX_ADDRESS_XX',
+    gov1Address,
+  );
 
   // agd tx  gov submit-proposal swingset-core-eval bar.json  foo.js
   await agd.tx(
