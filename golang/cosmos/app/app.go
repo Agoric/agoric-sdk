@@ -122,6 +122,11 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 
+	// Import the packet forward middleware
+	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router/types"
+
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
@@ -170,6 +175,7 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
+		packetforward.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
@@ -237,12 +243,13 @@ type GaiaApp struct { // nolint: golint
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	IBCKeeper      *ibckeeper.Keeper
-	ICAHostKeeper  icahostkeeper.Keeper
-	EvidenceKeeper evidencekeeper.Keeper
-	TransferKeeper ibctransferkeeper.Keeper
-	FeeGrantKeeper feegrantkeeper.Keeper
-	AuthzKeeper    authzkeeper.Keeper
+	IBCKeeper           *ibckeeper.Keeper
+	ICAHostKeeper       icahostkeeper.Keeper
+	PacketForwardKeeper *packetforwardkeeper.Keeper
+	EvidenceKeeper      evidencekeeper.Keeper
+	TransferKeeper      ibctransferkeeper.Keeper
+	FeeGrantKeeper      feegrantkeeper.Keeper
+	AuthzKeeper         authzkeeper.Keeper
 
 	SwingStoreExportsHandler swingset.SwingStoreExportsHandler
 	SwingSetSnapshotter      swingset.ExtensionSnapshotter
@@ -316,7 +323,7 @@ func NewAgoricApp(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
-		evidencetypes.StoreKey, ibctransfertypes.StoreKey,
+		evidencetypes.StoreKey, ibctransfertypes.StoreKey, packetforwardtypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
 		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
 	)
@@ -549,11 +556,24 @@ func NewAgoricApp(
 		govConfig,
 	)
 
+	// Initialize the packet forward middleware Keeper
+	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
+	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
+		appCodec,
+		keys[packetforwardtypes.StoreKey],
+		app.GetSubspace(packetforwardtypes.ModuleName),
+		app.TransferKeeper, // will be zero-value here, reference is set later on with SetTransferKeeper.
+		app.IBCKeeper.ChannelKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
+		app.IBCKeeper.ChannelKeeper,
+	)
+
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec,
 		keys[ibctransfertypes.StoreKey],
 		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper,
+		app.PacketForwardKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -562,6 +582,17 @@ func NewAgoricApp(
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+
+	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
+	var transferPFMModule porttypes.IBCModule
+	transferPFMModule = transfer.NewIBCModule(app.TransferKeeper)
+	transferPFMModule = packetforward.NewIBCMiddleware(
+		transferPFMModule,
+		app.PacketForwardKeeper,
+		0, // retries on timeout
+		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
@@ -579,7 +610,14 @@ func NewAgoricApp(
 	// create static IBC router, add transfer route, then set and seal it
 	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
+
+	// transfer stack contains (from top to bottom):
+	// - Packet Forward Middleware
+	// - ICA Hosts
+	// - Transfer
+	// - vIBC
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferPFMModule).
+		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
 		AddRoute(vibc.ModuleName, vibcIBCModule)
 
@@ -627,6 +665,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		icaModule,
+		packetforward.NewAppModule(app.PacketForwardKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
 		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
@@ -648,6 +687,7 @@ func NewAgoricApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -676,6 +716,7 @@ func NewAgoricApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		capabilitytypes.ModuleName,
@@ -714,6 +755,7 @@ func NewAgoricApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
@@ -1211,6 +1253,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
 
