@@ -5,7 +5,6 @@ import path from 'path';
 import { E, Far } from '@endo/far';
 import {
   prepareNetworkProtocol,
-  prepareNonceMaker,
   prepareLoopbackProtocolHandler,
 } from '@agoric/network';
 
@@ -85,11 +84,7 @@ async function testRemotePeg(t) {
    */
   const pegasus = publicAPI;
 
-  const makeNonceMaker = prepareNonceMaker(zone);
-  const makeLoopbackHandler = prepareLoopbackProtocolHandler(
-    zone,
-    makeNonceMaker,
-  );
+  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone, when);
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const network = makeNetworkProtocol(makeLoopbackHandler());
 
