@@ -116,8 +116,6 @@ export const setupNetworkProtocols = async (
     return Promise.all(ibcportP);
   };
 
-  debugger;
-
   // Note: before we add the pegasus transfer port,
   // we need to finish registering handlers for
   // ibc-port etc.
