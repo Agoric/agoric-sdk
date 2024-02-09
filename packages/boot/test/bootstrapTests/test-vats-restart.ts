@@ -126,7 +126,7 @@ test.serial('run network vat proposal', async t => {
   t.pass(); // reached here without throws
 });
 
-test.serial('register protocol before upgrade', async t => {
+test.serial('register network protocol before upgrade', async t => {
   const { EV } = t.context.runUtils;
   const net = await EV.vat('bootstrap').consumeItem('networkVat');
   const h1 = { onCreate: 'bogus protocol handler' };
@@ -176,6 +176,14 @@ test.serial('networkVat registrations are durable', async t => {
   await t.throwsAsync(EV(net).registerProtocolHandler(['P1'], h2), {
     message: /key "P1" already registered/,
   });
+
+  t.log('IBC protocol handler already registered?');
+  await t.throwsAsync(
+    EV(net).registerProtocolHandler(['/ibc-port', '/ibc-hop'], h2),
+    {
+      message: /key "\/ibc-port" already registered in collection "prefix"/,
+    },
+  );
 });
 
 test.serial('read metrics', async t => {
