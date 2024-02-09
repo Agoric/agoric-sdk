@@ -1,5 +1,5 @@
 // @ts-check
-export {};
+export { };
 
 /**
  * @template T
@@ -76,3 +76,5 @@ export {};
  * @property {(value: T) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
+
+/** @typedef {import('./when.js').When} When */
