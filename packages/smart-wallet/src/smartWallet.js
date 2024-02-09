@@ -671,7 +671,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { invitationPurse, address } = state;
 
           const brandToPurses = getBrandToPurses(walletPurses, self);
-          trace(`Found ${brandToPurses.values()} purse(s) for ${address}`);
+          trace(`Found purse(s) for ${address}`);
           for (const purses of brandToPurses.values()) {
             for (const record of purses) {
               void helper.watchPurse(record.purse);
