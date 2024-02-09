@@ -1,14 +1,13 @@
-#!/usr/bin/env tsx
+import { execFileSync } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
 
-import { execFileSync } from 'child_process';
-import { readFile, writeFile } from 'fs/promises';
+import test from 'ava';
 
 import { makeAgd } from '@agoric/synthetic-chain/src/lib/agd-lib.js';
 import {
   getUser,
   voteLatestProposalAndWait,
 } from '@agoric/synthetic-chain/src/lib/commonUpgradeHelpers.js';
-import assert from 'assert';
 
 const SUBMISSION_DIR = 'invite-submission';
 
@@ -34,19 +33,13 @@ const makeContext = async () => {
   return { agd, config };
 };
 
-// XXX vestige of Ava
-const step = async (name: string, fn: Function) => {
-  console.log(name);
-  await fn();
-};
-
 const replacePatternInFile = async (fileName, pattern, replacement) => {
   const scriptBuffer = await readFile(`${fileName}.template.js`);
   const newScript = scriptBuffer.toString().replace(pattern, replacement);
   await writeFile(`${fileName}.js`, newScript);
 };
 
-await step('verify smartWallet repairs', async () => {
+test('smartWallet repairs', async t => {
   const { agd, config } = await makeContext();
   const { chainId, deposit, proposer } = config;
   const from = agd.lookup(proposer);
@@ -89,14 +82,8 @@ await step('verify smartWallet repairs', async () => {
   const body = JSON.parse(JSON.parse(walletCurrent.value).values[0]);
   const bodyTruncated = JSON.parse(body.body.substring(1));
   const invitePurseBalance = bodyTruncated.purses[0].balance;
-  assert(invitePurseBalance.value[0], 'expecting a non-empty purse');
+  t.truthy(invitePurseBalance.value[0], 'expecting a non-empty purse');
   const description = invitePurseBalance.value[0].description;
 
-  assert.equal(
-    description,
-    'Add Collateral',
-    'invitation purse should not be empty',
-  );
-
-  console.log('✅ invitation purse is not empty');
+  t.is(description, 'Add Collateral', 'invitation purse should not be empty');
 });
