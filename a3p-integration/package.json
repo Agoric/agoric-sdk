@@ -9,7 +9,7 @@
         "doctor": "./node_modules/.bin/synthetic-chain doctor"
     },
     "dependencies": {
-        "@agoric/synthetic-chain": "^0.0.5-2",
+        "@agoric/synthetic-chain": "^0.0.5-3",
         "tsx": "^4.7.0"
     },
     "packageManager": "yarn@4.1.0",
