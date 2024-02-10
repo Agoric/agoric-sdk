@@ -86,7 +86,6 @@ export function finishCosmosApp({
   enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
-  chainId = DEFAULT_CHAIN_ID,
 }) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
