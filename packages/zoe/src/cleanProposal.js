@@ -4,9 +4,11 @@ import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 import { arrayToObj } from './objArrayConversion.js';
+import { natSafeMath } from './contractSupport/safeMath.js';
 
 import './internal-types.js';
 
+const { values } = Object;
 const { ownKeys } = Reflect;
 
 export const MAX_KEYWORD_LENGTH = 100;
@@ -140,6 +142,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
   const {
     want = harden({}),
     give = harden({}),
+    multiples = 1n,
     exit = harden({ onDemand: null }),
     ...rest
   } = proposal;
@@ -155,10 +158,36 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
   const cleanedProposal = harden({
     want: cleanedWant,
     give: cleanedGive,
+    multiples,
     exit,
   });
   mustMatch(cleanedProposal, FullProposalShape, 'proposal');
+  if (multiples > 1n) {
+    for (const amount of values(cleanedGive)) {
+      typeof amount.value === 'bigint' ||
+        Fail`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`;
+    }
+  }
   assertExit(exit);
   assertKeywordNotInBoth(cleanedWant, cleanedGive);
   return cleanedProposal;
 };
+
+/**
+ *
+ * @param {Amount} amount
+ * @param {bigint} multiples
+ * @returns {Amount}
+ */
+export const scaleAmount = (amount, multiples) => {
+  if (multiples === 1n) {
+    return amount;
+  }
+  const { brand, value } = amount;
+  if (typeof value !== 'bigint') {
+    throw Fail`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`;
+  }
+  assert(value >= 1n);
+  return harden({ brand, value: natSafeMath.multiply(value, multiples) });
+};
+harden(scaleAmount);

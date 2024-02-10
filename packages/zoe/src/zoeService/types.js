@@ -210,11 +210,12 @@
  * interact with the contract.
  * @property {() => Promise<boolean>} hasExited
  * Returns true if the seat has exited, false if it is still active.
- * @property {() => Promise<0|1>} numWantsSatisfied returns 1 if the proposal's
- * want clause was satisfied by the final allocation, otherwise 0. This is
- * numeric to support a planned enhancement called "multiples" which will allow
- * the return value to be any non-negative number. The promise will resolve
- * after the seat has exited.
+ * @property {() => Promise<number>} numWantsSatisfied
+ * Returns the number of times that the proposal's `want` clause was satisfied
+ * by the final allocation. If the `want` was not satisfied then it was
+ * satisfied `0` times. If the want was satisfied, then it was satisfied
+ * `>= 1` times. The promise will resolve after the seat has exited.
+ *
  * @property {() => Promise<Allocation>} getFinalAllocation
  * return a promise for the final allocation. The promise will resolve after the
  * seat has exited.
@@ -227,6 +228,7 @@
  *
  * @typedef {{give: AmountKeywordRecord,
  *            want: AmountKeywordRecord,
+ *            multiples: bigint,
  *            exit: ExitRule
  *           }} ProposalRecord
  */

@@ -71,6 +71,7 @@ export const TimerShape = makeHandleShape('timer');
 export const FullProposalShape = harden({
   want: AmountPatternKeywordRecordShape,
   give: AmountKeywordRecordShape,
+  multiples: M.bigint(),
   // To accept only one, we could use M.or rather than M.splitRecord,
   // but the error messages would have been worse. Rather,
   // cleanProposal's assertExit checks that there's exactly one.
