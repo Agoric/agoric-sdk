@@ -1,4 +1,5 @@
-/** @file sketch of e2e flows
+/**
+ * @file sketch of e2e flows
  * https://docs.google.com/document/d/1GcyHRmg4sZ6DVTBgGkmyESdeGKDktSnahtBPQhFcB5M/edit
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
