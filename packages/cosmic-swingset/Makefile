@@ -8,7 +8,9 @@ CHAIN_ID = agoriclocal
 FAUCET_PORT = 7000
 FAUCET_WALLET = provision
 FAUCET_ADDRESS = localhost
-ROSETTA_PORT = 8080
+
+# IVAN
+# ROSETTA_PORT = 8080
 
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
@@ -178,8 +180,9 @@ scenario2-use-fee-account: t1/$(BASE_PORT)/owner-address
 scenario2-use-client-account: t1/$(BASE_PORT)/owner-address
 	cp $< t1/$(BASE_PORT)/cosmos-client-account
 
-scenario2-run-rosetta-ci: wait-for-rosetta
-	./scripts/run-rosetta-ci.sh
+# IVAN
+# scenario2-run-rosetta-ci: wait-for-rosetta
+# 	./scripts/run-rosetta-ci.sh
 
 t1/$(BASE_PORT)/owner-address:
 	rm -rf t1/$(BASE_PORT)/owner
@@ -208,17 +211,18 @@ wait-for-cosmos:
 	done
 	@echo ' done!'
 
-wait-for-rosetta: wait-for-cosmos
-	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(ROSETTA_PORT) to come live..."
-	@while true; do \
-	  networks=$$(curl -s -X POST http://$(COSMOS_RPC_HOST):$(ROSETTA_PORT)/network/list --data '{ "metadata": {} }'); \
-		if ! test -z "$$networks"; then \
-		  break; \
-		fi; \
-		echo -n '.'; \
-		sleep 1; \
-	done
-	@echo ' done!'
+# IVAN
+# wait-for-rosetta: wait-for-cosmos
+# 	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(ROSETTA_PORT) to come live..."
+# 	@while true; do \
+# 	  networks=$$(curl -s -X POST http://$(COSMOS_RPC_HOST):$(ROSETTA_PORT)/network/list --data '{ "metadata": {} }'); \
+# 		if ! test -z "$$networks"; then \
+# 		  break; \
+# 		fi; \
+# 		echo -n '.'; \
+# 		sleep 1; \
+# 	done
+# 	@echo ' done!'
 
 t1-provision-one-with-powers: wait-for-cosmos
 	@addrfile=t1/$(BASE_PORT)/cosmos-client-account; \

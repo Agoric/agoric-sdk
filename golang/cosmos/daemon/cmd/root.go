@@ -159,7 +159,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 		keys.Commands(gaia.DefaultNodeHome),
 	)
 	// add rosetta
-	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+	// IVAN - rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
 const (

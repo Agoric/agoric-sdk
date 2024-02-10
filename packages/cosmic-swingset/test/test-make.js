@@ -50,27 +50,28 @@ test.serial('make and exec', async t => {
   t.is(await scenario2.export(), 0, 'export exits successfully');
 });
 
-test.serial('integration test: rosetta CI', async t => {
-  // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
-  const { scenario2 } = t.context;
+// IVAN
+// test.serial('integration test: rosetta CI', async t => {
+//   // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
+//   const { scenario2 } = t.context;
 
-  // Run the chain until error or rosetta-cli exits.
-  const chain = scenario2.spawnMake(['scenario2-run-chain'], {
-    stdio: ['ignore', 'ignore', 'ignore'],
-  });
-  const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci']);
-  const cleanup = async () => {
-    chain.kill();
-    rosetta.kill();
-    await Promise.allSettled([chain.exit, rosetta.exit]);
-  };
-  t.teardown(cleanup);
+//   // Run the chain until error or rosetta-cli exits.
+//   const chain = scenario2.spawnMake(['scenario2-run-chain'], {
+//     stdio: ['ignore', 'ignore', 'ignore'],
+//   });
+//   const rosetta = scenario2.spawnMake(['scenario2-run-rosetta-ci']);
+//   const cleanup = async () => {
+//     chain.kill();
+//     rosetta.kill();
+//     await Promise.allSettled([chain.exit, rosetta.exit]);
+//   };
+//   t.teardown(cleanup);
 
-  const code = await Promise.race([
-    rosetta.exit,
-    // Don't leave behind an unhandled rejection, but still treat winning this
-    // race as a failure.
-    chain.exit.then(c => `chain exited unexpectedly with code ${c}`),
-  ]);
-  t.is(code, 0, 'make scenario2-run-rosetta-ci is successful');
-});
+//   const code = await Promise.race([
+//     rosetta.exit,
+//     // Don't leave behind an unhandled rejection, but still treat winning this
+//     // race as a failure.
+//     chain.exit.then(c => `chain exited unexpectedly with code ${c}`),
+//   ]);
+//   t.is(code, 0, 'make scenario2-run-rosetta-ci is successful');
+// });
