@@ -1,7 +1,7 @@
 {
   "name": "@agoric/orchestration",
   "version": "0.1.0",
-  "description": "Interface for Interchain Accounts",
+  "description": "Chain abstraction for Agoric's orchestration clients",
   "type": "module",
   "main": "index.js",
   "types": "index.js",
@@ -28,8 +28,14 @@
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/notifier": "^0.6.2",
+    "@endo/far": "^1.0.2",
+    "@endo/marshal": "^1.1.0",
+    "@endo/patterns": "^1.1.0"
+  },
   "devDependencies": {
-    "@agoric/zoe": "^0.30.1",
+    "@agoric/zoe": "^0.26.2",
     "@cosmjs/amino": "^0.30.1",
     "@cosmjs/proto-signing": "^0.32.2",
     "@endo/far": "^1.0.2",
