@@ -77,10 +77,6 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
         'scenario2-run-chain-to-halt',
         ...bind({ BLOCKS_TO_RUN, INITIAL_HEIGHT }),
       ]),
-    // IVAN
-    // runRosettaCI: async () => {
-    //   return runMake(['scenario2-run-rosetta-ci'], { stdio: onlyStderr });
-    // },
     export: () =>
       pspawnAgd(
         ['export', '--home=t1/n0', '--export-dir=t1/n0/genesis-export'],

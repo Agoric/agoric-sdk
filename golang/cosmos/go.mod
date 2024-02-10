@@ -25,8 +25,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
-
 require (
 	cloud.google.com/go v0.110.4 // indirect
 	cloud.google.com/go/compute v1.21.0 // indirect
@@ -49,7 +47,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
-	// IVAN - github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
+	github.com/coinbase/rosetta-sdk-go v0.7.9 // indirect
 	github.com/cometbft/cometbft-db v0.7.0 // indirect
 	github.com/confio/ics23/go v0.9.1 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
