@@ -392,6 +392,6 @@ export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
  * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async opts => {
-  const { writeCircBuf } = await makeMemoryMappedCircularBuffer(opts);
+  const { writeCircBuf } = await makeSimpleCircularBuffer(opts);
   return makeSlogSenderFromBuffer({ writeCircBuf });
 };
