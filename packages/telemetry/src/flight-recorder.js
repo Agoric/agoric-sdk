@@ -1,4 +1,5 @@
 // @ts-check
+/* global Buffer */
 /// <reference types="ses" />
 
 // https://github.com/Agoric/agoric-sdk/issues/3742#issuecomment-1028451575
@@ -14,6 +15,7 @@
 // no coherency problem, and the speed is unaffected by disk write speeds.
 
 import BufferFromFile from 'bufferfromfile';
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { serializeSlogObj } from './serialize-slog-obj.js';
@@ -75,7 +77,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   return arenaSize;
 };
 
-/** @typedef {Awaited<ReturnType<typeof makeMemoryMappedCircularBuffer>>} CircularBuffer */
+/** @typedef {Awaited<ReturnType<typeof makeSimpleCircularBuffer>>} CircularBuffer */
 
 /**
  *
@@ -190,6 +192,99 @@ function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
 }
 
 /**
+ * Variant of makeMemoryMappedCircularBuffer that writes to a file instead of using BufferFromFile
+ *
+ * @param {{
+ *   circularBufferSize?: number,
+ *   stateDir?: string,
+ *   circularBufferFilename?: string
+ * }} opts
+ */
+export const makeSimpleCircularBuffer = async ({
+  circularBufferSize = DEFAULT_CBUF_SIZE,
+  stateDir = '/tmp',
+  circularBufferFilename,
+}) => {
+  const filename = circularBufferFilename || `${stateDir}/${DEFAULT_CBUF_FILE}`;
+
+  const newArenaSize = await initializeCircularBuffer(
+    filename,
+    circularBufferSize,
+  );
+
+  const file = await fsp.open(filename, 'r+');
+
+  const headerBuffer = Buffer.alloc(I_ARENA_START);
+
+  await file.read({
+    buffer: headerBuffer,
+    length: I_ARENA_START,
+    position: 0,
+  });
+  const header = new DataView(headerBuffer.buffer);
+
+  // Detect the arena size from the header, if not initialized.
+  const hdrArenaSize = header.getBigUint64(I_ARENA_SIZE);
+  const arenaSize = newArenaSize || hdrArenaSize;
+
+  const hdrMagic = header.getBigUint64(I_MAGIC);
+  SLOG_MAGIC === hdrMagic ||
+    Fail`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`;
+  arenaSize === hdrArenaSize ||
+    Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
+
+  /** @type {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} */
+  const readRecord = (outbuf, readStart, firstReadLength) => {
+    const bytesRead = fs.readSync(file.fd, outbuf, {
+      length: firstReadLength,
+      position: Number(readStart) + I_ARENA_START,
+    });
+    assert.equal(bytesRead, firstReadLength, 'Too few bytes read');
+
+    if (bytesRead < outbuf.byteLength) {
+      fs.readSync(file.fd, outbuf, {
+        offset: firstReadLength,
+        length: outbuf.byteLength - firstReadLength,
+        position: I_ARENA_START,
+      });
+    }
+  };
+
+  /**
+   * Writes to the file, offset by the header size. Also updates the file header.
+   *
+   * @param {Uint8Array} record
+   * @param {number} firstWriteLength
+   * @param {bigint} circEnd
+   */
+  const writeRecord = async (record, firstWriteLength, circEnd) => {
+    await file.write(
+      record,
+      // TS saying options bag not available
+      0,
+      firstWriteLength,
+      I_ARENA_START + Number(circEnd),
+    );
+    if (firstWriteLength < record.byteLength) {
+      // Write to the beginning of the arena.
+      await file.write(
+        record,
+        firstWriteLength,
+        record.byteLength - firstWriteLength,
+        I_ARENA_START,
+      );
+    }
+
+    // Write out the updated file header.
+    // This is somewhat independent of writing the record itself, but it needs
+    // updating each time a record is written.
+    await file.write(headerBuffer, undefined, undefined, 0);
+  };
+
+  return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
+};
+
+/**
  * @param {{
  *   circularBufferSize?: number,
  *   stateDir?: string,
@@ -272,7 +367,7 @@ export const makeMemoryMappedCircularBuffer = async ({
 
 /**
  *
- * @param {Pick<Awaited<ReturnType<typeof makeMemoryMappedCircularBuffer>>, 'writeCircBuf'>} circBuf
+ * @param {Pick<Awaited<ReturnType<typeof makeSimpleCircularBuffer>>, 'writeCircBuf'>} circBuf
  */
 export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
   /** @type {Promise<void>} */
