@@ -616,7 +616,7 @@ func NewAgoricApp(
 	// - ICA Hosts
 	// - Transfer
 	// - vIBC
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferPFMModule).
+	ibcRouter.AddRoute(packetforwardtypes.ModuleName, transferPFMModule).
 		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
 		AddRoute(vibc.ModuleName, vibcIBCModule)
