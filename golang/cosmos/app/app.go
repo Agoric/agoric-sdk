@@ -755,7 +755,6 @@ func NewAgoricApp(
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
-		packetforwardtypes.ModuleName,
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
@@ -768,6 +767,7 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		swingset.ModuleName,
 		lien.ModuleName,
+		packetforwardtypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
@@ -850,6 +850,9 @@ func NewAgoricApp(
 	}
 	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
+			Added: []string{
+				packetforwardtypes.ModuleName, // Added PFM
+			},
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
 			},
