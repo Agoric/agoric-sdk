@@ -1,7 +1,7 @@
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
-import { arrayToObj } from './objArrayConversion.js';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
@@ -124,11 +124,6 @@ export const provideIssuerStorage = zcfBaggage => {
     return getByBrand(brand);
   };
 
-  const storeIssuers = issuers => {
-    assertInstantiated();
-    return Promise.all(issuers.map(storeIssuer));
-  };
-
   /** @type {GetAssetKindByBrand} */
   const getAssetKindByBrand = brand => {
     assertInstantiated();
@@ -143,28 +138,14 @@ export const provideIssuerStorage = zcfBaggage => {
    */
   const storeIssuerKeywordRecord = async uncleanIssuerKeywordRecord => {
     assertInstantiated();
-    const keywords = cleanKeywords(uncleanIssuerKeywordRecord);
-    const issuerPs = keywords.map(
-      keyword => uncleanIssuerKeywordRecord[keyword],
+    cleanKeywords(uncleanIssuerKeywordRecord);
+    const issuerRecordPs = objectMap(uncleanIssuerKeywordRecord, issuerP =>
+      storeIssuer(issuerP),
     );
-    // The issuers may not have been seen before, so we must wait for the
-    // issuer records to be available synchronously
-    const issuerRecords = await storeIssuers(issuerPs);
-    // AWAIT ///
-
-    const issuers = arrayToObj(
-      issuerRecords.map(record => record.issuer),
-      keywords,
-    );
-    const brands = arrayToObj(
-      issuerRecords.map(record => record.brand),
-      keywords,
-    );
-
-    return harden({
-      issuers,
-      brands,
-    });
+    const issuerRecords = await deeplyFulfilledObject(issuerRecordPs);
+    const issuers = objectMap(issuerRecords, ({ issuer }) => issuer);
+    const brands = objectMap(issuerRecords, ({ brand }) => brand);
+    return harden({ issuers, brands });
   };
 
   /**
