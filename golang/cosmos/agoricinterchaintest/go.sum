@@ -85,6 +85,8 @@ github.com/StirlingMarketingGroup/go-namecase v1.0.0/go.mod h1:ZsoSKcafcAzuBx+sn
 github.com/VictoriaMetrics/fastcache v1.6.0/go.mod h1:0qHz5QP0GMX4pfmMA/zt5RgfNuXJrTP0zS7DqpHGGTw=
 github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrdtl/UvroE=
 github.com/Workiva/go-datastructures v1.0.53 h1:J6Y/52yX10Xc5JjXmGtWoSSxs3mZnGSaq37xZZh7Yig=
+github.com/agoric-labs/interchaintest/v6 v6.0.1-agoriclabs h1:OG3Z7F9YsqFKCi2w/JZVhMWs+VWNsAEujy39/I2Clxo=
+github.com/agoric-labs/interchaintest/v6 v6.0.1-agoriclabs/go.mod h1:B/KLzyRfuZI+uFKDQe+AXrvjJKRBjl5gds27iOwT9mM=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -747,8 +749,6 @@ github.com/spf13/viper v1.14.0/go.mod h1:WT//axPky3FdvXHzGw33dNdXXXfFQqmEalje+eg
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/strangelove-ventures/go-subkey v1.0.7 h1:cOP/Lajg3uxV/tvspu0m6+0Cu+DJgygkEAbx/s+f35I=
 github.com/strangelove-ventures/go-subkey v1.0.7/go.mod h1:E34izOIEm+sZ1YmYawYRquqBQWeZBjVB4pF7bMuhc1c=
-github.com/strangelove-ventures/interchaintest/v6 v6.0.0 h1:BWdp4v3T/ZCXMzCGQmm+fekEIK2GEyzliLs2UjpdTLE=
-github.com/strangelove-ventures/interchaintest/v6 v6.0.0/go.mod h1:AvF3PkMN6d34VSQuOFz1d6D/fRsx4SMG82V9VBr4ATA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
