@@ -15,7 +15,6 @@ import { AmountMath } from './amountMath.js';
  * @returns {AmountStore<K>}
  */
 export const makeAmountStore = (state, key) => {
-  /** @type {AmountStore<K>} */
   return harden({
     getAmount: () => state[key],
     increment: delta => {
