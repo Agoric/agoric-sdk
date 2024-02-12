@@ -34,9 +34,9 @@ export const tryFlushSlogSender = async (
   await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
     log?.('Failed to flush slog sender', err);
     if (err.errors) {
-      err.errors.forEach(error => {
+      for (const error of err.errors) {
         log?.('nested error:', error);
-      });
+      }
     }
     if (env.SLOGSENDER_FAIL_ON_ERROR) {
       throw err;
@@ -67,12 +67,12 @@ export const getResourceAttributes = ({
   }
   if (OTEL_RESOURCE_ATTRIBUTES) {
     // Allow overriding resource attributes.
-    OTEL_RESOURCE_ATTRIBUTES.split(',').forEach(kv => {
+    for (const kv of OTEL_RESOURCE_ATTRIBUTES.split(',')) {
       const match = kv.match(/^([^=]*)=(.*)$/);
       if (match) {
         resourceAttributes[match[1]] = match[2];
       }
-    });
+    }
   }
   return resourceAttributes;
 };
