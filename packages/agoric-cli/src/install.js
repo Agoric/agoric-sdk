@@ -1,4 +1,4 @@
-/* global process AggregateError Buffer */
+/* global process Buffer */
 import path from 'path';
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
