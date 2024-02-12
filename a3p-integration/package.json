@@ -10,9 +10,7 @@
     },
     "dependencies": {
         "@agoric/synthetic-chain": "^0.0.4-3",
-        "help": "^3.0.2",
-        "tsx": "^4.7.0",
-        "yarn": "^1.22.21"
+        "tsx": "^4.7.0"
     },
     "packageManager": "yarn@4.0.2",
     "license": "Apache-2.0"
