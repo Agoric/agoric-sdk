@@ -73,7 +73,7 @@ start-amm-etc: $(INTER_PROTO)/gov-amm-vaults-etc.js
 
 gov-q:
 	$(AGCH) query gov proposals --output json | \
-		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]'
+		jq -c '.proposals[] | [if .proposal_id == null then .id else .proposal_id end,.voting_end_time,.status]'
 
 # This probably shouldn't install, but that's what published instructions
 # expect.
