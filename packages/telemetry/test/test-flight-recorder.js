@@ -3,11 +3,11 @@ import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
 import {
-  makeMemoryMappedCircularBuffer,
   makeSimpleCircularBuffer,
   makeSlogSenderFromBuffer,
 } from '../src/flight-recorder.js';
 
+// Factored this way to support multiple implementations, which at one point there were
 const bufferTests = test.macro(
   /**
    *
@@ -78,9 +78,6 @@ const bufferTests = test.macro(
   },
 );
 
-test('memory mapped', bufferTests, {
-  makeBuffer: makeMemoryMappedCircularBuffer,
-});
 test('simple', bufferTests, {
   makeBuffer: makeSimpleCircularBuffer,
 });

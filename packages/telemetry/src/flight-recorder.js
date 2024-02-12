@@ -2,19 +2,6 @@
 /* global Buffer */
 /// <reference types="ses" />
 
-// https://github.com/Agoric/agoric-sdk/issues/3742#issuecomment-1028451575
-// I'd mmap() a 100MB file, reserve a few bytes for offsets, then use the rest
-// as a circular buffer to hold length-prefixed records. The agd process would
-// keep writing new events into the RAM window and updating the start/end
-// pointers, with some sequencing to make sure the record gets written before
-// the pointer is updated. Then, no mattter how abruptly the process is
-// terminated, as long as the host computer itself is still running, the on-disk
-// file would contain the most recent state, and anybody who reads the file will
-// get the most recent state. The host kernel (linux) is under no obligation to
-// flush it to disk any particular time, but knows when reads happen, so there's
-// no coherency problem, and the speed is unaffected by disk write speeds.
-
-import BufferFromFile from 'bufferfromfile';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -192,8 +179,6 @@ function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
 }
 
 /**
- * Variant of makeMemoryMappedCircularBuffer that writes to a file instead of using BufferFromFile
- *
  * @param {{
  *   circularBufferSize?: number,
  *   stateDir?: string,
@@ -281,87 +266,6 @@ export const makeSimpleCircularBuffer = async ({
     await file.write(headerBuffer, undefined, undefined, 0);
   };
 
-  return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
-};
-
-/**
- * @param {{
- *   circularBufferSize?: number,
- *   stateDir?: string,
- *   circularBufferFilename?: string
- * }} opts
- */
-export const makeMemoryMappedCircularBuffer = async ({
-  circularBufferSize = DEFAULT_CBUF_SIZE,
-  stateDir = '/tmp',
-  circularBufferFilename,
-}) => {
-  const filename = circularBufferFilename || `${stateDir}/${DEFAULT_CBUF_FILE}`;
-
-  const newArenaSize = await initializeCircularBuffer(
-    filename,
-    circularBufferSize,
-  );
-
-  /**
-   * @type {Uint8Array}
-   * BufferFromFile mmap()s the file into the process address space.
-   */
-  const fileBuf = BufferFromFile(filename).Uint8Array();
-  const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
-
-  // Detect the arena size from the header, if not initialized.
-  const hdrArenaSize = header.getBigUint64(I_ARENA_SIZE);
-  const arenaSize = newArenaSize || hdrArenaSize;
-
-  const hdrMagic = header.getBigUint64(I_MAGIC);
-  SLOG_MAGIC === hdrMagic ||
-    Fail`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`;
-  arenaSize === hdrArenaSize ||
-    Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
-  const arena = new Uint8Array(
-    fileBuf.buffer,
-    header.byteLength,
-    Number(arenaSize),
-  );
-
-  /**
-   *
-   * @param {Uint8Array} outbuf
-   * @param {number} readStart
-   * @param {number} firstReadLength
-   */
-
-  function readRecord(outbuf, readStart, firstReadLength) {
-    outbuf.set(arena.subarray(readStart, readStart + firstReadLength));
-    if (firstReadLength < outbuf.byteLength) {
-      outbuf.set(
-        arena.subarray(0, outbuf.byteLength - firstReadLength),
-        firstReadLength,
-      );
-    }
-  }
-
-  /**
-   *
-   * @param {Uint8Array} record
-   * @param {number} firstWriteLength
-   * @param {bigint} circEnd
-   */
-  const writeRecord = (record, firstWriteLength, circEnd) => {
-    arena.set(record.subarray(0, firstWriteLength), Number(circEnd));
-    if (firstWriteLength < record.byteLength) {
-      // Write to the beginning of the arena.
-      arena.set(record.subarray(firstWriteLength, record.byteLength), 0);
-    }
-    return Promise.resolve();
-  };
-
-  /**
-   * @param {Uint8Array} outbuf
-   * @param {number} [offset] offset relative to the current trailing edge (circStart) of the data
-   * @returns {IteratorResult<Uint8Array, void>}
-   */
   return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
 };
 
