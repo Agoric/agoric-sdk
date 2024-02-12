@@ -2,6 +2,7 @@ import { M } from '@agoric/store';
 import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
+import { makeAmountStore } from './amountStore.js';
 
 // TODO `InterfaceGuard` type parameter
 /** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
@@ -37,11 +38,6 @@ export const preparePurseKind = (
   // broken across an upgrade.
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
 
-  const updatePurseBalance = (state, newPurseBalance, purse) => {
-    state.currentBalance = newPurseBalance;
-    updateBalance(purse, purse.getCurrentAmount());
-  };
-
   // - This kind is a pair of purse and depositFacet that have a 1:1
   //   correspondence.
   // - They are virtualized together to share a single state record.
@@ -72,28 +68,34 @@ export const preparePurseKind = (
           // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.
           // See the comments on PurseI.deposit in typeGuards.js
           const { state } = this;
+          const { purse } = this.facets;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within deposit.
-          return depositInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const srcPaymentBalance = depositInternal(
+            balanceStore,
             srcPayment,
             optAmountShape,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return srcPaymentBalance;
         },
         withdraw(amount) {
           const { state } = this;
+          const { purse } = this.facets;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within withdraw.
-          return withdrawInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const payment = withdrawInternal(
+            balanceStore,
             amount,
             state.recoverySet,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return payment;
         },
         getCurrentAmount() {
-          return this.state.currentBalance;
+          const { state } = this;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
+          return balanceStore.getAmount();
         },
         getCurrentAmountNotifier() {
           return provideNotifier(this.facets.purse);
