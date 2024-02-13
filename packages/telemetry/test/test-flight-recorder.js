@@ -69,6 +69,10 @@ const bufferTests = test.macro(
 
     const { done: done2 } = readCircBuf(len1, offset);
     t.assert(done2, `readCircBuf ${last} should be done`);
+
+    slogSender(null, 'PRE-SERIALIZED');
+    await slogSender.forceFlush();
+    t.truthy(fs.readFileSync(tmpFile).includes('PRE-SERIALIZED'));
     // console.log({ tmpFile });
     removeCallback();
   },
