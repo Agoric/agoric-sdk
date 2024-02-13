@@ -234,6 +234,9 @@ jobs:
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
         working-directory: packages/deployment
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '18.x'
       - name: setup a3p-integration
         run: |
           corepack enable
