@@ -1,0 +1,25 @@
+{
+  "consume": {
+    "contractKits": true,
+    "governedContractKits": true,
+    "instancePrivateArgs": true,
+    "loadCriticalVat": true,
+    "psmKit": true,
+    "vatStore": true,
+    "zoe": "zoe",
+    "provisioning": "provisioning",
+    "vaultFactoryKit": true,
+    "agoricNamesAdmin": "makeCoreProposalBehavior",
+    "vatAdminSvc": "makeCoreProposalBehavior"
+  },
+  "produce": {},
+  "evaluateBundleCap": "makeCoreProposalBehavior",
+  "installation": {
+    "produce": "makeCoreProposalBehavior"
+  },
+  "modules": {
+    "utils": {
+      "runModuleBehaviors": "makeCoreProposalBehavior"
+    }
+  }
+}
