@@ -1,8 +1,8 @@
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { prepareVowTools } from '@agoric/vat-data/vow.js';
-import { makeScalarMapStore } from '@agoric/store';
 import { makeHeapZone } from '@agoric/zone';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
@@ -86,7 +86,9 @@ export const setupNetworkProtocols = async (
   // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
 
-  produceVatUpgradeInfo.resolve(makeScalarMapStore('vatUpgradeInfo'));
+  produceVatUpgradeInfo.resolve(
+    makeScalarBigMapStore('vatUpgradeInfo', { durable: true }),
+  );
   const info = await vatUpgradeInfoP;
   info.init('ibc', ibcRef);
   info.init('network', networkRef);
