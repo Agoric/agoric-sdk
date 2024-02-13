@@ -4,7 +4,7 @@
         "fromTag": "latest"
     },
     "scripts": {
-        "build": "yarn synthetic-chain build",
+        "build": "../scripts/generate-a3p-submission.sh && yarn synthetic-chain build",
         "test": "yarn synthetic-chain test",
         "doctor": "yarn synthetic-chain doctor"
     },
