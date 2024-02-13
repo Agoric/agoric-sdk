@@ -8,7 +8,7 @@ import { promises as fsAmbientPromises } from 'fs';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import { BridgeHandler } from '@agoric/vats';
+import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
 import type { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import {
   makeProposalExtractor,
@@ -58,11 +58,14 @@ export const makeTestContext = async t => {
     fs: fsAmbientPromises,
   });
 
+  const shared = { ibcCallbacks: undefined };
+
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
     buildProposal,
+    shared,
   };
 };
 
@@ -139,6 +142,17 @@ test.serial('register network protocol before upgrade', async t => {
   });
 });
 
+test.serial('make IBC callbacks before upgrade', async t => {
+  const { EV } = t.context.runUtils;
+  const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
+  const { root: ibc } = await EV(vatStore).get('ibc');
+  t.log('E(ibc).makeCallbacks(m1)');
+  const dummyBridgeManager = null as unknown as ScopedBridgeManager;
+  const callbacks = await EV(ibc).makeCallbacks(dummyBridgeManager);
+  t.truthy(callbacks);
+  t.context.shared.ibcCallbacks = callbacks;
+});
+
 test.serial('run restart-vats proposal', async t => {
   const { controller, buildProposal } = t.context;
 
@@ -166,6 +180,20 @@ test.serial('run restart-vats proposal', async t => {
 
   t.log('restart-vats proposal executed');
   t.pass(); // reached here without throws
+});
+
+test.serial('use IBC callbacks after upgrade', async t => {
+  const { EV } = t.context.runUtils;
+  const { ibcCallbacks } = t.context.shared;
+
+  const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
+  const { root: ibc } = await EV(vatStore).get('ibc');
+  t.log('E(ibc).createHandlers(...)');
+
+  const h = await EV(ibc).createHandlers(ibcCallbacks);
+  t.log(h);
+  t.truthy(h.protocolHandler, 'protocolHandler');
+  t.truthy(h.bridgeHandler, 'bridgeHandler');
 });
 
 test.serial('networkVat registrations are durable', async t => {
