@@ -75,53 +75,16 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   return arenaSize;
 };
 
+/** @typedef {Awaited<ReturnType<typeof makeMemoryMappedCircularBuffer>>} CircularBuffer */
+
 /**
- * @param {{
- *   circularBufferSize?: number,
- *   stateDir?: string,
- *   circularBufferFilename?: string
- * }} opts
+ *
+ * @param {bigint} arenaSize
+ * @param {DataView} header
+ * @param {(outbuf: Uint8Array, readStart: number, firstReadLength: number) => void} readRecord
+ * @param {(record: Uint8Array, firstWriteLength: number, circEnd: bigint) => Promise<void>} writeRecord
  */
-export const makeMemoryMappedCircularBuffer = async ({
-  circularBufferSize = DEFAULT_CBUF_SIZE,
-  stateDir = '/tmp',
-  circularBufferFilename,
-}) => {
-  const filename = circularBufferFilename || `${stateDir}/${DEFAULT_CBUF_FILE}`;
-  // console.log({ circularBufferFilename, filename });
-
-  const newArenaSize = await initializeCircularBuffer(
-    filename,
-    circularBufferSize,
-  );
-
-  /**
-   * @type {Uint8Array}
-   * BufferFromFile mmap()s the file into the process address space.
-   */
-  const fileBuf = BufferFromFile(filename).Uint8Array();
-  const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
-
-  // Detect the arena size from the header, if not initialized.
-  const hdrArenaSize = header.getBigUint64(I_ARENA_SIZE);
-  const arenaSize = newArenaSize || hdrArenaSize;
-
-  const hdrMagic = header.getBigUint64(I_MAGIC);
-  SLOG_MAGIC === hdrMagic ||
-    Fail`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`;
-  arenaSize === hdrArenaSize ||
-    Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
-  const arena = new Uint8Array(
-    fileBuf.buffer,
-    header.byteLength,
-    Number(arenaSize),
-  );
-
-  /**
-   * @param {Uint8Array} outbuf
-   * @param {number} [offset] offset relative to the current trailing edge (circStart) of the data
-   * @returns {IteratorResult<Uint8Array, void>}
-   */
+function finishCircularBuffer(arenaSize, header, readRecord, writeRecord) {
   const readCircBuf = (outbuf, offset = 0) => {
     offset + outbuf.byteLength <= arenaSize ||
       Fail`Reading past end of circular buffer`;
@@ -144,19 +107,13 @@ export const makeMemoryMappedCircularBuffer = async ({
       // The data is contiguous, like ---AAABBB---
       return { done: true, value: undefined };
     }
-    outbuf.set(arena.subarray(readStart, readStart + firstReadLength));
-    if (firstReadLength < outbuf.byteLength) {
-      outbuf.set(
-        arena.subarray(0, outbuf.byteLength - firstReadLength),
-        firstReadLength,
-      );
-    }
+    readRecord(outbuf, readStart, firstReadLength);
     return { done: false, value: outbuf };
   };
 
-  /** @param {Uint8Array} data */
-  const writeCircBuf = data => {
-    if (RECORD_HEADER_SIZE + data.byteLength > arena.byteLength) {
+  /** @type {(data: Uint8Array) => Promise<void>} */
+  const writeCircBuf = async data => {
+    if (RECORD_HEADER_SIZE + data.byteLength > arenaSize) {
       // The data is too big to fit in the arena, so skip it.
       const tooBigRecord = JSON.stringify({
         type: 'slog-record-too-big',
@@ -165,14 +122,17 @@ export const makeMemoryMappedCircularBuffer = async ({
       data = new TextEncoder().encode(tooBigRecord);
     }
 
-    if (RECORD_HEADER_SIZE + data.byteLength > arena.byteLength) {
+    if (RECORD_HEADER_SIZE + data.byteLength > arenaSize) {
       // Silently drop, it just doesn't fit.
       return;
     }
 
+    // Allocate for the data and a header
     const record = new Uint8Array(RECORD_HEADER_SIZE + data.byteLength);
+    // Set the data, after the header
     record.set(data, RECORD_HEADER_SIZE);
 
+    // Set the size in the header
     const lengthPrefix = new DataView(record.buffer);
     lengthPrefix.setBigUint64(0, BigInt(data.byteLength));
 
@@ -218,18 +178,96 @@ export const makeMemoryMappedCircularBuffer = async ({
       );
     }
 
+    header.setBigUint64(
+      I_CIRC_END,
+      (circEnd + BigInt(record.byteLength)) % arenaSize,
+    );
+
+    return writeRecord(record, firstWriteLength, circEnd);
+  };
+
+  return { readCircBuf, writeCircBuf };
+}
+
+/**
+ * @param {{
+ *   circularBufferSize?: number,
+ *   stateDir?: string,
+ *   circularBufferFilename?: string
+ * }} opts
+ */
+export const makeMemoryMappedCircularBuffer = async ({
+  circularBufferSize = DEFAULT_CBUF_SIZE,
+  stateDir = '/tmp',
+  circularBufferFilename,
+}) => {
+  const filename = circularBufferFilename || `${stateDir}/${DEFAULT_CBUF_FILE}`;
+
+  const newArenaSize = await initializeCircularBuffer(
+    filename,
+    circularBufferSize,
+  );
+
+  /**
+   * @type {Uint8Array}
+   * BufferFromFile mmap()s the file into the process address space.
+   */
+  const fileBuf = BufferFromFile(filename).Uint8Array();
+  const header = new DataView(fileBuf.buffer, 0, I_ARENA_START);
+
+  // Detect the arena size from the header, if not initialized.
+  const hdrArenaSize = header.getBigUint64(I_ARENA_SIZE);
+  const arenaSize = newArenaSize || hdrArenaSize;
+
+  const hdrMagic = header.getBigUint64(I_MAGIC);
+  SLOG_MAGIC === hdrMagic ||
+    Fail`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`;
+  arenaSize === hdrArenaSize ||
+    Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
+  const arena = new Uint8Array(
+    fileBuf.buffer,
+    header.byteLength,
+    Number(arenaSize),
+  );
+
+  /**
+   *
+   * @param {Uint8Array} outbuf
+   * @param {number} readStart
+   * @param {number} firstReadLength
+   */
+
+  function readRecord(outbuf, readStart, firstReadLength) {
+    outbuf.set(arena.subarray(readStart, readStart + firstReadLength));
+    if (firstReadLength < outbuf.byteLength) {
+      outbuf.set(
+        arena.subarray(0, outbuf.byteLength - firstReadLength),
+        firstReadLength,
+      );
+    }
+  }
+
+  /**
+   *
+   * @param {Uint8Array} record
+   * @param {number} firstWriteLength
+   * @param {bigint} circEnd
+   */
+  const writeRecord = (record, firstWriteLength, circEnd) => {
     arena.set(record.subarray(0, firstWriteLength), Number(circEnd));
     if (firstWriteLength < record.byteLength) {
       // Write to the beginning of the arena.
       arena.set(record.subarray(firstWriteLength, record.byteLength), 0);
     }
-    header.setBigUint64(
-      I_CIRC_END,
-      (circEnd + BigInt(record.byteLength)) % arenaSize,
-    );
+    return Promise.resolve();
   };
 
-  return { readCircBuf, writeCircBuf };
+  /**
+   * @param {Uint8Array} outbuf
+   * @param {number} [offset] offset relative to the current trailing edge (circStart) of the data
+   * @returns {IteratorResult<Uint8Array, void>}
+   */
+  return finishCircularBuffer(arenaSize, header, readRecord, writeRecord);
 };
 
 /**
@@ -237,15 +275,18 @@ export const makeMemoryMappedCircularBuffer = async ({
  * @param {Pick<Awaited<ReturnType<typeof makeMemoryMappedCircularBuffer>>, 'writeCircBuf'>} circBuf
  */
 export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
-  const writeJSON = obj => {
-    const jsonObj = serializeSlogObj(obj);
+  /** @type {Promise<void>} */
+  let toWrite = Promise.resolve();
+  const writeJSON = (obj, serialized = serializeSlogObj(obj)) => {
     // Prepend a newline so that the file can be more easily manipulated.
-    const data = new TextEncoder().encode(`\n${jsonObj}`);
+    const data = new TextEncoder().encode(`\n${serialized}`);
     // console.log('have obj', obj, data);
-    writeCircBuf(data);
+    toWrite = toWrite.then(() => writeCircBuf(data));
   };
   return Object.assign(writeJSON, {
-    forceFlush: async () => {},
+    forceFlush: async () => {
+      await toWrite;
+    },
     usesJsonObject: true,
   });
 };
