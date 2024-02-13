@@ -3,11 +3,11 @@ import { readFile, writeFile } from 'node:fs/promises';
 
 import test from 'ava';
 
-import { makeAgd } from '@agoric/synthetic-chain/src/lib/agd-lib.js';
 import {
+  makeAgd,
   getUser,
   voteLatestProposalAndWait,
-} from '@agoric/synthetic-chain/src/lib/commonUpgradeHelpers.js';
+} from '@agoric/synthetic-chain';
 
 const SUBMISSION_DIR = 'invite-submission';
 
