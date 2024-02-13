@@ -43,9 +43,13 @@ enactCoreEval() {
   while true; do
     status=$(agd query gov proposal "$propnum" --output=json | jq -r .status)
     case $status in
-    PROPOSAL_STATUS_PASSED) break ;;
-    PROPOSAL_STATUS_REJECTED) return 1 ;;
-    *) echo "waiting for proposal $propnum to pass (current status=$status)" ;;
+    PROPOSAL_STATUS_PASSED)
+      break ;;
+    PROPOSAL_STATUS_REJECTED) 
+    PROPOSAL_STATUS_FAILED)
+      return 1 ;;
+    *)
+      echo "waiting for proposal $propnum to pass (current status=$status)" ;;
     esac
     sleep 5
   done

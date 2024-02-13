@@ -57,7 +57,7 @@ submit-proposal: $(EVALS) $(DESCRIPTION)
 
 gov-q:
 	agd $(CHAIN_OPTS) query gov proposals --output json | \
-		jq -c '.proposals[] | [.proposal_id,.voting_end_time,.status]';
+		jq -c '.proposals[] | [if .proposal_id == null then .id else .proposal_id end,.voting_end_time,.status]';
 
 bank-q:
 	agd $(CHAIN_OPTS) query bank balances $(ADDR)
