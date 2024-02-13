@@ -12,12 +12,12 @@ export const prepareChainClientTools = zone => {
   const makeOcapAuthToken = zone.exoClass(
     'OcapAuthToken',
     M.interface('OcapAuthToken', {
-      getAllegedAddress: M.call().returns(M.string()),
+      getAllegedInfo: M.call().returns(M.record()),
     }),
-    allegedAddress => ({ allegedAddress }),
+    info => ({ info }),
     {
-      getAllegedAddress() {
-        return this.state.allegedAddress;
+      getAllegedInfo() {
+        return this.state.info;
       },
     },
   );
@@ -35,7 +35,7 @@ export const prepareChainClientTools = zone => {
   const pickle = obj => toCapData(harden(obj)).body;
 
   /**
-   * @param {import('./types.js').AccountAddress} allegedAddress
+   * @param {import('./types.js').AccountInfo} info
    * @param {import('@endo/far').FarRef<import('./types.js').Chain>} chain
    * @returns {import('./types.js').TxAuthorizerKit})}
    */
@@ -43,29 +43,29 @@ export const prepareChainClientTools = zone => {
     'OcapTxAuthorizerKit',
     undefined,
     /**
-     * @param {import('./types.js').AccountAddress} allegedAddress
+     * @param {import('./types.js').AccountInfo} info
      * @param {import('@endo/far').FarRef<import('./types.js').Chain>} chain
      */
-    (allegedAddress, chain) => ({
-      allegedAddress,
+    (info, chain) => ({
+      info,
       chain,
       authTokenToPickle: zone.detached().weakMapStore('OcapAuthTokens'),
     }),
     {
       authorizer: {
-        async getAllegedAddress() {
-          return this.state.allegedAddress;
+        async getInfo() {
+          return this.state.info;
         },
         /**
          * @param {import('./types.js').Transaction} tx
          * @returns {Promise<unknown>}
          */
         async authorize(tx) {
-          const { allegedAddress, authTokenToPickle } = this.state;
+          const { info, authTokenToPickle } = this.state;
           // Strip out the authorizations, since they aren't part of what needs
           // to be authorized.
           const { authorizations: _, ...txToPickle } = tx;
-          const authToken = makeOcapAuthToken(allegedAddress);
+          const authToken = makeOcapAuthToken(info);
           // Save the pickled transaction, so we can verify it later.
           authTokenToPickle.init(authToken, pickle(txToPickle));
           return authToken;
@@ -89,8 +89,12 @@ export const prepareChainClientTools = zone => {
           // We do this before submitting the transaction, so we don't miss the
           // event if the transaction is processed quickly.
           const topic = await E(chain).subscribeEvents({
-            blockHeight: M.bigint(),
-            event: M.splitRecord({ authToken }, undefined, M.any()),
+            typeUrl: '/agoric.Event',
+            obj: {
+              blockHeight: M.bigint(),
+              blockTime: M.number(),
+              event: M.splitRecord({ authToken }, undefined, M.any()),
+            },
           });
 
           // Now submit the authorized transaction.
@@ -105,8 +109,8 @@ export const prepareChainClientTools = zone => {
         },
       },
       verifier: {
-        async getAllegedAddress() {
-          return this.state.allegedAddress;
+        async getInfo() {
+          return this.state.info;
         },
         /**
          * @param {import('./types.js').Transaction} tx
