@@ -3,12 +3,12 @@ export {};
 
 /**
  * @typedef {object} Chain A fault-tolerant, consensus-based state machine.
- * @property {() => Promise<
- *  { address: AccountAddress, authorizer: TxAuthorizer }
+ * @property {(codecs?: CodecRegistry) => Promise<
+ *  { info: AccountInfo, agent: AccountAgent, authorizer: TxAuthorizer }
  * >} createAccount Create a fresh (unique) account on this chain, and return a
- * powerful authorizer that should be closely-held, as well as its public
- * address.
- * @property {(queryParams: TypedValue) => Promise<TypedValue>} queryState Given
+ * powerful authorizer that should be closely-held.  Also provide powerless
+ * account metadata.
+ * @property {(queryParams: TypedData) => Promise<TypedData>} queryState Given
  * some query parameters, return a response based on the chain's state.
  * @property {(tx: Transaction) => Promise<TxOptions>} populateTxOptions Given a
  * state-changing transaction, return the existing `tx.opts` augmented with any
@@ -26,16 +26,32 @@ export {};
  */
 
 /**
- * @typedef {string} AccountAddress
+ * @typedef {Record<string, any>} AccountInfo
  */
 
 /**
- * @typedef {object} TypedValue Track the encoding type for a Javascript value.
- * @property {`/${string}` | 'proto.Message'} typeUrl The type URL of the
- * encoded value.  This is usually a target protobuf message type starting with
- * a slash, but may also be `'proto.Message'` indicating that the `value` is
- * already protobuf-encoded data.
- * @property {any} value The value to be encoded.
+ * @typedef {object} CodecRegistry
+ * @property {(typeUrl: string, partial: Record<string, any>) => TypedData} encode
+ * @property {(typed: Omit<TypedData, 'obj'>) => TypedData} decode
+ * @property {(moduleExports: Record<string, any>) => void} registerModule
+ */
+
+/**
+ * @typedef {object} AccountAgent
+ * @property {(tx: Transaction) => Promise<{ results: TypedData[]}>} perform Populate missing
+ * options, authorize, and submit a transaction to the chain.  The returned data
+ * is the final result of the submission, when the transaction has effectively
+ * been committed.
+ */
+
+/**
+ * @typedef {{typeUrl: string} & Partial<TypedObject & import('@cosmjs/proto-signing').EncodeObject>} TypedData
+ */
+
+/**
+ * @typedef {object} TypedObject Track the type of a raw object.
+ * @property {import('@cosmjs/proto-signing').EncodeObject['typeUrl']} typeUrl The type URL for encoding.
+ * @property {Record<string, any>} obj The Javascript object, possibly partial.
  */
 
 /**
@@ -46,7 +62,7 @@ export {};
 
 /**
  * @typedef {object} Transaction
- * @property {TypedValue[]} msgs The messages to be committed in the
+ * @property {TypedData[]} messages The messages to be committed in the
  * transaction.  If any fail, the entire transaction is rolled back.
  * @property {TxOptions} [opts] Chain-specific options for the transaction.
  * @property {unknown[]} [authorizations] The authorizations (object
@@ -54,14 +70,8 @@ export {};
  */
 
 /**
- * @typedef {EachTopic<ChainEvent> & LatestTopic<ChainEvent>} EventTopic A
+ * @typedef {EachTopic<TypedData> & LatestTopic<TypedData>} EventTopic A
  * subscriber topic for chain events, with pinned history.
- */
-
-/**
- * @typedef {object} ChainEvent A single chain event.
- * @property {TypedValue} event The event's data.
- * @property {bigint} blockHeight The block height at which the event was emitted.
  */
 
 /**
@@ -74,19 +84,15 @@ export {};
 
 /**
  * @typedef {object} TxAuthorizer
- * @property {() => Promise<AccountAddress>} getAllegedAddress Get the account
- * address that this authorizer allegedly can authorize.
+ * @property {() => Promise<AccountInfo>} getInfo Get the account information
+ * that this authorizer allegedly can authorize.
  * @property {(tx: Transaction) => Promise<unknown>} authorize Create an
  * authorization for the specified transaction.
- * @property {(tx: Transaction) => Promise<EventTopic>} authorizeAndSubmit
- * Populate missing options, authorize, and submit a transaction to the chain.
- * The returned topic produces the events occuring while processing the
- * transaction, finishing when the transaction has effectively been committed.
  */
 
 /**
  * @typedef {object} TxVerifier
- * @property {() => Promise<AccountAddress>} getAllegedAddress Get the account
+ * @property {() => Promise<AccountInfo>} getInfo Get the account
  * address this verifier allegedly can verify.
  * @property {(tx: Transaction) => Promise<boolean>} verify Return true if the
  * transaction was authorized by the Authorizer from the same kit.
