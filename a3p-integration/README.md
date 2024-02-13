@@ -47,3 +47,10 @@ That's probably because you don't have that image built locally. To build it,
 cd packages/deployment
 make docker-build-sdk
 ```
+
+### UPGRADE NEEDED
+```
+panic: UPGRADE "UNRELEASED_UPGRADE" NEEDED at height: 1101: {"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}
+```
+
+Means your SDK image is different than the one expected by the upgrade proposal. The remedy also to rebuild it as in the case it's missing.
