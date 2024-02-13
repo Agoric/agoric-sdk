@@ -9,8 +9,4 @@ proposal is required to be in a file, so we have to edit a template file
 (sendInvite.template.js) to produce the .js file that will be submitted.
 
 The core-eval is invoked from the test, which then verifies that the details
-<<<<<<< HEAD:a3p-integration/proposals/b:upgrade-14/invite-submission/README.md
 were written to vstorage.
-=======
-were written to vstorage.
->>>>>>> d46546de4 (chore: helpful suggestions from review):a3p-integration/proposals/a:upgrade-14/invite-submission/README.md
