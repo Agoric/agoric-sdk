@@ -259,6 +259,7 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
+    bridgeHandlers = {} as Record<string, (obj: any) => unknown>,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -284,6 +285,9 @@ export const makeSwingsetTestKit = async (
    * changes there will sometimes require changes here.
    */
   const bridgeOutbound = (bridgeId: string, obj: any) => {
+    if (bridgeId in bridgeHandlers) {
+      return bridgeHandlers[bridgeId](obj);
+    }
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
