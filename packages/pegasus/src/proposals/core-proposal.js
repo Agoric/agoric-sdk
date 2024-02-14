@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
@@ -24,6 +25,9 @@ export const getManifestForPegasus = ({ restoreRef }, { pegasusRef }) => ({
       instance: {
         consume: { [CONTRACT_NAME]: t },
       },
+    },
+    [publishConnections.name]: {
+      consume: { pegasusConnections: t, client: t },
     },
   },
   installations: {
@@ -64,7 +68,8 @@ export const addPegasusTransferPort = async (
   pegasus,
   pegasusConnectionsAdmin,
 ) => {
-  const { handler, subscription } = await E(pegasus).makePegasusConnectionKit();
+  const { pfmHandler, subscription } =
+    await E(pegasus).makePegasusConnectionKit();
   observeIteration(subscribeEach(subscription), {
     updateState(connectionState) {
       const { localAddr, actions } = connectionState;
@@ -82,7 +87,7 @@ export const addPegasusTransferPort = async (
   return E(port).addListener(
     Far('listener', {
       async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return handler;
+        return pfmHandler;
       },
       async onListen(p, _listenHandler) {
         console.debug(`Listening on Pegasus transfer port: ${p}`);
@@ -108,3 +113,13 @@ export const listenPegasus = async ({
   return addPegasusTransferPort(port, pegasus, pegasusNameAdmin);
 };
 harden(listenPegasus);
+
+export const publishConnections = async ({
+  consume: { pegasusConnections: pegasusConnectionsP, client },
+}) => {
+  const pegasusConnections = await pegasusConnectionsP;
+  // FIXME: Be sure only to give the client the connections if _addr is on the
+  // allowlist.
+  return E(client).assignBundle([_addr => ({ pegasusConnections })]);
+};
+harden(publishConnections);
