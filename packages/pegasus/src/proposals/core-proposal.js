@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
@@ -26,7 +25,7 @@ export const getManifestForPegasus = ({ restoreRef }, { pegasusRef }) => ({
         consume: { [CONTRACT_NAME]: t },
       },
     },
-    [publishConnections.name]: {
+    publishConnections: {
       consume: { pegasusConnections: t, client: t },
     },
   },
@@ -68,8 +67,7 @@ export const addPegasusTransferPort = async (
   pegasus,
   pegasusConnectionsAdmin,
 ) => {
-  const { pfmHandler, subscription } =
-    await E(pegasus).makePegasusConnectionKit();
+  const { handler, subscription } = await E(pegasus).makePegasusConnectionKit();
   observeIteration(subscribeEach(subscription), {
     updateState(connectionState) {
       const { localAddr, actions } = connectionState;
@@ -87,7 +85,7 @@ export const addPegasusTransferPort = async (
   return E(port).addListener(
     Far('listener', {
       async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return pfmHandler;
+        return handler;
       },
       async onListen(p, _listenHandler) {
         console.debug(`Listening on Pegasus transfer port: ${p}`);
