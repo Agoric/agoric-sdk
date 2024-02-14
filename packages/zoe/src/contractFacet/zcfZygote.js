@@ -469,8 +469,12 @@ export const makeZCFZygote = async (
 
       await null;
       if (!zcfBaggage.has('repairedContractCompletionWatcher')) {
-        await E(zoeInstanceAdmin).repairContractCompletionWatcher();
-        console.log(`Repaired contract completion watcher`);
+        // We don't wait because it's a cross-vat call (to Zoe) that can't be
+        // completed during this vat's start-up
+        E(zoeInstanceAdmin)
+          .repairContractCompletionWatcher()
+          .catch(() => {});
+
         zcfBaggage.init('repairedContractCompletionWatcher', true);
       }
 

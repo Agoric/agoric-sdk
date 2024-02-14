@@ -266,6 +266,7 @@ export const makeStartInstance = (
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
         };
+        state.contractBundleCap = newContractBundleCap;
         return E.when(getFreshZcfBundleCap(), bCap =>
           E(state.adminNode).upgrade(bCap, { vatParameters }),
         );
