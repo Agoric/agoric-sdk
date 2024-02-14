@@ -377,11 +377,11 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         if (consummated) {
           throw Error(consummated);
         }
-        this.state.consummated = 'Already accepted';
 
         if (localAddress === undefined) {
           localAddress = localAddr;
         }
+        this.state.consummated =`${localAddress} Already accepted`;
 
         if (remoteAddress === undefined) {
           remoteAddress = remoteAddr;
