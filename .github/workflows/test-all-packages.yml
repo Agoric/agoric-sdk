@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['16.x', '18.x']
+        node-version: ['18.x', '20.x']
     steps:
       - uses: actions/checkout@v3
         with:
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -305,7 +305,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['16.x', '18.x']
+        engine: ['18.x', '20.x']
     steps:
       - name: set vars
         id: vars
@@ -346,7 +346,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -390,7 +390,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['16.x', '18.x']
+        engine: ['18.x', '20.x']
     steps:
       - name: set vars
         id: vars
@@ -430,7 +430,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -471,7 +471,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -513,7 +513,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -565,7 +565,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -606,7 +606,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -648,7 +648,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -690,7 +690,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
