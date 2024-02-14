@@ -1,56 +1,57 @@
 // @ts-nocheck
-/* global WeakRef */
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
 
 import engineGC from '../engine-gc.js';
-import { makeGcAndFinalize } from '../gc-and-finalize.js';
+import { makeGcAndFinalize, watchCollected } from '../gc-and-finalize.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
-function makeHeld() {
-  const held = Far('held');
-  const wr = new WeakRef(held);
+function makeStashKit(name = 'held') {
+  const held = Far(name);
+  const collected = watchCollected(held);
   const ws = new WeakSet(); // note: real WeakSet, not vref-aware
   ws.add(held);
   function isHeld(obj) {
     return ws.has(obj);
   }
-  return { held, wr, isHeld };
+  function isCollected() {
+    return collected.result;
+  }
+  return { held, isCollected, isHeld };
 }
 
 function prepareEphemeral(vom) {
-  const ephemeral = Far('ephemeral');
-  vom.registerEntry('o+12345', ephemeral);
-  const wr = new WeakRef(ephemeral);
-  return { wr };
+  const { held, isCollected } = makeStashKit('ephemeral');
+  vom.registerEntry('o+12345', held);
+  return { isCollected };
 }
 
 function stashRemotableOne(weakStore, key1) {
-  const { held, wr, isHeld } = makeHeld();
+  const { held, isCollected, isHeld } = makeStashKit();
   weakStore.init(key1, held);
-  return { wr, isHeld };
+  return { isCollected, isHeld };
 }
 
 function stashRemotableTwo(weakStore, key1) {
-  const { held, wr, isHeld } = makeHeld();
+  const { held, isCollected, isHeld } = makeStashKit();
   weakStore.init(key1, 'initial');
   weakStore.set(key1, held);
-  return { wr, isHeld };
+  return { isCollected, isHeld };
 }
 
 function stashRemotableThree(holderMaker) {
-  const { held, wr, isHeld } = makeHeld();
+  const { held, isCollected, isHeld } = makeStashKit();
   const holder = holderMaker(held);
-  return { wr, isHeld, holder };
+  return { isCollected, isHeld, holder };
 }
 
 function stashRemotableFour(holderMaker) {
-  const { held, wr, isHeld } = makeHeld();
+  const { held, isCollected, isHeld } = makeStashKit();
   const holder = holderMaker('initial');
   holder.setHeld(held);
-  return { wr, isHeld, holder };
+  return { isCollected, isHeld, holder };
 }
 
 test('remotables retained by virtualized data', async t => {
@@ -74,7 +75,7 @@ test('remotables retained by virtualized data', async t => {
   // false positive in the subsequent test
   const stash0 = prepareEphemeral(vom);
   await gcAndFinalize();
-  t.falsy(stash0.wr.deref(), `caution: fake VOM didn't release Remotable`);
+  t.true(stash0.isCollected(), `caution: fake VOM didn't release Remotable`);
 
   // stash a Remotable in the value of a weakStore
   const key1 = makeKey();
@@ -84,14 +85,14 @@ test('remotables retained by virtualized data', async t => {
   // Representatives or Presences, so the value is not holding a strong
   // reference to the Remotable. The VOM is supposed to keep it alive, via
   // reachableRemotables.
-  t.truthy(stash1.wr.deref());
+  t.false(stash1.isCollected());
   t.truthy(stash1.isHeld(weakStore.get(key1)));
 
   // do the same, but exercise weakStore.set instead of .init
   const key2 = makeKey();
   const stash2 = stashRemotableTwo(weakStore, key2);
   await gcAndFinalize();
-  t.truthy(stash2.wr.deref());
+  t.false(stash2.isCollected());
   t.truthy(stash2.isHeld(weakStore.get(key2)));
 
   // now stash a Remotable in the state of a virtual object during init()
@@ -100,12 +101,12 @@ test('remotables retained by virtualized data', async t => {
   // Each state property is virtualized upon write (via the generated
   // setters). So again we rely on the VOM to keep the Remotable alive in
   // case someone retrieves it again.
-  t.truthy(stash3.wr.deref());
+  t.false(stash3.isCollected());
   t.truthy(stash3.isHeld(stash3.holder.getHeld()));
 
   // same, but stash after init()
   const stash4 = stashRemotableFour(makeHolder);
   await gcAndFinalize();
-  t.truthy(stash4.wr.deref());
+  t.false(stash4.isCollected());
   t.truthy(stash4.isHeld(stash4.holder.getHeld()));
 });

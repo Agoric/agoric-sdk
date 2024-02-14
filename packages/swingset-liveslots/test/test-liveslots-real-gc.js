@@ -1,12 +1,11 @@
 // @ts-nocheck
-/* global WeakRef */
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser } from '@agoric/kmarshal';
 import engineGC from './engine-gc.js';
-import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { watchCollected, makeGcAndFinalize } from './gc-and-finalize.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   makeMessage,
@@ -28,13 +27,13 @@ const gcAndFinalize = makeGcAndFinalize(engineGC);
 
 test.serial('liveslots retains pending exported promise', async t => {
   const { log, syscall } = buildSyscall();
-  let watch;
+  let collected;
   const success = [];
   function build(_vatPowers) {
     const root = Far('root', {
       make() {
         const pk = makePromiseKit();
-        watch = new WeakRef(pk.promise);
+        collected = watchCollected(pk.promise);
         // we export the Promise, but do not retain resolve/reject
         return [pk.promise];
       },
@@ -55,7 +54,7 @@ test.serial('liveslots retains pending exported promise', async t => {
   const resultP = 'p-1';
   await dispatch(makeMessage(rootA, 'make', [], resultP));
   await gcAndFinalize();
-  t.truthy(watch.deref(), 'Promise not retained');
+  t.false(collected.result, 'Promise retained');
   t.is(log[0].type, 'resolve');
   const res0 = log[0].resolutions[0];
   t.is(res0[0], resultP);
@@ -66,13 +65,13 @@ test.serial('liveslots retains pending exported promise', async t => {
 
 test.serial('liveslots retains device nodes', async t => {
   const { syscall } = buildSyscall();
-  let watch;
+  let collected;
   const recognize = new WeakSet(); // real WeakSet
   const success = [];
   function build(_vatPowers) {
     const root = Far('root', {
       first(dn) {
-        watch = new WeakRef(dn);
+        collected = watchCollected(dn);
         recognize.add(dn);
       },
       second(dn) {
@@ -87,21 +86,21 @@ test.serial('liveslots retains device nodes', async t => {
   const device = 'd-1';
   await dispatch(makeMessage(rootA, 'first', [kslot(device)]));
   await gcAndFinalize();
-  t.truthy(watch.deref(), 'Device node not retained');
+  t.false(collected.result, 'Device node retained');
   await dispatch(makeMessage(rootA, 'second', [kslot(device)]));
   t.deepEqual(success, [true]);
 });
 
 test.serial('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
-  let wr;
+  let collected;
   function build(_vatPowers) {
     // eslint-disable-next-line no-unused-vars
     let presence1;
     const root = Far('root', {
       one(arg) {
         presence1 = arg;
-        wr = new WeakRef(arg);
+        collected = watchCollected(arg);
       },
       two() {},
       three() {
@@ -121,19 +120,19 @@ test.serial('GC syscall.dropImports', async t => {
   // rp1 = root~.one(arg)
   await dispatch(makeMessage(rootA, 'one', [kslot(arg)]));
   await dispatch(makeBringOutYourDead());
-  t.truthy(wr.deref());
+  t.false(collected.result);
 
   // an intermediate message will trigger GC, but the presence is still held
   await dispatch(makeMessage(rootA, 'two', []));
   await dispatch(makeBringOutYourDead());
-  t.truthy(wr.deref());
+  t.false(collected.result);
 
   // now tell the vat to drop the 'arg' presence we gave them earlier
   await dispatch(makeMessage(rootA, 'three', []));
   await dispatch(makeBringOutYourDead());
 
   // the presence itself should be gone
-  t.falsy(wr.deref());
+  t.true(collected.result);
 
   // first it will check that there are no VO's holding onto it
   const l2 = log.shift();
@@ -246,12 +245,12 @@ test.serial('GC dispatch.retireExports', async t => {
 
 test.serial('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
-  let wr;
+  let collected;
   function build(_vatPowers) {
     const root = Far('root', {
       one() {
         const ex1 = Far('export', {});
-        wr = new WeakRef(ex1);
+        collected = watchCollected(ex1);
         return ex1;
         // ex1 goes out of scope, dropping last userspace strongref
       },
@@ -285,19 +284,19 @@ test.serial('GC dispatch.dropExports', async t => {
 
   // the exported Remotable should be held in place by exportedRemotables
   // until we tell the vat we don't need it any more
-  t.truthy(wr.deref());
+  t.false(collected.result);
 
   // an intermediate message will trigger GC, but the presence is still held
   await dispatch(makeMessage(rootA, 'two', []));
   await dispatch(makeBringOutYourDead());
-  t.truthy(wr.deref());
+  t.false(collected.result);
 
   // now tell the vat we don't need a strong reference to that export.
   await dispatch(makeDropExports(ex1));
   await dispatch(makeBringOutYourDead());
 
   // that should allow ex1 to be collected
-  t.falsy(wr.deref());
+  t.true(collected.result);
 
   // and once it's collected, the vat should emit `syscall.retireExport`
   // because nobody else will be able to recognize it again
@@ -313,13 +312,13 @@ test.serial(
   'GC dispatch.retireExports inhibits syscall.retireExports',
   async t => {
     const { log, syscall } = buildSyscall();
-    let wr;
+    let collected;
     function build(_vatPowers) {
       let ex1;
       const root = Far('root', {
         hold() {
           ex1 = Far('export', {});
-          wr = new WeakRef(ex1);
+          collected = watchCollected(ex1);
           return ex1;
         },
         two() {},
@@ -356,19 +355,19 @@ test.serial(
 
     // the exported Remotable should be held in place by exportedRemotables
     // until we tell the vat we don't need it any more
-    t.truthy(wr.deref());
+    t.false(collected.result);
 
     // an intermediate message will trigger GC, but the presence is still held
     await dispatch(makeMessage(rootA, 'two', []));
     await dispatch(makeBringOutYourDead());
-    t.truthy(wr.deref());
+    t.false(collected.result);
 
     // now tell the vat we don't need a strong reference to that export.
     await dispatch(makeDropExports(ex1));
     await dispatch(makeBringOutYourDead());
 
     // that removes the liveslots strongref, but the vat's remains in place
-    t.truthy(wr.deref());
+    t.false(collected.result);
 
     // now the kernel tells the vat we can't even recognize the export
     await dispatch(makeRetireExports(ex1));
@@ -376,14 +375,14 @@ test.serial(
 
     // that ought to delete the table entry, but doesn't affect the vat
     // strongref
-    t.truthy(wr.deref());
+    t.false(collected.result);
 
     // now tell the vat to drop its strongref
     await dispatch(makeMessage(rootA, 'drop', []));
     await dispatch(makeBringOutYourDead());
 
     // which should let the export be collected
-    t.falsy(wr.deref());
+    t.true(collected.result);
 
     // the vat should *not* emit `syscall.retireExport`, because it already
     // received a dispatch.retireExport

@@ -1,13 +1,13 @@
 // @ts-nocheck
-/* global WeakRef */
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { kser, kunser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from '../liveslots-helpers.js';
+import { watchCollected } from '../gc-and-finalize.js';
 
 test('virtual object state writes', async t => {
-  let monitor;
+  let collected;
 
   const initData = { begin: 'ning' };
   const initStateData = { begin: kser(initData.begin) };
@@ -23,11 +23,11 @@ test('virtual object state writes', async t => {
     const root = Far('root', {
       make: () => {
         const thing = makeThing();
-        monitor = new WeakRef(thing);
+        collected = watchCollected(thing);
         return thing;
       },
       ping: thing => {
-        monitor = new WeakRef(thing);
+        collected = watchCollected(thing);
         return thing.ping();
       },
     });
@@ -56,7 +56,7 @@ test('virtual object state writes', async t => {
 
   // 'thing' is exported, but not held in RAM, so the Representative
   // should be dropped
-  t.falsy(monitor.deref());
+  t.true(collected.result);
 
   // Invoking a method, on the other hand, *does* require creation of
   // "state" and "context", and creation of "state" requires reading
@@ -70,5 +70,5 @@ test('virtual object state writes', async t => {
 
   // 'thing' is again dropped by RAM, so it should be dropped. If
   // "context" were erroneously retained, it would stick around.
-  t.falsy(monitor.deref());
+  t.true(collected.result);
 });
