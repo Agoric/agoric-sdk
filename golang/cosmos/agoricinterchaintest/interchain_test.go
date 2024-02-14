@@ -8,6 +8,7 @@ import (
 	interchaintest "github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/conformance"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
+	"github.com/agoric-labs/interchaintest/v6/relayer"
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
 	"go.uber.org/zap/zaptest"
 )
@@ -20,10 +21,13 @@ func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
 }
 
 func newCosmosRlyFactory(t *testing.T) interchaintest.RelayerFactory {
+	IBCRelayerImage := "ghcr.io/cosmos/relayer"
+	IBCRelayerVersion := "latest"
+
 	return interchaintest.NewBuiltinRelayerFactory(
 		ibc.CosmosRly,
 		zaptest.NewLogger(t),
-	)
+		relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000"))
 }
 
 func newCosmosHubChainSpec(chainName string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
@@ -47,7 +51,7 @@ func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, n
 
 	return &interchaintest.ChainSpec{
 		Name:          "agoric",
-		ChainName:     chainName, //"agoric-1",
+		ChainName:     chainName,
 		Version:       "heighliner-agoric",
 		GasAdjustment: &gasAdjustment,
 		NoHostMount:   &noHostMount,
@@ -57,7 +61,8 @@ func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, n
 			ChainID: chainID,
 			Images: []ibc.DockerImage{
 				{
-					Repository: "ivanagoric/agoric", // string `yaml:"repository"`
+					// TODO: The image to use should be passed into this test to make it more dynamic
+					Repository: "ivanagoric/agoric",
 					Version:    "heighliner-agoric",
 					UidGid:     "1025:1025",
 				},
@@ -76,18 +81,6 @@ func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, n
 		},
 		NumValidators: &numOfValidators,
 		NumFullNodes:  &numOfFullNodes,
-	}
-}
-
-func newAgoricRelayersFactory(t *testing.T) []interchaintest.RelayerFactory {
-	// Here we define our RelayerFactory by instantiating a new instance of the BuiltinRelayerFactory exposed in interchaintest.
-	// We will instantiate two instances, one for the Go relayer and one for Hermes.
-	rlyFactory := newCosmosRlyFactory(t)
-	hermesFactory := newHermesFactory(t)
-
-	return []interchaintest.RelayerFactory{
-		rlyFactory,
-		hermesFactory,
 	}
 }
 func TestChainPair_Agoric_Cosmos_1Val_CosmosRly(t *testing.T) {
