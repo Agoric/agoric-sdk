@@ -10,8 +10,11 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 import { TestFn } from 'ava';
 import { BridgeHandler } from '@agoric/vats';
 import type { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
-import { makeWalletFactoryDriver } from './drivers.ts';
+import {
+  makeProposalExtractor,
+  makeSwingsetTestKit,
+} from '../../tools/supports.ts';
+import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
 const { Fail } = assert;
 

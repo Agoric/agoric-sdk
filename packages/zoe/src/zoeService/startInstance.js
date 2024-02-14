@@ -6,12 +6,21 @@ import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
   prepareExoClass,
+  prepareExo,
+  watchPromise,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import { defineDurableHandle } from '../makeHandle.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
-import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
+import {
+  AdminFacetI,
+  InstanceAdminI,
+  InstanceAdminShape,
+} from '../typeGuards.js';
+
+// import '../internal-types.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
@@ -23,7 +32,7 @@ const { Fail, quote: q } = assert;
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} zoeBaggage
- * @returns {import('./utils').StartInstance}
+ * @returns {import('./utils.js').StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,
@@ -53,9 +62,44 @@ export const makeStartInstance = (
   const InstanceAdminStateShape = harden({
     instanceStorage: M.remotable('ZoeInstanceStorageManager'),
     instanceAdmin: M.remotable('InstanceAdmin'),
-    seatHandleToSeatAdmin: M.remotable(),
+    seatHandleToSeatAdmin: M.remotable(), // seatHandleToSeatAdmin, but putting that string here is backwards-incompatible
     adminNode: M.remotable('adminNode'),
   });
+
+  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<unknown, [InstanceAdmin, Handle<'adminNode'>]>} */
+  const watcher = prepareExo(
+    zoeBaggage,
+    'InstanceCompletionWatcher',
+    M.interface('InstanceCompletionWatcher', {
+      onFulfilled: M.call(
+        M.any(),
+        InstanceAdminShape,
+        M.remotable('adminNode'),
+      ).returns(),
+      onRejected: M.call(
+        M.any(),
+        InstanceAdminShape,
+        M.remotable('adminNode'),
+      ).returns(),
+    }),
+    {
+      onFulfilled: (completion, instanceAdmin) =>
+        instanceAdmin.exitAllSeats(completion),
+      onRejected: (/** @type {Error} */ reason, instanceAdmin, adminNode) => {
+        if (isUpgradeDisconnection(reason)) {
+          console.log(`resetting promise watcher after upgrade`, reason);
+          // eslint-disable-next-line no-use-before-define
+          watchForAdminNodeDone(adminNode, instanceAdmin);
+        } else {
+          instanceAdmin.failAllSeats(reason);
+        }
+      },
+    },
+  );
+
+  const watchForAdminNodeDone = (adminNode, instAdmin) => {
+    watchPromise(E(adminNode).done(), watcher, instAdmin, adminNode);
+  };
 
   const makeZoeInstanceAdmin = prepareExoClass(
     zoeBaggage,
@@ -131,10 +175,10 @@ export const makeStartInstance = (
       replaceAllocations(seatHandleAllocations) {
         const { state } = this;
         try {
-          seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
+          for (const { seatHandle, allocation } of seatHandleAllocations) {
             const zoeSeatAdmin = state.seatHandleToSeatAdmin.get(seatHandle);
             zoeSeatAdmin.replaceAllocation(allocation);
-          });
+          }
         } catch (err) {
           // nothing for Zoe to do if the termination fails
           void E(state.adminNode).terminateWithFailure(err);
@@ -160,6 +204,10 @@ export const makeStartInstance = (
       isBlocked(string) {
         const { state } = this;
         return state.instanceAdmin.isBlocked(string);
+      },
+      repairContractCompletionWatcher() {
+        const { state, self } = this;
+        void watchForAdminNodeDone(state.adminNode, self);
       },
     },
     {
@@ -278,13 +326,7 @@ export const makeStartInstance = (
     );
     zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
-    E.when(
-      E(adminNode).done(),
-      completion => {
-        instanceAdmin.exitAllSeats(completion);
-      },
-      reason => instanceAdmin.failAllSeats(reason),
-    );
+    void watchForAdminNodeDone(adminNode, instanceAdmin);
 
     /** @type {ZoeInstanceAdmin} */
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(

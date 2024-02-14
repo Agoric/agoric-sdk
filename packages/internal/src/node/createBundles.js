@@ -23,7 +23,7 @@ export const createBundlesFromAbsolute = async sourceBundles => {
     }
     const bundle = match[1];
 
-    const args = cacheToArgs.get(cache) || ['--to', cache];
+    const args = cacheToArgs.get(cache) || ['--cache-js', cache];
     args.push(srcPath, bundle);
     cacheToArgs.set(cache, args);
   }

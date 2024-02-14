@@ -1,9 +1,6 @@
-// @ts-check
-
 import { M } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { E } from '@endo/far';
-import './core/types-ambient.js';
 
 const { Fail, details: X } = assert;
 
@@ -44,7 +41,7 @@ const prepareScopedManager = zone => {
      * @param {{
      *   outbound: (bridgeId: string, obj: unknown) => Promise<any>;
      * }} toBridge
-     * @param {import('./types').BridgeHandler} [inboundHandler]
+     * @param {import('./types.js').BridgeHandler} [inboundHandler]
      */
     (bridgeId, toBridge, inboundHandler) => ({
       bridgeId,

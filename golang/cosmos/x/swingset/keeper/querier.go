@@ -24,17 +24,27 @@ const (
 // NewQuerier is the module level router for state queries
 func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
-		switch path[0] {
+		var queryType string
+		if len(path) > 0 {
+			queryType = path[0]
+		}
+		switch queryType {
 		case QueryEgress:
+			if len(path) < 2 || path[1] == "" {
+				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing egress address")
+			}
 			return queryEgress(ctx, path[1], req, keeper, legacyQuerierCdc)
 		case QueryMailbox:
-			return queryMailbox(ctx, path[1:], req, keeper, legacyQuerierCdc)
+			if len(path) < 2 || path[1] == "" {
+				return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "missing mailbox peer")
+			}
+			return queryMailbox(ctx, path[1], req, keeper, legacyQuerierCdc)
 		case LegacyQueryStorage:
 			return legacyQueryStorage(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		case LegacyQueryKeys:
 			return legacyQueryKeys(ctx, strings.Join(path[1:], "/"), req, keeper, legacyQuerierCdc)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query endpoint")
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown swingset query path")
 		}
 	}
 }
@@ -60,9 +70,7 @@ func queryEgress(ctx sdk.Context, bech32 string, req abci.RequestQuery, keeper K
 }
 
 // nolint: unparam
-func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	peer := path[0]
-
+func queryMailbox(ctx sdk.Context, peer string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	value := keeper.GetMailbox(ctx, peer)
 
 	if value == "" {

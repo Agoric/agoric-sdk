@@ -7,11 +7,14 @@ import (
 	stdlog "log"
 	"math"
 
+	sdkmath "cosmossdk.io/math"
+
 	"github.com/tendermint/tendermint/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -35,6 +38,12 @@ const (
 	StoragePathCustom              = "published"
 	StoragePathBundles             = "bundles"
 	StoragePathSwingStore          = "swingStore"
+)
+
+const (
+	// WalletStoragePathSegment matches the value of WALLET_STORAGE_PATH_SEGMENT
+	// packages/vats/src/core/startWalletFactory.js
+	WalletStoragePathSegment = "wallet"
 )
 
 const (
@@ -63,7 +72,7 @@ type inboundQueueRecord struct {
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.Codec
 	paramSpace paramtypes.Subspace
 
@@ -81,7 +90,7 @@ var _ ante.SwingsetKeeper = &Keeper{}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key sdk.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
@@ -104,6 +113,16 @@ func NewKeeper(
 	}
 }
 
+func populateAction(ctx sdk.Context, action vm.Action) (vm.Action, error) {
+	action = vm.PopulateAction(ctx, action)
+	ah := action.GetActionHeader()
+	if len(ah.Type) == 0 {
+		return nil, fmt.Errorf("action %q cannot have an empty ActionHeader.Type", action)
+	}
+
+	return action, nil
+}
+
 // pushAction appends an action to the controller's specified inbound queue.
 // The queue is kept in the kvstore so that changes are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
@@ -112,20 +131,18 @@ func NewKeeper(
 //
 // The inbound queue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/helpers/make-queue.js`.
-func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Jsonable) error {
+func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.Action) error {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return err
+	}
 	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
 	if !txHashOk {
 		txHash = "unknown"
 	}
 	msgIdx, msgIdxOk := ctx.Context().Value(baseapp.TxMsgIdxContextKey).(int)
 	if !txHashOk || !msgIdxOk {
-		switch action.(type) {
-		case *coreEvalAction:
-			// This is expected for CORE_EVAL since it's not in a transaction
-			// (deferred by governance to a BeginBlocker).
-		default:
-			stdlog.Printf("error while extracting context for action %q\n", action)
-		}
+		stdlog.Printf("error while extracting context for action %q\n", action)
 	}
 	record := inboundQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
 	bz, err := json.Marshal(record)
@@ -137,18 +154,32 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.J
 }
 
 // PushAction appends an action to the controller's actionQueue.
-func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathActionQueue, action)
 }
 
 // PushAction appends an action to the controller's highPriorityQueue.
-func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Jsonable) error {
+func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Action) error {
 	return k.pushAction(ctx, StoragePathHighPriorityQueue, action)
 }
 
 func (k Keeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
 	path := StoragePathHighPrioritySenders + "." + addr.String()
 	return k.vstorageKeeper.HasEntry(ctx, path), nil
+}
+
+// GetSmartWalletState returns the provision state of the smart wallet for the account address
+func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.SmartWalletState {
+	// walletStoragePath is path of `walletStorageNode` constructed in
+	// `provideSmartWallet` from packages/smart-wallet/src/walletFactory.js
+	walletStoragePath := StoragePathCustom + "." + WalletStoragePathSegment + "." + addr.String()
+
+	// TODO: implement a pending provision state
+	if k.vstorageKeeper.HasEntry(ctx, walletStoragePath) {
+		return types.SmartWalletStateProvisioned
+	}
+
+	return types.SmartWalletStateNone
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
@@ -214,7 +245,11 @@ func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
 // until the response.  It is orthogonal to PushAction, and should only be used
 // by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,
 // COMMIT_BLOCK).
-func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Jsonable) (string, error) {
+func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) {
+	action, err := populateAction(ctx, action)
+	if err != nil {
+		return "", err
+	}
 	bz, err := json.Marshal(action)
 	if err != nil {
 		return "", err
@@ -266,9 +301,9 @@ func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 	path := getBeansOwingPathForAddress(addr)
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
-		return sdk.ZeroUint()
+		return sdkmath.ZeroUint()
 	}
-	return sdk.NewUintFromString(entry.StringValue())
+	return sdkmath.NewUintFromString(entry.StringValue())
 }
 
 // SetBeansOwing sets the number of beans that the given address owes to the
@@ -312,6 +347,25 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint
 	// Record the new owing value, whether we have debited immediately or not
 	// (i.e. there is more owing than before, but not enough to debit).
 	k.SetBeansOwing(ctx, addr, remainderOwing)
+	return nil
+}
+
+// ChargeForSmartWallet charges the fee for provisioning a smart wallet.
+func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+	beansPerUnit := k.GetBeansPerUnit(ctx)
+	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
+	err := k.ChargeBeans(ctx, addr, beans)
+	if err != nil {
+		return err
+	}
+
+	// TODO: mark that a smart wallet provision is pending. However in that case,
+	// auto-provisioning should still be performed (but without fees being charged),
+	// until the controller actually provisions the smart wallet (the operation may
+	// transiently fail, requiring retries until success).
+	// However the provisioning code is not currently idempotent, and has side
+	// effects when the smart wallet is already provisioned.
+
 	return nil
 }
 

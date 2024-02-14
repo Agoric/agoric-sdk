@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @file lib-board: share objects by way of plain-data ids
  * @see prepareBoardKit()

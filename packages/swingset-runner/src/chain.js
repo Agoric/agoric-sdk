@@ -167,12 +167,15 @@ export async function initEmulatedChain(config, configPath) {
   const bootVat = config.vats[config.bootstrap];
   await null;
   if (coreProposals) {
-    const { bundles, code } = await extractCoreProposalBundles(
+    const { bundles, codeSteps } = await extractCoreProposalBundles(
       coreProposals,
       configPath,
     );
     config.bundles = { ...config.bundles, ...bundles };
-    bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
+    bootVat.parameters = {
+      ...bootVat.parameters,
+      coreProposalCodeSteps: codeSteps,
+    };
   }
 
   const batchChainStorage = (method, args) =>

@@ -36,7 +36,7 @@ harden(normalizeAddressWithOptions);
 
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
- * @param {import('./rpc').MinimalNetworkConfig & {
+ * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   dryRun?: boolean,
@@ -110,7 +110,7 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
- * @param {import('./rpc').MinimalNetworkConfig & {
+ * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
@@ -150,7 +150,7 @@ export const pollBlocks = opts => async lookup => {
 
 /**
  * @param {string} txhash
- * @param {import('./rpc').MinimalNetworkConfig & {
+ * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,

@@ -54,8 +54,8 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 
 /**
  * @typedef {{
- *   reserveCreatorFacet: import('../../src/reserve/assetReserve').AssetReserveLimitedCreatorFacet;
- *   reservePublicFacet: import('../../src/reserve/assetReserve').AssetReservePublicFacet;
+ *   reserveCreatorFacet: import('../../src/reserve/assetReserve.js').AssetReserveLimitedCreatorFacet;
+ *   reservePublicFacet: import('../../src/reserve/assetReserve.js').AssetReservePublicFacet;
  *   instance: Instance;
  * }} ReserveKit
  */

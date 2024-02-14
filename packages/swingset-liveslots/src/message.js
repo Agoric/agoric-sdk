@@ -3,7 +3,7 @@ import { insistCapData } from './capdata.js';
 
 /**
  * @typedef {{
- * methargs: import('./types').SwingSetCapData, // of [method, args]
+ * methargs: import('./types.js').SwingSetCapData, // of [method, args]
  * result: string | undefined | null,
  * }} Message
  */
@@ -32,7 +32,7 @@ export function insistMessage(message) {
 
 /**
  * @param {unknown} vdo
- * @returns {asserts vdo is VatDeliveryObject}
+ * @returns {asserts vdo is import('./types').VatDeliveryObject}
  */
 
 export function insistVatDeliveryObject(vdo) {
@@ -114,7 +114,7 @@ export function insistVatDeliveryResult(vdr) {
 
 /**
  * @param {unknown} vso
- * @returns {asserts vso is VatSyscallObject}
+ * @returns {asserts vso is import('./types').VatSyscallObject}
  */
 
 export function insistVatSyscallObject(vso) {
@@ -194,7 +194,7 @@ export function insistVatSyscallObject(vso) {
 
 /**
  * @param {unknown} vsr
- * @returns {asserts vsr is VatSyscallResult}
+ * @returns {asserts vsr is import('./types').VatSyscallResult}
  */
 
 export function insistVatSyscallResult(vsr) {

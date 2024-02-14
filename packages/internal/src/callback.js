@@ -14,21 +14,19 @@ const ownKeys =
   );
 
 /**
- * @template T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => Farable<T>} MakeAttenuator
+ * @template {import('@endo/exo/src/exo-makers.js').Methods} T
+ * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo/src/exo-makers.js').Farable<T>} MakeAttenuator
  */
 
 /**
  * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types').Callback<I>} Callback
+ * @typedef {import('./types.js').Callback<I>} Callback
  */
 
 /**
  * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types').SyncCallback<I>} SyncCallback
+ * @typedef {import('./types.js').SyncCallback<I>} SyncCallback
  */
-
-/** @template T @typedef {import('@endo/eventual-send').RemotableBrand<{}, T> & T} Farable */
 
 /**
  * @param {unknown} key

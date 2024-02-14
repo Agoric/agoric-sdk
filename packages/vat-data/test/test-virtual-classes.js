@@ -27,7 +27,7 @@ test('test defineVirtualExoClass', t => {
   const makeUpCounter = defineVirtualExoClass(
     'UpCounter',
     UpCounterI,
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
@@ -58,7 +58,7 @@ test('test defineVirtualExoClassKit', t => {
   const makeCounterKit = defineVirtualExoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       up: {

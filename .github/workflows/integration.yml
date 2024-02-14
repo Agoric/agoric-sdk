@@ -8,6 +8,7 @@ on:
     branches:
       - master
       - 'release-*'
+      - 'dev-*'
       - beta
     tags:
       - '@agoric/sdk@*'
@@ -49,11 +50,6 @@ jobs:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -117,11 +113,6 @@ jobs:
         with:
           submodules: 'true'
           path: ./agoric-sdk
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./agoric-sdk/.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-golang
@@ -130,7 +121,8 @@ jobs:
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:
-          node-version: 18.x
+          # XXX loadgen not compatible with 18.19 https://github.com/Agoric/agoric-sdk/pull/8365#issuecomment-1848003597
+          node-version: 18.18
           path: ./agoric-sdk
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
@@ -221,11 +213,6 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      matrix:
-        bootstrap-version: ['test', 'main']
-    # Uncomment to mark a failure of the `test` bootstrap job as a successful result
-    # continue-on-error: ${{ matrix.bootstrap-version == 'test' }}
     steps:
       - name: free up disk space
         run: |
@@ -241,26 +228,26 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v3
-      - name: Recreate integration-test-result if needed
-        id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
       - name: docker build (sdk)
-        # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
-        # TODO: Build this only once, not for every bootstrap-version.
+        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: cd packages/deployment && make docker-build-sdk
-      - name: docker build upgrade test
+        run: make docker-build-sdk
+        working-directory: packages/deployment
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '18.x'
+      - name: setup a3p-integration
         run: |
-          cd packages/deployment/upgrade-test && \
-            docker build \
-              --build-arg BOOTSTRAP_MODE=${{ matrix.bootstrap-version }} \
-              --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
-              -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
-      - name: docker run upgrade final stage
-        run: docker run --env "DEST=0" docker-upgrade-test:latest
+          corepack enable
+          yarn install
+        working-directory: a3p-integration
+      - name: build proposals tests
+        run: yarn build
+        working-directory: a3p-integration
+      - name: run proposals tests
+        run: yarn test
+        working-directory: a3p-integration
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -275,29 +262,6 @@ jobs:
         timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
-
-  set-integration-result-in-progress:
-    needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
-      - name: Update integration-test-result check to in-progress
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
-            const res = await github.rest.checks.update({
-              ...context.repo,
-              check_run_id: runId,
-              status: "in_progress",
-            })
-            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
-            console.log(`Updated check ${runId} to in-progress`)
 
   finalize-integration-result:
     needs:
@@ -318,26 +282,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - id: get-pending-integration-result
-        uses: ./.github/actions/get-latest-check
-        with:
-          create-if-needed: true
-      - name: Publish integration-test-result
+      - name: Final integration-test-result
         if: always()
         uses: actions/github-script@v6
         with:
           script: |
-            const runId = "${{ steps.get-pending-integration-result.outputs.run_id }}";
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
             const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
             const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
             const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
               'success' : 'failure';
-            const res = await github.rest.checks.update({
-              ...context.repo,
-              check_run_id: runId,
-              conclusion,
-            })
-            core.debug(`Check update response: ${JSON.stringify(res, null, 2)}`)
-            console.log(`Updated check ${runId} to ${conclusion}`)
+            console.log(`Finishing with ${conclusion}`)
+            if (conclusion === 'failure') {
+              core.setFailed('Integration tests failed')
+            }

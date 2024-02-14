@@ -3,12 +3,12 @@
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 /**
- * @typedef {(message: any[], ackNum: number) => void} DeliverMessages
+ * @typedef {(message: any[], ackNum: number) => Promise<void>} DeliverMessages
  */
 
 /**
  * @param {DeliverMessages} deliver
- * @param {{ clearTimeout: NodeJS.clearTimeout, setTimeout: NodeJS.setTimeout }} io
+ * @param {{ clearTimeout: import('node:timers').clearTimeout, setTimeout: import('node:timers').setTimeout }} io
  * @param {number} batchTimeoutMs
  */
 export function makeBatchedDeliver(
@@ -34,7 +34,7 @@ export function makeBatchedDeliver(
         // Transfer the batched messages to the deliver function.
         const msgs = batchedMessages;
         batchedMessages = [];
-        deliver(msgs, latestAckNum);
+        void deliver(msgs, latestAckNum);
       }, batchTimeoutMs);
     }
 

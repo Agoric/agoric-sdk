@@ -590,12 +590,12 @@ test('durable kind IDs can be reanimated', t => {
 
   // Store it in the store without having used it
   placeToPutIt.init('savedKindID', kindHandle);
-  t.is(log.shift(), 'get vc.1.ssavedKindID => undefined');
+  t.is(log.shift(), 'get vc.4.ssavedKindID => undefined');
   t.is(log.shift(), `get vom.rc.${khid} => undefined`);
   t.is(log.shift(), `set vom.rc.${khid} 1`);
-  t.is(log.shift(), `set vc.1.ssavedKindID ${vstr(kind)}`);
-  t.is(log.shift(), 'get vc.1.|entryCount => 0');
-  t.is(log.shift(), 'set vc.1.|entryCount 1');
+  t.is(log.shift(), `set vc.4.ssavedKindID ${vstr(kind)}`);
+  t.is(log.shift(), 'get vc.4.|entryCount => 0');
+  t.is(log.shift(), 'set vc.4.|entryCount 1');
   t.deepEqual(log, []);
 
   // Forget its Representative
@@ -609,7 +609,7 @@ test('durable kind IDs can be reanimated', t => {
 
   // Fetch it from the store, which should reanimate it
   const fetchedKindID = placeToPutIt.get('savedKindID');
-  t.is(log.shift(), `get vc.1.ssavedKindID => ${vstr(kind)}`);
+  t.is(log.shift(), `get vc.4.ssavedKindID => ${vstr(kind)}`);
   t.is(
     log.shift(),
     'get vom.dkind.10.descriptor => {"kindID":"10","tag":"testkind"}',
@@ -658,9 +658,23 @@ test('virtual object gc', t => {
   ];
   t.is(log.shift(), `get storeKindIDTable => undefined`);
   t.is(log.shift(), `set ${skit[0]} ${skit[1]}`);
+  t.is(log.shift(), 'set vc.1.|nextOrdinal 1');
+  t.is(log.shift(), 'set vc.1.|entryCount 0');
+  t.is(log.shift(), 'get watcherTableID => undefined');
+  t.is(log.shift(), 'set vc.2.|nextOrdinal 1');
+  t.is(log.shift(), 'set vc.2.|entryCount 0');
+  t.is(log.shift(), 'set watcherTableID o+d6/2');
+  t.is(log.shift(), 'get vom.rc.o+d6/2 => undefined');
+  t.is(log.shift(), 'set vom.rc.o+d6/2 1');
+  t.is(log.shift(), 'get watchedPromiseTableID => undefined');
+  t.is(log.shift(), 'set vc.3.|nextOrdinal 1');
+  t.is(log.shift(), 'set vc.3.|entryCount 0');
+  t.is(log.shift(), 'set watchedPromiseTableID o+d6/3');
+  t.is(log.shift(), 'get vom.rc.o+d6/3 => undefined');
+  t.is(log.shift(), 'set vom.rc.o+d6/3 1');
   t.is(
     log.shift(),
-    `set vom.vkind.10.descriptor {"kindID":"10","tag":"thing"}`,
+    'set vom.vkind.10.descriptor {"kindID":"10","tag":"thing"}',
   );
   t.is(log.shift(), `set vom.vkind.11.descriptor {"kindID":"11","tag":"ref"}`);
   t.deepEqual(log, []);
@@ -686,6 +700,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.${tbase}/1`, minThing('thing #1')],
     [`vom.${tbase}/2`, minThing('thing #2')],
     [`vom.${tbase}/3`, minThing('thing #3')],
@@ -695,8 +715,12 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // This is what the finalizer would do if the local reference was dropped and GC'd
@@ -722,6 +746,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.es.${tbase}/1`, 'r'],
     [`vom.${tbase}/1`, minThing('thing #1')],
     [`vom.${tbase}/2`, minThing('thing #2')],
@@ -732,8 +762,12 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // drop export -- should delete
@@ -763,6 +797,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.${tbase}/2`, minThing('thing #2')],
     [`vom.${tbase}/3`, minThing('thing #3')],
     [`vom.${tbase}/4`, minThing('thing #4')],
@@ -771,8 +811,12 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // case 2: export, drop export, drop local ref
@@ -790,6 +834,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.es.${tbase}/2`, 's'],
     [`vom.${tbase}/2`, minThing('thing #2')],
     [`vom.${tbase}/3`, minThing('thing #3')],
@@ -799,8 +849,12 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // drop local ref -- should delete
@@ -821,6 +875,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.${tbase}/3`, minThing('thing #3')],
     [`vom.${tbase}/4`, minThing('thing #4')],
     [`vom.${tbase}/5`, minThing('thing #5')],
@@ -828,8 +888,12 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // case 3: drop local ref with no prior export
@@ -851,14 +915,24 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.${tbase}/4`, minThing('thing #4')],
     [`vom.${tbase}/5`, minThing('thing #5')],
     [`vom.${tbase}/6`, minThing('thing #6')],
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 
   // case 4: ref virtually, export, drop local ref, drop export
@@ -871,15 +945,25 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.${tbase}/4`, minThing('thing #4')],
     [`vom.${tbase}/5`, minThing('thing #5')],
     [`vom.${tbase}/6`, minThing('thing #6')],
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     [`vom.rc.${tbase}/4`, '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
   // export
   setExportStatus(`${tbase}/4`, 'reachable');
@@ -913,6 +997,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 'r'],
     [`vom.${tbase}/4`, minThing('thing #4')],
@@ -921,10 +1011,14 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC(`${tbase}/5`, false);
@@ -948,6 +1042,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 's'],
     [`vom.${tbase}/4`, minThing('thing #4')],
@@ -956,11 +1056,15 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
     [`vom.rc.${tbase}/6`, '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
   // drop local ref -- should not delete because ref'd virtually
   pretendGC(`${tbase}/6`, false);
@@ -970,6 +1074,12 @@ test('virtual object gc', t => {
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
     skit,
+    ['vc.1.|entryCount', '0'],
+    ['vc.1.|nextOrdinal', '1'],
+    ['vc.2.|entryCount', '0'],
+    ['vc.2.|nextOrdinal', '1'],
+    ['vc.3.|entryCount', '0'],
+    ['vc.3.|nextOrdinal', '1'],
     [`vom.es.${tbase}/4`, 's'],
     [`vom.es.${tbase}/5`, 's'],
     [`vom.${tbase}/4`, minThing('thing #4')],
@@ -978,11 +1088,15 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
+    ['vom.rc.o+d6/2', '1'],
+    ['vom.rc.o+d6/3', '1'],
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
     [`vom.rc.${tbase}/6`, '1'],
     ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
     ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
+    ['watchedPromiseTableID', 'o+d6/3'],
+    ['watcherTableID', 'o+d6/2'],
   ]);
 });
 

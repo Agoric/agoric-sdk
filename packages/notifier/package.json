@@ -36,18 +36,18 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^0.2.21",
-    "@endo/marshal": "^0.8.8",
-    "@endo/patterns": "^0.2.5",
-    "@endo/promise-kit": "^0.2.59"
+    "@endo/far": "^1.0.2",
+    "@endo/marshal": "^1.1.0",
+    "@endo/patterns": "^1.1.0",
+    "@endo/promise-kit": "^1.0.2"
   },
   "devDependencies": {
     "@agoric/kmarshal": "^0.1.0",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/swing-store": "^0.9.1",
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/init": "^0.5.59",
-    "@endo/ses-ava": "^0.2.43",
+    "@endo/init": "^1.0.2",
+    "@endo/ses-ava": "^1.1.0",
     "ava": "^5.3.0",
     "c8": "^7.13.0"
   },

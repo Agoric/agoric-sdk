@@ -7,7 +7,7 @@ import '@endo/init';
 
 /**
  * @template T
- * @typedef {import('./defer').Deferred<T>} Deferred
+ * @typedef {import('./defer.js').Deferred<T>} Deferred
  */
 import * as childProcess from 'child_process';
 import fs from 'fs';

@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {

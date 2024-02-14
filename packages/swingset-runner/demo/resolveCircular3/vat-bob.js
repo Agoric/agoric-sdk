@@ -15,11 +15,11 @@ export function buildRootObject() {
   let r2;
   return Far('root', {
     genPromise1() {
-      [p1, r1] = makePR();
+      void ([p1, r1] = makePR());
       return p1;
     },
     genPromise2() {
-      [p2, r2] = makePR();
+      void ([p2, r2] = makePR());
       return p2;
     },
     usePromises(pa, pb) {

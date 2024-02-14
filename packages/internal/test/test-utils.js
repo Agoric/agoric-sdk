@@ -3,8 +3,6 @@ import test from 'ava';
 
 import { Far } from '@endo/far';
 import {
-  fromUniqueEntries,
-  objectMap,
   makeMeasureSeconds,
   assertAllDefined,
   whileTrue,
@@ -13,51 +11,6 @@ import {
   deeplyFulfilledObject,
   synchronizedTee,
 } from '../src/utils.js';
-
-test('fromUniqueEntries', t => {
-  /** @type {[string | symbol, number][]} */
-  const goodEntries = [
-    ['a', 7],
-    ['b', 8],
-    [Symbol.hasInstance, 9],
-  ];
-  const goodObj1 = Object.fromEntries(goodEntries);
-  t.deepEqual(goodObj1, {
-    a: 7,
-    b: 8,
-    [Symbol.hasInstance]: 9,
-  });
-  const goodObj2 = fromUniqueEntries(goodEntries);
-  t.deepEqual(goodObj2, goodObj1);
-
-  /** @type {[string | symbol, number][]} */
-  const badEntries = [
-    ['a', 7],
-    ['a', 8],
-    [Symbol.hasInstance, 9],
-  ];
-  const badObj = Object.fromEntries(badEntries);
-  t.deepEqual(badObj, {
-    a: 8,
-    [Symbol.hasInstance]: 9,
-  });
-  t.throws(() => fromUniqueEntries(badEntries), {
-    message: /^collision on property name "a": .*$/,
-  });
-});
-
-test('objectMap', t => {
-  // @ts-expect-error
-  t.throws(() => objectMap({ a: 1 }), { message: 'mapFn is not a function' });
-  t.deepEqual(
-    objectMap({ a: 1 }, val => val * 2),
-    { a: 2 },
-  );
-  t.deepEqual(
-    objectMap({ a: 1 }, (val, key) => `${key}:${val}`),
-    { a: 'a:1' },
-  );
-});
 
 test('deeplyFulfilledObject', async t => {
   const someFar = Far('somefar', { getAsync: () => Promise.resolve('async') });
@@ -182,6 +135,7 @@ const consumeStreamInto = async (stream, output, maxItems) => {
 const generateStream = async function* generateStream(items) {
   yield* items;
 };
+harden(generateStream);
 
 test('synchronizedTee - consumeAll - 1 reader', async t => {
   const sourceData = [1, 2, 3];
@@ -251,6 +205,7 @@ test('synchronizedTee - consume synchronized', async t => {
       }
     }
   }
+  harden(generate);
   const source = generate();
   const [reader1, reader2] = synchronizedTee(source, 2);
   await Promise.all([

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';

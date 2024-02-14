@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- accomodate different type search depths */
 import { assert } from '@agoric/assert';
 import {
   M,
@@ -33,20 +34,24 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     'installationsBundle',
   );
 
+  /** @type {(bundleLabel: string) => Installation<unknown>} */
   const makeBundleIDInstallation = prepareKind(
     zoeBaggage,
     'BundleIDInstallation',
     bundleLabel => ({ bundleLabel }),
+    // @ts-ignore cast without StartFunction property
     {
       getBundle: _context => Fail`bundleID-based Installation`,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
     },
   );
 
+  /** @type {(bundle: SourceBundle, bundleLabel?: string) => Installation<unknown>} */
   const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',
     (bundle, bundleLabel) => ({ bundle, bundleLabel }),
+    // @ts-ignore cast without StartFunction property
     {
       getBundle: ({ state: { bundle } }) => bundle,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
@@ -68,8 +73,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     typeof bundle === 'object' || Fail`a bundle must be provided`;
     /** @type {Installation} */
     bundle || Fail`a bundle must be provided`;
-    /** @type {Installation} */
-    // @ts-expect-error cast
     const installation = makeBundleInstallation(bundle, bundleLabel);
     installationsBundle.init(installation, bundle);
     return installation;
@@ -81,8 +84,12 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
         InstanceHandleShape,
         M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
       ),
-    ).returns(M.promise()),
-    installBundleID: M.call(M.string()).returns(M.promise()),
+    )
+      .optional(M.string())
+      .returns(M.promise()),
+    installBundleID: M.call(M.string())
+      .optional(M.string())
+      .returns(M.promise()),
     unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(
       UnwrappedInstallationShape,
     ),
@@ -125,8 +132,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
         const bundleCap = await getBundleCapForID(bundleID);
         // AWAIT
 
-        /** @type {Installation} */
-        // @ts-expect-error cast
         const installation = makeBundleIDInstallation(bundleLabel);
         installationsBundleCap.init(
           installation,

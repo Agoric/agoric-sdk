@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @typedef {{
  *   brand: import('@agoric/internal/src/marshal.js').BoardRemote;

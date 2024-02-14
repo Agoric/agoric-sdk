@@ -38,7 +38,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, withBankManager);
 });
 
-const DEBUG = false;
+const LOG_NEWS_HEAD = false;
 const bigIntReplacer = (_key, val) =>
   typeof val === 'bigint' ? Number(val) : val;
 
@@ -68,7 +68,7 @@ test.serial('avoid O(wallets) storage writes for a new asset', async t => {
       const news = await E(current).subscribeAfter(publishCount);
       publishCount = news.publishCount;
       chainStorageWrites += 1;
-      if (DEBUG) {
+      if (LOG_NEWS_HEAD) {
         console.log(JSON.stringify(news.head, bigIntReplacer, 2));
       }
     }

@@ -7,6 +7,14 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
  */
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
+
+type MakeInvitation = <Result>(
+  offerHandler: OfferHandler<Result>,
+  description: string,
+  customDetails?: object,
+  proposalShape?: Pattern,
+) => Promise<Invitation<R, A>>;
+
 /**
  * Zoe Contract Facet
  *
@@ -54,12 +62,7 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * getting in the `customDetails`. `customDetails` will be
    * placed in the details of the invitation.
    */
-  makeInvitation: <Result>(
-    offerHandler: OfferHandler<Result>,
-    description: string,
-    customDetails?: object,
-    proposalShape?: Pattern,
-  ) => Promise<Invitation<R, A>>;
+  makeInvitation: MakeInvitation;
   shutdown: (completion: Completion) => void;
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
@@ -244,4 +247,4 @@ type ContractStartFnResult<PF, CF> = {
   creatorInvitation?: Promise<Invitation<R, A>> | undefined;
 };
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
-type AdminFacet = import('../zoeService/utils').AdminFacet;
+type AdminFacet = import('../zoeService/utils').AdminFacet<any>;

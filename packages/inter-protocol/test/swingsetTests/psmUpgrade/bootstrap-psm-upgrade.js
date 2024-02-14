@@ -71,13 +71,13 @@ export const buildRootObject = async () => {
    *   >;
    *   psmV1?: Installation<PsmSF>;
    *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor').start
+   *     import('@agoric/governance/tools/puppetContractGovernor.js').start
    *   >;
    * }}
    */
   const installations = {};
 
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<PsmSF>} */
+  /** @type {import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<PsmSF>} */
   let governorFacets;
 
   /**
@@ -122,9 +122,11 @@ export const buildRootObject = async () => {
     /**
      * @param {{
      *   vatAdmin: ReturnType<
-     *     import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin')['buildRootObject']
+     *     import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js')['buildRootObject']
      *   >;
-     *   zoe: ReturnType<import('@agoric/vats/src/vat-zoe')['buildRootObject']>;
+     *   zoe: ReturnType<
+     *     import('@agoric/vats/src/vat-zoe.js')['buildRootObject']
+     *   >;
      * }} vats
      * @param {any} devices
      */
@@ -276,6 +278,8 @@ export const buildRootObject = async () => {
       ).getAdminFacet();
       const upgradeResult = await E(psmAdminFacet).upgradeContract(bundleId, {
         ...staticPrivateArgs,
+        // @ts-expect-error mock
+        feeMintAccess: undefined,
         initialPoserInvitation,
       });
       // incremented from zero

@@ -1,3 +1,13 @@
+export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
+export { makeScalarSetStore } from './stores/scalarSetStore.js';
+export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
+export { makeScalarMapStore } from './stores/scalarMapStore.js';
+
+export { provideLazy } from './stores/store-utils.js';
+
+// /////////////////////// Deprecated Re-exports ///////////////////////////////
+// Importers should import directly from the packages shown below
+
 export {
   isKey,
   assertKey,
@@ -42,6 +52,8 @@ export {
   assertPattern,
   matches,
   mustMatch,
+  isCopySet,
+  isCopyMap,
 } from '@endo/patterns';
 
 export {
@@ -50,13 +62,6 @@ export {
   defineExoClassKit,
   makeExo,
 } from '@endo/exo';
-
-export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
-export { makeScalarSetStore } from './stores/scalarSetStore.js';
-export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
-export { makeScalarMapStore } from './stores/scalarMapStore.js';
-
-export { provideLazy, isCopyMap, isCopySet } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 

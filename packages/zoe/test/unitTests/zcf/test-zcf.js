@@ -707,7 +707,10 @@ test(`zcfSeat from zcf.makeEmptySeatKit - only these properties exist`, async t 
   const { zcf } = await setupZCFTest();
   const makeZCFSeat = () => zcf.makeEmptySeatKit().zcfSeat;
   const seat = makeZCFSeat();
-  t.deepEqual(getStringMethodNames(seat), expectedStringMethods.sort());
+  t.deepEqual(
+    getStringMethodNames(seat).filter(name => !name.startsWith('__')),
+    expectedStringMethods.sort(),
+  );
 });
 
 test(`zcfSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
@@ -1270,6 +1273,45 @@ test('numWantsSatisfied: no', async t => {
 
   await zcfSeat.exit();
   t.is(await E(userSeat).numWantsSatisfied(), 0);
+
+  t.deepEqual(await E(E(userSeat).getExitSubscriber()).getUpdateSince(), {
+    updateCount: undefined,
+    value: undefined,
+  });
+});
+
+test('numWantsSatisfied: fail', async t => {
+  const { zcf } = await setupZCFTest();
+  const doubloonMint = await zcf.makeZCFMint('Doubloons');
+  const yenMint = await zcf.makeZCFMint('Yen');
+  const { brand: doubloonBrand } = doubloonMint.getIssuerRecord();
+  const { brand: yenBrand } = yenMint.getIssuerRecord();
+  const yenAmount = AmountMath.make(yenBrand, 100n);
+  const proposal = harden({
+    give: { DownPayment: yenAmount },
+    want: { Bonus: AmountMath.make(doubloonBrand, 1_000_000n) },
+  });
+
+  const { zcfSeat: mintSeat, userSeat: payoutSeat } = zcf.makeEmptySeatKit();
+  yenMint.mintGains(harden({ Cost: yenAmount }), mintSeat);
+  mintSeat.exit();
+  const payout = await E(payoutSeat).getPayout('Cost');
+  const payment = { DownPayment: payout };
+
+  const { zcfSeat, userSeat } = await makeOffer(
+    zcf.getZoeService(),
+    zcf,
+    proposal,
+    payment,
+  );
+
+  void zcfSeat.fail(Error('whatever'));
+  t.is(await E(userSeat).numWantsSatisfied(), 0);
+
+  await t.throwsAsync(
+    () => E(E(userSeat).getExitSubscriber()).getUpdateSince(),
+    { message: 'whatever' },
+  );
 });
 
 test('numWantsSatisfied: yes', async t => {
@@ -1290,6 +1332,11 @@ test('numWantsSatisfied: yes', async t => {
 
   await zcfSeat.exit();
   t.is(await E(userSeat).numWantsSatisfied(), 1);
+
+  t.deepEqual(await E(E(userSeat).getExitSubscriber()).getUpdateSince(), {
+    updateCount: undefined,
+    value: undefined,
+  });
 });
 
 test('numWantsSatisfied as promise', async t => {
@@ -1314,4 +1361,9 @@ test('numWantsSatisfied as promise', async t => {
 
   await zcfSeat.exit();
   await outcome;
+
+  t.deepEqual(await E(E(userSeat).getExitSubscriber()).getUpdateSince(), {
+    updateCount: undefined,
+    value: undefined,
+  });
 });

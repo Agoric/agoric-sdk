@@ -117,7 +117,7 @@ prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail
 SDKVER=$(( prior + 1 ))
 git tag @agoric/sdk@$SDKVER
 # Push the branch.
-git push -u origin release-$now
+git push -u origin prepare-release-$now
 # Tell which packages have actual news.
 scripts/have-news HEAD^ > have-news.md
 ```

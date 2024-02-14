@@ -1,4 +1,3 @@
-// @ts-check
 import { makeMap } from 'jessie.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -18,7 +17,7 @@ const trace = makeTracer('StartWF');
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Installation<
- *   import('@agoric/smart-wallet/src/walletFactory').start
+ *   import('@agoric/smart-wallet/src/walletFactory.js').start
  * >} inst
  *
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
@@ -109,6 +108,9 @@ export const startWalletFactory = async (
   },
   { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
+  // The wallet path is read by the cosmos side to check provisioning
+  // See `WalletStoragePathSegment` and `GetSmartWalletState` in
+  // golang/cosmos/x/swingset/keeper/keeper.go
   const WALLET_STORAGE_PATH_SEGMENT = 'wallet';
   const POOL_STORAGE_PATH_SEGMENT = 'provisionPool';
   const OLD_WALLET_STORAGE_PATH = 'published.wallet';

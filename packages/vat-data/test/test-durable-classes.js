@@ -33,7 +33,7 @@ test('test defineDurableExoClass', t => {
   const makeUpCounter = defineDurableExoClass(
     upCounterKind,
     UpCounterI,
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
@@ -69,7 +69,7 @@ test('test defineDurableExoClassKit', t => {
   const makeCounterKit = defineDurableExoClassKit(
     counterKindHandle,
     { up: UpCounterI, down: DownCounterI },
-    /** @param {number} x */
+    /** @param {number} [x] */
     (x = 0) => ({ x }),
     {
       up: {
@@ -124,7 +124,7 @@ test('finish option', t => {
     UpCounterI,
     /**
      * @param {string} name
-     * @param {number} x
+     * @param {number} [x]
      */
     (name, x = 0) => ({ name, x }),
     {

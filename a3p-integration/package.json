@@ -1,0 +1,16 @@
+{
+    "private": true,
+    "agoricSyntheticChain": {
+        "fromTag": "latest"
+    },
+    "scripts": {
+        "build": "../scripts/generate-a3p-submission.sh && yarn synthetic-chain build",
+        "test": "yarn synthetic-chain test",
+        "doctor": "yarn synthetic-chain doctor"
+    },
+    "dependencies": {
+        "@agoric/synthetic-chain": "^0.0.6-4"
+    },
+    "packageManager": "yarn@4.1.0",
+    "license": "Apache-2.0"
+}

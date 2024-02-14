@@ -2,7 +2,7 @@
 
 Some dimensions on which our Stores differ. For each of these dimensions, in the headings below we indicate the dominant default choice with a plus (+). A given Store maker should document which non-default points in this design space it supports. For example, the `makeScalarMapStore` function makes stores that are Strong and Ephemeral and have Scalar keys and Passable values.  The name is explicit only about the dimensions in which it differs from the defaults.
 
-This package establishes the naming scheme, but only populates some of the choices below. It is left to higher layer packages, such as `@agoric/vat-data`, to provide some of the other choices explained below.
+This package establishes the naming scheme, but only populates some of the choices below. It is left to higher layer packages, such as [@agoric/vat-data](../../vat-data), to provide some of the other choices explained below.
 
 All stores are Far objects (a kind of remotable) that may be snapshotted to (or restored from) a corresponding pass-by-copy objects. MapStores snapshot into CopyMaps. SetStores snapshot into CopySets.
 
@@ -57,7 +57,7 @@ If we expect a weak store to outlive most of its keys, we consider it long lived
 
 ## Small+ vs Big
 
-There is no qualifier for small. Non-big stores are always small. The `@agoric/store` package implements only small stores. Big stores are provided by the `@agoric/vat-data` package.
+There is no qualifier for small. Non-big stores are always small. The [@agoric/store](../../store) package implements only small stores. Big stores are provided by the [@agoric/vat-data](../../vat-data) package.
 
 * ***`make*Store`*** <br>
 A small store is one that is expected to fit into a normal JavaScript object using JavaScript's normal heap memory and occupying room in vat snapshots.

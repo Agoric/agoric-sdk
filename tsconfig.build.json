@@ -1,0 +1,36 @@
+/* Visit Visit https://www.typescriptlang.org/tsconfig to read more about this file */
+{
+    "extends": [
+        "./tsconfig.json",
+        "./tsconfig-build-options.json"
+    ],
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "outDir": "./build"
+    },
+    "exclude": [
+        "packages/agoric-cli",
+        "packages/benchmark",
+        "packages/cosmic-swingset",
+        "packages/deployment",
+        "packages/import-manager",
+        "packages/solo",
+        "packages/stat-logger",
+        "packages/swingset-runner",
+        "packages/telemetry",
+        "packages/xsnap/moddable",
+        "packages/xsnap/xsnap-native",
+        "packages/xsnap-lockdown",
+        "**/build",
+        "**/dist",
+        "**/docs",
+        "**/*.umd.js",
+        "**/proposals",
+        "**/scripts",
+        "**/test"
+    ],
+    "include": [
+        "./**/*.ts",
+        "packages/**/*.js"
+    ]
+}

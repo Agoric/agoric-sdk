@@ -548,15 +548,16 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
     }
   }
+  harden(enumerateNonDurableObjectExports);
 
   /**
    * Allocate a new koid.
    *
    * @param {string} ownerID
-   * @param {undefined | bigint} id
+   * @param {bigint} [id]
    * @returns {string}
    */
-  function addKernelObject(ownerID, id = undefined) {
+  function addKernelObject(ownerID, id) {
     // providing id= is only for unit tests
     insistVatID(ownerID);
     if (id === undefined) {
@@ -936,6 +937,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
     }
   }
+  harden(enumeratePromisesByDecider);
 
   function addSubscriberToPromise(kernelSlot, vatID) {
     insistKernelType('promise', kernelSlot);

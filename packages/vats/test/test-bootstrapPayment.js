@@ -1,5 +1,3 @@
-// @ts-check
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -14,7 +12,7 @@ import { feeIssuerConfig } from '../src/core/utils.js';
 
 /**
  * @template T @typedef
- *   {import('@agoric/zoe/src/zoeService/utils').Installation<T>}
+ *   {import('@agoric/zoe/src/zoeService/utils.js').Installation<T>}
  *   Installation<T>
  */
 /**

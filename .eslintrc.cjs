@@ -47,6 +47,9 @@ module.exports = {
   plugins: ['@typescript-eslint', 'prettier'],
   extends: ['@agoric', 'plugin:ava/recommended'],
   rules: {
+    // UNTIL on Endo with https://github.com/endojs/endo/pull/2032
+    '@endo/no-nullish-coalescing': 'off',
+
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
@@ -145,6 +148,7 @@ module.exports = {
     {
       files: ['*.ts'],
       rules: {
+        'jsdoc/require-param-type': 'off',
         // TS has this covered and eslint gets it wrong
         'no-undef': 'off',
       },
@@ -154,14 +158,6 @@ module.exports = {
       files: ['*.html'],
       parserOptions: {
         project: false,
-      },
-    },
-    {
-      files: ['packages/**/upgrade-test-scripts/**/*.*js'],
-      rules: {
-        // NOTE: This rule is enabled for the repository in general.  We turn it
-        // off for test code for now.
-        '@jessie.js/safe-await-separator': 'off',
       },
     },
     {

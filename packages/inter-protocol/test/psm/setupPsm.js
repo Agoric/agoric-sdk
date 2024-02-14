@@ -25,7 +25,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time').TimerService} timer
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsmBootstrap = async (
@@ -99,6 +99,7 @@ export const setupPsm = async (
   issuer.produce.IST.resolve(istIssuer);
 
   space.produce.provisionPoolStartResult.resolve({
+    // @ts-expect-error mock
     creatorFacet: Far('dummy', {
       initPSM: () => {
         t.log('dummy provisionPool.initPSM');

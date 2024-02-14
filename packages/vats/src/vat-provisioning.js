@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifierKit } from '@agoric/notifier';
 import {
@@ -57,7 +56,7 @@ const prepareSpecializedNameAdmin = zone => {
         // XXX relies on callers not to provide other admins via update()
         // TODO: enforce?
 
-        /** @type {import('./types').MyAddressNameAdmin} */
+        /** @type {import('./types.js').MyAddressNameAdmin} */
         // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
         // @ts-ignore cast
         const myAdmin = nameAdmin.lookupAdmin(address);
@@ -92,7 +91,6 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   const makeNamesByAddressAdmin = prepareSpecializedNameAdmin(zone);
 
   const nameHubKit = provide(baggage, 'nameHubKit', () => makeNameHubKit());
-  const { nameHub: namesByAddress } = makeNameHubKit();
   const namesByAddressAdmin = makeNamesByAddressAdmin(nameHubKit.nameAdmin);
 
   // xxx end-user ag-solo provisioning stuff (devnet only)
@@ -169,6 +167,7 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   return Far('root', {
     register,
     pleaseProvision,
-    getNamesByAddressKit: () => harden({ namesByAddress, namesByAddressAdmin }),
+    getNamesByAddressKit: () =>
+      harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
   });
 }

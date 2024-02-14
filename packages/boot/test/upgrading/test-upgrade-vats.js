@@ -3,13 +3,9 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import {
-  makeRunUtils,
-  matchAmount,
-  matchIter,
-  matchRef,
-} from '../bootstrapTests/supports.ts';
+import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
 
 /**
  * @type {import('ava').TestFn<{}>}
@@ -63,7 +59,7 @@ const makeScenario = async (
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
-  const runUtils = makeRunUtils(c, t.log);
+  const runUtils = makeRunUtils(c);
   return runUtils;
 };
 
@@ -428,7 +424,7 @@ test('upgrade vat-priceAuthority', async t => {
     priceAuthorityVatConfig,
   );
 
-  /** @type {import('@agoric/zoe/tools/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
+  /** @type {import('@agoric/vats/src/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
   const registry = await EV(priceAuthorityRoot).getRegistry();
 
   // Ideally we'd also test registering a PA and verifying the same one comes out the def end.

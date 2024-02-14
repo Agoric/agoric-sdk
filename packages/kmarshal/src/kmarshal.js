@@ -92,6 +92,8 @@ const [makeStandinPromise, getStandinPromiseTag] = (() => {
     }
   }
 })();
+export { makeStandinPromise };
+harden(makeStandinPromise);
 
 /**
  * @param {string} kref

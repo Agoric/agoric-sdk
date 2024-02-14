@@ -1,4 +1,3 @@
-// @ts-check
 // @jessie-check
 
 import { prepareIssuerKit } from '@agoric/ertp';

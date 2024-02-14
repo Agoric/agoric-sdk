@@ -75,7 +75,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
- *   import('../econCommitteeCharter')['start']
+ *   import('../econCommitteeCharter.js')['start']
  * >} EconCharterStartResult
  */
 /**
@@ -462,9 +462,9 @@ export const startRewardDistributor = async ({
     });
 
   /**
-   * @type {Awaited<
-   *   ReturnType<typeof import('../feeDistributor.js').makeFeeDistributor>
-   * > & { adminFacet: AdminFacet; instance: Instance }}
+   * @type {StartedInstanceKit<
+   *   typeof import('@agoric/inter-protocol/src/feeDistributor.js').start
+   * >}
    */
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
@@ -473,7 +473,6 @@ export const startRewardDistributor = async ({
     undefined,
     'feeDistributor',
   );
-  /** @type {ERef<import('../feeDistributor.js').FeeDestination>} */
   await E(instanceKit.creatorFacet).setDestinations({
     ...(rewardDistributorDepositFacet && {
       RewardDistributor: E(

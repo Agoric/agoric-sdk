@@ -80,16 +80,19 @@ const assembleAuctionBook = async basics => {
 
 test('states', async t => {
   const basics = await setupBasics();
-  const { moolaKit, simoleanKit } = basics;
-  const { book } = await assembleAuctionBook(basics);
+  const { moolaKit, moola, simoleanKit, simoleans } = basics;
+  const { pa, book } = await assembleAuctionBook(basics);
+
+  pa.setPrice(makeRatioFromAmounts(moola(9n), simoleans(10n)));
+  await eventLoopIteration();
 
   book.captureOraclePriceForRound();
   book.setStartingRate(makeRatio(90n, moolaKit.brand, 100n));
   t.deepEqual(
     book.getCurrentPrice(),
     makeRatioFromAmounts(
-      AmountMath.makeEmpty(moolaKit.brand),
-      AmountMath.make(simoleanKit.brand, 100n),
+      AmountMath.make(moolaKit.brand, 81_000_000_000n),
+      AmountMath.make(simoleanKit.brand, 100_000_000_000n),
     ),
   );
 });

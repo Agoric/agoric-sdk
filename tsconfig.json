@@ -4,17 +4,16 @@
     "module": "esnext",
     "moduleResolution": "node",
     "skipLibCheck": true,
-
     "allowJs": true,
     "checkJs": true,
     "strict": false,
     "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
-
     "noEmit": true
   },
   "include": [
-    ".eslintrc.cjs"
+    ".eslintrc.cjs",
+    "dist"
   ]
 }

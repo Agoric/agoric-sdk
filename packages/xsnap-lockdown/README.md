@@ -2,7 +2,7 @@
 
 This package provides the bundles necessary to prepare an Endo (aka SES: Secure ECMAScript) environment within an `xsnap` worker process.
 
-The basic xsnap package (@agoric/xsnap) provides two components. The first is the `xsnap-worker` executable, which embeds the XS JavaScript engine inside a driver program that listens for commands on a socket. The second is a library which can launch that program as a child process, and sends/receives messages over the socket. The `@agoric/xsnap` API lets you perform three basic operations on the worker: evaluate a string of code, deliver a string to a globally-registered handler function, and instruct the XS engine to write out a heap snapshot.
+The basic xsnap package ([@agoric/xsnap](../xsnap)) provides two components. The first is the `xsnap-worker` executable, which embeds the XS JavaScript engine inside a driver program that listens for commands on a socket. The second is a library which can launch that program as a child process, and sends/receives messages over the socket. The `@agoric/xsnap` API lets you perform three basic operations on the worker: evaluate a string of code, deliver a string to a globally-registered handler function, and instruct the XS engine to write out a heap snapshot.
 
 However this is not quite sufficient for use as a vat host, which needs a SES environment which can accept vat deliveries and issue syscalls. To build something more suitable, we need additional layers:
 

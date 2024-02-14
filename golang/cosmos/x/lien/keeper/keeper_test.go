@@ -99,7 +99,7 @@ func makeTestKit() testKit {
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		authtypes.Minter:               {authtypes.Minter},
 	}
-	innerAk := authkeeper.NewAccountKeeper(cdc, authStoreKey, authSpace, authtypes.ProtoBaseAccount, maccPerms)
+	innerAk := authkeeper.NewAccountKeeper(cdc, authStoreKey, authSpace, authtypes.ProtoBaseAccount, maccPerms, "agoric")
 	wak := types.NewWrappedAccountKeeper(innerAk)
 
 	// bank keeper
@@ -112,7 +112,7 @@ func makeTestKit() testKit {
 	sk := stakingkeeper.NewKeeper(cdc, stakingStoreKey, wak, bk, stakingSpace)
 
 	// lien keeper
-	pushAction := func(sdk.Context, vm.Jsonable) error {
+	pushAction := func(sdk.Context, vm.Action) error {
 		return nil
 	}
 	keeper := NewKeeper(cdc, lienStoreKey, wak, bk, sk, pushAction)
@@ -120,12 +120,12 @@ func makeTestKit() testKit {
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(paramsTKey, sdk.StoreTypeTransient, nil)
-	ms.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(authStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(bankStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(stakingStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(lienStoreKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsTKey, storetypes.StoreTypeTransient, nil)
+	ms.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(authStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(bankStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(lienStoreKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
@@ -165,7 +165,7 @@ func (tk testKit) initAccount(t *testing.T, funder, addr sdk.AccAddress, state t
 	}
 
 	// Total
-	toMint := state.Total.Sub(state.Locked)
+	toMint := state.Total.Sub(state.Locked...)
 	if !toMint.IsZero() {
 		err := tk.bankKeeper.MintCoins(tk.ctx, authtypes.Minter, toMint)
 		if err != nil {

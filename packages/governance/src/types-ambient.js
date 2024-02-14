@@ -31,8 +31,8 @@
 
 /**
  * @typedef { Amount | Brand | Installation | Instance | bigint |
- *   Ratio | string | import('@agoric/time/src/types').TimestampRecord |
- *   import('@agoric/time/src/types').RelativeTimeRecord | unknown } ParamValue
+ *   Ratio | string | import('@agoric/time').TimestampRecord |
+ *   import('@agoric/time').RelativeTimeRecord | unknown } ParamValue
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -331,8 +331,8 @@
 
 /**
  * @typedef {object} ClosingRule
- * @property {ERef<Timer>} timer
- * @property {import('@agoric/time/src/types').Timestamp} deadline
+ * @property {ERef<import('@agoric/time').TimerService>} timer
+ * @property {import('@agoric/time').Timestamp} deadline
  */
 
 /**
@@ -346,7 +346,7 @@
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('./binaryVoteCounter.js').start>} instance
- * @property {import('@agoric/time/src/types').Timestamp} deadline
+ * @property {import('@agoric/time').Timestamp} deadline
  * @property {Handle<'Question'>} questionHandle
  */
 
@@ -430,8 +430,8 @@
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
- * @property {(name: string) => import('@agoric/time/src/types').TimestampRecord} getTimestamp
- * @property {(name: string) => import('@agoric/time/src/types').RelativeTimeRecord} getRelativeTime
+ * @property {(name: string) => import('@agoric/time').TimestampRecord} getTimestamp
+ * @property {(name: string) => import('@agoric/time').RelativeTimeRecord} getRelativeTime
  * @property {(name: string) => any} getUnknown
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations
@@ -613,7 +613,7 @@
  *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time/src/types').Timestamp} deadline
+ * @param {import('@agoric/time').Timestamp} deadline
  * @param {ParamChangesSpec<P>} paramSpec
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
@@ -623,14 +623,14 @@
  * @param {string} apiMethodName
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time/src/types').Timestamp} deadline
+ * @param {import('@agoric/time').Timestamp} deadline
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
 
 /**
  * @callback VoteOnOfferFilter
  * @param {Installation} voteCounterInstallation
- * @param {import('@agoric/time/src/types').Timestamp} deadline
+ * @param {import('@agoric/time').Timestamp} deadline
  * @param {string[]} strings
  * @returns {Promise<ContractGovernanceVoteResult>}
  */
@@ -669,7 +669,7 @@
 
 /**
  * @typedef {object} GovernedContractTerms
- * @property {import('@agoric/time/src/types').TimerService} timer
+ * @property {import('@agoric/time').TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {object} privateArgs
  */

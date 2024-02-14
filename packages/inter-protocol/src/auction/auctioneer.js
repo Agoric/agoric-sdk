@@ -383,7 +383,7 @@ export const distributeProportionalSharesWithLimits = (
 /**
  * @param {ZCF<
  *   GovernanceTerms<typeof auctioneerParamTypes> & {
- *     timerService: import('@agoric/time/src/types').TimerService;
+ *     timerService: import('@agoric/time').TimerService;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     priceAuthority: PriceAuthority;
  *   }

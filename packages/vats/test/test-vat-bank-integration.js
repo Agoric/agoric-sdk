@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeScalarMapStore } from '@agoric/vat-data';
@@ -73,7 +72,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     vats: /** @type {any} */ ({}),
     vatPowers: /** @type {any} */ ({}),
     runBehaviors: /** @type {any} */ ({}),
-    modules: {},
+    modules: /** @type {any} */ ({}),
     ...spaces,
   });
 

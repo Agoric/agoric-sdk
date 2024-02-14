@@ -1,0 +1,11 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "src/index.js",
+        // FIXME hitting errors like: Failed to find JSDoc tag for ParamValueTyped after parsing comment, please file a bug report.
+        // "src/types-ambient.js",
+        "tools/puppetGovernance.js",
+    ]
+}

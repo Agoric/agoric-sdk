@@ -37,22 +37,20 @@ This is used by the SwingSet "bridge".
  
 ## CLI
 
-A blockchain node may be interrogated by RPC using `agd [--node $url] query vstorage $command` via [client/cli](./client/cli/query.go).
-* `children [--height $blockHeight] [-o {text,json}] [$path]`
-* `data [--height $blockHeight] [-o {text,json}] $path`
+A blockchain node may be interrogated by RPC using `agd [--node $url] query vstorage path` via [client/cli](./client/cli/query.go). (See command help for options and variants `data` and `children`.)
 
 Examples:
 ```sh
-$ agd --node https://main.rpc.agoric.net:443/ query vstorage children published.reserve
+$ agd --node https://main.rpc.agoric.net:443/ query vstorage path published.reserve.
 children:
 - governance
 - metrics
 pagination: null
 
-$ agd --node https://main.rpc.agoric.net:443/ query vstorage children -o json published.reserve
+$ agd --node https://main.rpc.agoric.net:443/ query vstorage path -o json published.reserve.
 {"children":["governance","metrics"],"pagination":null}
 
-$ agd --node https://main.rpc.agoric.net:443/ query vstorage data published.reserve.metrics
+$ agd --node https://main.rpc.agoric.net:443/ query vstorage path published.reserve.metrics
 value: '{"blockHeight":"11030240","values":["{\"body\":\"#{\\\"allocations\\\":{\\\"Fee\\\":{\\\"brand\\\":\\\"$0.Alleged:
   IST brand\\\",\\\"value\\\":\\\"+20053582387\\\"}},\\\"shortfallBalance\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalFeeBurned\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"},\\\"totalFeeMinted\\\":{\\\"brand\\\":\\\"$0\\\",\\\"value\\\":\\\"+0\\\"}}\",\"slots\":[\"board0257\"]}"]}'
 ```

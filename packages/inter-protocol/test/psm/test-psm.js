@@ -197,7 +197,7 @@ async function makePsmDriver(t, customTerms) {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  /** @type {Awaited<ReturnType<import('../../src/psm/psm.js').start>>} */
+  /** @type {StartedInstanceKit<import('../../src/psm/psm.js').start>} */
   const { creatorFacet, publicFacet } = await E(zoe).startInstance(
     psmInstall,
     harden({ AUSD: anchor.issuer }),
@@ -734,6 +734,7 @@ test('extra give wantMintedInvitation', async t => {
 const makeMockBankManager = t => {
   /** @type {BankManager} */
   const bankManager = Far('mock BankManager', {
+    __getInterfaceGuard__: () => undefined,
     getAssetSubscription: () => assert.fail('not impl'),
     getModuleAccountAddress: () => assert.fail('not impl'),
     getRewardDistributorDepositFacet: () =>
@@ -750,7 +751,7 @@ const makeMockBankManager = t => {
 };
 
 test('restore PSM: startPSM with previous metrics, params', async t => {
-  /** @type {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} */
+  /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
   const { agoricNames, agoricNamesAdmin, spaces } =

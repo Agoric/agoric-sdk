@@ -8,7 +8,7 @@ layers of the Agoric platform, with
 providing the lower layers.
 If you want to build on top of this platform, you don't need these
 repositories: instead you should
-[follow our instructions for getting started](https://agoric.com/documentation/getting-started/)
+[follow our instructions for getting started](https://docs.agoric.com/guides/getting-started/)
 with the Agoric SDK.
 
 But if you are improving the platform itself, these are the repositories
@@ -55,8 +55,10 @@ xcode-select --install
 
 From a new checkout of this repository, run:
 
-* `yarn install`
-* `yarn build`
+```sh
+yarn install
+yarn build
+```
 
 When the `yarn install` is done, the top-level `node_modules/` will contain
 all the shared dependencies, and each subproject's `node_modules/` should
@@ -89,7 +91,7 @@ To run the unit tests of just a single package (e.g. `eventual-send`):
 
 ## Run the larger demo
 
-Visit [https://agoric.com/documentation/](https://agoric.com/documentation/getting-started/before-using-agoric.html) for getting started instructions.
+Visit [https://docs.agoric.com](https://docs.agoric.com/guides/getting-started/) for getting started instructions.
 
 TL;DR:
 

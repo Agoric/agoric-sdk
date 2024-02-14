@@ -316,7 +316,7 @@ type ChainBootstrapSpaceT = {
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
   chainStorage: StorageNode | null;
-  chainTimerService: import('@agoric/time/src/types').TimerService;
+  chainTimerService: import('@agoric/time').TimerService;
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
@@ -341,13 +341,14 @@ type ChainBootstrapSpaceT = {
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
   instancePrivateArgs: Map<Instance, unknown>;
+  mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: PriceAuthority;
-  priceAuthorityAdmin: import('@agoric/zoe/tools/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
+  priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   provisionWalletBridgeManager:
@@ -372,7 +373,9 @@ type ChainBootstrapSpaceT = {
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
-  provisionPoolStartResult: unknown;
+  provisionPoolStartResult: GovernanceFacetKit<
+    typeof import('@agoric/inter-protocol/src/provisionPool.js').start
+  >;
   vatStore: import('./utils.js').VatStore;
   zoe: ZoeService;
 };
@@ -394,7 +397,7 @@ type BootstrapPowers = BootstrapSpace & {
   vatPowers: { [prop: string]: any; D: DProxy };
   vatParameters: BootstrapVatParams;
   runBehaviors: (manifest: unknown) => Promise<unknown>;
-  modules: Record<string, Record<string, any>>;
+  modules: import('./boot-chain.js').BootstrapModules;
 };
 
 type BootstrapSpace = WellKnownSpaces &

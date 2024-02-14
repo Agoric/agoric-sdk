@@ -103,6 +103,8 @@ function unhandledRejectionHandler(e, pr) {
  *   kernelBundle?: Bundle
  *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
  *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *   profileVats?: string[],
+ *   debugVats?: string[],
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -126,6 +128,8 @@ export async function makeSwingsetController(
     warehousePolicy = {},
     overrideVatManagerOptions = {},
     xsnapBundleData = makeXsnapBundleData(),
+    profileVats = [],
+    debugVats = [],
   } = runtimeOptions;
   const {
     bundleHandler = makeWorkerBundleHandler(
@@ -146,9 +150,13 @@ export async function makeSwingsetController(
     tmpName,
     debug: !!env.XSNAP_DEBUG,
     workerTraceRootPath: env.XSNAP_TEST_RECORD,
+    profileVats,
+    debugVats,
   });
   const startSubprocessWorkerNode = makeStartSubprocessWorkerNode(
     startSubprocessWorker,
+    profileVats,
+    debugVats,
   );
 
   function writeSlogObject(obj) {
@@ -238,7 +246,7 @@ export async function makeSwingsetController(
     warehousePolicy,
     overrideVatManagerOptions,
   };
-  /** @type { ReturnType<typeof import('../kernel').default> } */
+  /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
   const kernel = buildKernel(
     kernelEndowments,
     deviceEndowments,
@@ -317,6 +325,10 @@ export async function makeSwingsetController(
 
     async shutdown() {
       return kernel.shutdown();
+    },
+
+    reapAllVats() {
+      kernel.reapAllVats();
     },
 
     changeKernelOptions(options) {

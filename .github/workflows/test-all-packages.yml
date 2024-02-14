@@ -72,6 +72,9 @@ jobs:
       # eslint
       - name: yarn lint primary
         run: ./scripts/lint-with-types.sh primary
+      # build the API docs to verify it works
+      - name: build API docs
+        run: yarn docs
 
   lint-rest:
     timeout-minutes: 15
@@ -124,6 +127,9 @@ jobs:
       - name: yarn test (assert)
         if: (success() || failure())
         run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (benchmark)
+        if: (success() || failure())
+        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
         if: (success() || failure())
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -139,9 +145,6 @@ jobs:
       - name: yarn test (notifier)
         if: (success() || failure())
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (same-structure)
-        if: (success() || failure())
-        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -214,6 +217,8 @@ jobs:
       - name: yarn test (casting)
         if: (success() || failure())
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (create-dapp)
+        run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

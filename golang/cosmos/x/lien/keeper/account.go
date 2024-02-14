@@ -16,16 +16,16 @@ import (
 // In addition to the methods declared in authtypes.AccountI, additional
 // expectations are enforced dynamically through casting and reflection:
 //
-//	- non-module accounts are expected to obey the GenesisAccount interface,
-//	i.e. to have a Validate() method;
+//   - non-module accounts are expected to obey the GenesisAccount interface,
+//     i.e. to have a Validate() method;
 //
-//	- UnpackInterfacesMessage is needed for unpacking accounts embedded
-//	in an Any message;
+//   - UnpackInterfacesMessage is needed for unpacking accounts embedded
+//     in an Any message;
 //
-//	- MarshalYAML() is used for String rendering;
+//   - MarshalYAML() is used for String rendering;
 //
-//	- protobuf Messages are expected to implement a number of "XXX"-prefixed
-//	methods not visible in the Message interface.
+//   - protobuf Messages are expected to implement a number of "XXX"-prefixed
+//     methods not visible in the Message interface.
 //
 // Declaring the expected methods here allows them to implicitly fall through
 // to an embedded omniAccount.
@@ -88,7 +88,7 @@ func (uva unlockedVestingAccount) TrackDelegation(blockTime time.Time, balance, 
 // TrackUndelegation implements the vestexported.VestingAccount interface.
 func (uva unlockedVestingAccount) TrackUndelegation(amount sdk.Coins) {
 	// max(delegated - amount, 0) == delegated - min(delegated, amount)
-	uva.lien.Delegated = uva.lien.Delegated.Sub(uva.lien.Delegated.Min(amount))
+	uva.lien.Delegated = uva.lien.Delegated.Sub(uva.lien.Delegated.Min(amount)...)
 }
 
 // GetVestedCoins implements the vestexported.VestingAccount interface.
@@ -116,7 +116,7 @@ func (uva unlockedVestingAccount) GetOriginalVesting() sdk.Coins {
 	return sdk.NewCoins()
 }
 
-//GetDelegatedFree implements the vestexported.VestingAccount interface.
+// GetDelegatedFree implements the vestexported.VestingAccount interface.
 func (uva unlockedVestingAccount) GetDelegatedFree() sdk.Coins {
 	return uva.lien.Delegated
 }
@@ -172,6 +172,11 @@ func (fca fakeClawbackAccount) PostReward(ctx sdk.Context, reward sdk.Coins, act
 	return nil
 }
 
+// ReturnGrants implements the vestexported.ClawbackVestingAccountI interface.
+func (fca fakeClawbackAccount) ReturnGrants(ctx sdk.Context, action vestexported.ReturnGrantAction) error {
+	return action.TakeGrants(ctx, fca.omniGrantAccount) // XXX or just fail here
+}
+
 // LienAccount wraps an omniClawbackAccount to implement lien encumbrance.
 // The LockedCoins() method is the maximum of the coins locked for
 // liens, and the coins locked in the underlying VestingAccount.
@@ -206,12 +211,12 @@ func (la *LienAccount) LienedLockedCoins(ctx sdk.Context) sdk.Coins {
 	liened := la.lien.Coins
 	acc := la.omniClawbackAccount.(authtypes.AccountI)
 	if clawback, ok := acc.(vestexported.ClawbackVestingAccountI); ok {
-		liened = liened.Add(clawback.GetOriginalVesting().Sub(clawback.GetVestedOnly(ctx.BlockTime()))...)
+		liened = liened.Add(clawback.GetOriginalVesting().Sub(clawback.GetVestedOnly(ctx.BlockTime())...)...)
 	}
 	// Since coins can't go negative, even transiently, use the
 	// identity A + B = max(A, B) + min(A, B)
 	//    max(0, A - B) = max(B, A) - B = A - min(A, B)
-	return liened.Sub(liened.Min(delegated))
+	return liened.Sub(liened.Min(delegated)...)
 }
 
 // XXX_MessageName provides the message name for JSON serialization.

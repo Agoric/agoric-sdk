@@ -4,7 +4,7 @@ import { Fail } from '@agoric/assert';
  * @template V
  * @callback CacheGet
  * @param {string} key
- * @returns {V}
+ * @returns {V | undefined}
  */
 
 /**
@@ -17,7 +17,7 @@ import { Fail } from '@agoric/assert';
 /**
  * @callback CacheDelete
  * @param {string} key
- * @returns {void}
+ * @returns {boolean}
  *
  * @callback CacheFlush
  * @returns {void}
@@ -62,6 +62,7 @@ import { Fail } from '@agoric/assert';
 export function makeCache(readBacking, writeBacking, deleteBacking) {
   const stash = new Map();
   const dirtyKeys = new Set();
+  /** @type {Cache<V>} */
   const cache = {
     get: key => {
       assert.typeof(key, 'string');
@@ -82,8 +83,9 @@ export function makeCache(readBacking, writeBacking, deleteBacking) {
     },
     delete: key => {
       assert.typeof(key, 'string');
-      stash.delete(key);
+      const result = stash.delete(key);
       dirtyKeys.add(key);
+      return result;
     },
     flush: () => {
       const keys = [...dirtyKeys.keys()];

@@ -60,7 +60,6 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
- * @typedef {import('@agoric/internal/src/upgrade-api.js').DisconnectionObject} DisconnectionObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
@@ -117,8 +116,8 @@ export {};
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper').makeVatKeeper> } VatKeeper
- * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper').default> } KernelKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper.js').makeVatKeeper> } VatKeeper
+ * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper.js').default> } KernelKeeper
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
@@ -135,12 +134,14 @@ export {};
  *                                  dynamic?: boolean,
  *                                  description?: string,
  *                                  name?: string,
- *                                  vatSourceBundle?: *,
+ *                                  vatSourceBundle?: unknown,
  *                                  managerType?: string,
- *                                  vatParameters?: *) => VatSlog,
+ *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
- * @typedef { * } VatSlog
+ * @typedef {{
+ *   delivery: (crankNum: bigint, deliveryNum: bigint, kd: KernelDeliveryObject, vd: VatDeliveryObject) => SlogFinishDelivery,
+ * }} VatSlog
  *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
@@ -155,7 +156,10 @@ export {};
  * @typedef {{
  *   bundle: Bundle
  * }} BundleRef
- * @typedef {(SourceSpec | BundleSpec | BundleRef ) & {
+ * @typedef {{
+ *   bundleName: string
+ * }} BundleName
+ * @typedef {(SourceSpec | BundleSpec | BundleRef | BundleName ) & {
  *   creationOptions?: Record<string, any>,
  *   parameters?: Record<string, any>,
  * }} SwingSetConfigProperties
@@ -180,7 +184,7 @@ export {};
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
- * @property {*} [devices]
+ * @property {any} [devices]
  */
 /**
  * @typedef {KernelOptions & SwingSetOptions} SwingSetConfig a swingset config object
@@ -229,7 +233,7 @@ export {};
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {*} BundleCap
+ * @typedef {any} BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter

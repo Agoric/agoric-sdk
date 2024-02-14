@@ -7,7 +7,7 @@
  * Also, update golden master test/test-xs-perf.js to reflect new meter
  * version.
  */
-export const METER_TYPE = 'xs-meter-22';
+export const METER_TYPE = 'xs-meter-24';
 
 export const ExitCode = {
   E_UNKNOWN_ERROR: -1,
@@ -43,6 +43,7 @@ export class ErrorSignal extends Error {
     this.code = signal;
   }
 }
+harden(ErrorSignal);
 
 export class ErrorCode extends Error {
   /**
@@ -55,3 +56,4 @@ export class ErrorCode extends Error {
     this.code = code;
   }
 }
+harden(ErrorCode);

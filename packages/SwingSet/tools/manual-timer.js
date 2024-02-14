@@ -6,8 +6,8 @@ import { TimeMath } from '@agoric/time';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 
 /**
- * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
- * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ * @typedef {import('@agoric/time').Timestamp} Timestamp
+ * @typedef {import('@agoric/time').TimerService} TimerService
  * @typedef {import('../src/devices/timer/device-timer.js').Waker} Waker
  *
  * @typedef {object} ManualTimerCallbacks

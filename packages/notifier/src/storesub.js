@@ -10,6 +10,7 @@ import { subscribeEach } from './subscribe.js';
 /**
  * NB: does not yet survive upgrade https://github.com/Agoric/agoric-sdk/issues/6893
  *
+ * @alpha
  * @template T
  * @param {Subscriber<T>} subscriber
  * @param {(v: T) => void} consumeValue

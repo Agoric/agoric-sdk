@@ -1,4 +1,3 @@
-// @ts-check
 import { isPromise } from '@endo/promise-kit';
 import { E, Far } from '@endo/far';
 import * as farExports from '@endo/far';

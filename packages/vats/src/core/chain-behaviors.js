@@ -1,5 +1,4 @@
 /* global globalThis */
-// @ts-check
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
@@ -499,7 +498,7 @@ export const connectChainFaucet = async ({ consume: { client } }) => {
 };
 harden(connectChainFaucet);
 
-/** @type {import('./lib-boot').BootstrapManifest} */
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   ...BASIC_BOOTSTRAP_PERMITS,
 

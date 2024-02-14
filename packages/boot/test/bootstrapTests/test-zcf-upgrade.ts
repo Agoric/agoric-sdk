@@ -11,9 +11,12 @@ import path from 'path';
 import { BridgeHandler } from '@agoric/vats';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import { makeZoeDriver } from './drivers.ts';
-import { matchAmount } from './supports.js';
-import { makeProposalExtractor, makeSwingsetTestKit } from './supports.ts';
+import {
+  matchAmount,
+  makeProposalExtractor,
+  makeSwingsetTestKit,
+} from '../../tools/supports.ts';
+import { makeZoeDriver } from '../../tools/drivers.ts';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -119,7 +122,7 @@ test('run restart-vats proposal', async t => {
   const zcfProbeBundle = await bundleSource(source);
   await controller.validateAndInstallBundle(zcfProbeBundle);
   // This test self-sufficiently builds all the artifacts it needs. The test in
-  // .../packages/deployment/upgradeTest/upgradeTest-scripts/agoric-upgrade-12/zoe-upgrade/
+  // .../packages/deployment/upgradeTest/upgrade-test-scripts/unreleased-upgrade/zoe-upgrade/
   // needs a bundled copy of ./zcfProbe.js as of the final commit that will be
   // installed on-chain. Uncomment the following line and add
   // `import fs from "fs";` to generate a bundle of the contract.

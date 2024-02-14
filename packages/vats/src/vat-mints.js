@@ -1,4 +1,3 @@
-// @ts-check
 import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 

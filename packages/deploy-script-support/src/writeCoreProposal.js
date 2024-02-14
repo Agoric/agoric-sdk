@@ -39,6 +39,7 @@ export const makeWriteCoreProposal = (
   const { bundleSource, pathResolve } = endowments;
 
   let bundlerCache;
+  /** @returns {import('./getBundlerMaker.js').Bundler} */
   const getBundler = () => {
     if (!bundlerCache) {
       bundlerCache = E(getBundlerMaker()).makeBundler({
@@ -51,15 +52,15 @@ export const makeWriteCoreProposal = (
   const mergeProposalPermit = async (proposal, additionalPermits) => {
     const {
       sourceSpec,
-      getManifestCall: [exportedGetManifest, ...manifestArgs],
+      getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = proposal;
 
-    const manifestNs = await import(pathResolve(sourceSpec));
+    const proposalNS = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await manifestNs[exportedGetManifest](
-      { restoreRef: x => `restoreRef:${x}` },
-      ...manifestArgs,
+    const { manifest } = await proposalNS[manifestGetterName](
+      harden({ restoreRef: x => `restoreRef:${x}` }),
+      ...manifestGetterArgs,
     );
 
     const mergedPermits = mergePermits(manifest);
@@ -91,21 +92,28 @@ export const makeWriteCoreProposal = (
       return ns.default;
     };
 
+    const bundles = [];
+
     /**
      * Install an entrypoint.
      *
      * @param {string} entrypoint
      * @param {string} [bundlePath]
-     * @param [opts]
+     * @param {unknown} [opts]
      * @returns {Promise<import('./externalTypes.js').ManifestBundleRef>}
      */
     const install = async (entrypoint, bundlePath, opts) => {
       const bundle = getBundle(entrypoint, bundlePath);
 
       // Serialise the installations.
-      mutex = E.when(mutex, () => {
+      mutex = E.when(mutex, async () => {
         // console.log('installing', { filePrefix, entrypoint, bundlePath });
-        return getBundleSpec(bundle, getBundler, opts);
+        const spec = await getBundleSpec(bundle, getBundler, opts);
+        bundles.push({
+          entrypoint,
+          ...spec,
+        });
+        return spec;
       });
       // @ts-expect-error xxx mutex type narrowing
       return mutex;
@@ -113,6 +121,7 @@ export const makeWriteCoreProposal = (
 
     // Await a reference then publish to the board.
     const cmds = [];
+    /** @param {Promise<import('./externalTypes.js').ManifestBundleRef>} refP */
     const publishRef = async refP => {
       const { fileName, ...ref } = await refP;
       if (fileName) {
@@ -130,7 +139,7 @@ export const makeWriteCoreProposal = (
     // console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const { permits: proposalPermit, manifest: overrideManifest } =
+    const { permits: proposalPermit, manifest: customManifest } =
       await mergeProposalPermit(proposal, permits);
 
     // Get an install
@@ -143,10 +152,14 @@ export const makeWriteCoreProposal = (
 
 const manifestBundleRef = ${stringify(manifestBundleRef)};
 const getManifestCall = harden(${stringify(getManifestCall, true)});
-const overrideManifest = ${stringify(overrideManifest, true)};
+const customManifest = ${stringify(customManifest, true)};
 
-// Make the behavior the completion value.
-(${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, overrideManifest, E });
+// Make a behavior function and "export" it by way of script completion value.
+// It is constructed by an anonymous invocation to ensure the absence of a global binding
+// for makeCoreProposalBehavior, which may not be necessary but preserves behavior pre-dating
+// https://github.com/Agoric/agoric-sdk/pull/8712 .
+const behavior = (${makeCoreProposalBehavior})({ manifestBundleRef, getManifestCall, customManifest, E });
+behavior;
 `;
 
     const trimmed = defangAndTrim(code);
@@ -161,6 +174,18 @@ const overrideManifest = ${stringify(overrideManifest, true)};
     const proposalJsFile = `${filePrefix}.js`;
     log(`creating ${proposalJsFile}`);
     await writeFile(proposalJsFile, trimmed);
+
+    const plan = {
+      name: filePrefix,
+      script: proposalJsFile,
+      permit: proposalPermitJsonFile,
+      bundles,
+    };
+
+    await writeFile(
+      `${filePrefix}-plan.json`,
+      `${JSON.stringify(plan, null, 2)}\n`,
+    );
 
     log(`\
 You can now run a governance submission command like:

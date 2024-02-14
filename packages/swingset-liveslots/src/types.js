@@ -1,3 +1,6 @@
+// Ensure this is a module.
+export {};
+
 /**
  * @callback makeLiveSlots
  */
@@ -79,5 +82,8 @@
  *
  */
 
-// Ensure this is a module.
-export {};
+/**
+ * @template V fulfilled value
+ * @template {any[]} [A=unknown[]] arguments
+ * @typedef { {onFulfilled?: (value: V, ...args: A) => void, onRejected?: (reason: unknown, ...args: A) => void} } PromiseWatcher
+ */

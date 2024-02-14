@@ -7,6 +7,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -31,7 +32,7 @@ type Keeper interface {
 // The accountKeeper field must be the same one that the bankKeeper and
 // stakingKeeper use.
 type keeperImpl struct {
-	key sdk.StoreKey
+	key storetypes.StoreKey
 	cdc codec.Codec
 
 	accountKeeper *types.WrappedAccountKeeper
@@ -43,7 +44,7 @@ type keeperImpl struct {
 
 // NewKeeper returns a new Keeper.
 // The ak must be the same accout keeper that the bk and sk use.
-func NewKeeper(cdc codec.Codec, key sdk.StoreKey, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
+func NewKeeper(cdc codec.Codec, key storetypes.StoreKey, ak *types.WrappedAccountKeeper, bk types.BankKeeper, sk types.StakingKeeper,
 	pushAction vm.ActionPusher) Keeper {
 	return keeperImpl{
 		key:           key,
@@ -124,7 +125,7 @@ func (lk keeperImpl) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom stri
 		return oldAmt, fmt.Errorf("lien delta of %s is larger than existing balance %s", delta, oldAmt)
 	}
 	newCoin := sdk.NewCoin(denom, newAmt)
-	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmt))).Add(newCoin)
+	newCoins := oldCoins.Sub(sdk.NewCoins(sdk.NewCoin(denom, oldAmt))...).Add(newCoin)
 	newLien := types.Lien{
 		Coins:     newCoins,
 		Delegated: oldLien.Delegated,
@@ -223,7 +224,7 @@ func (lk keeperImpl) getLockedUnvested(ctx sdk.Context, addr sdk.AccAddress) (sd
 		original := clawbackAccount.GetOriginalVesting()
 		unlocked := clawbackAccount.GetUnlockedOnly(ctx.BlockTime())
 		vested := clawbackAccount.GetVestedOnly(ctx.BlockTime())
-		return original.Sub(unlocked), original.Sub(vested)
+		return original.Sub(unlocked...), original.Sub(vested...)
 	}
 	if vestingAccount, ok := account.(vestexported.VestingAccount); ok {
 		return vestingAccount.GetVestingCoins(ctx.BlockTime()), sdk.NewCoins()

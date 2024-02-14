@@ -85,7 +85,7 @@ async function testRemotePeg(t) {
   );
 
   /**
-   * @type {import('../src/pegasus').Pegasus}
+   * @type {import('../src/pegasus.js').Pegasus}
    */
   const pegasus = publicAPI;
   const network = makeNetworkProtocol(makeLoopbackProtocolHandler());
@@ -96,7 +96,7 @@ async function testRemotePeg(t) {
   /**
    * Pretend we're Gaia.
    *
-   * @type {import('@agoric/network/src').Connection?}
+   * @type {import('@agoric/network/src.js').Connection?}
    */
   let gaiaConnection;
   E(portP).addListener(

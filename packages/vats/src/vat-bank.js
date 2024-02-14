@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
@@ -34,7 +33,7 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 });
 
 /**
- * @typedef {import('./virtual-purse').VirtualPurseController} VirtualPurseController
+ * @typedef {import('./virtual-purse.js').VirtualPurseController} VirtualPurseController
  *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
@@ -230,6 +229,7 @@ async function* concatAsyncIterables(iterables) {
     yield* asyncIterable;
   }
 }
+harden(concatAsyncIterables);
 
 /**
  * TODO: This should be absorbed and zone-ified into the existing publish kit.

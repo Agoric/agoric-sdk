@@ -54,7 +54,7 @@ export const makeVaultsCommand = logger => {
 
   vaults
     .command('open')
-    .description('open a new vault')
+    .description('Prepare an offer to open a new vault')
     .requiredOption('--giveCollateral <number>', 'Collateral to give', Number)
     .requiredOption('--wantMinted <number>', 'Minted wants', Number)
     .option('--offerId <string>', 'Offer id', String, `openVault-${Date.now()}`)
@@ -76,7 +76,7 @@ export const makeVaultsCommand = logger => {
 
   vaults
     .command('adjust')
-    .description('adjust an existing vault')
+    .description('Prepare an offer to adjust an existing vault')
     .requiredOption(
       '--from <address>',
       'wallet address literal or name',
@@ -121,7 +121,7 @@ export const makeVaultsCommand = logger => {
 
   vaults
     .command('close')
-    .description('close an existing vault')
+    .description('Prepare an offer to close an existing vault')
     .requiredOption(
       '--from <address>',
       'wallet address literal or name',

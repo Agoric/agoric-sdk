@@ -14,7 +14,7 @@ import { Far } from '@endo/marshal';
  *
  * @param {Record<string, any>} script
  * @param {Installation<import('../src/contracts/oracle.js').OracleStart>} oracleInstallation
- * @param {import('@agoric/time/src/types').TimerService} timer
+ * @param {import('@agoric/time').TimerService} timer
  * @param {ZoeService} zoe
  * @param {Issuer} feeIssuer
  */

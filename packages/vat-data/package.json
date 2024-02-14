@@ -25,10 +25,10 @@
     "@agoric/swingset-liveslots": "^0.10.2"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.59",
-    "@endo/ses-ava": "^0.2.43",
+    "@endo/init": "^1.0.2",
+    "@endo/ses-ava": "^1.1.0",
     "ava": "^5.3.0",
-    "tsd": "^0.28.1"
+    "tsd": "^0.30.4"
   },
   "ava": {
     "require": [
@@ -45,6 +45,6 @@
     "node": ">=14.15.0"
   },
   "typeCoverage": {
-    "atLeast": 98.23
+    "atLeast": 99.19
   }
 }

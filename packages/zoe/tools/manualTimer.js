@@ -13,7 +13,7 @@ const { Fail } = assert;
 
 /**
  * @typedef {{
- *  timeStep?: import('@agoric/time/src/types').RelativeTime | bigint,
+ *  timeStep?: import('@agoric/time').RelativeTime | bigint,
  *  eventLoopIteration?: () => Promise<void>,
  * }} ZoeManualTimerOptions
  */
@@ -53,7 +53,7 @@ const nolog = (..._args) => {};
  * boundaries
  *
  * @param {(...args: any[]) => void} [log]
- * @param {import('@agoric/time/src/types').Timestamp | bigint} [startValue=0n]
+ * @param {import('@agoric/time').Timestamp | bigint} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
  * @returns {ManualTimer}
  */

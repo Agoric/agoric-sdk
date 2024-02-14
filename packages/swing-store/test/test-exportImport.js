@@ -83,6 +83,7 @@ async function fakeAVatSnapshot(vat, ks) {
   async function* getSnapshotStream() {
     yield Buffer.from(`snapshot of vat ${vat.vatID} as of ${vat.endPos}`);
   }
+  harden(getSnapshotStream);
   await ks.snapStore.saveSnapshot(vat.vatID, vat.endPos, getSnapshotStream());
   ks.transcriptStore.addItem(vat.vatID, 'save-snapshot');
   vat.endPos += 1;

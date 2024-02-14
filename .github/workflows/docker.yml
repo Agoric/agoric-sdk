@@ -6,6 +6,7 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:
@@ -146,6 +147,10 @@ jobs:
                 release-*)
                   # A pre-release.
                   DOCKER_TAGS=${GITHUB_REF_NAME#release-}-dev
+                  ;;
+                dev-*)
+                  # A pre-release while our release branch is straying from master
+                  DOCKER_TAGS=${GITHUB_REF_NAME#dev-}-dev
                   ;;
                 master)
                   # A trunk dev release.

@@ -19,7 +19,7 @@ export const DEFAULT_SLOGSENDER_AGENT = 'self';
 const filterTruthy = arr => /** @type {any[]} */ (arr.filter(Boolean));
 
 /**
- * @param {import('./index.js').MakeSlogSenderOptions} opts
+ * @type {import('./index.js').MakeSlogSender}
  */
 export const makeSlogSender = async (opts = {}) => {
   const { env = {}, stateDir: stateDirOption, ...otherOpts } = opts;
@@ -88,7 +88,7 @@ export const makeSlogSender = async (opts = {}) => {
     slogSenderModules.map(async moduleIdentifier =>
       import(moduleIdentifier)
         .then(
-          /** @param {{makeSlogSender: (opts: {}) => Promise<SlogSender | undefined>}} module */ ({
+          /** @param {{makeSlogSender: import('./index.js').MakeSlogSender}} module */ ({
             makeSlogSender: maker,
           }) => {
             if (typeof maker !== 'function') {

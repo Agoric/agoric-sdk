@@ -21,15 +21,13 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 type deliverInboundAction struct {
-	Type        string          `json:"type"`
-	Peer        string          `json:"peer"`
-	Messages    [][]interface{} `json:"messages"`
-	Ack         uint64          `json:"ack"`
-	BlockHeight int64           `json:"blockHeight"`
-	BlockTime   int64           `json:"blockTime"`
+	vm.ActionHeader `actionType:"DELIVER_INBOUND"`
+	Peer            string          `json:"peer"`
+	Messages        [][]interface{} `json:"messages"`
+	Ack             uint64          `json:"ack"`
 }
 
-func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionMsg, action vm.Jsonable) error {
+func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionMsg, action vm.Action) error {
 	isHighPriority, err := msg.IsHighPriority(ctx, keeper)
 	if err != nil {
 		return err
@@ -45,20 +43,15 @@ func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionM
 func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeliverInbound) (*types.MsgDeliverInboundResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	// msg.Nums and msg.Messages must be zipped into an array of [num, message] pairs.
 	messages := make([][]interface{}, len(msg.Messages))
 	for i, message := range msg.Messages {
-		messages[i] = make([]interface{}, 2)
-		messages[i][0] = msg.Nums[i]
-		messages[i][1] = message
+		messages[i] = []interface{}{msg.Nums[i], message}
 	}
-
 	action := &deliverInboundAction{
-		Type:        "DELIVER_INBOUND",
-		Peer:        msg.Submitter.String(),
-		Messages:    messages,
-		Ack:         msg.Ack,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		Peer:     msg.Submitter.String(),
+		Messages: messages,
+		Ack:      msg.Ack,
 	}
 
 	err := keeper.routeAction(ctx, msg, action)
@@ -70,26 +63,26 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 }
 
 type walletAction struct {
-	Type        string `json:"type"` // WALLET_ACTION
-	Owner       string `json:"owner"`
-	Action      string `json:"action"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"WALLET_ACTION"`
+	Owner           string `json:"owner"`
+	Action          string `json:"action"`
 }
 
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
 	action := &walletAction{
-		Type:        "WALLET_ACTION",
-		Owner:       msg.Owner.String(),
-		Action:      msg.Action,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		Owner:  msg.Owner.String(),
+		Action: msg.Action,
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return nil, err
@@ -98,25 +91,25 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 }
 
 type walletSpendAction struct {
-	Type        string `json:"type"` // WALLET_SPEND_ACTION
-	Owner       string `json:"owner"`
-	SpendAction string `json:"spendAction"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"WALLET_SPEND_ACTION"`
+	Owner           string `json:"owner"`
+	SpendAction     string `json:"spendAction"`
 }
 
 func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	if err != nil {
+		return nil, err
+	}
+
 	action := &walletSpendAction{
-		Type:        "WALLET_SPEND_ACTION",
 		Owner:       msg.Owner.String(),
 		SpendAction: msg.SpendAction,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
-	err := keeper.routeAction(ctx, msg, action)
+	err = keeper.routeAction(ctx, msg, action)
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +117,42 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 }
 
 type provisionAction struct {
+	vm.ActionHeader `actionType:"PLEASE_PROVISION"`
 	*types.MsgProvision
-	Type        string `json:"type"` // PLEASE_PROVISION
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	AutoProvision bool `json:"autoProvision"`
+}
+
+// provisionIfNeeded generates a provision action if no smart wallet is already
+// provisioned for the account. This assumes that all messages for
+// non-provisioned smart wallets allowed by the admission AnteHandler should
+// auto-provision the smart wallet.
+func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress) error {
+	// We need to generate a provision action until the smart wallet has
+	// been fully provisioned by the controller. This is because a provision is
+	// not guaranteed to succeed (e.g. lack of provision pool funds)
+	walletState := keeper.GetSmartWalletState(ctx, owner)
+	if walletState == types.SmartWalletStateProvisioned {
+		return nil
+	}
+
+	msg := &types.MsgProvision{
+		Address:    owner,
+		Submitter:  owner,
+		PowerFlags: []string{types.PowerFlagSmartWallet},
+	}
+
+	action := &provisionAction{
+		MsgProvision:  msg,
+		AutoProvision: true,
+	}
+
+	err := keeper.routeAction(ctx, msg, action)
+	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision) (*types.MsgProvisionResponse, error) {
@@ -140,9 +165,6 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 
 	action := &provisionAction{
 		MsgProvision: msg,
-		Type:         "PLEASE_PROVISION",
-		BlockHeight:  ctx.BlockHeight(),
-		BlockTime:    ctx.BlockTime().Unix(),
 	}
 
 	// Create the account, if it doesn't already exist.
@@ -162,10 +184,8 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 }
 
 type installBundleAction struct {
+	vm.ActionHeader `actionType:"INSTALL_BUNDLE"`
 	*types.MsgInstallBundle
-	Type        string `json:"type"` // INSTALL_BUNDLE
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
 }
 
 func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInstallBundle) (*types.MsgInstallBundleResponse, error) {
@@ -177,9 +197,6 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	}
 	action := &installBundleAction{
 		MsgInstallBundle: msg,
-		Type:             "INSTALL_BUNDLE",
-		BlockHeight:      ctx.BlockHeight(),
-		BlockTime:        ctx.BlockTime().Unix(),
 	}
 
 	err = keeper.routeAction(ctx, msg, action)

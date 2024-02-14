@@ -142,9 +142,12 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
       verbose && console.warn('Following', spec);
       const castingSpec = makeCastingSpec(spec);
       const follower = makeFollower(castingSpec, leader, followerOptions);
-      for await (const { value, blockHeight, currentBlockHeight } of iterate(
-        follower,
-      )) {
+      for await (const obj of iterate(follower)) {
+        if ('error' in obj) {
+          console.error('Error following:', obj.error);
+          continue;
+        }
+        const { value, blockHeight, currentBlockHeight } = obj;
         const blockHeightPrefix = opts.blockHeight ? `${blockHeight}:` : '';
         const currentBlockHeightPrefix = opts.currentBlockHeight
           ? `${currentBlockHeight}:`

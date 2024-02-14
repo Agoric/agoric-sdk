@@ -6,6 +6,7 @@ import '@endo/init';
 import anylogger from 'anylogger';
 import fs from 'fs';
 import { Buffer } from 'buffer';
+import process from 'node:process';
 
 import { assert, details as X, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
@@ -188,6 +189,9 @@ async function handleCommand(command) {
       return handleSetBundle(margs);
     case 'deliver':
       return handleDeliver(margs);
+    case 'exit':
+      process.exit(0);
+      break;
     default:
       throw Error(`unrecognized downlink message ${type}`);
   }

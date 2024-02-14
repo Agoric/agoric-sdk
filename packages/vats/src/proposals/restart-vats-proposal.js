@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Fail } from '@agoric/assert';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
