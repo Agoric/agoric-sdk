@@ -95,16 +95,15 @@ test.serial('GC syscall.dropImports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
-    // eslint-disable-next-line no-unused-vars
-    let presence1;
+    const holder = new Set();
     const root = Far('root', {
       one(arg) {
-        presence1 = arg;
+        holder.add(arg);
         collected = watchCollected(arg);
       },
       two() {},
       three() {
-        presence1 = undefined; // drops the import
+        holder.clear(); // drops the import
       },
     });
     return root;
@@ -314,17 +313,17 @@ test.serial(
     const { log, syscall } = buildSyscall();
     let collected;
     function build(_vatPowers) {
-      let ex1;
+      const holder = new Set();
       const root = Far('root', {
         hold() {
-          ex1 = Far('export', {});
+          const ex1 = Far('export', {});
+          holder.add(ex1);
           collected = watchCollected(ex1);
           return ex1;
         },
         two() {},
         drop() {
-          // eslint-disable-next-line no-unused-vars
-          ex1 = undefined; // drop the last userspace strongref
+          holder.clear(); // drop the last userspace strongref
         },
       });
       return root;
