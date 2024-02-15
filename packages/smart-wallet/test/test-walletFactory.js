@@ -181,12 +181,12 @@ test('bad action value', async t => {
   await t.context.sendToBridge(validMsg);
 
   // the signal of an error is available in chain storage
-  t.deepEqual(await headValue(updates), {
-    updated: 'walletAction',
-    status: {
-      error: 'Unexpected token i in JSON at position 0',
-    },
-  });
+  const head = await headValue(updates);
+  // For type narrowing
+  assert(head.updated === 'walletAction');
+  // The rest of the error message is different in Node 18 vs 20. On chain it
+  // will come from an XS version that is in common across all validators.
+  t.regex(head.status.error, /Unexpected token/);
 });
 
 test('notifiers', async t => {
