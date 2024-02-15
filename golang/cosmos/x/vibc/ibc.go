@@ -176,14 +176,14 @@ func (im IBCModule) OnChanOpenInit(
 }
 
 type channelOpenTryEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string                    `json:"event" default:"channelOpenTry"`
-	Order           string                    `json:"order"`
-	ConnectionHops  []string                  `json:"connectionHops"`
-	PortID          string                    `json:"portID"`
-	ChannelID       string                    `json:"channelID"`
-	Counterparty    channeltypes.Counterparty `json:"counterparty"`
-	Version         string                    `json:"version"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string                    `json:"event" default:"channelOpenTry"`
+	Order            string                    `json:"order"`
+	ConnectionHops   []string                  `json:"connectionHops"`
+	PortID           string                    `json:"portID"`
+	ChannelID        string                    `json:"channelID"`
+	Counterparty     channeltypes.Counterparty `json:"counterparty"`
+	Version          string                    `json:"version"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -219,7 +219,7 @@ func (im IBCModule) OnChanOpenTry(
 }
 
 type channelOpenAckEvent struct {
-	vm.ActionHeader     `actionType:"IBC_EVENT"`
+	*vm.ActionHeader    `actionType:"IBC_EVENT"`
 	Event               string                    `json:"event" default:"channelOpenAck"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
@@ -252,10 +252,10 @@ func (im IBCModule) OnChanOpenAck(
 }
 
 type channelOpenConfirmEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelOpenConfirm"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelOpenConfirm"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanOpenConfirm(
@@ -272,10 +272,10 @@ func (im IBCModule) OnChanOpenConfirm(
 }
 
 type channelCloseInitEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelCloseInit"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelCloseInit"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseInit(
@@ -293,10 +293,10 @@ func (im IBCModule) OnChanCloseInit(
 }
 
 type channelCloseConfirmEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelCloseConfirm"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelCloseConfirm"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseConfirm(
@@ -314,9 +314,9 @@ func (im IBCModule) OnChanCloseConfirm(
 }
 
 type receivePacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"receivePacket"`
-	Packet          channeltypes.Packet `json:"packet"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"receivePacket"`
+	Packet           channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -345,10 +345,10 @@ func (im IBCModule) OnRecvPacket(
 }
 
 type acknowledgementPacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"acknowledgementPacket"`
-	Packet          channeltypes.Packet `json:"packet"`
-	Acknowledgement []byte              `json:"acknowledgement"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"acknowledgementPacket"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Acknowledgement  []byte              `json:"acknowledgement"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -371,9 +371,9 @@ func (im IBCModule) OnAcknowledgementPacket(
 }
 
 type timeoutPacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"timeoutPacket"`
-	Packet          channeltypes.Packet `json:"packet"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"timeoutPacket"`
+	Packet           channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
