@@ -13,6 +13,10 @@ inputs:
     description: 'Keep Endo repository after installing from it'
     required: false
     default: 'false'
+  ignore-endo-branch:
+    description: 'Ignore external Endo branch configuration'
+    required: false
+    default: 'false'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -46,7 +50,9 @@ runs:
         result-encoding: string
         script: |-
           let branch = 'NOPE';
-          if (context.eventName === 'schedule') {
+          if (${{ inputs.ignore-endo-branch }}) {
+            // Skip endo branch
+          } else  if (context.eventName === 'schedule') {
             branch = 'master';
           } else if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
