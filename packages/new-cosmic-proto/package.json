@@ -69,6 +69,7 @@
     "prettier": "^2.8.7",
     "publish-scripts": "0.1.0",
     "rimraf": "^5.0.0",
+    "tsimp": "^2.0.11",
     "typescript": "^5.0.4"
   },
   "dependencies": {
@@ -78,8 +79,15 @@
     "@cosmjs/tendermint-rpc": "^0.30.1"
   },
   "ava": {
+    "extensions": {
+      "ts": "module"
+    },
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.ts"
+    ],
+    "nodeArguments": [
+      "--import=tsimp",
+      "--no-warnings"
     ]
   }
 }
