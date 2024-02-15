@@ -4,7 +4,10 @@
         "fromTag": "latest"
     },
     "scripts": {
-        "build": "../scripts/generate-a3p-submission.sh && yarn synthetic-chain build",
+        "build": "yarn run build:sdk && yarn run build:submission && yarn run build:synthetic-chain",
+        "build:sdk": "make -C ../packages/deployment docker-build-sdk",
+        "build:submission": "../scripts/generate-a3p-submission.sh",
+        "build:synthetic-chain": "yarn synthetic-chain build",
         "test": "yarn synthetic-chain test",
         "doctor": "yarn synthetic-chain doctor"
     },
