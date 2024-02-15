@@ -1,5 +1,6 @@
 #!/bin/bash
 
-# UNTIl this is upstream https://github.com/Agoric/agoric-3-proposals/issues/40
-# Set to zero so tests don't have to pay gas (we're not testing that)
-sed --in-place=.bak s/'minimum-gas-prices = ""'/'minimum-gas-prices = "0ubld,0uist"'/ ~/.agoric/config/app.toml
+# Place here any actions that should happen after the upgrade has executed. The
+# actions are executed in the upgraded chain software and the effects are
+# persisted in the generated image for the upgrade, so they can be used in
+# later steps, such as the "test" step, or further proposal layers.
