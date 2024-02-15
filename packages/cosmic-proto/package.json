@@ -63,12 +63,13 @@
   },
   "devDependencies": {
     "@agoric/cosmos": "^0.34.1",
+    "@ava/typescript": "^4.1.0",
     "@cosmology/telescope": "^1.0.1",
     "ava": "^5.3.1",
     "publish-scripts": "0.1.0",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
-    "typescript": "^5.0.4"
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@cosmjs/amino": "^0.32.2",
@@ -82,15 +83,14 @@
     "**/protobufjs": "^7.2.4"
   },
   "ava": {
-    "extensions": {
-      "ts": "module"
+    "typescript": {
+      "rewritePaths": {
+        "src/": "dist/"
+      },
+      "compile": false
     },
     "files": [
-      "test/**/test-*.ts"
-    ],
-    "nodeArguments": [
-      "--import=tsimp",
-      "--no-warnings"
+      "test/**/test-*.js"
     ]
   }
 }
