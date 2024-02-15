@@ -111,66 +111,68 @@ test.serial('upgrade at many points in network API flow', async t => {
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
   const flow = entries({
-    bindPort: async () => EV(networkVat).bind('/ibc-port/'),
-    startServer: async boundPort => {
+    bindPorts: async label => {
+      const serverPort = await EV(networkVat).bind('/ibc-port/');
+      const clientPort = await EV(networkVat).bind('/ibc-port/');
+      return [label, { serverPort, clientPort }];
+    },
+    startServer: async ([label, opts]) => {
       const started = await EV(zoe).startInstance(
         installation.ibcServerMock,
         {},
         {},
-        { boundPort },
+        { boundPort: opts.serverPort },
       );
-      t.truthy(started.creatorFacet);
-      return { serverPort: boundPort, server: started.creatorFacet };
+      t.truthy(started.creatorFacet, `${label} ibcServerMock`);
+      return [label, { ...opts, server: started.creatorFacet }];
     },
-    startListening: async opts => {
+    startListening: async ([label, opts]) => {
       await EV.sendOnly(opts.server).listen();
-      return opts;
+      await EV.sendOnly(opts.server).dequeue('onListen');
+      return [label, opts];
     },
-    getAddress: async opts => {
-      const address = await EV(opts.serverPort).getLocalAddress();
-      t.log('server address', address);
-      return { ...opts, address };
+    getAddresses: async ([label, opts]) => {
+      const serverAddress = await EV(opts.serverPort).getLocalAddress();
+      const clientAddress = await EV(opts.clientPort).getLocalAddress();
+      t.log(`${label} server ${serverAddress} client ${clientAddress}`);
+      return [label, { ...opts, serverAddress }];
     },
-    allocatePort: async opts => {
-      const clientPort = await EV(networkVat).bind('/ibc-port/');
-      return { ...opts, clientPort };
-    },
-    getClientAddress: async opts => {
-      const address = await EV(opts.clientPort).getLocalAddress();
-      t.log('client address', address);
-      return opts;
-    },
-    startClient: async opts => {
+    startClient: async ([label, opts]) => {
       const started = await EV(zoe).startInstance(
         installation.ibcClientMock,
         {},
         {},
         { myPort: opts.clientPort },
       );
-      t.truthy(started.creatorFacet);
-      return { ...opts, client: started.creatorFacet };
+      t.truthy(started.creatorFacet, `${label} ibcClientMock`);
+      return [label, { ...opts, client: started.creatorFacet }];
     },
-    startConnecting: async opts => {
-      await EV.sendOnly(opts.client).connect(opts.address);
-      return opts;
+    startConnecting: async ([label, opts]) => {
+      await EV.sendOnly(opts.client).connect(opts.serverAddress);
+      await EV.sendOnly(opts.server).dequeue('onAccept');
+      await EV.sendOnly(opts.server).dequeue('onOpen');
+      return [label, opts];
     },
-    sendPacket: async opts => {
-      await EV.sendOnly(opts.client).send('hello198');
-      return opts;
+    sendPacket: async ([label, opts]) => {
+      await EV.sendOnly(opts.client).send(label);
+      return [label, opts];
     },
-    checkAck: async opts => {
+    respond: async ([label, opts]) => {
+      await EV.sendOnly(opts.server).dequeue('onReceive');
+      return [label, opts];
+    },
+    checkAck: async ([label, opts]) => {
       const ack = await EV(opts.client).getAck();
-      t.is(ack, 'hello1981', 'expected echo');
-      return { ...opts, ack };
+      t.is(ack, `got ${label}`, `${label} expected echo`);
+      return [label, { ...opts, ack }];
     },
-    closeConnection: async opts => {
+    closeConnection: async ([label, opts]) => {
       await EV(opts.client).close();
     },
   });
 
-  const doSteps = async (label, steps, input = undefined) => {
+  const doSteps = async (label, steps, input: unknown = undefined) => {
     await null;
-    t.log(steps.length, 'steps:', label);
     let result = input;
     for (const [stepName, fn] of steps) {
       await t.notThrowsAsync(async () => {
@@ -181,7 +183,7 @@ test.serial('upgrade at many points in network API flow', async t => {
   };
 
   // Sanity check
-  await doSteps('pre-upgrade', flow);
+  await doSteps('pre-upgrade', flow, 'pre-upgrade');
 
   // For each step, run to just before that point and pause for
   // continuation after upgrade.
@@ -191,14 +193,18 @@ test.serial('upgrade at many points in network API flow', async t => {
   }>;
   for (let i = 0; i < flow.length; i += 1) {
     const [beforeStepName] = flow[i];
-    const result = await doSteps(`pre-${beforeStepName}`, flow.slice(0, i));
+    const result = await doSteps(
+      `pre-${beforeStepName}`,
+      flow.slice(0, i),
+      `pause-before-${beforeStepName}`,
+    );
     pausedFlows.push({ result, remainingSteps: flow.slice(i) });
   }
 
   await upgradeVats(t, EV, ['ibc', 'network']);
 
   // Verify a complete run post-upgrade.
-  await doSteps('post-upgrade', flow);
+  await doSteps('post-upgrade', flow, 'post-upgrade');
 
   // Verify completion of each paused flow.
   for (const { result, remainingSteps } of pausedFlows) {
