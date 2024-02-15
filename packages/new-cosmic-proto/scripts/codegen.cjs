@@ -1,7 +1,7 @@
 const { join } = require('path');
 const telescope = require('@cosmology/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
-const { AMINO_MAP } = require('./aminos');
+const { AMINO_MAP } = require('./aminos.cjs');
 
 const protoDirs = [join(__dirname, '/../proto')];
 const outPath = join(__dirname, '../src/codegen');
@@ -14,9 +14,9 @@ telescope({
     tsDisable: {
       files: [
         'cosmos/authz/v1beta1/tx.amino.ts',
-        'cosmos/staking/v1beta1/tx.amino.ts'
+        'cosmos/staking/v1beta1/tx.amino.ts',
       ],
-      patterns: ['**/*amino.ts', '**/*registry.ts']
+      patterns: ['**/*amino.ts', '**/*registry.ts'],
     },
     prototypes: {
       includePackageVar: false,
@@ -24,7 +24,7 @@ telescope({
       experimentalGlobalProtoNamespace: true,
       interfaces: {
         enabled: true,
-        useUnionTypes: false
+        useUnionTypes: false,
       },
       excluded: {
         packages: [
@@ -51,8 +51,8 @@ telescope({
           'cosmos.slashing.v1beta1',
           'google.api',
           'ibc.core.port.v1',
-          'ibc.core.types.v1'
-        ]
+          'ibc.core.types.v1',
+        ],
       },
       methods: {
         fromJSON: false,
@@ -63,11 +63,11 @@ telescope({
         toAmino: true,
         fromAmino: true,
         fromProto: true,
-        toProto: true
+        toProto: true,
       },
       parser: {
-        keepCase: false
-      }
+        keepCase: false,
+      },
     },
     typingsFormat: {
       duration: 'duration',
@@ -76,26 +76,25 @@ telescope({
       useDeepPartial: false,
       num64: 'bigint',
       customTypes: {
-        useCosmosSDKDec: true
-      }
+        useCosmosSDKDec: true,
+      },
     },
     aminoEncoding: {
       enabled: true,
-      exceptions: AMINO_MAP
+      exceptions: AMINO_MAP,
     },
     lcdClients: {
-      enabled: false
+      enabled: false,
     },
     rpcClients: {
       enabled: true,
-      camelCase: true
-    }
-  }
+    },
+  },
 })
   .then(() => {
     console.log('✨ all done!');
   })
-  .catch((e) => {
+  .catch(e => {
     console.error(e);
     process.exit(1);
   });

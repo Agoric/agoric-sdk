@@ -13,24 +13,23 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/codegen/index.d.ts",
+      "default": "./dist/codegen/index.js"
+    },
     "./package.json": "./package.json",
     "./swingset/msgs.js": {
-      "types": "./dist/agoric/swingset/msgs.d.ts",
-      "default": "./dist/agoric/swingset/msgs.js"
+      "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
+      "default": "./dist/codegen/agoric/swingset/msgs.js"
     },
     "./swingset/query.js": {
-      "types": "./dist/agoric/swingset/query.d.ts",
-      "default": "./dist/agoric/swingset/query.js"
+      "types": "./dist/codegen/agoric/swingset/query.d.ts",
+      "default": "./dist/codegen/agoric/swingset/query.js"
     },
     "./vstorage/query.js": {
-      "types": "./dist/agoric/vstorage/query.d.ts",
-      "default": "./dist/agoric/vstorage/query.js"
-    },
-    "./swingset/swingset.js": {
-      "types": "./dist/agoric/swingset/swingset.d.ts",
-      "default": "./dist/agoric/swingset/swingset.js"
+      "types": "./dist/codegen/agoric/vstorage/query.d.ts",
+      "default": "./dist/codegen/agoric/vstorage/query.js"
     }
   },
   "scripts": {

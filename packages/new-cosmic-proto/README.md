@@ -1,4 +1,4 @@
-# cosmic-proto
+# @agoric/cosmic-proto
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/545047/188804067-28e67e5e-0214-4449-ab04-2e0c564a6885.svg" width="80"><br />
@@ -9,13 +9,10 @@
 ## install
 
 ```sh
-npm install cosmic-proto
+npm install @agoric/cosmic-proto
 ```
 ## Table of contents
 
-- [cosmic-proto](#cosmic-proto)
-  - [Install](#install)
-  - [Table of contents](#table-of-contents)
 - [Usage](#usage)
     - [RPC Clients](#rpc-clients)
     - [Composing Messages](#composing-messages)
@@ -35,7 +32,7 @@ npm install cosmic-proto
 ### RPC Clients
 
 ```js
-import { agoric } from 'cosmic-proto';
+import { agoric } from '@agoric/cosmic-proto';
 
 const { createRPCQueryClient } = agoric.ClientFactory; 
 const client = await createRPCQueryClient({ rpcEndpoint: RPC_ENDPOINT });
@@ -51,10 +48,10 @@ const balances = await client.agoric.exchange.v1beta1
 
 ### Composing Messages
 
-Import the `agoric` object from `cosmic-proto`. 
+Import the `agoric` object from `@agoric/cosmic-proto`. 
 
 ```js
-import { agoric } from 'cosmic-proto';
+import { agoric } from '@agoric/cosmic-proto';
 
 const {
     createSpotLimitOrder,
@@ -66,7 +63,7 @@ const {
 #### CosmWasm Messages
 
 ```js
-import { cosmwasm } from "cosmic-proto";
+import { cosmwasm } from "@agoric/cosmic-proto";
 
 const {
     clearAdmin,
@@ -81,7 +78,7 @@ const {
 #### IBC Messages
 
 ```js
-import { ibc } from 'cosmic-proto';
+import { ibc } from '@agoric/cosmic-proto';
 
 const {
     transfer
@@ -91,7 +88,7 @@ const {
 #### Cosmos Messages
 
 ```js
-import { cosmos } from 'cosmic-proto';
+import { cosmos } from '@agoric/cosmic-proto';
 
 const {
     fundCommunityPool,
@@ -132,7 +129,7 @@ Here are the docs on [creating signers](https://github.com/cosmology-tech/cosmos
 Use `getSigningagoricClient` to get your `SigningStargateClient`, with the proto/amino messages full-loaded. No need to manually add amino types, just require and initialize the client:
 
 ```js
-import { getSigningagoricClient } from 'cosmic-proto';
+import { getSigningagoricClient } from '@agoric/cosmic-proto';
 
 const stargateClient = await getSigningagoricClient({
   rpcEndpoint,
@@ -220,7 +217,7 @@ import {
     ibcAminoConverters,
     agoricAminoConverters,
     agoricProtoRegistry
-} from 'cosmic-proto';
+} from '@agoric/cosmic-proto';
 
 const signer: OfflineSigner = /* create your signer (see above)  */
 const rpcEndpint = 'https://rpc.cosmos.directory/agoric'; // or another URL
@@ -259,7 +256,7 @@ yarn build
 
 ### Codegen
 
-Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.js` and configure the settings for bundling your SDK and contracts into `cosmic-proto`:
+Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.cjs` and configure the settings for bundling your SDK and contracts into `@agoric/cosmic-proto`:
 
 ```
 yarn codegen
