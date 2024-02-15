@@ -356,7 +356,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         }
         this.state.consummated = 'Already closed';
 
-        const [port, listener] = listening.get(listenPrefix);
+        const [port,   listener] = listening.get(listenPrefix);
 
         const current = currentConnections.get(port);
         current.delete(this.self);
@@ -381,7 +381,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         if (localAddress === undefined) {
           localAddress = localAddr;
         }
-        this.state.consummated =`${localAddress} Already accepted`;
+        this.state.consummated = `${localAddress} Already accepted`;
 
         if (remoteAddress === undefined) {
           remoteAddress = remoteAddr;
