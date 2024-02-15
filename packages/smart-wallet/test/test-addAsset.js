@@ -511,7 +511,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const mockStorage = await consume.chainStorage;
     const { aPlayer } = makeScenario(t);
 
-    aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
+    await aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
     const c2 = goofyClient(mockStorage, walletUIbridge.promise);
     await t.throwsAsync(c2, { message: /Withdrawal of {.*} failed/ });
     await eventLoopIteration();
