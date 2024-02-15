@@ -7,6 +7,7 @@ npm-debug.log*
 pids
 *.pid
 *.seed
+.tsimp
 
 # out
 dist
