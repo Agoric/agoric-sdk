@@ -4,6 +4,8 @@ This independant golang project contains tests that validate IBC conformance and
 - upstream: https://github.com/strangelove-ventures/interchaintest
 - fork: https://github.com/Agoric-labs/interchaintest
 
+This project has its own `go.mod` since `interchaintest` pulls in version of cosmos-sdk, cometBFT, & ibc-go that differ from those `agd` would use.
+
 ## To Build
 
 In order to sanity check that the tests build use:
@@ -15,6 +17,7 @@ Note this is not build or run by CI since:
 - It takes up to 40 minutes run the tests.
 - These tests validate proper functionality of the cosmos IBC module and apps. This functionality does not regularly change.
 - These tests require a docker image that is currently difficult to produce.
+- Changes to files outside this directory should not be able to cause this directory to fail to compile. This tool lives in its own bubble.
 
 ## To Run Tests
 
@@ -56,9 +59,16 @@ ex:
 $ PFME2E_CHAINNAME0=agoric PFME2E_CHAINNAME1=osmosis PFME2E_CHAINNAME2=stride PFME2E_CHAINNAME3=gaia PFME2E_RELAYERNAME=hermes go test -timeout 20m -v -run ^TestPacketForwardMiddleware
 ```
 
-## If Test Fail
+## Debugging Flakes
 
-Failing tests might leave around strander containers or volumes. Use Docker tools to delete these.
+`error in transaction (code: 6): failed to execute message; message index: 0: 809C699215C5BC041D4035479D28C30EAB11DBC5953E45D4545346B78482D82C: denomination trace not found`
+- Flakey `interchaintest` has failed to properly run commands on relayers
+
+`Wrong user balance on chainB expected[0] actual[100000]`
+- If you see `error in transaction (code: 6): failed to execute message; message index: 0: 809C699215C5BC041D4035479D28C30EAB11DBC5953E45D4545346B78482D82C: denomination trace not found` immediately below this error then the relayer fell over.
+- If not, it's possible the test simply didn't wait enough blocks for the transactions to settle
+
+If the tests terminate abnormally they may leave Docker containers or volumes stranded. These are safe to delete.
 
 ## Details on the Custom Fork of `interchaintest`
 
