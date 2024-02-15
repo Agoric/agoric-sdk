@@ -1,5 +1,8 @@
-// @ts-nocheck
+#! false node --ignore-this-line
 /* global E */
+
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
 
 /**
  * Write a value to chain storage
