@@ -1,7 +1,7 @@
 const { join } = require('path');
+const process = require('process');
 const telescope = require('@cosmology/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
-const { AMINO_MAP } = require('./aminos.cjs');
 
 const protoDirs = [join(__dirname, '/../proto')];
 const outPath = join(__dirname, '../src/codegen');
@@ -12,6 +12,8 @@ telescope({
   outPath,
   options: {
     tsDisable: {
+      // FIXME types aren't resolving correctly
+      disableAll: true,
       files: [
         'cosmos/authz/v1beta1/tx.amino.ts',
         'cosmos/staking/v1beta1/tx.amino.ts',
@@ -20,6 +22,7 @@ telescope({
     },
     prototypes: {
       includePackageVar: false,
+      // @ts-expect-error this is actually part of TelescopeOpts so huH?
       removeUnusedImports: true,
       experimentalGlobalProtoNamespace: true,
       interfaces: {
@@ -55,8 +58,8 @@ telescope({
         ],
       },
       methods: {
-        fromJSON: false,
-        toJSON: false,
+        fromJSON: true,
+        toJSON: true,
         encode: true,
         decode: true,
         fromPartial: true,
@@ -80,8 +83,7 @@ telescope({
       },
     },
     aminoEncoding: {
-      enabled: true,
-      exceptions: AMINO_MAP,
+      enabled: false,
     },
     lcdClients: {
       enabled: false,
