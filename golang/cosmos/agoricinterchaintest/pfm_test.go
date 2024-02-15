@@ -32,13 +32,13 @@ type ForwardMetadata struct {
 	RefundSequence *uint64       `json:"refund_sequence,omitempty"`
 }
 
-func TestPacketForwardMiddleware(t *testing.T) {
+func TestPFM(t *testing.T) {
 	cs := getChainSpec(t)
 	rf := getRelayerFactory(t)
-	testPacketForwardMiddleware(t, cs, rf)
+	testPFM(t, cs, rf)
 }
 
-func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
+func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
 
 	var (
 		ctx             = context.Background()
@@ -292,6 +292,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, r
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
+
 		require.Equalf(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
@@ -358,6 +360,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, r
 		chainCBalance, err := chainC.GetBalance(ctx, userC.FormattedAddress(), secondHopIBCDenom)
 		require.NoError(t, err)
 
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v]", chainABalance, chainBBalance, chainCBalance)
+
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
 		require.Equal(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
@@ -420,6 +424,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, r
 
 		chainCBalance, err := chainC.GetBalance(ctx, userC.FormattedAddress(), secondHopIBCDenom)
 		require.NoError(t, err)
+
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v]", chainABalance, chainBBalance, chainCBalance)
 
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
@@ -498,6 +504,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, r
 
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
+
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
 
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
@@ -628,10 +636,10 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, r
 		chainABalance, err = chainA.GetBalance(ctx, userA.FormattedAddress(), baIBCDenom)
 		require.NoError(t, err)
 
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
+
 		require.Equalf(t, transferAmount, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", transferAmount, chainABalance)
-		gasFees := chainB.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(transferAmount).Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", expectedBalance, chainBBalance)
+		require.Equal(t, userFunds, chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", userFunds, chainBBalance)
 		require.Equal(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equal(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 

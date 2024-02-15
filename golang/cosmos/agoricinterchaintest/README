@@ -1,0 +1,90 @@
+# agoricinterchaintests
+
+This independant golang project contains tests that validate IBC conformance and PFM functionality using a fork of Strangelove's `interchaintest`.
+- upstream: https://github.com/strangelove-ventures/interchaintest
+- fork: https://github.com/Agoric-labs/interchaintest
+
+## To Build
+
+In order to sanity check that the tests build use:
+```
+$ make build
+```
+
+Note this is not build or run by CI since:
+- It takes up to 40 minutes run the tests.
+- These tests validate proper functionality of the cosmos IBC module and apps. This functionality does not regularly change.
+- These tests require a docker image that is currently difficult to produce.
+
+## To Run Tests
+
+To run all the tests:
+```
+$ make
+```
+
+To test IBC Conformance only:
+```
+$ make TestConformance
+```
+
+To test PFM functionality only:
+```
+$ make Test
+```
+
+## Customizing Test Runs
+
+It is possible to use environment variables to change how the tests run
+
+- `PFME2E_CHAINNAME0` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the first chain
+- `PFME2E_CHAINNAME1` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the second chain
+- `PFME2E_CHAINNAME2` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the third chain
+- `PFME2E_CHAINNAME3` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the fourth chain
+- `PFME2E_CHAINIMAGE_AGORIC` - the value of this will be used specific the repository & version of docker image to use for the agoric chain. a valid value must have a semicolon and be formatted as `repository:tag`. ex: `PFME2E_CHAINIMAGE_AGORIC="ghcr.io/agoric/agoricinterchain:latest"`
+- `PFME2E_RELAYERNAME` - set to `"cosmos"` or `"hermes"` to choose the relayer type
+
+ex:
+```
+# run PFM tests with the:
+# - first chains as agoric
+# - the second chain as osmosis
+# - the third chain as stride
+# - the fourth chain as gaia
+# - use the hermes relayer
+# - note `-timeout 20m` which is included because these tests can be very slow 
+$ PFME2E_CHAINNAME0=agoric PFME2E_CHAINNAME1=osmosis PFME2E_CHAINNAME2=stride PFME2E_CHAINNAME3=gaia PFME2E_RELAYERNAME=hermes go test -timeout 20m -v -run ^TestPacketForwardMiddleware
+```
+
+## If Test Fail
+
+Failing tests might leave around strander containers or volumes. Use Docker tools to delete these.
+
+## Details on the Custom Fork of `interchaintest`
+
+The [Agoric custom fork of interchaintest](https://github.com/Agoric-labs/interchaintest) is necessary because the agoric chain does not include the `x/crisis` module. However, `interchaintest` passes `agd` unsupported commandline arguments to configure `x/crisis`. The fork contains a patch to skip these commandline arguments when `interchaintest.ChainSpec.ChainConfig.NoCrisisModule` is set.
+
+The exact git tag version of Agoric custom fork of interchaintest must be specified in the `go.mod` for this test suite. It is important to update that tag in the fork and in `go.mod` whenever the fork has a new update.
+
+## Building a Compatible Docker Image
+
+`interchaintest` relies on a partner tool [`heighliner`](https://github.com/strangelove-ventures/heighliner). `heighliner` modified Docker images to make them compatible with `interchaintest`. To build an Agoric compatible docker image:
+
+Get the Agoric compatible changes (one time):
+```
+$ git clone git@github.com:strangelove-ventures/heighliner.git
+$ cd heighliner
+$ git remote add toliaqat git@github.com:toliaqat/heighliner.git
+$ git pull toliaqat
+$ git merge remotes/toliaqat/main
+```
+
+For each new image:
+- edit `dockerfile/agoric/Dockerfile` in the heighliner checkout to point to the proper base image. Likely you'll want to use an a3p-integration image.
+- then:
+```
+$ go build
+$ ./heighliner build -c agoric -g main -t $USER/agoric:heighliner-agoric
+```
+- then from docker desktop push the $USER/agoric:heighliner-agoric to DockerHub or another container repo
+- then run agoricinterchaintests with `PFME2E_CHAINIMAGE_AGORIC=$USER/agoric:heighliner-agoric`
