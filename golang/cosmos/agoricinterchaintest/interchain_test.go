@@ -3,7 +3,10 @@ package agoricinterchaintest
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	interchaintest "github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/conformance"
@@ -12,6 +15,18 @@ import (
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
 	"go.uber.org/zap/zaptest"
 )
+
+const CHAIN_AGORIC = "agoric"
+const CHAIN_GAIA = "gaia"
+
+const RELAYER_COSMOS = "cosmos"
+const RELAYER_HERMES = "hermes"
+
+const DEFAULT_CHAINIMAGE_AGORIC = "ivanagoric/agoric:heighliner-agoric"
+
+const FMT_ENV_CHAINNAME = "PFME2E_CHAINNAME%d"
+const ENV_CHAINIMAGE_AGORIC = "PFME2E_CHAINIMAGE_AGORIC"
+const ENV_RELAYERNAME = "PFME2E_RELAYERNAME"
 
 func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
 	return interchaintest.NewBuiltinRelayerFactory(
@@ -30,28 +45,40 @@ func newCosmosRlyFactory(t *testing.T) interchaintest.RelayerFactory {
 		relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000"))
 }
 
-func newCosmosHubChainSpec(chainName string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
-	return &interchaintest.ChainSpec{
+func newCosmosHubChainSpec(chainUniqueName string, chainID string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
+	ret := &interchaintest.ChainSpec{
 		Name:          "gaia",
-		ChainName:     chainName,
+		ChainName:     chainUniqueName,
 		Version:       "v13.0.1",
 		NumValidators: &numOfValidators,
 		NumFullNodes:  &numOfFullNodes,
 	}
+
+	ret.ChainConfig.ChainID = chainID
+	return ret
 }
 
-func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
+func newUnknownCosmosChainSpec(chain string, chainUniqueName string, chainID string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
+	ret := &interchaintest.ChainSpec{
+		Name:          chain,
+		ChainName:     chainUniqueName,
+		Version:       "latest",
+		NumValidators: &numOfValidators,
+		NumFullNodes:  &numOfFullNodes,
+	}
+
+	ret.ChainConfig.ChainID = chainID
+	return ret
+}
+
+func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.DockerImage, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
 	coinDecimals := int64(6)
 	gasAdjustment := 1.3
 	noHostMount := false
 
-	if len(chainID) < 1 {
-		chainID = chainName
-	}
-
 	return &interchaintest.ChainSpec{
 		Name:          "agoric",
-		ChainName:     chainName,
+		ChainName:     chainUniqueName,
 		Version:       "heighliner-agoric",
 		GasAdjustment: &gasAdjustment,
 		NoHostMount:   &noHostMount,
@@ -60,12 +87,7 @@ func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, n
 			Name:    "agoric",
 			ChainID: chainID,
 			Images: []ibc.DockerImage{
-				{
-					// TODO: The image to use should be passed into this test to make it more dynamic
-					Repository: "ivanagoric/agoric",
-					Version:    "heighliner-agoric",
-					UidGid:     "1025:1025",
-				},
+				chainImage,
 			},
 			Bin:            "agd",
 			Bech32Prefix:   "agoric",
@@ -83,100 +105,128 @@ func newAgoricChainSpec(chainName string, chainID string, numOfValidators int, n
 		NumFullNodes:  &numOfFullNodes,
 	}
 }
-func TestChainPair_Agoric_Cosmos_1Val_CosmosRly(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
 
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
+// getChainImage will return the environment variable value
+// PFME2E_CHAINIMAGE_AGORIC. The value of this env var
+// must be in the form "repo/image:version"
+func getChainImageAgoric(t *testing.T) ibc.DockerImage {
+	ret := ibc.DockerImage{
+		UidGid: "1025:1025",
 	}
 
-	testChainPair(t, cs, newCosmosRlyFactory(t))
+	chainImage, present := os.LookupEnv(ENV_CHAINIMAGE_AGORIC)
+	if !present {
+		chainImage = DEFAULT_CHAINIMAGE_AGORIC
+	}
+
+	parts := strings.Split(chainImage, ":")
+	if len(parts) == 2 {
+		ret.Repository = parts[0]
+		ret.Version = parts[1]
+	} else {
+		t.Fatalf("Invalid value for %s[%s]. Must be of the format 'repository:version'", ENV_CHAINIMAGE_AGORIC, chainImage)
+	}
+
+	t.Logf("ChainImages: %s[%s:%s]", ENV_CHAINIMAGE_AGORIC, ret.Repository, ret.Version)
+
+	return ret
 }
 
-func TestChainPair_Agoric_Cosmos_1Val_Hermes(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
+func getChainNames(t *testing.T) [4]string {
 
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
+	ret := [4]string{
+		CHAIN_AGORIC, CHAIN_AGORIC, CHAIN_AGORIC, CHAIN_AGORIC,
 	}
 
-	testChainPair(t, cs, newHermesFactory(t))
+	for i := 0; i < 4; i++ {
+		envVar := fmt.Sprintf(FMT_ENV_CHAINNAME, i)
+		chainName, present := os.LookupEnv(envVar)
+		if present {
+			ret[i] = chainName
+		}
+	}
+
+	t.Logf("ChainNames: %s[%s] %s[%s] %s[%s] %s[%s]",
+		fmt.Sprintf(FMT_ENV_CHAINNAME, 0), ret[0],
+		fmt.Sprintf(FMT_ENV_CHAINNAME, 1), ret[1],
+		fmt.Sprintf(FMT_ENV_CHAINNAME, 2), ret[2],
+		fmt.Sprintf(FMT_ENV_CHAINNAME, 3), ret[3])
+
+	return ret
 }
 
-func TestChainPair_Cosmos_Cosmos_1Val_CosmosRly(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
+func getChainSpec(t *testing.T) []*interchaintest.ChainSpec {
+	nv := 1
+	nf := 0
 
-	cs := []*interchaintest.ChainSpec{
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-2", numOfValidators, numOfFullNodes),
+	chainNames := getChainNames(t)
+	chainImage := getChainImageAgoric(t)
+
+	ret := make([]*interchaintest.ChainSpec, 4)
+
+	for index, chainName := range chainNames {
+		chainId := fmt.Sprintf("%s%d", chainName, index)
+		chainUniqueName := chainId
+
+		switch chainName {
+		case CHAIN_AGORIC:
+			ret[index] = newAgoricChainSpec(chainUniqueName, chainId, chainImage, nv, nf)
+		case CHAIN_GAIA:
+			ret[index] = newCosmosHubChainSpec(chainUniqueName, chainId, nv, nf)
+		default:
+			ret[index] = newUnknownCosmosChainSpec(chainName, chainUniqueName, chainId, nv, nf)
+		}
 	}
 
-	testChainPair(t, cs, newCosmosRlyFactory(t))
+	return ret
 }
 
-func TestChainPair_Cosmos_Cosmos_1Val_Hermes(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-2", numOfValidators, numOfFullNodes),
+func getRelayerFactory(t *testing.T) interchaintest.RelayerFactory {
+	relayerName, present := os.LookupEnv(ENV_RELAYERNAME)
+	if !present {
+		relayerName = RELAYER_COSMOS
 	}
 
-	testChainPair(t, cs, newHermesFactory(t))
+	var ret interchaintest.RelayerFactory
+
+	switch relayerName {
+	case RELAYER_COSMOS:
+		ret = newCosmosRlyFactory(t)
+	case RELAYER_HERMES:
+		ret = newHermesFactory(t)
+	default:
+		t.Fatalf("Invalid value for %s[%s]. Valid values are [%s] or [%s]", ENV_RELAYERNAME, relayerName, RELAYER_COSMOS, RELAYER_HERMES)
+	}
+
+	t.Logf("RelayerNmae: %s[%s]", ENV_RELAYERNAME, relayerName)
+
+	return ret
 }
 
-func TestChainPair_Cosmos_Agoric_1Val_Hermes(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-	}
-
-	testChainPair(t, cs, newHermesFactory(t))
+func TestConformance(t *testing.T) {
+	cs := getChainSpec(t)
+	rf := getRelayerFactory(t)
+	testConformance(t, cs[0:2], rf)
 }
 
-func TestChainPair_Agoric_Agoric_1Val_CosmosRly(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
+func testConformance(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
+	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), cs)
 
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newAgoricChainSpec("agoric-2", "agoricchain-2", numOfValidators, numOfFullNodes),
-	}
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(45*time.Minute))
+	defer cancel()
 
-	testChainPair(t, cs, newCosmosRlyFactory(t))
+	// For our example we will use a No-op reporter that does not actually collect any test reports.
+	rep := testreporter.NewNopReporter()
+
+	// Test will now run the conformance test suite against both of our chains, ensuring that they both have basic
+	// IBC capabilities properly implemented and work with both the Go relayer and Hermes.
+	conformance.Test(t, ctx, []interchaintest.ChainFactory{cf}, []interchaintest.RelayerFactory{rf}, rep)
 }
 
-func TestChainPair_Agoric_Agoric_1Val_Hermes(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newAgoricChainSpec("agoric-2", "agoricchain-2", numOfValidators, numOfFullNodes),
-	}
-
-	testChainPair(t, cs, newHermesFactory(t))
-}
-
-func TestChainPair_Agoric_Cosmos_2Val(t *testing.T) {
-	numOfValidators := 2
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-	}
-
-	testChainPair(t, cs, newCosmosRlyFactory(t))
+func TestChainPair(t *testing.T) {
+	cs := getChainSpec(t)
+	rf := getRelayerFactory(t)
+	testChainPair(t, cs[0:2], rf)
 }
 
 func testChainPair(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
@@ -198,52 +248,4 @@ func testChainPair(t *testing.T, cs []*interchaintest.ChainSpec, rf interchainte
 
 	client, network := interchaintest.DockerSetup(t)
 	conformance.TestChainPair(t, ctx, client, network, chains[0], chains[1], rf, rep, nil)
-}
-
-func TestConformance_Agoric_Cosmos_1Val(t *testing.T) {
-	numOfValidators := 1
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-	}
-
-	testConformance(t, cs)
-}
-
-func TestConformance_Agoric_Cosmos_2Val(t *testing.T) {
-	numOfValidators := 2
-	numOfFullNodes := 0
-
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-	}
-
-	testConformance(t, cs)
-}
-
-func testConformance(t *testing.T, cs []*interchaintest.ChainSpec) {
-	numOfValidators := 1
-	numOfFullNodes := 0
-
-	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric-1", "agoricchain-1", numOfValidators, numOfFullNodes),
-		newCosmosHubChainSpec("cosmoshub-1", numOfValidators, numOfFullNodes),
-	})
-	//rf := newAgoricRelayersFactory(t)
-	rf := newCosmosRlyFactory(t)
-
-	// TODO: Use a 45 min
-	// ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(45*time.Minute))
-	// defer cancel()
-	ctx := context.Background()
-
-	// For our example we will use a No-op reporter that does not actually collect any test reports.
-	rep := testreporter.NewNopReporter()
-
-	// Test will now run the conformance test suite against both of our chains, ensuring that they both have basic
-	// IBC capabilities properly implemented and work with both the Go relayer and Hermes.
-	conformance.Test(t, ctx, []interchaintest.ChainFactory{cf}, []interchaintest.RelayerFactory{rf}, rep)
 }

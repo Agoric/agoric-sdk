@@ -10,7 +10,6 @@ import (
 	interchaintest "github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/chain/cosmos"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
-	"github.com/agoric-labs/interchaintest/v6/relayer"
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
 	"github.com/agoric-labs/interchaintest/v6/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -33,42 +32,19 @@ type ForwardMetadata struct {
 	RefundSequence *uint64       `json:"refund_sequence,omitempty"`
 }
 
-var (
-	chainName_A, chainName_B, chainName_C, chainName_D = "chaina", "chainb", "chainc", "chaind"
-	nv                                                 = 1
-	nf                                                 = 0
-)
-
-func TestPacketForwardMiddleware_AllGaia(t *testing.T) {
-
-	cs := []*interchaintest.ChainSpec{
-		newCosmosHubChainSpec(chainName_A, nv, nf),
-		newCosmosHubChainSpec(chainName_B, nv, nf),
-		newCosmosHubChainSpec(chainName_C, nv, nf),
-		newCosmosHubChainSpec(chainName_D, nv, nf),
-	}
-	testPacketForwardMiddleware(t, cs)
+func TestPacketForwardMiddleware(t *testing.T) {
+	cs := getChainSpec(t)
+	rf := getRelayerFactory(t)
+	testPacketForwardMiddleware(t, cs, rf)
 }
 
-func TestPacketForwardMiddleware_Agoric_Gaia(t *testing.T) {
-
-	cs := []*interchaintest.ChainSpec{
-		newAgoricChainSpec("agoric", chainName_A, nv, nf),
-		newCosmosHubChainSpec(chainName_B, nv, nf),
-		newCosmosHubChainSpec(chainName_C, nv, nf),
-		newCosmosHubChainSpec(chainName_D, nv, nf),
-	}
-	testPacketForwardMiddleware(t, cs)
-}
-
-func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
+func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
 
 	var (
-		ctx                            = context.Background()
-		client, network                = interchaintest.DockerSetup(t)
-		rep                            = testreporter.NewNopReporter()
-		eRep                           = rep.RelayerExecReporter(t)
-		chainA, chainB, chainC, chainD *cosmos.CosmosChain
+		ctx             = context.Background()
+		client, network = interchaintest.DockerSetup(t)
+		rep             = testreporter.NewNopReporter()
+		eRep            = rep.RelayerExecReporter(t)
 	)
 
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), cs)
@@ -76,10 +52,10 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
 
-	chainA, chainB, chainC, chainD = chains[0].(*cosmos.CosmosChain), chains[1].(*cosmos.CosmosChain), chains[2].(*cosmos.CosmosChain), chains[3].(*cosmos.CosmosChain)
+	r := rf.Build(t, client, network)
 
-	r := newCosmosRlyFactory(t).Build(t, client, network)
-
+	chainA, chainB, chainC, chainD := chains[0].(*cosmos.CosmosChain), chains[1].(*cosmos.CosmosChain), chains[2].(*cosmos.CosmosChain), chains[3].(*cosmos.CosmosChain)
+	chainName_A, chainName_B, chainName_C, chainName_D := chainA.Config().Name, chainB.Config().Name, chainC.Config().Name, chainD.Config().Name
 	pathAB := fmt.Sprintf("%s-%s", chainName_A, chainName_B)
 	pathBC := fmt.Sprintf("%s-%s", chainName_B, chainName_C)
 	pathCD := fmt.Sprintf("%s-%s", chainName_C, chainName_D)
@@ -174,10 +150,13 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 	secondHopEscrowAccount := sdk.MustBech32ifyAddressBytes(chainB.Config().Bech32Prefix, transfertypes.GetEscrowAddress(bcChan.PortID, bcChan.ChannelID))
 	thirdHopEscrowAccount := sdk.MustBech32ifyAddressBytes(chainC.Config().Bech32Prefix, transfertypes.GetEscrowAddress(cdChan.PortID, abChan.ChannelID))
 
-	blocksToWait := 20
+	blocksToWait := 25
 
 	t.Run("multi-hop a->b->c->d", func(t *testing.T) {
 		// Send packet from Chain A->Chain B->Chain C->Chain D
+
+		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
+		require.NoError(t, err)
 
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
@@ -230,12 +209,14 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainDBalance, err := chainD.GetBalance(ctx, userD.FormattedAddress(), thirdHopIBCDenom)
 		require.NoError(t, err)
 
+		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
+
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(transferAmount).Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance)
-		require.Equal(t, sdk.NewInt(0), chainBBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
-		require.Equal(t, transferAmount, chainDBalance)
+		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
+		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
+		require.Equalf(t, transferAmount, chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", transferAmount, chainDBalance)
 
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
 		require.NoError(t, err)
@@ -246,13 +227,17 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		thirdHopEscrowBalance, err := chainC.GetBalance(ctx, thirdHopEscrowAccount, secondHopIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, transferAmount, firstHopEscrowBalance)
-		require.Equal(t, transferAmount, secondHopEscrowBalance)
-		require.Equal(t, transferAmount, thirdHopEscrowBalance)
+		require.Equalf(t, transferAmount, firstHopEscrowBalance, "Wrong escrow balance on chainA expected[%v] actual[%v]", transferAmount, firstHopEscrowBalance)
+		require.Equalf(t, transferAmount, secondHopEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", transferAmount, secondHopEscrowBalance)
+		require.Equalf(t, transferAmount, thirdHopEscrowBalance, "Wrong escrow balance on chainC expected[%v] actual[%v]", transferAmount, thirdHopEscrowBalance)
 	})
 
 	t.Run("multi-hop denom unwind d->c->b->a", func(t *testing.T) {
 		// Send packet back from Chain D->Chain C->Chain B->Chain A
+
+		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
+		require.NoError(t, err)
+
 		transfer := ibc.WalletAmount{
 			Address: userC.FormattedAddress(),
 			Denom:   thirdHopIBCDenom,
@@ -307,13 +292,12 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		require.Equal(t, sdk.NewInt(0), chainDBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
-		require.Equal(t, sdk.NewInt(0), chainBBalance)
+		require.Equalf(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
+		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
+		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
 
-		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance)
+		expectedBalance := userFunds.Add(transferAmount)
+		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
 
 		// assert balances for IBC escrow accounts
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
@@ -325,14 +309,18 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		thirdHopEscrowBalance, err := chainC.GetBalance(ctx, thirdHopEscrowAccount, secondHopIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, sdk.NewInt(0), firstHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), secondHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), thirdHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), firstHopEscrowBalance, "Wrong escrow balance on chainA expected[%v] actual[%v]", sdk.NewInt(0), firstHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), secondHopEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), secondHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), thirdHopEscrowBalance, "Wrong escrow balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), thirdHopEscrowBalance)
 	})
 
 	t.Run("forward ack error refund", func(t *testing.T) {
 		// Send a malformed packet with invalid receiver address from Chain A->Chain B->Chain C
 		// This should succeed in the first hop and fail to make the second hop; funds should then be refunded to Chain A.
+
+		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
+		require.NoError(t, err)
+
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -370,11 +358,11 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainCBalance, err := chainC.GetBalance(ctx, userC.FormattedAddress(), secondHopIBCDenom)
 		require.NoError(t, err)
 
-		gasFees := 2 * chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
+		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance)
-		require.Equal(t, sdk.NewInt(0), chainBBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
+		require.Equal(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		require.Equal(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
+		require.Equal(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 
 		// assert balances for IBC escrow accounts
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
@@ -383,12 +371,16 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		secondHopEscrowBalance, err := chainB.GetBalance(ctx, secondHopEscrowAccount, firstHopIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, sdk.NewInt(0), firstHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), secondHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), firstHopEscrowBalance, "Wrong escrow balance on chainA expected[%v] actual[%v]", sdk.NewInt(0), firstHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), secondHopEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), secondHopEscrowBalance)
 	})
 
 	t.Run("forward timeout refund", func(t *testing.T) {
 		// Send packet from Chain A->Chain B->Chain C with the timeout so low for B->C transfer that it can not make it from B to C, which should result in a refund from B to A after two retries.
+
+		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
+		require.NoError(t, err)
+
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -429,11 +421,11 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainCBalance, err := chainC.GetBalance(ctx, userC.FormattedAddress(), secondHopIBCDenom)
 		require.NoError(t, err)
 
-		gasFees := 3 * chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
+		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance)
-		require.Equal(t, sdk.NewInt(0), chainBBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
+		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
+		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
 		require.NoError(t, err)
@@ -441,14 +433,18 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		secondHopEscrowBalance, err := chainB.GetBalance(ctx, secondHopEscrowAccount, firstHopIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, sdk.NewInt(0), firstHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), secondHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), firstHopEscrowBalance, "Wrong escrow balance on chainA expected[%v] actual[%v]", sdk.NewInt(0), firstHopEscrowBalance)
+		require.Equalf(t, sdk.NewInt(0), secondHopEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), secondHopEscrowBalance)
 	})
 
 	t.Run("multi-hop ack error refund", func(t *testing.T) {
 		// Send a malformed packet with invalid receiver address from Chain A->Chain B->Chain C->Chain D
 		// This should succeed in the first hop and second hop, then fail to make the third hop.
 		// Funds should be refunded to Chain B and then to Chain A via acknowledgements with errors.
+
+		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
+		require.NoError(t, err)
+
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -503,12 +499,12 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		gasFees := 4 * chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
+		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance)
-		require.Equal(t, sdk.NewInt(0), chainBBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
-		require.Equal(t, sdk.NewInt(0), chainDBalance)
+		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
+		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
+		require.Equalf(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 
 		// assert balances for IBC escrow accounts
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
@@ -520,9 +516,9 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		thirdHopEscrowBalance, err := chainC.GetBalance(ctx, thirdHopEscrowAccount, secondHopIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, sdk.NewInt(0), firstHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), secondHopEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), thirdHopEscrowBalance)
+		require.Equal(t, sdk.NewInt(0), firstHopEscrowBalance, "Wrong escrow balance on chainA expected[%v] actual[%v]", sdk.NewInt(0), firstHopEscrowBalance)
+		require.Equal(t, sdk.NewInt(0), secondHopEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), secondHopEscrowBalance)
+		require.Equal(t, sdk.NewInt(0), thirdHopEscrowBalance, "Wrong escrow balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), thirdHopEscrowBalance)
 	})
 
 	t.Run("multi-hop through native chain ack error refund", func(t *testing.T) {
@@ -569,8 +565,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		)
 		require.NoError(t, err)
 
-		require.Equal(t, transferAmount, chainABalance)
-		require.Equal(t, transferAmount, baEscrowBalance)
+		require.Equalf(t, transferAmount, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", transferAmount, chainABalance)
+		require.Equalf(t, transferAmount, baEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", transferAmount, baEscrowBalance)
 
 		// Send a malformed packet with invalid receiver address from Chain A->Chain B->Chain C->Chain D
 		// This should succeed in the first hop and second hop, then fail to make the third hop.
@@ -603,6 +599,9 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 			},
 		}
 
+		userFunds, err = chainB.GetBalance(ctx, userB.FormattedAddress(), chainB.Config().Denom)
+		require.NoError(t, err)
+
 		memo, err := json.Marshal(firstHopMetadata)
 		require.NoError(t, err)
 
@@ -629,12 +628,12 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		chainABalance, err = chainA.GetBalance(ctx, userA.FormattedAddress(), baIBCDenom)
 		require.NoError(t, err)
 
-		require.Equal(t, transferAmount, chainABalance)
-		gasFees := 5 * chainB.GetGasFeesInNativeDenom(transferTx.GasSpent)
+		require.Equalf(t, transferAmount, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", transferAmount, chainABalance)
+		gasFees := chainB.GetGasFeesInNativeDenom(transferTx.GasSpent)
 		expectedBalance := userFunds.Sub(transferAmount).Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainBBalance)
-		require.Equal(t, sdk.NewInt(0), chainCBalance)
-		require.Equal(t, sdk.NewInt(0), chainDBalance)
+		require.Equal(t, expectedBalance, chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", expectedBalance, chainBBalance)
+		require.Equal(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
+		require.Equal(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 
 		// assert balances for IBC escrow accounts
 		cdEscrowBalance, err := chainC.GetBalance(
@@ -658,8 +657,8 @@ func testPacketForwardMiddleware(t *testing.T, cs []*interchaintest.ChainSpec) {
 		)
 		require.NoError(t, err)
 
-		require.Equal(t, transferAmount, baEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), bcEscrowBalance)
-		require.Equal(t, sdk.NewInt(0), cdEscrowBalance)
+		require.Equal(t, transferAmount, baEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", transferAmount, baEscrowBalance)
+		require.Equal(t, sdk.NewInt(0), bcEscrowBalance, "Wrong escrow balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), bcEscrowBalance)
+		require.Equal(t, sdk.NewInt(0), cdEscrowBalance, "Wrong escrow balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), cdEscrowBalance)
 	})
 }
