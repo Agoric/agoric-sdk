@@ -3,12 +3,14 @@ package keeper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
+
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 )
@@ -34,15 +36,74 @@ func NewKeeper(
 	}
 }
 
-func (k Keeper) DeserializeTxMessages(msgBzs []json.RawMessage) ([]sdk.Msg, error) {
-	msgs := make([]sdk.Msg, len(msgBzs))
-	for i, bz := range msgBzs {
-		var any codectypes.Any
-		if err := k.cdc.UnmarshalJSON(bz, &any); err != nil {
+type fakeAny struct {
+	TypeURL string `json:"@type"`
+}
+
+type fakeCosmosTx struct {
+	Messages []json.RawMessage `json:"messages"`
+}
+
+// DeserializeRequests interprets a JSON-encoded array of Anys as Cosmos Query
+// requests.
+func (k Keeper) DeserializeRequests(bz []byte) ([]interface{}, error) {
+	// TODO replace these internals with the ones from TODODeserializeRequests
+	var cosmosTx fakeCosmosTx
+	if err := json.Unmarshal(bz, &cosmosTx); err != nil {
+		return nil, err
+	}
+
+	msgs := make([]interface{}, len(cosmosTx.Messages))
+	for i, anyMsg := range cosmosTx.Messages {
+		var someAny fakeAny
+		if err := json.Unmarshal(anyMsg, &someAny); err != nil {
 			return nil, err
 		}
 
-		err := k.cdc.UnpackAny(&any, &msgs[i])
+		switch someAny.TypeURL {
+		case "/cosmos.bank.v1beta1.QueryAllBalancesRequest":
+			var req banktypes.QueryAllBalancesRequest
+			if err := json.Unmarshal(anyMsg, &req); err != nil {
+				return nil, err
+			}
+			msgs[i] = &req
+		default:
+			return nil, fmt.Errorf("unrecognized type: %s", someAny.TypeURL)
+		}
+	}
+
+	return msgs, nil
+}
+
+// TODODeserializeRequests uses the codec's proto3 JSON unmarshaller and then
+// unpacks the Any types into actual objects.  FIXME: This is currently broken
+// with the following error:
+//
+// unable to resolve type URL /cosmos.bank.v1beta1.QueryAllBalancesRequest
+func (k Keeper) TODODeserializeRequests(bz []byte) ([]interface{}, error) {
+	var cosmosTx types.CosmosTx
+	if err := k.cdc.UnmarshalJSON(bz, &cosmosTx); err != nil {
+		return nil, err
+	}
+
+	msgs := make([]interface{}, len(cosmosTx.Messages))
+	for i, anyMsg := range cosmosTx.Messages {
+		err := k.cdc.UnpackAny(anyMsg, &msgs[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msgs, nil
+}
+
+func (k Keeper) DeserializeTxMessages(bz []byte) ([]sdk.Msg, error) {
+	var cosmosTx types.CosmosTx
+	if err := k.cdc.UnmarshalJSON(bz, &cosmosTx); err != nil {
+		return nil, err
+	}
+	msgs := make([]sdk.Msg, len(cosmosTx.Messages))
+	for i, anyMsg := range cosmosTx.Messages {
+		err := k.cdc.UnpackAny(anyMsg, &msgs[i])
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +137,7 @@ func (k Keeper) AllocateAddress(cctx context.Context) sdk.AccAddress {
 
 func (k Keeper) GetAllBalances(cctx context.Context, addr string) sdk.Coins {
 	ctx := sdk.UnwrapSDKContext(cctx)
-	return k.bankKeeper.GetAllBalances(ctx, sdk.AccAddress(addr))
+	return k.bankKeeper.GetAllBalances(ctx, sdk.MustAccAddressFromBech32(addr))
 }
 
 func (k Keeper) SendCoins(cctx context.Context, fromAddr, toAddr string, amt sdk.Coins) error {

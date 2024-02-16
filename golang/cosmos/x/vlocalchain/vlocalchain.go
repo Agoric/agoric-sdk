@@ -17,18 +17,19 @@ import (
 var _ vm.PortHandler = (*portHandler)(nil)
 
 type portHandler struct {
-	parent         vm.PortHandler
 	keeper         keeper.Keeper
 	transferKeeper types.TransferKeeper
 }
 
 type portMessage struct {
-	Type     string            `json:"type"`
-	Address  string            `json:"address"`
-	Messages []json.RawMessage `json:"messages"`
+	Type     string          `json:"type"`
+	Address  string          `json:"address,omitempty"`
+	Messages json.RawMessage `json:"messages,omitempty"`
 }
 
 func NewReceiver(keeper keeper.Keeper, transferKeeper types.TransferKeeper) portHandler {
+	// TODO: In app.go, add query services to queryServer
+	// app.RegisterGRPCServer(queryServer)
 	return portHandler{keeper: keeper, transferKeeper: transferKeeper}
 }
 
@@ -36,11 +37,6 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 	var msg portMessage
 	err = json.Unmarshal([]byte(str), &msg)
 	if err != nil {
-		firstErr := err
-		ret, err = h.parent.Receive(cctx, str)
-		if err != nil {
-			err = fmt.Errorf("first %v, then fallback: %v", firstErr, err)
-		}
 		return
 	}
 
@@ -53,19 +49,37 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		}
 		ret = string(bz)
 
-	case "VLOCALCHAIN_GET_BALANCE":
-		resp := h.keeper.GetAllBalances(cctx, msg.Address)
+	case "VLOCALCHAIN_QUERY":
+		// Copy the JSON messages string into a CosmosTx object so we can
+		// deserialize it with just proto3 JSON.
+		cosmosTxBz := []byte(`{"messages":` + string(msg.Messages) + `}`)
+
+		var qs []interface{}
+		qs, err = h.keeper.DeserializeRequests(cosmosTxBz)
+		if err != nil {
+			return
+		}
+		resps := make([]interface{}, len(qs))
+		for i, q := range qs {
+			resps[i], err = h.query(cctx, q)
+			if err != nil {
+				return
+			}
+		}
 		var bz []byte
-		if bz, err = json.Marshal(resp); err != nil {
+		if bz, err = json.Marshal(resps); err != nil {
 			return
 		}
 		ret = string(bz)
-
 	case "VLOCALCHAIN_EXECUTE_TX":
 		origCtx := sdk.UnwrapSDKContext(cctx)
 
+		// Copy the JSON messages string into a CosmosTx object so we can
+		// deserialize it with just proto3 JSON.
+		cosmosTxBz := []byte(`{"messages":` + string(msg.Messages) + `}`)
+
 		var msgs []sdk.Msg
-		if msgs, err = h.keeper.DeserializeTxMessages(msg.Messages); err != nil {
+		if msgs, err = h.keeper.DeserializeTxMessages(cosmosTxBz); err != nil {
 			return
 		}
 
@@ -93,9 +107,25 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		}
 		ret = string(bz)
 	default:
-		ret, err = h.parent.Receive(cctx, str)
+		err = fmt.Errorf("unrecognized message type %s", msg.Type)
 	}
 	return
+}
+
+func (h portHandler) query(ctx context.Context, m interface{}) (interface{}, error) {
+	var res interface{}
+	var err error
+	// We currently only handle a few kinds of requests.
+	// TODO: Enable more request types.
+	switch req := m.(type) {
+	case *banktypes.QueryAllBalancesRequest:
+		var coins sdk.Coins
+		coins = h.keeper.GetAllBalances(ctx, req.Address)
+		res = banktypes.QueryAllBalancesResponse{Balances: coins}
+	default:
+		err = fmt.Errorf("unrecognized message type %T", m)
+	}
+	return res, err
 }
 
 func (h portHandler) authenticateTx(msgs []sdk.Msg, address string) error {
@@ -117,8 +147,8 @@ func (h portHandler) authenticateTx(msgs []sdk.Msg, address string) error {
 
 func (h portHandler) executeTx(ctx context.Context, msgs []sdk.Msg, resps []interface{}) error {
 	for i, m := range msgs {
-		// We currently only handle a few kinds of messages.  Loopback ICA will
-		// enable more later by routing all possible messages.
+		// We currently only handle a few kinds of messages.
+		// TODO: Enable more message types.
 		var res interface{}
 		var err error
 		switch req := m.(type) {
