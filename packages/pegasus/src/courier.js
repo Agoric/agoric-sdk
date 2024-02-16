@@ -153,10 +153,8 @@ export const makeCourierMaker =
           throw Error(`Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`);
         }
         const publicFacet = await E(namesByAddress).lookup(address, contractKey);
-        console.log(publicFacet);
         args['funds'] = payout;
-        console.log(publicFacet[functionName]);
-        const result = await publicFacet[functionName](args);
+        const result = await E(publicFacet)[functionName](args);
         console.log("Completed PFM Call Forward: ", forward.call);
         console.log("PFM Call Result: ", result);
       }
