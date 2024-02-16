@@ -178,20 +178,20 @@ export const runModuleBehaviors = ({
   makeConfig,
 }) => {
   return Promise.all(
-    entries(manifest).map(([name, permit]) =>
-      Promise.resolve().then(() => {
-        const behavior = behaviors[name];
-        assert(behavior, `${name} not in ${Object.keys(behaviors).join(',')}`);
-        assert.typeof(
-          behavior,
-          'function',
-          `behaviors[${name}] is not a function; got ${behavior}`,
+    entries(manifest).map(async ([name, permit]) => {
+      await null;
+      const behavior = behaviors[name];
+      if (typeof behavior !== 'function') {
+        const behaviorKeys = Reflect.ownKeys(behaviors).map(key =>
+          typeof key === 'string' ? JSON.stringify(key) : String(key),
         );
-        const powers = extractPowers(permit, allPowers);
-        const config = harden(makeConfig(name, permit));
-        return behavior.call(behaviors, powers, config);
-      }),
-    ),
+        const keysStr = `[${behaviorKeys.join(', ')}]`;
+        throw Fail`${q(name)} is not a function in ${keysStr}: ${behavior}`;
+      }
+      const powers = extractPowers(permit, allPowers);
+      const config = harden(makeConfig(name, permit));
+      return Reflect.apply(behavior, behaviors, [powers, config]);
+    }),
   );
 };
 harden(runModuleBehaviors);
