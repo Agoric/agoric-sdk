@@ -81,7 +81,7 @@ async function testRemotePeg(t) {
         return localDepositFacet;
       }
       if (keys[0] === 'agoric1234567' && keys[1] === 'pfmTest') {
-        return instancePfmTest;
+        return instancePfmTest.publicFacet;
       }
       throw Error(`unrecognized namesByAddress lookup ${keys}`);
     },
@@ -140,19 +140,20 @@ async function testRemotePeg(t) {
                   'expected PFM Transfer packet',
                 );
                 resolver.resolve(JSON.stringify({ result: 'AQ==' }));
+              } else {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'I am a memo!',
+                    receiver: 'markaccount',
+                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                  },
+                  'expected memo transfer packet',
+                );
+                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
               }
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000001',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: 'I am a memo!',
-                  receiver: 'markaccount',
-                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                },
-                'expected memo transfer packet',
-              );
-              resolver.resolve(JSON.stringify({ result: 'AQ==' }));
             } else {
               t.deepEqual(
                 packet,
