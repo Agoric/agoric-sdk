@@ -132,7 +132,7 @@
  * @property {string} address - The address of the contract.
  * @property {string} contractKey - The key of the contract.
  * @property {string} functionName - The function to be called on the contract.
- * @property {string} args - The arguments for the function call, in JSON string format.
+ * @property {object} args - The arguments for the function call, in JSON.
  */
 
 /**
