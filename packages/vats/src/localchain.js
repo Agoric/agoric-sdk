@@ -3,8 +3,9 @@ import { M } from '@endo/patterns';
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
-  getBalance: M.callWhen().returns(M.any()),
   executeTx: M.callWhen(M.arrayOf(M.any())).returns(M.arrayOf(M.any())),
+  // A sample of adding specific queries.
+  allBalances: M.callWhen().returns(M.any()),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -12,19 +13,22 @@ const prepareLocalChainAccount = zone =>
   zone.exoClass(
     'LocalChainAccount',
     LocalChainAccountI,
-    (system, address) => ({ system, address }),
+    (system, address, chain) => ({ system, address, chain }),
     {
       // Information that the account creator needs.
       async getAddress() {
         return this.state.address;
       },
-      async getBalance() {
+      async allBalances() {
         // We make a balance request, scoped to our own address.
-        const { system, address } = this.state;
-        return E(system).toBridge({
-          type: 'VLOCALCHAIN_GET_BALANCE',
-          address,
-        });
+        const { address, chain } = this.state;
+        const res = await chain.query([
+          {
+            '@type': '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+            address,
+          },
+        ]);
+        return res[0];
       },
       async executeTx(messages) {
         const { system, address } = this.state;
@@ -40,6 +44,7 @@ const prepareLocalChainAccount = zone =>
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
+  query: M.callWhen(M.arrayOf(M.any())).returns(M.any()),
 });
 
 /**
@@ -55,7 +60,14 @@ const prepareLocalChain = (zone, createAccount) =>
       const address = await E(system).toBridge({
         type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
       });
-      return createAccount(system, address);
+      return createAccount(system, address, this.self);
+    },
+    async query(messages) {
+      const { system } = this.state;
+      return E(system).toBridge({
+        type: 'VLOCALCHAIN_QUERY',
+        messages,
+      });
     },
   });
 
@@ -67,3 +79,6 @@ export const prepareLocalChainTools = zone => {
   return harden({ makeLocalChain });
 };
 harden(prepareLocalChainTools);
+
+/** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
+/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */
