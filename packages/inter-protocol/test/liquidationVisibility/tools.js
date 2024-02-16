@@ -1,7 +1,11 @@
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit } from '@agoric/ertp';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import {
+  allValues,
+  makeTracer,
+  objectMap,
+} from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import {
   makeRatio,
@@ -206,6 +210,7 @@ export const setupServices = async (
     abtcCollateralManager,
     chainStorage,
     board,
+    childrenNodes,
   ] = await Promise.all([
     E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacetP,
@@ -220,6 +225,7 @@ export const setupServices = async (
       : Promise.resolve(undefined),
     consume.chainStorage,
     consume.board,
+    consume.childrenNodes,
   ]);
   trace(t, 'pa', {
     governorInstance,
@@ -264,6 +270,7 @@ export const setupServices = async (
     abtcTestPriceAuthority,
     chainStorage,
     board,
+    childrenNodes,
   };
 };
 

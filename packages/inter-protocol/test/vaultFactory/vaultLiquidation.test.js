@@ -257,15 +257,12 @@ const setupServices = async (
 
   return {
     zoe,
-    timer,
     governor: g,
     vaultFactory: v,
     runKit: { issuer: run.issuer, brand: run.brand },
     priceAuthority,
     reserveKit,
     auctioneerKit,
-    priceAuthorityAdmin,
-    aethTestPriceAuthority,
   };
 };
 
