@@ -76,6 +76,9 @@ export const defaultQueueMax = [
   makeQueueSize(QueueInbound, defaultInboundQueueMax),
 ];
 
+/**
+ * @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').ParamsSDKType}
+ */
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
   fee_unit_price: defaultFeeUnitPrice,
