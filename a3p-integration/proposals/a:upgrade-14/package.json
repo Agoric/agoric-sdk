@@ -9,7 +9,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.0.6-4",
+    "@agoric/synthetic-chain": "^0.0.7-1",
     "ava": "^5.3.1"
   },
   "scripts": {
