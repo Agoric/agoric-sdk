@@ -2,6 +2,7 @@ package vm
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -34,6 +35,26 @@ var portToName = make(map[int]string)
 var nameToPort = make(map[string]int)
 var lastPort = 0
 
+type protectedPortHandler struct {
+	inner PortHandler
+}
+
+func (h protectedPortHandler) Receive(ctx context.Context, str string) (ret string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// Propagate just the string, not the error stack or we will invite
+			// nondeterminism.
+			err = fmt.Errorf("panic: %s", r)
+		}
+	}()
+	ret, err = h.inner.Receive(ctx, str)
+	return
+}
+
+func NewProtectedPortHandler(inner PortHandler) PortHandler {
+	return protectedPortHandler{inner}
+}
+
 func SetControllerContext(ctx sdk.Context) func() {
 	// We are only called by the controller, so we assume that it is billing its
 	// own meter usage.
@@ -49,7 +70,7 @@ func GetPort(name string) int {
 
 func RegisterPortHandler(name string, portHandler PortHandler) int {
 	lastPort++
-	portToHandler[lastPort] = portHandler
+	portToHandler[lastPort] = NewProtectedPortHandler(portHandler)
 	portToName[lastPort] = name
 	nameToPort[name] = lastPort
 	return lastPort
