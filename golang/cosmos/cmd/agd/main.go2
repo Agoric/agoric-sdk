@@ -1,0 +1,111 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	osexec "os/exec"
+	"syscall"
+
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/spf13/cast"
+	"github.com/tendermint/tendermint/libs/log"
+
+	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
+	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+)
+
+func ReceiveJsonLines(t vm.Target, r io.Reader, logger log.Logger) error {
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanLines)
+	var err error
+	for scanner.Scan() {
+		bz := scanner.Bytes()
+		var msg vm.Message
+		if err = json.Unmarshal(bz, &msg); err != nil {
+			logger.Error("Error unmarshalling from agvm", "json", scanner.Text(), "error", err)
+			break
+		}
+		
+		if err = t.Receive(msg); err != nil {
+			logger.Error("Error receiving from agvm", "json", scanner.Text(), "error", err)
+			break
+		}
+	}
+
+	if err == nil {
+		err = scanner.Err()
+	}
+	return err
+}
+
+func main() {
+	var agdToVM *os.File
+	sendToVM := func (msg vm.Message) error {
+		if agdToVM == nil {
+			return errors.New("sendToVM called without VM pipe set up")
+		}
+		
+		bz, err := json.Marshal(msg)
+		if err != nil {
+			return err
+		}
+		bz = append(bz, '\n')
+		if _, err = agdToVM.Write(bz); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	target := vm.NewTarget(sendToVM)
+
+	// We need to delegate to our default app for running the actual chain.
+	exitCode := 0
+	daemoncmd.OnStartHook = func(logger log.Logger, appOpts servertypes.AppOptions) error {
+		// We tried running start, which should never exit, so exit with non-zero
+		// code if we ever stop.
+		exitCode = 99
+
+		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
+		binary, lookErr := FindCosmicSwingsetBinary()
+		if lookErr != nil {
+			return lookErr
+		}
+
+		if !cast.ToBool(appOpts.Get("split-vm")) {
+			args = append(args, os.Args[1:]...)
+
+			logger.Info("Start chain delegating to JS executable", "binary", binary, "args", args)
+			return syscall.Exec(binary, args, os.Environ())
+		}
+
+		agdFromVM, vmToAgd, err := os.Pipe()
+		if err != nil {
+			return err
+		}
+		vmFromAgd, w, err := os.Pipe()
+		if err != nil {
+			return err
+		}
+
+		// Start the command running, then continue.
+    cmd := NewVMCommand(args)
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		go func() {
+			// Premature exit from `agd start` should exit the process.
+			cmd.Wait()
+			os.Exit(exitCode)
+		}()
+		return nil
+	}
+
+	daemon.RunWithController(target)
+	os.Exit(exitCode)
+}

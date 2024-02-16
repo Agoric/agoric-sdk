@@ -1,0 +1,12 @@
+{
+  "name": "test-vtransfer",
+  "script": "test-vtransfer.js",
+  "permit": "test-vtransfer-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/vats/src/proposals/vtransfer-echoer.js",
+      "bundleID": "b1-bd8eb21a47c64a94c58fe393c17195fa39270007eddc3054fd6f281cda5e5f2b8e9b740532a09f4b549d723f0d2b7feea1ba6d30558e1f9fe774ad565effa682",
+      "fileName": "/Users/michael/.agoric/cache/b1-bd8eb21a47c64a94c58fe393c17195fa39270007eddc3054fd6f281cda5e5f2b8e9b740532a09f4b549d723f0d2b7feea1ba6d30558e1f9fe774ad565effa682.json"
+    }
+  ]
+}
