@@ -155,6 +155,15 @@ module.exports = {
       },
     },
     {
+      files: ['*.d.ts'],
+      rules: {
+        // Irrelevant in a typedef
+        'no-use-before-define': 'off',
+        // Linter confuses the type declaration with value declaration
+        'no-redeclare': 'off',
+      },
+    },
+    {
       // disable type-aware linting in HTML
       files: ['*.html'],
       parserOptions: {
