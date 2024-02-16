@@ -80,7 +80,8 @@ telescope({
       },
     },
     aminoEncoding: {
-      enabled: false,
+      // Necessary for getSigningAgoricClient
+      enabled: true,
     },
     lcdClients: {
       enabled: false,
