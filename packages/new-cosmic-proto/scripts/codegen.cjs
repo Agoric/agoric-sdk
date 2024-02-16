@@ -20,15 +20,12 @@ telescope({
       ],
       patterns: ['**/*amino.ts', '**/*registry.ts'],
     },
+    interfaces: {
+      enabled: true,
+      useUnionTypes: false,
+    },
     prototypes: {
       includePackageVar: false,
-      // @ts-expect-error this is actually part of TelescopeOpts so huH?
-      removeUnusedImports: true,
-      experimentalGlobalProtoNamespace: true,
-      interfaces: {
-        enabled: true,
-        useUnionTypes: false,
-      },
       excluded: {
         packages: [
           'ibc.applications.fee.v1', // issue with parsing protos (LCD routes with nested objects in params)
@@ -63,23 +60,23 @@ telescope({
         encode: true,
         decode: true,
         fromPartial: true,
-        toAmino: true,
-        fromAmino: true,
+        toAmino: false,
+        fromAmino: false,
         fromProto: true,
         toProto: true,
       },
       parser: {
         keepCase: false,
       },
-    },
-    typingsFormat: {
-      duration: 'duration',
-      timestamp: 'date',
-      useExact: false,
-      useDeepPartial: false,
-      num64: 'bigint',
-      customTypes: {
-        useCosmosSDKDec: true,
+      typingsFormat: {
+        duration: 'duration',
+        timestamp: 'date',
+        useExact: false,
+        useDeepPartial: false,
+        num64: 'bigint',
+        customTypes: {
+          useCosmosSDKDec: true,
+        },
       },
     },
     aminoEncoding: {
