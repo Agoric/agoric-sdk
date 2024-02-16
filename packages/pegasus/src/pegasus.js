@@ -311,6 +311,9 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
           pegToDenomState.delete(peg);
         }
       },
+      getPegs() {
+        return pegs
+      }
     });
     return pegasusConnectionActions;
   };

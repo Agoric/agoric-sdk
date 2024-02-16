@@ -96,6 +96,7 @@
  * @property {PegLocal} pegLocal
  * @property {PegRemote} pegRemote
  * @property {RejectTransfersWaitingForPegRemote} rejectTransfersWaitingForPegRemote
+ * @property {() => Set<Peg>} getPegs
  * @property {(reason?: any) => void} abort
  */
 
