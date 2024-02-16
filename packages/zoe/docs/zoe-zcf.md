@@ -121,8 +121,8 @@ Eventually, the Zoe Service may be split into multiple vats, but for now, all of
 
 Contracts by default are private: unless the contract gives you an object by which you can get access, you do not have *any* access to the contract.
 
-Zoe specifically uses the @agoric/ertp implementation for contract
-invitations, but when Zoe escrows assets for use in contracts, Zoe does not verify that the assets were made using the latest @agoric/ertp implementation. 
+Zoe specifically uses the [@agoric/ertp](../../ERTP) implementation for contract
+invitations, but when Zoe escrows assets for use in contracts, Zoe does not verify that the assets were made using the latest [@agoric/ertp](../../ERTP) implementation. 
 
 A user can only receive an invitation to a contract instance if the contract code calls `zcf.makeInvitation(...`, which goes through the proper channels and asks Zoe to mint the invitation. No other contract code or other channel can create an invitation for a contract instance.
 

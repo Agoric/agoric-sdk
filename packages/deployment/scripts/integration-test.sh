@@ -29,6 +29,8 @@ else
   echo "Running chain without loadgen" >&2
 fi
 
+set -x
+
 SOLO_ADDR=
 VAT_CONFIG=
 RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
@@ -69,7 +71,7 @@ then
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
   cd "$LOADGEN"
-  SOLO_COINS=40000000000uist PATH="$thisdir/../bin:$PATH" \
+  SOLO_COINS=40000000000uist PATH="$thisdir/../bin:$SDK_SRC/bin:$PATH" \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
   SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \

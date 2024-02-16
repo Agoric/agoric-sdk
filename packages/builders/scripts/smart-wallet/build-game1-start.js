@@ -27,7 +27,6 @@ export const game1ProposalBuilder = async ({ publishRef, install }) => {
   });
 };
 
-/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
   await writeCoreProposal('start-game1', game1ProposalBuilder);

@@ -98,26 +98,37 @@ proto-lint: proto-tools
 proto-check-breaking: proto-tools
 	${BIN}/buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
-TMVER := $(shell go list -m all | sed -ne 's!^github\.com/tendermint/tendermint \(.*\)!\1!p')
-COSMOSVER = $(shell go list -m all | sed -ne 's!^github\.com/cosmos/cosmos-sdk \(.*\)!\1!p')
-IBCVER = 832044782f10
-t:
-	echo "X$(COSMOSVER)X"
-
-TM_URL           := file://$(shell go list -m -f '{{ .Dir }}' github.com/tendermint/tendermint)/proto/tendermint
-GOGO_PROTO_URL   := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
-IBC_PROTO_URL    := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v4)/proto/ibc/core
+GOGO_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/gogo/protobuf)
+# GOOGLE_API_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
+IBC_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v6)/proto/ibc/core
+COSMOS_PROTO_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-proto)/proto/cosmos_proto
 COSMOS_SDK_PROTO_URL := file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)/proto/cosmos
 
+COSMOS_PROTO_TYPES = third_party/proto/cosmos_proto
 GOGO_PROTO_TYPES  = third_party/proto/gogoproto
+GOOGLE_API_TYPES = third_party/proto/google/api
+GOOGLE_PROTO_TYPES = third_party/proto/google/protobuf
 IBC_CHANNEL_TYPES = third_party/proto/ibc/core/channel/v1
 IBC_CLIENT_TYPES = third_party/proto/ibc/core/client/v1
-SDK_QUERY_TYPES  	= third_party/proto/cosmos/base/query/v1beta1
+SDK_BASE_TYPES = third_party/proto/cosmos/base/v1beta1
+SDK_QUERY_TYPES = third_party/proto/cosmos/base/query/v1beta1
 SDK_UPGRADE_TYPES = third_party/proto/cosmos/upgrade/v1beta1
 
 proto-update-deps:
+	mkdir -p $(COSMOS_PROTO_TYPES)
+	curl -sSL $(COSMOS_PROTO_PROTO_URL)/cosmos.proto > $(COSMOS_PROTO_TYPES)/cosmos.proto
+
 	mkdir -p $(GOGO_PROTO_TYPES)
 	curl -sSL $(GOGO_PROTO_URL)/gogoproto/gogo.proto > $(GOGO_PROTO_TYPES)/gogo.proto
+
+	# Downloading from a not-a-go-module is problematic. These files are artifacts for now.
+	# mkdir -p $(GOOGLE_API_TYPES)
+	# curl -sSL $(GOOGLE_API_URL)/annotations.proto > $(GOOGLE_API_TYPES)/annotations.proto
+	# curl -sSL $(GOOGLE_API_URL)/http.proto > $(GOOGLE_API_TYPES)/http.proto
+	# curl -sSL $(GOOGLE_API_URL)/httpbody.proto > $(GOOGLE_API_TYPES)/httpbody.proto
+
+	mkdir -p $(GOOGLE_PROTO_TYPES)
+	curl -sSL $(GOGO_PROTO_URL)/protobuf/google/protobuf/any.proto > $(GOOGLE_PROTO_TYPES)/any.proto
 
 	mkdir -p $(IBC_CHANNEL_TYPES)
 	curl -sSL $(IBC_PROTO_URL)/channel/v1/channel.proto > $(IBC_CHANNEL_TYPES)/channel.proto
@@ -125,17 +136,19 @@ proto-update-deps:
 	mkdir -p $(IBC_CLIENT_TYPES)
 	curl -sSL $(IBC_PROTO_URL)/client/v1/client.proto > $(IBC_CLIENT_TYPES)/client.proto
 
+	mkdir -p $(SDK_BASE_TYPES)
+	curl -sSL $(COSMOS_SDK_PROTO_URL)/base/v1beta1/coin.proto > $(SDK_BASE_TYPES)/coin.proto
+
 	mkdir -p $(SDK_QUERY_TYPES)
 	curl -sSL $(COSMOS_SDK_PROTO_URL)/base/query/v1beta1/pagination.proto > $(SDK_QUERY_TYPES)/pagination.proto
 
 	mkdir -p $(SDK_UPGRADE_TYPES)
 	curl -sSL $(COSMOS_SDK_PROTO_URL)/upgrade/v1beta1/upgrade.proto > $(SDK_UPGRADE_TYPES)/upgrade.proto
 
-
 UNAME_S ?= $(shell uname -s)
 UNAME_M ?= $(shell uname -m)
 
-BUF_VERSION ?= 0.56.0
+BUF_VERSION ?= 1.0.0
 
 PROTOC_VERSION ?= 3.11.2
 ifeq ($(UNAME_S),Linux)

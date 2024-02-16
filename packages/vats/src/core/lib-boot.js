@@ -98,8 +98,8 @@ export const makeBootstrap = (
     );
 
     const namesVat = namedVat.consume.agoricNames;
-    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-      await E(namesVat).getNameHubKit();
+    const nameHubKit = await E(namesVat).getNameHubKit();
+    const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } = nameHubKit;
     const spaces = await makeWellKnownSpaces(agoricNamesAdmin, log);
     produce.agoricNames.resolve(agoricNames);
     produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
@@ -136,21 +136,12 @@ export const makeBootstrap = (
 
     await runBehaviors(bootManifest);
 
-    const { coreProposalCode } = vatParameters;
-    if (!coreProposalCode) {
+    /** @type {{ coreProposalCodeSteps?: string[] }} */
+    const { coreProposalCodeSteps } = vatParameters;
+    if (!coreProposalCodeSteps) {
       return;
     }
 
-    // Start the governance from the core proposals.
-    const coreEvalMessage = {
-      type: 'CORE_EVAL',
-      evals: [
-        {
-          json_permits: 'true',
-          js_code: coreProposalCode,
-        },
-      ],
-    };
     /**
      * @type {{
      *   coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>;
@@ -158,7 +149,20 @@ export const makeBootstrap = (
      */
     // @ts-expect-error cast
     const { coreEvalBridgeHandler } = consume;
-    await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
+
+    // Start the governance from the core proposals.
+    for await (const coreProposalCode of coreProposalCodeSteps) {
+      const coreEvalMessage = {
+        type: 'CORE_EVAL',
+        evals: [
+          {
+            json_permits: 'true',
+            js_code: coreProposalCode,
+          },
+        ],
+      };
+      await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
+    }
   };
 
   // For testing supports

@@ -4,44 +4,15 @@
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
-import { asyncGenerate, makeSet } from 'jessie.js';
+import { asyncGenerate } from 'jessie.js';
 
 const { fromEntries, keys, values } = Object;
-const { ownKeys } = Reflect;
 
 const { quote: q, Fail } = assert;
 
 export const BASIS_POINTS = 10_000n;
 
 /** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
-
-/**
- * Throws if multiple entries use the same property name. Otherwise acts
- * like `Object.fromEntries` but hardens the result.
- * Use it to protect from property names computed from user-provided data.
- *
- * @template K,V
- * @param {Iterable<[K,V]>} allEntries
- * @returns {{[k: K]: V}}
- */
-export const fromUniqueEntries = allEntries => {
-  const entriesArray = [...allEntries];
-  const result = harden(fromEntries(entriesArray));
-  if (ownKeys(result).length === entriesArray.length) {
-    return result;
-  }
-  const names = makeSet();
-  for (const [name, _] of entriesArray) {
-    if (names.has(name)) {
-      Fail`collision on property name ${q(name)}: ${entriesArray}`;
-    }
-    names.add(name);
-  }
-  throw Fail`internal: failed to create object from unique entries`;
-};
-harden(fromUniqueEntries);
-
-export { objectMap } from '@endo/patterns';
 
 /**
  * @template T
@@ -140,7 +111,8 @@ export const PromiseAllOrErrors = async items => {
  *   trier: () => Promise<T>,
  *  finalizer: (error?: unknown) => Promise<void>,
  * ) => Promise<T>}
- */ export const aggregateTryFinally = async (trier, finalizer) =>
+ */
+export const aggregateTryFinally = async (trier, finalizer) =>
   trier().then(
     async result => finalizer().then(() => result),
     async tryError =>
@@ -166,7 +138,6 @@ export const PromiseAllOrErrors = async items => {
  * @throws if any value in the object entries is not defined
  * @returns {asserts obj is AllDefined<T>}
  */
-
 export const assertAllDefined = obj => {
   const missing = [];
   for (const [key, val] of Object.entries(obj)) {

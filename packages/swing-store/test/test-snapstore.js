@@ -26,6 +26,7 @@ function ensureTxn() {}
 async function* getSnapshotStream(payload) {
   yield Buffer.from(payload);
 }
+harden(getSnapshotStream);
 
 test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');

@@ -306,6 +306,7 @@ export function makeSnapStore(
       const snapshotReader = gzReader.pipe(unzipper);
       yield* snapshotReader;
     }
+    harden(exporter);
     return exporter();
   }
 
@@ -344,6 +345,7 @@ export function makeSnapStore(
         Fail`actual hash ${q(hash)} !== expected ${q(snapshotID)}`;
     }
   }
+  harden(loadSnapshot);
 
   const sqlDeleteVatSnapshots = db.prepare(`
     DELETE FROM snapshots
@@ -481,6 +483,7 @@ export function makeSnapStore(
       }
     }
   }
+  harden(getExportRecords);
 
   async function* getArtifactNames(artifactMode) {
     for (const rec of sqlGetAvailableSnapshots.iterate(1)) {
@@ -492,6 +495,7 @@ export function makeSnapStore(
       }
     }
   }
+  harden(getArtifactNames);
 
   const sqlAddSnapshotRecord = db.prepare(`
     INSERT INTO snapshots (vatID, snapPos, hash, inUse)
@@ -640,6 +644,7 @@ export function makeSnapStore(
   function* listAllSnapshots() {
     yield* sqlListAllSnapshots.iterate();
   }
+  harden(listAllSnapshots);
 
   const sqlDumpCurrentSnapshots = db.prepare(`
     SELECT vatID, snapPos, hash, compressedSnapshot, inUse

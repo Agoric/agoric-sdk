@@ -8,6 +8,7 @@ on:
     branches:
       - master
       - 'release-*'
+      - 'dev-*'
       - beta
     tags:
       - '@agoric/sdk@*'
@@ -228,18 +229,43 @@ jobs:
           df -h
       - uses: actions/checkout@v3
       - name: docker build (sdk)
-        # Produces ghcr.io/agoric/agoric-sdk:latest used in the following upgrade test.
+        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: cd packages/deployment && make docker-build-sdk
-      - name: docker build upgrade test
+        run: make docker-build-sdk
+        working-directory: packages/deployment
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '18.x'
+          # Rebuilding the SDK image with resolved endo packages is not currently supported
+          # and since we can't build core eval submissions form the SDK using a newer endo,
+          # simply ignore any endo branch integration (this means we don't have full coverage)
+          ignore-endo-branch: 'true'
+        id: restore-node
+      - name: setup a3p-integration
         run: |
-          cd packages/deployment/upgrade-test && \
-            docker build \
-              --build-arg DEST_IMAGE=ghcr.io/agoric/agoric-sdk:latest \
-              -t docker-upgrade-test:latest -f Dockerfile upgrade-test-scripts
-      - name: docker run upgrade final stage
-        run: docker run --env "DEST=0" docker-upgrade-test:latest
+          corepack enable
+          yarn install
+        working-directory: a3p-integration
+      - name: verify SDK image didn't change
+        # In the future when we can rebuild the SDK image with resolved endo packages, it would
+        # be expected that the SDK image previously built has changed
+        if: steps.restore-node.outputs.endo-branch == 'NOPE'
+        run: |
+          original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+          yarn build:sdk
+          new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+          if [ "$original" != "$new" ]; then
+            echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
+            exit 1
+          fi
+        working-directory: a3p-integration
+      - name: build proposals tests
+        run: yarn build
+        working-directory: a3p-integration
+      - name: run proposals tests
+        run: yarn test
+        working-directory: a3p-integration
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

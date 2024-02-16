@@ -165,6 +165,7 @@ export function buildRootObject(vatPowers) {
         yield state;
       }
     }
+    harden(makeApprovedNotifier);
 
     /** @type {WalletBridge} */
     const bridge = Far('bridge', {

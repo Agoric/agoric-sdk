@@ -7,6 +7,7 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
   workflow_dispatch:
 
 jobs:
@@ -59,6 +60,10 @@ jobs:
             release-*)
               # A pre-release.
               TAG=${GITHUB_REF_NAME#release-}-dev
+              ;;
+            dev-*)
+              # A pre-release while our release branch is straying from master
+              TAG=${GITHUB_REF_NAME#dev-}-dev
               ;;
             master)
               # A trunk dev release.

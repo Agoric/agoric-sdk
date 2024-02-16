@@ -1,6 +1,6 @@
 # VM Config
 
-Factored out of @agoric/vats, by way of @agoric/boot.
+Factored out of [@agoric/vats](../vats), by way of [@agoric/boot](../boot).
 
 This is similar to `@agoric/boot` but because that has the integration testing of bootstrap, it depends on almost everything.
 

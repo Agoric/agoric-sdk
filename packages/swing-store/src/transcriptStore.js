@@ -43,6 +43,7 @@ import { createSHA256 } from './hasher.js';
 function* empty() {
   // Yield nothing
 }
+harden(empty);
 
 /**
  * @param {number} position
@@ -158,6 +159,7 @@ export function makeTranscriptStore(
       }
     }
   }
+  harden(readFullVatTranscript);
 
   function spanArtifactName(rec) {
     return `transcript.${rec.vatID}.${rec.startPos}.${rec.endPos}`;
@@ -393,6 +395,7 @@ export function makeTranscriptStore(
       }
     }
   }
+  harden(getExportRecords);
 
   const sqlCountSpanItems = db.prepare(`
     SELECT COUNT(*) FROM transcriptItems
@@ -447,6 +450,7 @@ export function makeTranscriptStore(
       }
     }
   }
+  harden(getArtifactNames);
 
   const sqlGetSpanEndPos = db.prepare(`
     SELECT endPos
@@ -501,6 +505,7 @@ export function makeTranscriptStore(
           expectedCount,
         )})`;
     }
+    harden(reader);
 
     if (startPos === endPos) {
       return empty();
@@ -541,6 +546,7 @@ export function makeTranscriptStore(
       yield Buffer.from(`${entry}\n`);
     }
   }
+  harden(exportSpan);
 
   const sqlAddItem = db.prepare(`
     INSERT INTO transcriptItems (vatID, item, position, incarnation)

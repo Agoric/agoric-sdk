@@ -4,7 +4,7 @@
 
 binaries=( "agd version" "agoric -V" "ag-chain-cosmos version" )
 for binary in "${binaries[@]}"; do
-   echo "Checking $binary a"
+   echo "Checking $binary"
    $binary
    ec=$?
    if [[ $ec -ne 0 ]]; then

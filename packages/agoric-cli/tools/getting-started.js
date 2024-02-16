@@ -64,7 +64,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env, DEBUG: 'agoric' },
+      env: { ...process.env, DEBUG: 'agoric:debug' },
       detached: true,
       ...opts,
     });
@@ -105,7 +105,13 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       initOptions.push(...opts);
     }
     t.is(
-      await myMain(['init', ...initOptions, 'dapp-foo']),
+      await myMain([
+        'init',
+        '--dapp-template',
+        'dapp-fungible-faucet',
+        ...initOptions,
+        'dapp-foo',
+      ]),
       0,
       'init dapp-foo works',
     );

@@ -255,7 +255,11 @@ export function makeCollectionManager(
     const kindInfo = storeKindInfo[kindName];
     kindInfo || Fail`unknown collection kind ${kindName}`;
     const { hasWeakKeys, durable } = kindInfo;
-    const getSchema = () => schemaCache.get(collectionID);
+    const getSchema = () => {
+      const result = schemaCache.get(collectionID);
+      assert(result !== undefined);
+      return result;
+    };
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
 
@@ -518,7 +522,7 @@ export function makeCollectionManager(
           yield [yieldKeys ? key : undefined, yieldValues ? value : undefined];
         }
       }
-
+      harden(iter);
       return iter();
     }
 
@@ -528,6 +532,7 @@ export function makeCollectionManager(
           yield entry[0];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -592,6 +597,7 @@ export function makeCollectionManager(
           yield entry[1];
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -601,6 +607,7 @@ export function makeCollectionManager(
           yield entry;
         }
       }
+      harden(iter);
       return iter();
     }
 
@@ -746,7 +753,9 @@ export function makeCollectionManager(
     const collection = summonCollectionInternal(false, collectionID, kindName);
 
     let doMoreGC = collection.clearInternal(true);
-    const { schemataCapData } = schemaCache.get(collectionID);
+    const record = schemaCache.get(collectionID);
+    assert(record !== undefined);
+    const { schemataCapData } = record;
     doMoreGC =
       schemataCapData.slots.map(vrm.removeReachableVref).some(b => b) ||
       doMoreGC;

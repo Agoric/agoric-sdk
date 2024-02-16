@@ -60,7 +60,6 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
- * @typedef {import('@agoric/internal/src/upgrade-api.js').DisconnectionObject} DisconnectionObject
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
@@ -135,12 +134,14 @@ export {};
  *                                  dynamic?: boolean,
  *                                  description?: string,
  *                                  name?: string,
- *                                  vatSourceBundle?: *,
+ *                                  vatSourceBundle?: unknown,
  *                                  managerType?: string,
- *                                  vatParameters?: *) => VatSlog,
+ *                                  vatParameters?: unknown) => { vatSlog: VatSlog },
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
- * @typedef { * } VatSlog
+ * @typedef {{
+ *   delivery: (crankNum: bigint, deliveryNum: bigint, kd: KernelDeliveryObject, vd: VatDeliveryObject) => SlogFinishDelivery,
+ * }} VatSlog
  *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
@@ -183,7 +184,7 @@ export {};
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
- * @property {*} [devices]
+ * @property {any} [devices]
  */
 /**
  * @typedef {KernelOptions & SwingSetOptions} SwingSetConfig a swingset config object
@@ -232,7 +233,7 @@ export {};
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {*} BundleCap
+ * @typedef {any} BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter

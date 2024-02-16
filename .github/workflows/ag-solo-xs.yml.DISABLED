@@ -9,6 +9,7 @@ on:
       # $default-branch
       - master
       - 'release-*'
+      - 'dev-*'
 
 jobs:
   xs-build:

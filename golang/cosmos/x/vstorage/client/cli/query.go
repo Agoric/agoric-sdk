@@ -28,8 +28,8 @@ func GetQueryCmd(storeKey string) *cobra.Command {
 // GetCmdGetData queries information about storage
 func GetCmdGetData(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "data [path]",
-		Short: "get vstorage data for path",
+		Use:   "data <path>",
+		Short: "get data for vstorage path",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -60,8 +60,12 @@ func GetCmdGetChildren(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "children [path]",
 		Aliases: []string{"keys"},
-		Short:   "get vstorage subkey names for path",
-		Args:    cobra.MaximumNArgs(1),
+		Short:   "get child path segments under vstorage path",
+		Long: `get child path segments under vstorage path.
+When absent, path defaults to the empty root path.
+Path segments are dot-separated, so a child "baz" under path "foo.bar" has path
+"foo.bar.baz".`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -92,7 +96,7 @@ func GetCmdGetChildren(queryRoute string) *cobra.Command {
 // GetCmdGetPath queries vstorage data or children, depending on the path
 func GetCmdGetPath(queryRoute string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "path [path]",
+		Use:   "path <path>",
 		Short: "get vstorage data, or children if path ends with '.'",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

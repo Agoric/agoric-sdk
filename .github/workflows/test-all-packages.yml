@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['16.x', '18.x']
+        node-version: ['18.x', '20.x']
     steps:
       - uses: actions/checkout@v3
         with:
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -145,9 +145,6 @@ jobs:
       - name: yarn test (notifier)
         if: (success() || failure())
         run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (same-structure)
-        if: (success() || failure())
-        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         if: (success() || failure())
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -189,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -220,6 +217,8 @@ jobs:
       - name: yarn test (casting)
         if: (success() || failure())
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (create-dapp)
+        run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -306,7 +305,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['16.x', '18.x']
+        engine: ['18.x', '20.x']
     steps:
       - name: set vars
         id: vars
@@ -347,7 +346,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -391,7 +390,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['16.x', '18.x']
+        engine: ['18.x', '20.x']
     steps:
       - name: set vars
         id: vars
@@ -431,7 +430,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -472,7 +471,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -514,7 +513,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -566,7 +565,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -607,7 +606,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -649,7 +648,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars
@@ -691,7 +690,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        engine: ['18.x', '20.x', 'xs']
     steps:
       - name: set vars
         id: vars

@@ -38,7 +38,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, withBankManager);
 });
 
-const DEBUG = false;
+const LOG_NEWS_HEAD = false;
 const bigIntReplacer = (_key, val) =>
   typeof val === 'bigint' ? Number(val) : val;
 
@@ -68,7 +68,7 @@ test.serial('avoid O(wallets) storage writes for a new asset', async t => {
       const news = await E(current).subscribeAfter(publishCount);
       publishCount = news.publishCount;
       chainStorageWrites += 1;
-      if (DEBUG) {
+      if (LOG_NEWS_HEAD) {
         console.log(JSON.stringify(news.head, bigIntReplacer, 2));
       }
     }
@@ -511,7 +511,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
     const mockStorage = await consume.chainStorage;
     const { aPlayer } = makeScenario(t);
 
-    aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
+    await aPlayer(addr2, walletUIbridge, mockStorage, sendToBridge, updates);
     const c2 = goofyClient(mockStorage, walletUIbridge.promise);
     await t.throwsAsync(c2, { message: /Withdrawal of {.*} failed/ });
     await eventLoopIteration();

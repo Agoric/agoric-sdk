@@ -49,7 +49,6 @@ RUN bash -c "for i in {1..3}; do yarn install --network-timeout 1000000 && exit 
 
 # Need to build the Node.js node extension that uses our above Golang shared library.
 COPY --from=cosmos-go /usr/src/agoric-sdk/golang/cosmos/build golang/cosmos/build/
-RUN cd golang/cosmos && yarn build:gyp
 
 # Check out the specified submodule versions.
 # When changing/adding entries here, make sure to search the whole project for
@@ -59,10 +58,13 @@ RUN \
   MODDABLE_URL="$MODDABLE_URL" \
   XSNAP_NATIVE_COMMIT_HASH="$XSNAP_NATIVE_COMMIT_HASH" \
   XSNAP_NATIVE_URL="$XSNAP_NATIVE_URL" \
-  yarn build
+  bin/agd build
 
 # Remove dev dependencies.
 RUN rm -rf packages/xsnap/moddable packages/xsnap/xsnap-native/build/tmp
+RUN mkdir golang/tmp && \
+  mv golang/cosmos/package.json golang/cosmos/build golang/cosmos/index.cjs golang/tmp/ && \
+  rm -rf golang/cosmos && mv golang/tmp golang/cosmos
 # FIXME: This causes bundling differences.  https://github.com/endojs/endo/issues/919
 # RUN yarn install --frozen-lockfile --production --network-timeout 100000
 

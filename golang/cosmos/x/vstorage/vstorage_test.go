@@ -39,7 +39,7 @@ func makeTestKit() testKit {
 	keeper := NewKeeper(storeKey)
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)

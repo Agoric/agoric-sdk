@@ -232,7 +232,9 @@ export const prepareOfferWatcher = baggage => {
          */
         onRejected(err, seat) {
           const { facets } = this;
-          void watchForNumWants(facets, seat);
+          if (isUpgradeDisconnection(err)) {
+            void watchForNumWants(facets, seat);
+          }
         },
       },
     },

@@ -168,6 +168,7 @@ export function* enumerateKeysWithPrefix(fakestore, prefix) {
     }
   }
 }
+harden(enumerateKeysWithPrefix);
 
 export function recognizersOf(v, baseref) {
   // the | is followed by the collectionID that can recognize baseref

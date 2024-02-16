@@ -1,0 +1,9 @@
+{
+    "extends": [
+        "../../typedoc.base.json"
+    ],
+    "entryPoints": [
+        "index.js",
+        "./src/core/types-ambient.d.ts",
+    ]
+}
