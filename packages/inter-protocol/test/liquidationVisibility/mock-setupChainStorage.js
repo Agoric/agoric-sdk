@@ -8,21 +8,21 @@ import '../../src/vaultFactory/types.js';
 import '@agoric/zoe/exported.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
-import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import { Far } from '@endo/far';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { bindAllMethods } from '@agoric/internal/src/method-tools.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import {
   isStreamCell,
   assertPathSegment,
+  unmarshalFromVstorage,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { heapZone } from '@agoric/zone';
 import * as cb from '@agoric/internal/src/callback.js';
 import { installPuppetGovernance, produceInstallations } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
@@ -195,7 +195,7 @@ const prepareChainStorageNode = zone => {
   return makeChainStorageNode;
 };
 
-const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
+const makeHeapChainStorageNode = prepareChainStorageNode(heapZone);
 
 /**
  * Create a heap-based root storage node for a given backing function and root
