@@ -56,7 +56,8 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",
     "test": "ava",
-    "test:xs": "exit 0"
+    "test:xs": "exit 0",
+    "test:live": "yarn build && scripts/test-live.js"
   },
   "publishConfig": {
     "access": "public"
