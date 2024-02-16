@@ -1438,7 +1438,12 @@ test('liq-rejected-timestampStorageNode', async t => {
   aethTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
   await eventLoopIteration();
 
-  const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
+  await assertVaultState(t, vaultNotifier, 'active');
+
+  const { startTime } = await startAuctionClock(
+    auctioneerKit,
+    manualTimer,
+  );
 
   // Check that no child node with auction start time's name created after the liquidation
   const vstorageDuringLiquidation = await getDataFromVstorage(
