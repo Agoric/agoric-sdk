@@ -53,7 +53,6 @@ import {
   assertVaultNotification,
 } from './assertions.js';
 import { Phase } from '../vaultFactory/driver.js';
-import { setBlockMakeChildNode } from './mock-setupChainStorage.js';
 
 const trace = makeTracer('TestLiquidationVisibility', false);
 
@@ -166,6 +165,7 @@ test('liq-flow-1', async t => {
 
   // drop collateral price from 5:1 to 4:1 and liquidate vault
   aethTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  await eventLoopIteration();
 
   await assertVaultState(t, vaultNotifier, 'active');
 
@@ -388,6 +388,7 @@ test('liq-flow-1.1', async t => {
   // drop collateral price from 5:1 to 4:1 and liquidate vault
   aethTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
   abtcTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, abtc.brand));
+  await eventLoopIteration();
 
   await assertVaultState(t, vaultNotifierAeth, 'active');
   await assertVaultState(t, vaultNotifierAbtc, 'active');
@@ -746,6 +747,7 @@ test('liq-flow-2a', async t => {
   await E(aethTestPriceAuthority).setPrice(
     makeRatio(70n, run.brand, 10n, aeth.brand),
   );
+  await eventLoopIteration();
   trace(t, 'changed price to 7 RUN/Aeth');
 
   // A bidder places a bid
@@ -1265,7 +1267,7 @@ test('liq-rejected-schedule', async t => {
 
   // drop collateral price from 5:1 to 4:1 and liquidate vault
   aethTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
-
+  await eventLoopIteration();
   await assertVaultState(t, vaultNotifier, 'active');
 
   await E(auctioneerKit.publicFacet).setRejectGetSchedules(true);
@@ -1390,6 +1392,7 @@ test('liq-rejected-timestampStorageNode', async t => {
     reserveKit: { reserveCreatorFacet, reservePublicFacet },
     auctioneerKit,
     chainStorage,
+    childrenNodes,
   } = services;
 
   const { reserveTracker } = await getMetricTrackers({
@@ -1428,10 +1431,12 @@ test('liq-rejected-timestampStorageNode', async t => {
   );
   t.is(vstorageBeforeLiquidation.length, 0);
 
-  setBlockMakeChildNode('3600');
+  const liquiationNode = await childrenNodes.get('liquidations');
+  liquiationNode.toggleChildrenBlocked();
 
   // drop collateral price from 5:1 to 4:1 and liquidate vault
   aethTestPriceAuthority.setPrice(makeRatio(40n, run.brand, 10n, aeth.brand));
+  await eventLoopIteration();
 
   const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
 
