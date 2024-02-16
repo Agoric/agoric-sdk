@@ -245,7 +245,6 @@ To test with a real network,
 ```
 yarn test:live
 ```
-Note that requires `tsx` in the global path (`npm install -g tsx`).
 
 
 
