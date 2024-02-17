@@ -312,7 +312,8 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
         }
       },
       getPegs() {
-        return pegs
+        const pegsArray = Array.from(pegs);
+        return { "pegs": pegsArray }
       }
     });
     return pegasusConnectionActions;

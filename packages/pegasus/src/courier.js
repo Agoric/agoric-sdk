@@ -30,7 +30,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
 /**
  * Function to re-run an operation after a delay, up to a maximum number of retries.
  *
- * @param {function} operation
+ * @param {Function} operation
  * @param {number} delay
  * @param {number} retries
  */
@@ -39,7 +39,7 @@ function retryOperation(operation, delay, retries) {
     function attempt() {
       operation()
         .then(resolve)
-        .catch((reason) => {
+        .catch(reason => {
           if (retries - 1 > 0) {
             setTimeout(() => {
               retryOperation(operation, delay, retries - 1)
@@ -103,7 +103,7 @@ export const makeCourierMaker =
 
         // The payment is already escrowed, and proposed to retain, so try sending.
         return when(E(connection).send(transferPacket))
-          .then(ack => E(transferProtocol).assertTransferPacketAck(ack))
+          .then(async ack => E(transferProtocol).assertTransferPacketAck(ack))
           .then(
             _ => zcfSeat.exit(),
             reason => {
@@ -129,12 +129,24 @@ export const makeCourierMaker =
      * @param {string} depositAddress - The deposit address.
      * @returns {Promise} - A promise that resolves when the transfer is handled.
      */
-    const handleTransfer = async (forward, zcfSeat, localAmount, depositAddress) => {
+    const handleTransfer = async (
+      forward,
+      zcfSeat,
+      localAmount,
+      depositAddress,
+    ) => {
+      await null;
       if (forward.transfer) {
         redeem(zcfSeat, { Transfer: localAmount });
-        const next = (typeof forward.transfer.next === "string" && typeof forward.transfer.next != undefined) ? JSON.parse(forward.transfer.next) : forward.transfer.next;
-        await send(zcfSeat, forward.transfer.receiver, next ? next : "PFM Transfer", { sender: depositAddress });
-        console.log("Completed PFM Transfer Forward: ", forward);
+        const next =
+          typeof forward.transfer.next === 'string' &&
+          typeof forward.transfer.next !== 'undefined'
+            ? JSON.parse(forward.transfer.next)
+            : forward.transfer.next;
+        await send(zcfSeat, forward.transfer.receiver, next || 'PFM Transfer', {
+          sender: depositAddress,
+        });
+        console.log('Completed PFM Transfer Forward: ', forward);
       }
     };
 
@@ -143,29 +155,32 @@ export const makeCourierMaker =
      *
      * @param {Forward} forward - The parsed transfer memo.
      * @param {Payment} payout - The payout object.
-     * @param {Object} namesByAddress - The names by address object.
+     * @param {any} namesByAddr - The names by address object.
      * @returns {Promise} - A promise that resolves when the call is handled.
      */
-    const handleCall = async (forward, payout, namesByAddress) => {
+    const handleCall = async (forward, payout, namesByAddr) => {
+      await null;
       if (forward.call) {
         const { address, contractKey, functionName, args } = forward.call;
         if (!address || !contractKey || !functionName || !args) {
-          throw Error(`Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`);
+          throw Error(
+            `Invalid PFM Call Forward: ${JSON.stringify(forward.call)}`,
+          );
         }
-        const publicFacet = await E(namesByAddress).lookup(address, contractKey);
-        args['funds'] = payout;
+        const publicFacet = await E(namesByAddr).lookup(address, contractKey);
+        args.funds = payout;
         const result = await E(publicFacet)[functionName](args);
-        console.log("Completed PFM Call Forward: ", forward.call);
-        console.log("PFM Call Result: ", result);
+        console.log('Completed PFM Call Forward: ', forward.call);
+        console.log('PFM Call Result: ', result);
       }
     };
 
     /**
      * Redeem the backing payment.
      *
-     * @param {Object} zcfSeat - The Zoe contract facet seat.
-     * @param {Object} localAmount - The local amount to be redeemed.
-     * @param {Object} userSeat - The user seat.
+     * @param {object} zcfSeat - The Zoe contract facet seat.
+     * @param {object} localAmount - The local amount to be redeemed.
+     * @param {object} userSeat - The user seat.
      * @returns {Promise} - A promise that resolves to the payout.
      */
     const redeemPayment = async (zcfSeat, localAmount, userSeat) => {
@@ -176,24 +191,34 @@ export const makeCourierMaker =
         zcfSeat.fail(e);
         throw e;
       }
-      return await E(userSeat).getPayout('Transfer');
+      return E(userSeat).getPayout('Transfer');
     };
 
     /** @type {Receiver} */
     const receive = async ({ value, depositAddress, memo }) => {
+      await null;
       try {
         const localAmount = AmountMath.make(localBrand, value);
-        const depositFacet = await E(board).getValue(depositAddress).catch(_ => E(namesByAddress).lookup(depositAddress, WalletName.depositFacet));
+        const depositFacet = await E(board)
+          .getValue(depositAddress)
+          .catch(_ =>
+            E(namesByAddress).lookup(depositAddress, WalletName.depositFacet),
+          );
         const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
         const forward = parseTransferMemo(memo);
 
         if (forward) {
           if (forward.transfer) {
-            await retryOperation(() => handleTransfer(forward, zcfSeat, localAmount, depositAddress), 1000, forward.transfer.retries || 1);
+            await retryOperation(
+              () =>
+                handleTransfer(forward, zcfSeat, localAmount, depositAddress),
+              1000,
+              forward.transfer.retries || 1,
+            );
             // returning void ack will prevent WriteAcknowledgement from occurring for forwarded packet.
             // This is intentional so that the acknowledgement will be written later based on the ack/timeout of the forwarded packet.
             return;
-          } 
+          }
           if (forward.call) {
             const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
             await handleCall(forward, payout, namesByAddress);
@@ -202,15 +227,14 @@ export const makeCourierMaker =
         }
 
         const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
-        E(depositFacet).receive(payout).catch(_ => {});
+        E(depositFacet)
+          .receive(payout)
+          .catch(_ => {});
 
         return E(transferProtocol).makeTransferPacketAck(true);
-
       } catch (e) {
-
         console.error(e);
         return E(transferProtocol).makeTransferPacketAck(false, e);
-
       }
     };
 

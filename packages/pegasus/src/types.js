@@ -92,11 +92,16 @@
  */
 
 /**
+ * @typedef {object} PegObject
+ * @property {Array<Peg>} pegs
+ */
+
+/**
  * @typedef {object} PegasusConnectionActions
  * @property {PegLocal} pegLocal
  * @property {PegRemote} pegRemote
  * @property {RejectTransfersWaitingForPegRemote} rejectTransfersWaitingForPegRemote
- * @property {() => Set<Peg>} getPegs
+ * @property {() => PegObject} getPegs
  * @property {(reason?: any) => void} abort
  */
 
