@@ -1,4 +1,4 @@
-# agoricinterchaintests
+# e2e_test
 
 This independant golang project contains tests that validate IBC conformance and PFM functionality using a fork of Strangelove's `interchaintest`.
 - upstream: https://github.com/strangelove-ventures/interchaintest

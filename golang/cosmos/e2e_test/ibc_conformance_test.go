@@ -1,4 +1,4 @@
-package agoricinterchaintest
+package e2etest
 
 import (
 	"context"

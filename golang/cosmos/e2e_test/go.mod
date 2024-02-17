@@ -1,4 +1,4 @@
-module github.com/Agoric/agoric-sdk/golang/cosmos/agoricinterchaintest
+module github.com/Agoric/agoric-sdk/golang/cosmos/e2etest
 
 go 1.20
 

@@ -1,4 +1,4 @@
-package agoricinterchaintest
+package e2etest
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ func newCosmosHubChainSpec(chainUniqueName string, chainID string, numOfValidato
 	ret := &interchaintest.ChainSpec{
 		Name:          "gaia",
 		ChainName:     chainUniqueName,
-		Version:       "v13.0.1",
+		Version:       "v13.0.1", // This version of gaiad has the interface interchaintestv6 needs
 		NumValidators: &numOfValidators,
 		NumFullNodes:  &numOfFullNodes,
 	}
@@ -75,7 +75,7 @@ func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.D
 	return &interchaintest.ChainSpec{
 		Name:          "agoric",
 		ChainName:     chainUniqueName,
-		Version:       "heighliner-agoric",
+		Version:       chainImage.Version,
 		GasAdjustment: &gasAdjustment,
 		NoHostMount:   &noHostMount,
 		ChainConfig: ibc.ChainConfig{
