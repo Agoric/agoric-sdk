@@ -4,9 +4,7 @@
     "sdkImageTag": "unreleased",
     "planName": "UNRELEASED_UPGRADE",
     "upgradeInfo": {
-      "coreProposals": [
-        "@agoric/builders/scripts/vats/init-network.js"
-      ]
+      "coreProposals": []
     },
     "type": "Software Upgrade Proposal"
   },
@@ -18,7 +16,10 @@
   },
   "ava": {
     "concurrency": 1,
-    "serial": true
+    "serial": true,
+    "files": [
+      "!submission"
+    ]
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
