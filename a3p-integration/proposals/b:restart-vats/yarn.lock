@@ -5,9 +5,9 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.0.6-4":
-  version: 0.0.6-4
-  resolution: "@agoric/synthetic-chain@npm:0.0.6-4"
+"@agoric/synthetic-chain@npm:^0.0.7-5":
+  version: 0.0.7-5
+  resolution: "@agoric/synthetic-chain@npm:0.0.7-5"
   dependencies:
     "@endo/zip": "npm:^1.0.1"
     better-sqlite3: "npm:^9.4.0"
@@ -15,7 +15,7 @@ __metadata:
     execa: "npm:^8.0.1"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/0c8512eaedf05aa51a10e28c4db0970af1622cf70c0e51fa08768170f73326621125960fb5d8f300613203cdf1cf5ebb2950e6e691bb7204675c9062ff78293f
+  checksum: 10c0/c2f04793b4103b2affebf1e0107fee473b9127dbb39fe6c3fe5ee9a773d999a16be64dfee71d7ff37e00827a782c5b214ace3b9327368f2873c467f886cd3045
   languageName: node
   linkType: hard
 
@@ -1820,7 +1820,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.0.6-4"
+    "@agoric/synthetic-chain": "npm:^0.0.7-5"
     ava: "npm:^5.3.1"
   languageName: unknown
   linkType: soft
