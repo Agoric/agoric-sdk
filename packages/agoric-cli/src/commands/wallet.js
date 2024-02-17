@@ -50,10 +50,11 @@ export const makeWalletCommand = async command => {
     )
     .option('--spend', 'confirm you want to spend')
     .option('--nickname <string>', 'nickname to use', 'my-wallet')
-    .action(function (opts) {
+    .action(async function (opts) {
       const { account, nickname, spend } = opts;
       const { home, keyringBackend: backend } = wallet.opts();
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
+      await null;
       if (spend) {
         execSwingsetTransaction(tx, {
           from: account,
@@ -61,12 +62,12 @@ export const makeWalletCommand = async command => {
           ...networkConfig,
         });
       } else {
-        const params = fetchSwingsetParams(networkConfig);
+        const params = await fetchSwingsetParams(networkConfig);
         assert(
-          params.power_flag_fees.length === 1,
-          'multiple power_flag_fees not supported',
+          params.powerFlagFees.length === 1,
+          'multiple powerFlagFees not supported',
         );
-        const { fee: fees } = params.power_flag_fees[0];
+        const { fee: fees } = params.powerFlagFees[0];
         const nf = new Intl.NumberFormat('en-US');
         const costs = fees
           .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
