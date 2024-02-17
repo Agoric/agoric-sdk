@@ -1,7 +1,17 @@
-// to be replaced before execution
-const addr = 'XX_ADDRESS_XX';
+#! false node --ignore-this-line
+/* global E */
 
-// verify that a pre-existing wallet has an invitation purse that is still monitored
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+// to be replaced before execution
+const addr = '{{ADDRESS}}';
+
+/**
+ * verify that a pre-existing wallet has an invitation purse that is still monitored
+ *
+ * @param {BootstrapPowers} powers
+ */
 const sendInvitation = async powers => {
   console.log('sendInvitation start');
   // namesByAddress is broken #8113

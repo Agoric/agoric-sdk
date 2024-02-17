@@ -1,83 +1,40 @@
-import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 
 import test from 'ava';
 
-import { makeAgd } from '@agoric/synthetic-chain/src/lib/agd-lib.js';
-import {
-  getUser,
-  voteLatestProposalAndWait,
-} from '@agoric/synthetic-chain/src/lib/commonUpgradeHelpers.js';
+import { agd, getUser, evalBundles } from '@agoric/synthetic-chain';
 
 const SUBMISSION_DIR = 'invite-submission';
 
-const staticConfig = {
-  deposit: '10000000ubld', // 10 BLD
-  installer: 'gov1', // as in: agd keys show gov1
-  proposer: 'validator',
-  collateralPrice: 6, // conservatively low price. TODO: look up
-  swingstorePath: '~/.agoric/data/agoric/swingstore.sqlite',
-};
-
-/** Provide access to the outside world via context. */
-const makeContext = async () => {
-  const config = {
-    chainId: 'agoriclocal',
-    ...staticConfig,
-  };
-
-  const agd = makeAgd({ execFileSync }).withOpts({
-    keyringBackend: 'test',
-  });
-
-  return { agd, config };
-};
-
-const replacePatternInFile = async (fileName, pattern, replacement) => {
-  const scriptBuffer = await readFile(`${fileName}.template.js`);
-  const newScript = scriptBuffer.toString().replace(pattern, replacement);
-  await writeFile(`${fileName}.js`, newScript);
+/**
+ * @param {string} fileName base file name without .tjs extension
+ * @param {Record<string, string>} replacements
+ */
+const replaceTemplateValuesInFile = async (fileName, replacements) => {
+  let script = await readFile(`${fileName}.tjs`, 'utf-8');
+  for (const [template, value] of Object.entries(replacements)) {
+    script = script.replaceAll(`{{${template}}}`, value);
+  }
+  await writeFile(`${fileName}.js`, script);
 };
 
 test('smartWallet repairs', async t => {
-  const { agd, config } = await makeContext();
-  const { chainId, deposit, proposer } = config;
-  const from = agd.lookup(proposer);
-
   const gov1Address = await getUser('gov1');
-  await replacePatternInFile(
-    `${SUBMISSION_DIR}/sendInvite`,
-    'XX_ADDRESS_XX',
-    gov1Address,
-  );
 
-  // agd tx  gov submit-proposal swingset-core-eval bar.json  foo.js
-  await agd.tx(
-    [
-      'gov',
-      'submit-proposal',
-      'swingset-core-eval',
-      `${SUBMISSION_DIR}/sendInvite-permit.json`,
-      `${SUBMISSION_DIR}/sendInvite.js`,
-      '--title=sendInvite',
-      '--description="send an invitation to verify the purse accepts deposits"',
-      `--deposit=${deposit}`,
-      '--gas=auto',
-      '--gas-adjustment=1.2',
-      '--keyring-backend=test',
-    ],
-    { from, chainId, yes: true },
-  );
-  await voteLatestProposalAndWait();
+  await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/sendInvite`, {
+    ADDRESS: gov1Address,
+  });
+
+  await evalBundles(SUBMISSION_DIR);
 
   // agd query vstorage data published.wallet.$GOV1ADDR.current  -o json \
   //   |& jq '.value | fromjson | .values[0] | fromjson | .body[1:] \
   //   | fromjson | .purses '
-  const walletCurrent = await agd.query([
+  const walletCurrent = await agd.query(
     'vstorage',
     'data',
     `published.wallet.${gov1Address}.current`,
-  ]);
+  );
 
   const body = JSON.parse(JSON.parse(walletCurrent.value).values[0]);
   const bodyTruncated = JSON.parse(body.body.substring(1));
