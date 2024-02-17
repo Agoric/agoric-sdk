@@ -30,11 +30,11 @@ test('smartWallet repairs', async t => {
   // agd query vstorage data published.wallet.$GOV1ADDR.current  -o json \
   //   |& jq '.value | fromjson | .values[0] | fromjson | .body[1:] \
   //   | fromjson | .purses '
-  const walletCurrent = await agd.query([
+  const walletCurrent = await agd.query(
     'vstorage',
     'data',
     `published.wallet.${gov1Address}.current`,
-  ]);
+  );
 
   const body = JSON.parse(JSON.parse(walletCurrent.value).values[0]);
   const bodyTruncated = JSON.parse(body.body.substring(1));
