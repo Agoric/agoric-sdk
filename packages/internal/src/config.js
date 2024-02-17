@@ -26,7 +26,7 @@ export const BridgeId = {
 };
 harden(BridgeId);
 
-export const BridgeKeys = {
+export const CosmosInitKeyToBridgeId = {
   vbankPort: BridgeId.BANK,
   vibcPort: BridgeId.DIBC,
 };
