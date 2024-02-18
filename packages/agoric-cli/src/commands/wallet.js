@@ -8,7 +8,6 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { Command } from 'commander';
 import fs from 'fs';
 import util from 'util';
 import { execFileSync } from 'child_process';
@@ -25,8 +24,12 @@ import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;
 
-export const makeWalletCommand = async () => {
-  const wallet = new Command('wallet')
+/**
+ * @param {import('commander').Command['command']} command
+ * @returns {Promise<import('commander').Command>}
+ */
+export const makeWalletCommand = async command => {
+  const wallet = command('wallet')
     .description('wallet commands')
     .option('--home <dir>', 'agd application home directory')
     .option(
