@@ -48,10 +48,19 @@ echo "Compute 3-way diffs between Gaia and us"
     echo "creating $new"
     mkdir -p "$(dirname "$new")"
     status=0
-    diff3 -mE \
-      "$thisdir/$our" \
-      "$tmp/${FROM_BRANCH//\//_}/$src" \
-      "$tmp/${TO_BRANCH//\//_}/$src" \
+    ourfile="$thisdir/$our"
+    if [ ! -f $ourfile ]; then
+      ourfile=/dev/null
+    fi
+    fromfile="$tmp/${FROM_BRANCH//\//_}/$src"
+    if [ ! -f $fromfile ]; then
+      fromfile=/dev/null
+    fi
+    tofile="$tmp/${TO_BRANCH//\//_}/$src"
+    if [ ! -f $tofile ]; then
+      tofile=/dev/null
+    fi
+    diff3 -mE "$ourfile" "$fromfile" "$tofile" \
       > "$new" || status=$?
     if [ $status -ge 2 ]; then
       exit "$status"

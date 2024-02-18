@@ -42,7 +42,7 @@ func RunWithController(sendToController cmd.Sender) {
 	config.Seal()
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)

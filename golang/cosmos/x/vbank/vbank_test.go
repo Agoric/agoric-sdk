@@ -263,9 +263,9 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(vbankStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(paramsStoreKey, sdk.StoreTypeIAVL, db)
-	ms.MountStoreWithDB(paramsTStoreKey, sdk.StoreTypeTransient, db)
+	ms.MountStoreWithDB(vbankStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(paramsTStoreKey, storetypes.StoreTypeTransient, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
