@@ -595,7 +595,7 @@ func NewAgoricApp(
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper,
+		app.PacketForwardKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -611,7 +611,7 @@ func NewAgoricApp(
 
 	// transfer stack contains (from top to bottom):
 	// - ICA Host
-	// - Packet Forward Middleware
+	// - Packet Forward Middleware wrapping transfer IBC
 	// - vIBC
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferPFMModule).

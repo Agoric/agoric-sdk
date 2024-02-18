@@ -205,9 +205,3 @@ tools-clean:
 
 test:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
-
-interchaintest-gen: ## Run code generators
-	go generate ./agoricinterchaintest
-
-interchaintest: interchaintest-gen ## Build interchaintest binary into ./bin
-	go test -ldflags "-X github.com/strangelove-ventures/interchaintest/v6/internal/version.GitSha=$(shell git describe --always --dirty)" -c -o ./bin/interchaintest ./agoricinterchaintest
