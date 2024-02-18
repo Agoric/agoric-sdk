@@ -347,6 +347,7 @@ func NewAgoricApp(
 		keys[paramstypes.StoreKey],
 		tkeys[paramstypes.TStoreKey],
 	)
+	// TODO: Should more params be added to the params keeper ala https://github.com/monopauli/kava/blob/4d1bfed1a19fa00979456ae61d7c575eb198b465/app/app.go#L417
 
 	// set the BaseApp's parameter store
 	bApp.SetParamStore(
@@ -582,12 +583,9 @@ func NewAgoricApp(
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
 	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
-
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
-	var transferPFMModule porttypes.IBCModule
-	transferPFMModule = transfer.NewIBCModule(app.TransferKeeper)
-	transferPFMModule = packetforward.NewIBCMiddleware(
-		transferPFMModule,
+	transferPFMModule := packetforward.NewIBCMiddleware(
+		transferIBCModule,
 		app.PacketForwardKeeper,
 		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
@@ -608,19 +606,18 @@ func NewAgoricApp(
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// create static IBC router, add transfer route, then set and seal it
-	// FIXME: Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
+	// Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
 	ibcRouter := porttypes.NewRouter()
 
 	// transfer stack contains (from top to bottom):
+	// - ICA Host
 	// - Packet Forward Middleware
-	// - ICA Hosts
-	// - Transfer
 	// - vIBC
-	ibcRouter.AddRoute(packetforwardtypes.ModuleName, transferPFMModule).
-		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
+		AddRoute(ibctransfertypes.ModuleName, transferPFMModule).
 		AddRoute(vibc.ModuleName, vibcIBCModule)
 
+	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
