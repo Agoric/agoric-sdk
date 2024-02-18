@@ -1076,6 +1076,8 @@ export async function launch({
     controller.writeSlogObject(obj);
   }
 
+  console.info('Launched SwingSet kernel');
+
   return {
     blockingSend,
     shutdown,
