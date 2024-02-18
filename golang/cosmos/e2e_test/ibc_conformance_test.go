@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	interchaintest "github.com/agoric-labs/interchaintest/v6"
+	"github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/conformance"
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
 	"go.uber.org/zap/zaptest"

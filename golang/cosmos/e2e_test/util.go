@@ -1,14 +1,19 @@
 package e2etest
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
-	interchaintest "github.com/agoric-labs/interchaintest/v6"
+	"github.com/agoric-labs/interchaintest/v6"
+	"github.com/agoric-labs/interchaintest/v6/chain/cosmos"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
 	"github.com/agoric-labs/interchaintest/v6/relayer"
+	"github.com/agoric-labs/interchaintest/v6/testutil"
+
 	"go.uber.org/zap/zaptest"
 )
 
@@ -19,10 +24,12 @@ const RELAYER_COSMOS = "cosmos"
 const RELAYER_HERMES = "hermes"
 
 const DEFAULT_CHAINIMAGE_AGORIC = "ivanagoric/agoric:heighliner-agoric"
+const DEFAULT_BLOCKS_TO_WAIT = 25
 
 const FMT_ENV_CHAINNAME = "PFME2E_CHAINNAME%d"
 const ENV_CHAINIMAGE_AGORIC = "PFME2E_CHAINIMAGE_AGORIC"
 const ENV_RELAYERNAME = "PFME2E_RELAYERNAME"
+const ENV_BLOCKS_TO_WAIT = "PFME2E_BLOCKS_TO_WAIT"
 
 func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
 	return interchaintest.NewBuiltinRelayerFactory(
@@ -197,4 +204,45 @@ func getRelayerFactory(t *testing.T) interchaintest.RelayerFactory {
 	t.Logf("RelayerNmae: %s[%s]", ENV_RELAYERNAME, relayerName)
 
 	return ret
+}
+
+func sendIBCTransferWithWait(
+	c *cosmos.CosmosChain,
+	ctx context.Context,
+	channelID string,
+	keyName string,
+	amount ibc.WalletAmount,
+	options ibc.TransferOptions,
+) (tx ibc.Tx, err error) {
+	blocksToWait := DEFAULT_BLOCKS_TO_WAIT
+
+	blocksAsStr, present := os.LookupEnv(ENV_BLOCKS_TO_WAIT)
+	if present {
+		blocksToWait, err = strconv.Atoi(blocksAsStr)
+		if err != nil {
+			return tx, err
+		}
+	}
+
+	chainAHeight, err := c.Height(ctx)
+	if err != nil {
+		return tx, err
+	}
+
+	tx, err = c.SendIBCTransfer(ctx, channelID, keyName, amount, options)
+	if err != nil {
+		return tx, err
+	}
+
+	_, err = testutil.PollForAck(ctx, c, chainAHeight, chainAHeight+30, tx.Packet)
+	if err != nil {
+		return tx, err
+	}
+
+	err = testutil.WaitForBlocks(ctx, blocksToWait, c)
+	if err != nil {
+		return tx, err
+	}
+
+	return tx, err
 }

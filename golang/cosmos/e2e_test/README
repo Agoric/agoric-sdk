@@ -64,7 +64,7 @@ $ PFME2E_CHAINNAME0=agoric PFME2E_CHAINNAME1=osmosis PFME2E_CHAINNAME2=stride PF
 `error in transaction (code: 6): failed to execute message; message index: 0: 809C699215C5BC041D4035479D28C30EAB11DBC5953E45D4545346B78482D82C: denomination trace not found`
 - Flakey `interchaintest` has failed to properly run commands on relayers
 
-`Wrong user balance on chainB expected[0] actual[100000]`
+`Wrong user balance on chain<blah> expected[<foo>>] actual[<bar>]`
 - If you see `error in transaction (code: 6): failed to execute message; message index: 0: 809C699215C5BC041D4035479D28C30EAB11DBC5953E45D4545346B78482D82C: denomination trace not found` immediately below this error then the relayer fell over.
 - If not, it's possible the test simply didn't wait enough blocks for the transactions to settle
 

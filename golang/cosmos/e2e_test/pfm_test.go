@@ -7,11 +7,10 @@ import (
 	"testing"
 	"time"
 
-	interchaintest "github.com/agoric-labs/interchaintest/v6"
+	"github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/chain/cosmos"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
-	"github.com/agoric-labs/interchaintest/v6/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	"github.com/stretchr/testify/require"
@@ -35,11 +34,11 @@ type ForwardMetadata struct {
 func TestPFM(t *testing.T) {
 	cs := getChainSpec(t)
 	rf := getRelayerFactory(t)
+
 	testPFM(t, cs, rf)
 }
 
 func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
-
 	var (
 		ctx             = context.Background()
 		client, network = interchaintest.DockerSetup(t)
@@ -52,10 +51,12 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 	chains, err := cf.Chains(t.Name())
 	require.NoError(t, err)
 
+	chainA, chainB, chainC, chainD := chains[0].(*cosmos.CosmosChain), chains[1].(*cosmos.CosmosChain), chains[2].(*cosmos.CosmosChain), chains[3].(*cosmos.CosmosChain)
+	chainID_A, chainID_B, chainID_C, chainID_D := chainA.Config().ChainID, chainB.Config().ChainID, chainC.Config().ChainID, chainD.Config().ChainID
+	chainName_A, chainName_B, chainName_C, chainName_D := chainA.Config().Name, chainB.Config().Name, chainC.Config().Name, chainD.Config().Name
+
 	r := rf.Build(t, client, network)
 
-	chainA, chainB, chainC, chainD := chains[0].(*cosmos.CosmosChain), chains[1].(*cosmos.CosmosChain), chains[2].(*cosmos.CosmosChain), chains[3].(*cosmos.CosmosChain)
-	chainName_A, chainName_B, chainName_C, chainName_D := chainA.Config().Name, chainB.Config().Name, chainC.Config().Name, chainD.Config().Name
 	pathAB := fmt.Sprintf("%s-%s", chainName_A, chainName_B)
 	pathBC := fmt.Sprintf("%s-%s", chainName_B, chainName_C)
 	pathCD := fmt.Sprintf("%s-%s", chainName_C, chainName_D)
@@ -97,20 +98,19 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		_ = ic.Close()
 	})
 
-	userFunds := sdk.NewInt(10_000_000_000)
-	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), userFunds, chainA, chainB, chainC, chainD)
+	users := interchaintest.GetAndFundTestUsers(t, ctx, t.Name(), sdk.NewInt(10_000_000_000), chainA, chainB, chainC, chainD)
 
-	abChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainA.Config().ChainID, chainB.Config().ChainID)
+	abChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainID_A, chainID_B)
 	require.NoError(t, err)
 
 	baChan := abChan.Counterparty
 
-	cbChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainC.Config().ChainID, chainB.Config().ChainID)
+	cbChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainID_C, chainID_B)
 	require.NoError(t, err)
 
 	bcChan := cbChan.Counterparty
 
-	dcChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainD.Config().ChainID, chainC.Config().ChainID)
+	dcChan, err := ibc.GetTransferChannel(ctx, r, eRep, chainID_D, chainID_C)
 	require.NoError(t, err)
 
 	cdChan := dcChan.Counterparty
@@ -131,7 +131,7 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 	// Get original account balances
 	userA, userB, userC, userD := users[0], users[1], users[2], users[3]
 
-	transferAmount := sdk.NewInt(100000)
+	transferAmount := sdk.NewInt(100_000)
 
 	// Compose the prefixed denoms and ibc denom for asserting balances
 	firstHopDenom := transfertypes.GetPrefixedDenom(baChan.PortID, baChan.ChannelID, chainA.Config().Denom)
@@ -150,13 +150,8 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 	secondHopEscrowAccount := sdk.MustBech32ifyAddressBytes(chainB.Config().Bech32Prefix, transfertypes.GetEscrowAddress(bcChan.PortID, bcChan.ChannelID))
 	thirdHopEscrowAccount := sdk.MustBech32ifyAddressBytes(chainC.Config().Bech32Prefix, transfertypes.GetEscrowAddress(cdChan.PortID, abChan.ChannelID))
 
-	blocksToWait := 25
-
 	t.Run("multi-hop a->b->c->d", func(t *testing.T) {
 		// Send packet from Chain A->Chain B->Chain C->Chain D
-
-		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
-		require.NoError(t, err)
 
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
@@ -187,14 +182,10 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		memo, err := json.Marshal(firstHopMetadata)
 		require.NoError(t, err)
 
-		chainAHeight, err := chainA.Height(ctx)
+		initialChainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err := chainA.SendIBCTransfer(ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainA, chainAHeight, chainAHeight+30, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		transferTx, err := sendIBCTransferWithWait(chainA, ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
@@ -210,10 +201,9 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		require.NoError(t, err)
 
 		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
-
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(transferAmount).Sub(sdk.NewInt(gasFees))
-		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		expectedChainABalance := initialChainABalance.Sub(transferAmount).Sub(sdk.NewInt(gasFees))
+		require.Equalf(t, expectedChainABalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedChainABalance, chainABalance)
 		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
 		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equalf(t, transferAmount, chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", transferAmount, chainDBalance)
@@ -234,10 +224,6 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 
 	t.Run("multi-hop denom unwind d->c->b->a", func(t *testing.T) {
 		// Send packet back from Chain D->Chain C->Chain B->Chain A
-
-		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
-		require.NoError(t, err)
-
 		transfer := ibc.WalletAmount{
 			Address: userC.FormattedAddress(),
 			Denom:   thirdHopIBCDenom,
@@ -269,14 +255,10 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		memo, err := json.Marshal(firstHopMetadata)
 		require.NoError(t, err)
 
-		chainDHeight, err := chainD.Height(ctx)
+		initialChainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err := chainD.SendIBCTransfer(ctx, dcChan.ChannelID, userD.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainD, chainDHeight, chainDHeight+30, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		_, err = sendIBCTransferWithWait(chainD, ctx, dcChan.ChannelID, userD.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		// assert balances for user controlled wallets
@@ -293,13 +275,11 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		require.NoError(t, err)
 
 		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
-
 		require.Equalf(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
-
-		expectedBalance := userFunds.Add(transferAmount)
-		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		expectedChainABalance := initialChainABalance.Add(transferAmount)
+		require.Equalf(t, expectedChainABalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedChainABalance, chainABalance)
 
 		// assert balances for IBC escrow accounts
 		firstHopEscrowBalance, err := chainA.GetBalance(ctx, firstHopEscrowAccount, chainA.Config().Denom)
@@ -319,10 +299,6 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 	t.Run("forward ack error refund", func(t *testing.T) {
 		// Send a malformed packet with invalid receiver address from Chain A->Chain B->Chain C
 		// This should succeed in the first hop and fail to make the second hop; funds should then be refunded to Chain A.
-
-		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
-		require.NoError(t, err)
-
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -340,14 +316,10 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		memo, err := json.Marshal(metadata)
 		require.NoError(t, err)
 
-		chainAHeight, err := chainA.Height(ctx)
+		initialChainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err := chainA.SendIBCTransfer(ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainA, chainAHeight, chainAHeight+25, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		transferTx, err := sendIBCTransferWithWait(chainA, ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		// assert balances for user controlled wallets
@@ -361,10 +333,9 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		require.NoError(t, err)
 
 		t.Logf("Balances: userA[%v] userB[%v] userC[%v]", chainABalance, chainBBalance, chainCBalance)
-
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equal(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		expectedChainABalance := initialChainABalance.Sub(sdk.NewInt(gasFees))
+		require.Equal(t, expectedChainABalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedChainABalance, chainABalance)
 		require.Equal(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
 		require.Equal(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 
@@ -381,10 +352,6 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 
 	t.Run("forward timeout refund", func(t *testing.T) {
 		// Send packet from Chain A->Chain B->Chain C with the timeout so low for B->C transfer that it can not make it from B to C, which should result in a refund from B to A after two retries.
-
-		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
-		require.NoError(t, err)
-
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -405,14 +372,10 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		memo, err := json.Marshal(metadata)
 		require.NoError(t, err)
 
-		chainAHeight, err := chainA.Height(ctx)
+		initialChainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err := chainA.SendIBCTransfer(ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainA, chainAHeight, chainAHeight+25, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		transferTx, err := sendIBCTransferWithWait(chainA, ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		// assert balances for user controlled wallets
@@ -426,10 +389,9 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		require.NoError(t, err)
 
 		t.Logf("Balances: userA[%v] userB[%v] userC[%v]", chainABalance, chainBBalance, chainCBalance)
-
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		expectedChainABalance := initialChainABalance.Sub(sdk.NewInt(gasFees))
+		require.Equalf(t, expectedChainABalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedChainABalance, chainABalance)
 		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
 		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 
@@ -447,10 +409,6 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		// Send a malformed packet with invalid receiver address from Chain A->Chain B->Chain C->Chain D
 		// This should succeed in the first hop and second hop, then fail to make the third hop.
 		// Funds should be refunded to Chain B and then to Chain A via acknowledgements with errors.
-
-		userFunds, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
-		require.NoError(t, err)
-
 		transfer := ibc.WalletAmount{
 			Address: userB.FormattedAddress(),
 			Denom:   chainA.Config().Denom,
@@ -472,7 +430,7 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 
 		firstHopMetadata := &PacketMetadata{
 			Forward: &ForwardMetadata{
-				Receiver: userC.KeyName(),
+				Receiver: userC.FormattedAddress(),
 				Channel:  bcChan.ChannelID,
 				Port:     bcChan.PortID,
 				Next:     &next,
@@ -482,14 +440,10 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		memo, err := json.Marshal(firstHopMetadata)
 		require.NoError(t, err)
 
-		chainAHeight, err := chainA.Height(ctx)
+		initialChainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err := chainA.SendIBCTransfer(ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainA, chainAHeight, chainAHeight+30, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		transferTx, err := sendIBCTransferWithWait(chainA, ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		// assert balances for user controlled wallets
@@ -505,11 +459,9 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		chainABalance, err := chainA.GetBalance(ctx, userA.FormattedAddress(), chainA.Config().Denom)
 		require.NoError(t, err)
 
-		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
-
 		gasFees := chainA.GetGasFeesInNativeDenom(transferTx.GasSpent)
-		expectedBalance := userFunds.Sub(sdk.NewInt(gasFees))
-		require.Equalf(t, expectedBalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedBalance, chainABalance)
+		expectedChainABalance := initialChainABalance.Sub(sdk.NewInt(gasFees))
+		require.Equalf(t, expectedChainABalance, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", expectedChainABalance, chainABalance)
 		require.Equalf(t, sdk.NewInt(0), chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", sdk.NewInt(0), chainBBalance)
 		require.Equalf(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equalf(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
@@ -552,14 +504,7 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 			Amount:  transferAmount,
 		}
 
-		chainBHeight, err := chainB.Height(ctx)
-		require.NoError(t, err)
-
-		transferTx, err := chainB.SendIBCTransfer(ctx, baChan.ChannelID, userB.KeyName(), transfer, ibc.TransferOptions{})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainB, chainBHeight, chainBHeight+10, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainB)
+		_, err := sendIBCTransferWithWait(chainB, ctx, baChan.ChannelID, userB.KeyName(), transfer, ibc.TransferOptions{})
 		require.NoError(t, err)
 
 		// assert balance for user controlled wallet
@@ -607,20 +552,13 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 			},
 		}
 
-		userFunds, err = chainB.GetBalance(ctx, userB.FormattedAddress(), chainB.Config().Denom)
-		require.NoError(t, err)
-
 		memo, err := json.Marshal(firstHopMetadata)
 		require.NoError(t, err)
 
-		chainAHeight, err := chainA.Height(ctx)
+		initialChainBBalance, err := chainB.GetBalance(ctx, userB.FormattedAddress(), chainB.Config().Denom)
 		require.NoError(t, err)
 
-		transferTx, err = chainA.SendIBCTransfer(ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
-		require.NoError(t, err)
-		_, err = testutil.PollForAck(ctx, chainA, chainAHeight, chainAHeight+30, transferTx.Packet)
-		require.NoError(t, err)
-		err = testutil.WaitForBlocks(ctx, blocksToWait, chainA)
+		_, err = sendIBCTransferWithWait(chainA, ctx, abChan.ChannelID, userA.KeyName(), transfer, ibc.TransferOptions{Memo: string(memo)})
 		require.NoError(t, err)
 
 		// assert balances for user controlled wallets
@@ -637,9 +575,9 @@ func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.Rel
 		require.NoError(t, err)
 
 		t.Logf("Balances: userA[%v] userB[%v] userC[%v] userD[%v]", chainABalance, chainBBalance, chainCBalance, chainDBalance)
-
-		require.Equalf(t, transferAmount, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", transferAmount, chainABalance)
-		require.Equal(t, userFunds, chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", userFunds, chainBBalance)
+		require.Equal(t, transferAmount, chainABalance, "Wrong user balance on chainA expected[%v] actual[%v]", transferAmount, chainABalance)
+		expectedChainBBalance := initialChainBBalance
+		require.Equal(t, expectedChainBBalance, chainBBalance, "Wrong user balance on chainB expected[%v] actual[%v]", expectedChainBBalance, chainBBalance)
 		require.Equal(t, sdk.NewInt(0), chainCBalance, "Wrong user balance on chainC expected[%v] actual[%v]", sdk.NewInt(0), chainCBalance)
 		require.Equal(t, sdk.NewInt(0), chainDBalance, "Wrong user balance on chainD expected[%v] actual[%v]", sdk.NewInt(0), chainDBalance)
 
