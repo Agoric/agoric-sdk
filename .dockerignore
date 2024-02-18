@@ -14,6 +14,7 @@ packages/stat-logger
 **/*.log
 **/dist
 !packages/cosmic-proto/dist
+**/compiled
 **/build
 **/bundles
 **/__pycache__
