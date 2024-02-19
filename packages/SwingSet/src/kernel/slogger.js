@@ -138,6 +138,10 @@ export function makeSlogger(slogCallbacks, writeObj) {
       const vc = {};
       for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
         vc[level] = (sourceTag, ...args) => {
+          if (replay) {
+            // Don't duplicate stale console output.
+            return;
+          }
           sourcedConsole[level](sourceTag, ...args);
           const when = { state, crankNum, vatID, deliveryNum };
           const source = sourceTag === 'ls' ? 'liveslots' : sourceTag;
