@@ -1,17 +1,18 @@
 package vibc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -63,8 +64,9 @@ func NewIBCModule(keeper Keeper) IBCModule {
 	}
 }
 
-func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
+func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
+	ctx := sdk.UnwrapSDKContext(cctx)
 	keeper := ch.keeper
 
 	msg := new(portMessage)
@@ -79,29 +81,28 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 
 	switch msg.Method {
 	case "sendPacket":
-		seq, ok := keeper.GetNextSequenceSend(
-			ctx.Context,
-			msg.Packet.SourcePort,
-			msg.Packet.SourceChannel,
-		)
-		if !ok {
-			return "", fmt.Errorf("unknown sequence number")
-		}
-
 		timeoutTimestamp := msg.Packet.TimeoutTimestamp
 		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
 			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
+			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
-		packet := channeltypes.NewPacket(
-			msg.Packet.Data, seq,
-			msg.Packet.SourcePort, msg.Packet.SourceChannel,
-			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			msg.Packet.TimeoutHeight, timeoutTimestamp,
+		seq, err := keeper.SendPacket(
+			ctx,
+			msg.Packet.SourcePort,
+			msg.Packet.SourceChannel,
+			msg.Packet.TimeoutHeight,
+			timeoutTimestamp,
+			msg.Packet.Data,
 		)
-		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
+			// synthesize the sent packet
+			packet := channeltypes.NewPacket(
+				msg.Packet.Data, seq,
+				msg.Packet.SourcePort, msg.Packet.SourceChannel,
+				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+				msg.Packet.TimeoutHeight, timeoutTimestamp,
+			)
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
 				ret = string(bytes)
@@ -109,14 +110,14 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
+		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "startChannelOpenInit":
 		err = keeper.ChanOpenInit(
-			ctx.Context, stringToOrder(msg.Order), msg.Hops,
+			ctx, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort,
 			msg.Packet.DestinationPort,
 			msg.Version,
@@ -126,19 +127,19 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
+		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
+		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		err = keeper.TimeoutExecuted(ctx, msg.Packet)
 		if err == nil {
 			ret = "true"
 		}

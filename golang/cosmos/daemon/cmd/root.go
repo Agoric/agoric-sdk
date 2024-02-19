@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
@@ -28,6 +30,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	tmcfg "github.com/tendermint/tendermint/config"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -37,11 +40,11 @@ import (
 )
 
 // Sender is a function that sends a request to the controller.
-type Sender func(needReply bool, str string) (string, error)
+type Sender func(ctx context.Context, needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(logger log.Logger)
-var OnExportHook func(logger log.Logger)
+var OnStartHook func(log.Logger, servertypes.AppOptions) error
+var OnExportHook func(log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -59,7 +62,7 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   AppName,
-		Short: "Stargate Agoric App",
+		Short: "Agoric Cosmos App",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -80,13 +83,20 @@ func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
+			customTMConfig := initTendermintConfig()
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customTMConfig)
 		},
 	}
 
 	initRootCmd(sender, rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
+}
+
+func initTendermintConfig() *tmcfg.Config {
+	cfg := tmcfg.DefaultConfig()
+	// customize config here
+	return cfg
 }
 
 // initAppConfig helps to override default appConfig template and configs.
@@ -121,7 +131,7 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
 		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
-		AddGenesisAccountCmd(gaia.DefaultNodeHome),
+		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
@@ -221,7 +231,9 @@ func (ac appCreator) newApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	if OnStartHook != nil {
-		OnStartHook(logger)
+		if err := OnStartHook(logger, appOpts); err != nil {
+			panic(err)
+		}
 	}
 
 	var cache sdk.MultiStorePersistentCache
@@ -258,6 +270,10 @@ func (ac appCreator) newApp(
 	if err != nil {
 		panic(err)
 	}
+	snapshotOptions := snapshottypes.NewSnapshotOptions(
+		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
+		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
+	)
 
 	return gaia.NewAgoricApp(
 		ac.sender,
@@ -274,9 +290,7 @@ func (ac appCreator) newApp(
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshotStore(snapshotStore),
-		baseapp.SetSnapshotInterval(cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval))),
-		baseapp.SetSnapshotKeepRecent(cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent))),
+		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
 	)
 }
 
@@ -358,7 +372,9 @@ func (ac appCreator) appExport(
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
 	if OnExportHook != nil {
-		OnExportHook(logger)
+		if err := OnExportHook(logger, appOpts); err != nil {
+			return servertypes.ExportedApp{}, err
+		}
 	}
 
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)

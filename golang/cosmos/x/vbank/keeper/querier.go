@@ -11,7 +11,11 @@ import (
 
 func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
-		switch path[0] {
+		var queryType string
+		if len(path) > 0 {
+			queryType = path[0]
+		}
+		switch queryType {
 		case types.QueryParams:
 			return queryParams(ctx, path[1:], req, k, legacyQuerierCdc)
 
@@ -19,7 +23,7 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			return queryState(ctx, path[1:], req, k, legacyQuerierCdc)
 
 		default:
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
+			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown vbank query path")
 		}
 	}
 }

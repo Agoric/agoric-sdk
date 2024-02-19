@@ -1,6 +1,7 @@
 package swingset
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,7 +34,8 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 // Receive implements the vm.PortHandler method.
 // It receives and processes an inbound message, returning the
 // JSON-serialized response or an error.
-func (ph portHandler) Receive(ctx *vm.ControllerContext, str string) (string, error) {
+func (ph portHandler) Receive(cctx context.Context, str string) (string, error) {
+	ctx := sdk.UnwrapSDKContext(cctx)
 	var msg swingsetMessage
 	err := json.Unmarshal([]byte(str), &msg)
 	if err != nil {
@@ -42,7 +44,7 @@ func (ph portHandler) Receive(ctx *vm.ControllerContext, str string) (string, er
 
 	switch msg.Method {
 	case SwingStoreUpdateExportData:
-		return ph.handleSwingStoreUpdateExportData(ctx.Context, msg.Args)
+		return ph.handleSwingStoreUpdateExportData(ctx, msg.Args)
 
 	default:
 		return "", fmt.Errorf("unrecognized swingset method %s", msg.Method)
