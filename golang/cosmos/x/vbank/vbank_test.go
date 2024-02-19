@@ -284,7 +284,7 @@ func Test_Receive_GetBalance(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	ret, err := ch.Receive(ctlCtx, `{
 		"type": "VBANK_GET_BALANCE",
@@ -312,7 +312,7 @@ func Test_Receive_Give(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	ret, err := ch.Receive(ctlCtx, `{
 		"type": "VBANK_GIVE",
@@ -349,7 +349,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 	bank := &mockBank{}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	tests := []struct {
 		name          string
@@ -474,7 +474,7 @@ func Test_Receive_Grab(t *testing.T) {
 	}}
 	keeper, ctx := makeTestKit(nil, bank)
 	ch := NewPortHandler(AppModule{}, keeper)
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	ret, err := ch.Receive(ctlCtx, `{
 		"type": "VBANK_GRAB",
@@ -787,7 +787,7 @@ func Test_Module_Account(t *testing.T) {
 	keeper, ctx := makeTestKit(acct, nil)
 	am := AppModule{keeper: keeper}
 	ch := NewPortHandler(am, keeper)
-	ctlCtx := &vm.ControllerContext{Context: ctx}
+	ctlCtx := sdk.WrapSDKContext(ctx)
 
 	mod1 := "vbank/reserve"
 	ret, err := ch.Receive(ctlCtx, `{
