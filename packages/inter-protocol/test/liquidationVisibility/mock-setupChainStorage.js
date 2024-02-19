@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
-import { M } from '@endo/patterns';
+import '@agoric/notifier/exported.js';
+import '@agoric/time';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
@@ -27,7 +28,7 @@ import {
 
 /**
  *
- * @param {import('@agoric/notifier').StorageNode} chainStorageP
+ * @param {ERef<StorageNode>} chainStorageP
  * @param {Map<string, Promise>} childrenMap
  */
 export const makeStorageWrapper = async (chainStorageP, childrenMap) => {
@@ -55,7 +56,7 @@ export const makeStorageWrapper = async (chainStorageP, childrenMap) => {
 
 /**
  * @param {any} t
- * @param {import('@agoric/time').TimerService} [optTimer]
+ * @param {import('@agoric/time/src/types.js').TimerService} [optTimer]
  */
 const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
@@ -70,8 +71,8 @@ const setupBootstrap = async (t, optTimer) => {
 
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
-  // @ts-expect-error
   produce.chainStorage.resolve(
+    // @ts-expect-error
     makeStorageWrapper(makeMockChainStorageRoot(), childrenNodes),
   );
   produce.board.resolve(makeFakeBoard());
@@ -88,6 +89,7 @@ const setupBootstrap = async (t, optTimer) => {
   const { brand, issuer } = spaces;
   brand.produce.IST.resolve(run.brand);
   issuer.produce.IST.resolve(run.issuer);
+  // @ts-expect-error
   produce.childrenNodes.resolve(childrenNodes);
 
   return { produce, consume, modules: { utils: { ...utils } }, ...spaces };

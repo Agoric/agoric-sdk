@@ -26,13 +26,6 @@ const trace = makeTracer('LIQ');
  * >} VaultData
  */
 
-/**
- * @typedef {MapStore<
- *   Vault,
- *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
- * >} VaultData
- */
-
 const makeCancelToken = makeCancelTokenMaker('liq');
 
 /**
