@@ -123,6 +123,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
 	vtransferkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
+	testtypes "github.com/cosmos/ibc-go/v6/testing/types"
 
 	// Import the packet forward middleware
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
@@ -301,8 +302,7 @@ func NewGaiaApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	defaultController := func(ctx context.Context, needReply bool, str string) (string, error) {
-		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		return "", nil
+		return str, nil
 	}
 	return NewAgoricApp(
 		defaultController, vm.NewAgdServer(),
@@ -1308,4 +1308,37 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(vbank.ModuleName)
 
 	return paramsKeeper
+}
+
+// TestingApp functions
+
+// GetBaseApp implements the TestingApp interface.
+func (app *GaiaApp) GetBaseApp() *baseapp.BaseApp {
+	return app.BaseApp
+}
+
+// GetStakingKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetStakingKeeper() testtypes.StakingKeeper {
+	return app.StakingKeeper
+}
+
+// GetIBCKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetIBCKeeper() *ibckeeper.Keeper {
+	return app.IBCKeeper
+}
+
+// GetScopedIBCKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
+	return app.ScopedIBCKeeper
+}
+
+// GetTxConfig implements the TestingApp interface.
+func (app *GaiaApp) GetTxConfig() client.TxConfig {
+	return MakeEncodingConfig().TxConfig
+}
+
+// For testing purposes
+func (app *GaiaApp) SetSwingStoreExportDir(dir string) {
+	module := app.mm.Modules[swingset.ModuleName].(swingset.AppModule)
+	module.SetSwingStoreExportDir(dir)
 }
