@@ -50,8 +50,9 @@
     "clean": "npm run clean:mjs && npm run clean:dist",
     "build:rename": "publish-scripts --cmd rename --srcDir mjs --outDir dist --findExt js --replaceExt mjs --no-rmDir",
     "build": "npm run clean && npm run build:cjs && npm run build:mjs && npm run build:rename",
-    "codegen": "node scripts/codegen.cjs",
+    "codegen": "yarn protos-update && node scripts/codegen.cjs",
     "prepare": "npm run build",
+    "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",
     "test": "ava",
@@ -61,6 +62,7 @@
     "access": "restricted"
   },
   "devDependencies": {
+    "@agoric/cosmos": "^0.34.1",
     "@cosmology/telescope": "^1.0.1",
     "ava": "^5.3.1",
     "eslint": "8.45.0",
