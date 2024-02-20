@@ -538,10 +538,10 @@ export const Egress = {
     return message;
   },
 };
-function createBaseExtensionSnapshotterArtifactPayload() {
+function createBaseSwingStoreArtifact() {
   return { name: '', data: new Uint8Array() };
 }
-export const ExtensionSnapshotterArtifactPayload = {
+export const SwingStoreArtifact = {
   encode(message, writer = _m0.Writer.create()) {
     if (message.name !== '') {
       writer.uint32(10).string(message.name);
@@ -554,7 +554,7 @@ export const ExtensionSnapshotterArtifactPayload = {
   decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseExtensionSnapshotterArtifactPayload();
+    const message = createBaseSwingStoreArtifact();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -589,7 +589,7 @@ export const ExtensionSnapshotterArtifactPayload = {
     return obj;
   },
   fromPartial(object) {
-    const message = createBaseExtensionSnapshotterArtifactPayload();
+    const message = createBaseSwingStoreArtifact();
     message.name = object.name ?? '';
     message.data = object.data ?? new Uint8Array();
     return message;

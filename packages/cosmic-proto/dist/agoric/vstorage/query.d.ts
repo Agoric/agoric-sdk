@@ -13,6 +13,39 @@ export interface QueryDataRequest {
 export interface QueryDataResponse {
   value: string;
 }
+/** QueryCapDataRequest contains a path and formatting configuration. */
+export interface QueryCapDataRequest {
+  path: string;
+  /**
+   * mediaType must be an actual media type in the registry at
+   * https://www.iana.org/assignments/media-types/media-types.xhtml
+   * or a special value that does not conflict with the media type syntax.
+   * The only valid value is "JSON Lines", which is also the default.
+   */
+  mediaType: string;
+  /**
+   * itemFormat, if present, must be the special value "flat" to indicate that
+   * the deep structure of each item should be flattened into a single level
+   * with kebab-case keys (e.g., `{ "metrics": { "min": 0, "max": 88 } }` as
+   * `{ "metrics-min": 0, "metrics-max": 88 }`).
+   */
+  itemFormat: string;
+  /**
+   * remotableValueFormat indicates how to transform references to opaque but
+   * distinguishable Remotables into readable embedded representations.
+   * * "object" represents each Remotable as an `{ id, allegedName }` object, e.g. `{ "id": "board007", "allegedName": "IST brand" }`.
+   * * "string" represents each Remotable as a string with bracket-wrapped contents including its alleged name and id, e.g. "[Alleged: IST brand <board007>]".
+   */
+  remotableValueFormat: string;
+}
+/**
+ * QueryCapDataResponse represents the result with the requested formatting,
+ * reserving space for future metadata such as media type.
+ */
+export interface QueryCapDataResponse {
+  blockHeight: string;
+  value: string;
+}
 /** QueryChildrenRequest is the vstorage path children query. */
 export interface QueryChildrenRequest {
   path: string;
@@ -52,6 +85,44 @@ export declare const QueryDataResponse: {
   >(
     object: I,
   ): QueryDataResponse;
+};
+export declare const QueryCapDataRequest: {
+  encode(message: QueryCapDataRequest, writer?: _m0.Writer): _m0.Writer;
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryCapDataRequest;
+  fromJSON(object: any): QueryCapDataRequest;
+  toJSON(message: QueryCapDataRequest): unknown;
+  fromPartial<
+    I extends {
+      path?: string | undefined;
+      mediaType?: string | undefined;
+      itemFormat?: string | undefined;
+      remotableValueFormat?: string | undefined;
+    } & {
+      path?: string | undefined;
+      mediaType?: string | undefined;
+      itemFormat?: string | undefined;
+      remotableValueFormat?: string | undefined;
+    } & { [K in Exclude<keyof I, keyof QueryCapDataRequest>]: never },
+  >(
+    object: I,
+  ): QueryCapDataRequest;
+};
+export declare const QueryCapDataResponse: {
+  encode(message: QueryCapDataResponse, writer?: _m0.Writer): _m0.Writer;
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryCapDataResponse;
+  fromJSON(object: any): QueryCapDataResponse;
+  toJSON(message: QueryCapDataResponse): unknown;
+  fromPartial<
+    I extends {
+      blockHeight?: string | undefined;
+      value?: string | undefined;
+    } & {
+      blockHeight?: string | undefined;
+      value?: string | undefined;
+    } & { [K in Exclude<keyof I, keyof QueryCapDataResponse>]: never },
+  >(
+    object: I,
+  ): QueryCapDataResponse;
 };
 export declare const QueryChildrenRequest: {
   encode(message: QueryChildrenRequest, writer?: _m0.Writer): _m0.Writer;
@@ -382,8 +453,13 @@ export declare const QueryChildrenResponse: {
 };
 /** Query defines the gRPC querier service */
 export interface Query {
-  /** Return an arbitrary vstorage datum. */
+  /** Return the raw string value of an arbitrary vstorage datum. */
   Data(request: QueryDataRequest): Promise<QueryDataResponse>;
+  /**
+   * Return a formatted representation of a vstorage datum that must be
+   * a valid StreamCell with CapData values, or standalone CapData.
+   */
+  CapData(request: QueryCapDataRequest): Promise<QueryCapDataResponse>;
   /** Return the children of a given vstorage path. */
   Children(request: QueryChildrenRequest): Promise<QueryChildrenResponse>;
 }
@@ -397,6 +473,7 @@ export declare class QueryClientImpl implements Query {
     },
   );
   Data(request: QueryDataRequest): Promise<QueryDataResponse>;
+  CapData(request: QueryCapDataRequest): Promise<QueryCapDataResponse>;
   Children(request: QueryChildrenRequest): Promise<QueryChildrenResponse>;
 }
 interface Rpc {

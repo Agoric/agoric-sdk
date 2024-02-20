@@ -111,8 +111,13 @@ export interface Egress {
   /** TODO: Remove these power flags as they are deprecated and have no effect. */
   powerFlags: string[];
 }
-/** The payload messages used by swingset state-sync */
-export interface ExtensionSnapshotterArtifactPayload {
+/**
+ * SwingStoreArtifact encodes an artifact of a swing-store export.
+ * Artifacts may be stored or transmitted in any order. Most handlers do
+ * maintain the artifact order from their original source as an effect of how
+ * they handle the artifacts.
+ */
+export interface SwingStoreArtifact {
   name: string;
   data: Uint8Array;
 }
@@ -514,17 +519,11 @@ export declare const Egress: {
     object: I,
   ): Egress;
 };
-export declare const ExtensionSnapshotterArtifactPayload: {
-  encode(
-    message: ExtensionSnapshotterArtifactPayload,
-    writer?: _m0.Writer,
-  ): _m0.Writer;
-  decode(
-    input: _m0.Reader | Uint8Array,
-    length?: number,
-  ): ExtensionSnapshotterArtifactPayload;
-  fromJSON(object: any): ExtensionSnapshotterArtifactPayload;
-  toJSON(message: ExtensionSnapshotterArtifactPayload): unknown;
+export declare const SwingStoreArtifact: {
+  encode(message: SwingStoreArtifact, writer?: _m0.Writer): _m0.Writer;
+  decode(input: _m0.Reader | Uint8Array, length?: number): SwingStoreArtifact;
+  fromJSON(object: any): SwingStoreArtifact;
+  toJSON(message: SwingStoreArtifact): unknown;
   fromPartial<
     I extends {
       name?: string | undefined;
@@ -532,12 +531,10 @@ export declare const ExtensionSnapshotterArtifactPayload: {
     } & {
       name?: string | undefined;
       data?: Uint8Array | undefined;
-    } & {
-      [K in Exclude<keyof I, keyof ExtensionSnapshotterArtifactPayload>]: never;
-    },
+    } & { [K in Exclude<keyof I, keyof SwingStoreArtifact>]: never },
   >(
     object: I,
-  ): ExtensionSnapshotterArtifactPayload;
+  ): SwingStoreArtifact;
 };
 type Builtin =
   | Date
