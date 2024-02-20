@@ -10,8 +10,6 @@ import { preparePurseKind } from './purse.js';
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
-/** @typedef {import('@agoric/zone').Zone} Zone */
-
 const { details: X, quote: q, Fail } = assert;
 
 /**
@@ -69,7 +67,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {Zone} issuerZone
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo

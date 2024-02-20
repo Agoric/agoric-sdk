@@ -3,20 +3,17 @@ import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
 
-// TODO `InterfaceGuard` type parameter
-/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
-/** @typedef {import('@agoric/zone').Zone} Zone */
-
 const { Fail } = assert;
 
+// TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
- * @param {Zone} issuerZone
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
  * @param {{
- *   purse: InterfaceGuard;
- *   depositFacet: InterfaceGuard;
+ *   purse: import('@endo/patterns').InterfaceGuard<any>;
+ *   depositFacet: import('@endo/patterns').InterfaceGuard<any>;
  * }} PurseIKit
  * @param {{
  *   depositInternal: any;

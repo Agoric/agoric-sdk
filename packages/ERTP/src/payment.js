@@ -2,19 +2,13 @@
 
 import { initEmpty } from '@agoric/store';
 
-/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
-/**
- * @template {Record<string | symbol, MethodGuard>} [T=Record<string | symbol, MethodGuard>]
- * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
- */
-/** @typedef {import('@agoric/zone').Zone} Zone */
-
+// TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
  * @template {AssetKind} K
- * @param {Zone} issuerZone
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {Brand<K>} brand
- * @param {InterfaceGuard} PaymentI
+ * @param {import('@endo/patterns').InterfaceGuard<any>} PaymentI
  * @returns {() => Payment<K>}
  */
 export const preparePaymentKind = (issuerZone, name, brand, PaymentI) => {

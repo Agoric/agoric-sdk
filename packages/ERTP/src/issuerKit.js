@@ -11,11 +11,6 @@ import { preparePaymentLedger } from './paymentLedger.js';
 
 import './types-ambient.js';
 
-// TODO Why does TypeScript lose the `MapStore` typing of `Baggage` here, even
-// though it knows the correct type at the exporting `@agoric/vat-data`
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-/** @typedef {import('@agoric/zone').Zone} Zone */
-
 /**
  * @template {AssetKind} K
  * @typedef {object} IssuerRecord
@@ -30,7 +25,7 @@ import './types-ambient.js';
  *
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {Zone} issuerZone
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -88,7 +83,7 @@ const INSTANCE_KEY = 'issuer';
  * make a new one.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -111,7 +106,7 @@ harden(upgradeIssuerKit);
 /**
  * Does baggage already have an issuerKit?
  *
- * @param {Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
@@ -145,7 +140,7 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
@@ -191,7 +186,7 @@ harden(makeDurableIssuerKit);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
