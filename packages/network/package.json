@@ -27,11 +27,12 @@
     "@agoric/vat-data": "^0.5.2",
     "@endo/base64": "^1.0.1",
     "@endo/far": "^1.0.2",
+    "@endo/patterns": "^1.1.0",
     "@endo/promise-kit": "^1.0.2"
   },
   "devDependencies": {
-    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/swingset-liveslots": "^0.10.2",
+    "@agoric/swingset-vat": "^0.32.2",
     "@agoric/zone": "^0.2.2",
     "@endo/bundle-source": "^3.0.2",
     "ava": "^5.3.0",
