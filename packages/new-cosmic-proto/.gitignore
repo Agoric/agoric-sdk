@@ -49,3 +49,6 @@ yarn.lock
 
 # others
 .DS_Store
+
+# Copy as needed from golang tree
+proto
