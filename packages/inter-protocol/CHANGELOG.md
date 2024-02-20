@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.16.2-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u13.0...@agoric/inter-protocol@0.16.2-u14.0) (2024-02-20)
+
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([31d7c2f](https://github.com/Agoric/agoric-sdk/commit/31d7c2f4ecea9a34956cc6716fb8d73cbeb12e64))
+
+
+### Bug Fixes
+
+* **smartWallet:** handle upgrade disconnects from purse notifiers ([f82b82b](https://github.com/Agoric/agoric-sdk/commit/f82b82bb79b21c0789609cc26b1c8f58ccdb32bc))
+
+
+
 ### [0.16.2-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u12.0...@agoric/inter-protocol@0.16.2-u13.0) (2023-12-07)
 
 

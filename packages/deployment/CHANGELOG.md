@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@4.0.0-u13.0...@agoric/deployment@4.0.0-u14.0) (2024-02-20)
+
+
+### Bug Fixes
+
+* **deployment:** remove dependency on `HELPER_BINARY` ([8eeff73](https://github.com/Agoric/agoric-sdk/commit/8eeff73e8a34ca65a3a3a39373bdf043cd61a698))
+
+
+
 ## [4.0.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@4.0.0-u12.0...@agoric/deployment@4.0.0-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/deployment

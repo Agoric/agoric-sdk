@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4-u14.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u13.0...@agoric/smart-wallet@0.5.4-u14.0) (2024-02-20)
+
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([31d7c2f](https://github.com/Agoric/agoric/commit/31d7c2f4ecea9a34956cc6716fb8d73cbeb12e64))
+* repairUnwatchedPurses ([aad9f16](https://github.com/Agoric/agoric/commit/aad9f1640e46da4e80f959767a485e1ee7fb0ea5))
+
+
+### Bug Fixes
+
+* **smartWallet:** handle upgrade disconnects from purse notifiers ([f82b82b](https://github.com/Agoric/agoric/commit/f82b82bb79b21c0789609cc26b1c8f58ccdb32bc))
+
+
+
 ### [0.5.4-u13.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u12.0...@agoric/smart-wallet@0.5.4-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/smart-wallet

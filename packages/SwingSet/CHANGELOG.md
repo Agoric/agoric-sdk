@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.3-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u13.0...@agoric/swingset-vat@0.32.3-u14.0) (2024-02-20)
+
+
+### Bug Fixes
+
+* **SwingSet:** silence vat console output during replay ([6d51b08](https://github.com/Agoric/agoric-sdk/commit/6d51b08356082c00fff8da1a692770ec4a0c1c24))
+
+
+
 ### [0.32.3-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.3-u12.0...@agoric/swingset-vat@0.32.3-u13.0) (2023-12-07)
 
 

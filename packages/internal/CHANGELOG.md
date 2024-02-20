@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.4.0-u13.0...@agoric/internal@0.4.0-u14.0) (2024-02-20)
+
+
+### Features
+
+* **cosmic-swingset:** implement `ENACTED_UPGRADE` blocking send ([e36966d](https://github.com/Agoric/agoric-sdk/commit/e36966dd0d9164ced5d0b70acc88b773b639adb9))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([2a68ca1](https://github.com/Agoric/agoric-sdk/commit/2a68ca148f637ca88c553b75834496ac6ebea841))
+
+
+
 ## [0.4.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.4.0-u12.0...@agoric/internal@0.4.0-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/internal

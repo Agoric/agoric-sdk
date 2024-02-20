@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.1-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.3.0...@agoric/cosmic-proto@0.3.1-u14.0) (2024-02-20)
+
+
+### Features
+
+* **cosmic-proto:** add vstorage query ([584fad3](https://github.com/Agoric/agoric-sdk/commit/584fad35b201d0de7f826aa2ed4d2815db1adc82))
+
+
+### Bug Fixes
+
+* **cosmic-proto:** add missing `cosmos_proto` dep ([e8e5d26](https://github.com/Agoric/agoric-sdk/commit/e8e5d2640040cf3a6ccd210c67906b175599b328))
+* **cosmic-proto:** do not git ignore all generated files ([58a2810](https://github.com/Agoric/agoric-sdk/commit/58a2810952125a201d3f6b0f3289854909ae3858))
+
+
+
 ## [0.3.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.2.1...@agoric/cosmic-proto@0.3.0) (2023-05-19)
 
 

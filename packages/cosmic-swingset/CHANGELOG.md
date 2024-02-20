@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u13.0...@agoric/cosmic-swingset@0.42.0-u14.0) (2024-02-20)
+
+
+### Features
+
+* **cosmos:** support core proposals set by upgrade handler ([14e47cc](https://github.com/Agoric/agoric-sdk/commit/14e47cc503db18ee74d7d9bd3193797524b7f540))
+* support `coreProposals.steps` ([368cf01](https://github.com/Agoric/agoric-sdk/commit/368cf013f329f87c8e740ec48ac3faebb5a065eb))
+* **cosmic-swingset:** add begin block check and transaction ([#8432](https://github.com/Agoric/agoric-sdk/issues/8432)) ([7d56920](https://github.com/Agoric/agoric-sdk/commit/7d56920d176f64bb05810b86933ce66b452c4593))
+* **cosmic-swingset:** implement `ENACTED_UPGRADE` blocking send ([e36966d](https://github.com/Agoric/agoric-sdk/commit/e36966dd0d9164ced5d0b70acc88b773b639adb9))
+* **cosmic-swingset:** run upgrade actions to completion ([1cf7c92](https://github.com/Agoric/agoric-sdk/commit/1cf7c92ee422c794c1b706214a21d3c06a36fdf0))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** merge `coreProposals` from bootstrap and upgrade plan ([7637b51](https://github.com/Agoric/agoric-sdk/commit/7637b51bd89002367d4e39ff6e707121dc369bea))
+* **cosmic-swingset:** only require vatconfig if uninitialized ([960de3b](https://github.com/Agoric/agoric-sdk/commit/960de3ba0d031eeb3d78858559f7e770137c52c7))
+* **cosmic-swingset:** only search for the `vatconfig` on init ([41133e0](https://github.com/Agoric/agoric-sdk/commit/41133e00aa9b82e2daf89cf5cff5ab72a6c4ea76))
+
+
+
 ## [0.42.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u12.0...@agoric/cosmic-swingset@0.42.0-u13.0) (2023-12-07)
 
 
