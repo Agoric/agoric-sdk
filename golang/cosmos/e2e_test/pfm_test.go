@@ -17,10 +17,14 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-type PacketMetadata struct {
-	Forward *ForwardMetadata `json:"forward"`
+func TestPFM(t *testing.T) {
+	cs := getChainSpec(t)
+	rf := getRelayerFactory(t)
+
+	testPFM(t, cs, rf)
 }
 
+// ForwardMetadata is the shape of the JSON in a single PFM hop in the IBC memo
 type ForwardMetadata struct {
 	Receiver       string        `json:"receiver"`
 	Port           string        `json:"port"`
@@ -31,13 +35,12 @@ type ForwardMetadata struct {
 	RefundSequence *uint64       `json:"refund_sequence,omitempty"`
 }
 
-func TestPFM(t *testing.T) {
-	cs := getChainSpec(t)
-	rf := getRelayerFactory(t)
-
-	testPFM(t, cs, rf)
+// PacketMetadata is a chain of ForwardMetadata collectively describing the full IBC memo
+type PacketMetadata struct {
+	Forward *ForwardMetadata `json:"forward"`
 }
 
+// testPFM verified multiple PFM scenarios serially
 func testPFM(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
 	var (
 		ctx             = context.Background()

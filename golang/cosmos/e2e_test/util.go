@@ -11,7 +11,7 @@ import (
 	"github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/chain/cosmos"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
-	"github.com/agoric-labs/interchaintest/v6/relayer"
+	//"github.com/agoric-labs/interchaintest/v6/relayer"
 	"github.com/agoric-labs/interchaintest/v6/testutil"
 
 	"go.uber.org/zap/zaptest"
@@ -31,6 +31,7 @@ const ENV_CHAINIMAGE_AGORIC = "PFME2E_CHAINIMAGE_AGORIC"
 const ENV_RELAYERNAME = "PFME2E_RELAYERNAME"
 const ENV_BLOCKS_TO_WAIT = "PFME2E_BLOCKS_TO_WAIT"
 
+// newHermesFactory creates a hermes relayer
 func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
 	return interchaintest.NewBuiltinRelayerFactory(
 		ibc.Hermes,
@@ -38,16 +39,25 @@ func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
 	)
 }
 
+// newCosmosRlyFactory creates a cosmos relayer
 func newCosmosRlyFactory(t *testing.T) interchaintest.RelayerFactory {
-	IBCRelayerImage := "ghcr.io/cosmos/relayer"
-	IBCRelayerVersion := "latest"
+
+	// TODO: At one point was using latest docker image for relyaer but disabling
+	// to remove variables while debugging heighliner builds of agoric chain are failing
+	//
+	// IBCRelayerImage := "ghcr.io/cosmos/relayer"
+	// IBCRelayerVersion := "latest"
+	// image := relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000")
 
 	return interchaintest.NewBuiltinRelayerFactory(
 		ibc.CosmosRly,
 		zaptest.NewLogger(t),
-		relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000"))
+		// image
+	)
 }
 
+// newCosmosHubChainSpec creates a chainspec for a gaia instance compatible with these tests
+// TODO: replacing the v13.0.01 version with latest has not been tested.
 func newCosmosHubChainSpec(chainUniqueName string, chainID string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
 	ret := &interchaintest.ChainSpec{
 		Name:          "gaia",
@@ -61,6 +71,8 @@ func newCosmosHubChainSpec(chainUniqueName string, chainID string, numOfValidato
 	return ret
 }
 
+// newUnknownCosmosChainSpec creates any cosmos chain where interchaintest has a built in definition
+// NB: In many cases these images will not work due to issues outside the scope of Agoric's project
 func newUnknownCosmosChainSpec(chain string, chainUniqueName string, chainID string, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
 	ret := &interchaintest.ChainSpec{
 		Name:          chain,
@@ -74,6 +86,9 @@ func newUnknownCosmosChainSpec(chain string, chainUniqueName string, chainID str
 	return ret
 }
 
+// newAgoricChainSpec fully specifies the details necessary to launch an Agoric chain image built from
+// - https://github.com/strangelove-ventures/heighliner/pull/211
+// - NoCrisisModule is a flag added in the agoric-labs fork of interchaintest
 func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.DockerImage, numOfValidators int, numOfFullNodes int) *interchaintest.ChainSpec {
 	coinDecimals := int64(6)
 	gasAdjustment := 1.3
@@ -109,7 +124,7 @@ func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.D
 	}
 }
 
-// getChainImage will return the environment variable value
+// getChainImage will build a docker image from the environment variable value
 // PFME2E_CHAINIMAGE_AGORIC. The value of this env var
 // must be in the form "repo/image:version"
 func getChainImageAgoric(t *testing.T) ibc.DockerImage {
@@ -135,6 +150,7 @@ func getChainImageAgoric(t *testing.T) ibc.DockerImage {
 	return ret
 }
 
+// getChainNames reads the environment variables FMT_ENV_CHAINNAME0, FMT_ENV_CHAINNAME1, FMT_ENV_CHAINNAME2, FMT_ENV_CHAINNAME3
 func getChainNames(t *testing.T) [4]string {
 
 	ret := [4]string{
@@ -158,6 +174,7 @@ func getChainNames(t *testing.T) [4]string {
 	return ret
 }
 
+// getChainSpec reads environment variables and builds a full ChainSpec
 func getChainSpec(t *testing.T) []*interchaintest.ChainSpec {
 	nv := 1
 	nf := 0
@@ -184,6 +201,7 @@ func getChainSpec(t *testing.T) []*interchaintest.ChainSpec {
 	return ret
 }
 
+// getRelayerFactory reads environment variables and builds the correct RelayerFactory
 func getRelayerFactory(t *testing.T) interchaintest.RelayerFactory {
 	relayerName, present := os.LookupEnv(ENV_RELAYERNAME)
 	if !present {
@@ -206,6 +224,10 @@ func getRelayerFactory(t *testing.T) interchaintest.RelayerFactory {
 	return ret
 }
 
+// sendIBCTransferWithWait performs cosmos.CosmosChain.SendIBCTransfer
+// - Automatically waits to confirm TX is ACK'd
+// - Automatically waits for results to settle
+// - The environment variable PFME2E_BLOCKS_TO_WAIT controls how many blocks to wait for ACK and settlement
 func sendIBCTransferWithWait(
 	c *cosmos.CosmosChain,
 	ctx context.Context,

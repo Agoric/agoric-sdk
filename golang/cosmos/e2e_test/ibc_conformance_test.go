@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/conformance"
@@ -12,17 +11,24 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
+// TestConformance builds chainspec & relayers from env vars then runs conformance tests
 func TestConformance(t *testing.T) {
 	cs := getChainSpec(t)
 	rf := getRelayerFactory(t)
 	testConformance(t, cs[0:2], rf)
 }
 
+// TestChainPair builds chainspec & relayers from env vars then runs chain pair tests
+func TestChainPair(t *testing.T) {
+	cs := getChainSpec(t)
+	rf := getRelayerFactory(t)
+	testChainPair(t, cs[0:2], rf)
+}
+
 func testConformance(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), cs)
 
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(45*time.Minute))
-	defer cancel()
+	ctx := context.Background()
 
 	// For our example we will use a No-op reporter that does not actually collect any test reports.
 	rep := testreporter.NewNopReporter()
@@ -32,19 +38,9 @@ func testConformance(t *testing.T, cs []*interchaintest.ChainSpec, rf interchain
 	conformance.Test(t, ctx, []interchaintest.ChainFactory{cf}, []interchaintest.RelayerFactory{rf}, rep)
 }
 
-func TestChainPair(t *testing.T) {
-	cs := getChainSpec(t)
-	rf := getRelayerFactory(t)
-	testChainPair(t, cs[0:2], rf)
-}
-
 func testChainPair(t *testing.T, cs []*interchaintest.ChainSpec, rf interchaintest.RelayerFactory) {
-
 	cf := interchaintest.NewBuiltinChainFactory(zaptest.NewLogger(t), cs)
 
-	// Use a 45 min
-	// ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(45*time.Minute))
-	// defer cancel()
 	ctx := context.Background()
 
 	// For our example we will use a No-op reporter that does not actually collect any test reports.
