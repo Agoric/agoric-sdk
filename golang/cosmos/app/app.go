@@ -593,7 +593,8 @@ func NewAgoricApp(
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// create static IBC router, add transfer route, then set and seal it
-	// Don't be confused by the name!  The port router maps *module names* (not PortIDs) to modules.
+	// Don't be confused by the name!  The port router maps *module names* (not
+	// PortIDs) to modules.
 	ibcRouter := porttypes.NewRouter()
 
 	// transfer stack contains (from top to bottom):
@@ -607,8 +608,18 @@ func NewAgoricApp(
 	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
-	app.VlocalchainKeeper = vlocalchain.NewKeeper(appCodec, keys[vlocalchain.StoreKey], app.BankKeeper)
-	app.vlocalchainPort = vm.RegisterPortHandler("vlocalchain", vlocalchain.NewReceiver(app.VlocalchainKeeper, app.TransferKeeper))
+	// The local chain keeper provides ICA/ICQ-like support for the VM to
+	// control a fresh account and/or query this Cosmos-SDK instance.
+	app.VlocalchainKeeper = vlocalchain.NewKeeper(
+		appCodec,
+		keys[vlocalchain.StoreKey],
+		app.BaseApp.MsgServiceRouter(),
+		app.BaseApp.GRPCQueryRouter(),
+	)
+	app.vlocalchainPort = vm.RegisterPortHandler(
+		"vlocalchain",
+		vlocalchain.NewReceiver(app.VlocalchainKeeper),
+	)
 
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
@@ -877,11 +888,11 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
 			// Then, upgrade the provisioning vat
 			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
-			// Enable Orchestration.
-			// vm.CoreProposalStepForModules(
-			//   "@agoric/builders/scripts/vats/init-network.js",
-			//   "@agoric/builders/scripts/vats/init-localchain.js",
-			// ),
+			// Enable low-level Orchestration.
+			vm.CoreProposalStepForModules(
+				"@agoric/builders/scripts/vats/init-network.js",
+				"@agoric/builders/scripts/vats/init-localchain.js",
+			),
 		}
 
 		app.upgradeDetails = &upgradeDetails{
@@ -938,11 +949,13 @@ type cosmosInitAction struct {
 	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
 	Params          swingset.Params `json:"params"`
 	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
-	StoragePort     int             `json:"storagePort"`
-	SwingsetPort    int             `json:"swingsetPort"`
-	VbankPort       int             `json:"vbankPort"`
-	VibcPort        int             `json:"vibcPort"`
-	VlocalchainPort int             `json:"vlocalchainPort"`
+	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
+	// with a key consisting of this name with the "Port" stripped.
+	StoragePort     int `json:"storagePort"`
+	SwingsetPort    int `json:"swingsetPort"`
+	VbankPort       int `json:"vbankPort"`
+	VibcPort        int `json:"vibcPort"`
+	VlocalchainPort int `json:"vlocalchainPort"`
 }
 
 // Name returns the name of the App
@@ -967,11 +980,12 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		ChainID:         ctx.ChainID(),
-		IsBootstrap:     bootstrap,
-		Params:          app.SwingSetKeeper.GetParams(ctx),
-		SupplyCoins:     sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		UpgradeDetails:  app.upgradeDetails,
+		ChainID:        ctx.ChainID(),
+		IsBootstrap:    bootstrap,
+		Params:         app.SwingSetKeeper.GetParams(ctx),
+		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
+		UpgradeDetails: app.upgradeDetails,
+		// See CAVEAT in cosmosInitAction.
 		StoragePort:     app.vstoragePort,
 		SwingsetPort:    app.swingsetPort,
 		VbankPort:       app.vbankPort,

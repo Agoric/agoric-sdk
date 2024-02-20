@@ -1,6 +1,8 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
+const { Fail } = assert;
+
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
@@ -34,7 +36,10 @@ const prepareLocalChainAccount = zone =>
             address,
           },
         ]);
-        return res[0];
+        if (res[0].error) {
+          throw Fail`query failed: ${res[0].error}`;
+        }
+        return res[0].reply;
       },
       async executeTx(messages) {
         const { system, address } = this.state;
