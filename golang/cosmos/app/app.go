@@ -849,6 +849,8 @@ func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
 			// Then, upgrade Zoe and ZCF
 			vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
+			// Next revive KREAd characters
+			vm.CoreProposalStepForModules("@agoric/vats/scripts/revive-kread.js"),
 		}
 
 		app.upgradeDetails = &upgradeDetails{
