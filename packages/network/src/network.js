@@ -1,6 +1,7 @@
 // @ts-check
 
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
@@ -13,6 +14,129 @@ import '@agoric/store/exported.js';
  * casually.
  */
 export const ENDPOINT_SEPARATOR = '/';
+
+const Shape1 = /** @type {const} */ ({
+  /**
+   * Data is string | Buffer | ArrayBuffer
+   * but only string is passable
+   */
+  Data: M.string(),
+  Bytes: M.string(),
+  Endpoint: M.string(),
+  // TODO: match on "Vow" tag
+  // @endo/patterns supports it as of
+  // https://github.com/endojs/endo/pull/2091
+  // but that's not in agoric-sdk yet.
+  // For now, use M.any() to avoid:
+  // cannot check unrecognized tag "Vow": "[Vow]"
+  Vow: M.any(),
+
+  ConnectionHandler: M.remotable('ConnectionHandler'),
+  Connection: M.remotable('Connection'),
+  InboundAttempt: M.remotable('InboundAttempt'),
+  Listener: M.remotable('Listener'),
+  ListenHandler: M.remotable('ListenHandler'),
+  Port: M.remotable('Port'),
+  ProtocolHandler: M.remotable('ProtocolHandler'),
+  ProtocolImpl: M.remotable('ProtocolImpl'),
+});
+
+const Shape2 = /** @type {const} */ ({
+  ...Shape1,
+  Vow$: shape => M.or(shape, Shape1.Vow),
+  AttemptDescription: M.splitRecord(
+    { handler: Shape1.ConnectionHandler },
+    { remoteAddress: Shape1.Endpoint, localAddress: Shape1.Endpoint },
+  ),
+  Opts: M.recordOf(M.string(), M.any()),
+});
+
+export const Shape = /** @type {const} */ harden({
+  ...Shape2,
+  ConnectionI: M.interface('Connection', {
+    send: M.callWhen(Shape2.Data)
+      .optional(Shape2.Opts)
+      .returns(Shape2.Vow$(Shape2.Bytes)),
+    close: M.callWhen().returns(Shape2.Vow$(M.undefined())),
+    getLocalAddress: M.call().returns(Shape2.Endpoint),
+    getRemoteAddress: M.call().returns(Shape2.Endpoint),
+  }),
+  InboundAttemptI: M.interface('InboundAttempt', {
+    accept: M.callWhen(Shape2.AttemptDescription).returns(
+      Shape2.Vow$(Shape2.Connection),
+    ),
+    getLocalAddress: M.call().returns(Shape2.Endpoint),
+    getRemoteAddress: M.call().returns(Shape2.Endpoint),
+    close: M.callWhen().returns(Shape2.Vow$(M.undefined())),
+  }),
+  PortI: M.interface('Port', {
+    getLocalAddress: M.call().returns(Shape2.Endpoint),
+    addListener: M.callWhen(Shape2.Listener).returns(
+      Shape2.Vow$(M.undefined()),
+    ),
+    connect: M.callWhen(Shape2.Endpoint)
+      .optional(Shape2.ConnectionHandler)
+      .returns(Shape2.Vow$(Shape2.Connection)),
+    removeListener: M.callWhen(Shape2.Listener).returns(
+      Shape2.Vow$(M.undefined()),
+    ),
+    revoke: M.callWhen().returns(M.undefined()),
+  }),
+  ProtocolHandlerI: M.interface('ProtocolHandler', {
+    onCreate: M.callWhen(M.remotable(), Shape2.ProtocolHandler).returns(
+      Shape2.Vow$(M.undefined()),
+    ),
+    generatePortID: M.callWhen(Shape2.Endpoint, Shape2.ProtocolHandler).returns(
+      Shape2.Vow$(M.string()),
+    ),
+    onBind: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(M.undefined())),
+    onListen: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.ListenHandler,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(M.undefined())),
+    onListenRemove: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.ListenHandler,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(M.undefined())),
+    onInstantiate: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.Endpoint,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(Shape2.Endpoint)),
+    onConnect: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.Endpoint,
+      Shape2.ConnectionHandler,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(Shape2.AttemptDescription)),
+    onRevoke: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.ProtocolHandler,
+    ).returns(Shape2.Vow$(M.undefined())),
+  }),
+  ProtocolImplI: M.interface('ProtocolImpl', {
+    bind: M.callWhen(Shape2.Endpoint).returns(Shape2.Vow$(Shape2.Port)),
+    inbound: M.callWhen(Shape2.Endpoint, Shape2.Endpoint).returns(
+      Shape2.Vow$(Shape2.InboundAttempt),
+    ),
+    outbound: M.callWhen(
+      Shape2.Port,
+      Shape2.Endpoint,
+      Shape2.ConnectionHandler,
+    ).returns(Shape2.Vow$(Shape2.Connection)),
+  }),
+});
 
 /** @param {unknown} err */
 export const rethrowUnlessMissing = err => {
@@ -62,7 +186,7 @@ export function getPrefixes(addr) {
 const prepareHalfConnection = (zone, { when }) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
-    undefined,
+    Shape.ConnectionI,
     /** @param {ConnectionOpts} opts */
     ({ addrs, handlers, conns, current, l, r }) => {
       /** @type {Error | undefined} */
@@ -187,7 +311,7 @@ export const crossoverConnection = (
 const prepareInboundAttempt = (zone, makeConnection, when) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
-    undefined,
+    Shape.InboundAttemptI,
     /**
      * @param {object} opts
      * @param {string} opts.localAddr
@@ -300,9 +424,11 @@ const RevokeState = /** @type {const} */ ({
  * @param {import('@agoric/vow').When} when
  */
 const preparePort = (zone, when) => {
+  const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
+
   const makePort = zone.exoClass(
     'Port',
-    undefined,
+    Shape.PortI,
     /**
      * @param {object} opts
      * @param {Endpoint} opts.localAddr
@@ -395,7 +521,10 @@ const preparePort = (zone, when) => {
        * @param {Endpoint} remotePort
        * @param {ConnectionHandler} connectionHandler
        */
-      async connect(remotePort, connectionHandler = {}) {
+      async connect(
+        remotePort,
+        connectionHandler = /** @type {any} */ (makeIncapable()),
+      ) {
         const { revoked, localAddr, protocolImpl, openConnections } =
           this.state;
 
@@ -436,7 +565,6 @@ const preparePort = (zone, when) => {
         await Promise.all(ps);
         currentConnections.delete(this.self);
         boundPorts.delete(localAddr);
-        return `Port ${localAddr} revoked`;
       },
     },
   );
@@ -457,7 +585,12 @@ const prepareBinder = (zone, powers) => {
 
   const makeBinderKit = zone.exoClassKit(
     'binder',
-    undefined,
+    {
+      protocolImpl: Shape.ProtocolImplI,
+      binder: M.interface('Binder', {
+        bind: M.callWhen(Shape.Endpoint).returns(Shape.Port),
+      }),
+    },
     /**
      * @param {object} opts
      * @param { MapStore<Port, SetStore<Closable>> } opts.currentConnections
@@ -706,7 +839,31 @@ export const prepareNetworkProtocol = (zone, powers) => {
 export const prepareEchoConnectionKit = zone => {
   const makeEchoConnectionKit = zone.exoClassKit(
     'EchoConnectionKit',
-    undefined,
+    {
+      handler: M.interface('ConnectionHandler', {
+        onReceive: M.callWhen(
+          Shape2.Connection,
+          Shape2.Bytes,
+          Shape2.ConnectionHandler,
+        )
+          .optional(Shape2.Opts)
+          .returns(Shape2.Data),
+        onClose: M.callWhen(Shape2.Connection)
+          .optional(M.any(), Shape2.ConnectionHandler)
+          .returns(M.undefined()),
+      }),
+      listener: M.interface('Listener', {
+        onListen: M.callWhen(Shape.Port, Shape.ListenHandler).returns(
+          Shape.Vow$(M.undefined()),
+        ),
+        onAccept: M.callWhen(
+          Shape.Port,
+          Shape.Endpoint,
+          Shape.Endpoint,
+          Shape.ListenHandler,
+        ).returns(Shape.Vow$(Shape.ConnectionHandler)),
+      }),
+    },
     () => {
       /** @type {Error | undefined} */
       let closed;
@@ -769,7 +926,7 @@ export function prepareLoopbackProtocolHandler(zone, when) {
 
   const makeLoopbackProtocolHandler = zone.exoClass(
     'ProtocolHandler',
-    undefined,
+    Shape.ProtocolHandlerI,
     /** @param {string} [instancePrefix] */
     (instancePrefix = 'nonce/') => {
       /** @type {MapStore<string, [Port, ListenHandler]>} */
@@ -786,7 +943,7 @@ export function prepareLoopbackProtocolHandler(zone, when) {
       async onCreate(_impl, _protocolHandler) {
         // TODO
       },
-      async generatePortID(_protocolHandler) {
+      async generatePortID(_localAddr, _protocolHandler) {
         this.state.portNonce += 1n;
         return `port${this.state.portNonce}`;
       },
