@@ -1,7 +1,12 @@
 // @ts-check
 import { E as defaultE } from '@endo/far';
+import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
-import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
+import {
+  ENDPOINT_SEPARATOR,
+  Shape,
+  prepareNetworkProtocol,
+} from './network.js';
 
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
@@ -17,6 +22,12 @@ import '@agoric/store/exported.js';
  *   prefix->route from the database
  */
 
+export const RouterI = M.interface('Router', {
+  getRoutes: M.call(Shape.Endpoint).returns(M.arrayOf([M.string(), M.any()])),
+  register: M.call(M.string(), M.any()).returns(M.undefined()),
+  unregister: M.call(M.string(), M.any()).returns(M.undefined()),
+});
+
 /**
  * @template T
  * @param {import('@agoric/base-zone').Zone} zone
@@ -26,7 +37,7 @@ export const prepareRouter = zone => {
 
   const makeRouter = zone.exoClass(
     'Router',
-    undefined,
+    RouterI,
     () => {
       /** @type {MapStore<string, T>} */
       const prefixToRoute = detached.mapStore('prefix');
@@ -105,7 +116,14 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
 
   const makeRouterProtocol = zone.exoClass(
     'RouterProtocol',
-    undefined,
+    M.interface('RouterProtocol', {
+      registerProtocolHandler: M.call(
+        M.arrayOf(M.string()),
+        M.remotable(),
+      ).returns(),
+      unregisterProtocolHandler: M.call(M.string(), M.remotable()).returns(),
+      bind: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
+    }),
     () => {
       /** @type {Router<Protocol>} */
       const router = makeRouter();
