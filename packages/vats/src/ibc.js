@@ -2,8 +2,9 @@
 
 import { assert, details as X, Fail } from '@agoric/assert';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 
-import { dataToBase64, base64ToBytes } from '@agoric/network';
+import { dataToBase64, base64ToBytes, Shape } from '@agoric/network';
 
 import '@agoric/store/exported.js';
 import '@agoric/network/exported.js';
@@ -38,7 +39,10 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
 const prepareAckWatcher = zone => {
   const makeAckWatcher = zone.exoClass(
     'AckWatcher',
-    undefined,
+    M.interface('AckWatcher', {
+      onFulfilled: M.call(Shape.Data).returns(),
+      onRejected: M.call(M.any()).returns(),
+    }),
     (protocolUtils, packet) => ({ protocolUtils, packet }),
     {
       onFulfilled(ack) {
@@ -95,7 +99,24 @@ export const prepareIBCConnectionHandler = zone => {
    */
   const makeIBCConnectionHandler = zone.exoClass(
     'IBCConnectionHandler',
-    undefined,
+    M.interface('ConnectionHandler', {
+      onOpen: M.callWhen(
+        Shape.Connection,
+        Shape.Endpoint,
+        Shape.Endpoint,
+        Shape.ConnectionHandler,
+      ).returns(Shape.Vow$(M.undefined())),
+      onReceive: M.callWhen(
+        Shape.Connection,
+        Shape.Bytes,
+        Shape.ConnectionHandler,
+      )
+        .optional(Shape.Opts)
+        .returns(Shape.Vow$(Shape.Data)),
+      onClose: M.callWhen(Shape.Connection)
+        .optional(M.any(), Shape.ConnectionHandler)
+        .returns(Shape.Vow$(M.undefined())),
+    }),
     (
       { protocolUtils, channelKeyToConnP, channelKeyToSeqAck },
       { channelID, portID, rChannelID, rPortID, order },
@@ -218,7 +239,22 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
    */
   const makeIBCProtocolKit = zone.exoClassKit(
     'IBCProtocolHandler',
-    undefined,
+    harden({
+      protocolHandler: Shape.ProtocolHandlerI,
+      bridgeHandler: M.interface('BridgeHandler', {
+        fromBridge: M.callWhen(M.any()).returns(M.undefined()),
+      }),
+      util: M.interface('Util', {
+        downcall: M.call(M.string(), M.any()).returns(M.promise()),
+        ibcSendPacket: M.call(M.record())
+          .optional(M.nat())
+          .returns(Shape.Vow$(Shape.Bytes)),
+        localAddrToPortID: M.call(M.string()).returns(M.string()),
+        findAckKit: M.call(M.string(), M.string(), M.scalar()).returns(
+          Shape.Vow$(M.string()),
+        ),
+      }),
+    }),
     ibcdev => {
       /** @type {MapStore<string, Connection>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
@@ -710,7 +746,9 @@ harden(prepareIBCProtocol);
 export const prepareCallbacks = zone => {
   return zone.exoClass(
     'callbacks',
-    undefined,
+    M.interface('callbacks', {
+      downcall: M.call(M.string(), M.any()).returns(M.promise()),
+    }),
     /** @param {import('@agoric/vats').ScopedBridgeManager} dibcBridgeManager */
     dibcBridgeManager => ({ dibcBridgeManager }),
     {
