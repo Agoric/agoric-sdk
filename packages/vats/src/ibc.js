@@ -418,10 +418,10 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               //   );
 
               const attempt = await when(
-                /** @type {ProtocolImpl} */ (protocolImpl).inbound(
-                  localAddr,
-                  remoteAddr,
-                ),
+                /** @type {ProtocolImpl} */(protocolImpl).inbound(
+                localAddr,
+                remoteAddr,
+              ),
               );
 
               // Tell what version string we negotiated.

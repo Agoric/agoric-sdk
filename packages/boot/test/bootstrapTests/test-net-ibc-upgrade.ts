@@ -7,6 +7,8 @@ import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeBridge } from './ibcBridgeMock.js';
 import { BridgeId } from '@agoric/internal';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
+// import { E } from '@endo/eventual-send';
+import { V as E } from '@agoric/vat-data/vow.js';
 
 const { entries, assign } = Object;
 
@@ -162,7 +164,7 @@ test.serial('upgrade at many points in network API flow', async t => {
       return [label, opts];
     },
     checkAck: async ([label, opts]) => {
-      const ack = await EV(opts.client).getAck();
+      const ack = await E.when(EV(opts.client).getAck());
       t.is(ack, `got ${label}`, `${label} expected echo`);
       return [label, { ...opts, ack }];
     },
