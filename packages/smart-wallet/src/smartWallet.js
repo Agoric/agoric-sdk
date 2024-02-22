@@ -645,24 +645,24 @@ export const prepareSmartWallet = (baggage, shared) => {
             const offerSpec = liveOffers.get(seatId);
             const seat = liveOfferSeats.get(seatId);
 
-            const invitation = invitationFromSpec(offerSpec.invitationSpec);
-            watcherPromises.push(
-              E.when(
-                E(invitationIssuer).getAmountOf(invitation),
-                invitationAmount => {
-                  const watcher = makeOfferWatcher(
-                    facets.helper,
-                    facets.deposit,
-                    offerSpec,
-                    address,
-                    invitationAmount,
-                    seat,
-                  );
-                  return watchOfferOutcomes(watcher, seat);
-                },
-              ),
-            );
+            const watchOutcome = (async () => {
+              // To infer the invitation amount for the offer
+              const invitation = invitationFromSpec(offerSpec.invitationSpec);
+              const invitationAmount =
+                await E(invitationIssuer).getAmountOf(invitation);
+              const watcher = makeOfferWatcher(
+                facets.helper,
+                facets.deposit,
+                offerSpec,
+                address,
+                invitationAmount,
+                seat,
+              );
+              void E(invitationIssuer).burn(invitation);
+              return watchOfferOutcomes(watcher, seat);
+            })();
             trace(`Repaired seat ${seatId} for wallet ${address}`);
+            watcherPromises.push(watchOutcome);
           }
 
           await Promise.all(watcherPromises);
