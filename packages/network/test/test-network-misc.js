@@ -19,7 +19,7 @@ import {
 import '../src/types.js';
 
 // eslint-disable-next-line no-constant-condition
-const log = false ? console.log : () => {};
+const log = false ? console.log : () => { };
 
 /**
  * @param {import('@agoric/zone').Zone} zone
@@ -141,7 +141,7 @@ test('handled protocol', async t => {
         async onOpen(connection, localAddr, remoteAddr) {
           t.is(localAddr, '/ibc/*/ordered');
           t.is(remoteAddr, '/ibc/*/ordered/echo');
-          const ack = await E(connection).send('ping');
+          const ack = await when(connection.send('ping'));
           // log(ack);
           t.is(`${ack}`, 'ping', 'received pong');
           void connection.close();

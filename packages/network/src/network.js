@@ -169,6 +169,24 @@ export function getPrefixes(addr) {
   return ret;
 }
 
+/** @param {import('@agoric/base-zone').Zone} zone */
+const prepareAckWatcher = zone => {
+  const makeAckWatcher = zone.exoClass(
+    'AckWatcher',
+    undefined,
+    (protocolUtils, packet) => ({ protocolUtils, packet }),
+    {
+      onFulfilled(ack) {
+        return toBytes(ack || '');
+      },
+      onRejected(e) {
+        console.error(e);
+      },
+    },
+  );
+  return makeAckWatcher;
+};
+
 /**
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
@@ -182,8 +200,9 @@ export function getPrefixes(addr) {
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param makeAckWatcher
  */
-const prepareHalfConnection = (zone, { when }) => {
+const prepareHalfConnection = (zone, { when, watch }, makeAckWatcher) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
     Shape.ConnectionI,
@@ -218,13 +237,14 @@ const prepareHalfConnection = (zone, { when }) => {
           throw closed;
         }
 
-        const ack = await when(
-          E(handlers[r])
-            .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
-            .catch(rethrowUnlessMissing),
+        return when(
+          watch(
+            E(handlers[r])
+              .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
+              .catch(rethrowUnlessMissing),
+            makeAckWatcher(),
+          ),
         );
-
-        return toBytes(ack || '');
       },
       async close() {
         const { closed, current, conns, l, handlers } = this.state;
@@ -557,7 +577,7 @@ const preparePort = (zone, { when }) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
@@ -577,7 +597,8 @@ const preparePort = (zone, { when }) => {
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
 const prepareBinder = (zone, powers) => {
-  const makeConnection = prepareHalfConnection(zone, powers);
+  const makeAckWatcher = prepareAckWatcher(zone);
+  const makeConnection = prepareHalfConnection(zone, powers, makeAckWatcher);
   const { when } = powers;
   const makeInboundAttempt = prepareInboundAttempt(
     zone,
@@ -790,6 +811,12 @@ const prepareBinder = (zone, powers) => {
           currentConnections.init(port, detached.setStore('connections'));
           return port;
         },
+      },
+      ackWatcher: {
+        onFulfilled(ack) {
+          return ack;
+        },
+        onRejected() { },
       },
     },
   );
