@@ -1,5 +1,4 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { wrapTest } from '@endo/ses-ava';
+import rawTest from 'ava';
 
-import test from 'ava';
-
-export { test };
+export const test = wrapTest(rawTest);

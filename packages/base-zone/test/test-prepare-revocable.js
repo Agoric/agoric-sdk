@@ -1,11 +1,11 @@
 // Modeled on test-heap-classes.js
 
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { M } from '@endo/patterns';
-import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import { prepareRevocableKit } from '../../../src/contractSupport/prepare-revocable.js';
+import { makeHeapZone } from '../src/heap.js';
+import { prepareRevocableKit } from '../src/prepare-revocable.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
