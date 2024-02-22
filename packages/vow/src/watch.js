@@ -2,62 +2,9 @@
 import { M } from '@endo/patterns';
 
 import { getVowPayload, unwrapPromise, basicE } from './vow-utils.js';
-
-const { Fail } = assert;
+import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
 
 const { apply } = Reflect;
-
-export const PromiseWatcherI = M.interface('PromiseWatcher', {
-  onFulfilled: M.call(M.any()).rest(M.any()).returns(),
-  onRejected: M.call(M.any()).rest(M.any()).returns(),
-});
-
-/**
- * @typedef {object} PromiseWatcher
- * @property {(...args: unknown[]) => void} [onFulfilled]
- * @property {(...args: unknown[]) => void} [onRejected]
- */
-
-/**
- * Adapt a promise watcher method to E.when.
- * @param {Record<PropertyKey, (...args: unknown[]) => unknown>} that
- * @param {PropertyKey} prop
- * @param {unknown[]} postArgs
- */
-const callMeMaybe = (that, prop, postArgs) => {
-  const fn = that[prop];
-  if (!fn) {
-    return undefined;
-  }
-  assert.typeof(fn, 'function');
-  /**
-   * @param {unknown} arg value or reason
-   */
-  const wrapped = arg => {
-    // Don't return a value, to prevent E.when from subscribing to a resulting
-    // promise.
-    apply(fn, that, [arg, ...postArgs]);
-  };
-  return wrapped;
-};
-
-/**
- * Shim the promise watcher behaviour when VatData.watchPromise is not available.
- *
- * @param {Promise<any>} p
- * @param {PromiseWatcher} watcher
- * @param {...unknown[]} watcherArgs
- * @returns {void}
- */
-const watchPromiseShim = (p, watcher, ...watcherArgs) => {
-  Promise.resolve(p) === p || Fail`watchPromise only watches promises`;
-  const onFulfilled = callMeMaybe(watcher, 'onFulfilled', watcherArgs);
-  const onRejected = callMeMaybe(watcher, 'onRejected', watcherArgs);
-  onFulfilled ||
-    onRejected ||
-    Fail`promise watcher must implement at least one handler method`;
-  void basicE.when(p, onFulfilled, onRejected);
-};
 
 /**
  * @param {typeof watchPromiseShim} watchPromise
@@ -66,7 +13,7 @@ const makeWatchVow =
   watchPromise =>
   /**
    * @param {any} specimen
-   * @param {PromiseWatcher} promiseWatcher
+   * @param {import('./watch-promise.js').PromiseWatcher} promiseWatcher
    */
   (specimen, promiseWatcher) => {
     let promise;
@@ -80,12 +27,12 @@ const makeWatchVow =
   };
 
 /**
- * @param {import('./types.js').Settler} settler
+ * @param {import('./types.js').VowResolver} resolver
  * @param {import('./types.js').Watcher<unknown, unknown, unknown>} watcher
  * @param {keyof Required<import('./types.js').Watcher>} wcb
  * @param {unknown} value
  */
-const settle = (settler, watcher, wcb, value) => {
+const settle = (resolver, watcher, wcb, value) => {
   try {
     let chainedValue = value;
     const w = watcher[wcb];
@@ -94,10 +41,10 @@ const settle = (settler, watcher, wcb, value) => {
     } else if (wcb === 'onRejected') {
       throw value;
     }
-    settler && settler.resolve(chainedValue);
+    resolver && resolver.resolve(chainedValue);
   } catch (e) {
-    if (settler) {
-      settler.reject(e);
+    if (resolver) {
+      resolver.reject(e);
     } else {
       throw e;
     }
@@ -122,13 +69,13 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchVow) =>
      * @template [T=any]
      * @template [TResult1=T]
      * @template [TResult2=never]
-     * @param {import('./types.js').Settler<TResult1 | TResult2>} settler
+     * @param {import('./types.js').VowResolver<TResult1 | TResult2>} resolver
      * @param {import('./types.js').Watcher<T, TResult1, TResult2>} [watcher]
      */
-    (settler, watcher) => {
+    (resolver, watcher) => {
       const state = {
         vow: undefined,
-        settler,
+        resolver,
         watcher,
       };
       return /** @type {Partial<typeof state>} */ (state);
@@ -141,9 +88,9 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchVow) =>
         },
       },
       promiseWatcher: {
-        /** @type {Required<PromiseWatcher>['onFulfilled']} */
+        /** @type {Required<import('./watch-promise.js').PromiseWatcher>['onFulfilled']} */
         onFulfilled(value) {
-          const { watcher, settler } = this.state;
+          const { watcher, resolver } = this.state;
           if (getVowPayload(value)) {
             // We've been shortened, so reflect our state accordingly, and go again.
             this.facets.vowSetter.setVow(value);
@@ -151,32 +98,32 @@ const prepareWatcherKit = (zone, rejectionMeansRetry, watchVow) =>
             return undefined;
           }
           this.state.watcher = undefined;
-          this.state.settler = undefined;
-          if (!settler) {
+          this.state.resolver = undefined;
+          if (!resolver) {
             return undefined;
           } else if (watcher) {
-            settle(settler, watcher, 'onFulfilled', value);
+            settle(resolver, watcher, 'onFulfilled', value);
           } else {
-            settler.resolve(value);
+            resolver.resolve(value);
           }
         },
-        /** @type {Required<PromiseWatcher>['onRejected']} */
+        /** @type {Required<import('./watch-promise.js').PromiseWatcher>['onRejected']} */
         onRejected(reason) {
-          const { watcher, settler } = this.state;
+          const { watcher, resolver } = this.state;
           if (rejectionMeansRetry(reason)) {
             watchVow(this.state.vow, this.facets.promiseWatcher);
             return;
           }
-          this.state.settler = undefined;
+          this.state.resolver = undefined;
           this.state.watcher = undefined;
           if (!watcher) {
-            settler && settler.reject(reason);
-          } else if (!settler) {
+            resolver && resolver.reject(reason);
+          } else if (!resolver) {
             throw reason; // for host's unhandled rejection handler to catch
           } else if (watcher.onRejected) {
-            settle(settler, watcher, 'onRejected', reason);
+            settle(resolver, watcher, 'onRejected', reason);
           } else {
-            settler.reject(reason);
+            resolver.reject(reason);
           }
         },
       },
@@ -207,9 +154,9 @@ export const prepareWatch = (
    */
   const watch = (specimenP, watcher) => {
     /** @type {import('./types.js').VowKit<TResult1 | TResult2>} */
-    const { settler, vow } = makeVowKit();
+    const { resolver, vow } = makeVowKit();
 
-    const { promiseWatcher, vowSetter } = makeWatcherKit(settler, watcher);
+    const { promiseWatcher, vowSetter } = makeWatcherKit(resolver, watcher);
 
     // Ensure we have a presence that won't be disconnected later.
     unwrapPromise(specimenP, (specimen, payload) => {

@@ -428,14 +428,6 @@ export default makeE;
  */
 
 /**
- * @template [R = unknown]
- * @typedef {{
- *   promise: Promise<R>;
- *   settler: import('@endo/eventual-send').Settler<R>;
- * }} EPromiseKit
- */
-
-/**
  * Type for an object that must only be invoked with E.  It supports a given
  * interface but declares all the functions as asyncable.
  *

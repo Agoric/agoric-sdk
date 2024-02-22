@@ -7,12 +7,19 @@ import { prepareWatch } from './watch.js';
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {object} [powers]
  * @param {(reason: any) => boolean} [powers.rejectionMeansRetry]
- * @param {(p: PromiseLike<any>, watcher: import('./watch.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
+ * @param {(p: PromiseLike<any>, watcher: import('./watch-promise.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
-export const prepareVowTools = (zone, powers) => {
-  const { rejectionMeansRetry = () => false, watchPromise } = powers || {};
-  const { makeVowKit, makeVowPromiseKit } = prepareVowKits(zone);
-  const when = makeWhen(makeVowPromiseKit, rejectionMeansRetry);
+export const prepareVowTools = (zone, powers = {}) => {
+  const { rejectionMeansRetry = () => false, watchPromise } = powers;
+  const { makeVowKit, providePromiseForVowResolver } = prepareVowKits(
+    zone,
+    watchPromise,
+  );
+  const when = makeWhen(
+    makeVowKit,
+    providePromiseForVowResolver,
+    rejectionMeansRetry,
+  );
   const watch = prepareWatch(
     zone,
     makeVowKit,

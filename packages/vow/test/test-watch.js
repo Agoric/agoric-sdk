@@ -34,21 +34,21 @@ const runTests = async t => {
   const connErrorP = Promise.reject(Error('disconnected'));
   t.is(await when(watch(connErrorP, makeAckWatcher(packet))), 'rejected');
 
-  const { vow, settler } = makeVowKit();
+  const { vow, resolver } = makeVowKit();
   const connVowP = Promise.resolve(vow);
-  settler.resolve('ack');
+  resolver.resolve('ack');
   t.is(await when(watch(connVowP, makeAckWatcher(packet))), 'fulfilled');
   t.is(await when(watch(vow, makeAckWatcher(packet))), 'fulfilled');
 
-  const { vow: vow2, settler: settler2 } = makeVowKit();
+  const { vow: vow2, resolver: resolver2 } = makeVowKit();
   const connVow2P = Promise.resolve(vow2);
-  settler2.resolve(vow);
+  resolver2.resolve(vow);
   t.is(await when(watch(connVow2P, makeAckWatcher(packet))), 'fulfilled');
 
-  const { vow: vow3, settler: settler3 } = makeVowKit();
+  const { vow: vow3, resolver: resolver3 } = makeVowKit();
   const connVow3P = Promise.resolve(vow3);
-  settler3.reject(Error('disco2'));
-  settler3.resolve(vow2);
+  resolver3.reject(Error('disco2'));
+  resolver3.resolve(vow2);
   t.is(await when(watch(connVow3P, makeAckWatcher(packet))), 'rejected');
 };
 

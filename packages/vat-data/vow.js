@@ -12,7 +12,7 @@ const vatData = globalThis.VatData;
  * version.  If it is `undefined`, `@agoric/vow` will shim it.
  * @type {undefined | ((
  *   p: Promise<any>,
- *   watcher: import('@agoric/vow/src/watch.js').PromiseWatcher,
+ *   watcher: import('@agoric/vow/src/watch-promise.js').PromiseWatcher,
  *   ...args: unknown[]
  * ) => void)}
  */

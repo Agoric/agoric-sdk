@@ -2,45 +2,51 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
+import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
+
+const sink = () => {};
+harden(sink);
+
+/**
+ * @typedef {Partial<import('@endo/promise-kit').PromiseKit<any>> &
+ *   Pick<import('@endo/promise-kit').PromiseKit<any>, 'promise'>} VowEphemera
+ */
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
+ * @param {typeof watchPromiseShim} [watchPromise]
  */
-export const prepareVowKits = zone => {
-  /** WeakMap<object, any> */
-  const vowV0ToEphemeral = new WeakMap();
+export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
+  /** @type {WeakMap<import('./types.js').VowResolver, VowEphemera>} */
+  const resolverToEphemera = new WeakMap();
 
   /**
    * Get the current incarnation's promise kit associated with a vowV0.
    *
-   * @param {import('./types.js').VowPayload['vowV0']} vowV0
-   * @returns {import('@endo/promise-kit').PromiseKit<any>}
+   * @param {import('./types.js').VowResolver} resolver
    */
-  const findCurrentKit = vowV0 => {
-    let pk = vowV0ToEphemeral.get(vowV0);
+  const provideCurrentKit = resolver => {
+    let pk = resolverToEphemera.get(resolver);
     if (pk) {
       return pk;
     }
 
     pk = makePromiseKit();
-    pk.promise.catch(() => {}); // silence unhandled rejection
-    vowV0ToEphemeral.set(vowV0, pk);
+    pk.promise.catch(sink); // silence unhandled rejection
+    resolverToEphemera.set(resolver, pk);
     return pk;
   };
 
   /**
-   * @param {'resolve' | 'reject'} kind
-   * @param {import('./types.js').VowPayload['vowV0']} vowV0
-   * @param {unknown} value
+   * @param {import('./types.js').VowResolver} resolver
    */
-  const settle = (kind, vowV0, value) => {
-    const kit = findCurrentKit(vowV0);
-    const cb = kit[kind];
-    if (!cb) {
-      return;
+  const getPromiseKitForResolution = resolver => {
+    const kit = provideCurrentKit(resolver);
+    if (kit.resolve) {
+      // Resolution is a one-time event, so forget the resolve/reject functions.
+      resolverToEphemera.set(resolver, harden({ promise: kit.promise }));
     }
-    vowV0ToEphemeral.set(vowV0, harden({ promise: kit.promise }));
-    cb(value);
+    return kit;
   };
 
   const makeVowInternalsKit = zone.exoClassKit(
@@ -49,35 +55,68 @@ export const prepareVowKits = zone => {
       vowV0: M.interface('VowV0', {
         shorten: M.call().returns(M.promise()),
       }),
-      settler: M.interface('Settler', {
+      resolver: M.interface('VowResolver', {
         resolve: M.call().optional(M.any()).returns(),
         reject: M.call().optional(M.any()).returns(),
       }),
+      watchNextStep: PromiseWatcherI,
     },
-    () => ({}),
+    () => ({
+      value: undefined,
+      // The stepStatus is null if the promise step hasn't settled yet.
+      stepStatus: /** @type {null | 'fulfilled' | 'rejected'} */ (null),
+    }),
     {
       vowV0: {
         /**
          * @returns {Promise<any>}
          */
-        shorten() {
-          return findCurrentKit(this.facets.vowV0).promise;
+        async shorten() {
+          const { stepStatus, value } = this.state;
+          switch (stepStatus) {
+            case 'fulfilled':
+              return value;
+            case 'rejected':
+              throw value;
+            case null:
+              return provideCurrentKit(this.facets.resolver).promise;
+            default:
+              throw new TypeError(`unexpected stepStatus ${stepStatus}`);
+          }
         },
       },
-      settler: {
+      resolver: {
         /**
          * @param {any} [value]
          */
         resolve(value) {
-          const { vowV0 } = this.facets;
-          settle('resolve', vowV0, value);
+          const { resolver } = this.facets;
+          const { promise, resolve } = getPromiseKitForResolution(resolver);
+          if (resolve) {
+            resolve(value);
+            watchPromise(promise, this.facets.watchNextStep);
+          }
         },
         /**
          * @param {any} [reason]
          */
         reject(reason) {
-          const { vowV0 } = this.facets;
-          settle('reject', vowV0, reason);
+          const { resolver, watchNextStep } = this.facets;
+          const { reject } = getPromiseKitForResolution(resolver);
+          if (reject) {
+            reject(reason);
+            watchNextStep.onRejected(reason);
+          }
+        },
+      },
+      watchNextStep: {
+        onFulfilled(value) {
+          this.state.stepStatus = 'fulfilled';
+          this.state.value = value;
+        },
+        onRejected(reason) {
+          this.state.stepStatus = 'rejected';
+          this.state.value = reason;
         },
       },
     },
@@ -88,24 +127,17 @@ export const prepareVowKits = zone => {
    * @returns {import('./types.js').VowKit<T>}
    */
   const makeVowKit = () => {
-    const { settler, vowV0 } = makeVowInternalsKit();
+    const { resolver, vowV0 } = makeVowInternalsKit();
     const vow = makeTagged('Vow', harden({ vowV0 }));
-    return harden({ settler, vow });
+    return harden({ resolver, vow });
   };
 
   /**
-   * @template T
-   * @returns {import('./types.js').VowPromiseKit<T>}
+   * @param {import('./types').VowResolver} resolver
    */
-  const makeVowPromiseKit = () => {
-    const { settler, vowV0 } = makeVowInternalsKit();
-    const vow = makeTagged('Vow', harden({ vowV0 }));
-
-    /** @type {{ promise: Promise<T> }} */
-    const { promise } = findCurrentKit(vowV0);
-    return harden({ settler, vow, promise });
-  };
-  return { makeVowKit, makeVowPromiseKit };
+  const providePromiseForVowResolver = resolver =>
+    provideCurrentKit(resolver).promise;
+  return { makeVowKit, providePromiseForVowResolver };
 };
 
 harden(prepareVowKits);

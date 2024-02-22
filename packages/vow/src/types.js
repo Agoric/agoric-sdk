@@ -50,7 +50,7 @@ export {};
  * @template [T=any]
  * @typedef {{
  *   vow: Vow<T>,
- *   settler: Settler<T>,
+ *   resolver: VowResolver<T>,
  * }} VowKit
  */
 
@@ -58,14 +58,14 @@ export {};
  * @template [T=any]
  * @typedef {{
  *   vow: Vow<T>,
- *   settler: Settler<T>,
+ *   resolver: VowResolver<T>,
  *   promise: Promise<T>
  * }} VowPromiseKit
  */
 
 /**
  * @template [T=any]
- * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} Settler
+ * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} VowResolver
  */
 
 /**
