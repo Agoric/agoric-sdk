@@ -173,7 +173,7 @@ const trace = makeTracer('SmrtWlt');
  *   paymentQueues: MapStore<Brand, Array<Payment>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
- *   offerToUsedInvitation: MapStore<string, Amount>,
+ *   offerToUsedInvitation: MapStore<string, Amount<'set'>>,
  *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
