@@ -46,6 +46,8 @@ STAMPS=node_modules/.cache/agoric
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
 
+echo 1>&2 "@@@ Executing $thisdir/agd in $PWD"
+
 # shellcheck disable=SC1091
 source "$thisdir/../repoconfig.sh"
 
