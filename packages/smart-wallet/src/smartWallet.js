@@ -1102,9 +1102,9 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
           });
         },
+        // TODO remove this and repairUnwatchedSeats once the repair has taken place.
         /**
-         * one-time use function. Remove this and repairUnwatchedSeats once the
-         * repair has taken place.
+         * To be called once ever per wallet.
          *
          * @param {object} key
          */
@@ -1115,8 +1115,12 @@ export const prepareSmartWallet = (baggage, shared) => {
             return;
           }
 
-          void facets.helper.repairUnwatchedSeats();
-          void facets.helper.repairUnwatchedPurses();
+          facets.helper.repairUnwatchedSeats().catch(e => {
+            console.error('repairUnwatchedSeats rejection', e);
+          });
+          facets.helper.repairUnwatchedPurses().catch(e => {
+            console.error('repairUnwatchedPurses rejection', e);
+          });
           trace(`repaired wallet ${state.address}`);
         },
       },
