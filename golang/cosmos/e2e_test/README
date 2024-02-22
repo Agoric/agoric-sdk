@@ -1,6 +1,6 @@
 # e2e_test
 
-This independant golang project contains tests that validate IBC conformance and PFM functionality using a fork of Strangelove's `interchaintest`.
+This independent golang project contains tests that validate IBC conformance and PFM functionality using a fork of Strangelove's `interchaintest`.
 - upstream: https://github.com/strangelove-ventures/interchaintest
 - fork: https://github.com/Agoric-labs/interchaintest
 
@@ -40,13 +40,13 @@ $ make Test
 
 It is possible to use environment variables to change how the tests run
 
-- `PFME2E_CHAINNAME0` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the first chain
-- `PFME2E_CHAINNAME1` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the second chain
-- `PFME2E_CHAINNAME2` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the third chain
-- `PFME2E_CHAINNAME3` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the fourth chain
-- `PFME2E_CHAINIMAGE_AGORIC` - the value of this will be used specific the repository & version of docker image to use for the agoric chain. a valid value must have a semicolon and be formatted as `repository:tag`. ex: `PFME2E_CHAINIMAGE_AGORIC="ghcr.io/agoric/agoricinterchain:latest"`
-- `PFME2E_RELAYERNAME` - set to `"cosmos"` or `"hermes"` to choose the relayer type
-- `PFME2E_BLOCKS_TO_WAIT` - set to a number to control how many blocks to wait for an ACK from an IBC transfer and how many blocks to wait for TX settlement.
+- `E2ETEST_CHAINNAME0` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the first chain
+- `E2ETEST_CHAINNAME1` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the second chain
+- `E2ETEST_CHAINNAME2` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the third chain
+- `E2ETEST_CHAINNAME3` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the fourth chain
+- `E2ETEST_CHAINIMAGE_AGORIC` - the value of this will be used specific the repository & version of docker image to use for the agoric chain. a valid value must have a semicolon and be formatted as `repository:tag`. ex: `E2ETEST_CHAINIMAGE_AGORIC="ghcr.io/agoric/agoricinterchain:latest"`
+- `E2ETEST_RELAYERNAME` - set to `"cosmos"` or `"hermes"` to choose the relayer type
+- `E2ETEST_BLOCKS_TO_WAIT` - set to a number to control how many blocks to wait for an ACK from an IBC transfer and how many blocks to wait for TX settlement.
 
 ex:
 ```
@@ -57,7 +57,7 @@ ex:
 # - the fourth chain as gaia
 # - use the hermes relayer
 # - note `-timeout 20m` which is included because these tests can be very slow 
-$ PFME2E_CHAINNAME0=agoric PFME2E_CHAINNAME1=osmosis PFME2E_CHAINNAME2=stride PFME2E_CHAINNAME3=gaia PFME2E_RELAYERNAME=hermes go test -timeout 20m -v -run ^TestPacketForwardMiddleware
+$ E2ETEST_CHAINNAME0=agoric E2ETEST_CHAINNAME1=osmosis E2ETEST_CHAINNAME2=stride E2ETEST_CHAINNAME3=gaia E2ETEST_RELAYERNAME=hermes go test -timeout 20m -v -run ^TestPacketForwardMiddleware
 ```
 
 ## Debugging Flakes
@@ -73,7 +73,7 @@ If the tests terminate abnormally they may leave Docker containers or volumes st
 
 ## Details on the Custom Fork of `interchaintest`
 
-The [Agoric custom fork of interchaintest](https://github.com/Agoric-labs/interchaintest) is necessary because the agoric chain does not include the `x/crisis` module. However, `interchaintest` passes `agd` unsupported commandline arguments to configure `x/crisis`. The fork contains a patch to skip these commandline arguments when `interchaintest.ChainSpec.ChainConfig.NoCrisisModule` is set.
+The [Agoric custom fork of interchaintest](https://github.com/Agoric-labs/interchaintest) is necessary because the agoric chain does not include the `x/crisis` module. However, `interchaintest` passes `agd` unsupported command line arguments to configure `x/crisis`. The fork contains a patch to skip these command line arguments when `interchaintest.ChainSpec.ChainConfig.NoCrisisModule` is set.
 
 The exact git tag version of Agoric custom fork of interchaintest must be specified in the `go.mod` for this test suite. It is important to update that tag in the fork and in `go.mod` whenever the fork has a new update.
 
@@ -95,7 +95,6 @@ For each new image:
 - then:
 ```
 $ go build
-$ ./heighliner build -c agoric -g main -t $USER/agoric:heighliner-agoric
+$ ./heighliner build -c agoric -g main -t agoric:heighliner-agoric
 ```
-- then from docker desktop push the $USER/agoric:heighliner-agoric to DockerHub or another container repo
-- then run agoricinterchaintests with `PFME2E_CHAINIMAGE_AGORIC=$USER/agoric:heighliner-agoric`
+- then run agoricinterchaintests with `E2ETEST_CHAINIMAGE_AGORIC=agoric:heighliner-agoric`

@@ -347,7 +347,6 @@ func NewAgoricApp(
 		keys[paramstypes.StoreKey],
 		tkeys[paramstypes.TStoreKey],
 	)
-	// TODO: Should more params be added to the params keeper ala https://github.com/monopauli/kava/blob/4d1bfed1a19fa00979456ae61d7c575eb198b465/app/app.go#L417
 
 	// set the BaseApp's parameter store
 	bApp.SetParamStore(

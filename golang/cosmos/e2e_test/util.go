@@ -11,7 +11,7 @@ import (
 	"github.com/agoric-labs/interchaintest/v6"
 	"github.com/agoric-labs/interchaintest/v6/chain/cosmos"
 	"github.com/agoric-labs/interchaintest/v6/ibc"
-	//"github.com/agoric-labs/interchaintest/v6/relayer"
+	"github.com/agoric-labs/interchaintest/v6/relayer"
 	"github.com/agoric-labs/interchaintest/v6/testutil"
 
 	"go.uber.org/zap/zaptest"
@@ -23,13 +23,13 @@ const CHAIN_GAIA = "gaia"
 const RELAYER_COSMOS = "cosmos"
 const RELAYER_HERMES = "hermes"
 
-const DEFAULT_CHAINIMAGE_AGORIC = "ivanagoric/agoric:heighliner-agoric"
+const DEFAULT_CHAINIMAGE_AGORIC = "agoric:heighliner-agoric"
 const DEFAULT_BLOCKS_TO_WAIT = 25
 
-const FMT_ENV_CHAINNAME = "PFME2E_CHAINNAME%d"
-const ENV_CHAINIMAGE_AGORIC = "PFME2E_CHAINIMAGE_AGORIC"
-const ENV_RELAYERNAME = "PFME2E_RELAYERNAME"
-const ENV_BLOCKS_TO_WAIT = "PFME2E_BLOCKS_TO_WAIT"
+const FMT_ENV_CHAINNAME = "E2ETEST_CHAINNAME%d"
+const ENV_CHAINIMAGE_AGORIC = "E2ETEST_CHAINIMAGE_AGORIC"
+const ENV_RELAYERNAME = "E2ETEST_RELAYERNAME"
+const ENV_BLOCKS_TO_WAIT = "E2ETEST_BLOCKS_TO_WAIT"
 
 // newHermesFactory creates a hermes relayer
 func newHermesFactory(t *testing.T) interchaintest.RelayerFactory {
@@ -45,14 +45,14 @@ func newCosmosRlyFactory(t *testing.T) interchaintest.RelayerFactory {
 	// TODO: At one point was using latest docker image for relyaer but disabling
 	// to remove variables while debugging heighliner builds of agoric chain are failing
 	//
-	// IBCRelayerImage := "ghcr.io/cosmos/relayer"
-	// IBCRelayerVersion := "latest"
-	// image := relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000")
+	IBCRelayerImage := "ghcr.io/cosmos/relayer"
+	IBCRelayerVersion := "latest"
+	image := relayer.CustomDockerImage(IBCRelayerImage, IBCRelayerVersion, "100:1000")
 
 	return interchaintest.NewBuiltinRelayerFactory(
 		ibc.CosmosRly,
 		zaptest.NewLogger(t),
-		// image
+		image,
 	)
 }
 
@@ -107,11 +107,12 @@ func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.D
 			Images: []ibc.DockerImage{
 				chainImage,
 			},
-			Bin:            "agd",
-			Bech32Prefix:   "agoric",
-			Denom:          "ubld",
-			CoinType:       "564",
-			GasPrices:      "0.01ubld",
+			Bin:          "agd",
+			Bech32Prefix: "agoric",
+			Denom:        "ubld",
+			CoinType:     "564",
+			// interchaintest is super flaky when gas is enabled
+			GasPrices:      "0.0ubld",
 			GasAdjustment:  1.3,
 			TrustingPeriod: "672h",
 			NoHostMount:    false,
@@ -125,7 +126,7 @@ func newAgoricChainSpec(chainUniqueName string, chainID string, chainImage ibc.D
 }
 
 // getChainImage will build a docker image from the environment variable value
-// PFME2E_CHAINIMAGE_AGORIC. The value of this env var
+// E2ETEST_CHAINIMAGE_AGORIC. The value of this env var
 // must be in the form "repo/image:version"
 func getChainImageAgoric(t *testing.T) ibc.DockerImage {
 	ret := ibc.DockerImage{
@@ -227,7 +228,7 @@ func getRelayerFactory(t *testing.T) interchaintest.RelayerFactory {
 // sendIBCTransferWithWait performs cosmos.CosmosChain.SendIBCTransfer
 // - Automatically waits to confirm TX is ACK'd
 // - Automatically waits for results to settle
-// - The environment variable PFME2E_BLOCKS_TO_WAIT controls how many blocks to wait for ACK and settlement
+// - The environment variable E2ETEST_BLOCKS_TO_WAIT controls how many blocks to wait for ACK and settlement
 func sendIBCTransferWithWait(
 	c *cosmos.CosmosChain,
 	ctx context.Context,

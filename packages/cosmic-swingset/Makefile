@@ -8,6 +8,7 @@ CHAIN_ID = agoriclocal
 FAUCET_PORT = 7000
 FAUCET_WALLET = provision
 FAUCET_ADDRESS = localhost
+ROSETTA_PORT = 8080
 
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)
@@ -177,6 +178,9 @@ scenario2-use-fee-account: t1/$(BASE_PORT)/owner-address
 scenario2-use-client-account: t1/$(BASE_PORT)/owner-address
 	cp $< t1/$(BASE_PORT)/cosmos-client-account
 
+scenario2-run-rosetta-ci: wait-for-rosetta
+	./scripts/run-rosetta-ci.sh
+
 t1/$(BASE_PORT)/owner-address:
 	rm -rf t1/$(BASE_PORT)/owner
 	$(AGCH) --home=t1/$(BASE_PORT)/owner keys --keyring-backend=test add owner | jq -r .address > $@.tmp
@@ -197,6 +201,18 @@ wait-for-cosmos:
 		if test -z "$$start"; then \
 		  start=$$block; \
 		elif test $$block -gt $$start; then \
+		  break; \
+		fi; \
+		echo -n '.'; \
+		sleep 1; \
+	done
+	@echo ' done!'
+
+wait-for-rosetta: wait-for-cosmos
+	@echo -n "Waiting for $(COSMOS_RPC_HOST):$(ROSETTA_PORT) to come live..."
+	@while true; do \
+	  networks=$$(curl -s -X POST http://$(COSMOS_RPC_HOST):$(ROSETTA_PORT)/network/list --data '{ "metadata": {} }'); \
+		if ! test -z "$$networks"; then \
 		  break; \
 		fi; \
 		echo -n '.'; \

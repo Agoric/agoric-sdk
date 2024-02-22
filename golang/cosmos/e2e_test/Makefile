@@ -1,11 +1,11 @@
 # It is possible to use environment variables to change how the tests run
-# - `PFME2E_CHAINNAME0` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the first chain
-# - `PFME2E_CHAINNAME1` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the second chain
-# - `PFME2E_CHAINNAME2` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the third chain
-# - `PFME2E_CHAINNAME3` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the fourth chain
-# - `PFME2E_CHAINIMAGE_AGORIC` - the value of this will be used specific the repository & version of docker image to use for the agoric chain. a valid value must have a semicolon and be formatted as `repository:tag`. ex: `PFME2E_CHAINIMAGE_AGORIC="ghcr.io/agoric/agoricinterchain:latest"`
-# - `PFME2E_RELAYERNAME` - set to `"cosmos"` or `"hermes"` to choose the relayer type
-# - `PFME2E_BLOCKS_TO_WAIT` - set to a number to control how many blocks to wait for an ACK from an IBC transfer and how many blocks to wait for TX settlement.
+# - `E2ETEST_CHAINNAME0` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the first chain
+# - `E2ETEST_CHAINNAME1` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the second chain
+# - `E2ETEST_CHAINNAME2` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the third chain
+# - `E2ETEST_CHAINNAME3` - set to `"agoric"`, `"gaia"`, or another chain known by interchaintest to choose which chain runs as the fourth chain
+# - `E2ETEST_CHAINIMAGE_AGORIC` - the value of this will be used specific the repository & version of docker image to use for the agoric chain. a valid value must have a semicolon and be formatted as `repository:tag`. ex: `E2ETEST_CHAINIMAGE_AGORIC="ghcr.io/agoric/agoricinterchain:latest"`
+# - `E2ETEST_RELAYERNAME` - set to `"cosmos"` or `"hermes"` to choose the relayer type
+# - `E2ETEST_BLOCKS_TO_WAIT` - set to a number to control how many blocks to wait for an ACK from an IBC transfer and how many blocks to wait for TX settlement.
 all: TestConformance TestPFM
 
 # build - Sanity compile the tests
