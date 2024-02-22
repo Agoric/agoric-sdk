@@ -646,10 +646,29 @@ export const prepareSmartWallet = (baggage, shared) => {
             const seat = liveOfferSeats.get(seatId);
 
             const watchOutcome = (async () => {
-              // To infer the invitation amount for the offer
-              const invitation = invitationFromSpec(offerSpec.invitationSpec);
-              const invitationAmount =
-                await E(invitationIssuer).getAmountOf(invitation);
+              await null;
+              let invitationAmount = state.offerToUsedInvitation.get(
+                // @ts-expect-error older type allowed number
+                offerSpec.id,
+              );
+              if (invitationAmount) {
+                facets.helper.logWalletInfo(
+                  'recovered invitation amount for offer',
+                  offerSpec.id,
+                );
+              } else {
+                facets.helper.logWalletInfo(
+                  'inferring invitation amount for offer',
+                  offerSpec.id,
+                );
+                const tempInvitation = invitationFromSpec(
+                  offerSpec.invitationSpec,
+                );
+                invitationAmount =
+                  await E(invitationIssuer).getAmountOf(tempInvitation);
+                void E(invitationIssuer).burn(tempInvitation);
+              }
+
               const watcher = makeOfferWatcher(
                 facets.helper,
                 facets.deposit,
@@ -658,7 +677,6 @@ export const prepareSmartWallet = (baggage, shared) => {
                 invitationAmount,
                 seat,
               );
-              void E(invitationIssuer).burn(invitation);
               return watchOfferOutcomes(watcher, seat);
             })();
             trace(`Repaired seat ${seatId} for wallet ${address}`);
