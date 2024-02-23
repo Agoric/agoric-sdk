@@ -42,6 +42,7 @@ export default [
   "@agoric/vat-data",
   "@agoric/vats",
   "@agoric/vm-config",
+  "@agoric/vow",
   "@agoric/wallet",
   "@agoric/wallet-backend",
   "@agoric/xsnap",
