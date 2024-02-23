@@ -388,13 +388,16 @@ export const makeSwingsetTestKit = async (
   console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
+  const updateTimer = async time => {
+    await timer.poll(time);
+  };
   const jumpTimeTo = (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
     targetTime >= currentTime ||
       Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
     currentTime = targetTime;
     trace('jumpTimeTo', currentTime);
-    return runUtils.runThunk(() => timer.poll(currentTime));
+    return runUtils.queueAndRun(() => updateTimer(currentTime), true);
   };
   const advanceTimeTo = async (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
@@ -403,7 +406,7 @@ export const makeSwingsetTestKit = async (
     while (currentTime < targetTime) {
       trace('stepping time from', currentTime, 'towards', targetTime);
       currentTime += 1n;
-      await runUtils.runThunk(() => timer.poll(currentTime));
+      await runUtils.queueAndRun(() => updateTimer(currentTime), true);
     }
   };
   const advanceTimeBy = (
