@@ -13,6 +13,10 @@ inputs:
     description: 'Keep Endo repository after installing from it'
     required: false
     default: 'false'
+  ignore-endo-branch:
+    description: 'Ignore external Endo branch configuration'
+    required: false
+    default: 'false'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -46,7 +50,9 @@ runs:
         result-encoding: string
         script: |-
           let branch = 'NOPE';
-          if (context.eventName === 'schedule') {
+          if (${{ inputs.ignore-endo-branch }}) {
+            // Skip endo branch
+          } else  if (context.eventName === 'schedule') {
             branch = 'master';
           } else if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
@@ -58,6 +64,18 @@ runs:
           }
           console.log(branch);
           return branch;
+    - name: merge endo integration branch
+      id: endo-integration-merge
+      run: |-
+        set -e
+        git ls-remote --exit-code --heads origin "refs/heads/integration-endo-${{ steps.endo-branch.outputs.result }}" || exit 0
+        git fetch --unshallow origin integration-endo-${{ steps.endo-branch.outputs.result }}
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
+      shell: bash
+      working-directory: ${{ inputs.path }}
+      if: steps.endo-branch.outputs.result != 'NOPE'
     - name: check out Endo if necessary
       id: endo-checkout
       uses: actions/checkout@v3
@@ -84,18 +102,6 @@ runs:
         echo "$sha" > endo-sha.txt
         git add endo-sha.txt
       shell: bash
-    - name: merge endo integration branch
-      id: endo-integration-merge
-      run: |-
-        set -e
-        git ls-remote --exit-code --heads origin "refs/heads/integration-endo-${{ steps.endo-branch.outputs.result }}" || exit 0
-        git fetch --unshallow origin integration-endo-${{ steps.endo-branch.outputs.result }}
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
-      shell: bash
-      working-directory: ${{ inputs.path }}
-      if: steps.endo-branch.outputs.result != 'NOPE'
     - name: Reconfigure git to use HTTP authentication
       run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
       shell: bash

@@ -28,6 +28,7 @@ mkdir -p proto
 cd proto
 ln -s ../../../golang/cosmos/proto/agoric .
 ln -s ../../../golang/cosmos/third_party/proto/gogoproto .
+ln -s ../../../golang/cosmos/third_party/proto/cosmos_proto .
 ln -s ../node_modules/protobufjs/google .
 ```
 

@@ -234,10 +234,31 @@ jobs:
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
         working-directory: packages/deployment
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: '18.x'
+          # Rebuilding the SDK image with resolved endo packages is not currently supported
+          # and since we can't build core eval submissions form the SDK using a newer endo,
+          # simply ignore any endo branch integration (this means we don't have full coverage)
+          ignore-endo-branch: 'true'
+        id: restore-node
       - name: setup a3p-integration
         run: |
           corepack enable
           yarn install
+        working-directory: a3p-integration
+      - name: verify SDK image didn't change
+        # In the future when we can rebuild the SDK image with resolved endo packages, it would
+        # be expected that the SDK image previously built has changed
+        if: steps.restore-node.outputs.endo-branch == 'NOPE'
+        run: |
+          original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+          yarn build:sdk
+          new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+          if [ "$original" != "$new" ]; then
+            echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
+            exit 1
+          fi
         working-directory: a3p-integration
       - name: build proposals tests
         run: yarn build

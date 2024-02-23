@@ -17,13 +17,13 @@ export function buildRootObject() {
     first() {
       log('=> Bob: first begins');
       let p1;
-      [p1, r1] = makePR();
+      void ([p1, r1] = makePR());
       return p1;
     },
     second(p) {
       log('=> Bob: second begins');
       let p2;
-      [p2, r2] = makePR();
+      void ([p2, r2] = makePR());
       r1([p2]);
       p.then(
         r => log(`=> Bob: second(p) resolved to '${r}'`),

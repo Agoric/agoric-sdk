@@ -1,0 +1,17 @@
+{
+  "agoricProposal": {
+    "type": "/agoric.swingset.CoreEvalProposal",
+    "source": "subdir"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/synthetic-chain": "^0.0.7",
+    "ava": "^5.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "serial": true
+  },
+  "packageManager": "yarn@4.1.0"
+}

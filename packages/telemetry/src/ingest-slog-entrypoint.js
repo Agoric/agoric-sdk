@@ -74,7 +74,7 @@ async function run() {
     if (!flush) {
       return;
     }
-    await slogSender.forceFlush();
+    await slogSender.forceFlush?.();
     fs.writeFileSync(progressFileName, JSON.stringify(progress));
   };
 

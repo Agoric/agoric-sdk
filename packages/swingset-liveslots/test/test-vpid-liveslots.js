@@ -857,7 +857,7 @@ test('inter-vat circular promise references', async t => {
     let r;
     return Far('root', {
       genPromise() {
-        [p, r] = makePR();
+        void ([p, r] = makePR());
         return p;
       },
       usePromise(pa) {

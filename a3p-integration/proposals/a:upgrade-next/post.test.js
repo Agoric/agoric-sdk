@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { getIncarnation } from '@agoric/synthetic-chain/src/lib/vat-status.js';
+import { getIncarnation } from '@agoric/synthetic-chain';
 
 test(`Ensure Network Vat was installed`, async t => {
   const incarnation = await getIncarnation('network');
@@ -18,4 +18,3 @@ test(`Zoe vat was upgraded`, async t => {
 
   t.is(incarnation, 1);
 });
-

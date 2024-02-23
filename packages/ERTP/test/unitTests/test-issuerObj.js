@@ -422,7 +422,7 @@ test('issuer.combine array of promises', async t => {
     const paymentP = claim(issuer.makeEmptyPurse(), freshPayment);
     paymentsP.push(paymentP);
   }
-  harden(paymentsP);
+  void harden(paymentsP);
 
   const checkCombinedResult = paymentP =>
     issuer.getAmountOf(paymentP).then(pAmount => {

@@ -142,13 +142,7 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.A
 	}
 	msgIdx, msgIdxOk := ctx.Context().Value(baseapp.TxMsgIdxContextKey).(int)
 	if !txHashOk || !msgIdxOk {
-		switch action.(type) {
-		case *coreEvalAction:
-			// This is expected for CORE_EVAL since it's not in a transaction
-			// (deferred by governance to a BeginBlocker).
-		default:
-			stdlog.Printf("error while extracting context for action %q\n", action)
-		}
+		stdlog.Printf("error while extracting context for action %q\n", action)
 	}
 	record := inboundQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
 	bz, err := json.Marshal(record)

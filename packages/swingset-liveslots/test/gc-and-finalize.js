@@ -1,4 +1,4 @@
-/* global setImmediate */
+/* global setImmediate, FinalizationRegistry */
 
 /* A note on our GC terminology:
  *
@@ -88,4 +88,33 @@ export function makeGcAndFinalize(gcPower) {
     // Node.js seems to need another for promises to get cleared out
     await new Promise(setImmediate);
   };
+}
+
+const fr = new FinalizationRegistry(({ promise, resolve }) => {
+  promise.result = true;
+  resolve(true);
+});
+
+const makeCollectedResultKit = () => {
+  /** @type {(val: true) => void} */
+  let resolve;
+
+  const promise = /** @type {Promise<true> & {result: boolean}} */ (
+    new Promise(r => {
+      resolve = r;
+    })
+  );
+  promise.result = false;
+  return {
+    promise,
+    // @ts-expect-error
+    resolve,
+  };
+};
+
+export function watchCollected(target) {
+  const kit = makeCollectedResultKit();
+  fr.register(target, kit);
+
+  return kit.promise;
 }

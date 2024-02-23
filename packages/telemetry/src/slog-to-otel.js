@@ -54,9 +54,9 @@ const serializeInto = (value, prefix, target = {}, depth = 3) => {
       } else {
         const proto = Object.getPrototypeOf(value);
         if (proto == null || proto === Object.prototype) {
-          Object.entries(value).forEach(([key, nested]) =>
-            serializeInto(nested, `${prefix}.${key}`, target, depth),
-          );
+          for (const [key, nested] of Object.entries(value)) {
+            serializeInto(nested, `${prefix}.${key}`, target, depth);
+          }
           return target;
         }
       }

@@ -1,17 +1,19 @@
 {
     "private": true,
     "agoricSyntheticChain": {
-        "fromTag": "main"
+        "fromTag": "latest"
     },
     "scripts": {
-        "build": "./node_modules/.bin/synthetic-chain build",
-        "test": "./node_modules/.bin/synthetic-chain test",
-        "doctor": "./node_modules/.bin/synthetic-chain doctor"
+        "build": "yarn run build:sdk && yarn run build:submission && yarn run build:synthetic-chain",
+        "build:sdk": "make -C ../packages/deployment docker-build-sdk",
+        "build:submission": "../scripts/generate-a3p-submission.sh",
+        "build:synthetic-chain": "yarn synthetic-chain build",
+        "test": "yarn synthetic-chain test",
+        "doctor": "yarn synthetic-chain doctor"
     },
     "dependencies": {
-        "@agoric/synthetic-chain": "^0.0.4-3",
-        "tsx": "^4.7.0"
+        "@agoric/synthetic-chain": "^0.0.7"
     },
-    "packageManager": "yarn@4.0.2",
+    "packageManager": "yarn@4.1.0",
     "license": "Apache-2.0"
 }
