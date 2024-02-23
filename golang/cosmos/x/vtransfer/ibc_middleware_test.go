@@ -1,6 +1,7 @@
 package vtransfer_test
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -41,7 +42,13 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 func SetupAgoricTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
 	db := dbm.NewMemDB()
 	encCdc := app.MakeEncodingConfig()
-	appd := app.NewGaiaApp(log.NewNopLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+	controller := func(ctx context.Context, needReply bool, str string) (string, error) {
+		// fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
+		// FIXME: Unmarshal JSON and reply to the upcall.
+		jsonReply := `true`
+		return jsonReply, nil
+	}
+	appd := app.NewAgoricApp(controller, log.NewNopLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
 	gensisState := app.NewDefaultGenesisState()
 	return appd, gensisState
 }
