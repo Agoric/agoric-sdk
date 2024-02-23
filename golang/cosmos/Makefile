@@ -202,3 +202,6 @@ grpc-gateway-stamp:
 
 tools-clean:
 	rm -f proto-tools-stamp buf-stamp grpc-gateway-stamp
+
+lint:
+	golangci-lint run

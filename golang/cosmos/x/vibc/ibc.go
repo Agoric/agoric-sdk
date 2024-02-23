@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
@@ -169,7 +169,7 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return "", sdkerrors.Wrap(
+	return "", sdkioerrors.Wrap(
 		channeltypes.ErrChannelNotFound,
 		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
 	)
@@ -212,7 +212,7 @@ func (im IBCModule) OnChanOpenTry(
 
 	// Claim channel capability passed back by IBC module
 	if err = im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return "", sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
+		return "", sdkioerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return event.Version, err

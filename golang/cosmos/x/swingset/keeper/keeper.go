@@ -282,9 +282,9 @@ func (k Keeper) SetState(ctx sdk.Context, state types.State) {
 
 // GetBeansPerUnit returns a map taken from the current SwingSet parameters from
 // a unit (key) string to an unsigned integer amount of beans.
-func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdk.Uint {
+func (k Keeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint {
 	params := k.GetParams(ctx)
-	beansPerUnit := make(map[string]sdk.Uint, len(params.BeansPerUnit))
+	beansPerUnit := make(map[string]sdkmath.Uint, len(params.BeansPerUnit))
 	for _, bpu := range params.BeansPerUnit {
 		beansPerUnit[bpu.Key] = bpu.Beans
 	}
@@ -297,7 +297,7 @@ func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 
 // GetBeansOwing returns the number of beans that the given address owes to
 // the FeeAccount but has not yet paid.
-func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
+func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Uint {
 	path := getBeansOwingPathForAddress(addr)
 	entry := k.vstorageKeeper.GetEntry(ctx, path)
 	if !entry.HasValue() {
@@ -308,7 +308,7 @@ func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdk.Uint {
 
 // SetBeansOwing sets the number of beans that the given address owes to the
 // feeCollector but has not yet paid.
-func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) {
+func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) {
 	path := getBeansOwingPathForAddress(addr)
 	k.vstorageKeeper.SetStorage(ctx, agoric.NewKVEntry(path, beans.String()))
 }
@@ -316,7 +316,7 @@ func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Ui
 // ChargeBeans charges the given address the given number of beans.  It divides
 // the beans into the number to debit immediately vs. the number to store in the
 // beansOwing.
-func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdk.Uint) error {
+func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) error {
 	beansPerUnit := k.GetBeansPerUnit(ctx)
 
 	wasOwing := k.GetBeansOwing(ctx, addr)

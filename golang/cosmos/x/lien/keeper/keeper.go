@@ -6,6 +6,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,7 +21,7 @@ type Keeper interface {
 	GetLien(ctx sdk.Context, addr sdk.AccAddress) types.Lien
 	SetLien(ctx sdk.Context, addr sdk.AccAddress, lien types.Lien)
 	IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool)
-	ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error)
+	ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdkmath.Int) (sdkmath.Int, error)
 	GetAccountState(ctx sdk.Context, addr sdk.AccAddress) types.AccountState
 	BondDenom(ctx sdk.Context) string
 	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
@@ -112,7 +113,7 @@ func (lk keeperImpl) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, 
 // independently.
 //
 // The delta is given as a raw Int instead of a Coin since it may be negative.
-func (lk keeperImpl) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error) {
+func (lk keeperImpl) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdkmath.Int) (sdkmath.Int, error) {
 	oldLien := lk.GetLien(ctx, addr)
 	oldCoins := oldLien.Coins
 	oldAmt := oldCoins.AmountOf(denom)

@@ -5,11 +5,12 @@ import (
 	"strings"
 	"testing"
 
+	sdkioerrors "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 func TestErrorStackTraces(t *testing.T) {
-	err := sdkerrors.Wrapf(sdkerrors.ErrInsufficientFee, "my error %d", 123)
+	err := sdkioerrors.Wrapf(sdkerrors.ErrInsufficientFee, "my error %d", 123)
 	expected := "my error 123: insufficient fee"
 
 	// Check that sdkerrors.Wrapf(...).Error() does not leak stack.
