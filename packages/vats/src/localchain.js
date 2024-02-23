@@ -1,7 +1,10 @@
+// @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 const { Fail } = assert;
+
+/** @typedef {Record<string, unknown> & { '@type': string }} ProtobufJson */
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
@@ -41,6 +44,10 @@ const prepareLocalChainAccount = zone =>
         }
         return res[0].reply;
       },
+      /**
+       * @param {ProtobufJson[]} messages
+       * @returns {Promise<unknown>}
+       */
       async executeTx(messages) {
         const { system, address } = this.state;
         const obj = {
