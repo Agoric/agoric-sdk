@@ -4,14 +4,22 @@ import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @typedef {object} Revoker
- * @property {() => boolean} revoke
+ * @template {any} [U=any]
+ * @typedef {object} RevocableMakerKit
+ * @property {(revocable: U) => boolean} revoke
+ * @property {(underlying: U) => U} makeRevocable
+ *   Forwards to the underlying exo object, until revoked
+ */
+
+/**
+ * @typedef {object} RevokerFacet
+ * @property {() => boolean} revokeOne
  */
 
 /**
  * @template {any} [U=any]
  * @typedef {object} RevocableKit
- * @property {Revoker} revoker
+ * @property {RevokerFacet} revoker
  * @property {U} revocable
  *   Forwards to the underlying exo object, until revoked
  */
@@ -57,9 +65,9 @@ const { Fail, quote: q } = assert;
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the revocable caretaker.
  * @param {RevocableKitOptions} [options]
- * @returns {(underlying: U) => RevocableKit<U>}
+ * @returns {RevocableMakerKit<U>}
  */
-export const prepareRevocableKit = (
+export const prepareRevocableMakerKit = (
   zone,
   uKindName,
   uMethodNames,
@@ -72,7 +80,7 @@ export const prepareRevocableKit = (
   } = options;
   const RevocableIKit = harden({
     revoker: M.interface(`${uInterfaceName}_revoker`, {
-      revoke: M.call().returns(M.boolean()),
+      revokeOne: M.call().returns(M.boolean()),
     }),
     revocable: M.interface(
       `${uInterfaceName}_revocable`,
@@ -87,6 +95,8 @@ export const prepareRevocableKit = (
 
   const revocableKindName = `${uKindName}_caretaker`;
 
+  let amplifier;
+
   const makeRevocableKit = zone.exoClassKit(
     revocableKindName,
     RevocableIKit,
@@ -95,7 +105,7 @@ export const prepareRevocableKit = (
     }),
     {
       revoker: {
-        revoke() {
+        revokeOne() {
           const { state } = this;
           if (state.underlying === undefined) {
             return false;
@@ -128,10 +138,36 @@ export const prepareRevocableKit = (
       stateShape: {
         underlying: M.opt(M.remotable('underlying')),
       },
+      receiveAmplifier: amp => {
+        amplifier = amp;
+      },
     },
   );
 
-  // @ts-expect-error parameter confusion
-  return makeRevocableKit;
+  /**
+   * @param {U} underlying
+   * @returns {U}
+   */
+  const makeRevocable = underlying =>
+    // @ts-expect-error some confusion about UU vs Guarded<U> I think
+    makeRevocableKit(underlying).revocable;
+
+  /**
+   * @param {U} revocable
+   * @returns {boolean}
+   */
+  const revoke = revocable => {
+    /** @type {RevocableKit<U>} */
+    const facets = amplifier(revocable);
+    if (facets === undefined) {
+      return false;
+    }
+    return facets.revoker.revokeOne();
+  };
+
+  return harden({
+    revoke,
+    makeRevocable,
+  });
 };
-harden(prepareRevocableKit);
+harden(prepareRevocableMakerKit);
