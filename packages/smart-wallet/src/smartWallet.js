@@ -664,8 +664,9 @@ export const prepareSmartWallet = (baggage, shared) => {
                 const tempInvitation = invitationFromSpec(
                   offerSpec.invitationSpec,
                 );
-                invitationAmount =
-                  await E(invitationIssuer).getAmountOf(tempInvitation);
+                invitationAmount = await E(invitationIssuer).getAmountOf(
+                  tempInvitation,
+                );
                 void E(invitationIssuer).burn(tempInvitation);
               }
 
