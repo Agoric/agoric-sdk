@@ -53,6 +53,7 @@ import {
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E, Far } from '@endo/far';
 import { TimestampShape } from '@agoric/time';
+import { AuctionPFShape } from '../auction/auctioneer.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -174,14 +175,13 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 
 /**
  * @typedef {{
- *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>;
- *   debtBrand: Brand<'nat'>;
- *   liquidationsStorageNode: StorageNode;
- *   liquidatingVaults: SetStore<Vault>;
- *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>;
- *   poolIncrementSeat: ZCFSeat;
- *   retainedCollateralSeat: ZCFSeat;
- *   unsettledVaults: MapStore<string, Vault>;
+ *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>,
+ *   debtBrand: Brand<'nat'>,
+ *   liquidatingVaults: SetStore<Vault>,
+ *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>,
+ *   poolIncrementSeat: ZCFSeat,
+ *   retainedCollateralSeat: ZCFSeat,
+ *   unsettledVaults: MapStore<string, Vault>,
  * }} ImmutableState
  */
 
@@ -273,7 +273,6 @@ export const prepareVaultManagerKit = (
       debtMint,
       collateralBrand,
       metricsStorageNode,
-      liquidationsStorageNode,
       startTimeStamp,
       storageNode,
     } = params;
@@ -283,7 +282,6 @@ export const prepareVaultManagerKit = (
     const immutable = {
       debtBrand,
       poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
-      liquidationsStorageNode,
       /**
        * Vaults that have been sent for liquidation. When we get proceeds (or
        * lack thereof) back from the liquidator, we will allocate them among the
@@ -1499,15 +1497,13 @@ export const prepareVaultManagerKit = (
    * >} externalParams
    */
   const makeVaultManagerKit = async externalParams => {
-    const [metricsStorageNode, liquidationsStorageNode] = await Promise.all([
-      E(externalParams.storageNode).makeChildNode('metrics'),
-      E(externalParams.storageNode).makeChildNode('liquidations'),
-    ]);
+    const metricsStorageNode = await E(
+      externalParams.storageNode,
+    ).makeChildNode('metrics');
 
     return makeVaultManagerKitInternal({
       ...externalParams,
       metricsStorageNode,
-      liquidationsStorageNode,
     });
   };
   return makeVaultManagerKit;
