@@ -173,7 +173,7 @@ const trace = makeTracer('SmrtWlt');
  *   paymentQueues: MapStore<Brand, Array<Payment>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
- *   offerToUsedInvitation: MapStore<string, Amount>,
+ *   offerToUsedInvitation: MapStore<string, Amount<'set'>>,
  *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
@@ -645,24 +645,43 @@ export const prepareSmartWallet = (baggage, shared) => {
             const offerSpec = liveOffers.get(seatId);
             const seat = liveOfferSeats.get(seatId);
 
-            const invitation = invitationFromSpec(offerSpec.invitationSpec);
-            watcherPromises.push(
-              E.when(
-                E(invitationIssuer).getAmountOf(invitation),
-                invitationAmount => {
-                  const watcher = makeOfferWatcher(
-                    facets.helper,
-                    facets.deposit,
-                    offerSpec,
-                    address,
-                    invitationAmount,
-                    seat,
-                  );
-                  return watchOfferOutcomes(watcher, seat);
-                },
-              ),
-            );
+            const watchOutcome = (async () => {
+              await null;
+              let invitationAmount = state.offerToUsedInvitation.get(
+                // @ts-expect-error older type allowed number
+                offerSpec.id,
+              );
+              if (invitationAmount) {
+                facets.helper.logWalletInfo(
+                  'recovered invitation amount for offer',
+                  offerSpec.id,
+                );
+              } else {
+                facets.helper.logWalletInfo(
+                  'inferring invitation amount for offer',
+                  offerSpec.id,
+                );
+                const tempInvitation = invitationFromSpec(
+                  offerSpec.invitationSpec,
+                );
+                invitationAmount = await E(invitationIssuer).getAmountOf(
+                  tempInvitation,
+                );
+                void E(invitationIssuer).burn(tempInvitation);
+              }
+
+              const watcher = makeOfferWatcher(
+                facets.helper,
+                facets.deposit,
+                offerSpec,
+                address,
+                invitationAmount,
+                seat,
+              );
+              return watchOfferOutcomes(watcher, seat);
+            })();
             trace(`Repaired seat ${seatId} for wallet ${address}`);
+            watcherPromises.push(watchOutcome);
           }
 
           await Promise.all(watcherPromises);
@@ -1104,9 +1123,9 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
           });
         },
+        // TODO remove this and repairUnwatchedSeats once the repair has taken place.
         /**
-         * one-time use function. Remove this and repairUnwatchedSeats once the
-         * repair has taken place.
+         * To be called once ever per wallet.
          *
          * @param {object} key
          */
@@ -1117,8 +1136,12 @@ export const prepareSmartWallet = (baggage, shared) => {
             return;
           }
 
-          void facets.helper.repairUnwatchedSeats();
-          void facets.helper.repairUnwatchedPurses();
+          facets.helper.repairUnwatchedSeats().catch(e => {
+            console.error('repairUnwatchedSeats rejection', e);
+          });
+          facets.helper.repairUnwatchedPurses().catch(e => {
+            console.error('repairUnwatchedPurses rejection', e);
+          });
           trace(`repaired wallet ${state.address}`);
         },
       },

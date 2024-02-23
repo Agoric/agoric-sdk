@@ -107,17 +107,29 @@ const offerWatcherGuard = harden({
   }),
 });
 
+/**
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
 export const prepareOfferWatcher = baggage => {
   return prepareExoClassKit(
     baggage,
     'OfferWatcher',
     offerWatcherGuard,
-    (walletHelper, deposit, offerSpec, address, iAmount, seatRef) => ({
+    /**
+     *
+     * @param {*} walletHelper
+     * @param {*} deposit
+     * @param {import('./offers.js').OfferSpec} offerSpec
+     * @param {string} address
+     * @param {Amount<'set'>} invitationAmount
+     * @param {UserSeat} seatRef
+     */
+    (walletHelper, deposit, offerSpec, address, invitationAmount, seatRef) => ({
       walletHelper,
       deposit,
       status: offerSpec,
       address,
-      invitationAmount: iAmount,
+      invitationAmount,
       seatRef,
     }),
     {
