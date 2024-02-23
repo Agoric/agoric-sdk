@@ -302,7 +302,8 @@ func NewGaiaApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	defaultController := func(ctx context.Context, needReply bool, str string) (string, error) {
-		return str, nil
+		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
+		return "null", nil
 	}
 	return NewAgoricApp(
 		defaultController, vm.NewAgdServer(),
@@ -531,6 +532,9 @@ func NewAgoricApp(
 	})
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, keys[vtransfer.StoreKey], vibcForVtransferKeeper)
 
+	vtransferReceiver := vibc.NewReceiver(app.VtransferKeeper)
+	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferReceiver)
+
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
@@ -590,7 +594,6 @@ func NewAgoricApp(
 	transferApp := transfer.NewAppModule(app.TransferKeeper)
 	var transferStack ibcporttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	vtransferMiddleware := vibc.NewMiddlewareReceiver(app.VtransferKeeper, transferStack)
 	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
@@ -600,8 +603,6 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
-
-	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferMiddleware)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
