@@ -138,7 +138,7 @@ test('handled protocol', async t => {
         async onOpen(connection, localAddr, remoteAddr) {
           t.is(localAddr, '/ibc/*/ordered');
           t.is(remoteAddr, '/ibc/*/ordered/echo');
-          const ack = await when(connection.send('ping'));
+          const ack = await when(E(connection).send('ping'));
           // log(ack);
           t.is(`${ack}`, 'ping', 'received pong');
           void connection.close();

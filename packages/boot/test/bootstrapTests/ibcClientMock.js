@@ -1,6 +1,7 @@
 /** @file Mock IBC Server */
 // @ts-check
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
+import { V as E } from '@agoric/vat-data/vow.js';
 
 /**
  * @param {ZCF} zcf
@@ -14,7 +15,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { log } = console;
   let connP;
-  let ackP;
+  let ackV;
 
   const creatorFacet = Far('CF', {
     connect: remote => {
@@ -29,9 +30,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     send: data => {
       log('send', data);
       assert(connP, 'must connect first');
-      ackP = E(connP).send(data);
+      ackV = E(connP).send(data);
     },
-    getAck: () => ackP,
+    getAck: () => E.when(ackV),
     close: () => E(connP).close(),
   });
 
