@@ -38,21 +38,13 @@ const ALREADY_VOW = harden({});
  * @returns {Promise<U>}
  */
 export const unwrapPromise = async (specimenP, cb) => {
-  let payload = getVowPayload(specimenP);
-
   // Take exactly 1 turn to find the first vow, if any.
+  const payload = getVowPayload(specimenP);
   const awaited = await (payload ? ALREADY_VOW : specimenP);
-  /** @type {unknown} */
-  let unwrapped;
-  if (awaited === ALREADY_VOW) {
-    // The fact that we have a vow payload means it's not actually a
-    // promise.
-    unwrapped = specimenP;
-  } else {
-    // Check if the awaited specimen is a vow.
-    unwrapped = awaited;
-    payload = getVowPayload(unwrapped);
-  }
 
-  return cb(/** @type {Awaited<T>} */ (unwrapped), payload);
+  if (awaited === ALREADY_VOW) {
+    return cb(/** @type {Awaited<T>} */ (specimenP), payload);
+  }
+  // The awaited specimen may be a vow.
+  return cb(/** @type {Awaited<T>} */ (awaited), getVowPayload(awaited));
 };

@@ -1,7 +1,7 @@
 // @ts-check
 import { M } from '@endo/patterns';
 
-import { getVowPayload, unwrapPromise, basicE } from './vow-utils.js';
+import { getVowPayload, basicE } from './vow-utils.js';
 
 const { Fail } = assert;
 
@@ -62,13 +62,12 @@ const watchPromiseShim = (p, watcher, ...watcherArgs) => {
 /**
  * @param {typeof watchPromiseShim} watchPromise
  */
-const makeWatchVow =
-  watchPromise =>
+const makeWatchVow = watchPromise => {
   /**
    * @param {any} specimen
    * @param {PromiseWatcher} promiseWatcher
    */
-  (specimen, promiseWatcher) => {
+  const watchVow = (specimen, promiseWatcher) => {
     let promise;
     const payload = getVowPayload(specimen);
     if (payload) {
@@ -78,6 +77,8 @@ const makeWatchVow =
     }
     watchPromise(promise, promiseWatcher);
   };
+  return watchVow;
+};
 
 /**
  * @param {import('./types.js').Settler} settler
@@ -211,17 +212,18 @@ export const prepareWatch = (
 
     const { promiseWatcher, vowSetter } = makeWatcherKit(settler, watcher);
 
-    // Ensure we have a presence that won't be disconnected later.
-    unwrapPromise(specimenP, (specimen, payload) => {
-      vowSetter.setVow(specimen);
-      // Persistently watch the specimen.
-      if (!payload) {
-        // Specimen is not a vow.
-        promiseWatcher.onFulfilled(specimen);
-        return;
-      }
-      watchVow(specimen, promiseWatcher);
-    }).catch(e => promiseWatcher.onRejected(e));
+    if (getVowPayload(specimenP)) {
+      vowSetter.setVow(specimenP);
+    } else {
+      // TODO: Eat less of our own tail.
+      const {
+        settler: { resolve, reject },
+        vow: specimenVow,
+      } = makeVowKit();
+      basicE.when(specimenP, resolve, reject).catch(() => {});
+      vowSetter.setVow(specimenVow);
+    }
+    watchVow(specimenP, promiseWatcher);
 
     return vow;
   };

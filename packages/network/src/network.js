@@ -108,12 +108,12 @@ const prepareHalfConnection = (zone, { when, watch }, makeAckWatcher) => {
           throw closed;
         }
 
-        return watch(
-          E(handlers[r])
-            .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
-            .catch(rethrowUnlessMissing),
-          makeAckWatcher(),
+        const ackP = E(handlers[r]).onReceive(
+          conns.get(r),
+          toBytes(packetBytes),
+          handlers[r],
         );
+        return watch(ackP, makeAckWatcher());
       },
       async close() {
         const { closed, current, conns, l, handlers } = this.state;
@@ -441,7 +441,7 @@ const preparePort = (zone, when) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
@@ -672,7 +672,7 @@ const prepareBinder = (zone, powers) => {
         onFulfilled(ack) {
           return ack;
         },
-        onRejected() { },
+        onRejected() {},
       },
     },
   );
