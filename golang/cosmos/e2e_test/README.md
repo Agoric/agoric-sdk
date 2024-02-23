@@ -33,7 +33,7 @@ $ make TestConformance
 
 To test PFM functionality only:
 ```
-$ make Test
+$ make TestPFM
 ```
 
 ## Customizing Test Runs

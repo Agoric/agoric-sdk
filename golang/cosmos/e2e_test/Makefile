@@ -27,3 +27,4 @@ TestConformance:
 TestChainPair:
 	# Add a 20min timeout since tests are slow
 	go test -timeout 20m -v -run ^TestChainPair
+	
