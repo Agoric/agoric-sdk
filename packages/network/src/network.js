@@ -171,19 +171,14 @@ export function getPrefixes(addr) {
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 const prepareAckWatcher = zone => {
-  const makeAckWatcher = zone.exoClass(
-    'AckWatcher',
-    undefined,
-    (protocolUtils, packet) => ({ protocolUtils, packet }),
-    {
-      onFulfilled(ack) {
-        return toBytes(ack || '');
-      },
-      onRejected(e) {
-        console.error(e);
-      },
+  const makeAckWatcher = zone.exoClass('AckWatcher', undefined, () => ({}), {
+    onFulfilled(ack) {
+      return toBytes(ack || '');
     },
-  );
+    onRejected(e) {
+      console.error(e);
+    },
+  });
   return makeAckWatcher;
 };
 
@@ -237,13 +232,11 @@ const prepareHalfConnection = (zone, { when, watch }, makeAckWatcher) => {
           throw closed;
         }
 
-        return when(
-          watch(
-            E(handlers[r])
-              .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
-              .catch(rethrowUnlessMissing),
-            makeAckWatcher(),
-          ),
+        return watch(
+          E(handlers[r])
+            .onReceive(conns.get(r), toBytes(packetBytes), handlers[r])
+            .catch(rethrowUnlessMissing),
+          makeAckWatcher(),
         );
       },
       async close() {
