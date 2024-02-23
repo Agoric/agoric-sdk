@@ -264,7 +264,6 @@ export const prepareVaultManagerKit = (
   /**
    * @param {HeldParams & {
    *   metricsStorageNode: StorageNode;
-   *   liquidationsStorageNode: StorageNode;
    * }} params
    * @returns {HeldParams & ImmutableState & MutableState}
    */
@@ -430,6 +429,10 @@ export const prepareVaultManagerKit = (
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
+          // We have to store this in ephemera since we can't add new properties
+          // to the `state`. See https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md
+          ephemera.liquidationsStorageNode =
+            E(storageNode).makeChildNode('liquidations');
 
           trace('helper.start() making periodNotifier');
           const periodNotifier = E(timerService).makeNotifier(
@@ -795,12 +798,14 @@ export const prepareVaultManagerKit = (
          */
         async makeLiquidationRecorderKits(timestamp) {
           const {
-            state: { liquidationsStorageNode },
+            state: { collateralBrand },
           } = this;
 
-          const timestampStorageNode = E(liquidationsStorageNode).makeChildNode(
-            `${timestamp.absValue}`,
-          );
+          const ephemera = collateralEphemera(collateralBrand);
+
+          const timestampStorageNode = E(
+            ephemera.liquidationsStorageNode,
+          ).makeChildNode(`${timestamp.absValue}`);
 
           const [
             preAuctionStorageNode,
