@@ -5,16 +5,15 @@
  */
 import * as processAmbient from 'child_process';
 import * as fsAmbient from 'fs';
-import { Fail } from '@agoric/assert';
-import { NonNullish } from '@agoric/assert/src/assert.js';
+import { Fail, NonNullish } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { TimeMath } from '@agoric/time';
-import { scale6 } from '../liquidation.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
 } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { scale6 } from '../liquidation.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../../tools/board-utils.js';
 import { makeSwingsetTestKit } from '../supports.js';
 import {
@@ -346,6 +345,7 @@ const makeProposalExtractor = ({ childProcess, fs }) => {
     packageScriptName,
     env = {},
   }) => {
+    // eslint-disable-next-line no-undef
     const scriptEnv = Object.assign(Object.create(process.env), env);
     // XXX use '@agoric/inter-protocol'?
     const out = await runPackageScript(

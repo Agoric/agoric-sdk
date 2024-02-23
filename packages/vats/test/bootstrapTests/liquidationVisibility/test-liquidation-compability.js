@@ -1,5 +1,4 @@
 // @ts-check
-/* global process */
 /**
  * @file Bootstrap test of restarting (almost) all vats
  */
@@ -95,6 +94,7 @@ test.serial('restart contractGovernor', async t => {
 });
 
 test.serial('visibility-after-upgrade', async t => {
+  const { storage } = t.context;
   await checkVMChildNodes({
     t,
     managerIndex: 0,
@@ -102,4 +102,7 @@ test.serial('visibility-after-upgrade', async t => {
     liquidation: true,
     base: 3,
   });
+
+  t.log('Data', storage.data.keys());
+  t.pass();
 });
