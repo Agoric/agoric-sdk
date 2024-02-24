@@ -2,35 +2,30 @@ import { Fail, q } from '@agoric/assert';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
-const sink = () => {};
-
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
  */
 export const makeRunUtils = controller => {
   const mutex = makeQueue();
-
-  mutex.put(controller.run());
+  const logRunFailure = reason =>
+    console.log('controller.run() failure', reason);
+  mutex.put(controller.run().catch(logRunFailure));
 
   /**
-   * @template {() => any} T
-   * @param {T} thunk
-   * @returns {Promise<ReturnType<T>>}
+   * Wait for exclusive access to the controller, then before relinquishing that access,
+   * enqueue and process a delivery and return the result.
+   *
+   * @param {() => import('@endo/far').ERef<void | ReturnType<controller['queueToVatObject']>>} deliveryThunk
+   * function for enqueueing a delivery and returning the result kpid (if any)
+   * @param {boolean} [voidResult] whether to ignore the result
+   * @returns {Promise<any>}
    */
-  const runThunk = async thunk => {
-    // this promise for the last lock may fail
-    // sink because the result will resolve for the previous runMethod return
-    await mutex.get().catch(sink);
-
-    const thunkResult = await thunk();
-
-    const result = controller.run().then(() => thunkResult);
-    mutex.put(result.then(sink, sink));
-    return result;
-  };
-
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
-    const kpid = await runThunk(deliveryThunk);
+    await mutex.get();
+    const kpid = await deliveryThunk();
+    const runResultP = controller.run();
+    mutex.put(runResultP.catch(logRunFailure));
+    await runResultP;
 
     if (voidResult) {
       return undefined;
@@ -146,7 +141,7 @@ export const makeRunUtils = controller => {
         }),
     },
   );
-  return harden({ runThunk, EV });
+  return harden({ queueAndRun, EV });
 };
 
 /**
