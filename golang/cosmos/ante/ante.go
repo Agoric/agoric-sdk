@@ -1,6 +1,7 @@
 package ante
 
 import (
+	sdkioerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -21,19 +22,19 @@ type HandlerOptions struct {
 
 func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	if opts.AccountKeeper == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "account keeper is required for AnteHandler")
 	}
 	if opts.BankKeeper == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for AnteHandler")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "bank keeper is required for AnteHandler")
 	}
 	if opts.SignModeHandler == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "sign mode handler is required for ante builder")
 	}
 	if opts.AdmissionData == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "admission data is required for AnteHandler")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "admission data is required for AnteHandler")
 	}
 	if opts.SwingsetKeeper == nil {
-		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "swingset keeper is required for AnteHandler")
+		return nil, sdkioerrors.Wrap(sdkerrors.ErrLogic, "swingset keeper is required for AnteHandler")
 	}
 
 	var sigGasConsumer = opts.SigGasConsumer

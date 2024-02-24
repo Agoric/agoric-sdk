@@ -7,7 +7,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	sdkioerrors "cosmossdk.io/errors"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
@@ -73,7 +73,7 @@ func (k Keeper) ChanOpenInit(ctx sdk.Context, order channeltypes.Order, connecti
 	capName := host.PortPath(portID)
 	portCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
+		return sdkioerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
 	}
 	counterparty := channeltypes.Counterparty{
 		PortId: rPortID,
@@ -105,7 +105,7 @@ func (k Keeper) SendPacket(
 	capName := host.ChannelCapabilityPath(sourcePort, sourceChannel)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return 0, sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return 0, sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
@@ -132,7 +132,7 @@ func (k Keeper) WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	ack := rawAcknowledgement{
 		data: acknowledgement,
@@ -146,7 +146,7 @@ func (k Keeper) ChanCloseInit(ctx sdk.Context, portID, channelID string) error {
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	err := k.channelKeeper.ChanCloseInit(ctx, portID, channelID, chanCap)
 	if err != nil {
@@ -174,7 +174,7 @@ func (k Keeper) TimeoutExecuted(ctx sdk.Context, packet ibcexported.PacketI) err
 	capName := host.ChannelCapabilityPath(portID, channelID)
 	chanCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
+		return sdkioerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 	}
 	return k.channelKeeper.TimeoutExecuted(ctx, chanCap, packet)
 }

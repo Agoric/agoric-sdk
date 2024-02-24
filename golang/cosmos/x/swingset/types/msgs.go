@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -88,7 +89,7 @@ func NewMsgDeliverInbound(msgs *Messages, submitter sdk.AccAddress) *MsgDeliverI
 func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	/*
@@ -120,14 +121,14 @@ func (msg MsgDeliverInbound) Type() string { return "eventualSend" }
 // ValidateBasic runs stateless checks on the message
 func (msg MsgDeliverInbound) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if len(msg.Messages) != len(msg.Nums) {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages and Nums must be the same length")
 	}
 	for _, m := range msg.Messages {
 		if len(m) == 0 {
-			return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
+			return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Messages cannot be empty")
 		}
 	}
 	return nil
@@ -161,7 +162,7 @@ func NewMsgWalletAction(owner sdk.AccAddress, action string) *MsgWalletAction {
 func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
@@ -211,13 +212,13 @@ func (msg MsgWalletSpendAction) GetSignBytes() []byte {
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletAction) ValidateBasic() error {
 	if msg.Owner.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
 	}
 	if len(strings.TrimSpace(msg.Action)) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
 	}
 	if !json.Valid([]byte(msg.Action)) {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
+		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
 	}
 	return nil
 }
@@ -233,7 +234,7 @@ func NewMsgWalletSpendAction(owner sdk.AccAddress, spendAction string) *MsgWalle
 func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	err := checkSmartWalletProvisioned(ctx, keeper, msg.Owner)
@@ -253,7 +254,7 @@ func (msg MsgWalletSpendAction) GetInboundMsgCount() int32 {
 func (msg MsgWalletSpendAction) IsHighPriority(ctx sdk.Context, data interface{}) (bool, error) {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return false, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return false, sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
 	return keeper.IsHighPriorityAddress(ctx, msg.Owner)
@@ -266,13 +267,13 @@ func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
 // ValidateBasic runs stateless checks on the message
 func (msg MsgWalletSpendAction) ValidateBasic() error {
 	if msg.Owner.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Owner address cannot be empty")
 	}
 	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
 	}
 	if !json.Valid([]byte(msg.SpendAction)) {
-		return sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
+		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
 	}
 	return nil
 }
@@ -295,13 +296,13 @@ func (msg MsgProvision) Type() string { return "provision" }
 // ValidateBasic runs stateless checks on the message
 func (msg MsgProvision) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if msg.Address.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Peer address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Peer address cannot be empty")
 	}
 	if len(msg.Nickname) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
 	}
 	return nil
 }
@@ -351,7 +352,7 @@ func NewMsgInstallBundle(bundleJson string, submitter sdk.AccAddress) *MsgInstal
 func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
 	keeper, ok := data.(SwingSetKeeper)
 	if !ok {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
+		return sdkioerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle}, msg.ExpectedUncompressedSize())
 }
@@ -375,23 +376,23 @@ func (msg MsgInstallBundle) Type() string { return "installBundle" }
 // ValidateBasic runs stateless checks on the message
 func (msg MsgInstallBundle) ValidateBasic() error {
 	if msg.Submitter.Empty() {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidAddress, "Submitter address cannot be empty")
 	}
 	if len(msg.Bundle) == 0 && len(msg.CompressedBundle) == 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Bundle cannot be empty")
 	}
 	if len(msg.Bundle) != 0 && len(msg.CompressedBundle) != 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit both a compressed and an uncompressed bundle at the same time")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Cannot submit both a compressed and an uncompressed bundle at the same time")
 	}
 	if len(msg.Bundle) > 0 && msg.UncompressedSize != 0 {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set without a compressed bundle")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size cannot be set without a compressed bundle")
 	}
 	if len(msg.CompressedBundle) > 0 && !(msg.UncompressedSize > 0) {
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be positive")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size must be positive")
 	}
 	if msg.UncompressedSize >= bundleUncompressedSizeLimit {
 		// must enforce a limit to avoid overflow when computing its successor in Uncompress()
-		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
+		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Uncompressed size out of range")
 	}
 	// We don't check the accuracy of the uncompressed size here, since it could comsume significant CPU.
 	return nil
@@ -454,7 +455,7 @@ func (msg *MsgInstallBundle) Uncompress() error {
 		return err
 	}
 	if n != msg.UncompressedSize {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "Uncompressed size does not match expected value")
+		return sdkioerrors.Wrap(sdkerrors.ErrInvalidRequest, "Uncompressed size does not match expected value")
 	}
 	msg.Bundle = buf.String()
 	msg.CompressedBundle = []byte{}

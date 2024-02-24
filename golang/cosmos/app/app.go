@@ -12,6 +12,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -24,7 +25,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -999,12 +999,12 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
 
 	if err != nil {
-		panic(errors.Wrap(err, "cannot initialize Controller"))
+		panic(sdkioerrors.Wrap(err, "cannot initialize Controller"))
 	}
 	var res bool
 	err = json.Unmarshal([]byte(out), &res)
 	if err != nil {
-		panic(errors.Wrapf(err, "cannot unmarshal Controller init response: %s", out))
+		panic(sdkioerrors.Wrapf(err, "cannot unmarshal Controller init response: %s", out))
 	}
 	if !res {
 		panic(fmt.Errorf("controller negative init response"))

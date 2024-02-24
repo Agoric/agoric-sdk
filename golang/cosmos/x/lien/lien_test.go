@@ -8,6 +8,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien/types"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -73,7 +74,7 @@ func (m *mockLienKeeper) SetLien(ctx sdk.Context, addr sdk.AccAddress, lien type
 func (m *mockLienKeeper) IterateLiens(ctx sdk.Context, cb func(addr sdk.AccAddress, lien types.Lien) bool) {
 }
 
-func (m *mockLienKeeper) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdk.Int) (sdk.Int, error) {
+func (m *mockLienKeeper) ChangeLien(ctx sdk.Context, addr sdk.AccAddress, denom string, delta sdkmath.Int) (sdkmath.Int, error) {
 	state := m.GetAccountState(ctx, addr)
 	oldLiened := state.Liened.AmountOf(denom)
 	newLiened := oldLiened.Add(delta)
@@ -343,43 +344,43 @@ func TestGetStaking(t *testing.T) {
 	ctx := sdk.Context{}.WithContext(context.Background())
 	ctlCtx := sdk.WrapSDKContext(ctx)
 
-	pi := func(x int64) *sdk.Int {
+	pi := func(x int64) *sdkmath.Int {
 		n := i(x)
 		return &n
 	}
 
-	null := (*sdk.Int)(nil)
+	null := (*sdkmath.Int)(nil)
 
 	for _, tt := range []struct {
 		name       string
 		validators []string
 		delegators []string
-		wantVals   []*sdk.Int
+		wantVals   []*sdkmath.Int
 		wantStates []*delegatorState
 	}{
 		{
 			name:       "empty",
 			validators: []string{},
 			delegators: []string{},
-			wantVals:   []*sdk.Int{},
+			wantVals:   []*sdkmath.Int{},
 			wantStates: []*delegatorState{},
 		},
 		{
 			name:       "one_val",
 			validators: []string{val1.OperatorAddress},
 			delegators: []string{},
-			wantVals:   []*sdk.Int{pi(12300)},
+			wantVals:   []*sdkmath.Int{pi(12300)},
 			wantStates: []*delegatorState{},
 		},
 		{
 			name:       "one_del",
 			validators: []string{},
 			delegators: []string{addr1.String()},
-			wantVals:   []*sdk.Int{},
+			wantVals:   []*sdkmath.Int{},
 			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{},
-					Values:       []sdk.Int{},
+					Values:       []sdkmath.Int{},
 					Other:        i(510),
 				},
 			},
@@ -388,11 +389,11 @@ func TestGetStaking(t *testing.T) {
 			name:       "one_each",
 			validators: []string{val1.OperatorAddress},
 			delegators: []string{addr1.String()},
-			wantVals:   []*sdk.Int{pi(12300)},
+			wantVals:   []*sdkmath.Int{pi(12300)},
 			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{0},
-					Values:       []sdk.Int{i(456)},
+					Values:       []sdkmath.Int{i(456)},
 					Other:        i(54),
 				},
 			},
@@ -401,26 +402,26 @@ func TestGetStaking(t *testing.T) {
 			name:       "full",
 			validators: []string{val1.OperatorAddress, val2.OperatorAddress, val3.OperatorAddress},
 			delegators: []string{addr1.String(), addr2.String(), addr3.String(), addr4.String()},
-			wantVals:   []*sdk.Int{pi(12300), pi(2345), pi(34567)},
+			wantVals:   []*sdkmath.Int{pi(12300), pi(2345), pi(34567)},
 			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{0, 1},
-					Values:       []sdk.Int{i(456), i(54)},
+					Values:       []sdkmath.Int{i(456), i(54)},
 					Other:        zero,
 				},
 				{
 					ValidatorIdx: []int{0, 2},
-					Values:       []sdk.Int{i(101), i(424)},
+					Values:       []sdkmath.Int{i(101), i(424)},
 					Other:        zero,
 				},
 				{
 					ValidatorIdx: []int{2},
-					Values:       []sdk.Int{i(1025)},
+					Values:       []sdkmath.Int{i(1025)},
 					Other:        zero,
 				},
 				{
 					ValidatorIdx: []int{},
-					Values:       []sdk.Int{},
+					Values:       []sdkmath.Int{},
 					Other:        zero,
 				},
 			},
@@ -429,16 +430,16 @@ func TestGetStaking(t *testing.T) {
 			name:       "dup",
 			validators: []string{val1.OperatorAddress, val1.OperatorAddress},
 			delegators: []string{addr1.String(), addr1.String()},
-			wantVals:   []*sdk.Int{pi(12300), pi(12300)},
+			wantVals:   []*sdkmath.Int{pi(12300), pi(12300)},
 			wantStates: []*delegatorState{
 				{
 					ValidatorIdx: []int{1}, // selects last index
-					Values:       []sdk.Int{i(456)},
+					Values:       []sdkmath.Int{i(456)},
 					Other:        i(54),
 				},
 				{
 					ValidatorIdx: []int{1}, // selects last index
-					Values:       []sdk.Int{i(456)},
+					Values:       []sdkmath.Int{i(456)},
 					Other:        i(54),
 				},
 			},
@@ -447,12 +448,12 @@ func TestGetStaking(t *testing.T) {
 			name:       "bad_addr",
 			validators: []string{"foo", val1.OperatorAddress},
 			delegators: []string{"bar", addr1.String()},
-			wantVals:   []*sdk.Int{null, pi(12300)},
+			wantVals:   []*sdkmath.Int{null, pi(12300)},
 			wantStates: []*delegatorState{
 				nil,
 				{
 					ValidatorIdx: []int{1},
-					Values:       []sdk.Int{i(456)},
+					Values:       []sdkmath.Int{i(456)},
 					Other:        i(54),
 				},
 			},

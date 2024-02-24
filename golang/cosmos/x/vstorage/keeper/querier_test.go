@@ -8,6 +8,7 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -26,7 +27,7 @@ func TestQuerier(t *testing.T) {
 		label    string
 		path     []string
 		expected []byte
-		err      *sdkerrors.Error
+		err      *sdkioerrors.Error
 	}
 	testCases := []testCase{}
 
@@ -77,7 +78,7 @@ func TestQuerier(t *testing.T) {
 	}...)
 
 	// Ensure stability of cosmos-sdk error codes
-	if codespace, code, _ := sdkerrors.ABCIInfo(sdkerrors.ErrNotFound, true); codespace != "sdk" || code != 38 {
+	if codespace, code, _ := sdkioerrors.ABCIInfo(sdkerrors.ErrNotFound, true); codespace != "sdk" || code != 38 {
 		t.Errorf("cosmos-sdk ErrNotFound has codespace %s, code %d, expected sdk/38", codespace, code)
 	}
 
@@ -102,7 +103,7 @@ func TestQuerier(t *testing.T) {
 		if desc.err != nil {
 			if err == nil {
 				t.Errorf("%s: got no error, want error %q", desc.label, *desc.err)
-			} else if codespace, code, _ := sdkerrors.ABCIInfo(err, true); codespace != desc.err.Codespace() || code != desc.err.ABCICode() {
+			} else if codespace, code, _ := sdkioerrors.ABCIInfo(err, true); codespace != desc.err.Codespace() || code != desc.err.ABCICode() {
 				t.Errorf("%s: got error %v, want error %q", desc.label, err, *desc.err)
 			}
 		} else if !bytes.Equal(res, desc.expected) {

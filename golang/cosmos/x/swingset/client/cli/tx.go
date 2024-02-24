@@ -253,11 +253,13 @@ Specify at least one pair of permit.json and code.js files`,
 				return err
 			}
 
+			//nolint:staticcheck // Agoric is still using the legacy proposal shape
 			title, err := cmd.Flags().GetString(govcli.FlagTitle)
 			if err != nil {
 				return err
 			}
 
+			//nolint:staticcheck // Agoric is still using the legacy proposal shape
 			description, err := cmd.Flags().GetString(govcli.FlagDescription)
 			if err != nil {
 				return err
@@ -315,7 +317,9 @@ Specify at least one pair of permit.json and code.js files`,
 		},
 	}
 
+	//nolint:staticcheck // Agoric is still using the legacy proposal shape
 	cmd.Flags().String(govcli.FlagTitle, "", "title of proposal")
+	//nolint:staticcheck // Agoric is still using the legacy proposal shape
 	cmd.Flags().String(govcli.FlagDescription, "", "description of proposal")
 	cmd.Flags().String(govcli.FlagDeposit, "", "deposit for proposal")
 

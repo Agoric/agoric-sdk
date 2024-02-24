@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"regexp"
 
+	sdkioerrors "cosmossdk.io/errors"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/tendermint/tendermint/libs/log"
 )
 
@@ -588,7 +588,7 @@ func (exportsHandler SwingStoreExportsHandler) InitiateExport(blockHeight uint64
 		} else if discardErr != nil {
 			// Safe to wrap error and use detailed error info since this error
 			// will not go back into swingset layers
-			err = sdkerrors.Wrapf(err, "failed to discard swing-store export after failing to process export: %+v", discardErr)
+			err = sdkioerrors.Wrapf(err, "failed to discard swing-store export after failing to process export: %+v", discardErr)
 		}
 	}()
 

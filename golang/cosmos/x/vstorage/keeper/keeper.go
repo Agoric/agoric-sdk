@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	sdkmath "cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	db "github.com/tendermint/tm-db"
@@ -428,7 +429,7 @@ func (k Keeper) GetNoDataValue() []byte {
 	return types.EncodedNoDataValue
 }
 
-func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
+func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
 	indexEntry := k.GetEntry(ctx, path)
 	if !indexEntry.HasValue() {
 		return sdk.NewInt(0), nil
@@ -441,14 +442,14 @@ func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdk.Int, error) {
 	return index, nil
 }
 
-func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdk.Int, error) {
+func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdkmath.Int, error) {
 	head, err := k.getIntValue(ctx, queuePath+".head")
 	if err != nil {
-		return sdk.NewInt(0), err
+		return sdkmath.NewInt(0), err
 	}
 	tail, err := k.getIntValue(ctx, queuePath+".tail")
 	if err != nil {
-		return sdk.NewInt(0), err
+		return sdkmath.NewInt(0), err
 	}
 	// The tail index is exclusive
 	return tail.Sub(head), nil

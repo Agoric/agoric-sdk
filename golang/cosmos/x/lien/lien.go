@@ -12,6 +12,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -22,29 +23,29 @@ type portHandler struct {
 
 // portMessage is a struct that any lien bridge message can unmarshal into.
 type portMessage struct {
-	Type       string   `json:"type"`
-	Address    string   `json:"address"`
-	Denom      string   `json:"denom"`
-	Delta      sdk.Int  `json:"delta"`
-	Validators []string `json:"validators"`
-	Delegators []string `json:"delegators"`
+	Type       string      `json:"type"`
+	Address    string      `json:"address"`
+	Denom      string      `json:"denom"`
+	Delta      sdkmath.Int `json:"delta"`
+	Validators []string    `json:"validators"`
+	Delegators []string    `json:"delegators"`
 }
 
 // msgAccountState marshals into the AccountState message for the lien bridge.
 type msgAccountState struct {
-	CurrentTime int64   `json:"currentTime"`
-	Total       sdk.Int `json:"total"`
-	Bonded      sdk.Int `json:"bonded"`
-	Unbonding   sdk.Int `json:"unbonding"`
-	Locked      sdk.Int `json:"locked"`
-	Liened      sdk.Int `json:"liened"`
+	CurrentTime int64       `json:"currentTime"`
+	Total       sdkmath.Int `json:"total"`
+	Bonded      sdkmath.Int `json:"bonded"`
+	Unbonding   sdkmath.Int `json:"unbonding"`
+	Locked      sdkmath.Int `json:"locked"`
+	Liened      sdkmath.Int `json:"liened"`
 	// TODO: send unvested amount
 }
 
 type delegatorState struct {
-	ValidatorIdx []int     `json:"val_idx"`
-	Values       []sdk.Int `json:"values"`
-	Other        sdk.Int   `json:"other"`
+	ValidatorIdx []int         `json:"val_idx"`
+	Values       []sdkmath.Int `json:"values"`
+	Other        sdkmath.Int   `json:"other"`
 }
 
 type msgStaking struct {
@@ -52,7 +53,7 @@ type msgStaking struct {
 	Denom    string `json:"denom"`
 	// the following fields are arrays of pointer types so we can use JSON null
 	// for out-of-band values
-	ValidatorValues []*sdk.Int        `json:"validator_values"`
+	ValidatorValues []*sdkmath.Int    `json:"validator_values"`
 	DelegatorStates []*delegatorState `json:"delegator_states"`
 }
 
@@ -95,7 +96,7 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 	reply := msgStaking{
 		EpochTag:        fmt.Sprint(ctx.BlockHeight()),
 		Denom:           ch.keeper.BondDenom(ctx),
-		ValidatorValues: make([]*sdk.Int, len(msg.Validators)),
+		ValidatorValues: make([]*sdkmath.Int, len(msg.Validators)),
 		DelegatorStates: make([]*delegatorState, len(msg.Delegators)),
 	}
 	validatorIndex := map[string]int{} // map of validators addresses to indexes
@@ -123,7 +124,7 @@ func (ch portHandler) handleGetStaking(ctx sdk.Context, msg portMessage) (string
 		// Note that the delegations were returned in a specific order - no nodeterminism
 		state := delegatorState{
 			ValidatorIdx: make([]int, 0, len(delegations)),
-			Values:       make([]sdk.Int, 0, len(delegations)),
+			Values:       make([]sdkmath.Int, 0, len(delegations)),
 			Other:        sdk.NewInt(0),
 		}
 		for _, d := range delegations {
