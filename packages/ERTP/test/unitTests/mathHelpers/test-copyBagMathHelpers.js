@@ -65,7 +65,7 @@ test('copyBag with strings getValue', t => {
   );
   t.deepEqual(
     getCopyBagEntries(
-      /** @type {CopyBag} */ (
+      /** @type {import('@endo/patterns').CopyBag} */ (
         m.getValue(
           mockBrand,
           harden({ brand: mockBrand, value: makeBag(['1']) }),

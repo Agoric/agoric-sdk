@@ -1,26 +1,18 @@
 // @jessie-check
 
 import { initEmpty } from '@agoric/store';
-import { prepareExoClass } from '@agoric/vat-data';
 
-/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
-/**
- * @template {Record<string | symbol, MethodGuard>} [T=Record<string | symbol, MethodGuard>]
- * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
- */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
+// TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {Brand<K>} brand
- * @param {InterfaceGuard} PaymentI
+ * @param {import('@endo/patterns').InterfaceGuard<any>} PaymentI
  * @returns {() => Payment<K>}
  */
-export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
-  const makePayment = prepareExoClass(
-    issuerBaggage,
+export const preparePaymentKind = (issuerZone, name, brand, PaymentI) => {
+  const makePayment = issuerZone.exoClass(
     `${name} payment`,
     PaymentI,
     initEmpty,

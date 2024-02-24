@@ -3,19 +3,12 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
-import {
-  provideDurableWeakMapStore,
-  prepareExo,
-  provide,
-} from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
-
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -74,7 +67,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
@@ -83,7 +76,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
-  issuerBaggage,
+  issuerZone,
   name,
   assetKind,
   displayInfo,
@@ -91,8 +84,12 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  // @ts-expect-error XXX callWhen
-  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
+  // Should be
+  // at-ts-expect-error XXX callWhen
+  // but ran into the usual disagreement between local lint and CI
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore
+  const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -121,7 +118,7 @@ export const preparePaymentLedger = (
     amountShape,
   );
 
-  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
+  const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -139,11 +136,9 @@ export const preparePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentLedger',
-    { valueShape: amountShape },
-  );
+  const paymentLedger = issuerZone.weakMapStore('paymentLedger', {
+    valueShape: amountShape,
+  });
 
   /**
    * A withdrawn live payment is associated with the recovery set of the purse
@@ -164,10 +159,7 @@ export const preparePaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentRecoverySets',
-  );
+  const paymentRecoverySets = issuerZone.weakMapStore('paymentRecoverySets');
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -293,7 +285,7 @@ export const preparePaymentLedger = (
   /** @type {() => Purse<K>} */
   // @ts-expect-error type parameter confusion
   const makeEmptyPurse = preparePurseKind(
-    issuerBaggage,
+    issuerZone,
     name,
     assetKind,
     brand,
@@ -305,8 +297,12 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  // @ts-expect-error cast due to callWhen discrepancy
-  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
+  // Should be
+  // at-ts-expect-error cast due to callWhen discrepancy
+  // but ran into the usual disagreement between local lint and CI
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore
+  const issuer = issuerZone.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -359,20 +355,28 @@ export const preparePaymentLedger = (
    * Because the `mintRecoveryPurse` is placed in baggage, even if the caller of
    * `makeIssuerKit` drops it on the floor, it can still be recovered in an
    * emergency upgrade.
-   *
-   * @type {Purse<K>}
    */
-  const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
-    makeEmptyPurse(),
+  // Should be
+  // at-ts-expect-error checked cast
+  // but ran into the usual disagreement between local lint and IDE lint.
+  // Don't know yet about lint under CI.
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore
+  const mintRecoveryPurse = /** @type {Purse<K>} */ (
+    issuerZone.makeOnce('mintRecoveryPurse', () => makeEmptyPurse())
   );
 
   /** @type {Mint<K>} */
-  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
+  const mint = issuerZone.exo(`${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },
     mintPayment(newAmount) {
-      // @ts-expect-error checked cast
+      // Should be
+      // at-ts-expect-error checked cast
+      // but ran into the usual disagreement between local lint and CI
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+      // @ts-ignore
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and

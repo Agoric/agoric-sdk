@@ -3,16 +3,13 @@
 import { assert } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { preparePaymentLedger } from './paymentLedger.js';
 
 import './types-ambient.js';
-
-// TODO Why does TypeScript lose the `MapStore` typing of `Baggage` here, even
-// though it knows the correct type at the exporting `@agoric/vat-data`
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
  * @template {AssetKind} K
@@ -28,7 +25,7 @@ import './types-ambient.js';
  *
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -40,7 +37,7 @@ import './types-ambient.js';
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
-  issuerBaggage,
+  issuerZone,
   optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(name, 'string');
@@ -60,7 +57,7 @@ const setupIssuerKit = (
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
   const { issuer, mint, brand, mintRecoveryPurse } = preparePaymentLedger(
-    issuerBaggage,
+    issuerZone,
     name,
     assetKind,
     cleanDisplayInfo,
@@ -86,7 +83,7 @@ const INSTANCE_KEY = 'issuer';
  * make a new one.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -101,14 +98,15 @@ export const upgradeIssuerKit = (
   optShutdownWithFailure = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
-  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  return setupIssuerKit(issuerRecord, issuerZone, optShutdownWithFailure);
 };
 harden(upgradeIssuerKit);
 
 /**
  * Does baggage already have an issuerKit?
  *
- * @param {Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
@@ -142,7 +140,7 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
@@ -167,7 +165,8 @@ export const makeDurableIssuerKit = (
 ) => {
   const issuerData = harden({ name, assetKind, displayInfo, elementShape });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
-  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
+  const issuerZone = makeDurableZone(issuerBaggage);
+  return setupIssuerKit(issuerData, issuerZone, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
@@ -187,7 +186,7 @@ harden(makeDurableIssuerKit);
  *   basic fungible tokens.
  *
  *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/vat-data').Baggage} issuerBaggage
  * @param {string} name
  * @param {K} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
