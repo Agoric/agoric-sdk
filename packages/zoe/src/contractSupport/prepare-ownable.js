@@ -1,6 +1,6 @@
 import { M } from '@endo/patterns';
+import { prepareRevocableKit } from '@agoric/base-zone/zone-helpers.js';
 import { OfferHandlerI } from '../typeGuards.js';
-import { prepareRevocableKit } from './prepare-revocable.js';
 
 const TransferProposalShape = M.splitRecord({
   give: {},
