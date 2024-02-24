@@ -149,7 +149,8 @@ export const prepareRevocableMakerKit = (
    * @returns {U}
    */
   const makeRevocable = underlying =>
-    // @ts-expect-error some confusion about UU vs Guarded<U> I think
+    // Cannot use at-ts-expect-error because it errors here but not in ERTP
+    // @ts-ignore some confusion about UU vs Guarded<U> I think
     makeRevocableKit(underlying).revocable;
 
   /**

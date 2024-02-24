@@ -4,7 +4,7 @@
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
-import { preparePaymentKind } from './payment.js';
+import { preparePaymentMakerKit } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
@@ -118,7 +118,12 @@ export const preparePaymentLedger = (
     amountShape,
   );
 
-  const makePayment = preparePaymentKind(issuerZone, name, brand, PaymentI);
+  const { revokePayment, makePayment } = preparePaymentMakerKit(
+    issuerZone,
+    name,
+    brand,
+    PaymentI,
+  );
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -135,7 +140,7 @@ export const preparePaymentLedger = (
     throw reason;
   };
 
-  /** @type {WeakMapStore<Payment, Amount>} */
+  /** @type {WeakMapStore<Payment<K>, Amount<K>>} */
   const paymentLedger = issuerZone.weakMapStore('paymentLedger', {
     valueShape: amountShape,
   });
@@ -165,9 +170,9 @@ export const preparePaymentLedger = (
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
    * `initPayment` should contain the only call to `paymentLedger.init`.
    *
-   * @param {Payment} payment
-   * @param {Amount} amount
-   * @param {SetStore<Payment>} [optRecoverySet]
+   * @param {Payment<K>} payment
+   * @param {Amount<K>} amount
+   * @param {SetStore<Payment<K>>} [optRecoverySet]
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
     if (optRecoverySet !== undefined) {
@@ -181,7 +186,7 @@ export const preparePaymentLedger = (
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
    * `deletePayment` should contain the only call to `paymentLedger.delete`.
    *
-   * @param {Payment} payment
+   * @param {Payment<K>} payment
    */
   const deletePayment = payment => {
     paymentLedger.delete(payment);
@@ -190,9 +195,10 @@ export const preparePaymentLedger = (
       paymentRecoverySets.delete(payment);
       recoverySet.delete(payment);
     }
+    revokePayment(payment);
   };
 
-  /** @type {(allegedAmount: Amount) => Amount} */
+  /** @type {(allegedAmount: Amount<K>) => Amount<K>} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean} */
 
@@ -203,7 +209,7 @@ export const preparePaymentLedger = (
    *
    * Note: `optAmountShape` is user-supplied with no previous validation.
    *
-   * @param {Amount} paymentBalance
+   * @param {Amount<K>} paymentBalance
    * @param {Pattern} [optAmountShape]
    * @returns {void}
    */
@@ -214,7 +220,7 @@ export const preparePaymentLedger = (
   };
 
   /**
-   * @param {Payment} payment
+   * @param {Payment<K>} payment
    * @returns {void}
    */
   const assertLivePayment = payment => {
@@ -227,10 +233,10 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.deposit
    *
-   * @param {import('./amountStore.js').AmountStore} balanceStore
-   * @param {Payment} srcPayment
+   * @param {import('./amountStore.js').AmountStore<K>} balanceStore
+   * @param {Payment<K>} srcPayment
    * @param {Pattern} [optAmountShape]
-   * @returns {Amount}
+   * @returns {Amount<K>}
    */
   const depositInternal = (
     balanceStore,
@@ -261,10 +267,10 @@ export const preparePaymentLedger = (
   /**
    * Used by the purse code to implement purse.withdraw
    *
-   * @param {import('./amountStore.js').AmountStore} balanceStore
-   * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
-   * @returns {Payment}
+   * @param {import('./amountStore.js').AmountStore<K>} balanceStore
+   * @param {Amount<K>} amount - the amount to be withdrawn
+   * @param {SetStore<Payment<K>>} recoverySet
+   * @returns {Payment<K>}
    */
   const withdrawInternal = (balanceStore, amount, recoverySet) => {
     amount = coerce(amount);
@@ -318,19 +324,19 @@ export const preparePaymentLedger = (
     makeEmptyPurse() {
       return makeEmptyPurse();
     },
-    /** @param {Payment} payment awaited by callWhen */
+    /** @param {Payment<K>} payment awaited by callWhen */
     isLive(payment) {
       // IssuerI delays calling this method until `payment` is a Remotable
       return paymentLedger.has(payment);
     },
-    /** @param {Payment} payment awaited by callWhen */
+    /** @param {Payment<K>} payment awaited by callWhen */
     getAmountOf(payment) {
       // IssuerI delays calling this method until `payment` is a Remotable
       assertLivePayment(payment);
       return paymentLedger.get(payment);
     },
     /**
-     * @param {Payment} payment awaited by callWhen
+     * @param {Payment<K>} payment awaited by callWhen
      * @param {Pattern} optAmountShape
      */
     burn(payment, optAmountShape = undefined) {
