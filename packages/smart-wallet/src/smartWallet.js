@@ -645,10 +645,15 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             const watchOutcome = (async () => {
               await null;
-              let invitationAmount = state.offerToUsedInvitation.get(
+              let invitationAmount = state.offerToUsedInvitation.has(
                 // @ts-expect-error older type allowed number
                 offerSpec.id,
-              );
+              )
+                ? state.offerToUsedInvitation.get(
+                    // @ts-expect-error older type allowed number
+                    offerSpec.id,
+                  )
+                : undefined;
               if (invitationAmount) {
                 facets.helper.logWalletInfo(
                   'recovered invitation amount for offer',
