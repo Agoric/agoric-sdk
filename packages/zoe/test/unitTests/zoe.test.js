@@ -95,7 +95,7 @@ test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
     message:
-      'In "offer" method of (ZoeService): arg 2?: remotable "[Alleged: Token payment]" - Must be a copyRecord',
+      'In "offer" method of (ZoeService): arg 2?: remotable "[Alleged: Token payment_caretaker revocable]" - Must be a copyRecord',
   });
 });
 

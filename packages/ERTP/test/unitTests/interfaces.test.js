@@ -14,5 +14,5 @@ test('interfaces - particular implementation', t => {
   const depositFacet = purse.getDepositFacet();
   t.is(getInterfaceOf(depositFacet), 'Alleged: bucks Purse depositFacet');
   const payment = mint.mintPayment(AmountMath.make(brand, 2n));
-  t.is(getInterfaceOf(payment), 'Alleged: bucks payment');
+  t.is(getInterfaceOf(payment), 'Alleged: bucks payment_caretaker revocable');
 });

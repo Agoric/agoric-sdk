@@ -56,7 +56,7 @@ test('burnInvitation - invitation already used', async t => {
     () => burnInvitation(mockInvitationKit.issuer, invitation),
     {
       message:
-        'A Zoe invitation is required, not "[Alleged: mockInvitation payment]"',
+        'A Zoe invitation is required, not "[Alleged: mockInvitation payment_caretaker revocable]"',
     },
   );
 });
