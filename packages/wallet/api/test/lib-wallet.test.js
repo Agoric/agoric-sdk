@@ -897,7 +897,7 @@ test('lib-wallet offer methods', async t => {
           description: 'getRefund',
           handle: {
             kind: 'unnamed',
-            petname: 'unnamed-7',
+            petname: 'unnamed-6',
           },
           installation: {
             kind: 'unnamed',
@@ -910,7 +910,7 @@ test('lib-wallet offer methods', async t => {
         },
         inviteHandleBoardId: 'board0257',
         meta: {
-          id: 9,
+          id: 8,
         },
         proposalTemplate: {
           give: { Contribution: { pursePetname: 'Fun budget', value: 1 } },
