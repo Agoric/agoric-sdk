@@ -112,7 +112,6 @@ import (
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -180,7 +179,6 @@ var (
 		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
-		lien.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -216,7 +214,6 @@ type GaiaApp struct { // nolint: golint
 
 	controllerInited bool
 	bootstrapNeeded  bool
-	lienPort         int
 	swingsetPort     int
 	vbankPort        int
 	vibcPort         int
@@ -257,7 +254,6 @@ type GaiaApp struct { // nolint: golint
 	VstorageKeeper           vstorage.Keeper
 	VibcKeeper               vibc.Keeper
 	VbankKeeper              vbank.Keeper
-	LienKeeper               lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -325,7 +321,7 @@ func NewAgoricApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, packetforwardtypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
-		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vbank.StoreKey, lien.StoreKey,
+		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vbank.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -362,7 +358,7 @@ func NewAgoricApp(
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
-	innerAk := authkeeper.NewAccountKeeper(
+	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
 		keys[authtypes.StoreKey],
 		app.GetSubspace(authtypes.ModuleName),
@@ -370,8 +366,7 @@ func NewAgoricApp(
 		maccPerms,
 		appName,
 	)
-	wrappedAccountKeeper := lien.NewWrappedAccountKeeper(innerAk)
-	app.AccountKeeper = wrappedAccountKeeper
+
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		keys[banktypes.StoreKey],
@@ -523,16 +518,6 @@ func NewAgoricApp(
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
 	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
-	// Lien keeper, and circular reference back to wrappedAccountKeeper
-	app.LienKeeper = lien.NewKeeper(
-		appCodec, keys[lien.StoreKey],
-		wrappedAccountKeeper, app.BankKeeper, app.StakingKeeper,
-		app.SwingSetKeeper.PushAction,
-	)
-	wrappedAccountKeeper.SetWrapper(app.LienKeeper.GetAccountWrapper())
-	lienModule := lien.NewAppModule(app.LienKeeper)
-	app.lienPort = vm.RegisterPortHandler("lien", lien.NewPortHandler(app.LienKeeper))
-
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
 	govRouter.
@@ -640,11 +625,7 @@ func NewAgoricApp(
 			app.BaseApp.DeliverTx,
 			encodingConfig.TxConfig,
 		),
-		// NOTE: using innerAk here instead of app.AccountKeeper
-		// since migration method doesn't know how to unwrap the account keeper.
-		// Needs access to some struct fields.
-		// (Alternative is to add accessor methods to the AccountKeeper interface.)
-		auth.NewAppModule(appCodec, innerAk, nil),
+		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper),
@@ -666,7 +647,6 @@ func NewAgoricApp(
 		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
 		vbankModule,
-		lienModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -701,12 +681,10 @@ func NewAgoricApp(
 		swingset.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
-		lien.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		vibc.ModuleName,
 		vbank.ModuleName,
-		lien.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -762,7 +740,6 @@ func NewAgoricApp(
 		vbank.ModuleName,
 		vibc.ModuleName,
 		swingset.ModuleName,
-		lien.ModuleName,
 		packetforwardtypes.ModuleName,
 	}
 
@@ -851,6 +828,7 @@ func NewAgoricApp(
 			},
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
+				"lien",                 // Agoric removed the lien module
 			},
 		}
 
@@ -949,7 +927,6 @@ type cosmosInitAction struct {
 	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
 	Params          swingset.Params `json:"params"`
 	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
-	LienPort        int             `json:"lienPort"`
 	StoragePort     int             `json:"storagePort"`
 	SwingsetPort    int             `json:"swingsetPort"`
 	VbankPort       int             `json:"vbankPort"`
@@ -983,7 +960,6 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 		Params:         app.SwingSetKeeper.GetParams(ctx),
 		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		UpgradeDetails: app.upgradeDetails,
-		LienPort:       app.lienPort,
 		StoragePort:    app.vstoragePort,
 		SwingsetPort:   app.swingsetPort,
 		VbankPort:      app.vbankPort,

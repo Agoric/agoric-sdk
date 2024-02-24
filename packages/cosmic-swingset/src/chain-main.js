@@ -668,9 +668,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           portNums.bank = action.vbankPort;
         }
 
-        if (action.lienPort) {
-          portNums.lien = action.lienPort;
-        }
         harden(portNums);
 
         // Ensure that initialization has completed.
