@@ -46,8 +46,9 @@ const { Fail, quote: q } = assert;
 
 /**
  * Make an exo class kit for wrapping an underlying exo class,
- * where the wrapper is a revocable forwarder
+ * where the wrapper is a revocable forwarder.
  *
+ * @deprecated Change to `prepareRevocableMakerKit` once #8977 happens
  * @template {any} [U=any]
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
