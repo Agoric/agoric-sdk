@@ -41,6 +41,7 @@ function retryOperation(operation, delay, retries) {
         .then(resolve)
         .catch(reason => {
           if (retries - 1 > 0) {
+            // eslint-disable-next-line no-undef
             setTimeout(() => {
               retryOperation(operation, delay, retries - 1)
                 .then(resolve)
@@ -222,7 +223,7 @@ export const makeCourierMaker =
           if (forward.call) {
             const payout = await redeemPayment(zcfSeat, localAmount, userSeat);
             await handleCall(forward, payout, namesByAddress);
-            return E(transferProtocol).makeTransferPacketAck(true);
+            return await E(transferProtocol).makeTransferPacketAck(true);
           }
         }
 
@@ -231,7 +232,7 @@ export const makeCourierMaker =
           .receive(payout)
           .catch(_ => {});
 
-        return E(transferProtocol).makeTransferPacketAck(true);
+        return await E(transferProtocol).makeTransferPacketAck(true);
       } catch (e) {
         console.error(e);
         return E(transferProtocol).makeTransferPacketAck(false, e);
