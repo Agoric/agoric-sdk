@@ -21,7 +21,25 @@ const prepareAckWatcher = (zone, t) => {
   });
 };
 
-const runTests = async t => {
+/**
+ * @template T
+ */
+const makePromiseKit = () => {
+  /** @type {import('../src/types.js').VowResolver<T>} */
+  let resolver;
+  /** @type {Promise<T>} */
+  const promise = new Promise((resolve, reject) => {
+    resolver = { resolve, reject };
+  });
+  /* @ts-expect-error TS(2454) */
+  return { promise, resolver };
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {import('ava').ExecutionContext<unknown>} t
+ */
+test('ack watcher - shim', async t => {
   const zone = makeHeapZone();
   const { watch, when, makeVowKit } = prepareVowTools(zone);
   const makeAckWatcher = prepareAckWatcher(zone, t);
@@ -50,6 +68,28 @@ const runTests = async t => {
   resolver3.reject(Error('disco2'));
   resolver3.resolve(vow2);
   t.is(await when(watch(connVow3P, makeAckWatcher(packet))), 'rejected');
-};
+});
 
-test('ack watcher - shim', runTests);
+test('promise watcher', async t => {
+  const zone = makeHeapZone();
+  const { watch, when } = prepareVowTools(zone, {
+    rejectionMeansRetry: reason => reason === 'disconnected',
+  });
+
+  const pk = makePromiseKit();
+  pk.resolver.reject('disconnected');
+
+  const vow = watch(pk.promise, {
+    onFulfilled(value) {
+      t.log(`onfulfilled ${value}`);
+      t.fail('should not fulfil');
+      return 'fulfilled';
+    },
+    onRejected(reason) {
+      t.is(reason, 'disconnected');
+      return `rejected ${reason}`;
+    },
+  });
+
+  t.is(await when(vow), 'rejected disconnected');
+});

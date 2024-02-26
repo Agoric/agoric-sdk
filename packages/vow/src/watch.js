@@ -1,7 +1,5 @@
 // @ts-check
-import { M } from '@endo/patterns';
-
-import { getVowPayload, unwrapPromise, basicE } from './vow-utils.js';
+import { getVowPayload, basicE } from './vow-utils.js';
 import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
 
 const { apply } = Reflect;
