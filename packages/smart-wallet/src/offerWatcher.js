@@ -153,6 +153,7 @@ export const prepareOfferWatcher = baggage => {
           );
         },
 
+        /** @param {unknown} result */
         publishResult(result) {
           const { state, facets } = this;
 
@@ -169,6 +170,7 @@ export const prepareOfferWatcher = baggage => {
               facets.helper.updateStatus({ result });
               break;
             case 'copyRecord':
+              // @ts-expect-error narrowed by passStyle
               if ('invitationMakers' in result) {
                 // save for continuing invitation offer
 
@@ -176,6 +178,7 @@ export const prepareOfferWatcher = baggage => {
                   String(state.status.id),
                   state.invitationAmount,
                   result.invitationMakers,
+                  // @ts-expect-error narrowed by passStyle
                   result.publicSubscribers,
                 );
               }
