@@ -156,7 +156,7 @@ const runAuction = async (runUtils, advanceTimeBy) => {
   return liveAuctionSchedule;
 };
 
-const startAuction = async t => {
+export const startAuction = async t => {
   const { readLatest, advanceTimeTo } = t.context;
 
   const scheduleNotification = readLatest('published.auction.schedule');

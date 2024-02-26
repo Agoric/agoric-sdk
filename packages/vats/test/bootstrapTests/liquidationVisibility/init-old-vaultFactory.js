@@ -35,8 +35,8 @@ const installKeyGroups = {
       '../../../../inter-protocol/bundles/bundle-auctioneer.js',
     ],
     vaultFactory: [
-      '/Users/jorgelopes/Documents/GitHub/Agoric/sow6/liquidation-visibility/agoric-sdk-liquidation-visibility/packages/vats/test/bootstrapTests/liquidationVisibility/vaultFactory/vaultFactory.js',
-      '/Users/jorgelopes/Documents/GitHub/Agoric/sow6/liquidation-visibility/agoric-sdk-liquidation-visibility/packages/vats/test/bootstrapTests/liquidationVisibility/bundles/bundle-vaultFactory.js',
+      '@agoric/vats/test/bootstrapTests/liquidationVisibility/vaultFactory/vaultFactory.js',
+      '@agoric/vats/test/bootstrapTests/liquidationVisibility/bundles/bundle-vaultFactory.js',
     ],
     feeDistributor: [
       '@agoric/inter-protocol/src/feeDistributor.js',
