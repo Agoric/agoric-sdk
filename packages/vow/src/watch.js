@@ -7,9 +7,13 @@ const { apply } = Reflect;
 /**
  * @param {typeof watchPromiseShim} watchPromise
  */
-const makeWatchVow =
+const makeWatchNextStep =
   watchPromise =>
   /**
+   * If the specimen is a vow, obtain a fresh shortened promise from it,
+   * otherwise coerce the non-vow specimen to a promise.  Then, associate a
+   * (usually durable) watcher object with the promise.
+   *
    * @param {any} specimen
    * @param {import('./watch-promise.js').PromiseWatcher} promiseWatcher
    */
@@ -51,10 +55,10 @@ const settle = (resolver, watcher, wcb, value) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {(reason: any) => boolean} rejectionMeansRetry
- * @param {ReturnType<typeof makeWatchVow>} watchVow
+ * @param {(reason: any) => boolean} isRetryableReason
+ * @param {ReturnType<typeof makeWatchNextStep>} watchNextStep
  */
-const preparePromiseWatcher = (zone, rejectionMeansRetry, watchVow) =>
+const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
   zone.exoClass(
     'PromiseWatcher',
     PromiseWatcherI,
@@ -80,8 +84,8 @@ const preparePromiseWatcher = (zone, rejectionMeansRetry, watchVow) =>
         if (getVowPayload(value)) {
           // We've been shortened, so reflect our state accordingly, and go again.
           this.state.vow = value;
-          watchVow(value, this.self);
-          return undefined;
+          watchNextStep(value, this.self);
+          return;
         }
         this.state.watcher = undefined;
         this.state.resolver = undefined;
@@ -96,8 +100,8 @@ const preparePromiseWatcher = (zone, rejectionMeansRetry, watchVow) =>
       /** @type {Required<import('./watch-promise.js').PromiseWatcher>['onRejected']} */
       onRejected(reason) {
         const { vow, watcher, resolver } = this.state;
-        if (vow && rejectionMeansRetry(reason)) {
-          watchVow(vow, this.self);
+        if (vow && isRetryableReason(reason)) {
+          watchNextStep(vow, this.self);
           return;
         }
         this.state.resolver = undefined;
@@ -119,19 +123,19 @@ const preparePromiseWatcher = (zone, rejectionMeansRetry, watchVow) =>
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {() => import('./types.js').VowKit<any>} makeVowKit
  * @param {typeof watchPromiseShim} [watchPromise]
- * @param {(reason: any) => boolean} [rejectionMeansRetry]
+ * @param {(reason: any) => boolean} [isRetryableReason]
  */
 export const prepareWatch = (
   zone,
   makeVowKit,
   watchPromise = watchPromiseShim,
-  rejectionMeansRetry = _reason => false,
+  isRetryableReason = _reason => false,
 ) => {
-  const watchVow = makeWatchVow(watchPromise);
+  const watchNextStep = makeWatchNextStep(watchPromise);
   const makePromiseWatcher = preparePromiseWatcher(
     zone,
-    rejectionMeansRetry,
-    watchVow,
+    isRetryableReason,
+    watchNextStep,
   );
 
   /**
@@ -145,7 +149,8 @@ export const prepareWatch = (
     /** @type {import('./types.js').VowKit<TResult1 | TResult2>} */
     const { resolver, vow } = makeVowKit();
 
-    // Create a promise watcher to track vows, retrying on disconnection.
+    // Create a promise watcher to track vows, retrying upon rejection as
+    // controlled by `isRetryableReason`.
     const promiseWatcher = makePromiseWatcher(resolver, watcher);
 
     // Coerce the specimen to a promise, and start the watcher cycle.

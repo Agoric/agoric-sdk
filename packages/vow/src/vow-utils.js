@@ -8,9 +8,15 @@ import { isPassable } from '@agoric/base-zone';
 export { basicE };
 
 /**
+ * A vow is a passable tagged as 'Vow'.  Its payload is a record with
+ * API-versioned remotables.  payload.vowV0 is the API for the `watch` and
+ * `when` operators to use for retriable shortening of the vow chain.
+ *
+ * If the specimen is a Vow, return its payload, otherwise undefined.
+ *
  * @template T
- * @param {any} specimen
- * @returns {import('./types').VowPayload<T> | undefined}
+ * @param {any} specimen any value to verify as a vow
+ * @returns {import('./types').VowPayload<T> | undefined} undefined if specimen is not a vow, otherwise the vow's payload.
  */
 export const getVowPayload = specimen => {
   const isVow =
@@ -25,34 +31,4 @@ export const getVowPayload = specimen => {
     /** @type {unknown} */ (specimen)
   );
   return vow.payload;
-};
-
-/** A unique object identity just for internal use. */
-const ALREADY_VOW = harden({});
-
-/**
- * @template T
- * @template U
- * @param {T} specimenP
- * @param {(unwrapped: Awaited<T>, payload?: import('./types').VowPayload<any>) => U} cb
- * @returns {Promise<U>}
- */
-export const unwrapPromise = async (specimenP, cb) => {
-  let payload = getVowPayload(specimenP);
-
-  // Take exactly 1 turn to find the first vow, if any.
-  const awaited = await (payload ? ALREADY_VOW : specimenP);
-  /** @type {unknown} */
-  let unwrapped;
-  if (awaited === ALREADY_VOW) {
-    // The fact that we have a vow payload means it's not actually a
-    // promise.
-    unwrapped = specimenP;
-  } else {
-    // Check if the awaited specimen is a vow.
-    unwrapped = awaited;
-    payload = getVowPayload(unwrapped);
-  }
-
-  return cb(/** @type {Awaited<T>} */ (unwrapped), payload);
 };

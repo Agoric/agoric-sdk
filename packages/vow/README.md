@@ -76,3 +76,40 @@ const { watch, makeVowKit } = prepareVowTools(vowZone);
 // Now the functions have been bound to the durable baggage.
 // Vows and resolvers you create can be saved in durable stores.
 ```
+
+## Internals
+
+The current "version 0" vow internals expose a `shorten()` method, returning a
+promise for the next resolution.  `watch` and `when` use `shorten()` to advance
+through the vow chain step-by-step, tolerating disconnects by retrying a failed
+step, rather than just making one giant leap to the end of a promise chain with
+`.then(...)`.
+
+Here is an (oversimplified) algorithm that `watch` and `when` use to obtain a
+final result:
+
+```js
+// Directly await the non-retriable original specimen.
+// This is non-retriable because we don't know how our caller obtained
+// it in the first place, since it is an application-specific detail
+// that may not be side-effect free.
+let result = await specimenP;
+let vowInternals = getVowInternals(result);
+// Loop until the result is no longer a vow.
+while (vowInternals) {
+  try {
+    const shortened = await E(internals.vowV0).shorten();
+    const nextInternals = getVowInternals(shortened);
+    // Atomically update the state.
+    result = shortened;
+    vowInternals = nextInternals;
+  } catch (e) {
+    if (!isDisconnectionReason(e)) {
+      // Not a disconnect, so abort.
+      throw e;
+    }
+    // It was a disconnect, so try again with the same state.
+  }
+}
+return result;
+```

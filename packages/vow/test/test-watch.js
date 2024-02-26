@@ -2,6 +2,7 @@
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+
 import { prepareVowTools } from '../src/tools.js';
 
 /**
@@ -19,20 +20,6 @@ const prepareAckWatcher = (zone, t) => {
       return 'rejected';
     },
   });
-};
-
-/**
- * @template T
- */
-const makePromiseKit = () => {
-  /** @type {import('../src/types.js').VowResolver<T>} */
-  let resolver;
-  /** @type {Promise<T>} */
-  const promise = new Promise((resolve, reject) => {
-    resolver = { resolve, reject };
-  });
-  /* @ts-expect-error TS(2454) */
-  return { promise, resolver };
 };
 
 /**
@@ -70,16 +57,16 @@ test('ack watcher - shim', async t => {
   t.is(await when(watch(connVow3P, makeAckWatcher(packet))), 'rejected');
 });
 
-test('promise watcher', async t => {
+test('disconnection of non-vow informs watcher', async t => {
   const zone = makeHeapZone();
   const { watch, when } = prepareVowTools(zone, {
-    rejectionMeansRetry: reason => reason === 'disconnected',
+    isRetryableReason: reason => reason === 'disconnected',
   });
 
-  const pk = makePromiseKit();
-  pk.resolver.reject('disconnected');
-
-  const vow = watch(pk.promise, {
+  // Even though this promise is rejected with a retryable reason, there's no
+  // vow before it to retry, so we pass the rejection up to the watcher.
+  /* eslint-disable-next-line prefer-promise-reject-errors */
+  const vow = watch(Promise.reject('disconnected'), {
     onFulfilled(value) {
       t.log(`onfulfilled ${value}`);
       t.fail('should not fulfil');
