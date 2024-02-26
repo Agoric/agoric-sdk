@@ -8,7 +8,10 @@ import { TimeMath } from '@agoric/time';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
-import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '@agoric/inter-protocol/src/auction/params.js';
+import {
+  AUCTION_START_DELAY,
+  PRICE_LOCK_PERIOD,
+} from '@agoric/inter-protocol/src/auction/params.js';
 import { makeCancelTokenMaker } from '@agoric/inter-protocol/src/auction/util.js';
 
 const trace = makeTracer('LIQ');

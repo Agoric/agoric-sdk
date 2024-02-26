@@ -8,7 +8,10 @@ import {
   allEmpty,
   makeNatAmountShape,
 } from '@agoric/inter-protocol/src/contractSupport.js';
-import { calculateCurrentDebt, reverseInterest } from '@agoric/inter-protocol/src/interest-math.js';
+import {
+  calculateCurrentDebt,
+  reverseInterest,
+} from '@agoric/inter-protocol/src/interest-math.js';
 import { UnguardedHelperI } from '@agoric/inter-protocol/src/typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 

@@ -1440,10 +1440,7 @@ test('liq-rejected-timestampStorageNode', async t => {
 
   await assertVaultState(t, vaultNotifier, 'active');
 
-  const { startTime } = await startAuctionClock(
-    auctioneerKit,
-    manualTimer,
-  );
+  const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
 
   // Check that no child node with auction start time's name created after the liquidation
   const vstorageDuringLiquidation = await getDataFromVstorage(
