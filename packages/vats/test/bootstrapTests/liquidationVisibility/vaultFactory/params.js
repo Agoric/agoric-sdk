@@ -12,7 +12,10 @@ import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { amountPattern, ratioPattern } from '@agoric/inter-protocol/src/contractSupport.js';
+import {
+  amountPattern,
+  ratioPattern,
+} from '@agoric/inter-protocol/src/contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
 export const RECORDING_PERIOD_KEY = 'RecordingPeriod';

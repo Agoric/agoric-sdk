@@ -106,4 +106,3 @@ test.serial('visibility-after-upgrade', async t => {
   t.log('Data', storage.data.keys());
   t.pass();
 });
-
