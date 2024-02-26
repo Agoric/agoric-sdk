@@ -75,7 +75,11 @@
     "@cosmjs/proto-signing": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
     "@cosmjs/tendermint-rpc": "^0.32.2",
-    "@endo/init": "^1.0.3"
+    "@endo/init": "^1.0.3",
+    "axios": "^1.6.7"
+  },
+  "resolutions": {
+    "**/protobufjs": "^7.2.4"
   },
   "ava": {
     "extensions": {
