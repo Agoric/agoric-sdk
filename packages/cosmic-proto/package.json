@@ -67,10 +67,10 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@cosmjs/amino": "0.29.4",
-    "@cosmjs/proto-signing": "^0.30.1",
-    "@cosmjs/stargate": "^0.30.1",
-    "@cosmjs/tendermint-rpc": "^0.30.1",
+    "@cosmjs/amino": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "@cosmjs/tendermint-rpc": "^0.32.2",
     "@endo/init": "^1.0.3"
   },
   "ava": {
