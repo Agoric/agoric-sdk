@@ -8,8 +8,11 @@ import { TimeMath } from '@agoric/time';
 import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
-import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
-import { makeCancelTokenMaker } from '../auction/util.js';
+import {
+  AUCTION_START_DELAY,
+  PRICE_LOCK_PERIOD,
+} from '@agoric/inter-protocol/src/auction/params.js';
+import { makeCancelTokenMaker } from '@agoric/inter-protocol/src/auction/util.js';
 
 const trace = makeTracer('LIQ');
 
@@ -17,13 +20,6 @@ const trace = makeTracer('LIQ');
 /** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */
 /** @typedef {import('@agoric/time/src/types').CancelToken} CancelToken */
 /** @typedef {import('@agoric/time/src/types').RelativeTimeRecord} RelativeTimeRecord */
-
-/**
- * @typedef {MapStore<
- *   Vault,
- *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
- * >} VaultData
- */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 
@@ -69,7 +65,7 @@ const cancelWakeups = timer => {
  * @param {TimerWaker} opts.priceLockWaker
  * @param {TimerWaker} opts.liquidationWaker
  * @param {TimerWaker} opts.reschedulerWaker
- * @param {import('../auction/scheduler.js').Schedule} opts.nextAuctionSchedule
+ * @param {import('@agoric/inter-protocol/src/auction/scheduler.js').Schedule} opts.nextAuctionSchedule
  * @param {import('@agoric/time/src/types').TimestampRecord} opts.now
  * @param {ParamStateRecord} opts.params
  * @returns {void}
@@ -144,7 +140,7 @@ const setWakeups = ({
  * Called by vaultDirector's resetWakeupsForNextAuction at start() and every
  * time there's a "reschedule" wakeup.
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<import('@agoric/inter-protocol/src/auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
  * @param {ERef<TimerService>} timer
  * @param {TimerWaker} priceLockWaker
  * @param {TimerWaker} liquidationWaker
@@ -210,7 +206,7 @@ harden(liquidationResults);
 /**
  * Watch governed params for change
  *
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
+ * @param {ERef<import('@agoric/inter-protocol/src/auction/auctioneer.js').AuctioneerPublicFacet>} auctioneerPublicFacet
  * @param {ERef<TimerService>} timer
  * @param {TimerWaker} reschedulerWaker
  * @returns {void}
@@ -268,7 +264,7 @@ export const getLiquidatableVaults = (
   const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(
     collateralizationDetails,
   );
-  /** @type {VaultData} */
+  /** @type {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} */
   const vaultData = makeScalarMapStore();
 
   const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();

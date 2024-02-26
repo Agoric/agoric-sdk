@@ -23,7 +23,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeCollectFeesInvitation } from '../collectFees.js';
+import { makeCollectFeesInvitation } from '@agoric/inter-protocol/src/collectFees.js';
 import {
   setWakeupsForNextAuction,
   watchForGovernanceChange,
@@ -60,7 +60,7 @@ const trace = makeTracer('VD', true);
  *  burnDebt: BurnDebt,
  *  getGovernedParams: (collateralBrand: Brand) => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndTransfer: MintAndTransfer,
- *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
+ *  getShortfallReporter: () => Promise<import('@agoric/inter-protocol/src/reserve/assetReserve.js').ShortfallReporter>,
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
@@ -78,7 +78,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
- * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
+ * @param {ERef<import('@agoric/inter-protocol/src/auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
@@ -96,7 +96,7 @@ const prepareVaultDirector = (
   makeRecorderKit,
   makeERecorderKit,
 ) => {
-  /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
+  /** @type {import('@agoric/inter-protocol/src/reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
 
   /** For holding newly minted tokens until transferred */
@@ -424,8 +424,7 @@ const prepareVaultDirector = (
 
         makeLiquidationWaker() {
           return makeWaker('liquidationWaker', _timestamp => {
-            // XXX floating promise
-            allManagersDo(vm => vm.liquidateVaults(auctioneer, _timestamp));
+            allManagersDo(vm => vm.liquidateVaults(auctioneer));
           });
         },
         makeReschedulerWaker() {

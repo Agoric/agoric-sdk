@@ -24,7 +24,7 @@ import {
   NotifierShape,
   RatioShape,
 } from '@agoric/ertp';
-import { allValuesSettled, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import {
@@ -49,15 +49,14 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { E, Far } from '@endo/far';
-import { TimestampShape } from '@agoric/time';
-import { AuctionPFShape } from '../auction/auctioneer.js';
+import { E } from '@endo/eventual-send';
+import { AuctionPFShape } from '@agoric/inter-protocol/src/auction/auctioneer.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
   quoteAsRatio,
-} from '../contractSupport.js';
-import { chargeInterest } from '../interest.js';
+} from '@agoric/inter-protocol/src/contractSupport.js';
+import { chargeInterest } from '@agoric/inter-protocol/src/interest.js';
 import { getLiquidatableVaults } from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -163,35 +162,6 @@ const trace = makeTracer('VM');
  * storedCollateralQuote: PriceQuote,
  * }}
  */
-
-/**
- * @typedef {(
- *   | string
- *   | { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
- * )[][]} PreAuctionState
- *
- * @typedef {(string | { phase: string })[][]} PostAuctionState
- *
- * @typedef {{
- *   collateralOffered?: Amount<'nat'>;
- *   istTarget?: Amount<'nat'>;
- *   collateralForReserve?: Amount<'nat'>;
- *   shortfallToReserve?: Amount<'nat'>;
- *   mintedProceeds?: Amount<'nat'>;
- *   collateralSold?: Amount<'nat'>;
- *   collateralRemaining?: Amount<'nat'>;
- *   endTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
- * }} AuctionResultState
- *
- * @typedef {{
- *   preAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PreAuctionState>;
- *   postAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PostAuctionState>;
- *   auctionResultRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AuctionResultState>;
- * }} LiquidationRecorderKits
- */
-
-/** @typedef {import('./liquidation.js').VaultData} VaultData */
-
 // any b/c will be filled after start()
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
@@ -214,9 +184,7 @@ export const prepareVaultManagerKit = (
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
   /**
-   * @param {HeldParams & {
-   *   metricsStorageNode: StorageNode;
-   * }} params
+   * @param {HeldParams & { metricsStorageNode: StorageNode }} params
    * @returns {HeldParams & ImmutableState & MutableState}
    */
   const initState = params => {
@@ -233,6 +201,7 @@ export const prepareVaultManagerKit = (
     const immutable = {
       debtBrand,
       poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
+
       /**
        * Vaults that have been sent for liquidation. When we get proceeds (or lack
        * thereof) back from the liquidator, we will allocate them among the vaults.
@@ -323,9 +292,7 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(AuctionPFShape, TimestampShape).returns(
-          M.promise(),
-        ),
+        liquidateVaults: M.call(AuctionPFShape).returns(M.promise()),
       }),
     },
     initState,
@@ -388,10 +355,6 @@ export const prepareVaultManagerKit = (
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
-          // We have to store this in ephemera since we can't add new properties
-          // to the `state`. See https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md
-          ephemera.liquidationsStorageNode =
-            E(storageNode).makeChildNode('liquidations');
 
           trace('helper.start() making periodNotifier');
           const periodNotifier = E(timerService).makeNotifier(
@@ -632,149 +595,6 @@ export const prepareVaultManagerKit = (
           });
 
           return E(metricsTopicKit.recorder).write(payload);
-        },
-
-        /**
-         * @param {TimestampRecord} timestamp
-         * @returns {Promise<LiquidationVisibilityWriters>}
-         */
-        async makeLiquidationVisibilityWriters(timestamp) {
-          const liquidationRecorderKits =
-            await this.facets.helper.makeLiquidationRecorderKits(timestamp);
-
-          /** @param {VaultData} vaultData */
-          const writePreAuction = vaultData => {
-            /** @type PreAuctionState */
-            const preAuctionState = [...vaultData.entries()].map(
-              ([vault, data]) => [
-                `vault${vault.getVaultState().idInManager}`,
-                { ...data },
-              ],
-            );
-
-            return E(
-              liquidationRecorderKits.preAuctionRecorderKit.recorder,
-            ).writeFinal(preAuctionState);
-          };
-
-          /**
-           * @param {PostAuctionParams} params
-           * @returns {Promise<void>}
-           */
-          const writePostAuction = ({ plan, vaultsInPlan }) => {
-            /** @type PostAuctionState */
-            const postAuctionState = plan.transfersToVault.map(
-              ([id, transfer]) => [
-                `vault${vaultsInPlan[id].getVaultState().idInManager}`,
-                {
-                  ...transfer,
-                  phase: vaultsInPlan[id].getVaultState().phase,
-                },
-              ],
-            );
-            return E(
-              liquidationRecorderKits.postAuctionRecorderKit.recorder,
-            ).writeFinal(postAuctionState);
-          };
-
-          /** @param {AuctionResultsParams} params */
-          const writeAuctionResults = ({
-            plan,
-            totalCollateral,
-            totalDebt,
-            auctionSchedule,
-          }) => {
-            /** @type AuctionResultState */
-            const auctionResultState = {
-              collateralOffered: totalCollateral,
-              istTarget: totalDebt,
-              collateralForReserve: plan.collateralForReserve,
-              shortfallToReserve: plan.shortfallToReserve,
-              mintedProceeds: plan.mintedProceeds,
-              collateralSold: plan.collateralSold,
-              collateralRemaining: plan.collatRemaining,
-              // @ts-expect-error
-              endTime: auctionSchedule?.liveAuctionSchedule.endTime,
-            };
-            return E(
-              liquidationRecorderKits.auctionResultRecorderKit.recorder,
-            ).writeFinal(auctionResultState);
-          };
-
-          return Far('Liquidation Visibility Writers', {
-            writePreAuction,
-            writePostAuction,
-            writeAuctionResults,
-          });
-        },
-
-        /**
-         * This method checks if liquidationVisibilityWriters is undefined or
-         * not in case of a rejected promise when creating the writers. If
-         * liquidationVisibilityWriters is undefined it silently notifies the
-         * console. Otherwise, it goes on with the writing.
-         *
-         * @param {LiquidationVisibilityWriters} liquidationVisibilityWriters
-         * @param {[string, object][]} writes
-         */
-        async writeLiqVisibility(liquidationVisibilityWriters, writes) {
-          console.log('WRITES', writes);
-          if (!liquidationVisibilityWriters) {
-            trace(
-              'writeLiqVisibility',
-              `Error: liquidationVisibilityWriters is ${liquidationVisibilityWriters}`,
-            );
-            return;
-          }
-
-          for (const [methodName, params] of writes) {
-            trace('DEBUG', methodName, params);
-            void liquidationVisibilityWriters[methodName](params);
-          }
-        },
-
-        /**
-         * @param {TimestampRecord} timestamp
-         * @returns {Promise<LiquidationRecorderKits>}
-         */
-        async makeLiquidationRecorderKits(timestamp) {
-          const {
-            state: { collateralBrand },
-          } = this;
-
-          const ephemera = collateralEphemera(collateralBrand);
-
-          const timestampStorageNode = E(
-            ephemera.liquidationsStorageNode,
-          ).makeChildNode(`${timestamp.absValue}`);
-
-          const [
-            preAuctionStorageNode,
-            postAuctionStorageNode,
-            auctionResultStorageNode,
-          ] = await Promise.all([
-            E(E(timestampStorageNode).makeChildNode('vaults')).makeChildNode(
-              'preAuction',
-            ),
-            E(E(timestampStorageNode).makeChildNode('vaults')).makeChildNode(
-              'postAuction',
-            ),
-            E(timestampStorageNode).makeChildNode('auctionResult'),
-          ]);
-
-          const preAuctionRecorderKit = makeRecorderKit(preAuctionStorageNode);
-          const postAuctionRecorderKit = makeRecorderKit(
-            postAuctionStorageNode,
-          );
-          const auctionResultRecorderKit = makeRecorderKit(
-            auctionResultStorageNode,
-          );
-
-          return {
-            preAuctionRecorderKit,
-            postAuctionRecorderKit,
-            auctionResultRecorderKit,
-          };
         },
 
         /**
@@ -1227,10 +1047,9 @@ export const prepareVaultManagerKit = (
           return storedCollateralQuote;
         },
         /**
-         * @param {ERef<AuctioneerPublicFacet>} auctionPF
-         * @param {TimestampRecord} timestamp
+         * @param {AuctioneerPublicFacet} auctionPF
          */
-        async liquidateVaults(auctionPF, timestamp) {
+        async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { self, helper } = facets;
           const {
@@ -1275,12 +1094,11 @@ export const prepareVaultManagerKit = (
             liquidatingVaults.getSize(),
             totalCollateral,
           );
-          const schedulesP = E(auctionPF).getSchedules();
 
           helper.markLiquidating(totalDebt, totalCollateral);
           void helper.writeMetrics();
 
-          const makeDeposit = E.when(
+          const { userSeatPromise, deposited } = await E.when(
             E(auctionPF).makeDepositInvitation(),
             depositInvitation =>
               offerTo(
@@ -1294,26 +1112,6 @@ export const prepareVaultManagerKit = (
               ),
           );
 
-          // helper.makeLiquidationVisibilityWriters and schedulesP depends on others vats,
-          // so we switched from Promise.all to Promise.allSettled because if one of those vats fail
-          // we don't want those failures to prevent liquidation process from going forward.
-          // We don't handle the case where 'makeDeposit' rejects as liquidation depends on
-          // 'makeDeposit' being fulfilled.
-          const {
-            makeDeposit: { userSeatPromise, deposited },
-            liquidationVisibilityWriters,
-            auctionSchedule,
-          } = await allValuesSettled({
-            makeDeposit,
-            liquidationVisibilityWriters:
-              helper.makeLiquidationVisibilityWriters(timestamp),
-            auctionSchedule: schedulesP,
-          });
-
-          void helper.writeLiqVisibility(liquidationVisibilityWriters, [
-            ['writePreAuction', vaultData],
-          ]);
-
           // This is expected to wait for the duration of the auction, which
           // is controlled by the auction parameters startFrequency, clockStep,
           // and the difference between startingRate and lowestRate.
@@ -1324,16 +1122,14 @@ export const prepareVaultManagerKit = (
           );
 
           trace(`LiqV after long wait`, proceeds);
-          let plan;
-          let vaultsInPlan;
           try {
-            ({ plan, vaultsInPlan } = helper.planProceedsDistribution(
+            const { plan, vaultsInPlan } = helper.planProceedsDistribution(
               proceeds,
               totalDebt,
               storedCollateralQuote,
               vaultData,
               totalCollateral,
-            ));
+            );
             trace('PLAN', plan);
             // distributeProceeds may reconstitute vaults, removing them from liquidatingVaults
             helper.distributeProceeds({
@@ -1353,35 +1149,14 @@ export const prepareVaultManagerKit = (
             vault.liquidated();
             liquidatingVaults.delete(vault);
           }
-          void helper.writeLiqVisibility(
-            liquidationVisibilityWriters,
-            harden([
-              [
-                'writeAuctionResults',
-                {
-                  plan,
-                  totalCollateral,
-                  totalDebt,
-                  auctionSchedule,
-                },
-              ],
-              [
-                'writePostAuction',
-                {
-                  plan,
-                  vaultsInPlan,
-                },
-              ],
-            ]),
-          );
-          void helper.writeMetrics();
+
+          await facets.helper.writeMetrics();
         },
       },
     },
 
     {
       finish: ({ state, facets: { helper } }) => {
-        console.log('LOG: FINISHED');
         helper.start();
         void state.assetTopicKit.recorder.write(
           harden({
@@ -1399,17 +1174,11 @@ export const prepareVaultManagerKit = (
     },
   );
 
-  /**
-   * @param {Omit<
-   *   Parameters<typeof makeVaultManagerKitInternal>[0],
-   *   'metricsStorageNode' | 'liquidationsStorageNode'
-   * >} externalParams
-   */
+  /** @param {Omit<Parameters<typeof makeVaultManagerKitInternal>[0], 'metricsStorageNode'>} externalParams */
   const makeVaultManagerKit = async externalParams => {
     const metricsStorageNode = await E(
       externalParams.storageNode,
     ).makeChildNode('metrics');
-
     return makeVaultManagerKitInternal({
       ...externalParams,
       metricsStorageNode,

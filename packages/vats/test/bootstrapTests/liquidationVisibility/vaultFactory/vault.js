@@ -7,9 +7,12 @@ import {
   addSubtract,
   allEmpty,
   makeNatAmountShape,
-} from '../contractSupport.js';
-import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { UnguardedHelperI } from '../typeGuards.js';
+} from '@agoric/inter-protocol/src/contractSupport.js';
+import {
+  calculateCurrentDebt,
+  reverseInterest,
+} from '@agoric/inter-protocol/src/interest-math.js';
+import { UnguardedHelperI } from '@agoric/inter-protocol/src/typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
@@ -116,9 +119,6 @@ export const VaultI = M.interface('Vault', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
-  getVaultState: M.call().returns(
-    harden({ idInManager: M.string(), phase: M.string() }),
-  ),
   initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
   liquidated: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
@@ -593,13 +593,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
       self: {
         getVaultSeat() {
           return this.state.vaultSeat;
-        },
-
-        getVaultState() {
-          return {
-            idInManager: this.state.idInManager,
-            phase: this.state.phase,
-          };
         },
 
         /**

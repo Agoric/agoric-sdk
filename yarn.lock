@@ -1377,6 +1377,11 @@
     "@endo/zip" "^0.2.31"
     ses "^0.18.4"
 
+"@endo/env-options@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-1.1.1.tgz#eee630f8eff01580ec49e0dedcb1b6cef05d89a4"
+  integrity sha512-uCwlJ8Vkndx/VBBo36BdYHdxSoQPy7ZZpwyJNfv86Rh4B1IZfqzCRPf0u0mPgJdzOr7lShQey60SuYwoMSZ9Xg==
+
 "@endo/eslint-plugin@0.4.3":
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/@endo/eslint-plugin/-/eslint-plugin-0.4.3.tgz#aa53784b9f2f45a4384cb59efeabc33e2709ec75"
@@ -1391,6 +1396,13 @@
   version "0.17.2"
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.17.2.tgz#c8710d557c2f57723be05fe99e941cd893acc5d2"
   integrity sha512-nux02l2yYXXUeUA2PigOO1K0gbVVMYx3prfYrW/G7Ny6PiDLtOyaeMWwKQwFTgJV2yAkOfvycr4LC1+tm7hu/Q==
+
+"@endo/eventual-send@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.1.1.tgz#64f0d8e8e8c4f10e663bc875b6a69d7d3677d940"
+  integrity sha512-3o8JxHSkd8q+CMMhbvB6oAZX0g6UQbc2/0Cso1KUiDvYIjknVNEqnnVoNGFW4LdyiQdQTRoRcL7GDT8KE6ebAw==
+  dependencies:
+    "@endo/env-options" "^1.1.1"
 
 "@endo/exo@0.2.2":
   version "0.2.2"
