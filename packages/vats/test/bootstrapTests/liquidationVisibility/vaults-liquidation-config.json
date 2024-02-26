@@ -5,7 +5,7 @@
   "coreProposals": [
     "@agoric/vats/scripts/init-core.js",
     {
-      "module": "/Users/jorgelopes/Documents/GitHub/Agoric/sow6/liquidation-visibility/agoric-sdk-liquidation-visibility/packages/vats/test/bootstrapTests/liquidationVisibility/init-old-vaultFactory.js",
+      "module": "@agoric/vats/test/bootstrapTests/liquidationVisibility/init-old-vaultFactory.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
         {

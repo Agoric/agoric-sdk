@@ -4,7 +4,7 @@
  * @file Bootstrap test vaults liquidation visibility
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeLiquidationTestContext, scale6 } from '../liquidation.js';
+import { makeLiquidationTestContext } from '../liquidation.js';
 import { checkVisibility, startAuction } from './liquidation-test-utils.js';
 
 /**
@@ -34,7 +34,6 @@ test.serial('visibility-before-upgrade', async t => {
 test.serial('restart-vault-factory', async t => {
   const {
     runUtils: { EV },
-    readLatest,
   } = t.context;
   const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
