@@ -87,6 +87,7 @@ const offerWatcherGuard = harden({
       .optional(M.record())
       .returns(),
     publishResult: M.call(M.any()).returns(),
+    handleError: M.call(M.error()).returns(),
   }),
   paymentWatcher: M.interface('paymentWatcher', {
     onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(
@@ -131,6 +132,9 @@ export const prepareOfferWatcher = baggage => {
     }),
     {
       helper: {
+        /**
+         * @param {Record<string, unknown>} offerStatusUpdates
+         */
         updateStatus(offerStatusUpdates) {
           const { state } = this;
           state.status = harden({ ...state.status, ...offerStatusUpdates });
@@ -189,6 +193,22 @@ export const prepareOfferWatcher = baggage => {
               facets.helper.updateStatus({ result: UNPUBLISHED_RESULT });
           }
         },
+        /**
+         * Called when the offer result promise rejects. The other two watchers
+         * are waiting for particular values out of Zoe but they settle at the same time
+         * and don't need their own error handling.
+         * @param {Error} err
+         */
+        handleError(err) {
+          const { facets } = this;
+          facets.helper.updateStatus({ error: err.toString() });
+          const { seatRef } = this.state;
+          void E.when(E(seatRef).hasExited(), hasExited => {
+            if (!hasExited) {
+              void E(seatRef).tryExit();
+            }
+          });
+        },
       },
 
       /** @type {OutcomeWatchers['paymentWatcher']} */
@@ -205,6 +225,8 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ payouts: amounts });
         },
         /**
+         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         *
          * @param {Error} err
          * @param {UserSeat} seat
          */
@@ -212,6 +234,8 @@ export const prepareOfferWatcher = baggage => {
           const { facets } = this;
           if (isUpgradeDisconnection(err)) {
             void watchForPayout(facets, seat);
+          } else {
+            facets.helper.handleError(err);
           }
         },
       },
@@ -223,6 +247,8 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.publishResult(result);
         },
         /**
+         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         *
          * @param {Error} err
          * @param {UserSeat} seat
          */
@@ -230,6 +256,8 @@ export const prepareOfferWatcher = baggage => {
           const { facets } = this;
           if (isUpgradeDisconnection(err)) {
             void watchForOfferResult(facets, seat);
+          } else {
+            facets.helper.handleError(err);
           }
         },
       },
@@ -242,6 +270,12 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ numWantsSatisfied: numSatisfied });
         },
         /**
+         * If promise disconnected, watch again.
+         *
+         * Errors are handled by the paymentWatcher because numWantsSatisfied()
+         * and getPayouts() settle the same (they await the same promise and
+         * then synchronously return a local value).
+         *
          * @param {Error} err
          * @param {UserSeat} seat
          */

@@ -456,6 +456,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
   };
 
+  // TODO move to top level so its type can be exported
   /**
    * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
    * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
@@ -990,14 +991,15 @@ export const prepareSmartWallet = (baggage, shared) => {
             // await so that any errors are caught and handled below
             await watchOfferOutcomes(watcher, seatRef);
           } catch (err) {
-            facets.helper.logWalletError('OFFER ERROR:', err);
+            // This block only runs if the block above fails during one vat incarnation.
+            facets.helper.logWalletError('IMMEDIATE OFFER ERROR:', err);
 
-            // Notify the user
+            // Update status to observers
             if (err.upgradeMessage === 'vat upgraded') {
               // The offer watchers will reconnect. Don't reclaim or exit
               return;
             } else if (watcher) {
-              watcher.helper.updateStatus({ error: err.toString() });
+              // The watcher's onRejected will updateStatus()
             } else {
               facets.helper.updateStatus({
                 error: err.toString(),
@@ -1005,6 +1007,7 @@ export const prepareSmartWallet = (baggage, shared) => {
               });
             }
 
+            // Backstop recovery, in case something very basic fails.
             if (offerSpec?.proposal?.give) {
               facets.payments
                 .tryReclaimingWithdrawnPayments(offerSpec.id)
@@ -1016,14 +1019,8 @@ export const prepareSmartWallet = (baggage, shared) => {
                 );
             }
 
-            if (seatRef) {
-              void E.when(E(seatRef).hasExited(), hasExited => {
-                if (!hasExited) {
-                  void E(seatRef).tryExit();
-                }
-              });
-            }
-
+            // XXX tests rely on throwing immediate errors, not covering the
+            // error handling in the event the failure is after an upgrade
             throw err;
           }
         },
