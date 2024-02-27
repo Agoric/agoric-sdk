@@ -227,15 +227,15 @@ export const prepareOfferWatcher = baggage => {
         /**
          * If promise disconnected, watch again. Or if there's an Error, handle it.
          *
-         * @param {Error} err
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForPayout(facets, seat);
           } else {
-            facets.helper.handleError(err);
+            facets.helper.handleError(reason);
           }
         },
       },
@@ -249,15 +249,15 @@ export const prepareOfferWatcher = baggage => {
         /**
          * If promise disconnected, watch again. Or if there's an Error, handle it.
          *
-         * @param {Error} err
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForOfferResult(facets, seat);
           } else {
-            facets.helper.handleError(err);
+            facets.helper.handleError(reason);
           }
         },
       },
@@ -276,12 +276,12 @@ export const prepareOfferWatcher = baggage => {
          * and getPayouts() settle the same (they await the same promise and
          * then synchronously return a local value).
          *
-         * @param {Error} err
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForNumWants(facets, seat);
           }
         },
