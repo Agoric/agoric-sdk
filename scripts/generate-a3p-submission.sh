@@ -18,4 +18,3 @@ buildSubmission() {
 }
 
 buildSubmission test-localchain "b:localchain"
-buildSubmission restart-vats "g:restart-vats"

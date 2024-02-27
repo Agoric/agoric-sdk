@@ -54,6 +54,8 @@ For a chain software upgrade proposal, the `type` is `"Software Upgrade Proposal
 - `planName` is the "upgrade name" included in the proposal which must match the value in the upgraded chain software. In the `master` branch its value is `UNRELEASED_UPGRADE`. In the release branches, it's `agoric-upgrade-NN`.
 - `upgradeInfo` contains other details passed to the governance proposal. In particular, the info can have a `coreProposal` field which instruct the chain software to run other core proposals besides the one already configured in the chain software's upgrade handler (see `CoreProposalSteps` in `/golang/cosmos/app/app.go`). This field is likely not relevant for release branches.
 
+For an example, see `a:upgrade-next` in master.
+
 ### Core-eval proposal
 
 The `type` of a core-eval proposal is `"/agoric.swingset.CoreEvalProposal"`, and content is submitted from a `submission` subfolder.
@@ -61,6 +63,8 @@ The `type` of a core-eval proposal is `"/agoric.swingset.CoreEvalProposal"`, and
 If the proposal is planned to be executed after the chain software upgrade, and the source of the proposal is in `agoric-sdk`, it's recommended to not check-in the `submission` content in source control and instead generate it automatically when testing. Since proposals cannot access SDK code, a script can be used to generate the `submission` content. Until there is [native support for build scripts in the `synthetic-chain` tool](https://github.com/Agoric/agoric-3-proposals/issues/87), `a3p-integration`'s `build:submission` step invokes `/script/generate-a3p-submission.sh` in `agoric-sdk` before starting the upgrade test.
 
 For core eval proposals executing before the chain software upgrade, the `submission` should be checked in, since bundles built from newer software may not be compatible with older chains.
+
+For an example, see https://github.com/Agoric/agoric-sdk/pull/8907
 
 ## Hooks
 
