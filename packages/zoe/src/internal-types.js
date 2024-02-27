@@ -59,6 +59,8 @@
  * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
+ * @property {(result: HandleOfferResult) => void} resolveExitAndResult
+ * @property {(payments: PaymentPKeywordRecord) => Promise<void>} finalPayouts
  */
 
 /**

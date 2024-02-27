@@ -204,6 +204,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           !hasExited1 || assert(!hasExited1, msg);
         },
       },
+      /** @type {ZoeSeatAdmin} */
       zoeSeatAdmin: {
         replaceAllocation(replacementAllocation) {
           const { state, facets } = this;
@@ -355,6 +356,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       };
     },
     {
+      /** @type {UserSeat} */
       userSeat: {
         async getProposal() {
           return this.state.userSeatAccess.getProposal();
