@@ -119,6 +119,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 
 	// Import the packet forward middleware
@@ -218,6 +219,7 @@ type GaiaApp struct { // nolint: golint
 	vbankPort        int
 	vibcPort         int
 	vstoragePort     int
+	vlocalchainPort  int
 
 	upgradeDetails *upgradeDetails
 
@@ -254,6 +256,7 @@ type GaiaApp struct { // nolint: golint
 	VstorageKeeper           vstorage.Keeper
 	VibcKeeper               vibc.Keeper
 	VbankKeeper              vbank.Keeper
+	VlocalchainKeeper        vlocalchain.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -321,7 +324,7 @@ func NewAgoricApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, packetforwardtypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
-		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vbank.StoreKey,
+		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vlocalchain.StoreKey, vbank.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -604,6 +607,9 @@ func NewAgoricApp(
 	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.VlocalchainKeeper = vlocalchain.NewKeeper(appCodec, keys[vlocalchain.StoreKey], app.BankKeeper)
+	app.vlocalchainPort = vm.RegisterPortHandler("vlocalchain", vlocalchain.NewReceiver(app.VlocalchainKeeper, app.TransferKeeper))
+
 	// create evidence keeper with router
 	evidenceKeeper := evidencekeeper.NewKeeper(
 		appCodec,
@@ -825,6 +831,7 @@ func NewAgoricApp(
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
+				vlocalchain.ModuleName,        // Agoric added vlocalchain
 			},
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
@@ -870,7 +877,11 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
 			// Then, upgrade the provisioning vat
 			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
-			// vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/init-network.js"),
+			// Enable Orchestration.
+			// vm.CoreProposalStepForModules(
+			//   "@agoric/builders/scripts/vats/init-network.js",
+			//   "@agoric/builders/scripts/vats/init-localchain.js",
+			// ),
 		}
 
 		app.upgradeDetails = &upgradeDetails{
@@ -931,6 +942,7 @@ type cosmosInitAction struct {
 	SwingsetPort    int             `json:"swingsetPort"`
 	VbankPort       int             `json:"vbankPort"`
 	VibcPort        int             `json:"vibcPort"`
+	VlocalchainPort int             `json:"vlocalchainPort"`
 }
 
 // Name returns the name of the App
@@ -955,15 +967,16 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
-		ChainID:        ctx.ChainID(),
-		IsBootstrap:    bootstrap,
-		Params:         app.SwingSetKeeper.GetParams(ctx),
-		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
-		UpgradeDetails: app.upgradeDetails,
-		StoragePort:    app.vstoragePort,
-		SwingsetPort:   app.swingsetPort,
-		VbankPort:      app.vbankPort,
-		VibcPort:       app.vibcPort,
+		ChainID:         ctx.ChainID(),
+		IsBootstrap:     bootstrap,
+		Params:          app.SwingSetKeeper.GetParams(ctx),
+		SupplyCoins:     sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
+		UpgradeDetails:  app.upgradeDetails,
+		StoragePort:     app.vstoragePort,
+		SwingsetPort:    app.swingsetPort,
+		VbankPort:       app.vbankPort,
+		VibcPort:        app.vibcPort,
+		VlocalchainPort: app.vlocalchainPort,
 	}
 	// This uses `BlockingSend` as a friendly wrapper for `sendToController`
 	//
