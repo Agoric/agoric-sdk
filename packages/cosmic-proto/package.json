@@ -28,6 +28,10 @@
       "types": "./dist/codegen/agoric/swingset/query.d.ts",
       "default": "./dist/codegen/agoric/swingset/query.js"
     },
+    "./swingset/swingset.js": {
+      "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
+      "default": "./dist/codegen/agoric/swingset/swingset.js"
+    },
     "./vstorage/query.js": {
       "types": "./dist/codegen/agoric/vstorage/query.d.ts",
       "default": "./dist/codegen/agoric/vstorage/query.js"
