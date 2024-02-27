@@ -456,6 +456,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
   };
 
+  // TODO move to top level so its type can be exported
   /**
    * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
    * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
@@ -853,6 +854,10 @@ export const prepareSmartWallet = (baggage, shared) => {
 
       payments: {
         /**
+         * Withdraw the offered amount from the appropriate purse of this wallet.
+         *
+         * Save its amount in liveOfferPayments in case we need to reclaim the payment.
+         *
          * @param {AmountKeywordRecord} give
          * @param {OfferId} offerId
          * @returns {PaymentPKeywordRecord}
@@ -868,8 +873,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             .getLiveOfferPayments()
             .init(offerId, brandPaymentRecord);
 
-          // Add each payment to liveOfferPayments as it is withdrawn. If
-          // there's an error partway through, we can recover the withdrawals.
+          // Add each payment amount to brandPaymentRecord as it is withdrawn. If
+          // there's an error later, we can use it to redeposit the correct amount.
           return objectMap(give, amount => {
             /** @type {Promise<Purse>} */
             const purseP = facets.helper.purseForBrand(amount.brand);
@@ -890,19 +895,27 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
+        /**
+         * Find the live payments for the offer and deposit them back in the appropriate purses.
+         *
+         * @param {OfferId} offerId
+         * @returns {Promise<void>}
+         */
         async tryReclaimingWithdrawnPayments(offerId) {
           const { facets } = this;
+
+          await null;
 
           const liveOfferPayments = facets.helper.getLiveOfferPayments();
           if (liveOfferPayments.has(offerId)) {
             const brandPaymentRecord = liveOfferPayments.get(offerId);
             if (!brandPaymentRecord) {
-              return Promise.resolve(undefined);
+              return;
             }
             // Use allSettled to ensure we attempt all the deposits, regardless of
             // individual rejections.
-            return Promise.allSettled(
-              Array.from(brandPaymentRecord.entries()).map(async ([b, p]) => {
+            await Promise.allSettled(
+              Array.from(brandPaymentRecord.entries()).map(([b, p]) => {
                 // Wait for the withdrawal to complete.  This protects against a
                 // race when updating paymentToPurse.
                 const purseP = facets.helper.purseForBrand(b);
@@ -990,14 +1003,15 @@ export const prepareSmartWallet = (baggage, shared) => {
             // await so that any errors are caught and handled below
             await watchOfferOutcomes(watcher, seatRef);
           } catch (err) {
-            facets.helper.logWalletError('OFFER ERROR:', err);
+            // This block only runs if the block above fails during one vat incarnation.
+            facets.helper.logWalletError('IMMEDIATE OFFER ERROR:', err);
 
-            // Notify the user
+            // Update status to observers
             if (err.upgradeMessage === 'vat upgraded') {
               // The offer watchers will reconnect. Don't reclaim or exit
               return;
             } else if (watcher) {
-              watcher.helper.updateStatus({ error: err.toString() });
+              // The watcher's onRejected will updateStatus()
             } else {
               facets.helper.updateStatus({
                 error: err.toString(),
@@ -1005,6 +1019,7 @@ export const prepareSmartWallet = (baggage, shared) => {
               });
             }
 
+            // Backstop recovery, in case something very basic fails.
             if (offerSpec?.proposal?.give) {
               facets.payments
                 .tryReclaimingWithdrawnPayments(offerSpec.id)
@@ -1016,14 +1031,8 @@ export const prepareSmartWallet = (baggage, shared) => {
                 );
             }
 
-            if (seatRef) {
-              void E.when(E(seatRef).hasExited(), hasExited => {
-                if (!hasExited) {
-                  void E(seatRef).tryExit();
-                }
-              });
-            }
-
+            // XXX tests rely on throwing immediate errors, not covering the
+            // error handling in the event the failure is after an upgrade
             throw err;
           }
         },
