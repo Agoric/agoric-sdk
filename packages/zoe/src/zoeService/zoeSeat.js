@@ -136,6 +136,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       };
     },
     {
+      /** @type {ZoeSeatAdmin} */
       zoeSeatAdmin: {
         replaceAllocation(replacementAllocation) {
           const { state } = this;
@@ -258,6 +259,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           state.payouts = settledPayouts;
         },
       },
+      /** @type {UserSeat} */
       userSeat: {
         async getProposal() {
           const { state } = this;
