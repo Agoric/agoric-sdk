@@ -56,7 +56,6 @@ bundles
 bundle-*.js
 compiled
 dist
-!packages/cosmic-proto/dist
 api-docs
 
 # misc

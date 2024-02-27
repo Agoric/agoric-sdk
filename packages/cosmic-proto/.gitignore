@@ -1,7 +1,3 @@
-# TODO gitignore build output and generate it as needed
-# We don't ignore the build output (dist, mjs) because our CI integration
-# tests don't have hooks to build the package before consuming it.
-
 # cache
 .tsimp
 
