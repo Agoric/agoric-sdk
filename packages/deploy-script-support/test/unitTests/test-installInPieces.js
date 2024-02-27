@@ -27,6 +27,7 @@ test('installInPieces', async t => {
     },
   };
 
+  // @ts-expect-error fake Zoe
   const bundler = E(publicFacet).makeBundler({ zoe });
 
   const installation = await installInPieces(endoPieces, bundler, {

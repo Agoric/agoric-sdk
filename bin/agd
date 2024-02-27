@@ -19,6 +19,32 @@ function fatal() {
   exit 1
 }
 
+# Use sha1sum where available or as an ultimate fallback for good error messages,
+# but otherwise use other available fallbacks.
+for cmd in sha1sum shasum sha1sum; do
+  DIGEST_CMD=$cmd
+  command -v $DIGEST_CMD &>/dev/null && break
+done
+
+function diffsha1() {
+  stamp=$1
+  shift
+  if ! (true > "$stamp.new") 2>/dev/null; then
+    # echo "Cannot write to $stamp.new" 1>&2
+    return 0
+  fi
+  find ${1+"$@"} > "$stamp.new.files"
+  if test ! -s "$stamp.new.files"; then
+    # echo "No new dependencies found for $stamp" 1>&2
+    rm -f "$stamp.new.files"
+    return 0
+  fi
+  xargs $DIGEST_CMD <"$stamp.new.files" | sort +1 > "$stamp.new" || true
+  rm -f "$stamp.new.files"
+  diff -u "$stamp" "$stamp.new" || return 1
+  return 0
+}
+
 GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}
 NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
 
@@ -31,7 +57,8 @@ thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
 source "$thisdir/../repoconfig.sh"
 
 if test "${1-''}" = build; then
-  BUILD_ONLY=true
+  do_not_build=false
+  only_build=true
   # Enable shell debugging.
   set -x
   case "${2-''}" in
@@ -40,14 +67,22 @@ if test "${1-''}" = build; then
     ;;
   esac
 else
-  BUILD_ONLY=false
+  case ${NO_BUILD-false} in
+  true | yes | y | 1)
+    do_not_build=true
+    ;;
+  *)
+    do_not_build=false
+    ;;
+  esac
+  only_build=false
 fi
 
-NEED_NODEJS=$BUILD_ONLY
+need_nodejs=$only_build
 case $@ in
-*" start" | *" start "*)
+start | *" start" | *" start "*)
   # We're starting the daemon, so we need Node.js.
-  NEED_NODEJS=true
+  need_nodejs=true
   ;;
 esac
 
@@ -61,7 +96,7 @@ else
   SKIP_DOWNLOAD=true
 fi
 
-if $NEED_NODEJS; then
+if $need_nodejs; then
   # We need to get node at the script top level because it's used by the daemon
   # as well.
   case $(node --version 2>/dev/null) in
@@ -93,65 +128,18 @@ fi
 (
   # Send the build output to stderr unless we're only building.  This prevents
   # the daemon's stdout from being polluted with build output.
-  $BUILD_ONLY || exec 1>&2
+  $only_build || exec 1>&2
 
   cd "$thisdir/.."
+  test -d "$STAMPS" || echo "Creating $STAMPS" 1>&2
   mkdir -p "$STAMPS"
 
-  if $NEED_NODEJS; then
-    lazy_yarn() {
-      yarn --version 2>/dev/null 1>&2 || {
-        # Auto-download the Yarn version we need, if allowed.
-        $SKIP_DOWNLOAD || {
-          npm install -g yarn
-        }
-      }
-      yarn "$@"
-    }
-
-    # Check if any package.json is newer than the installation stamp.
-    stamp=$STAMPS/yarn-installed
-    if test -e "$stamp"; then
-      print=( -newer "$stamp" )
-    else
-      print=()
-    fi
-    print+=( -print )
-
-    # Find the current list of package.jsons.
-    files=( package.json )
-    while IFS= read -r line; do
-      files+=( "$line" )
-    done < <(lazy_yarn -s workspaces info |
-      sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
-
-    src=$(find "${files[@]}" "${print[@]}" | head -1 || true)
-    test -z "$src" || {
-      echo "At least $src is newer than node_modules"
-      rm -f "$STAMPS/yarn-built"
-      lazy_yarn install
-      date > "$stamp"
-    }
-
-    stamp=$STAMPS/yarn-built
-    test -e "$stamp" || {
-      echo "Yarn packages need to be built"
-      lazy_yarn build
-      date > "$stamp"
-    }
-  fi
-
-  stamp=$GOLANG_DAEMON
-  if test -e "$stamp"; then
-    print=( -newer "$stamp" )
-  else
-    print=()
-  fi
-  print+=( -print )
-  src=$(find "$GOLANG_DIR" \( -name '*.go' -o -name 'go.*' \) "${print[@]}" | head -1 || true)
-  test -z "$src" || {
-    echo "At least $src is newer than $stamp"
-
+  sum=$STAMPS/golang-built.sum
+  diffsha1 "$sum" "$GOLANG_DIR" \( \
+    ! -name '*_test.go' -name '*.go' \
+    -o -name '*.cc' \
+    -o -name 'go.*' \) || { echo "$GOLANG_DIR $sum has changed"; $do_not_build; } || {
+    rm -f "$sum"
     (
       # Run this build in another subshell in case we had to modify the path.
       case $(go version 2>/dev/null) in
@@ -173,15 +161,55 @@ fi
         ;;
       esac
       # Ensure minimum patch versions of Go environment
-      goversion=$(go version 2>/dev/null)
-      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
-      [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
-      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
-      # Build the daemon.
       cd "$GOLANG_DIR"
-      make
+      if goversion=$(go version 2>/dev/null); then
+        goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
+        [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
+        golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
+        make compile-go
+      fi
     )
   }
+  test -f "$sum" || mv -f "$sum.new" "$sum"
+  rm -f "$sum.new"
+
+  if $need_nodejs; then
+    lazy_yarn() {
+      yarn --version 2>/dev/null 1>&2 || {
+        # Auto-download the Yarn version we need, if allowed.
+        $SKIP_DOWNLOAD || {
+          npm install -g yarn
+        }
+      }
+      yarn "$@"
+    }
+
+    # Check if any package.json sums are different.
+    sum=$STAMPS/yarn-installed.sum
+
+    # Find the current list of package.jsons.
+    files=( package.json )
+    while IFS= read -r line; do
+      files+=( "$line" )
+    done < <(lazy_yarn -s workspaces info |
+      sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
+
+    diffsha1 "$sum" "${files[@]}" || { echo "$sum has changed"; $do_not_build; } || {
+      rm -f "$sum" "$STAMPS/yarn-built"
+      lazy_yarn install
+      mv "$sum.new" "$sum"
+    }
+    rm -f "$sum.new"
+
+    stamp=$STAMPS/yarn-built
+    test -e "$stamp" || {
+      echo "Yarn packages need to be built"
+      lazy_yarn build
+      date > "$stamp"
+    }
+
+    (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
+  fi
 )
 
 # the xsnap binary lives in a platform-specific directory
@@ -196,7 +224,7 @@ esac
 xsnap_version=$("${thisdir}/../packages/xsnap/xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker" -n)
 [[ "${xsnap_version}" == "${XSNAP_VERSION}" ]] || fatal "xsnap version mismatch; expected ${XSNAP_VERSION}, got ${xsnap_version}"
 
-if $BUILD_ONLY; then
+if $only_build; then
   echo "Build complete." 1>&2
   exit 0
 fi

@@ -1,17 +1,18 @@
 package vibc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v4/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
+	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v4/modules/core/exported"
+	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -63,8 +64,9 @@ func NewIBCModule(keeper Keeper) IBCModule {
 	}
 }
 
-func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
+func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
 	// fmt.Println("ibc.go downcall", str)
+	ctx := sdk.UnwrapSDKContext(cctx)
 	keeper := ch.keeper
 
 	msg := new(portMessage)
@@ -79,29 +81,28 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 
 	switch msg.Method {
 	case "sendPacket":
-		seq, ok := keeper.GetNextSequenceSend(
-			ctx.Context,
-			msg.Packet.SourcePort,
-			msg.Packet.SourceChannel,
-		)
-		if !ok {
-			return "", fmt.Errorf("unknown sequence number")
-		}
-
 		timeoutTimestamp := msg.Packet.TimeoutTimestamp
 		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
 			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.Context.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
+			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
 		}
 
-		packet := channeltypes.NewPacket(
-			msg.Packet.Data, seq,
-			msg.Packet.SourcePort, msg.Packet.SourceChannel,
-			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-			msg.Packet.TimeoutHeight, timeoutTimestamp,
+		seq, err := keeper.SendPacket(
+			ctx,
+			msg.Packet.SourcePort,
+			msg.Packet.SourceChannel,
+			msg.Packet.TimeoutHeight,
+			timeoutTimestamp,
+			msg.Packet.Data,
 		)
-		err = keeper.SendPacket(ctx.Context, packet)
 		if err == nil {
+			// synthesize the sent packet
+			packet := channeltypes.NewPacket(
+				msg.Packet.Data, seq,
+				msg.Packet.SourcePort, msg.Packet.SourceChannel,
+				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+				msg.Packet.TimeoutHeight, timeoutTimestamp,
+			)
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
 				ret = string(bytes)
@@ -109,14 +110,14 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx.Context, msg.Packet, msg.Ack)
+		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "startChannelOpenInit":
 		err = keeper.ChanOpenInit(
-			ctx.Context, stringToOrder(msg.Order), msg.Hops,
+			ctx, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort,
 			msg.Packet.DestinationPort,
 			msg.Version,
@@ -126,19 +127,19 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 		}
 
 	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx.Context, msg.Packet.SourcePort, msg.Packet.SourceChannel)
+		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "bindPort":
-		err = keeper.BindPort(ctx.Context, msg.Packet.SourcePort)
+		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
 		if err == nil {
 			ret = "true"
 		}
 
 	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx.Context, msg.Packet)
+		err = keeper.TimeoutExecuted(ctx, msg.Packet)
 		if err == nil {
 			ret = "true"
 		}
@@ -151,7 +152,7 @@ func (ch IBCModule) Receive(ctx *vm.ControllerContext, str string) (ret string, 
 	return
 }
 
-func (im IBCModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+func (im IBCModule) PushAction(ctx sdk.Context, action vm.Action) error {
 	// fmt.Println("ibc.go upcall", send)
 	return im.keeper.PushAction(ctx, action)
 	// fmt.Println("ibc.go upcall reply", reply, err)
@@ -175,16 +176,14 @@ func (im IBCModule) OnChanOpenInit(
 }
 
 type channelOpenTryEvent struct {
-	Type           string                    `json:"type"`  // IBC
-	Event          string                    `json:"event"` // channelOpenTry
-	Order          string                    `json:"order"`
-	ConnectionHops []string                  `json:"connectionHops"`
-	PortID         string                    `json:"portID"`
-	ChannelID      string                    `json:"channelID"`
-	Counterparty   channeltypes.Counterparty `json:"counterparty"`
-	Version        string                    `json:"version"`
-	BlockHeight    int64                     `json:"blockHeight"`
-	BlockTime      int64                     `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string                    `json:"event" default:"channelOpenTry"`
+	Order           string                    `json:"order"`
+	ConnectionHops  []string                  `json:"connectionHops"`
+	PortID          string                    `json:"portID"`
+	ChannelID       string                    `json:"channelID"`
+	Counterparty    channeltypes.Counterparty `json:"counterparty"`
+	Version         string                    `json:"version"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -198,16 +197,12 @@ func (im IBCModule) OnChanOpenTry(
 	counterpartyVersion string,
 ) (string, error) {
 	event := channelOpenTryEvent{
-		Type:           "IBC_EVENT",
-		Event:          "channelOpenTry",
 		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
 		ChannelID:      channelID,
 		Counterparty:   counterparty,
 		Version:        counterpartyVersion, // TODO: don't just use the counterparty version
-		BlockHeight:    ctx.BlockHeight(),
-		BlockTime:      ctx.BlockTime().Unix(),
 	}
 
 	err := im.PushAction(ctx, event)
@@ -224,15 +219,13 @@ func (im IBCModule) OnChanOpenTry(
 }
 
 type channelOpenAckEvent struct {
-	Type                string                    `json:"type"`  // IBC
-	Event               string                    `json:"event"` // channelOpenAck
+	vm.ActionHeader     `actionType:"IBC_EVENT"`
+	Event               string                    `json:"event" default:"channelOpenAck"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
 	CounterpartyVersion string                    `json:"counterpartyVersion"`
 	Counterparty        channeltypes.Counterparty `json:"counterparty"`
 	ConnectionHops      []string                  `json:"connectionHops"`
-	BlockHeight         int64                     `json:"blockHeight"`
-	BlockTime           int64                     `json:"blockTime"`
 }
 
 func (im IBCModule) OnChanOpenAck(
@@ -248,27 +241,21 @@ func (im IBCModule) OnChanOpenAck(
 
 	channel.Counterparty.ChannelId = counterpartyChannelID
 	event := channelOpenAckEvent{
-		Type:                "IBC_EVENT",
-		Event:               "channelOpenAck",
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
 		Counterparty:        channel.Counterparty,
 		ConnectionHops:      channel.ConnectionHops,
-		BlockHeight:         ctx.BlockHeight(),
-		BlockTime:           ctx.BlockTime().Unix(),
 	}
 
 	return im.PushAction(ctx, event)
 }
 
 type channelOpenConfirmEvent struct {
-	Type        string `json:"type"`  // IBC
-	Event       string `json:"event"` // channelOpenConfirm
-	PortID      string `json:"portID"`
-	ChannelID   string `json:"channelID"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string `json:"event" default:"channelOpenConfirm"`
+	PortID          string `json:"portID"`
+	ChannelID       string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanOpenConfirm(
@@ -277,24 +264,18 @@ func (im IBCModule) OnChanOpenConfirm(
 	channelID string,
 ) error {
 	event := channelOpenConfirmEvent{
-		Type:        "IBC_EVENT",
-		Event:       "channelOpenConfirm",
-		PortID:      portID,
-		ChannelID:   channelID,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		PortID:    portID,
+		ChannelID: channelID,
 	}
 
 	return im.PushAction(ctx, event)
 }
 
 type channelCloseInitEvent struct {
-	Type        string `json:"type"`  // IBC
-	Event       string `json:"event"` // channelCloseInit
-	PortID      string `json:"portID"`
-	ChannelID   string `json:"channelID"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string `json:"event" default:"channelCloseInit"`
+	PortID          string `json:"portID"`
+	ChannelID       string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseInit(
@@ -303,12 +284,8 @@ func (im IBCModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	event := channelCloseInitEvent{
-		Type:        "IBC_EVENT",
-		Event:       "channelCloseInit",
-		PortID:      portID,
-		ChannelID:   channelID,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		PortID:    portID,
+		ChannelID: channelID,
 	}
 
 	err := im.PushAction(ctx, event)
@@ -316,12 +293,10 @@ func (im IBCModule) OnChanCloseInit(
 }
 
 type channelCloseConfirmEvent struct {
-	Type        string `json:"type"`  // IBC
-	Event       string `json:"event"` // channelCloseConfirm
-	PortID      string `json:"portID"`
-	ChannelID   string `json:"channelID"`
-	BlockHeight int64  `json:"blockHeight"`
-	BlockTime   int64  `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string `json:"event" default:"channelCloseConfirm"`
+	PortID          string `json:"portID"`
+	ChannelID       string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseConfirm(
@@ -330,12 +305,8 @@ func (im IBCModule) OnChanCloseConfirm(
 	channelID string,
 ) error {
 	event := channelCloseConfirmEvent{
-		Type:        "IBC_EVENT",
-		Event:       "channelCloseConfirm",
-		PortID:      portID,
-		ChannelID:   channelID,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		PortID:    portID,
+		ChannelID: channelID,
 	}
 
 	err := im.PushAction(ctx, event)
@@ -343,11 +314,9 @@ func (im IBCModule) OnChanCloseConfirm(
 }
 
 type receivePacketEvent struct {
-	Type        string              `json:"type"`  // IBC
-	Event       string              `json:"event"` // receivePacket
-	Packet      channeltypes.Packet `json:"packet"`
-	BlockHeight int64               `json:"blockHeight"`
-	BlockTime   int64               `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string              `json:"event" default:"receivePacket"`
+	Packet          channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -364,11 +333,7 @@ func (im IBCModule) OnRecvPacket(
 	// the same packets.
 
 	event := receivePacketEvent{
-		Type:        "IBC_EVENT",
-		Event:       "receivePacket",
-		Packet:      packet,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		Packet: packet,
 	}
 
 	err := im.PushAction(ctx, event)
@@ -380,12 +345,10 @@ func (im IBCModule) OnRecvPacket(
 }
 
 type acknowledgementPacketEvent struct {
-	Type            string              `json:"type"`  // IBC
-	Event           string              `json:"event"` // acknowledgementPacket
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string              `json:"event" default:"acknowledgementPacket"`
 	Packet          channeltypes.Packet `json:"packet"`
 	Acknowledgement []byte              `json:"acknowledgement"`
-	BlockHeight     int64               `json:"blockHeight"`
-	BlockTime       int64               `json:"blockTime"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -395,12 +358,8 @@ func (im IBCModule) OnAcknowledgementPacket(
 	relayer sdk.AccAddress,
 ) error {
 	event := acknowledgementPacketEvent{
-		Type:            "IBC_EVENT",
-		Event:           "acknowledgementPacket",
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
-		BlockHeight:     ctx.BlockHeight(),
-		BlockTime:       ctx.BlockTime().Unix(),
 	}
 
 	err := im.PushAction(ctx, event)
@@ -412,11 +371,9 @@ func (im IBCModule) OnAcknowledgementPacket(
 }
 
 type timeoutPacketEvent struct {
-	Type        string              `json:"type"`  // IBC
-	Event       string              `json:"event"` // timeoutPacket
-	Packet      channeltypes.Packet `json:"packet"`
-	BlockHeight int64               `json:"blockHeight"`
-	BlockTime   int64               `json:"blockTime"`
+	vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event           string              `json:"event" default:"timeoutPacket"`
+	Packet          channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
@@ -425,11 +382,7 @@ func (im IBCModule) OnTimeoutPacket(
 	relayer sdk.AccAddress,
 ) error {
 	event := timeoutPacketEvent{
-		Type:        "IBC_EVENT",
-		Event:       "timeoutPacket",
-		Packet:      packet,
-		BlockHeight: ctx.BlockHeight(),
-		BlockTime:   ctx.BlockTime().Unix(),
+		Packet: packet,
 	}
 
 	err := im.PushAction(ctx, event)

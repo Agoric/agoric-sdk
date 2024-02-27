@@ -10,6 +10,7 @@ package main
 import "C"
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
 
 type goReturn = struct {
@@ -44,7 +46,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 	daemoncmd.AppName = "ag-chain-cosmos"
 
 	// FIXME: Decouple the sending logic from the Cosmos app.
-	sendToNode := func(needReply bool, str string) (string, error) {
+	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
 		var rPort int
 		if needReply {
 			lastReply++
@@ -78,10 +80,11 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
 		exitCode := 0
-		daemoncmd.OnStartHook = func(logger log.Logger) {
+		daemoncmd.OnStartHook = func(logger log.Logger, appOpts servertypes.AppOptions) error {
 			// We tried running start, which should never exit, so exit with non-zero
 			// code if we ever stop.
 			exitCode = 99
+			return nil
 		}
 		daemon.RunWithController(sendToNode)
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")

@@ -19,7 +19,7 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<Purse>} zoeInvitationPurse
+ * @param {ERef<Purse<'set'>>} zoeInvitationPurse
  */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
@@ -28,7 +28,7 @@ export const makeOfferAndFindInvitationAmount = (
 ) => {
   /**
    * @param {Record<string, any>} invitationDetailsCriteria
-   * @returns {Promise<Amount>} invitationAmount
+   * @returns {Promise<Amount<'set'>>} invitationAmount
    */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();

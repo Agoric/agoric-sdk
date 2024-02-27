@@ -149,7 +149,7 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 
 let pushPriceCounter = 0;
 /**
- * @param {*} wallet
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} wallet
  * @param {string} adminOfferId
  * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
  * @returns {Promise<string>} offer id
@@ -322,6 +322,7 @@ test.serial('errors', async t => {
         'In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
     },
   );
+
   await eventLoopIteration();
 
   // Success, round starts

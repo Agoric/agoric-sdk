@@ -1,15 +1,11 @@
 package vm
 
 import (
+	"context"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-type ControllerContext struct {
-	Context               sdk.Context
-	IBCChannelHandlerPort int
-}
 
 type ControllerAdmissionMsg interface {
 	sdk.Msg
@@ -25,16 +21,13 @@ type ControllerAdmissionMsg interface {
 	IsHighPriority(sdk.Context, interface{}) (bool, error)
 }
 
-// Jsonable is a value, j, that can be passed through json.Marshal(j).
-type Jsonable interface{}
-
-// ActionPusher enqueues data for later consumption by the controller.
-type ActionPusher func(ctx sdk.Context, action Jsonable) error
-
-var controllerContext ControllerContext
+var wrappedEmptySDKContext = sdk.WrapSDKContext(
+	sdk.Context{}.WithContext(context.Background()),
+)
+var controllerContext context.Context = wrappedEmptySDKContext
 
 type PortHandler interface {
-	Receive(*ControllerContext, string) (string, error)
+	Receive(context.Context, string) (string, error)
 }
 
 var portToHandler = make(map[int]PortHandler)
@@ -45,9 +38,9 @@ var lastPort = 0
 func SetControllerContext(ctx sdk.Context) func() {
 	// We are only called by the controller, so we assume that it is billing its
 	// own meter usage.
-	controllerContext.Context = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
+	controllerContext = sdk.WrapSDKContext(ctx.WithGasMeter(sdk.NewInfiniteGasMeter()))
 	return func() {
-		controllerContext.Context = sdk.Context{}
+		controllerContext = wrappedEmptySDKContext
 	}
 }
 
@@ -75,5 +68,5 @@ func ReceiveFromController(portNum int, msg string) (string, error) {
 	if handler == nil {
 		return "", fmt.Errorf("unregistered port %d", portNum)
 	}
-	return handler.Receive(&controllerContext, msg)
+	return handler.Receive(controllerContext, msg)
 }

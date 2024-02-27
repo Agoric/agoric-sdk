@@ -4,13 +4,13 @@ description: 'Notify on actions status'
 inputs:
   from:
     description: 'The email address to send the notification from'
-    required: true
+    required: false
   to:
     description: 'Recipients'
-    required: true
+    required: false
   password:
     description: 'Sendgrid Password'
-    required: true
+    required: false
   webhook:
     description: 'Slack webhook URL'
     required: true
@@ -19,7 +19,8 @@ runs:
   using: composite
   steps:
     - name: send ${{ job.status }} email
-      uses: dawidd6/action-send-mail@v2
+      if: ${{ inputs.to != '' }}
+      uses: dawidd6/action-send-mail@v3
       with:
         # mail server settings
         server_address: smtp.sendgrid.net
@@ -42,7 +43,7 @@ runs:
         from: ${{ inputs.from }}
     - name: Send GitHub trigger payload
       id: slack
-      uses: slackapi/slack-github-action@v1.18.0
+      uses: slackapi/slack-github-action@v1.24.0
       with:
         payload: |
           {

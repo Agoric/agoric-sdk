@@ -16,30 +16,29 @@ export {};
  */
 
 /**
- * @typedef BundleHandle
- * @property {string} [bundleName]
+ * @typedef {{fileName?: string} & ({ bundleName: string } | { bundleID: string}) } ManifestBundleRef
  */
 
 /**
  * @callback PublishBundleRef
- * @param {ERef<BundleHandle>} bundle
- * @returns {Promise<BundleHandle>}
+ * @param {ERef<ManifestBundleRef>} bundle
+ * @returns {Promise<ManifestBundleRef>}
  */
 
 /**
- * @callback InstallBundle
+ * @callback InstallEntrypoint
  * @param {string} srcSpec
- * @param {string} bundlePath
- * @param {any} [opts]
- * @returns {BundleHandle}
+ * @param {string} [bundlePath]
+ * @param {unknown} [opts]
+ * @returns {Promise<ManifestBundleRef>}
  */
 
 /**
  * @callback ProposalBuilder
  * @param {{
  *   publishRef: PublishBundleRef,
- *   install: InstallBundle,
- *   wrapInstall?: <T>(f: T) => T }
+ *   install: InstallEntrypoint,
+ *   wrapInstall?: <T extends InstallEntrypoint>(f: T) => T }
  * } powers
  * @param {...any} args
  * @returns {Promise<ProposalResult>}

@@ -13,6 +13,9 @@
 import { E } from '@endo/far';
 import url from 'url';
 
+/** @typedef {ReturnType<import('./endo-pieces-contract.js')['start']>['publicFacet']} BundleMaker */
+/** @typedef {ReturnType<BundleMaker['makeBundler']>} Bundler */
+
 export const makeGetBundlerMaker =
   (homeP, { lookup, bundleSource }) =>
   async ({
@@ -20,6 +23,7 @@ export const makeGetBundlerMaker =
     log = console.log,
   } = {}) => {
     const { board: optionalBoard, zoe, scratch } = await homeP;
+    /** @type {() => Promise<BundleMaker>} */
     const lookupOrCreate = async () => {
       // Locate the bundler maker if any already exists at the given path.
       let bundlerMaker = await lookup(JSON.parse(BUNDLER_MAKER_LOOKUP));

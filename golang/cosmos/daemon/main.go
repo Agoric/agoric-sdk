@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,7 +18,7 @@ import (
 )
 
 // DefaultController is a stub controller.
-var DefaultController = func(needReply bool, str string) (string, error) {
+var DefaultController = func(ctx context.Context, needReply bool, str string) (string, error) {
 	return "", fmt.Errorf("Controller not configured; did you mean to use `ag-chain-cosmos` instead?")
 }
 
@@ -42,7 +43,7 @@ func RunWithController(sendToController cmd.Sender) {
 	config.Seal()
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
-	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
+	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)

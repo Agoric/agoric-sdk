@@ -751,10 +751,14 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 	}
 	defer os.RemoveAll(exportDir)
 
+	exportsHandler.logger.Info("creating swing-store restore", "exportDir", exportDir, "height", blockHeight)
+
 	err = WriteSwingStoreExportToDirectory(provider, exportDir)
 	if err != nil {
 		return err
 	}
+
+	exportsHandler.logger.Info("restoring swing-store", "exportDir", exportDir, "height", blockHeight)
 
 	action := &swingStoreRestoreExportAction{
 		Type:        swingStoreExportActionType,
@@ -772,7 +776,7 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 		return err
 	}
 
-	exportsHandler.logger.Info("restored swing-store export", "exportDir", exportDir, "height", blockHeight)
+	exportsHandler.logger.Info("restored swing-store", "exportDir", exportDir, "height", blockHeight)
 
 	return nil
 }

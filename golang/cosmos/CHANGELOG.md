@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u13.0...@agoric/cosmos@0.35.0-u14.0) (2024-02-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** make vm comms use `context.Context`
+
+### Features
+
+* repair KREAd contract on zoe upgrade ([6ac7623](https://github.com/Agoric/agoric-sdk/commit/6ac762379e2660353a23202acd2d6fb52ed13682))
+* **cosmos:** Add a "CapData" vstorage RPC endpoint ([d20e708](https://github.com/Agoric/agoric-sdk/commit/d20e708cf68e6b0616218e668f21f66b491032b5)), closes [#7581](https://github.com/Agoric/agoric-sdk/issues/7581)
+* **cosmos:** Add a vstorage package for decoding CapData ([f1b6b74](https://github.com/Agoric/agoric-sdk/commit/f1b6b74d6410412d86f094175fca72e2e17e8a2b))
+* **cosmos:** clean up `OnStartHook` and `OnExitHook` signatures ([e8a3a77](https://github.com/Agoric/agoric-sdk/commit/e8a3a77aacab4affa7e83885ece8789418a31846))
+* **cosmos:** make vm comms use `context.Context` ([0bb03a0](https://github.com/Agoric/agoric-sdk/commit/0bb03a0f222426bf8da6729d968c404dc9e72468))
+* agd vstorage 'path' for data or children ([71a217e](https://github.com/Agoric/agoric-sdk/commit/71a217e5a3576b6e8e89fb27e59eb7f2ebde592b))
+* **cosmos:** Always include alleged name and slot id in vstorage CapData remotable representations ([ee23c4e](https://github.com/Agoric/agoric-sdk/commit/ee23c4e404d90afaa28dbf53dfdb33cb9c3eda1b))
+* expose node service to retrieve operator config ([972d243](https://github.com/Agoric/agoric-sdk/commit/972d243eff2bf1eb0ca10f8a9860109a5a39cf87))
+* replace zoe and zcf ([#8846](https://github.com/Agoric/agoric-sdk/issues/8846)) ([0169c7e](https://github.com/Agoric/agoric-sdk/commit/0169c7e505099fdcfa8e4d1436e5d3b372f1c320))
+* tolerate missing files in gaia 3-way diff ([8633f4d](https://github.com/Agoric/agoric-sdk/commit/8633f4d7917a12035182715d560d50f312ece4ff))
+* upgrade ibc-go to v6.2.1 ([2371b51](https://github.com/Agoric/agoric-sdk/commit/2371b5178eff16baadc5716a3f7e11573d3b8889))
+* **cosmos:** impose defaults when sending VM actions ([d32e71e](https://github.com/Agoric/agoric-sdk/commit/d32e71ec14121c3c69aa3c173f284c706d329c75))
+* **cosmos:** next upgrade is `agoric-upgrade-14` ([0333099](https://github.com/Agoric/agoric-sdk/commit/03330999fa8ea872c57a94db063eadbdadc6f342))
+* **cosmos:** support core proposals set by upgrade handler ([14e47cc](https://github.com/Agoric/agoric-sdk/commit/14e47cc503db18ee74d7d9bd3193797524b7f540))
+* **cosmos:** upgrade wallet factory ([ceffbcd](https://github.com/Agoric/agoric-sdk/commit/ceffbcdd85bd4dfa3a7646b590133f9fd55755c8))
+
+
+### Bug Fixes
+
+* **cosmos:** add action context to core evals ([ce1197d](https://github.com/Agoric/agoric-sdk/commit/ce1197dca3c6e274f39ab9f125ed0ec8ad9388fd))
+* avoid broken goleveldb ([f4bd519](https://github.com/Agoric/agoric-sdk/commit/f4bd519ff0675fec1ecb81eaf2488b0df72bd286))
+* exempt more 3rd-party protos from link check ([0be9f00](https://github.com/Agoric/agoric-sdk/commit/0be9f0097d7657f33b5ecda467ff33309b228f51))
+* govulncheck updates ([e83fb57](https://github.com/Agoric/agoric-sdk/commit/e83fb57406ff176c11322c5b61e8515d7d8235df))
+* pick up snapshot initiation fix ([2d41178](https://github.com/Agoric/agoric-sdk/commit/2d41178e84d66fb3c4e990406989a4f6e1f4f386))
+* unwrap account keeper for app module ([4807023](https://github.com/Agoric/agoric-sdk/commit/48070238018ce6afc361254e5e847e90752eb9cf))
+* update protobuf download and generation for ibc-go v4 ([63bdd54](https://github.com/Agoric/agoric-sdk/commit/63bdd54f7629adc6dbb38632c0e1b0bc2526f0e2))
+
+
+### Reverts
+
+* Revert "fix(cosmos): don't log expected missing tx context of CORE_EVAL" ([eb856af](https://github.com/Agoric/agoric-sdk/commit/eb856afcb32b4376ceb353c6895c65db0c251958))
+
+
+
 ## [0.35.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u12.0...@agoric/cosmos@0.35.0-u13.0) (2023-12-07)
 
 

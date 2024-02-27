@@ -1,4 +1,4 @@
-name: Integration tests triggered
+name: Pre-merge checks
 
 on:
   pull_request:
@@ -6,23 +6,84 @@ on:
       - opened
       - reopened
       - synchronize
+      - converted_to_draft
       - ready_for_review
       - labeled
+      - unlabeled
       - auto_merge_enabled
+      - auto_merge_disabled
   merge_group:
 
 jobs:
-  pre_check:
-    uses: ./.github/workflows/pre-check-integration.yml
-
   wait-integration-pre-checks:
-    needs: pre_check
     runs-on: ubuntu-latest
     steps:
-      - name: wait
-        shell: bash
+      - shell: bash
+        run: echo "TODO remove this vestigial job"
+
+  merge-strategy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == true ||
+      github.event.pull_request.base.ref != 'master' || (
+        contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
+        contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+        contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+        contains(github.event.pull_request.labels.*.name, 'bypass:automerge') ||
+        github.event.pull_request.auto_merge != null
+      )
+    strategy:
+      # abuse the matrix feature to create a check which stays pending until
+      # a merge strategy is chosen
+      matrix:
+        merge: [chosen]
+    steps:
+      - shell: bash
+        run: echo "Merge strategy chosen"
+
+  linear-history:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.base.ref == 'master' && (
+        contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+        contains(github.event.pull_request.labels.*.name, 'bypass:automerge')
+      ) &&
+      !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - shell: bash
         run: |
-          cat <<EOF
-            needs ${{ toJSON(needs.pre_check.outputs) }}
-          EOF
-          sleep 5
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          HEAD_LABEL="${{ github.event.pull_request.head.label }}"
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          BASE_LABEL="${{ github.event.pull_request.base.label }}"
+          merge_commits=$(git rev-list --merges "$BASE_SHA".."$HEAD_SHA")
+
+          if [ -n "$merge_commits" ]; then
+            echo "Error: merge commits found in $BASE_LABEL..$HEAD_LABEL"
+
+            for merge_commit in $merge_commits; do
+              echo "$merge_commit"
+            done
+
+            exit 1
+          fi
+
+          fixup_commits=
+          for commit in $(git rev-list $BASE_SHA..$HEAD_SHA); do
+            case $(git show --pretty=format:%s -s $commit) in fixup\!*|squash\!*)
+              fixup_commits="$fixup_commits\n$commit"
+              ;;
+            esac
+          done
+
+          if [ -n "$fixup_commits" ]; then
+            echo "Error: fixup/squash commits found in $BASE_LABEL..$HEAD_LABEL"
+            echo -e "$fixup_commits"
+            exit 1
+          fi

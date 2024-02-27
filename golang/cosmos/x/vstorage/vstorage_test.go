@@ -1,6 +1,7 @@
 package vstorage
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -14,7 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
@@ -32,27 +32,27 @@ type testKit struct {
 	keeper  Keeper
 	handler vstorageHandler
 	ctx     sdk.Context
-	cctx    *vm.ControllerContext
+	cctx    context.Context
 }
 
 func makeTestKit() testKit {
 	keeper := NewKeeper(storeKey)
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(storeKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)
 	}
 	ctx := sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
-	cctx := &vm.ControllerContext{Context: ctx}
+	cctx := sdk.WrapSDKContext(ctx)
 	handler := vstorageHandler{keeper}
 	return testKit{keeper, handler, ctx, cctx}
 }
 
 func callReceive(
 	handler vstorageHandler,
-	cctx *vm.ControllerContext,
+	cctx context.Context,
 	method string,
 	args []interface{},
 ) (string, error) {

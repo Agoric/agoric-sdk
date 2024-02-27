@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u13.0...agoric@0.22.0-u14.0) (2024-02-27)
+
+
+### Features
+
+* **create-dapp:** `npm create @agoric/dapp ...` uses `agoric init` ([8525a4f](https://github.com/Agoric/agoric-sdk/commit/8525a4f247a6f21752904c69cd5730926e9daba0))
+
+
+### Bug Fixes
+
+* use dapp-offer-up by default ([#8630](https://github.com/Agoric/agoric-sdk/issues/8630)) ([689fcfa](https://github.com/Agoric/agoric-sdk/commit/689fcfa168f9b0728c8fac7470376f94d3f28e27))
+* **agoric-cli:** `open` should default to `localhost`, not numeric IPv4 ([885b3a2](https://github.com/Agoric/agoric-sdk/commit/885b3a246846e5704528c0f795a9d48bc59b4861))
+
+
+
 ## [0.22.0-u13.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.21.2-u12.0...agoric@0.22.0-u13.0) (2023-12-07)
 
 

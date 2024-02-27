@@ -196,7 +196,7 @@ var (
 func makeTestStore() sdk.KVStore {
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
-	ms.MountStoreWithDB(swingsetStoreKey, sdk.StoreTypeIAVL, db)
+	ms.MountStoreWithDB(swingsetStoreKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
 		panic(err)

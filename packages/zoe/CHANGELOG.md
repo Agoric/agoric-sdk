@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.26.3-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.26.3-u13.0...@agoric/zoe@0.26.3-u14.0) (2024-02-27)
+
+
+### Features
+
+* zcf ask zoe to repair 'adminNode.done()` watcher on restart ([7195679](https://github.com/Agoric/agoric-sdk/commit/7195679b1edc6ee70875fd29dfa22947e1eabdb7))
+
+
+### Bug Fixes
+
+* make zoeStorageModule correctly restart with zcfMints present. ([f47702b](https://github.com/Agoric/agoric-sdk/commit/f47702b7886fa9bae95b393d88fbb3842441e7f6))
+* When setting a new zcfBundleCap, store it in baggage ([#8807](https://github.com/Agoric/agoric-sdk/issues/8807)) ([8be87aa](https://github.com/Agoric/agoric-sdk/commit/8be87aadde1b9161fdd958ca487f4e9c7cf6c650))
+
+
+
 ### [0.26.3-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.26.3-u12.0...@agoric/zoe@0.26.3-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/zoe

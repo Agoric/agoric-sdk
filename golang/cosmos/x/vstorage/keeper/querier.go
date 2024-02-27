@@ -33,7 +33,11 @@ func getVstorageEntryPath(urlPathSegments []string) (string, error) {
 // be used to extend it to a vstorage path such as "foo.bar.baz").
 func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, urlPathSegments []string, req abci.RequestQuery) (res []byte, err error) {
-		switch urlPathSegments[0] {
+		var queryType string
+		if len(urlPathSegments) > 0 {
+			queryType = urlPathSegments[0]
+		}
+		switch queryType {
 		case QueryData:
 			entryPath, entryPathErr := getVstorageEntryPath(urlPathSegments[1:])
 			if entryPathErr != nil {
@@ -47,7 +51,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 			}
 			return queryChildren(ctx, entryPath, req, keeper, legacyQuerierCdc)
 		default:
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query endpoint")
+			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "unknown vstorage query path")
 		}
 	}
 }

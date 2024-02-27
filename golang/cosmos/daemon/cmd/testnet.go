@@ -37,7 +37,7 @@ import (
 
 var (
 	flagNodeDirPrefix     = "node-dir-prefix"
-	flagNumValidators     = "v"
+	flagNumValidators     = "validator-count"
 	flagOutputDir         = "output-dir"
 	flagNodeDaemonHome    = "node-daemon-home"
 	flagStartingIPAddress = "starting-ip-address"
@@ -48,13 +48,13 @@ func testnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalance
 	cmd := &cobra.Command{
 		Use:   "testnet",
 		Short: fmt.Sprintf("Initialize files for a %s testnet", AppName),
-		Long: `testnet will create "v" number of directories and populate each with
+		Long: `testnet will create one directory per validator and populate each with
 necessary files (private validator, genesis, config, etc.).
 
 Note, strict routability for addresses is turned off in the config file.
 
 Example:
-	agd testnet --v 4 --output-dir ./output --starting-ip-address 192.168.10.2
+	agd testnet -n 4 --output-dir ./output --starting-ip-address 192.168.10.2
 	`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -74,6 +74,13 @@ Example:
 			numValidators, _ := cmd.Flags().GetInt(flagNumValidators)
 			algo, _ := cmd.Flags().GetString(flags.FlagKeyAlgorithm)
 
+			if cmd.Flags().Changed("v") {
+				if cmd.Flags().Changed(flagNumValidators) {
+					return fmt.Errorf("--%s and --v are mutually exclusive", flagNumValidators)
+				}
+				numValidators, _ = cmd.Flags().GetInt("v")
+			}
+
 			return InitTestnet(
 				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, numValidators,
@@ -81,9 +88,13 @@ Example:
 		},
 	}
 
-	cmd.Flags().Int(flagNumValidators, 4, "Number of validators to initialize the testnet with")
+	cmd.Flags().IntP(flagNumValidators, "n", 4, "Number of validators to initialize the testnet with")
+	cmd.Flags().Int("v", 4, fmt.Sprintf("Alias for --%s", flagNumValidators))
+	if vFlag := cmd.Flags().Lookup("v"); vFlag != nil {
+		vFlag.Deprecated = fmt.Sprintf("use --%s", flagNumValidators)
+	}
 	cmd.Flags().StringP(flagOutputDir, "o", "./mytestnet", "Directory to store initialization data for the testnet")
-	cmd.Flags().String(flagNodeDirPrefix, "node", "Prefix the directory name for each node with (node results in node0, node1, ...)")
+	cmd.Flags().String(flagNodeDirPrefix, "node", "Prefix for the name of per-validator subdirectories (to be number-suffixed like node0, node1, ...)")
 	cmd.Flags().String(flagNodeDaemonHome, AppName, "Home directory of the node's daemon configuration")
 	cmd.Flags().String(flagStartingIPAddress, "192.168.0.1", "Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)")
 	cmd.Flags().String(flags.FlagChainID, "", "genesis file chain-id, if left blank will be randomly created")
@@ -167,7 +178,7 @@ func InitTestnet(
 		memo := fmt.Sprintf("%s@%s:26656", nodeIDs[i], ip)
 		genFiles = append(genFiles, nodeConfig.GenesisFile())
 
-		kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf)
+		kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf, clientCtx.Codec)
 		if err != nil {
 			return err
 		}

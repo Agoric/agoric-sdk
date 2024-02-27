@@ -1,5 +1,4 @@
-// backported types are out of sync
-// @ts-nocheck
+import { E } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -8,8 +7,13 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { StorageNodeShape, makeTracer } from '@agoric/internal';
-import { observeNotifier } from '@agoric/notifier';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  objectMap,
+  StorageNodeShape,
+} from '@agoric/internal';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { M, mustMatch } from '@agoric/store';
 import {
   appendToStoredArray,
@@ -18,19 +22,25 @@ import {
 import {
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
+  prepareExoClass,
   prepareExoClassKit,
   provide,
+  watchPromise,
 } from '@agoric/vat-data';
 import {
+  prepareRecorderKit,
   SubscriberShape,
   TopicsRecordShape,
-  prepareRecorderKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
+import {
+  AmountKeywordRecordShape,
+  PaymentPKeywordRecordShape,
+} from '@agoric/zoe/src/typeGuards.js';
+
 import { makeInvitationsHelper } from './invitations.js';
-import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
+import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
 const { Fail, quote: q } = assert;
 
@@ -42,17 +52,36 @@ const trace = makeTracer('SmrtWlt');
  * @see {@link ../README.md}}
  */
 
+/** @typedef {number | string} OfferId */
+
+/**
+ * @typedef {{
+ *   id: OfferId,
+ *   invitationSpec: import('./invitations').InvitationSpec,
+ *   proposal: Proposal,
+ *   offerArgs?: unknown
+ * }} OfferSpec
+ */
+
+/**
+ * @typedef {{
+ *   logger:  {info: (...args: any[]) => void, error: (...args: any[]) => void},
+ *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher,
+ *   invitationFromSpec: ERef<Invitation>,
+ * }} ExecutorPowers
+ */
+
 /**
  * @typedef {{
  *   method: 'executeOffer'
- *   offer: import('./offers.js').OfferSpec,
+ *   offer: OfferSpec,
  * }} ExecuteOfferAction
  */
 
 /**
  * @typedef {{
  *   method: 'tryExitOffer'
- *   offerId: import('./offers.js').OfferId,
+ *   offerId: OfferId,
  * }} TryExitOfferAction
  */
 
@@ -83,7 +112,7 @@ const trace = makeTracer('SmrtWlt');
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
  *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
+ *   liveOffers: Array<[OfferId, import('./offers.js').OfferStatus]>,
  * }} CurrentWalletRecord
  */
 
@@ -108,18 +137,15 @@ const trace = makeTracer('SmrtWlt');
  *   brand: Brand,
  *   displayInfo: DisplayInfo,
  *   issuer: Issuer,
- *   petname: import('./types').Petname
+ *   petname: import('./types.js').Petname
  * }} BrandDescriptor
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
 
-// imports
-/** @typedef {import('./types').RemotePurse} RemotePurse */
-
 /**
  * @typedef {{
  *   address: string,
- *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
  *   currentStorageNode: StorageNode,
  *   invitationPurse: Purse<'set'>,
  *   walletStorageNode: StorageNode,
@@ -134,6 +160,7 @@ const trace = makeTracer('SmrtWlt');
  *   invitationDisplayInfo: DisplayInfo,
  *   publicMarshaller: Marshaller,
  *   zoe: ERef<ZoeService>,
+ *   secretWalletFactoryKey: any,
  * }} SharedParams
  *
  * @typedef {ImmutableState & MutableState} State
@@ -144,14 +171,15 @@ const trace = makeTracer('SmrtWlt');
  *
  * @typedef {Readonly<UniqueParams & {
  *   paymentQueues: MapStore<Brand, Array<Payment>>,
- *   offerToInvitationMakers: MapStore<string, import('./types').InvitationMakers>,
+ *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
- *   offerToUsedInvitation: MapStore<string, Amount>,
- *   purseBalances: MapStore<RemotePurse, Amount>,
+ *   offerToUsedInvitation: MapStore<string, Amount<'set'>>,
+ *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
- *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
+ *   liveOffers: MapStore<OfferId, import('./offers.js').OfferStatus>,
+ *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
+ *   liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>,
  * }>} ImmutableState
  *
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
@@ -165,7 +193,7 @@ const trace = makeTracer('SmrtWlt');
  * TODO: consider moving to nameHub.js?
  *
  * @param {unknown} target - passable Key
- * @param {ERef<NameHub>} nameHub
+ * @param {ERef<import('@agoric/vats').NameHub>} nameHub
  */
 const namesOf = async (target, nameHub) => {
   const entries = await E(nameHub).entries();
@@ -223,6 +251,12 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationDisplayInfo: DisplayInfoShape,
       publicMarshaller: M.remotable('Marshaller'),
       zoe: M.eref(M.remotable('ZoeService')),
+
+      // known only to smartWallets and walletFactory, this allows the
+      // walletFactory to invoke functions on the self facet that no one else
+      // can. Used to protect the upgrade-to-incarnation 2 repair. This can be
+      // dropped once the repair has taken place.
+      secretWalletFactoryKey: M.any(),
     }),
   );
 
@@ -237,8 +271,62 @@ export const prepareSmartWallet = (baggage, shared) => {
     return store;
   });
 
+  const makeOfferWatcher = prepareOfferWatcher(baggage);
+
+  const updateShape = {
+    value: AmountShape,
+    updateCount: M.bigint(),
+  };
+
+  const NotifierShape = M.remotable();
+  const amountWatcherGuard = M.interface('paymentWatcher', {
+    onFulfilled: M.call(updateShape, NotifierShape).returns(),
+    onRejected: M.call(M.any(), NotifierShape).returns(M.promise()),
+  });
+
+  const prepareAmountWatcher = () =>
+    prepareExoClass(
+      baggage,
+      'AmountWatcher',
+      amountWatcherGuard,
+      /**
+       * @param {Purse} purse
+       * @param {ReturnType<makeWalletWithResolvedStorageNodes>['helper']} helper
+       */
+      (purse, helper) => ({ purse, helper }),
+      {
+        /**
+         * @param {{ value: Amount, updateCount: bigint | undefined }} updateRecord
+         * @param { Notifier<Amount> } notifier
+         * @returns {void}
+         */
+        onFulfilled(updateRecord, notifier) {
+          const { helper, purse } = this.state;
+          helper.updateBalance(purse, updateRecord.value);
+          helper.watchNextBalance(
+            this.self,
+            notifier,
+            updateRecord.updateCount,
+          );
+        },
+        /**
+         * @param {unknown} err
+         * @returns {Promise<void>}
+         */
+        onRejected(err) {
+          const { helper, purse } = this.state;
+          if (isUpgradeDisconnection(err)) {
+            return helper.watchPurse(purse); // retry
+          }
+          helper.logWalletError(`failed amount observer`, err);
+          throw err;
+        },
+      },
+    );
+
+  const makeAmountWatcher = prepareAmountWatcher();
+
   /**
-   *
    * @param {UniqueParams} unique
    * @returns {State}
    */
@@ -302,6 +390,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       liveOfferSeats: makeScalarBigMapStore('live offer seats', {
         durable: true,
       }),
+      liveOfferPayments: makeScalarBigMapStore('live offer payments', {
+        durable: true,
+      }),
     };
 
     return {
@@ -320,9 +411,33 @@ export const prepareSmartWallet = (baggage, shared) => {
         .returns(M.promise()),
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
+      watchNextBalance: M.call(M.any(), NotifierShape, M.bigint()).returns(),
+      repairUnwatchedSeats: M.call().returns(M.promise()),
+      repairUnwatchedPurses: M.call().returns(M.promise()),
+      updateStatus: M.call(M.any()).returns(),
+      addContinuingOffer: M.call(
+        M.or(M.number(), M.string()),
+        AmountShape,
+        M.remotable('InvitationMaker'),
+        M.or(M.record(), M.undefined()),
+      ).returns(M.promise()),
+      purseForBrand: M.call(BrandShape).returns(M.promise()),
+      logWalletInfo: M.call().rest(M.arrayOf(M.any())).returns(),
+      logWalletError: M.call().rest(M.arrayOf(M.any())).returns(),
+      getLiveOfferPayments: M.call().returns(M.remotable('mapStore')),
     }),
+
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
+    }),
+    payments: M.interface('payments support', {
+      withdrawGive: M.call(
+        AmountKeywordRecordShape,
+        M.or(M.number(), M.string()),
+      ).returns(PaymentPKeywordRecordShape),
+      tryReclaimingWithdrawnPayments: M.call(
+        M.or(M.number(), M.string()),
+      ).returns(M.promise()),
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
@@ -337,9 +452,11 @@ export const prepareSmartWallet = (baggage, shared) => {
       getCurrentSubscriber: M.call().returns(SubscriberShape),
       getUpdatesSubscriber: M.call().returns(SubscriberShape),
       getPublicTopics: M.call().returns(TopicsRecordShape),
+      repairWalletForIncarnation2: M.call(M.any()).returns(),
     }),
   };
 
+  // TODO move to top level so its type can be exported
   /**
    * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
    * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
@@ -360,6 +477,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @type {(id: string) => void}
          */
         assertUniqueOfferId(id) {
+          const { facets } = this;
           const {
             liveOffers,
             liveOfferSeats,
@@ -370,13 +488,14 @@ export const prepareSmartWallet = (baggage, shared) => {
           const used =
             liveOffers.has(id) ||
             liveOfferSeats.has(id) ||
+            facets.helper.getLiveOfferPayments().has(id) ||
             offerToInvitationMakers.has(id) ||
             offerToPublicSubscriberPaths.has(id) ||
             offerToUsedInvitation.has(id);
           !used || Fail`cannot re-use offer id ${id}`;
         },
         /**
-         * @param {RemotePurse} purse
+         * @param {Purse} purse
          * @param {Amount<any>} balance
          */
         updateBalance(purse, balance) {
@@ -415,44 +534,40 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
-        /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
+        /** @type {(purse: ERef<Purse>) => Promise<void>} */
         async watchPurse(purseRef) {
-          const { address } = this.state;
+          const { helper } = this.facets;
+
+          // This would seem to fit the observeNotifier() pattern,
+          // but purse notifiers are not necessarily durable.
+          // If there is an error due to upgrade, retry watchPurse().
 
           const purse = await purseRef; // promises don't fit in durable storage
+          const handler = makeAmountWatcher(purse, helper);
 
-          const { helper } = this.facets;
           // publish purse's balance and changes
-          void E.when(
-            E(purse).getCurrentAmount(),
-            balance => helper.updateBalance(purse, balance),
-            err =>
-              console.error(
-                address,
-                'initial purse balance publish failed',
-                err,
-              ),
-          );
-          void observeNotifier(E(purse).getCurrentAmountNotifier(), {
-            updateState(balance) {
-              helper.updateBalance(purse, balance);
-            },
-            fail(reason) {
-              console.error(address, `failed updateState observer`, reason);
-            },
-          });
+          const notifier = await E(purse).getCurrentAmountNotifier();
+          const startP = E(notifier).getUpdateSince(undefined);
+          // @ts-expect-error import watchPromise's type is unknown
+          watchPromise(startP, handler, notifier);
+        },
+
+        watchNextBalance(handler, notifier, updateCount) {
+          const nextP = E(notifier).getUpdateSince(updateCount);
+          // @ts-expect-error import watchPromise's type is unknown
+          watchPromise(nextP, handler, notifier);
         },
 
         /**
          * Provide a purse given a NameHub of issuers and their
          * brands.
          *
-         * We current support only one NameHub, agoricNames, and
+         * We currently support only one NameHub, agoricNames, and
          * hence one purse per brand. But we store an array of them
          * to facilitate a transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<NameHub>} known - namehub with brand, issuer branches
+         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -499,6 +614,199 @@ export const prepareSmartWallet = (baggage, shared) => {
           void helper.watchPurse(purse);
           return purse;
         },
+
+        /**
+         * see https://github.com/Agoric/agoric-sdk/issues/8445 and
+         * https://github.com/Agoric/agoric-sdk/issues/8286. As originally
+         * released, the smartWallet didn't durably monitor the promises for the
+         * outcomes of offers, and would have dropped them on upgrade of Zoe or
+         * the smartWallet itself. Using watchedPromises, (see offerWatcher.js)
+         * we've addressed the problem for new offers. This function will
+         * backfill the solution for offers that were outstanding before the
+         * transition to incarnation 2 of the smartWallet.
+         */
+        async repairUnwatchedSeats() {
+          const { state, facets } = this;
+          const { address, invitationPurse, liveOffers, liveOfferSeats } =
+            state;
+          const { zoe, agoricNames, invitationBrand, invitationIssuer } =
+            shared;
+
+          const invitationFromSpec = makeInvitationsHelper(
+            zoe,
+            agoricNames,
+            invitationBrand,
+            invitationPurse,
+            state.offerToInvitationMakers.get,
+          );
+
+          const watcherPromises = [];
+          for (const seatId of liveOfferSeats.keys()) {
+            facets.helper.logWalletInfo(`repairing ${seatId}`);
+            const offerSpec = liveOffers.get(seatId);
+            const seat = liveOfferSeats.get(seatId);
+
+            const watchOutcome = (async () => {
+              await null;
+              let invitationAmount = state.offerToUsedInvitation.has(
+                // @ts-expect-error older type allowed number
+                offerSpec.id,
+              )
+                ? state.offerToUsedInvitation.get(
+                    // @ts-expect-error older type allowed number
+                    offerSpec.id,
+                  )
+                : undefined;
+              if (invitationAmount) {
+                facets.helper.logWalletInfo(
+                  'recovered invitation amount for offer',
+                  offerSpec.id,
+                );
+              } else {
+                facets.helper.logWalletInfo(
+                  'inferring invitation amount for offer',
+                  offerSpec.id,
+                );
+                const tempInvitation = invitationFromSpec(
+                  offerSpec.invitationSpec,
+                );
+                invitationAmount = await E(invitationIssuer).getAmountOf(
+                  tempInvitation,
+                );
+                void E(invitationIssuer).burn(tempInvitation);
+              }
+
+              const watcher = makeOfferWatcher(
+                facets.helper,
+                facets.deposit,
+                offerSpec,
+                address,
+                invitationAmount,
+                seat,
+              );
+              return watchOfferOutcomes(watcher, seat);
+            })();
+            trace(`Repaired seat ${seatId} for wallet ${address}`);
+            watcherPromises.push(watchOutcome);
+          }
+
+          await Promise.all(watcherPromises);
+        },
+        async repairUnwatchedPurses() {
+          const { state, facets } = this;
+          const { helper, self } = facets;
+          const { invitationPurse, address } = state;
+
+          const brandToPurses = getBrandToPurses(walletPurses, self);
+          trace(`Found ${brandToPurses.values()} purse(s) for ${address}`);
+          for (const purses of brandToPurses.values()) {
+            for (const record of purses) {
+              void helper.watchPurse(record.purse);
+              trace(`Repaired purse ${record.petname} of ${address}`);
+            }
+          }
+
+          void helper.watchPurse(invitationPurse);
+        },
+
+        /** @param {import('./offers.js').OfferStatus} offerStatus */
+        updateStatus(offerStatus) {
+          const { state, facets } = this;
+          facets.helper.logWalletInfo('offerStatus', offerStatus);
+
+          void state.updateRecorderKit.recorder.write({
+            updated: 'offerStatus',
+            status: offerStatus,
+          });
+
+          if ('numWantsSatisfied' in offerStatus) {
+            if (state.liveOfferSeats.has(offerStatus.id)) {
+              state.liveOfferSeats.delete(offerStatus.id);
+            }
+
+            if (facets.helper.getLiveOfferPayments().has(offerStatus.id)) {
+              facets.helper.getLiveOfferPayments().delete(offerStatus.id);
+            }
+
+            if (state.liveOffers.has(offerStatus.id)) {
+              state.liveOffers.delete(offerStatus.id);
+              // This might get skipped in subsequent passes, since we .delete()
+              // the first time through
+              facets.helper.publishCurrentState();
+            }
+          }
+        },
+        async addContinuingOffer(
+          offerId,
+          invitationAmount,
+          invitationMakers,
+          publicSubscribers,
+        ) {
+          const { state, facets } = this;
+
+          state.offerToUsedInvitation.init(offerId, invitationAmount);
+          state.offerToInvitationMakers.init(offerId, invitationMakers);
+          const pathMap = await objectMapStoragePath(publicSubscribers);
+          if (pathMap) {
+            facets.helper.logWalletInfo('recording pathMap', pathMap);
+            state.offerToPublicSubscriberPaths.init(offerId, pathMap);
+          }
+          facets.helper.publishCurrentState();
+        },
+
+        /**
+         * @param {Brand} brand
+         * @returns {Promise<Purse>}
+         */
+        async purseForBrand(brand) {
+          const { state, facets } = this;
+          const { registry, invitationBrand } = shared;
+
+          if (registry.has(brand)) {
+            // @ts-expect-error virtual purse
+            return E(state.bank).getPurse(brand);
+          } else if (invitationBrand === brand) {
+            return state.invitationPurse;
+          }
+
+          const purse = await facets.helper.getPurseIfKnownBrand(
+            brand,
+            shared.agoricNames,
+          );
+          if (purse) {
+            return purse;
+          }
+          throw Fail`cannot find/make purse for ${brand}`;
+        },
+        logWalletInfo(...args) {
+          const { state } = this;
+          console.info('wallet', state.address, ...args);
+        },
+        logWalletError(...args) {
+          const { state } = this;
+          console.error('wallet', state.address, ...args);
+        },
+        // In new SmartWallets, this is part of state, but we can't add fields
+        // to instance state for older SmartWallets, so put it in baggage.
+        getLiveOfferPayments() {
+          const { state } = this;
+
+          if (state.liveOfferPayments) {
+            return state.liveOfferPayments;
+          }
+
+          // This will only happen for legacy wallets, before WF incarnation 2
+          if (!baggage.has(state.address)) {
+            trace(`getLiveOfferPayments adding store for ${state.address}`);
+            baggage.init(
+              state.address,
+              makeScalarBigMapStore('live offer payments', {
+                durable: true,
+              }),
+            );
+          }
+          return baggage.get(state.address);
+        },
       },
       /**
        * Similar to {DepositFacet} but async because it has to look up the purse.
@@ -514,9 +822,13 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @throws if there's not yet a purse, though the payment is held to try again when there is
          */
         async receive(payment) {
-          const { helper } = this.facets;
-          const { paymentQueues: queues, bank, invitationPurse } = this.state;
+          const {
+            state,
+            facets: { helper },
+          } = this;
+          const { paymentQueues: queues, bank, invitationPurse } = state;
           const { registry, invitationBrand } = shared;
+
           const brand = await E(payment).getAllegedBrand();
 
           // When there is a purse deposit into it
@@ -542,119 +854,195 @@ export const prepareSmartWallet = (baggage, shared) => {
           throw Fail`cannot deposit payment with brand ${brand}: no purse`;
         },
       },
+
+      payments: {
+        /**
+         * Withdraw the offered amount from the appropriate purse of this wallet.
+         *
+         * Save its amount in liveOfferPayments in case we need to reclaim the payment.
+         *
+         * @param {AmountKeywordRecord} give
+         * @param {OfferId} offerId
+         * @returns {PaymentPKeywordRecord}
+         */
+        withdrawGive(give, offerId) {
+          const { facets } = this;
+
+          /** @type {MapStore<Brand, Payment>} */
+          const brandPaymentRecord = makeScalarBigMapStore('paymentToBrand', {
+            durable: true,
+          });
+          facets.helper
+            .getLiveOfferPayments()
+            .init(offerId, brandPaymentRecord);
+
+          // Add each payment amount to brandPaymentRecord as it is withdrawn. If
+          // there's an error later, we can use it to redeposit the correct amount.
+          return objectMap(give, amount => {
+            /** @type {Promise<Purse>} */
+            const purseP = facets.helper.purseForBrand(amount.brand);
+            const paymentP = E(purseP).withdraw(amount);
+            void E.when(
+              paymentP,
+              payment => brandPaymentRecord.init(amount.brand, payment),
+              e => {
+                // recovery will be handled by tryReclaimingWithdrawnPayments()
+                facets.helper.logWalletInfo(
+                  `⚠️ Payment withdrawal failed.`,
+                  offerId,
+                  e,
+                );
+              },
+            );
+            return paymentP;
+          });
+        },
+
+        /**
+         * Find the live payments for the offer and deposit them back in the appropriate purses.
+         *
+         * @param {OfferId} offerId
+         * @returns {Promise<void>}
+         */
+        async tryReclaimingWithdrawnPayments(offerId) {
+          const { facets } = this;
+
+          await null;
+
+          const liveOfferPayments = facets.helper.getLiveOfferPayments();
+          if (liveOfferPayments.has(offerId)) {
+            const brandPaymentRecord = liveOfferPayments.get(offerId);
+            if (!brandPaymentRecord) {
+              return;
+            }
+            // Use allSettled to ensure we attempt all the deposits, regardless of
+            // individual rejections.
+            await Promise.allSettled(
+              Array.from(brandPaymentRecord.entries()).map(([b, p]) => {
+                // Wait for the withdrawal to complete.  This protects against a
+                // race when updating paymentToPurse.
+                const purseP = facets.helper.purseForBrand(b);
+
+                // Now send it back to the purse.
+                return E(purseP).deposit(p);
+              }),
+            );
+          }
+        },
+      },
+
       offers: {
         /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *
-         * @param {import('./offers.js').OfferSpec} offerSpec
+         * @param {OfferSpec} offerSpec
          * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
          * @throws if any parts of the offer can be determined synchronously to be invalid
          */
         async executeOffer(offerSpec) {
           const { facets, state } = this;
-          const {
-            address,
-            bank,
-            invitationPurse,
-            offerToInvitationMakers,
-            offerToUsedInvitation,
-            offerToPublicSubscriberPaths,
-            updateRecorderKit,
-          } = this.state;
-          const { invitationBrand, zoe, invitationIssuer, registry } = shared;
+          const { address, invitationPurse } = state;
+          const { zoe, agoricNames } = shared;
+          const { invitationBrand, invitationIssuer } = shared;
 
           facets.helper.assertUniqueOfferId(String(offerSpec.id));
 
-          const logger = {
-            info: (...args) => console.info('wallet', address, ...args),
-            error: (...args) => console.error('wallet', address, ...args),
-          };
+          await null;
 
-          const executor = makeOfferExecutor({
-            zoe,
-            depositFacet: facets.deposit,
-            invitationIssuer,
-            powers: {
-              invitationFromSpec: makeInvitationsHelper(
-                zoe,
-                shared.agoricNames,
-                invitationBrand,
-                invitationPurse,
-                offerToInvitationMakers.get,
-              ),
-              /**
-               * @param {Brand} brand
-               * @returns {Promise<RemotePurse>}
-               */
-              purseForBrand: async brand => {
-                const { helper } = facets;
-                if (registry.has(brand)) {
-                  // @ts-expect-error RemotePurse cast
-                  return E(bank).getPurse(brand);
-                } else if (invitationBrand === brand) {
-                  // @ts-expect-error RemotePurse cast
-                  return invitationPurse;
-                }
+          let seatRef;
+          let watcher;
+          try {
+            const invitationFromSpec = makeInvitationsHelper(
+              zoe,
+              agoricNames,
+              invitationBrand,
+              invitationPurse,
+              state.offerToInvitationMakers.get,
+            );
 
-                const purse = await helper.getPurseIfKnownBrand(
-                  brand,
-                  shared.agoricNames,
-                );
-                if (purse) {
-                  return purse;
-                }
-                throw Fail`cannot find/make purse for ${brand}`;
-              },
-              logger,
-            },
-            onStatusChange: offerStatus => {
-              logger.info('offerStatus', offerStatus);
+            facets.helper.logWalletInfo('starting executeOffer', offerSpec.id);
 
-              void updateRecorderKit.recorder.write({
-                updated: 'offerStatus',
-                status: offerStatus,
-              });
+            // 1. Prepare values and validate synchronously.
+            const { proposal } = offerSpec;
 
-              const isSeatExited = 'numWantsSatisfied' in offerStatus;
-              if (isSeatExited) {
-                if (state.liveOfferSeats.has(offerStatus.id)) {
-                  state.liveOfferSeats.delete(offerStatus.id);
-                }
+            const invitation = invitationFromSpec(offerSpec.invitationSpec);
 
-                if (state.liveOffers.has(offerStatus.id)) {
-                  state.liveOffers.delete(offerStatus.id);
-                  facets.helper.publishCurrentState();
-                }
-              }
-            },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
-            onNewContinuingOffer: async (
-              offerId,
+            const [paymentKeywordRecord, invitationAmount] = await Promise.all([
+              proposal?.give &&
+                deeplyFulfilledObject(
+                  facets.payments.withdrawGive(proposal.give, offerSpec.id),
+                ),
+              E(invitationIssuer).getAmountOf(invitation),
+            ]);
+
+            // 2. Begin executing offer
+            // No explicit signal to user that we reached here but if anything above
+            // failed they'd get an 'error' status update.
+
+            /** @type {UserSeat} */
+            seatRef = await E(zoe).offer(
+              invitation,
+              proposal,
+              paymentKeywordRecord,
+              offerSpec.offerArgs,
+            );
+            facets.helper.logWalletInfo(offerSpec.id, 'seated');
+
+            watcher = makeOfferWatcher(
+              facets.helper,
+              facets.deposit,
+              offerSpec,
+              address,
               invitationAmount,
-              invitationMakers,
-              publicSubscribers,
-            ) => {
-              offerToUsedInvitation.init(offerId, invitationAmount);
-              offerToInvitationMakers.init(offerId, invitationMakers);
-              const pathMap = await objectMapStoragePath(publicSubscribers);
-              if (pathMap) {
-                logger.info('recording pathMap', pathMap);
-                offerToPublicSubscriberPaths.init(offerId, pathMap);
-              }
-              facets.helper.publishCurrentState();
-            },
-          });
+              seatRef,
+            );
 
-          return executor.executeOffer(offerSpec, seatRef => {
             state.liveOffers.init(offerSpec.id, offerSpec);
-            facets.helper.publishCurrentState();
             state.liveOfferSeats.init(offerSpec.id, seatRef);
-          });
+
+            // publish the live offers
+            facets.helper.publishCurrentState();
+
+            // await so that any errors are caught and handled below
+            await watchOfferOutcomes(watcher, seatRef);
+          } catch (err) {
+            // This block only runs if the block above fails during one vat incarnation.
+            facets.helper.logWalletError('IMMEDIATE OFFER ERROR:', err);
+
+            // Update status to observers
+            if (err.upgradeMessage === 'vat upgraded') {
+              // The offer watchers will reconnect. Don't reclaim or exit
+              return;
+            } else if (watcher) {
+              // The watcher's onRejected will updateStatus()
+            } else {
+              facets.helper.updateStatus({
+                error: err.toString(),
+                ...offerSpec,
+              });
+            }
+
+            // Backstop recovery, in case something very basic fails.
+            if (offerSpec?.proposal?.give) {
+              facets.payments
+                .tryReclaimingWithdrawnPayments(offerSpec.id)
+                .catch(e =>
+                  facets.helper.logWalletError(
+                    'recovery failed reclaiming payments',
+                    e,
+                  ),
+                );
+            }
+
+            // XXX tests rely on throwing immediate errors, not covering the
+            // error handling in the event the failure is after an upgrade
+            throw err;
+          }
         },
         /**
          * Take an offer's id, look up its seat, try to exit.
          *
-         * @param {import('./offers.js').OfferId} offerId
+         * @param {OfferId} offerId
          * @returns {Promise<void>}
          * @throws if the seat can't be found or E(seatRef).tryExit() fails.
          */
@@ -672,14 +1060,14 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
+          const { facets } = this;
+          const { offers } = facets;
           const { publicMarshaller } = shared;
-
-          const { offers } = this.facets;
 
           /** @param {Error} err */
           const recordError = err => {
-            const { address, updateRecorderKit } = this.state;
-            console.error('wallet', address, 'handleBridgeAction error:', err);
+            const { updateRecorderKit } = this.state;
+            facets.helper.logWalletError('handleBridgeAction error:', err);
             void updateRecorderKit.recorder.write({
               updated: 'walletAction',
               status: { error: err.message },
@@ -724,14 +1112,18 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         /** @deprecated use getPublicTopics */
         getCurrentSubscriber() {
-          return this.state.currentRecorderKit.subscriber;
+          const { state } = this;
+          return state.currentRecorderKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getUpdatesSubscriber() {
-          return this.state.updateRecorderKit.subscriber;
+          const { state } = this;
+          return state.updateRecorderKit.subscriber;
         },
         getPublicTopics() {
-          const { currentRecorderKit, updateRecorderKit } = this.state;
+          const { state } = this;
+          const { currentRecorderKit, updateRecorderKit } = state;
+
           return harden({
             current: {
               description: 'Current state of wallet',
@@ -745,6 +1137,27 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
           });
         },
+        // TODO remove this and repairUnwatchedSeats once the repair has taken place.
+        /**
+         * To be called once ever per wallet.
+         *
+         * @param {object} key
+         */
+        repairWalletForIncarnation2(key) {
+          const { state, facets } = this;
+
+          if (key !== shared.secretWalletFactoryKey) {
+            return;
+          }
+
+          facets.helper.repairUnwatchedSeats().catch(e => {
+            console.error('repairUnwatchedSeats rejection', e);
+          });
+          facets.helper.repairUnwatchedPurses().catch(e => {
+            console.error('repairUnwatchedPurses rejection', e);
+          });
+          trace(`repaired wallet ${state.address}`);
+        },
       },
     },
     {
@@ -752,7 +1165,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         const { invitationPurse } = state;
         const { helper } = facets;
 
-        // @ts-expect-error RemotePurse cast
         void helper.watchPurse(invitationPurse);
       },
     },

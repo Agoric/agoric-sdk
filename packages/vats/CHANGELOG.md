@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.15.2-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.2-u13.0...@agoric/vats@0.15.2-u14.0) (2024-02-27)
+
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([31d7c2f](https://github.com/Agoric/agoric-sdk/commit/31d7c2f4ecea9a34956cc6716fb8d73cbeb12e64))
+* repair KREAd contract on zoe upgrade ([6ac7623](https://github.com/Agoric/agoric-sdk/commit/6ac762379e2660353a23202acd2d6fb52ed13682))
+* replace zoe and zcf ([#8846](https://github.com/Agoric/agoric-sdk/issues/8846)) ([0169c7e](https://github.com/Agoric/agoric-sdk/commit/0169c7e505099fdcfa8e4d1436e5d3b372f1c320))
+* support `coreProposals.steps` ([368cf01](https://github.com/Agoric/agoric-sdk/commit/368cf013f329f87c8e740ec48ac3faebb5a065eb))
+
+
+### Bug Fixes
+
+* **vats:** include index.js in NPM package ([#8815](https://github.com/Agoric/agoric-sdk/issues/8815)) ([5749bd2](https://github.com/Agoric/agoric-sdk/commit/5749bd2c3de726c9c9ba326e05756f4c30c15903))
+
+
+
 ### [0.15.2-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.2-u12.0...@agoric/vats@0.15.2-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/vats

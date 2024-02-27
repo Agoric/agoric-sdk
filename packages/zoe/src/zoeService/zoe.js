@@ -18,6 +18,7 @@ import '../internal-types.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
+import { M } from '@agoric/store';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -32,7 +33,7 @@ import { ZoeServiceI } from '../typeGuards.js';
 const { Fail } = assert;
 
 /**
- * Create an durable instance of Zoe.
+ * Create a durable instance of Zoe.
  *
  * @param {object} options
  * @param {Baggage} options.zoeBaggage - the baggage for Zoe durability. Must be provided by caller
@@ -52,16 +53,22 @@ const makeDurableZoeKit = ({
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
 }) => {
+  /** @type {BundleCap} */
   let zcfBundleCap;
 
   const saveBundleCap = () => {
-    E.when(
+    void E.when(
       Promise.all([vatAdminSvc, getZcfBundleCap(zcfSpec, vatAdminSvc)]),
       ([vatAdminService, bundleCap]) => {
         zcfBundleCap = bundleCap;
 
-        zoeBaggage.init('vatAdminSvc', vatAdminService);
-        zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        if (!zoeBaggage.has('vatAdminSvc')) {
+          zoeBaggage.init('vatAdminSvc', vatAdminService);
+          zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+        } else {
+          zoeBaggage.set('vatAdminSvc', vatAdminService);
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
+        }
       },
     );
   };
@@ -168,6 +175,26 @@ const makeDurableZoeKit = ({
     });
   };
 
+  const ZoeConfigI = M.interface('ZoeConfigFacet', {
+    updateZcfBundleId: M.call(M.string()).returns(),
+  });
+
+  const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
+    updateZcfBundleId(bundleId) {
+      void E.when(
+        getZcfBundleCap({ id: bundleId }, vatAdminSvc),
+        bundleCap => {
+          zcfBundleCap = bundleCap;
+          zoeBaggage.set('zcfBundleCap', zcfBundleCap);
+        },
+        e => {
+          console.error('🚨 unable to update ZCF Bundle: ', e);
+          throw e;
+        },
+      );
+    },
+  });
+
   /** @type {ZoeService} */
   const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
     install(bundleId, bundleLabel) {
@@ -223,6 +250,7 @@ const makeDurableZoeKit = ({
 
   return harden({
     zoeService,
+    zoeConfigFacet,
     /** @type {FeeMintAccess} */
     // @ts-expect-error cast
     feeMintAccess: feeMintKit.feeMintAccess,
