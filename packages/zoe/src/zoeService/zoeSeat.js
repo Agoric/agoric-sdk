@@ -228,7 +228,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           );
 
           state.exiting = true;
-          E.when(
+          void E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
