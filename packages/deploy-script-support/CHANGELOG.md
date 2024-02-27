@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.4-u13.0...@agoric/deploy-script-support@0.10.4-u14.0) (2024-02-27)
+
+
+### Features
+
+* **deploy-script-support:** generalize `extractCoreProposalBundles` ([5de1e93](https://github.com/Agoric/agoric-sdk/commit/5de1e93747146a4c9cd4e3d3d77a0f43033c72fb))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([2a68ca1](https://github.com/Agoric/agoric-sdk/commit/2a68ca148f637ca88c553b75834496ac6ebea841))
+* **extract-proposal:** organize proposals into steps ([eaa6b4f](https://github.com/Agoric/agoric-sdk/commit/eaa6b4fdc5c8ce5c377ac8ed2b88971f78641536))
+* better diagnostic for bad proposal ([19725e5](https://github.com/Agoric/agoric-sdk/commit/19725e5a132056a314d90975fffbb89053de8829))
+
+
+
 ### [0.10.4-u13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.4-u12.0...@agoric/deploy-script-support@0.10.4-u13.0) (2023-12-07)
 
 **Note:** Version bump only for package @agoric/deploy-script-support
