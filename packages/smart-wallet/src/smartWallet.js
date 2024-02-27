@@ -857,6 +857,10 @@ export const prepareSmartWallet = (baggage, shared) => {
 
       payments: {
         /**
+         * Withdraw the offered amount from the appropriate purse of this wallet.
+         *
+         * Save its amount in liveOfferPayments in case we need to reclaim the payment.
+         *
          * @param {AmountKeywordRecord} give
          * @param {OfferId} offerId
          * @returns {PaymentPKeywordRecord}
@@ -872,8 +876,8 @@ export const prepareSmartWallet = (baggage, shared) => {
             .getLiveOfferPayments()
             .init(offerId, brandPaymentRecord);
 
-          // Add each payment to liveOfferPayments as it is withdrawn. If
-          // there's an error partway through, we can recover the withdrawals.
+          // Add each payment amount to brandPaymentRecord as it is withdrawn. If
+          // there's an error later, we can use it to redeposit the correct amount.
           return objectMap(give, amount => {
             /** @type {Promise<Purse>} */
             const purseP = facets.helper.purseForBrand(amount.brand);
@@ -894,19 +898,27 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
+        /**
+         * Find the live payments for the offer and deposit them back in the appropriate purses.
+         *
+         * @param {OfferId} offerId
+         * @returns {Promise<void>}
+         */
         async tryReclaimingWithdrawnPayments(offerId) {
           const { facets } = this;
+
+          await null;
 
           const liveOfferPayments = facets.helper.getLiveOfferPayments();
           if (liveOfferPayments.has(offerId)) {
             const brandPaymentRecord = liveOfferPayments.get(offerId);
             if (!brandPaymentRecord) {
-              return Promise.resolve(undefined);
+              return;
             }
             // Use allSettled to ensure we attempt all the deposits, regardless of
             // individual rejections.
-            return Promise.allSettled(
-              Array.from(brandPaymentRecord.entries()).map(async ([b, p]) => {
+            await Promise.allSettled(
+              Array.from(brandPaymentRecord.entries()).map(([b, p]) => {
                 // Wait for the withdrawal to complete.  This protects against a
                 // race when updating paymentToPurse.
                 const purseP = facets.helper.purseForBrand(b);
