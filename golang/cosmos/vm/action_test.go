@@ -10,9 +10,11 @@ import (
 )
 
 var (
-	_ vm.Action = &Trivial{}
+	_ vm.Action = Defaults{}
 	_ vm.Action = &Defaults{}
+	_ vm.Action = dataAction{}
 	_ vm.Action = &dataAction{}
+	_ vm.Action = &Trivial{}
 )
 
 type Trivial struct {
@@ -29,8 +31,8 @@ type Defaults struct {
 	Any    interface{}
 }
 
-func (d Defaults) GetActionHeader() vm.ActionHeader {
-	return vm.ActionHeader{}
+func (d Defaults) GetActionHeader() *vm.ActionHeader {
+	return &vm.ActionHeader{}
 }
 
 type dataAction struct {
@@ -52,6 +54,10 @@ func TestActionContext(t *testing.T) {
 			&Trivial{Abc: 123, def: "zot"},
 			&Trivial{Abc: 123, def: "zot"},
 		},
+		{"not a pointer", emptyCtx,
+			&Trivial{Abc: 123, def: "zot"},
+			Trivial{Abc: 123, def: "zot"},
+		},
 		{"block height",
 			emptyCtx.WithBlockHeight(998),
 			&Trivial{Abc: 123, def: "zot"},
@@ -67,6 +73,20 @@ func TestActionContext(t *testing.T) {
 			&Defaults{},
 			&Defaults{"abc", 123, 4.56, true, nil},
 		},
+		{"data action no pointer",
+			emptyCtx,
+			dataAction{},
+			dataAction{
+				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION"},
+			},
+		},
+		{"data action pointer",
+			emptyCtx,
+			&dataAction{},
+			&dataAction{
+				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION"},
+			},
+		},
 		{"data action defaults",
 			emptyCtx.WithBlockHeight(998).WithBlockTime(time.UnixMicro(1_000_000)),
 			&dataAction{Data: []byte("hello")},
@@ -75,30 +95,30 @@ func TestActionContext(t *testing.T) {
 		},
 		{"data action override Type",
 			emptyCtx.WithBlockHeight(998).WithBlockTime(time.UnixMicro(1_000_000)),
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION2"}},
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION2", BlockHeight: 998, BlockTime: 1}},
 		},
 		{"data action override BlockHeight",
 			emptyCtx.WithBlockHeight(998).WithBlockTime(time.UnixMicro(1_000_000)),
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{BlockHeight: 999}},
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION", BlockHeight: 999, BlockTime: 1}},
 		},
 		{"data action override BlockTime",
 			emptyCtx.WithBlockHeight(998).WithBlockTime(time.UnixMicro(1_000_000)),
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{BlockTime: 2}},
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION", BlockHeight: 998, BlockTime: 2}},
 		},
 		{"data action override all defaults",
 			emptyCtx.WithBlockHeight(998).WithBlockTime(time.UnixMicro(1_000_000)),
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION2", BlockHeight: 999, BlockTime: 2}},
-			&dataAction{Data: []byte("hello2"),
+			dataAction{Data: []byte("hello2"),
 				ActionHeader: &vm.ActionHeader{Type: "DATA_ACTION2", BlockHeight: 999, BlockTime: 2}},
 		},
 	}

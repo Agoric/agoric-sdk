@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type AgdServer struct {}
+type AgdServer struct{}
 
 func NewAgdServer() *AgdServer {
 	return &AgdServer{}

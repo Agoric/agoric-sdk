@@ -1,12 +1,7 @@
 {
   "agoricProposal": {
-    "releaseNotes": "TBD",
-    "sdkImageTag": "unreleased",
-    "planName": "UNRELEASED_UPGRADE",
-    "upgradeInfo": {
-      "coreProposals": []
-    },
-    "type": "Software Upgrade Proposal"
+    "type": "/agoric.swingset.CoreEvalProposal",
+    "source": "subdir"
   },
   "type": "module",
   "license": "Apache-2.0",
@@ -20,9 +15,6 @@
     "files": [
       "!submission"
     ]
-  },
-  "scripts": {
-    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "packageManager": "yarn@4.1.0"
 }

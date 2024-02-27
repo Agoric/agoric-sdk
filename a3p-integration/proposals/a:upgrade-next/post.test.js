@@ -7,6 +7,16 @@ test(`Ensure Network Vat was installed`, async t => {
   t.is(incarnation, 0);
 });
 
+test(`Ensure IBC Vat was installed`, async t => {
+  const incarnation = await getIncarnation('ibc');
+  t.is(incarnation, 0);
+});
+
+test(`Ensure Local Chain Vat was installed`, async t => {
+  const incarnation = await getIncarnation('localchain');
+  t.is(incarnation, 0);
+});
+
 test(`Smart Wallet vat was upgraded`, async t => {
   const incarnation = await getIncarnation('walletFactory');
 

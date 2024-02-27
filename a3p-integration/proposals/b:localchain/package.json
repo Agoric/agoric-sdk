@@ -11,7 +11,10 @@
   },
   "ava": {
     "concurrency": 1,
-    "serial": true
+    "serial": true,
+    "files": [
+      "!submission"
+    ]
   },
   "packageManager": "yarn@4.1.0"
 }

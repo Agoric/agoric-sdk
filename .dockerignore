@@ -6,6 +6,7 @@ coverage
 packages/cosmic-swingset/t[0-9]
 packages/cosmic-swingset/t[0-9].*
 golang/cosmos/build
+a3p-integration
 packages/deployment
 packages/swingset-runner
 packages/stat-logger
