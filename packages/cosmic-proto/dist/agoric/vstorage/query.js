@@ -88,6 +88,132 @@ export const QueryDataResponse = {
     return message;
   },
 };
+function createBaseQueryCapDataRequest() {
+  return { path: '', mediaType: '', itemFormat: '', remotableValueFormat: '' };
+}
+export const QueryCapDataRequest = {
+  encode(message, writer = _m0.Writer.create()) {
+    if (message.path !== '') {
+      writer.uint32(10).string(message.path);
+    }
+    if (message.mediaType !== '') {
+      writer.uint32(18).string(message.mediaType);
+    }
+    if (message.itemFormat !== '') {
+      writer.uint32(26).string(message.itemFormat);
+    }
+    if (message.remotableValueFormat !== '') {
+      writer.uint32(82).string(message.remotableValueFormat);
+    }
+    return writer;
+  },
+  decode(input, length) {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryCapDataRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.path = reader.string();
+          break;
+        case 2:
+          message.mediaType = reader.string();
+          break;
+        case 3:
+          message.itemFormat = reader.string();
+          break;
+        case 10:
+          message.remotableValueFormat = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object) {
+    return {
+      path: isSet(object.path) ? String(object.path) : '',
+      mediaType: isSet(object.mediaType) ? String(object.mediaType) : '',
+      itemFormat: isSet(object.itemFormat) ? String(object.itemFormat) : '',
+      remotableValueFormat: isSet(object.remotableValueFormat)
+        ? String(object.remotableValueFormat)
+        : '',
+    };
+  },
+  toJSON(message) {
+    const obj = {};
+    message.path !== undefined && (obj.path = message.path);
+    message.mediaType !== undefined && (obj.mediaType = message.mediaType);
+    message.itemFormat !== undefined && (obj.itemFormat = message.itemFormat);
+    message.remotableValueFormat !== undefined &&
+      (obj.remotableValueFormat = message.remotableValueFormat);
+    return obj;
+  },
+  fromPartial(object) {
+    const message = createBaseQueryCapDataRequest();
+    message.path = object.path ?? '';
+    message.mediaType = object.mediaType ?? '';
+    message.itemFormat = object.itemFormat ?? '';
+    message.remotableValueFormat = object.remotableValueFormat ?? '';
+    return message;
+  },
+};
+function createBaseQueryCapDataResponse() {
+  return { blockHeight: '', value: '' };
+}
+export const QueryCapDataResponse = {
+  encode(message, writer = _m0.Writer.create()) {
+    if (message.blockHeight !== '') {
+      writer.uint32(10).string(message.blockHeight);
+    }
+    if (message.value !== '') {
+      writer.uint32(82).string(message.value);
+    }
+    return writer;
+  },
+  decode(input, length) {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryCapDataResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.blockHeight = reader.string();
+          break;
+        case 10:
+          message.value = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object) {
+    return {
+      blockHeight: isSet(object.blockHeight) ? String(object.blockHeight) : '',
+      value: isSet(object.value) ? String(object.value) : '',
+    };
+  },
+  toJSON(message) {
+    const obj = {};
+    message.blockHeight !== undefined &&
+      (obj.blockHeight = message.blockHeight);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+  fromPartial(object) {
+    const message = createBaseQueryCapDataResponse();
+    message.blockHeight = object.blockHeight ?? '';
+    message.value = object.value ?? '';
+    return message;
+  },
+};
 function createBaseQueryChildrenRequest() {
   return { path: '', pagination: undefined };
 }
@@ -224,12 +350,20 @@ export class QueryClientImpl {
     this.service = opts?.service || 'agoric.vstorage.Query';
     this.rpc = rpc;
     this.Data = this.Data.bind(this);
+    this.CapData = this.CapData.bind(this);
     this.Children = this.Children.bind(this);
   }
   Data(request) {
     const data = QueryDataRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, 'Data', data);
     return promise.then(data => QueryDataResponse.decode(new _m0.Reader(data)));
+  }
+  CapData(request) {
+    const data = QueryCapDataRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, 'CapData', data);
+    return promise.then(data =>
+      QueryCapDataResponse.decode(new _m0.Reader(data)),
+    );
   }
   Children(request) {
     const data = QueryChildrenRequest.encode(request).finish();

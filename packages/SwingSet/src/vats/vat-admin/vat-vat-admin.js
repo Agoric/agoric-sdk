@@ -174,7 +174,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   function pauseService() {
     if (!quiescentP) {
-      [quiescentP, quiescentRR] = producePRR();
+      void ([quiescentP, quiescentRR] = producePRR());
     }
     checkForQuiescence();
     return quiescentP;

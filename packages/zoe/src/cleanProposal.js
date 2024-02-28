@@ -1,9 +1,9 @@
 import { assert, q, Fail } from '@agoric/assert';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
 import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
-import { arrayToObj } from './objArrayConversion.js';
 
 import './internal-types.js';
 
@@ -56,12 +56,10 @@ export const coerceAmountPatternKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
 ) => {
-  const keywords = cleanKeywords(allegedAmountKeywordRecord);
-
-  const amounts = Object.values(allegedAmountKeywordRecord);
-  // Check that each value can be coerced using the AmountMath
-  // indicated by brand. `AmountMath.coerce` throws if coercion fails.
-  const coercedAmounts = amounts.map(amount => {
+  cleanKeywords(allegedAmountKeywordRecord);
+  return objectMap(allegedAmountKeywordRecord, amount => {
+    // Check that each value can be coerced using the AmountMath
+    // indicated by brand. `AmountMath.coerce` throws if coercion fails.
     if (isKey(amount)) {
       const brandAssetKind = getAssetKindByBrand(amount.brand);
       const assetKind = getAssetKind(amount);
@@ -75,9 +73,6 @@ export const coerceAmountPatternKeywordRecord = (
       return amount;
     }
   });
-
-  // Recreate the amountKeywordRecord with coercedAmounts.
-  return harden(arrayToObj(coercedAmounts, keywords));
 };
 
 export const coerceAmountKeywordRecord = (

@@ -47,11 +47,11 @@ On Agoric, use the following to create and resolve a vow:
 // it cannot be used by upgradable vats.  See "Durability" below:
 import { V as E, makeVowKit } from '@agoric/vat-data/vow.js';
 [...]
-const { settler, vow } = makeVowKit();
+const { resolver, vow } = makeVowKit();
 // Send vow to a potentially different vat.
 E(outsideReference).performSomeMethod(vow);
 // some time later...
-settler.resolve('now you know the answer');
+resolver.resolve('now you know the answer');
 ```
 
 ## Durability
@@ -74,5 +74,5 @@ const vowZone = zone.subZone('VowTools');
 const { watch, makeVowKit } = prepareVowTools(vowZone);
 
 // Now the functions have been bound to the durable baggage.
-// Vows and settlers you create can be saved in durable stores.
+// Vows and resolvers you create can be saved in durable stores.
 ```

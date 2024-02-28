@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mode: [no-deprecations, no-failure]
+        mode: [no-failure]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4

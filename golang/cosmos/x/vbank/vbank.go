@@ -68,9 +68,9 @@ func (vbu vbankManyBalanceUpdates) Swap(i int, j int) {
 }
 
 type vbankBalanceUpdate struct {
-	vm.ActionHeader `actionType:"VBANK_BALANCE_UPDATE"`
-	Nonce           uint64                  `json:"nonce"`
-	Updated         vbankManyBalanceUpdates `json:"updated"`
+	*vm.ActionHeader `actionType:"VBANK_BALANCE_UPDATE"`
+	Nonce            uint64                  `json:"nonce"`
+	Updated          vbankManyBalanceUpdates `json:"updated"`
 }
 
 // getBalanceUpdate returns a bridge message containing the current bank balance

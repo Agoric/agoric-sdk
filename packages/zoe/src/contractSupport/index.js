@@ -55,7 +55,6 @@ export {
 
 export * from './durability.js';
 export * from './prepare-ownable.js';
-export * from './prepare-revocable.js';
 export * from './priceAuthority.js';
 export * from './priceQuote.js';
 export * from './statistics.js';

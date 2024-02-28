@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
@@ -169,21 +169,21 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return "", sdkerrors.Wrap(
+	return "", sdkioerrors.Wrap(
 		channeltypes.ErrChannelNotFound,
 		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
 	)
 }
 
 type channelOpenTryEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string                    `json:"event" default:"channelOpenTry"`
-	Order           string                    `json:"order"`
-	ConnectionHops  []string                  `json:"connectionHops"`
-	PortID          string                    `json:"portID"`
-	ChannelID       string                    `json:"channelID"`
-	Counterparty    channeltypes.Counterparty `json:"counterparty"`
-	Version         string                    `json:"version"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string                    `json:"event" default:"channelOpenTry"`
+	Order            string                    `json:"order"`
+	ConnectionHops   []string                  `json:"connectionHops"`
+	PortID           string                    `json:"portID"`
+	ChannelID        string                    `json:"channelID"`
+	Counterparty     channeltypes.Counterparty `json:"counterparty"`
+	Version          string                    `json:"version"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -212,14 +212,14 @@ func (im IBCModule) OnChanOpenTry(
 
 	// Claim channel capability passed back by IBC module
 	if err = im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return "", sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
+		return "", sdkioerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	return event.Version, err
 }
 
 type channelOpenAckEvent struct {
-	vm.ActionHeader     `actionType:"IBC_EVENT"`
+	*vm.ActionHeader    `actionType:"IBC_EVENT"`
 	Event               string                    `json:"event" default:"channelOpenAck"`
 	PortID              string                    `json:"portID"`
 	ChannelID           string                    `json:"channelID"`
@@ -252,10 +252,10 @@ func (im IBCModule) OnChanOpenAck(
 }
 
 type channelOpenConfirmEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelOpenConfirm"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelOpenConfirm"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanOpenConfirm(
@@ -272,10 +272,10 @@ func (im IBCModule) OnChanOpenConfirm(
 }
 
 type channelCloseInitEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelCloseInit"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelCloseInit"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseInit(
@@ -293,10 +293,10 @@ func (im IBCModule) OnChanCloseInit(
 }
 
 type channelCloseConfirmEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string `json:"event" default:"channelCloseConfirm"`
-	PortID          string `json:"portID"`
-	ChannelID       string `json:"channelID"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string `json:"event" default:"channelCloseConfirm"`
+	PortID           string `json:"portID"`
+	ChannelID        string `json:"channelID"`
 }
 
 func (im IBCModule) OnChanCloseConfirm(
@@ -314,9 +314,9 @@ func (im IBCModule) OnChanCloseConfirm(
 }
 
 type receivePacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"receivePacket"`
-	Packet          channeltypes.Packet `json:"packet"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"receivePacket"`
+	Packet           channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -345,10 +345,10 @@ func (im IBCModule) OnRecvPacket(
 }
 
 type acknowledgementPacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"acknowledgementPacket"`
-	Packet          channeltypes.Packet `json:"packet"`
-	Acknowledgement []byte              `json:"acknowledgement"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"acknowledgementPacket"`
+	Packet           channeltypes.Packet `json:"packet"`
+	Acknowledgement  []byte              `json:"acknowledgement"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -371,9 +371,9 @@ func (im IBCModule) OnAcknowledgementPacket(
 }
 
 type timeoutPacketEvent struct {
-	vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event           string              `json:"event" default:"timeoutPacket"`
-	Packet          channeltypes.Packet `json:"packet"`
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string              `json:"event" default:"timeoutPacket"`
+	Packet           channeltypes.Packet `json:"packet"`
 }
 
 func (im IBCModule) OnTimeoutPacket(

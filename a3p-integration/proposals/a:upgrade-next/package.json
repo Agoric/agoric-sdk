@@ -4,20 +4,25 @@
     "sdkImageTag": "unreleased",
     "planName": "UNRELEASED_UPGRADE",
     "upgradeInfo": {
-      "coreProposals": [
-        "@agoric/builders/scripts/vats/init-network.js"
-      ]
+      "coreProposals": []
     },
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.0.4-3",
+    "@agoric/synthetic-chain": "^0.0.7",
     "ava": "^5.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "serial": true,
+    "files": [
+      "!submission"
+    ]
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.0.2"
+  "packageManager": "yarn@4.1.0"
 }

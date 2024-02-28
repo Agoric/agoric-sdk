@@ -87,6 +87,7 @@ const offerWatcherGuard = harden({
       .optional(M.record())
       .returns(),
     publishResult: M.call(M.any()).returns(),
+    handleError: M.call(M.error()).returns(),
   }),
   paymentWatcher: M.interface('paymentWatcher', {
     onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(
@@ -104,21 +105,36 @@ const offerWatcherGuard = harden({
   }),
 });
 
+/**
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
 export const prepareOfferWatcher = baggage => {
   return prepareExoClassKit(
     baggage,
     'OfferWatcher',
     offerWatcherGuard,
-    (walletHelper, deposit, offerSpec, address, iAmount, seatRef) => ({
+    /**
+     *
+     * @param {*} walletHelper
+     * @param {*} deposit
+     * @param {import('./offers.js').OfferSpec} offerSpec
+     * @param {string} address
+     * @param {Amount<'set'>} invitationAmount
+     * @param {UserSeat} seatRef
+     */
+    (walletHelper, deposit, offerSpec, address, invitationAmount, seatRef) => ({
       walletHelper,
       deposit,
       status: offerSpec,
       address,
-      invitationAmount: iAmount,
+      invitationAmount,
       seatRef,
     }),
     {
       helper: {
+        /**
+         * @param {Record<string, unknown>} offerStatusUpdates
+         */
         updateStatus(offerStatusUpdates) {
           const { state } = this;
           state.status = harden({ ...state.status, ...offerStatusUpdates });
@@ -141,6 +157,7 @@ export const prepareOfferWatcher = baggage => {
           );
         },
 
+        /** @param {unknown} result */
         publishResult(result) {
           const { state, facets } = this;
 
@@ -157,6 +174,7 @@ export const prepareOfferWatcher = baggage => {
               facets.helper.updateStatus({ result });
               break;
             case 'copyRecord':
+              // @ts-expect-error narrowed by passStyle
               if ('invitationMakers' in result) {
                 // save for continuing invitation offer
 
@@ -164,6 +182,7 @@ export const prepareOfferWatcher = baggage => {
                   String(state.status.id),
                   state.invitationAmount,
                   result.invitationMakers,
+                  // @ts-expect-error narrowed by passStyle
                   result.publicSubscribers,
                 );
               }
@@ -173,6 +192,22 @@ export const prepareOfferWatcher = baggage => {
               // drop the result
               facets.helper.updateStatus({ result: UNPUBLISHED_RESULT });
           }
+        },
+        /**
+         * Called when the offer result promise rejects. The other two watchers
+         * are waiting for particular values out of Zoe but they settle at the same time
+         * and don't need their own error handling.
+         * @param {Error} err
+         */
+        handleError(err) {
+          const { facets } = this;
+          facets.helper.updateStatus({ error: err.toString() });
+          const { seatRef } = this.state;
+          void E.when(E(seatRef).hasExited(), hasExited => {
+            if (!hasExited) {
+              void E(seatRef).tryExit();
+            }
+          });
         },
       },
 
@@ -190,13 +225,17 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ payouts: amounts });
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         *
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForPayout(facets, seat);
+          } else {
+            facets.helper.handleError(reason);
           }
         },
       },
@@ -208,13 +247,17 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.publishResult(result);
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         *
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForOfferResult(facets, seat);
+          } else {
+            facets.helper.handleError(reason);
           }
         },
       },
@@ -227,12 +270,18 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ numWantsSatisfied: numSatisfied });
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again.
+         *
+         * Errors are handled by the paymentWatcher because numWantsSatisfied()
+         * and getPayouts() settle the same (they await the same promise and
+         * then synchronously return a local value).
+         *
+         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForNumWants(facets, seat);
           }
         },

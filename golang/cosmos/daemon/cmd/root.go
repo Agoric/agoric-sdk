@@ -15,7 +15,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/cosmos/cosmos-sdk/client/pruning"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/snapshots"
@@ -126,9 +128,15 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
+	ac := appCreator{
+		encCfg: encodingConfig,
+		sender: sender,
+	}
+
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(gaia.ModuleBasics, gaia.DefaultNodeHome),
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
+		genutilcli.MigrateGenesisCmd(),
 		genutilcli.GenTxCmd(gaia.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, gaia.DefaultNodeHome),
 		genutilcli.ValidateGenesisCmd(gaia.ModuleBasics),
 		AddGenesisAccountCmd(encodingConfig.Marshaler, gaia.DefaultNodeHome),
@@ -136,12 +144,10 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
+		pruning.Cmd(ac.newApp, gaia.DefaultNodeHome),
+		snapshot.Cmd(ac.newApp),
 	)
 
-	ac := appCreator{
-		encCfg: encodingConfig,
-		sender: sender,
-	}
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	for _, command := range rootCmd.Commands() {
@@ -231,6 +237,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		authcmd.GetAuxToFeeCommand(),
 		flags.LineBreak,
 		vestingcli.GetTxCmd(),
 	)
@@ -284,7 +291,7 @@ func (ac appCreator) newApp(
 	}
 
 	snapshotDir := filepath.Join(homePath, "data", "snapshots")
-	snapshotDB, err := sdk.NewLevelDB("metadata", snapshotDir)
+	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
 	if err != nil {
 		panic(err)
 	}

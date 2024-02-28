@@ -3,11 +3,6 @@
 /// <reference types="ses"/>
 
 /**
- * @template {Key} [K=Key]
- * @typedef {import('@endo/patterns').CopyBag<K>} CopyBag
- */
-
-/**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} Amount Amounts are descriptions of digital assets,
  *   answering the questions "how much" and "of what kind". Amounts are values
@@ -22,8 +17,8 @@
  */
 
 /**
- * @typedef {NatValue | SetValue | CopySet | CopyBag} AmountValue An
- *   `AmountValue` describes a set or quantity of assets that can be owned or
+ * @typedef {NatValue | SetValue | CopySet | import('@endo/patterns').CopyBag} AmountValue
+ *   An `AmountValue` describes a set or quantity of assets that can be owned or
  *   shared.
  *
  *   A fungible `AmountValue` uses a non-negative bigint to represent a quantity
@@ -58,7 +53,7 @@
  *   : K extends 'copySet'
  *   ? CopySet
  *   : K extends 'copyBag'
- *   ? CopyBag
+ *   ? import('@endo/patterns').CopyBag
  *   : never} AssetValueForKind
  */
 
@@ -70,7 +65,7 @@
  *   ? 'set'
  *   : V extends CopySet
  *   ? 'copySet'
- *   : V extends CopyBag
+ *   : V extends import('@endo/patterns').CopyBag
  *   ? 'copyBag'
  *   : never} AssetKindForValue
  */

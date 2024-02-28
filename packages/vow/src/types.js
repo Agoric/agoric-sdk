@@ -1,5 +1,5 @@
 // @ts-check
-export {};
+export { };
 
 /**
  * @template T
@@ -50,7 +50,7 @@ export {};
  * @template [T=any]
  * @typedef {{
  *   vow: Vow<T>,
- *   settler: Settler<T>,
+ *   resolver: VowResolver<T>,
  * }} VowKit
  */
 
@@ -58,14 +58,14 @@ export {};
  * @template [T=any]
  * @typedef {{
  *   vow: Vow<T>,
- *   settler: Settler<T>,
+ *   resolver: VowResolver<T>,
  *   promise: Promise<T>
  * }} VowPromiseKit
  */
 
 /**
  * @template [T=any]
- * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} Settler
+ * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} VowResolver
  */
 
 /**
@@ -76,5 +76,3 @@ export {};
  * @property {(value: T) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
-
-/** @typedef {import('./when.js').When} When */

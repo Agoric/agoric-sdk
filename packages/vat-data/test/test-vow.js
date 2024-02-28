@@ -10,9 +10,9 @@ test('heap messages', async t => {
   });
 
   /** @type {ReturnType<typeof makeVowKit<typeof greeter>>} */
-  const { vow, settler } = makeVowKit();
+  const { vow, resolver } = makeVowKit();
   const retP = V(vow).hello('World');
-  settler.resolve(greeter);
+  resolver.resolve(greeter);
 
   // Happy path: WE(vow)[method](...args) calls the method.
   t.is(await retP, 'Hello, World!');

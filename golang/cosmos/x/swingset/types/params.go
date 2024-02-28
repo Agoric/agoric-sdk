@@ -5,6 +5,7 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
@@ -18,7 +19,7 @@ var (
 	ParamStoreKeyQueueMax           = []byte("queue_max")
 )
 
-func NewStringBeans(key string, beans sdk.Uint) StringBeans {
+func NewStringBeans(key string, beans sdkmath.Uint) StringBeans {
 	return StringBeans{
 		Key:   key,
 		Beans: beans,

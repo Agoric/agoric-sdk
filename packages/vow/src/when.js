@@ -2,11 +2,13 @@
 import { unwrapPromise, getVowPayload, basicE } from './vow-utils.js';
 
 /**
- * @param {() => import('./types.js').VowPromiseKit<any>} makeVowPromiseKit
+ * @param {() => import('./types.js').VowKit<any>} makeVowKit
+ * @param {(resolver: import('./types').VowResolver) => Promise<any>} providePromiseForVowResolver
  * @param {(reason: any) => boolean} [rejectionMeansRetry]
  */
 export const makeWhen = (
-  makeVowPromiseKit,
+  makeVowKit,
+  providePromiseForVowResolver,
   rejectionMeansRetry = () => false,
 ) => {
   /**
@@ -14,8 +16,9 @@ export const makeWhen = (
    * @param {import('./types.js').ERef<T | import('./types.js').Vow<T>>} specimenP
    */
   const when = specimenP => {
-    /** @type {import('./types.js').VowPromiseKit<T>} */
-    const { settler, promise } = makeVowPromiseKit();
+    /** @type {import('./types.js').VowKit<T>} */
+    const { resolver } = makeVowKit();
+    const promise = providePromiseForVowResolver(resolver);
     // Ensure we have a presence that won't be disconnected later.
     unwrapPromise(specimenP, async (specimen, payload) => {
       // Shorten the vow chain without a watcher.
@@ -39,8 +42,8 @@ export const makeWhen = (
         }
         payload = nextPayload;
       }
-      settler.resolve(result);
-    }).catch(e => settler.reject(e));
+      resolver.resolve(result);
+    }).catch(e => resolver.reject(e));
 
     return promise;
   };

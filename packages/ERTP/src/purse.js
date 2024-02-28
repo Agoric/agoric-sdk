@@ -1,22 +1,19 @@
 import { M } from '@agoric/store';
-import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
-
-// TODO `InterfaceGuard` type parameter
-/** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+import { makeAmountStore } from './amountStore.js';
 
 const { Fail } = assert;
 
+// TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
- * @param {Baggage} issuerBaggage
+ * @param {import('@agoric/zone').Zone} issuerZone
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
  * @param {{
- *   purse: InterfaceGuard;
- *   depositFacet: InterfaceGuard;
+ *   purse: import('@endo/patterns').InterfaceGuard<any>;
+ *   depositFacet: import('@endo/patterns').InterfaceGuard<any>;
  * }} PurseIKit
  * @param {{
  *   depositInternal: any;
@@ -24,7 +21,7 @@ const { Fail } = assert;
  * }} purseMethods
  */
 export const preparePurseKind = (
-  issuerBaggage,
+  issuerZone,
   name,
   assetKind,
   brand,
@@ -35,12 +32,8 @@ export const preparePurseKind = (
 
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
+  // TODO propagate zonifying to notifiers, maybe?
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
-
-  const updatePurseBalance = (state, newPurseBalance, purse) => {
-    state.currentBalance = newPurseBalance;
-    updateBalance(purse, purse.getCurrentAmount());
-  };
 
   // - This kind is a pair of purse and depositFacet that have a 1:1
   //   correspondence.
@@ -49,17 +42,14 @@ export const preparePurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = prepareExoClassKit(
-    issuerBaggage,
+  const makePurseKit = issuerZone.exoClassKit(
     `${name} Purse`,
     PurseIKit,
     () => {
       const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
       /** @type {SetStore<Payment>} */
-      const recoverySet = makeScalarBigSetStore('recovery set', {
-        durable: true,
-      });
+      const recoverySet = issuerZone.detached().setStore('recovery set');
 
       return {
         currentBalance,
@@ -72,28 +62,34 @@ export const preparePurseKind = (
           // PurseI does *not* delay `deposit` until `srcPayment` is fulfulled.
           // See the comments on PurseI.deposit in typeGuards.js
           const { state } = this;
+          const { purse } = this.facets;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within deposit.
-          return depositInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const srcPaymentBalance = depositInternal(
+            balanceStore,
             srcPayment,
             optAmountShape,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return srcPaymentBalance;
         },
         withdraw(amount) {
           const { state } = this;
+          const { purse } = this.facets;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
           // Note COMMIT POINT within withdraw.
-          return withdrawInternal(
-            state.currentBalance,
-            newPurseBalance =>
-              updatePurseBalance(state, newPurseBalance, this.facets.purse),
+          const payment = withdrawInternal(
+            balanceStore,
             amount,
             state.recoverySet,
           );
+          updateBalance(purse, balanceStore.getAmount());
+          return payment;
         },
         getCurrentAmount() {
-          return this.state.currentBalance;
+          const { state } = this;
+          const balanceStore = makeAmountStore(state, 'currentBalance');
+          return balanceStore.getAmount();
         },
         getCurrentAmountNotifier() {
           return provideNotifier(this.facets.purse);

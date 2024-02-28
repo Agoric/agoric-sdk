@@ -21,9 +21,15 @@ export const BridgeId = {
   STORAGE: 'storage',
   PROVISION: 'provision',
   PROVISION_SMART_WALLET: 'provisionWallet',
+  VLOCALCHAIN: 'vlocalchain',
   WALLET: 'wallet',
 };
 harden(BridgeId);
+
+export const CosmosInitKeyToBridgeId = {
+  vbankPort: BridgeId.BANK,
+  vibcPort: BridgeId.DIBC,
+};
 
 export const WalletName = {
   depositFacet: 'depositFacet',

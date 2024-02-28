@@ -3,6 +3,7 @@ package vibc
 import (
 	"fmt"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -17,7 +18,7 @@ func NewHandler(keeper Keeper) sdk.Handler {
 
 		default:
 			errMsg := fmt.Sprintf("Unrecognized vibc Msg type: %T", msg)
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }
@@ -32,7 +33,7 @@ func handleMsgSendPacket(ctx sdk.Context, keeper Keeper, msg *MsgSendPacket) (*s
 	onePass := sdk.NewInt64Coin("sendpacketpass", 1)
 	balance := keeper.GetBalance(ctx, msg.Sender, onePass.Denom)
 	if balance.IsLT(onePass) {
-		return nil, sdkerrors.Wrap(
+		return nil, sdkioerrors.Wrap(
 			sdkerrors.ErrInsufficientFee,
 			fmt.Sprintf("sender %s needs at least %s", msg.Sender, onePass.String()),
 		)

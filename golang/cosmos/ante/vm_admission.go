@@ -3,6 +3,7 @@ package ante
 import (
 	"github.com/armon/go-metrics"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -57,7 +58,7 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 	if numErrors > 0 {
 		// Add to instrumentation.
 
-		return ctx, sdkerrors.Wrapf(ErrAdmissionRefused, "controller refused message admission: %s", errors[0].Error())
+		return ctx, sdkioerrors.Wrapf(ErrAdmissionRefused, "controller refused message admission: %s", errors[0].Error())
 	}
 
 	return next(ctx, tx, simulate)

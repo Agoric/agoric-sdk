@@ -57,23 +57,29 @@ const main = async (progname, rawArgs, powers) => {
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
 
-  program
-    .option('--sdk', 'use the Agoric SDK containing this program')
-    .option('--no-sdk', 'do not use the Agoric SDK containing this program')
-    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
-    .option(
+  const cmdOpts = { verbose: 0 };
+  const addCmdOpts = baseCmd =>
+    baseCmd.option(
       '-v, --verbose',
       'verbosity that can be increased',
-      (_value, previous) => previous + 1,
-      0,
+      (_value, _previous) => (cmdOpts.verbose += 1),
     );
+  const baseCmd = (...args) => addCmdOpts(program.command(...args));
+
+  addCmdOpts(
+    program
+      .enablePositionalOptions()
+      .option('--sdk', 'use the Agoric SDK containing this program')
+      .option('--no-sdk', 'do not use the Agoric SDK containing this program'),
+  );
 
   // Add each of the commands.
-  program
-    .command('cosmos <command...>')
+  baseCmd('cosmos <command...>')
+    .passThroughOptions(true)
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .description('client for an Agoric Cosmos chain')
     .action(async (command, _options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
 
@@ -90,8 +96,7 @@ const main = async (progname, rawArgs, powers) => {
     { executableFile: ibcSetup },
   );
 
-  program
-    .command('open')
+  baseCmd('open')
     .description('launch the Agoric UI')
     .option(
       '--hostport <host:port>',
@@ -112,12 +117,11 @@ const main = async (progname, rawArgs, powers) => {
       },
     )
     .action(async (_options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(walletMain, ['wallet'], opts);
     });
 
-  program
-    .command('init <project>')
+  baseCmd('init <project>')
     .description('create a new Dapp directory named <project>')
     .option(
       '--dapp-template <name>',
@@ -134,13 +138,17 @@ const main = async (progname, rawArgs, powers) => {
       'use this branch instead of the repository HEAD',
       DEFAULT_DAPP_BRANCH,
     )
+    // Tolerate @agoric/create-dapp's `agoric init --version` invocation.
+    .option('-V, --version', 'output the version number', () => {
+      console.log(pkg.version);
+      process.exit(0);
+    })
     .action(async (project, _options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(initMain, ['init', project], opts);
     });
 
-  program
-    .command('set-defaults <program> <config-dir>')
+  baseCmd('set-defaults <program> <config-dir>')
     .description('update the configuration files for <program> in <config-dir>')
     .option(
       '--enable-cors',
@@ -168,7 +176,7 @@ const main = async (progname, rawArgs, powers) => {
       '',
     )
     .action(async (prog, configDir, _options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
 
@@ -187,17 +195,15 @@ const main = async (progname, rawArgs, powers) => {
     },
   );
 
-  program
-    .command('install [force-sdk-version]')
+  baseCmd('install [force-sdk-version]')
     .description('install Dapp dependencies')
     .action(async (forceSdkVersion, _options, cmd) => {
       await isNotBasedir();
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(installMain, ['install', forceSdkVersion], opts);
     });
 
-  program
-    .command('follow <path-spec...>')
+  baseCmd('follow <path-spec...>')
     .description('follow an Agoric Casting leader')
     .option(
       '--proof <strict | optimistic | none>',
@@ -270,7 +276,7 @@ const main = async (progname, rawArgs, powers) => {
     )
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
     .action(async (pathSpecs, _options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
 
@@ -297,19 +303,18 @@ const main = async (progname, rawArgs, powers) => {
         '',
       );
 
-  program
-    .command('run <script> [script-args...]')
+  baseCmd('run <script> [script-args...]')
     .description(
       'run a script with all your user privileges and some Agoric endowments',
     )
+    .passThroughOptions(true)
     .action(async (script, scriptArgs, _options, cmd) => {
-      const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts, scriptArgs };
       return subMain(runMain, ['run', script], opts);
     });
 
   addRunOptions(
-    program
-      .command('deploy [script...]')
+    baseCmd('deploy [script...]')
       .option(
         '--target <target>',
         'One of agoric, local, cosmos, or sim',
@@ -323,8 +328,7 @@ const main = async (progname, rawArgs, powers) => {
     return subMain(deployMain, ['deploy', ...scripts], opts);
   });
 
-  program
-    .command('publish [bundle...]')
+  baseCmd('publish [bundle...]')
     .option(
       '-c, --chain-id <chainID>',
       'The ID of the destination chain',
@@ -345,10 +349,9 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(publishMain, ['publish', ...bundles], opts);
     });
 
-  program.addCommand(await makeWalletCommand());
+  await makeWalletCommand(baseCmd);
 
-  program
-    .command('start [profile] [args...]')
+  baseCmd('start [profile] [args...]')
     .description(
       `\
 start an Agoric VM
@@ -360,6 +363,7 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
 `,
     )
     .option('-d, --debug', 'run in JS debugger mode')
+    .option('--docker-tag <tag>', 'image tag to use for Docker containers')
     .option('--reset', 'clear all VM state before starting')
     .option('--no-restart', 'do not actually start the VM')
     .option('--pull', 'for Docker-based VM, pull the image before running')
@@ -383,18 +387,12 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
     )
     .action(async (profile, args, _options, cmd) => {
       await isNotBasedir();
-      const opts = { ...program.opts(), ...cmd.opts() };
+      const opts = { ...program.opts(), ...cmd.opts(), ...cmdOpts };
       return subMain(startMain, ['start', profile, ...args], opts);
     });
 
   // Throw an error instead of exiting directly.
   program.exitOverride();
-
-  // Hack: cosmos arguments are always unparsed.
-  const cosmosIndex = rawArgs.indexOf('cosmos');
-  if (cosmosIndex >= 0) {
-    rawArgs.splice(cosmosIndex + 1, 0, '--');
-  }
 
   try {
     await program.parseAsync(rawArgs, { from: 'user' });

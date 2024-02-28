@@ -54,6 +54,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
     'bank',
     'board',
     'ibcport',
+    'localchain',
     'myAddressNameAdmin',
     'namesByAddress',
     'priceAuthority',
