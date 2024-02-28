@@ -13,6 +13,7 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/codegen/index.d.ts",
@@ -33,7 +34,7 @@
     }
   },
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "module": "dist/index.js",
   "typings": "dist/index.d.ts",
   "directories": {
     "lib": "src"
@@ -43,14 +44,9 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build:cjs": "yarn tsc --outDir dist --module commonjs || true",
-    "build:mjs": "yarn tsc --outDir mjs --module es2022 --declaration false || true",
-    "clean:mjs": "rimraf mjs",
-    "clean:dist": "rimraf dist",
-    "clean": "npm run clean:mjs && npm run clean:dist",
-    "build:rename": "publish-scripts --cmd rename --srcDir mjs --outDir dist --findExt js --replaceExt mjs --no-rmDir",
-    "build": "npm run clean && npm run build:cjs && npm run build:mjs && npm run build:rename",
-    "codegen": "yarn protos-update && node scripts/codegen.cjs",
+    "build": "yarn tsc --project tsconfig.build.json",
+    "clean": "rimraf dist",
+    "codegen": "yarn protos-update && node scripts/codegen.cjs && yarn prettier --write src",
     "prepare": "npm run build",
     "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
