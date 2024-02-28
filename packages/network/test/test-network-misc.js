@@ -349,7 +349,7 @@ test('loopback protocol', async t => {
           return makeConnectionHandler();
         },
         async onRemove(port, _listenHandler) {
-          console.log("onRemove".port)
+          console.log("onRemove", port)
         },
       },
     );
