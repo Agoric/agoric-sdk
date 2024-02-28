@@ -77,7 +77,7 @@ program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
 program.addCommand(makeInterCommand(procIO, { fetch }));
 program.addCommand(makeTestCommand(procIO, { fetch }));
 
-E.when(program.parseAsync(process.argv), undefined, err => {
+void E.when(program.parseAsync(process.argv), undefined, err => {
   if (err instanceof CommanderError) {
     console.error(err.message);
   } else {
