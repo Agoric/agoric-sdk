@@ -17,7 +17,8 @@ import {
 import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
 /**
- * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ * @import {EReturn} from '@endo/eventual-send';
+ * @import {ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
  */
 
 const trace = makeTracer('CGK', false);
@@ -277,4 +278,4 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   return makeContractGovernorKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareContractGovernorKit>>} ContractGovernorKit */
+/** @typedef {EReturn<EReturn<typeof prepareContractGovernorKit>>} ContractGovernorKit */
