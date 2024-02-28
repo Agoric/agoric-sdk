@@ -55,6 +55,10 @@ import {
   validateImporterOptions,
 } from './import-kernel-db.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 const ignore = () => {};
 
 // eslint-disable-next-line no-unused-vars
@@ -581,7 +585,7 @@ export default async function main(
     return blockingSendSpy;
   }
 
-  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  /** @type {EReturn<typeof launch>['blockingSend'] | undefined} */
   let blockingSend;
 
   async function handleSwingStoreExport(blockHeight, request, requestArgs) {

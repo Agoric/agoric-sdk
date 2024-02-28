@@ -20,7 +20,11 @@ import { makePriceQuoteIssuer } from '@agoric/zoe/src/contractSupport/priceQuote
 import { prepareFluxAggregatorKit } from '../../src/price/fluxAggregatorKit.js';
 import { topicPath } from '../supports.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/** @type {import('ava').TestFn<EReturn<typeof makeContext>>} */
 const test = unknownTest;
 
 const defaultConfig = {

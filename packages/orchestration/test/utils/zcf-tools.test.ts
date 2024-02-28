@@ -6,7 +6,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import { E, Far } from '@endo/far';
+import { E, Far, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
 import { createRequire } from 'node:module';
 import { makeZcfTools } from '../../src/utils/zcf-tools.js';
@@ -40,7 +40,7 @@ const makeTestContext = async () => {
   return { zoe, zcf, zcfTools, vt };
 };
 
-type TestContext = Awaited<ReturnType<typeof makeTestContext>>;
+type TestContext = EReturn<typeof makeTestContext>;
 
 const test = anyTest as TestFn<TestContext>;
 

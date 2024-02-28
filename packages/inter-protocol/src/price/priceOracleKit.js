@@ -7,6 +7,10 @@ const trace = makeTracer('OrKit', true);
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * @typedef {{
  *   oracleId: string;
  *   roundPowers: {
@@ -122,4 +126,4 @@ export const prepareOracleAdminKit = baggage =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<typeof prepareOracleAdminKit>>} OracleKit */
+/** @typedef {EReturn<EReturn<typeof prepareOracleAdminKit>>} OracleKit */
