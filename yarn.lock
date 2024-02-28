@@ -509,7 +509,7 @@
     "@endo/eventual-send" "^0.17.6"
     "@endo/pass-style" "^0.1.7"
 
-"@endo/far@^1.0.2", "@endo/far@^1.0.4":
+"@endo/far@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-1.0.4.tgz#98f8c82b215b2aa99ee23fda39c8ee8cc4f8e342"
   integrity sha512-EQjU+3yVhAUYNpuAcGlGKKrLq8eOLSZp+sCKEVYI3S8Q3WW468FJUy2ldLjDqWDLe24Yup+mQ6zDEVzUwiT4cQ==

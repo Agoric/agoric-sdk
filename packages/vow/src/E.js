@@ -208,7 +208,7 @@ const makeE = (
        */
       x =>
         harden(
-          new Proxy(() => { }, makeEProxyHandler(x, HandledPromise, unwrap)),
+          new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, unwrap)),
         ),
       {
         /**
@@ -253,7 +253,7 @@ const makeE = (
         sendOnly: x =>
           harden(
             new Proxy(
-              () => { },
+              () => {},
               makeESendOnlyProxyHandler(x, HandledPromise, unwrap),
             ),
           ),
@@ -277,7 +277,7 @@ const makeE = (
             return unwrapped;
           }
           return unwrapped.then(
-            ...trackTurns(/** @type {const} */([onfulfilled, onrejected])),
+            ...trackTurns(/** @type {const} */ ([onfulfilled, onrejected])),
           );
         },
       },

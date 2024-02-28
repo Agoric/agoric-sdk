@@ -276,7 +276,12 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
        */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
-      /** @type {MapStore<string, SetStore<import('@agoric/vow').Settler>>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   SetStore<import('@agoric/vow').VowResolver>
+       * >}
+       */
       const portToPendingConns = detached.mapStore('portToPendingConns');
 
       return {
@@ -361,7 +366,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
 
           const kit = makeVowKit();
 
-          pendingConns.add(kit.settler);
+          pendingConns.add(kit.resolver);
           /** @type {Outbound} */
           const ob = {
             portID,
@@ -454,10 +459,10 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               //   );
 
               const attempt = await when(
-                /** @type {ProtocolImpl} */(protocolImpl).inbound(
-                localAddr,
-                remoteAddr,
-              ),
+                /** @type {ProtocolImpl} */ (protocolImpl).inbound(
+                  localAddr,
+                  remoteAddr,
+                ),
               );
 
               // Tell what version string we negotiated.

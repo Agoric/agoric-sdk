@@ -11,20 +11,20 @@ const { apply } = Reflect;
  */
 const makeWatchVow =
   watchPromise =>
-    /**
-     * @param {any} specimen
-     * @param {import('./watch-promise.js').PromiseWatcher} promiseWatcher
-     */
-    (specimen, promiseWatcher) => {
-      let promise;
-      const payload = getVowPayload(specimen);
-      if (payload) {
-        promise = basicE(payload.vowV0).shorten();
-      } else {
-        promise = basicE.resolve(specimen);
-      }
-      watchPromise(promise, promiseWatcher);
-    };
+  /**
+   * @param {any} specimen
+   * @param {import('./watch-promise.js').PromiseWatcher} promiseWatcher
+   */
+  (specimen, promiseWatcher) => {
+    let promise;
+    const payload = getVowPayload(specimen);
+    if (payload) {
+      promise = basicE(payload.vowV0).shorten();
+    } else {
+      promise = basicE.resolve(specimen);
+    }
+    watchPromise(promise, promiseWatcher);
+  };
 
 /**
  * @param {import('./types.js').VowResolver} resolver

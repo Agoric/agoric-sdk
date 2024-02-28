@@ -84,7 +84,7 @@ async function testRemotePeg(t) {
    */
   const pegasus = publicAPI;
 
-  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone, when);
+  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone, powers);
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const network = makeNetworkProtocol(makeLoopbackHandler());
 

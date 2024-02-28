@@ -557,7 +557,7 @@ const preparePort = (zone, { when }) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
@@ -579,7 +579,11 @@ const preparePort = (zone, { when }) => {
 const prepareBinder = (zone, powers) => {
   const makeConnection = prepareHalfConnection(zone, powers);
   const { when } = powers;
-  const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection, powers);
+  const makeInboundAttempt = prepareInboundAttempt(
+    zone,
+    makeConnection,
+    powers,
+  );
   const makePort = preparePort(zone, powers);
   const detached = zone.detached();
 
@@ -919,9 +923,9 @@ export const prepareEchoConnectionKit = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('@agoric/vow').When} when
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export function prepareLoopbackProtocolHandler(zone, when) {
+export function prepareLoopbackProtocolHandler(zone, { when }) {
   const detached = zone.detached();
 
   const makeLoopbackProtocolHandler = zone.exoClass(

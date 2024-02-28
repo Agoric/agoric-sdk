@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
 import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
 
-const sink = () => { };
+const sink = () => {};
 harden(sink);
 
 /**

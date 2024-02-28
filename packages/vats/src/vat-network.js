@@ -11,7 +11,6 @@ import { Far } from '@endo/far';
 export function buildRootObject(_vatPowers, _args, baggage) {
   const zone = makeDurableZone(baggage);
   const powers = prepareVowTools(zone.subZone('vow'));
-  const { when } = powers;
 
   const makeRouterProtocol = prepareRouterProtocol(
     zone.subZone('network'),
@@ -23,7 +22,7 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
-    when,
+    powers,
   );
   const makeEchoConnectionKit = prepareEchoConnectionKit(zone);
 

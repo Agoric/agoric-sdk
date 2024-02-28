@@ -1,8 +1,8 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
 import { makeMarshal } from '@endo/marshal';
-import { isPromise } from '@endo/promise-kit';
 import { assert } from '@agoric/assert';
+import { isPromise } from '@endo/promise-kit';
 
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
