@@ -18,3 +18,5 @@ export declare class SyncCallback<
 
   public isSync: true;
 }
+
+export type ExoObj<T> = Awaited<ReturnType<Awaited<ReturnType<T>>>>;

@@ -516,7 +516,7 @@ harden(prepareVaultDirector);
  *
  * @type {(
  *   ...pvdArgs: Parameters<typeof prepareVaultDirector>
- * ) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ * ) => import('@agoric/internal').ExoObj<typeof prepareVaultDirector>}
  */
 export const provideDirector = (...args) => {
   const makeVaultDirector = prepareVaultDirector(...args);

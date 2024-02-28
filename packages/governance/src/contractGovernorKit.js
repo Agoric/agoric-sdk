@@ -273,4 +273,4 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   return makeContractGovernorKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareContractGovernorKit>>} ContractGovernorKit */
+/** @typedef {import('@agoric/internal').ExoObj<typeof prepareContractGovernorKit>} ContractGovernorKit */

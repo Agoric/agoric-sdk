@@ -122,4 +122,4 @@ export const prepareOracleAdminKit = baggage =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<typeof prepareOracleAdminKit>>} OracleKit */
+/** @typedef {import('@agoric/internal').ExoObj<typeof prepareOracleAdminKit>} OracleKit */
