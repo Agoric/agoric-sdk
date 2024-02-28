@@ -1,9 +1,9 @@
 // @jessie-check
+// @ts-check
 
 import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
-const makePowerFlagFee = (powerFlag, fee) => ({ powerFlag, fee });
 const makeCoin = (denom, amount) => ({ denom, amount: `${Nat(amount)}` });
 /**
  * @param {string} key
@@ -63,8 +63,9 @@ export const defaultBeansPerUnit = [
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
 
+/** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').PowerFlagFeeSDKType[]} */
 export const defaultPowerFlagFees = [
-  makePowerFlagFee('SMART_WALLET', [makeCoin('ubld', 10_000_000n)]),
+  { power_flag: 'SMART_WALLET', fee: [makeCoin('ubld', 10_000_000n)] },
 ];
 
 export const QueueInbound = 'inbound';
