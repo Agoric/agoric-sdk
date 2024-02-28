@@ -35,6 +35,7 @@ export const makeMakeExiter = baggage => {
       exit() {
         const { state } = this;
         state.zcfSeat.exit();
+        console.log(`EXIT nulling zcfSeat`);
         state.zcfSeat = undefined;
       },
     },

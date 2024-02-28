@@ -159,6 +159,7 @@ export const createSeatManager = (
         assertNoStagedAllocation(self);
         doExitSeat(self);
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
+        console.log(`ZCFSeat deleting from handles on exit`);
         zcfSeatToSeatHandle.delete(self);
       },
       fail(
@@ -180,6 +181,7 @@ export const createSeatManager = (
             zcfSeatToSeatHandle.get(self),
             harden(reason),
           );
+          console.log(`ZCFSeat deleting from handles on fail`);
           zcfSeatToSeatHandle.delete(self);
         }
         return reason;

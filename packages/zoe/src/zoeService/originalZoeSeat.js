@@ -163,6 +163,9 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           const { state, facets } = this;
           // Since this method doesn't wait, we could re-enter via exitAllSeats.
           // If that happens, we shouldn't re-do any of the work.
+
+          console.log(`OZSeat exiting from old seat`);
+
           if (state.exiting) {
             return;
           }
