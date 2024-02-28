@@ -271,6 +271,22 @@ export const prepareSmartWallet = (baggage, shared) => {
     return store;
   });
 
+  /**
+   * @param {Brand} brand
+   * @param {Pick<State, 'bank' | 'invitationPurse'> & Pick<ReturnType<makeWalletWithResolvedStorageNodes>, 'helper'>} powers
+   * @returns {ERef<Purse | undefined>}
+   */
+  const getPurseForBrand = (brand, { bank, invitationPurse, helper }) => {
+    const { agoricNames, invitationBrand, registry } = shared;
+    if (brand === invitationBrand) {
+      return invitationPurse;
+    } else if (registry.has(brand)) {
+      // @ts-expect-error a virtual purse is close enough
+      return E(bank).getPurse(brand);
+    }
+    return helper.getPurseIfKnownBrand(brand, agoricNames);
+  };
+
   const makeOfferWatcher = prepareOfferWatcher(baggage);
 
   const updateShape = {
@@ -757,23 +773,15 @@ export const prepareSmartWallet = (baggage, shared) => {
          */
         async purseForBrand(brand) {
           const { state, facets } = this;
-          const { registry, invitationBrand } = shared;
+          const { bank, invitationPurse } = state;
+          const { helper } = facets;
 
-          if (registry.has(brand)) {
-            // @ts-expect-error virtual purse
-            return E(state.bank).getPurse(brand);
-          } else if (invitationBrand === brand) {
-            return state.invitationPurse;
-          }
-
-          const purse = await facets.helper.getPurseIfKnownBrand(
-            brand,
-            shared.agoricNames,
-          );
-          if (purse) {
-            return purse;
-          }
-          throw Fail`cannot find/make purse for ${brand}`;
+          const purse = await getPurseForBrand(brand, {
+            bank,
+            invitationPurse,
+            helper,
+          });
+          return purse || Fail`cannot find/make purse for ${brand}`;
         },
         logWalletInfo(...args) {
           const { state } = this;
@@ -824,23 +832,16 @@ export const prepareSmartWallet = (baggage, shared) => {
             facets: { helper },
           } = this;
           const { paymentQueues: queues, bank, invitationPurse } = state;
-          const { registry, invitationBrand } = shared;
 
           const brand = await E(payment).getAllegedBrand();
 
-          // When there is a purse deposit into it
-          if (registry.has(brand)) {
-            const purse = E(bank).getPurse(brand);
-            return E(purse).deposit(payment);
-          } else if (invitationBrand === brand) {
-            // @ts-expect-error narrow assetKind to 'set'
-            return E(invitationPurse).deposit(payment);
-          }
+          const purse = await getPurseForBrand(brand, {
+            bank,
+            invitationPurse,
+            helper,
+          });
 
-          const purse = await helper.getPurseIfKnownBrand(
-            brand,
-            shared.agoricNames,
-          );
+          // When there is a purse, deposit into it.
           if (purse) {
             return E(purse).deposit(payment);
           }
