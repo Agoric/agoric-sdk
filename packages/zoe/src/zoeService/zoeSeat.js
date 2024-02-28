@@ -383,6 +383,7 @@ export const makeZoeSeatAdminFactory = baggage => {
 
           const exitResult = E(state.exitObj).exit();
 
+          console.log(`ZSeat cutting exitObj`);
           // unlink an un-collectible cycle.
           state.exitObj = undefined;
 
