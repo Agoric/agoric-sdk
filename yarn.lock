@@ -509,7 +509,7 @@
     "@endo/eventual-send" "^0.17.6"
     "@endo/pass-style" "^0.1.7"
 
-"@endo/far@^1.0.4":
+"@endo/far@^1.0.2", "@endo/far@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-1.0.4.tgz#98f8c82b215b2aa99ee23fda39c8ee8cc4f8e342"
   integrity sha512-EQjU+3yVhAUYNpuAcGlGKKrLq8eOLSZp+sCKEVYI3S8Q3WW468FJUy2ldLjDqWDLe24Yup+mQ6zDEVzUwiT4cQ==
@@ -591,7 +591,7 @@
     "@endo/promise-kit" "^1.0.4"
     "@fast-check/ava" "^1.1.5"
 
-"@endo/patterns@^1.2.0":
+"@endo/patterns@^1.1.0", "@endo/patterns@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@endo/patterns/-/patterns-1.2.0.tgz#5932feb051e2b966ed010aa14f0428b1712d91a2"
   integrity sha512-uZaN7nMSW7wWB1Nhyxpppowmchc//Z+UvilakQqrN8uUzX0qUKmTgviS4vKtCmsFtLXlfI13uqp0k8OPr3ClpQ==

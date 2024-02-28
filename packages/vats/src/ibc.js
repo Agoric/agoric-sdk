@@ -454,10 +454,10 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               //   );
 
               const attempt = await when(
-                /** @type {ProtocolImpl} */ (protocolImpl).inbound(
-                  localAddr,
-                  remoteAddr,
-                ),
+                /** @type {ProtocolImpl} */(protocolImpl).inbound(
+                localAddr,
+                remoteAddr,
+              ),
               );
 
               // Tell what version string we negotiated.
@@ -553,7 +553,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
                   order: chanInfo.order,
                 },
               );
-              onConnectP.settler.resolve({
+              onConnectP.resolver.resolve({
                 localAddress,
                 remoteAddress,
                 handler: rchandler,
@@ -622,7 +622,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
                 source_port: portID,
               } = packet;
               const ackKit = util.findAckKit(channelID, portID, sequence);
-              ackKit.settler.resolve(base64ToBytes(acknowledgement));
+              ackKit.resolver.resolve(base64ToBytes(acknowledgement));
               break;
             }
 
@@ -634,7 +634,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
                 source_port: portID,
               } = packet;
               const ackKit = util.findAckKit(channelID, portID, sequence);
-              ackKit.settler.reject(Error(`Packet timed out`));
+              ackKit.resolver.reject(Error(`Packet timed out`));
               break;
             }
 

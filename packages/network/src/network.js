@@ -306,9 +306,9 @@ export const crossoverConnection = (
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
- * @param {import('@agoric/vow').When} when
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-const prepareInboundAttempt = (zone, makeConnection, when) => {
+const prepareInboundAttempt = (zone, makeConnection, { when }) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
     Shape.InboundAttemptI,
@@ -421,9 +421,9 @@ const RevokeState = /** @type {const} */ ({
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {import('@agoric/vow').When} when
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-const preparePort = (zone, when) => {
+const preparePort = (zone, { when }) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
   const makePort = zone.exoClass(
@@ -557,7 +557,7 @@ const preparePort = (zone, when) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
+        const ps = values.map(conn => when(E(conn).close()).catch(_ => { }));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
           ps.push(this.self.removeListener(listener));
@@ -579,8 +579,8 @@ const preparePort = (zone, when) => {
 const prepareBinder = (zone, powers) => {
   const makeConnection = prepareHalfConnection(zone, powers);
   const { when } = powers;
-  const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection, when);
-  const makePort = preparePort(zone, when);
+  const makeInboundAttempt = prepareInboundAttempt(zone, makeConnection, powers);
+  const makePort = preparePort(zone, powers);
   const detached = zone.detached();
 
   const makeBinderKit = zone.exoClassKit(

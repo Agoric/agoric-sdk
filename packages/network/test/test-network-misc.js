@@ -19,7 +19,7 @@ import {
 import '../src/types.js';
 
 // eslint-disable-next-line no-constant-condition
-const log = false ? console.log : () => {};
+const log = false ? console.log : () => { };
 
 /**
  * @param {import('@agoric/zone').Zone} zone
@@ -45,6 +45,9 @@ const prepareProtocolHandler = (
       };
     },
     {
+      async onInstantiate(_port, _localAddr, _remote, _protocol) {
+        return "";
+      },
       async onCreate(_protocol, _impl) {
         log('created', _protocol, _impl);
       },
@@ -127,13 +130,13 @@ test('handled protocol', async t => {
 
   const port = await when(protocol.bind('/ibc/*/ordered'));
 
-  const { vow, settler } = makeVowKit();
+  const { vow, resolver } = makeVowKit();
 
   const prepareTestProtocolHandler = () => {
     const makeTestProtocolHandler = zone.exoClass(
       'TestProtocolHandler',
       undefined,
-      () => ({ settler }),
+      () => ({ resolver }),
       {
         async onOpen(connection, localAddr, remoteAddr) {
           t.is(localAddr, '/ibc/*/ordered');
@@ -145,7 +148,7 @@ test('handled protocol', async t => {
         },
         async onClose(_connection, reason) {
           t.is(reason, undefined, 'no close reason');
-          this.state.settler.resolve(null);
+          this.state.resolver.resolve(null);
         },
         async onReceive(_connection, bytes) {
           t.is(`${bytes}`, 'ping');
@@ -179,7 +182,7 @@ test('protocol connection listen', async t => {
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
   const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
-  const { vow, settler } = makeVowKit();
+  const { vow, resolver } = makeVowKit();
 
   const prepareConnectionHandler = () => {
     let handler;
@@ -187,7 +190,7 @@ test('protocol connection listen', async t => {
     const makeConnectionHandler = zone.exoClass(
       'connectionHandler',
       undefined,
-      () => ({ settler }),
+      () => ({ resolver }),
       {
         async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
           t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
@@ -205,7 +208,7 @@ test('protocol connection listen', async t => {
           handler = undefined;
           t.assert(c, 'connection is passed to onClose');
           t.is(reason, undefined, 'no close reason');
-          this.state.settler.resolve(null);
+          this.state.resolver.resolve(null);
         },
         async onReceive(c, packet, connectionHandler) {
           t.is(
@@ -315,7 +318,7 @@ test('loopback protocol', async t => {
   );
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
-  const { vow, settler } = makeVowKit();
+  const { vow, resolver } = makeVowKit();
 
   const port = await when(protocol.bind('/loopback/foo'));
 
@@ -345,6 +348,8 @@ test('loopback protocol', async t => {
         async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
           return makeConnectionHandler();
         },
+        async onRemove(port, _listenHandler) {
+        },
       },
     );
 
@@ -360,14 +365,14 @@ test('loopback protocol', async t => {
     const openerHandler = zone.exoClass(
       'opener',
       undefined,
-      ({ settler: innerSsettler }) => ({ innerSsettler }),
+      ({ resolver: innerResolver }) => ({ innerResolver }),
       {
         async onOpen(c, localAddr, remoteAddr, _connectionHandler) {
           t.is(localAddr, '/loopback/bar/nonce/1');
           t.is(remoteAddr, '/loopback/foo/nonce/2');
           const pingack = await when(c.send('ping'));
           t.is(pingack, 'pingack', 'expected pingack');
-          this.state.innerSsettler.resolve(null);
+          this.state.innerResolver.resolve(null);
         },
       },
     );
@@ -378,7 +383,7 @@ test('loopback protocol', async t => {
   const makeOpenerHandler = prepareOpener();
 
   await when(
-    port2.connect(port.getLocalAddress(), makeOpenerHandler({ settler })),
+    port2.connect(port.getLocalAddress(), makeOpenerHandler({ resolver })),
   );
 
   await when(vow);

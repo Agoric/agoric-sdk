@@ -35,8 +35,8 @@ const preparePlusOneConnectionHandler = (zone, { makeVowKit }, log) => {
     {
       async onReceive(_c, packetBytes) {
         log('Receiving Data', packetBytes);
-        const { vow, settler } = makeVowKit();
-        settler.resolve(`${packetBytes}1`);
+        const { vow, resolver } = makeVowKit();
+        resolver.resolve(`${packetBytes}1`);
         return vow;
       },
       async onOpen(_c, localAddr, remoteAddr, _connectionHandler) {
