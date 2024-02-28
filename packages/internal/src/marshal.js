@@ -8,11 +8,11 @@ const { Fail } = assert;
 /**
  * Should be a union with Remotable, but that's `any`, making this type meaningless
  *
- * @typedef {{ getBoardId: () => string }} BoardRemote
+ * @typedef {{ getBoardId: () => string | null }} BoardRemote
  */
 
 /**
- * @param {{ boardId: string, iface?: string }} slotInfo
+ * @param {{ boardId: string | null, iface?: string }} slotInfo
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
@@ -42,7 +42,7 @@ const boardValToSlot = val => {
  * Remotable-bearing data.
  *
  * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<import('@endo/marshal').Marshal<string>, 'serialize' | 'unserialize'>}
+ * @returns {Omit<import('@endo/marshal').Marshal<string | null>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
   return makeMarshal(boardValToSlot, slotToVal, {
