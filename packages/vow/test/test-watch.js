@@ -11,11 +11,15 @@ import { prepareVowTools } from '../src/tools.js';
  */
 const prepareAckWatcher = (zone, t) => {
   return zone.exoClass('AckWatcher', undefined, packet => ({ packet }), {
-    onFulfilled(ack) {
+    onFulfilled(ack, ...args) {
+      t.is(args.length, 1);
+      t.is(args[0], 'watcher context');
       t.is(ack, 'ack');
       return 'fulfilled';
     },
-    onRejected(reason) {
+    onRejected(reason, ...args) {
+      t.is(args.length, 1);
+      t.is(args[0], 'watcher context');
       t.true(reason instanceof Error);
       return 'rejected';
     },
@@ -34,27 +38,48 @@ test('ack watcher - shim', async t => {
   const packet = harden({ portId: 'port-1', channelId: 'channel-1' });
 
   const connSendP = Promise.resolve('ack');
-  t.is(await when(watch(connSendP, makeAckWatcher(packet))), 'fulfilled');
+  t.is(
+    await when(watch(connSendP, makeAckWatcher(packet), 'watcher context')),
+    'fulfilled',
+  );
 
   const connErrorP = Promise.reject(Error('disconnected'));
-  t.is(await when(watch(connErrorP, makeAckWatcher(packet))), 'rejected');
+  t.is(
+    await when(watch(connErrorP, makeAckWatcher(packet), 'watcher context')),
+    'rejected',
+  );
 
   const { vow, resolver } = makeVowKit();
   const connVowP = Promise.resolve(vow);
   resolver.resolve('ack');
-  t.is(await when(watch(connVowP, makeAckWatcher(packet))), 'fulfilled');
-  t.is(await when(watch(vow, makeAckWatcher(packet))), 'fulfilled');
+  t.is(
+    await when(watch(connVowP, makeAckWatcher(packet), 'watcher context')),
+    'fulfilled',
+  );
+  t.is(
+    await when(watch(vow, makeAckWatcher(packet), 'watcher context')),
+    'fulfilled',
+  );
 
   const { vow: vow2, resolver: resolver2 } = makeVowKit();
   const connVow2P = Promise.resolve(vow2);
   resolver2.resolve(vow);
-  t.is(await when(watch(connVow2P, makeAckWatcher(packet))), 'fulfilled');
+  t.is(
+    await when(watch(connVow2P, makeAckWatcher(packet), 'watcher context')),
+    'fulfilled',
+  );
 
   const { vow: vow3, resolver: resolver3 } = makeVowKit();
   const connVow3P = Promise.resolve(vow3);
   resolver3.reject(Error('disco2'));
   resolver3.resolve(vow2);
-  t.is(await when(watch(connVow3P, makeAckWatcher(packet))), 'rejected');
+  t.is(
+    await when(
+      // @ts-expect-error intentional extra argument
+      watch(connVow3P, makeAckWatcher(packet), 'watcher context', 'unexpected'),
+    ),
+    'rejected',
+  );
 });
 
 test('disconnection of non-vow informs watcher', async t => {
