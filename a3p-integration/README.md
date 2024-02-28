@@ -97,7 +97,13 @@ make -C ../packages/deployment docker-build-sdk
 
 ## Generating core-eval submissions
 
-Some core-eval proposals `submission` content are generated from the `agoric-sdk` code, and must be rebuilt every time there is a change. The `/scripts/generate-a3p-submission.sh` script contains commands to generate the core-eval content and move it to the expected proposal package's `submission` folder. It is executed as part of `a3p-integration`'s `build:submission` step.
+Some core-eval proposals `submission` content are generated from the `agoric-sdk`
+code, and must be rebuilt every time there is a change. The
+`/scripts/generate-a3p-submission.sh` script contains commands to generate the
+core-eval content and move it to the expected proposal package's `submission`
+folder. It is executed as part of `a3p-integration`'s `build:submission` step.
+Each proposal should add a `build:submission` rule in its  package.json to
+specify the details of proposals that require a build step.
 
 ## Building synthetic-chain images
 

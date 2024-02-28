@@ -16,5 +16,8 @@
       "!submission"
     ]
   },
+  "scripts": {
+    "build:submission": "../../../scripts/generate-a3p-submission.sh test-localchain b:localchain"
+  },
   "packageManager": "yarn@4.1.0"
 }
