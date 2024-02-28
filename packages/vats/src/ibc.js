@@ -194,7 +194,7 @@ export const prepareIBCConnectionHandler = zone => {
         const seqToAck = channelKeyToSeqAck.get(channelKey);
 
         for (const ackKit of seqToAck.values()) {
-          ackKit.settler.reject(rejectReason);
+          ackKit.resolver.reject(rejectReason);
         }
         channelKeyToSeqAck.delete(channelKey);
       },
@@ -412,8 +412,8 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
           const pendingConns = portToPendingConns.get(portID);
           portToPendingConns.delete(portID);
           const revoked = Error(`Port ${localAddr} revoked`);
-          for (const settler of pendingConns.values()) {
-            settler.reject(revoked);
+          for (const resolver of pendingConns.values()) {
+            resolver.reject(revoked);
           }
         },
       },

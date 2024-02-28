@@ -106,7 +106,7 @@ async function testRemotePeg(t) {
               gaiaConnection = c;
             },
             async onReceive(_c, packetBytes) {
-              const { settler, vow } = makeVowKit();
+              const { resolver, vow } = makeVowKit();
               const packet = JSON.parse(packetBytes);
               if (packet.memo) {
                 t.deepEqual(
@@ -120,7 +120,7 @@ async function testRemotePeg(t) {
                   },
                   'expected transfer packet',
                 );
-                settler.resolve(JSON.stringify({ result: 'AQ==' }));
+                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
               } else {
                 t.deepEqual(
                   packet,
@@ -133,7 +133,7 @@ async function testRemotePeg(t) {
                   },
                   'expected transfer packet',
                 );
-                settler.resolve(JSON.stringify({ result: 'AQ==' }));
+                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
               }
               return vow;
             },
