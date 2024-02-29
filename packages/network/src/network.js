@@ -189,7 +189,7 @@ const prepareHalfConnection = (zone, { when }) => {
     Shape.ConnectionI,
     /** @param {ConnectionOpts} opts */
     ({ addrs, handlers, conns, current, l, r }) => {
-      /** @type {Error | undefined} */
+      /** @type {string | undefined} */
       let closed;
 
       return {
@@ -229,9 +229,9 @@ const prepareHalfConnection = (zone, { when }) => {
       async close() {
         const { closed, current, conns, l, handlers } = this.state;
         if (closed) {
-          throw closed;
+          throw Error(closed);
         }
-        this.state.closed = Error('Connection closed');
+        this.state.closed = 'Connection closed';
         current.delete(conns.get(l));
         await when(
           E(this.state.handlers[l]).onClose(
@@ -327,7 +327,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
       listenPrefix,
       listening,
     }) => {
-      /** @type {Error | undefined} */
+      /** @type {String | undefined} */
       let consummated;
 
       return {
@@ -352,9 +352,9 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         const { listening, listenPrefix, currentConnections } = this.state;
 
         if (consummated) {
-          throw consummated;
+          throw Error(consummated);
         }
-        this.state.consummated = Error(`Already closed`);
+        this.state.consummated = 'Already closed';
 
         const [port, listener] = listening.get(listenPrefix);
 
@@ -375,9 +375,9 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         const { consummated, localAddr, remoteAddr } = this.state;
         const { listening, listenPrefix, currentConnections } = this.state;
         if (consummated) {
-          throw consummated;
+          throw Error(consummated);
         }
-        this.state.consummated = Error(`Already accepted`);
+        this.state.consummated = 'Already accepted';
 
         if (localAddress === undefined) {
           localAddress = localAddr;
@@ -869,7 +869,7 @@ export const prepareEchoConnectionKit = zone => {
       }),
     },
     () => {
-      /** @type {Error | undefined} */
+      /** @type {string | undefined} */
       let closed;
       return {
         closed,
@@ -899,10 +899,10 @@ export const prepareEchoConnectionKit = zone => {
           const { closed } = this.state;
 
           if (closed) {
-            throw closed;
+            throw Error(closed);
           }
 
-          this.state.closed = Error('Connection closed');
+          this.state.closed = 'Connection closed';
         },
       },
       listener: {
