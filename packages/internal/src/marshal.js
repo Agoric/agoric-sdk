@@ -1,3 +1,4 @@
+// @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { isStreamCell } from './lib-chainStorage.js';
@@ -7,11 +8,11 @@ const { Fail } = assert;
 /**
  * Should be a union with Remotable, but that's `any`, making this type meaningless
  *
- * @typedef {{ getBoardId: () => string }} BoardRemote
+ * @typedef {{ getBoardId: () => string | null }} BoardRemote
  */
 
 /**
- * @param {*} slotInfo
+ * @param {{ boardId: string | null, iface?: string }} slotInfo
  * @returns {BoardRemote}
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
@@ -19,14 +20,19 @@ export const makeBoardRemote = ({ boardId, iface }) => {
   return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
 };
 
+/**
+ * @param {string} boardId
+ * @param {string} iface
+ */
 export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
-export const boardValToSlot = val => {
+/** @param {BoardRemote | object} val */
+const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
   }
-  Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
+  throw Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
 };
 
 /**
@@ -36,7 +42,7 @@ export const boardValToSlot = val => {
  * Remotable-bearing data.
  *
  * @param {(slot: string, iface: string) => any} [slotToVal]
- * @returns {Omit<import('@endo/marshal').Marshal<string>, 'serialize' | 'unserialize'>}
+ * @returns {Omit<import('@endo/marshal').Marshal<string | null>, 'serialize' | 'unserialize'>}
  */
 export const boardSlottingMarshaller = (slotToVal = undefined) => {
   return makeMarshal(boardValToSlot, slotToVal, {
@@ -101,9 +107,12 @@ harden(unmarshalFromVstorage);
 export const makeHistoryReviver = (entries, slotToVal = undefined) => {
   const board = boardSlottingMarshaller(slotToVal);
   const vsMap = new Map(entries);
+  /** @param {...unknown} args } */
   const fromCapData = (...args) =>
     Reflect.apply(board.fromCapData, board, args);
+  /** @param {string} key } */
   const getItem = key => unmarshalFromVstorage(vsMap, key, fromCapData, -1);
+  /** @param {string} prefix } */
   const children = prefix => {
     prefix.endsWith('.') || Fail`prefix must end with '.'`;
     return harden([
@@ -115,5 +124,8 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
       ),
     ]);
   };
-  return harden({ getItem, children, has: k => vsMap.get(k) !== undefined });
+  /** @param {string} k } */
+  const has = k => vsMap.get(k) !== undefined;
+
+  return harden({ getItem, children, has });
 };
