@@ -16,10 +16,6 @@ npm install @agoric/cosmic-proto
 - [Usage](#usage)
     - [RPC Clients](#rpc-clients)
     - [Composing Messages](#composing-messages)
-        - Cosmos, CosmWasm, and IBC
-            - [CosmWasm](#cosmwasm-messages)
-            - [IBC](#ibc-messages)
-            - [Cosmos](#cosmos-messages)
 - [Wallets and Signers](#connecting-with-wallets-and-signing-messages)
     - [Stargate Client](#initializing-the-stargate-client)
     - [Creating Signers](#creating-signers)
@@ -37,11 +33,6 @@ import { agoric } from '@agoric/cosmic-proto';
 const { createRPCQueryClient } = agoric.ClientFactory; 
 const client = await createRPCQueryClient({ rpcEndpoint: RPC_ENDPOINT });
 
-// now you can query the cosmos modules
-const balance = await client.cosmos.bank.v1beta1
-    .allBalances({ address: 'agoric1addresshere' });
-
-// you can also query the agoric modules
 const swingsetParams = await client.agoric.swingset.params()
 ```
 
@@ -55,49 +46,6 @@ import { agoric } from '@agoric/cosmic-proto';
 const {
     installBundle,
 } = agoric.exchange.v1beta1.MessageComposer.withTypeUrl;
-```
-
-#### IBC Messages
-
-```js
-import { ibc } from '@agoric/cosmic-proto';
-
-const {
-    transfer
-} = ibc.applications.transfer.v1.MessageComposer.withTypeUrl
-```
-
-#### Cosmos Messages
-
-```js
-import { cosmos } from '@agoric/cosmic-proto';
-
-const {
-    fundCommunityPool,
-    setWithdrawAddress,
-    withdrawDelegatorReward,
-    withdrawValidatorCommission
-} = cosmos.distribution.v1beta1.MessageComposer.fromPartial;
-
-const {
-    multiSend,
-    send
-} = cosmos.bank.v1beta1.MessageComposer.fromPartial;
-
-const {
-    beginRedelegate,
-    createValidator,
-    delegate,
-    editValidator,
-    undelegate
-} = cosmos.staking.v1beta1.MessageComposer.fromPartial;
-
-const {
-    deposit,
-    submitProposal,
-    vote,
-    voteWeighted
-} = cosmos.gov.v1beta1.MessageComposer.fromPartial;
 ```
 
 ## Connecting with Wallets and Signing Messages
@@ -193,8 +141,6 @@ import { AminoTypes, SigningStargateClient } from "@cosmjs/stargate";
 import { 
     cosmosAminoConverters,
     cosmosProtoRegistry,
-    cosmwasmAminoConverters,
-    cosmwasmProtoRegistry,
     ibcProtoRegistry,
     ibcAminoConverters,
     agoricAminoConverters,
@@ -206,14 +152,12 @@ const rpcEndpint = 'https://rpc.cosmos.directory/agoric'; // or another URL
 
 const protoRegistry: ReadonlyArray<[string, GeneratedType]> = [
     ...cosmosProtoRegistry,
-    ...cosmwasmProtoRegistry,
     ...ibcProtoRegistry,
     ...agoricProtoRegistry
 ];
 
 const aminoConverters = {
     ...cosmosAminoConverters,
-    ...cosmwasmAminoConverters,
     ...ibcAminoConverters,
     ...agoricAminoConverters
 };
@@ -251,7 +195,7 @@ yarn test:live
 
 ### Codegen
 
-Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.cjs` and configure the settings for bundling your SDK and contracts into `@agoric/cosmic-proto`:
+Protos live in `./proto`. Look inside of `scripts/codegen.cjs` and configure the settings for bundling your SDK into `@agoric/cosmic-proto`:
 
 ```
 yarn codegen
@@ -271,7 +215,6 @@ yarn publish
 Checkout these related projects:
 
 * [@cosmology/telescope](https://github.com/cosmology-tech/telescope) Your Frontend Companion for Building with TypeScript with Cosmos SDK Modules.
-* [@cosmwasm/ts-codegen](https://github.com/CosmWasm/ts-codegen) Convert your CosmWasm smart contracts into dev-friendly TypeScript classes.
 * [chain-registry](https://github.com/cosmology-tech/chain-registry) Everything from token symbols, logos, and IBC denominations for all assets you want to support in your application.
 * [cosmos-kit](https://github.com/cosmology-tech/cosmos-kit) Experience the convenience of connecting with a variety of web3 wallets through a single, streamlined interface.
 * [create-cosmos-app](https://github.com/cosmology-tech/create-cosmos-app) Set up a modern Cosmos app by running one command.
