@@ -129,7 +129,8 @@ test.serial('run network vat proposal', async t => {
 test.serial('register network protocol before upgrade', async t => {
   const { EV } = t.context.runUtils;
   const net = await EV.vat('bootstrap').consumeItem('networkVat');
-  const h1 = { onCreate: 'bogus protocol handler' };
+  const h1 = await EV(net).makeLoopbackProtocolHandler();
+
   t.log('register P1');
   await EV(net).registerProtocolHandler(['P1'], h1);
 
@@ -171,7 +172,8 @@ test.serial('run restart-vats proposal', async t => {
 test.serial('networkVat registrations are durable', async t => {
   const { EV } = t.context.runUtils;
   const net = await EV.vat('bootstrap').consumeItem('networkVat');
-  const h2 = { onCreate: 'another bogus protocol handler' };
+
+  const h2 = await EV(net).makeLoopbackProtocolHandler();
   t.log('register P1 again? No.');
   await t.throwsAsync(EV(net).registerProtocolHandler(['P1'], h2), {
     message: /key "P1" already registered/,
