@@ -240,7 +240,12 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
        */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
-      /** @type {MapStore<string, SetStore<import('@agoric/vow').VowResolver>>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   SetStore<import('@agoric/vow').VowResolver>
+       * >}
+       */
       const portToPendingConns = detached.mapStore('portToPendingConns');
 
       return {
