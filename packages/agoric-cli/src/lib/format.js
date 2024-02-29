@@ -39,7 +39,7 @@ const exampleAsset = {
 
 /**
  * @param {AssetDescriptor[]} assets
- * @returns {(a: Amount & { brand: BoardRemote }) => [string, number | any[]]}
+ * @returns {(a: Amount & { brand: BoardRemote }) => [string | null, number | any[]]}
  */
 export const makeAmountFormatter = assets => amt => {
   const { brand, value } = amt;

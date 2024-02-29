@@ -1,9 +1,10 @@
 // @jessie-check
+// @ts-check
 
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 /**
- * @typedef {(message: any[], ackNum: number) => Promise<void>} DeliverMessages
+ * @typedef {(message: unknown[], ackNum: number) => Promise<void>} DeliverMessages
  */
 
 /**
@@ -16,8 +17,10 @@ export function makeBatchedDeliver(
   { clearTimeout, setTimeout },
   batchTimeoutMs = DEFAULT_BATCH_TIMEOUT_MS,
 ) {
+  /** @type {unknown[]} */
   let batchedMessages = [];
   let latestAckNum = 0;
+  /** @type {NodeJS.Timeout} */
   let deliverTimeout;
 
   /**
