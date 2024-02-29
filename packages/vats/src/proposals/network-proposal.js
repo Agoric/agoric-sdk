@@ -1,10 +1,8 @@
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import {
-  makeLoopbackProtocolHandler,
-  makeEchoConnectionHandler,
-  makeNonceMaker,
-} from '@agoric/network';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { makeScalarMapStore } from '@agoric/store';
+import { makeHeapZone } from '@agoric/zone';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
@@ -15,60 +13,37 @@ const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   const ps = [];
+
+  const loopbackHandler = await E(vats.network).makeLoopbackProtocolHandler();
   // Every vat has a loopback device.
-  ps.push(
-    E(vats.network).registerProtocolHandler(
-      ['/local'],
-      makeLoopbackProtocolHandler(),
-    ),
-  );
+  ps.push(E(vats.network).registerProtocolHandler(['/local'], loopbackHandler));
+
   if (dibcBridgeManager) {
     assert('ibc' in vats);
     // We have access to the bridge, and therefore IBC.
-    const callbacks = Far('callbacks', {
-      downcall(method, obj) {
-        return E(dibcBridgeManager).toBridge({
-          ...obj,
-          type: 'IBC_METHOD',
-          method,
-        });
-      },
-    });
+    const settledBridgeManager = await dibcBridgeManager;
+    const callbacks = await E(vats.ibc).makeCallbacks(settledBridgeManager);
     ps.push(
       E(vats.ibc)
-        .createInstance(callbacks)
-        .then(ibcHandler =>
+        .createHandlers(callbacks)
+        .then(({ protocolHandler, bridgeHandler }) =>
           E(dibcBridgeManager)
-            .initHandler(ibcHandler)
+            .initHandler(bridgeHandler)
             .then(() =>
               E(vats.network).registerProtocolHandler(
                 ['/ibc-port', '/ibc-hop'],
-                ibcHandler,
+                protocolHandler,
               ),
             ),
         ),
     );
   } else {
-    const loHandler = makeLoopbackProtocolHandler(
-      makeNonceMaker('ibc-channel/channel-'),
+    const loHandler = await E(vats.network).makeLoopbackProtocolHandler(
+      'ibc-channel/channel-',
     );
     ps.push(E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler));
   }
   await Promise.all(ps);
-
-  // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await E(vats.network).bind('/ibc-port/echo');
-
-  return E(echoPort).addListener(
-    Far('listener', {
-      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return harden(makeEchoConnectionHandler());
-      },
-      async onListen(port, _listenHandler) {
-        console.debug(`listening on echo port: ${port}`);
-      },
-    }),
-  );
 };
 
 /**
@@ -95,8 +70,9 @@ export const setupNetworkProtocols = async (
       loadCriticalVat,
       bridgeManager: bridgeManagerP,
       provisioning,
+      vatUpgradeInfo: vatUpgradeInfoP,
     },
-    produce: { networkVat },
+    produce: { networkVat, vatUpgradeInfo: produceVatUpgradeInfo },
   },
   options,
 ) => {
@@ -109,6 +85,11 @@ export const setupNetworkProtocols = async (
   };
   // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
+
+  produceVatUpgradeInfo.resolve(makeScalarMapStore('vatUpgradeInfo'));
+  const info = await vatUpgradeInfoP;
+  info.init('ibc', ibcRef);
+  info.init('network', networkRef);
 
   networkVat.reset();
   networkVat.resolve(vats.network);
@@ -139,6 +120,16 @@ export const setupNetworkProtocols = async (
   // we need to finish registering handlers for
   // ibc-port etc.
   await registerNetworkProtocols(vats, dibcBridgeManager);
+
+  // Heap-based vow resolution is used for this module because the
+  // bootstrap vat can't yet be upgraded.
+  const powers = prepareVowTools(makeHeapZone());
+
+  const { when } = powers;
+  // Add an echo listener on our ibc-port network (whether real or virtual).
+  const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
+  const { listener } = await E(vats.network).makeEchoConnectionKit();
+  await E(echoPort).addListener(listener);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
 
@@ -151,10 +142,13 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         bridgeManager: 'bridge',
         zoe: 'zoe',
         provisioning: 'provisioning',
+        vatUpgradeInfo: true,
       },
       produce: {
         networkVat: 'network',
+        vatUpgradeInfo: true,
       },
+      zone: true,
     },
   },
   options: {
