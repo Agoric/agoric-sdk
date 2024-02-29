@@ -6,6 +6,7 @@
     "upgradeInfo": {
       "coreProposals": []
     },
+    "sdk-generate": [ "probe-zcf-bundle probeZcfBundle probe-submission" ],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
