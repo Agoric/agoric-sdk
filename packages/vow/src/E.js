@@ -409,7 +409,9 @@ export default makeE;
 
 /**
  * @template T
- * @typedef {Awaited<T> extends import('./types').Vow<infer U> ? Unwrap<U> : Awaited<T>} Unwrap
+ * @typedef {T extends PromiseLike<infer U> ? Unwrap<U> :
+ *   T extends import('./types').Vow<infer U> ? Unwrap<U> :
+ *   T} Unwrap
  */
 
 /**

@@ -29,6 +29,14 @@ test('heap messages', async t => {
   // Happy path: await WE.when unwraps the vow.
   t.is(await V.when(vow), greeter);
 
+  t.is(
+    await V.when(vow, res => {
+      t.is(res, greeter);
+      return 'done';
+    }),
+    'done',
+  );
+
   // Sad path: await by itself gives the raw vow.
   const w = await vow;
   t.not(w, greeter);

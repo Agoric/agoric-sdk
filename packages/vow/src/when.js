@@ -6,14 +6,20 @@ import { getVowPayload, basicE } from './vow-utils.js';
  */
 export const makeWhen = (isRetryableReason = () => false) => {
   /**
-   * Shorten any vows in `specimenP` until we achieve a final result.
+   * Shorten `specimenP` until we achieve a final result.
    *
-   * @template T
-   * @param {import('./types.js').ERef<T | import('./types.js').Vow<T>>} specimenP
+   * @template [T=any]
+   * @template [TResult1=import('./E.js').Unwrap<T>]
+   * @template [TResult2=never]
+   * @param {T} specimenP value to unwrap
+   * @param {(value: import('./E.js').Unwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
+   * @param {(reason: any) => TResult2 | PromiseLike<TResult2>} [onRejected]
+   * @returns {Promise<TResult1 | TResult2>}
    */
-  const when = async specimenP => {
+  const when = async (specimenP, onFulfilled, onRejected) => {
     // Ensure we don't run until a subsequent turn.
     await null;
+    Promise.prototype.then;
 
     // Ensure we have a presence that won't be disconnected later.
     let result = await specimenP;
@@ -32,8 +38,13 @@ export const makeWhen = (isRetryableReason = () => false) => {
       payload = getVowPayload(result);
     }
 
+    const unwrapped = /** @type {import('./E.js').Unwrap<T>} */ (result);
+
     // We've extracted the final result.
-    return /** @type {Awaited<T>} */ (result);
+    if (onFulfilled == null && onRejected == null) {
+      return /** @type {TResult1} */ (unwrapped);
+    }
+    return basicE.resolve(unwrapped).then(onFulfilled, onRejected);
   };
   harden(when);
 
