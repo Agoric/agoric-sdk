@@ -1002,19 +1002,19 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             // await so that any errors are caught and handled below
             await watchOfferOutcomes(watcher, seatRef);
-          } catch (err) {
+          } catch (reason) {
             // This block only runs if the block above fails during one vat incarnation.
-            facets.helper.logWalletError('IMMEDIATE OFFER ERROR:', err);
+            facets.helper.logWalletError('IMMEDIATE OFFER ERROR:', reason);
 
             // Update status to observers
-            if (err.upgradeMessage === 'vat upgraded') {
+            if (isUpgradeDisconnection(reason)) {
               // The offer watchers will reconnect. Don't reclaim or exit
               return;
             } else if (watcher) {
               // The watcher's onRejected will updateStatus()
             } else {
               facets.helper.updateStatus({
-                error: err.toString(),
+                error: reason.toString(),
                 ...offerSpec,
               });
             }
@@ -1033,7 +1033,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             // XXX tests rely on throwing immediate errors, not covering the
             // error handling in the event the failure is after an upgrade
-            throw err;
+            throw reason;
           }
         },
         /**
@@ -1052,7 +1052,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * Umarshals the actionCapData and delegates to the appropriate action handler.
          *
-         * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
+         * @param {import('@endo/marshal').CapData<string | null>} actionCapData of type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */

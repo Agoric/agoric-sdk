@@ -444,3 +444,53 @@ test('upgrade vat-priceAuthority', async t => {
   matchRef(t, reincarnatedRegistry.priceAuthority, registry.priceAuthority);
   matchRef(t, reincarnatedRegistry.adminFacet, registry.adminFacet);
 });
+
+test('upgrade vat-vow', async t => {
+  const bundles = {
+    vow: {
+      sourceSpec: bfile('./vat-vow.js'),
+    },
+  };
+
+  const { EV } = await makeScenario(t, { bundles });
+
+  t.log('create initial version');
+  const vowVatConfig = {
+    name: 'vow',
+    bundleCapName: 'vow',
+  };
+  const vowRoot = await EV.vat('bootstrap').createVat(vowVatConfig);
+
+  t.log('test incarnation 0');
+  /** @type {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} */
+  const localPromises = {
+    forever: [],
+    fulfilled: ['hello'],
+    rejected: ['goodbye', true],
+  };
+  await EV(vowRoot).makeLocalPromiseWatchers(localPromises);
+  t.deepEqual(await EV(vowRoot).getWatcherResults(), {
+    fulfilled: { status: 'fulfilled', value: 'hello' },
+    forever: { status: 'unsettled' },
+    rejected: { status: 'rejected', reason: 'goodbye' },
+  });
+
+  t.log('restart');
+  const { incarnationNumber } =
+    await EV.vat('bootstrap').upgradeVat(vowVatConfig);
+  t.is(incarnationNumber, 1, 'vat must be reincarnated');
+
+  t.log('test incarnation 1');
+  t.deepEqual(await EV(vowRoot).getWatcherResults(), {
+    fulfilled: { status: 'fulfilled', value: 'hello' },
+    forever: {
+      status: 'rejected',
+      reason: {
+        name: 'vatUpgraded',
+        upgradeMessage: 'vat upgraded',
+        incarnationNumber: 0,
+      },
+    },
+    rejected: { status: 'rejected', reason: 'goodbye' },
+  });
+});

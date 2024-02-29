@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
@@ -42,12 +41,13 @@ export const startPegasus = async ({
   },
 }) => {
   const [board, namesByAddress] = await Promise.all([boardP, namesByAddressP]);
-  const terms = { board, namesByAddress };
+  const privates = { board, namesByAddress };
 
   const { instance } = await E(zoe).startInstance(
     pegasusInstall,
     undefined,
-    terms,
+    undefined,
+    privates,
   );
 
   produceInstance.resolve(instance);
@@ -76,7 +76,9 @@ export const addPegasusTransferPort = async (
         void E(pegasusConnectionsAdmin).delete(localAddr);
       }
     },
-  });
+  }).catch(err =>
+    console.error('Error observing Pegasus connection kit:', err),
+  );
   return E(port).addListener(
     Far('listener', {
       async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {

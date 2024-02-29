@@ -4,22 +4,25 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import {
-  makeNetworkProtocol,
-  makeLoopbackProtocolHandler,
+  prepareNetworkProtocol,
+  prepareLoopbackProtocolHandler,
 } from '@agoric/network';
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeScalarMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const contractPath = `${dirname}/../src/pegasus.js`;
+const contractPath = `${dirname}/../src/contract.js`;
 
 /**
  * @template T
@@ -31,11 +34,21 @@ const makeAsyncIteratorFromSubscription = sub =>
     Symbol.asyncIterator
   ]();
 
+const provideBaggage = key => {
+  const zone = makeDurableZone(makeScalarMapStore());
+  return zone.mapStore(`${key} baggage`);
+};
+
 /**
  * @param {import('ava').Assertions} t
  */
 async function testRemotePeg(t) {
   t.plan(24);
+
+  // const zone = makeHeapZone();
+  const zone = makeDurableZone(provideBaggage('peagsus'));
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
 
   /**
    * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
@@ -69,6 +82,7 @@ async function testRemotePeg(t) {
   const { publicFacet: publicAPI } = await E(zoe).startInstance(
     installationHandle,
     {},
+    {},
     { board: fakeBoard, namesByAddress: fakeNamesByAddress },
   );
 
@@ -76,7 +90,10 @@ async function testRemotePeg(t) {
    * @type {import('../src/pegasus.js').Pegasus}
    */
   const pegasus = publicAPI;
-  const network = makeNetworkProtocol(makeLoopbackProtocolHandler());
+
+  const makeLoopbackHandler = prepareLoopbackProtocolHandler(zone, powers);
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const network = makeNetworkProtocol(makeLoopbackHandler());
 
   const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
   const portName = await E(portP).getLocalAddress();
@@ -84,50 +101,54 @@ async function testRemotePeg(t) {
   /**
    * Pretend we're Gaia.
    *
-   * @type {import('@agoric/network/src.js').Connection?}
+   * @type {Connection}
    */
   let gaiaConnection;
-  E(portP).addListener(
-    Far('acceptor', {
-      async onAccept(_p, _localAddr, _remoteAddr) {
-        return Far('handler', {
-          async onOpen(c) {
-            gaiaConnection = c;
-          },
-          async onReceive(_c, packetBytes) {
-            const packet = JSON.parse(packetBytes);
-            if (packet.memo) {
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000001',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: 'I am a memo!',
-                  receiver: 'markaccount',
-                  sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                },
-                'expected transfer packet',
-              );
-              return JSON.stringify({ result: 'AQ==' });
-            } else {
-              t.deepEqual(
-                packet,
-                {
-                  amount: '100000000000000000001',
-                  denom: 'portdef/chanabc/uatom',
-                  memo: '',
-                  receiver: 'markaccount',
-                  sender: 'pegasus',
-                },
-                'expected transfer packet',
-              );
-              return JSON.stringify({ result: 'AQ==' });
-            }
-          },
-        });
-      },
-    }),
-  );
+  E(portP)
+    .addListener(
+      Far('acceptor', {
+        async onAccept(_p, _localAddr, _remoteAddr) {
+          return Far('handler', {
+            async onOpen(c) {
+              gaiaConnection = c;
+            },
+            async onReceive(_c, packetBytes) {
+              const { resolver, vow } = makeVowKit();
+              const packet = JSON.parse(packetBytes);
+              if (packet.memo) {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: 'I am a memo!',
+                    receiver: 'markaccount',
+                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                  },
+                  'expected transfer packet',
+                );
+                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
+              } else {
+                t.deepEqual(
+                  packet,
+                  {
+                    amount: '100000000000000000001',
+                    denom: 'portdef/chanabc/uatom',
+                    memo: '',
+                    receiver: 'markaccount',
+                    sender: 'pegasus',
+                  },
+                  'expected transfer packet',
+                );
+                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
+              }
+              return vow;
+            },
+          });
+        },
+      }),
+    )
+    .catch(e => t.fail(e));
 
   // Pretend we're Agoric.
   const { handler: chandler, subscription: connectionSubscription } =
@@ -178,7 +199,7 @@ async function testRemotePeg(t) {
   const localPurseP = E(localIssuerP).makeEmptyPurse();
   resolveLocalDepositFacet(E(localPurseP).getDepositFacet());
 
-  const sendAckData = await sendAckDataP;
+  const sendAckData = await when(sendAckDataP);
   const sendAck = JSON.parse(sendAckData);
   t.deepEqual(sendAck, { result: 'AQ==' }, 'Gaia sent the atoms');
   if (!sendAck.result) {
@@ -199,8 +220,8 @@ async function testRemotePeg(t) {
     sender: 'FIXME:sender2',
   };
 
-  const sendAckData2 = await E(gaiaConnection).send(
-    JSON.stringify(sendPacket2),
+  const sendAckData2 = await when(
+    E(gaiaConnection).send(JSON.stringify(sendPacket2)),
   );
   const sendAck2 = JSON.parse(sendAckData2);
   t.deepEqual(sendAck2, { result: 'AQ==' }, 'Gaia sent more atoms');
@@ -225,9 +246,11 @@ async function testRemotePeg(t) {
 
   // Wait for the packet to go through.
   t.deepEqual(await remoteDenomAit.next(), { done: false, value: 'umuon' });
-  E(pegConnActions).rejectTransfersWaitingForPegRemote('umuon');
+  E(pegConnActions)
+    .rejectTransfersWaitingForPegRemote('umuon')
+    .catch(e => t.fail(e));
 
-  const sendAckData3 = await sendAckData3P;
+  const sendAckData3 = await when(sendAckData3P);
   const sendAck3 = JSON.parse(sendAckData3);
   t.deepEqual(
     sendAck3,

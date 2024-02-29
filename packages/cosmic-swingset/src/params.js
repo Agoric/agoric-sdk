@@ -29,7 +29,10 @@ export const encodeQueueSizes = queueSizes =>
     return { key, size };
   });
 
-// Map the SwingSet parameters to a deterministic data structure.
+/**
+ * Map the SwingSet parameters to a deterministic data structure.
+ * @param {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').ParamsSDKType} params
+ */
 export const parseParams = params => {
   const {
     beans_per_unit: rawBeansPerUnit,

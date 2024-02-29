@@ -23,10 +23,10 @@ const watchPromise = vatData && vatData.watchPromise;
  * @param {any} reason
  * @returns {boolean}
  */
-const rejectionMeansRetry = reason => isUpgradeDisconnection(reason);
+const isRetryableReason = reason => isUpgradeDisconnection(reason);
 
 export const defaultPowers = harden({
-  rejectionMeansRetry,
+  isRetryableReason,
   watchPromise,
 });
 
@@ -44,4 +44,7 @@ export const { watch, when, makeVowKit } = prepareVowTools(makeHeapZone());
  * for `watch` to durably shorten.  Use the standard `import('@endo/far').E` if
  * you need to `watch` its resulting promises.
  */
-export const V = makeE(globalThis.HandledPromise, { unwrap: when });
+export const V = makeE(globalThis.HandledPromise, {
+  unwrap: when,
+  additional: { when },
+});

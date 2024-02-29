@@ -97,6 +97,49 @@ test.serial('open vault', async t => {
   });
 });
 
+test.serial('run network vat proposal', async t => {
+  const { controller, buildProposal } = t.context;
+
+  t.log('building network proposal');
+  const proposal = await buildProposal(
+    '@agoric/builders/scripts/vats/init-network.js',
+  );
+
+  for await (const bundle of proposal.bundles) {
+    await controller.validateAndInstallBundle(bundle);
+  }
+  t.log('installed', proposal.bundles.length, 'bundles');
+
+  t.log('executing proposal');
+  const bridgeMessage = {
+    type: 'CORE_EVAL',
+    evals: proposal.evals,
+  };
+  t.log({ bridgeMessage });
+  const { EV } = t.context.runUtils;
+  const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+    'bootstrap',
+  ).consumeItem('coreEvalBridgeHandler');
+  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+
+  t.log('network proposal executed');
+  t.pass(); // reached here without throws
+});
+
+test.serial('register network protocol before upgrade', async t => {
+  const { EV } = t.context.runUtils;
+  const net = await EV.vat('bootstrap').consumeItem('networkVat');
+  const h1 = await EV(net).makeLoopbackProtocolHandler();
+
+  t.log('register P1');
+  await EV(net).registerProtocolHandler(['P1'], h1);
+
+  t.log('register P1 again? No.');
+  await t.throwsAsync(EV(net).registerProtocolHandler(['P1'], h1), {
+    message: /key "P1" already registered/,
+  });
+});
+
 test.serial('run restart-vats proposal', async t => {
   const { controller, buildProposal } = t.context;
 
@@ -124,6 +167,25 @@ test.serial('run restart-vats proposal', async t => {
 
   t.log('restart-vats proposal executed');
   t.pass(); // reached here without throws
+});
+
+test.serial('networkVat registrations are durable', async t => {
+  const { EV } = t.context.runUtils;
+  const net = await EV.vat('bootstrap').consumeItem('networkVat');
+
+  const h2 = await EV(net).makeLoopbackProtocolHandler();
+  t.log('register P1 again? No.');
+  await t.throwsAsync(EV(net).registerProtocolHandler(['P1'], h2), {
+    message: /key "P1" already registered/,
+  });
+
+  t.log('IBC protocol handler already registered?');
+  await t.throwsAsync(
+    EV(net).registerProtocolHandler(['/ibc-port', '/ibc-hop'], h2),
+    {
+      message: /key "\/ibc-port" already registered in collection "prefix"/,
+    },
+  );
 });
 
 test.serial('read metrics', async t => {

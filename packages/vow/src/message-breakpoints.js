@@ -1,3 +1,4 @@
+// @ts-check
 import { getEnvironmentOption } from '@endo/env-options';
 
 const { quote: q, Fail } = assert;

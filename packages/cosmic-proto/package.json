@@ -1,6 +1,6 @@
 {
   "name": "@agoric/cosmic-proto",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Protobuf stubs for the Agoric cosmos-sdk module",
   "keywords": [],
   "author": "Agoric",
@@ -15,48 +15,83 @@
   },
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/codegen/index.d.ts",
+      "default": "./dist/codegen/index.js"
+    },
     "./package.json": "./package.json",
     "./swingset/msgs.js": {
-      "types": "./dist/agoric/swingset/msgs.d.ts",
-      "default": "./dist/agoric/swingset/msgs.js"
+      "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
+      "default": "./dist/codegen/agoric/swingset/msgs.js"
     },
     "./swingset/query.js": {
-      "types": "./dist/agoric/swingset/query.d.ts",
-      "default": "./dist/agoric/swingset/query.js"
-    },
-    "./vstorage/query.js": {
-      "types": "./dist/agoric/vstorage/query.d.ts",
-      "default": "./dist/agoric/vstorage/query.js"
+      "types": "./dist/codegen/agoric/swingset/query.d.ts",
+      "default": "./dist/codegen/agoric/swingset/query.js"
     },
     "./swingset/swingset.js": {
-      "types": "./dist/agoric/swingset/swingset.d.ts",
-      "default": "./dist/agoric/swingset/swingset.js"
+      "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
+      "default": "./dist/codegen/agoric/swingset/swingset.js"
+    },
+    "./vstorage/query.js": {
+      "types": "./dist/codegen/agoric/vstorage/query.d.ts",
+      "default": "./dist/codegen/agoric/vstorage/query.js"
     }
   },
-  "scripts": {
-    "build": "echo Use yarn rebuild to update dist output",
-    "rebuild": "rm -rf gen && mkdir -p gen && yarn generate && tsc --build && yarn prettier -w dist/agoric && rm -rf gen",
-    "generate": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=messages' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto ./proto/agoric/vstorage/query.proto -I./proto",
-    "test": "node test/sanity-test.js",
-    "test:xs": "exit 0",
-    "lint": "exit 0",
-    "lint-fix": "exit 0"
-  },
-  "dependencies": {
-    "protobufjs": "^7.0.0"
-  },
-  "devDependencies": {
-    "ts-proto": "^1.131.0"
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "directories": {
+    "lib": "src"
   },
   "files": [
     "dist",
-    "LICENSE*",
-    "swingset"
+    "!CHANGELOG.md"
   ],
+  "scripts": {
+    "build": "yarn tsc --project tsconfig.build.json",
+    "clean": "rimraf dist",
+    "codegen": "yarn protos-update && node scripts/codegen.cjs && yarn prettier --write src",
+    "prepare": "npm run build",
+    "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "tsc",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "test:live": "yarn build && scripts/test-live.js"
+  },
   "publishConfig": {
     "access": "public"
   },
-  "typeCoverage": {
-    "atLeast": null
+  "devDependencies": {
+    "@agoric/cosmos": "^0.34.1",
+    "@ava/typescript": "^4.1.0",
+    "@cosmology/telescope": "^1.0.1",
+    "ava": "^5.3.1",
+    "publish-scripts": "0.1.0",
+    "rimraf": "^5.0.0",
+    "tsimp": "^2.0.11",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@cosmjs/amino": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "@endo/init": "^1.0.3",
+    "axios": "^1.6.7"
+  },
+  "resolutions": {
+    "**/protobufjs": "^7.2.4"
+  },
+  "ava": {
+    "typescript": {
+      "rewritePaths": {
+        "src/": "dist/"
+      },
+      "compile": false
+    },
+    "files": [
+      "test/**/test-*.js"
+    ]
   }
 }
