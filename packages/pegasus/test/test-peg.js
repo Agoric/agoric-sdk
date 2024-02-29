@@ -16,7 +16,6 @@ import { prepareVowTools } from '@agoric/vat-data/vow.js';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
