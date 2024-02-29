@@ -130,12 +130,12 @@ const makeProcess = (t, keyring, out) => {
         t.truthy(cmd);
         switch (cmd) {
           case 'keys': {
-            ['--node', '--chain'].forEach(opt => {
+            for (const opt of ['--node', '--chain']) {
               const ix = args.findIndex(a => a.startsWith(opt));
               if (ix >= 0) {
                 args.splice(ix, 1);
               }
-            });
+            }
             t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
             const name = args[3];
             const addr = keyring[name];
@@ -316,10 +316,10 @@ test('README: inter usage', async t => {
 
   const net = makeNet({ ...publishedNames, wallet: govWallets });
   const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
-  subCommands(cmd).forEach(c => {
+  for (const c of subCommands(cmd)) {
     c.exitOverride();
     c.configureOutput({ writeErr: s => diag.push(s) });
-  });
+  }
 
   await t.throwsAsync(cmd.parseAsync(argv));
   const txt = diag.join('').trim();
@@ -343,10 +343,10 @@ test('diagnostic for agd ENOENT', async t => {
     },
     makeNet({}),
   );
-  subCommands(cmd).forEach(c => {
+  for (const c of subCommands(cmd)) {
     c.exitOverride();
     c.configureOutput({ writeErr: s => diag.push(s) });
-  });
+  }
 
   await t.throwsAsync(cmd.parseAsync(argv), { instanceOf: CommanderError });
   t.is(
@@ -366,11 +366,11 @@ const usageTest = (words, blurb = 'Command usage:') => {
     const program = createCommand('agops');
     const cmd = await makeInterCommand(makeProcess(t, {}, out), makeNet({}));
     program.addCommand(cmd);
-    subCommands(program).forEach(c =>
+    for (const c of subCommands(program)) {
       c.exitOverride(() => {
         throw new CommanderError(1, 'usage', '');
-      }),
-    );
+      });
+    }
     cmd.configureOutput({
       writeOut: s => out.push(s),
       writeErr: s => out.push(s),

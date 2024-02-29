@@ -7,7 +7,7 @@
 
 import type { ERef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
-import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
+import type { agoric } from '@agoric/cosmic-proto';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { OfferSpec } from './offers.js';
 
@@ -40,7 +40,7 @@ export type BridgeActionCapData = WalletCapData<
 /**
  * Defined by walletAction struct in msg_server.go
  *
- * @see {MsgWalletSpendAction} and walletSpendAction in msg_server.go
+ * @see {agoric.swingset.MsgWalletAction} and walletSpendAction in msg_server.go
  */
 export type WalletActionMsg = {
   type: 'WALLET_ACTION';
@@ -55,7 +55,7 @@ export type WalletActionMsg = {
 /**
  * Defined by walletSpendAction struct in msg_server.go
  *
- * @see {MsgWalletSpendAction} and walletSpendAction in msg_server.go
+ * @see {agoric.swingset.MsgWalletSpendAction} and walletSpendAction in msg_server.go
  */
 export type WalletSpendActionMsg = {
   type: 'WALLET_SPEND_ACTION';

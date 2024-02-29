@@ -1,5 +1,6 @@
 // @ts-check
 /* global process */
+import { agoric } from '@agoric/cosmic-proto';
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
@@ -92,20 +93,19 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
 };
 harden(execSwingsetTransaction);
 
-// xxx rpc should be able to query this by HTTP without shelling out
-export const fetchSwingsetParams = net => {
-  const { chainName, rpcAddrs, execFileSync = execFileSyncAmbient } = net;
-  const cmd = [
-    `--node=${rpcAddrs[0]}`,
-    `--chain-id=${chainName}`,
-    'query',
-    'swingset',
-    'params',
-    '--output',
-    '--json',
-  ];
-  const buffer = execFileSync(agdBinary, cmd);
-  return JSON.parse(buffer.toString());
+/**
+ *
+ * @param {import('./rpc.js').MinimalNetworkConfig} net
+ * @returns {Promise<import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset').Params>}
+ */
+export const fetchSwingsetParams = async net => {
+  const { rpcAddrs } = net;
+  const rpcEndpoint = rpcAddrs[0];
+  const client = await agoric.ClientFactory.createRPCQueryClient({
+    rpcEndpoint,
+  });
+  const { params } = await client.agoric.swingset.params();
+  return params;
 };
 harden(fetchSwingsetParams);
 

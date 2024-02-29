@@ -36,6 +36,9 @@
     "typedoc": "^0.25.7",
     "typescript": "^5.3.3"
   },
+  "resolutions": {
+    "**/protobufjs": "^7.2.4"
+  },
   "engines": {
     "node": "^16.13 || ^18.12 || ^20.9"
   },
@@ -84,7 +87,7 @@
   },
   "ava": {
     "files": [
-      "packages/*/test/**/test-*.js"
+      "packages/*/test/**/test-*.ts"
     ],
     "timeout": "30m"
   },

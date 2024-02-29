@@ -19,6 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.0",
+    "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/builders": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/ertp": "^0.16.2",
@@ -52,7 +53,7 @@
     "@agoric/swingset-liveslots": "^0.10.2",
     "ava": "^5.3.0",
     "c8": "^7.13.0",
-    "tsx": "^3.12.8"
+    "tsx": "3.12.8"
   },
   "files": [
     "CHANGELOG.md",

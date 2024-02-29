@@ -26,6 +26,7 @@ import {
 import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -172,7 +173,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
           loadAndRmPkgFile(permit),
           loadAndRmPkgFile(script),
         ]);
-        return { json_permits: permits, js_code: code };
+        return { json_permits: permits, js_code: code } as CoreEvalSDKType;
       }),
     );
 
