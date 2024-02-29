@@ -46,7 +46,7 @@ const callMeMaybe = (that, prop, postArgs) => {
  *
  * @param {Promise<any>} p
  * @param {PromiseWatcher} watcher
- * @param {...unknown[]} watcherArgs
+ * @param {...unknown} watcherArgs
  * @returns {void}
  */
 export const watchPromiseShim = (p, watcher, ...watcherArgs) => {

@@ -16,7 +16,7 @@ harden(sink);
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {typeof watchPromiseShim} [watchPromise]
  */
-export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
+export const prepareVowKit = (zone, watchPromise = watchPromiseShim) => {
   /** @type {WeakMap<import('./types.js').VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
 
@@ -132,12 +132,7 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
     return harden({ resolver, vow });
   };
 
-  /**
-   * @param {import('./types').VowResolver} resolver
-   */
-  const providePromiseForVowResolver = resolver =>
-    provideCurrentKit(resolver).promise;
-  return { makeVowKit, providePromiseForVowResolver };
+  return makeVowKit;
 };
 
-harden(prepareVowKits);
+harden(prepareVowKit);
