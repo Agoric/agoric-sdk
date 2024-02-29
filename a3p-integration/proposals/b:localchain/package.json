@@ -2,8 +2,7 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "source": "subdir",
-    "submission": "test-localchain",
-    "test-localchain": "b:localchain"
+    "sdk-generate": [ "test-localchain" ]
   },
   "type": "module",
   "license": "Apache-2.0",
