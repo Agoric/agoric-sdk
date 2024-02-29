@@ -7,10 +7,10 @@ import { prepareVowTools } from '../src/tools.js';
 
 test('retry on disconnection', async t => {
   const zone = makeHeapZone();
-  const rejectionMeansRetry = e => e && e.message === 'disconnected';
+  const isRetryableReason = e => e && e.message === 'disconnected';
 
   const { watch, when } = prepareVowTools(zone, {
-    rejectionMeansRetry,
+    isRetryableReason,
   });
   const makeTestVowV0 = zone.exoClass(
     'TestVowV0',
@@ -52,10 +52,10 @@ test('retry on disconnection', async t => {
     [2, 'disco', 'disco', 'sad'],
   ];
 
-  for await (const watchVow of [false, true]) {
-    t.log('testing watchVow', watchVow);
+  for await (const pattern of ['when', 'watch']) {
+    t.log('testing', pattern);
     for await (const [final, ...plan] of PLANS) {
-      t.log(`testing (plan=${plan}, watchVow=${watchVow})`);
+      t.log(`testing (plan=${plan}, ${pattern})`);
 
       /** @type {import('../src/types.js').Vow<string>} */
       const vow = makeTagged('Vow', {
@@ -63,23 +63,31 @@ test('retry on disconnection', async t => {
       });
 
       let resultP;
-      if (watchVow) {
-        const resultW = watch(vow, {
-          onFulfilled(value) {
-            t.is(plan[final], 'happy');
-            t.is(value, 'resolved');
-            return value;
-          },
-          onRejected(reason) {
-            t.is(plan[final], 'sad');
-            t.is(reason && reason.message, 'dejected');
-            return ['rejected', reason];
-          },
-        });
-        t.is('then' in resultW, false, 'watch resultW.then is undefined');
-        resultP = when(resultW);
-      } else {
-        resultP = when(vow).catch(e => ['rejected', e]);
+      switch (pattern) {
+        case 'watch': {
+          const resultW = watch(vow, {
+            onFulfilled(value) {
+              t.is(plan[final], 'happy');
+              t.is(value, 'resolved');
+              return value;
+            },
+            onRejected(reason) {
+              t.is(plan[final], 'sad');
+              t.is(reason && reason.message, 'dejected');
+              return ['rejected', reason];
+            },
+          });
+          t.is('then' in resultW, false, 'watch resultW.then is undefined');
+          resultP = when(resultW);
+          break;
+        }
+        case 'when': {
+          resultP = when(vow).catch(e => ['rejected', e]);
+          break;
+        }
+        default: {
+          t.fail(`unknown pattern ${pattern}`);
+        }
       }
 
       switch (plan[final]) {
@@ -87,7 +95,7 @@ test('retry on disconnection', async t => {
           t.is(
             await resultP,
             'resolved',
-            `resolve expected (plan=${plan}, watchVow=${watchVow})`,
+            `resolve expected (plan=${plan}, ${pattern})`,
           );
           break;
         }
@@ -95,7 +103,7 @@ test('retry on disconnection', async t => {
           t.like(
             await resultP,
             ['rejected', Error('dejected')],
-            `reject expected (plan=${plan}, watchVow=${watchVow})`,
+            `reject expected (plan=${plan}, ${pattern})`,
           );
           break;
         }

@@ -39,6 +39,7 @@ module.exports = {
       './packages/*/tsconfig.json',
       './packages/*/tsconfig.json',
       './packages/wallet/*/tsconfig.json',
+      './a3p-integration/proposals/*/tsconfig.json',
       './tsconfig.json',
     ],
     tsconfigRootDir: __dirname,
