@@ -136,6 +136,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       };
     },
     {
+      /** @type {ZoeSeatAdmin} */
       zoeSeatAdmin: {
         replaceAllocation(replacementAllocation) {
           const { state } = this;
@@ -159,7 +160,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           assertHasNotExited(this, 'Cannot exit seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          void E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
@@ -180,7 +181,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           assertHasNotExited(this, 'Cannot fail seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          void E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
@@ -207,7 +208,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           }
 
           const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-          E.when(
+          void E.when(
             offerResultPromise,
             offerResult => {
               // Resolve the ephemeral promise for offerResult
@@ -258,6 +259,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           state.payouts = settledPayouts;
         },
       },
+      /** @type {UserSeat} */
       userSeat: {
         async getProposal() {
           const { state } = this;
