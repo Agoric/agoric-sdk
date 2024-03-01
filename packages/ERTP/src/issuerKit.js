@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { assert } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -26,6 +26,8 @@ import './types-ambient.js';
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
  * @param {import('@agoric/zone').Zone} issuerZone
+ * @param {RecoverySetsOption} recoverySetsState Omitted from issuerRecord
+ *   because it was added in an upgrade.
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
  *   the middle of an atomic action (which btw should never happen), it
  *   potentially leaves its ledger in a corrupted state. If this function was
@@ -38,6 +40,7 @@ import './types-ambient.js';
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
   issuerZone,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   assert.typeof(name, 'string');
@@ -62,6 +65,7 @@ const setupIssuerKit = (
     assetKind,
     cleanDisplayInfo,
     elementShape,
+    recoverySetsState,
     optShutdownWithFailure,
   );
 
@@ -77,6 +81,12 @@ harden(setupIssuerKit);
 
 /** The key at which the issuer record is stored. */
 const INSTANCE_KEY = 'issuer';
+/**
+ * The key at which the issuerKit's `RecoverySetsOption` state is stored.
+ * Introduced by an upgrade, so may be absent on a predecessor incarnation. See
+ * `RecoverySetsOption` for defaulting behavior.
+ */
+const RECOVERY_SETS_STATE = 'recoverySetsState';
 
 /**
  * Used _only_ to upgrade a predecessor issuerKit. Use `makeDurableIssuerKit` to
@@ -91,15 +101,39 @@ const INSTANCE_KEY = 'issuer';
  *   unit of computation, like the enclosing vat, can be shutdown before
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
+ * @param {RecoverySetsOption} [recoverySetsOption] Added in upgrade, so last
+ *   and optional. See `RecoverySetsOption` for defaulting behavior.
  * @returns {IssuerKit<K>}
  */
 export const upgradeIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
+  recoverySetsOption = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
   const issuerZone = makeDurableZone(issuerBaggage);
-  return setupIssuerKit(issuerRecord, issuerZone, optShutdownWithFailure);
+  const oldRecoverySetsState = issuerBaggage.has(RECOVERY_SETS_STATE)
+    ? issuerBaggage.get(RECOVERY_SETS_STATE)
+    : 'hasRecoverySets';
+  if (
+    oldRecoverySetsState === 'noRecoverySets' &&
+    recoverySetsOption === 'hasRecoverySets'
+  ) {
+    Fail`Cannot (yet?) upgrade from 'noRecoverySets' to 'hasRecoverySets'`;
+  }
+  if (
+    oldRecoverySetsState === 'hasRecoverySets' &&
+    recoverySetsOption === 'noRecoverySets'
+  ) {
+    Fail`Cannot (yet?) upgrade from 'hasRecoverySets' to 'noRecoverySets'`;
+  }
+  const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
+  return setupIssuerKit(
+    issuerRecord,
+    issuerZone,
+    recoverySetsState,
+    optShutdownWithFailure,
+  );
 };
 harden(upgradeIssuerKit);
 
@@ -119,8 +153,14 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * typically, the amount of an invitation payment is a singleton set. Such a
  * payment is often referred to in the singular as "an invitation".)
  *
+ * `recoverySetsOption` added in upgrade. Note that `IssuerOptionsRecord` is
+ * never stored, so we never need to worry about inheriting one from a
+ * predecessor predating the introduction of recovery sets. See
+ * `RecoverySetsOption` for defaulting behavior.
+ *
  * @typedef {Partial<{
  *   elementShape: Pattern;
+ *   recoverySetsOption: RecoverySetsOption;
  * }>} IssuerOptionsRecord
  */
 
@@ -161,12 +201,24 @@ export const makeDurableIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) => {
-  const issuerData = harden({ name, assetKind, displayInfo, elementShape });
+  const issuerData = harden({
+    name,
+    assetKind,
+    displayInfo,
+    elementShape,
+  });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
   const issuerZone = makeDurableZone(issuerBaggage);
-  return setupIssuerKit(issuerData, issuerZone, optShutdownWithFailure);
+  const recoverySetsState = recoverySetsOption || 'hasRecoverySets';
+  issuerBaggage.init(RECOVERY_SETS_STATE, recoverySetsState);
+  return setupIssuerKit(
+    issuerData,
+    issuerZone,
+    recoverySetsState,
+    optShutdownWithFailure,
+  );
 };
 harden(makeDurableIssuerKit);
 
@@ -210,12 +262,19 @@ export const prepareIssuerKit = (
   options = {},
 ) => {
   if (hasIssuer(issuerBaggage)) {
-    const { elementShape: _ = undefined } = options;
-    const issuerKit = upgradeIssuerKit(issuerBaggage, optShutdownWithFailure);
+    const { elementShape: _ = undefined, recoverySetsOption = undefined } =
+      options;
+    const issuerKit = upgradeIssuerKit(
+      issuerBaggage,
+      optShutdownWithFailure,
+      recoverySetsOption,
+    );
 
     // TODO check consistency with name, assetKind, displayInfo, elementShape.
     // Consistency either means that these are the same, or that they differ
-    // in a direction we are prepared to upgrade.
+    // in a direction we are prepared to upgrade. Note that it is the
+    // responsibility of `upgradeIssuerKit` to check consistency of
+    // `recoverySetsOption`, so continue to not do that here.
 
     // @ts-expect-error Type parameter confusion.
     return issuerKit;
@@ -273,7 +332,7 @@ export const makeIssuerKit = (
   assetKind = AssetKind.NAT,
   displayInfo = harden({}),
   optShutdownWithFailure = undefined,
-  { elementShape = undefined } = {},
+  { elementShape = undefined, recoverySetsOption = undefined } = {},
 ) =>
   makeDurableIssuerKit(
     makeScalarBigMapStore('dropped issuer kit', { durable: true }),
@@ -281,6 +340,6 @@ export const makeIssuerKit = (
     assetKind,
     displayInfo,
     optShutdownWithFailure,
-    { elementShape },
+    { elementShape, recoverySetsOption },
   );
 harden(makeIssuerKit);
