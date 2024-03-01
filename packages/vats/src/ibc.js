@@ -12,8 +12,8 @@ import '@agoric/network/exported.js';
 // empty acknowledgements as distinct from unacknowledged packets.
 const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 
-// Default timeout after 10 minutes.
-const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
+// Default timeout after 60 minutes.
+const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /** @typedef {import('./types.js').BridgeHandler} BridgeHandler */
 
@@ -194,13 +194,18 @@ export const prepareIBCProtocol = (zone, powers) => {
     'IBCProtocolHandler',
     undefined,
     ibcdev => {
-      /** @type {MapStore<string, Connection>} */
+      /** @type {MapStore<string, import('@agoric/vow').Remote<Connection>>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
 
       /** @type {MapStore<string, ConnectingInfo>} */
       const channelKeyToInfo = detached.mapStore('channelKeyToInfo');
 
-      /** @type {MapStore<string, InboundAttempt>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   import('@agoric/vow').Remote<InboundAttempt>
+       * >}
+       */
       const channelKeyToAttempt = detached.mapStore('channelKeyToAttempt');
 
       /** @type {MapStore<string, Outbound[]>} */
@@ -230,8 +235,9 @@ export const prepareIBCProtocol = (zone, powers) => {
         srcPortToOutbounds,
         channelKeyToSeqAck,
         portToPendingConns,
-        lastPortID: 0, // Nonce for creating port identifiers.
-        /** @type {ProtocolImpl | undefined} */ protocolImpl: undefined,
+        lastPortID: 0n, // Nonce for creating port identifiers.
+        /** @type {import('@agoric/vow').Remote<ProtocolImpl> | null} */
+        protocolImpl: null,
       };
     },
     {
@@ -245,7 +251,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           return '';
         },
         async generatePortID(_localAddr, _protocolHandler) {
-          this.state.lastPortID += 1;
+          this.state.lastPortID += 1n;
           return `port-${this.state.lastPortID}`;
         },
         async onBind(port, localAddr, _protocolHandler) {
@@ -315,7 +321,10 @@ export const prepareIBCProtocol = (zone, powers) => {
             onConnectP: kit,
             localAddr,
           };
-          if (!srcPortToOutbounds.has(portID)) {
+          if (srcPortToOutbounds.has(portID)) {
+            const outbounds = srcPortToOutbounds.get(portID);
+            srcPortToOutbounds.set(portID, harden([...outbounds, ob]));
+          } else {
             srcPortToOutbounds.init(portID, harden([ob]));
           }
 
@@ -426,11 +435,10 @@ export const prepareIBCProtocol = (zone, powers) => {
               //     e => console.warn('Manual packet', e, 'failed:', e),
               //   );
 
+              assert(protocolImpl);
+
               return watch(
-                /** @type {ProtocolImpl} */ (protocolImpl).inbound(
-                  localAddr,
-                  remoteAddr,
-                ),
+                E(protocolImpl).inbound(localAddr, remoteAddr),
                 this.facets.protocolImplInboundWatcher,
                 {
                   obj,
@@ -556,7 +564,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               const conn = channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              return watch(conn.send(data), this.facets.ackWatcher, {
+              return watch(E(conn).send(data), this.facets.ackWatcher, {
                 packet,
               });
             }
@@ -592,7 +600,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               if (channelKeyToConnP.has(channelKey)) {
                 const conn = channelKeyToConnP.get(channelKey);
                 channelKeyToConnP.delete(channelKey);
-                void conn.close();
+                void E(conn).close();
               }
               break;
             }
@@ -664,7 +672,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             return seqToAck.get(sequence);
           }
           const kit = makeVowKit();
-          seqToAck.init(sequence, harden(kit));
+          seqToAck.init(sequence, kit);
           return kit;
         },
       },
