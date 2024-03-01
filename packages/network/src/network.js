@@ -5,6 +5,7 @@ import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
+import { Shape } from './shapes.js';
 
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
@@ -15,136 +16,14 @@ import '@agoric/store/exported.js';
  */
 export const ENDPOINT_SEPARATOR = '/';
 
-const Shape1 = /** @type {const} */ ({
-  /**
-   * Data is string | Buffer | ArrayBuffer
-   * but only string is passable
-   */
-  Data: M.string(),
-  Bytes: M.string(),
-  Endpoint: M.string(),
-  // TODO: match on "Vow" tag
-  // @endo/patterns supports it as of
-  // https://github.com/endojs/endo/pull/2091
-  // but that's not in agoric-sdk yet.
-  // For now, use M.any() to avoid:
-  // cannot check unrecognized tag "Vow": "[Vow]"
-  Vow: M.any(),
-
-  ConnectionHandler: M.remotable('ConnectionHandler'),
-  Connection: M.remotable('Connection'),
-  InboundAttempt: M.remotable('InboundAttempt'),
-  Listener: M.remotable('Listener'),
-  ListenHandler: M.remotable('ListenHandler'),
-  Port: M.remotable('Port'),
-  ProtocolHandler: M.remotable('ProtocolHandler'),
-  ProtocolImpl: M.remotable('ProtocolImpl'),
-});
-
-const Shape2 = /** @type {const} */ ({
-  ...Shape1,
-  Vow$: shape => M.or(shape, Shape1.Vow),
-  AttemptDescription: M.splitRecord(
-    { handler: Shape1.ConnectionHandler },
-    { remoteAddress: Shape1.Endpoint, localAddress: Shape1.Endpoint },
-  ),
-  Opts: M.recordOf(M.string(), M.any()),
-});
-
-export const Shape = /** @type {const} */ harden({
-  ...Shape2,
-  ConnectionI: M.interface('Connection', {
-    send: M.callWhen(Shape2.Data)
-      .optional(Shape2.Opts)
-      .returns(Shape2.Vow$(Shape2.Bytes)),
-    close: M.callWhen().returns(Shape2.Vow$(M.undefined())),
-    getLocalAddress: M.call().returns(Shape2.Endpoint),
-    getRemoteAddress: M.call().returns(Shape2.Endpoint),
-  }),
-  InboundAttemptI: M.interface('InboundAttempt', {
-    accept: M.callWhen(Shape2.AttemptDescription).returns(
-      Shape2.Vow$(Shape2.Connection),
-    ),
-    getLocalAddress: M.call().returns(Shape2.Endpoint),
-    getRemoteAddress: M.call().returns(Shape2.Endpoint),
-    close: M.callWhen().returns(Shape2.Vow$(M.undefined())),
-  }),
-  PortI: M.interface('Port', {
-    getLocalAddress: M.call().returns(Shape2.Endpoint),
-    addListener: M.callWhen(Shape2.Listener).returns(
-      Shape2.Vow$(M.undefined()),
-    ),
-    connect: M.callWhen(Shape2.Endpoint)
-      .optional(Shape2.ConnectionHandler)
-      .returns(Shape2.Vow$(Shape2.Connection)),
-    removeListener: M.callWhen(Shape2.Listener).returns(
-      Shape2.Vow$(M.undefined()),
-    ),
-    revoke: M.callWhen().returns(M.undefined()),
-  }),
-  ProtocolHandlerI: M.interface('ProtocolHandler', {
-    onCreate: M.callWhen(M.remotable(), Shape2.ProtocolHandler).returns(
-      Shape2.Vow$(M.undefined()),
-    ),
-    generatePortID: M.callWhen(Shape2.Endpoint, Shape2.ProtocolHandler).returns(
-      Shape2.Vow$(M.string()),
-    ),
-    onBind: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(M.undefined())),
-    onListen: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.ListenHandler,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(M.undefined())),
-    onListenRemove: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.ListenHandler,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(M.undefined())),
-    onInstantiate: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.Endpoint,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(Shape2.Endpoint)),
-    onConnect: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.Endpoint,
-      Shape2.ConnectionHandler,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(Shape2.AttemptDescription)),
-    onRevoke: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.ProtocolHandler,
-    ).returns(Shape2.Vow$(M.undefined())),
-  }),
-  ProtocolImplI: M.interface('ProtocolImpl', {
-    bind: M.callWhen(Shape2.Endpoint).returns(Shape2.Vow$(Shape2.Port)),
-    inbound: M.callWhen(Shape2.Endpoint, Shape2.Endpoint).returns(
-      Shape2.Vow$(Shape2.InboundAttempt),
-    ),
-    outbound: M.callWhen(
-      Shape2.Port,
-      Shape2.Endpoint,
-      Shape2.ConnectionHandler,
-    ).returns(Shape2.Vow$(Shape2.Connection)),
-  }),
-});
+const sink = harden(() => {});
 
 /** @param {unknown} err */
 export const rethrowUnlessMissing = err => {
-  // Ugly hack rather than being able to determine if the function
-  // exists.
+  // Ugly hack rather than being able to use eventual optional chaining.
   if (
     !(err instanceof TypeError) ||
-    !err.message.match(/target has no method|is not a function$/)
+    !String(err.message).match(/target has no method|is not a function$/)
   ) {
     throw err;
   }
@@ -172,7 +51,7 @@ export function getPrefixes(addr) {
 /**
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
- * @property {ConnectionHandler[]} handlers
+ * @property {Remote<Required<ConnectionHandler>>[]} handlers
  * @property {MapStore<number, Connection>} conns
  * @property {WeakSetStore<Closable>} current
  * @property {0|1} l
@@ -188,20 +67,16 @@ const prepareHalfConnection = (zone, { when }) => {
     'Connection',
     Shape.ConnectionI,
     /** @param {ConnectionOpts} opts */
-    ({ addrs, handlers, conns, current, l, r }) => {
+    ({ addrs, handlers, conns, current, l, r }) => ({
+      addrs,
+      handlers,
+      conns,
+      current,
+      l,
+      r,
       /** @type {string | undefined} */
-      let closed;
-
-      return {
-        addrs,
-        handlers,
-        conns,
-        current,
-        l,
-        r,
-        closed,
-      };
-    },
+      closed: undefined,
+    }),
     {
       getLocalAddress() {
         const { addrs, l } = this.state;
@@ -215,7 +90,7 @@ const prepareHalfConnection = (zone, { when }) => {
       async send(packetBytes) {
         const { closed, handlers, r, conns } = this.state;
         if (closed) {
-          throw closed;
+          throw Error(closed);
         }
 
         const ack = await when(
@@ -249,12 +124,12 @@ const prepareHalfConnection = (zone, { when }) => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {ConnectionHandler} handler0
+ * @param {Remote<Required<ConnectionHandler>>} handler0
  * @param {Endpoint} addr0
- * @param {ConnectionHandler} handler1
+ * @param {Remote<Required<ConnectionHandler>>} handler1
  * @param {Endpoint} addr1
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
- * @param {WeakSetStore<Closable>} current
+ * @param {WeakSetStore<Closable>} [current]
  */
 export const crossoverConnection = (
   zone,
@@ -270,7 +145,7 @@ export const crossoverConnection = (
   /** @type {MapStore<number, Connection>} */
   const conns = detached.mapStore('addrToConnections');
 
-  /** @type {ConnectionHandler[]} */
+  /** @type {Remote<Required<ConnectionHandler>>[]} */
   const handlers = harden([handler0, handler1]);
   /** @type {Endpoint[]} */
   const addrs = harden([addr0, addr1]);
@@ -316,9 +191,9 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
      * @param {object} opts
      * @param {string} opts.localAddr
      * @param {string} opts.remoteAddr
-     * @param { MapStore<Port, SetStore<Closable>> } opts.currentConnections
+     * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {string} opts.listenPrefix
-     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
+     * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
      */
     ({
       localAddr,
@@ -327,7 +202,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
       listenPrefix,
       listening,
     }) => {
-      /** @type {String | undefined} */
+      /** @type {string | undefined} */
       let consummated;
 
       return {
@@ -369,7 +244,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
        * @param {object} opts
        * @param {string} [opts.localAddress]
        * @param {string} [opts.remoteAddress]
-       * @param {ConnectionHandler} opts.handler
+       * @param {Remote<ConnectionHandler>} opts.handler
        */
       async accept({ localAddress, remoteAddress, handler: rchandler }) {
         const { consummated, localAddr, remoteAddr } = this.state;
@@ -395,12 +270,19 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
         const lchandler = await when(
           E(listener).onAccept(port, localAddress, remoteAddress, listener),
         );
+        const lch = /** @type {Remote<Required<ConnectionHandler>>} */ (
+          lchandler
+        );
+
+        const rch = /** @type {Remote<Required<ConnectionHandler>>} */ (
+          rchandler
+        );
 
         return crossoverConnection(
           zone,
-          lchandler,
+          lch,
           localAddress,
-          rchandler,
+          rch,
           remoteAddress,
           makeConnection,
           current,
@@ -426,51 +308,57 @@ const RevokeState = /** @type {const} */ ({
 const preparePort = (zone, { when }) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
-  const makePort = zone.exoClass(
-    'Port',
-    Shape.PortI,
-    /**
-     * @param {object} opts
-     * @param {Endpoint} opts.localAddr
-     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
-     * @param {SetStore<Connection>} opts.openConnections
-     * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
-     * @param {MapStore<string, Port>} opts.boundPorts
-     * @param {ProtocolHandler} opts.protocolHandler
-     * @param {ProtocolImpl} opts.protocolImpl
-     */
-    ({
-      localAddr,
+  /**
+   * @param {object} opts
+   * @param {Endpoint} opts.localAddr
+   * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
+   * @param {SetStore<Remote<Connection>>} opts.openConnections
+   * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
+   * @param {MapStore<string, Port>} opts.boundPorts
+   * @param {Remote<ProtocolHandler>} opts.protocolHandler
+   * @param {ProtocolImpl} opts.protocolImpl
+   */
+  const initPort = ({
+    localAddr,
+    listening,
+    openConnections,
+    currentConnections,
+    boundPorts,
+    protocolHandler,
+    protocolImpl,
+  }) => {
+    return {
       listening,
       openConnections,
       currentConnections,
       boundPorts,
+      localAddr,
       protocolHandler,
       protocolImpl,
-    }) => {
-      return {
-        listening,
-        openConnections,
-        currentConnections,
-        boundPorts,
-        localAddr,
-        protocolHandler,
-        protocolImpl,
-        /** @type {RevokeState | undefined} */
-        revoked: undefined,
-      };
-    },
-    {
+      /** @type {RevokeState | undefined} */
+      revoked: undefined,
+    };
+  };
+
+  const makePort = zone.exoClass(
+    'Port',
+    Shape.PortI,
+    initPort,
+    /** @type {ExoClassMethods<Port, typeof initPort>} */ ({
       getLocalAddress() {
         // Works even after revoke().
         return this.state.localAddr;
       },
-      /** @param {ListenHandler} listenHandler */
+      /** @param {Remote<ListenHandler>} listenHandler */
       async addListener(listenHandler) {
         const { revoked, listening, localAddr, protocolHandler } = this.state;
 
         !revoked || Fail`Port ${this.state.localAddr} is revoked`;
         listenHandler || Fail`listenHandler is not defined`;
+
+        const lh = /** @type {Remote<Required<ListenHandler>>} */ (
+          listenHandler
+        );
 
         if (listening.has(localAddr)) {
           // Last one wins.
@@ -478,10 +366,10 @@ const preparePort = (zone, { when }) => {
           if (lhandler === listenHandler) {
             return;
           }
-          listening.set(localAddr, [this.self, listenHandler]);
+          listening.set(localAddr, [this.self, lh]);
           E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
-          listening.init(localAddr, harden([this.self, listenHandler]));
+          listening.init(localAddr, harden([this.self, lh]));
         }
 
         // ASSUME: that the listener defines onAccept.
@@ -494,15 +382,16 @@ const preparePort = (zone, { when }) => {
             protocolHandler,
           ),
         );
-        await when(E(listenHandler).onListen(this.self, listenHandler)).catch(
+        await when(E(lh).onListen(this.self, listenHandler)).catch(
           rethrowUnlessMissing,
         );
       },
-      /** @param {ListenHandler} listenHandler */
+      /** @param {Remote<ListenHandler>} listenHandler */
       async removeListener(listenHandler) {
         const { listening, localAddr, protocolHandler } = this.state;
         listening.has(localAddr) || Fail`Port ${localAddr} is not listening`;
-        listening.get(localAddr)[1] === listenHandler ||
+        const lh = listening.get(localAddr)[1];
+        lh === listenHandler ||
           Fail`Port ${localAddr} handler to remove is not listening`;
         listening.delete(localAddr);
         await when(
@@ -513,17 +402,19 @@ const preparePort = (zone, { when }) => {
             protocolHandler,
           ),
         );
-        await when(E(listenHandler).onRemove(this.self, listenHandler)).catch(
+        await when(E(lh).onRemove(this.self, listenHandler)).catch(
           rethrowUnlessMissing,
         );
       },
       /**
        * @param {Endpoint} remotePort
-       * @param {ConnectionHandler} connectionHandler
+       * @param {Remote<ConnectionHandler>} [connectionHandler]
        */
       async connect(
         remotePort,
-        connectionHandler = /** @type {any} */ (makeIncapable()),
+        connectionHandler = /** @type {Remote<ConnectionHandler>} */ (
+          makeIncapable()
+        ),
       ) {
         const { revoked, localAddr, protocolImpl, openConnections } =
           this.state;
@@ -533,7 +424,7 @@ const preparePort = (zone, { when }) => {
         const dst = harden(remotePort);
         // eslint-disable-next-line no-use-before-define
         const conn = await when(
-          protocolImpl.outbound(this.self, dst, connectionHandler),
+          E(protocolImpl).outbound(this.self, dst, connectionHandler),
         );
         if (revoked) {
           void E(conn).close();
@@ -557,16 +448,16 @@ const preparePort = (zone, { when }) => {
 
         // Clean up everything we did.
         const values = [...currentConnections.get(this.self).values()];
-        const ps = values.map(conn => when(E(conn).close()).catch(_ => {}));
+        const ps = values.map(conn => when(E(conn).close()).catch(sink));
         if (listening.has(localAddr)) {
           const listener = listening.get(localAddr)[1];
-          ps.push(this.self.removeListener(listener));
+          ps.push(when(this.self.removeListener(listener)).catch(sink));
         }
         await Promise.all(ps);
         currentConnections.delete(this.self);
         boundPorts.delete(localAddr);
       },
-    },
+    }),
   );
 
   return makePort;
@@ -597,15 +488,18 @@ const prepareBinder = (zone, powers) => {
     },
     /**
      * @param {object} opts
-     * @param { MapStore<Port, SetStore<Closable>> } opts.currentConnections
+     * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {MapStore<string, Port>} opts.boundPorts
-     * @param {MapStore<Endpoint, [Port, ListenHandler]>} opts.listening
-     * @param {ProtocolHandler} opts.protocolHandler
+     * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
+     * @param {Remote<ProtocolHandler>} opts.protocolHandler
      */
-    ({ currentConnections, boundPorts, listening, protocolHandler }) => {
+    ({ currentConnections, boundPorts, listening, protocolHandler: ph }) => {
       /** @type {SetStore<Connection>} */
       const openConnections = detached.setStore('openConnections');
 
+      const protocolHandler = /** @type {Remote<Required<ProtocolHandler>>} */ (
+        ph
+      );
       return {
         currentConnections,
         boundPorts,
@@ -698,7 +592,7 @@ const prepareBinder = (zone, powers) => {
             const attempt = await when(
               this.facets.protocolImpl.inbound(remoteAddr, initialLocalAddr),
             );
-            accepted = await when(attempt.accept({ handler: lchandler }));
+            accepted = await when(E(attempt).accept({ handler: lchandler }));
           })().catch(e => {
             lastFailure = e;
           });
@@ -728,12 +622,20 @@ const prepareBinder = (zone, powers) => {
             throw lastFailure;
           }
 
+          const lch = /** @type {Remote<Required<ConnectionHandler>>} */ (
+            lchandler
+          );
+
+          const rch = /** @type {Remote<Required<ConnectionHandler>>} */ (
+            rchandler
+          );
+
           const current = currentConnections.get(port);
           return crossoverConnection(
             zone,
-            lchandler,
+            lch,
             localAddress,
-            rchandler,
+            rch,
             remoteAddress,
             makeConnection,
             current,
@@ -786,7 +688,7 @@ const prepareBinder = (zone, powers) => {
           await when(
             E(protocolHandler).onBind(port, localAddr, protocolHandler),
           );
-          boundPorts.init(localAddr, harden(port));
+          boundPorts.init(localAddr, port);
           currentConnections.init(port, detached.setStore('connections'));
           return port;
         },
@@ -805,7 +707,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinderKit = prepareBinder(zone, powers);
 
   /**
-   * @param {ProtocolHandler} protocolHandler
+   * @param {Remote<ProtocolHandler>} protocolHandler
    * @returns {Protocol}
    */
   const makeNetworkProtocol = protocolHandler => {
@@ -817,7 +719,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
     /** @type {MapStore<string, Port>} */
     const boundPorts = detached.mapStore('addrToPort');
 
-    /** @type {MapStore<Endpoint, [Port, ListenHandler]>} */
+    /** @type {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} */
     const listening = detached.mapStore('listening');
 
     const { binder, protocolImpl } = makeBinderKit({
@@ -846,14 +748,14 @@ export const prepareEchoConnectionKit = zone => {
     {
       handler: M.interface('ConnectionHandler', {
         onReceive: M.callWhen(
-          Shape2.Connection,
-          Shape2.Bytes,
-          Shape2.ConnectionHandler,
+          Shape.Connection,
+          Shape.Bytes,
+          Shape.ConnectionHandler,
         )
-          .optional(Shape2.Opts)
-          .returns(Shape2.Data),
-        onClose: M.callWhen(Shape2.Connection)
-          .optional(M.any(), Shape2.ConnectionHandler)
+          .optional(Shape.Opts)
+          .returns(Shape.Data),
+        onClose: M.callWhen(Shape.Connection)
+          .optional(M.any(), Shape.ConnectionHandler)
           .returns(M.undefined()),
       }),
       listener: M.interface('Listener', {
@@ -869,10 +771,9 @@ export const prepareEchoConnectionKit = zone => {
       }),
     },
     () => {
-      /** @type {string | undefined} */
-      let closed;
       return {
-        closed,
+        /** @type {string | undefined} */
+        closed: undefined,
       };
     },
     {
@@ -907,7 +808,7 @@ export const prepareEchoConnectionKit = zone => {
       },
       listener: {
         async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-          return harden(this.facets.handler);
+          return this.facets.handler;
         },
         async onListen(port, _listenHandler) {
           console.debug(`listening on echo port: ${port}`);
@@ -928,22 +829,24 @@ export const prepareEchoConnectionKit = zone => {
 export function prepareLoopbackProtocolHandler(zone, { when }) {
   const detached = zone.detached();
 
+  /** @param {string} [instancePrefix] */
+  const initHandler = (instancePrefix = 'nonce/') => {
+    /** @type {MapStore<string, [Remote<Port>, Remote<Required<ListenHandler>>]>} */
+    const listeners = detached.mapStore('localAddr');
+
+    return {
+      listeners,
+      portNonce: 0n,
+      instancePrefix,
+      instanceNonce: 0n,
+    };
+  };
+
   const makeLoopbackProtocolHandler = zone.exoClass(
     'ProtocolHandler',
     Shape.ProtocolHandlerI,
-    /** @param {string} [instancePrefix] */
-    (instancePrefix = 'nonce/') => {
-      /** @type {MapStore<string, [Port, ListenHandler]>} */
-      const listeners = detached.mapStore('localAddr');
-
-      return {
-        listeners,
-        portNonce: 0n,
-        instancePrefix,
-        instanceNonce: 0n,
-      };
-    },
-    {
+    initHandler,
+    /** @type {ExoClassMethods<Required<ProtocolHandler>, typeof initHandler>} */ ({
       async onCreate(_impl, _protocolHandler) {
         // noop
       },
@@ -954,13 +857,7 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
       async onBind(_port, _localAddr, _protocolHandler) {
         // noop, for now; Maybe handle a bind?
       },
-      async onConnect(
-        _port,
-        localAddr,
-        remoteAddr,
-        _chandler,
-        protocolHandler,
-      ) {
+      async onConnect(_port, localAddr, remoteAddr, _chandler) {
         const { listeners } = this.state;
         const [lport, lhandler] = listeners.get(remoteAddr);
         const rchandler = await when(
@@ -968,12 +865,7 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
         );
         // console.log(`rchandler is`, rchandler);
         const remoteInstance = await when(
-          E(protocolHandler).onInstantiate(
-            lport,
-            remoteAddr,
-            localAddr,
-            protocolHandler,
-          ),
+          E(this.self).onInstantiate(lport, remoteAddr, localAddr, this.self),
         ).catch(rethrowUnlessMissing);
         return {
           remoteInstance,
@@ -988,21 +880,25 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
       async onListen(port, localAddr, listenHandler, _protocolHandler) {
         const { listeners } = this.state;
 
+        const lh = /** @type {Remote<Required<ListenHandler>>} */ (
+          listenHandler
+        );
+
         // This implementation has a simple last-one-wins replacement policy.
         // Other handlers might use different policies.
         if (listeners.has(localAddr)) {
           const lhandler = listeners.get(localAddr)[1];
           if (lhandler !== listenHandler) {
-            listeners.set(localAddr, [port, listenHandler]);
+            listeners.set(localAddr, harden([port, lh]));
           }
         } else {
-          listeners.init(localAddr, harden([port, listenHandler]));
+          listeners.init(localAddr, harden([port, lh]));
         }
       },
       /**
        * @param {Port} port
        * @param {Endpoint} localAddr
-       * @param {ListenHandler} listenHandler
+       * @param {Remote<ListenHandler>} listenHandler
        * @param {*} _protocolHandler
        */
       async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
@@ -1016,7 +912,7 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
       async onRevoke(_port, _localAddr, _protocolHandler) {
         // This is an opportunity to clean up resources.
       },
-    },
+    }),
   );
 
   return makeLoopbackProtocolHandler;

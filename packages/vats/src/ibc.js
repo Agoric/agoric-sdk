@@ -12,8 +12,8 @@ import '@agoric/network/exported.js';
 // empty acknowledgements as distinct from unacknowledged packets.
 const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 
-// Default timeout after 10 minutes.
-const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
+// Default timeout after 60 minutes.
+const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /** @typedef {import('./types.js').BridgeHandler} BridgeHandler */
 
@@ -220,13 +220,18 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
     'IBCProtocolHandler',
     undefined,
     ibcdev => {
-      /** @type {MapStore<string, Connection>} */
+      /** @type {MapStore<string, import('@agoric/vow').Remote<Connection>>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
 
       /** @type {MapStore<string, ConnectingInfo>} */
       const channelKeyToInfo = detached.mapStore('channelKeyToInfo');
 
-      /** @type {MapStore<string, InboundAttempt>} */
+      /**
+       * @type {MapStore<
+       *   string,
+       *   import('@agoric/vow').Remote<InboundAttempt>
+       * >}
+       */
       const channelKeyToAttempt = detached.mapStore('channelKeyToAttempt');
 
       /** @type {MapStore<string, Outbound[]>} */
@@ -256,8 +261,9 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
         srcPortToOutbounds,
         channelKeyToSeqAck,
         portToPendingConns,
-        lastPortID: 0, // Nonce for creating port identifiers.
-        /** @type {ProtocolImpl | undefined} */ protocolImpl: undefined,
+        lastPortID: 0n, // Nonce for creating port identifiers.
+        /** @type {import('@agoric/vow').Remote<ProtocolImpl> | null} */
+        protocolImpl: null,
       };
     },
     {
@@ -271,7 +277,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
           return '';
         },
         async generatePortID(_localAddr, _protocolHandler) {
-          this.state.lastPortID += 1;
+          this.state.lastPortID += 1n;
           return `port-${this.state.lastPortID}`;
         },
         async onBind(port, localAddr, _protocolHandler) {
@@ -341,7 +347,10 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
             onConnectP: kit,
             localAddr,
           };
-          if (!srcPortToOutbounds.has(portID)) {
+          if (srcPortToOutbounds.has(portID)) {
+            const outbounds = srcPortToOutbounds.get(portID);
+            srcPortToOutbounds.set(portID, harden([...outbounds, ob]));
+          } else {
             srcPortToOutbounds.init(portID, harden([ob]));
           }
 
@@ -422,11 +431,9 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               //     e => console.warn('Manual packet', e, 'failed:', e),
               //   );
 
+              assert(protocolImpl);
               const attempt = await when(
-                /** @type {ProtocolImpl} */ (protocolImpl).inbound(
-                  localAddr,
-                  remoteAddr,
-                ),
+                E(protocolImpl).inbound(localAddr, remoteAddr),
               );
 
               // Tell what version string we negotiated.
@@ -579,7 +586,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               const conn = channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              watch(conn.send(data), makeAckWatcher(util, packet));
+              watch(E(conn).send(data), makeAckWatcher(util, packet));
               break;
             }
 
@@ -614,7 +621,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               if (channelKeyToConnP.has(channelKey)) {
                 const conn = channelKeyToConnP.get(channelKey);
                 channelKeyToConnP.delete(channelKey);
-                void conn.close();
+                void E(conn).close();
               }
               break;
             }
@@ -686,7 +693,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
             return seqToAck.get(sequence);
           }
           const kit = makeVowKit();
-          seqToAck.init(sequence, harden(kit));
+          seqToAck.init(sequence, kit);
           return kit;
         },
       },

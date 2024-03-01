@@ -4,9 +4,12 @@
  */
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+
+// Heap-based vow resolution is used for this module because the
+// bootstrap vat can't yet be upgraded.
+import { when } from '@agoric/vat-data/vow.js';
+
 import { makeScalarMapStore } from '@agoric/store';
-import { makeHeapZone } from '@agoric/zone';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
@@ -16,9 +19,12 @@ const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
  * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
+  /** @type {Promise<void>[]} */
   const ps = [];
 
-  const loopbackHandler = await E(vats.network).makeLoopbackProtocolHandler();
+  const loopbackHandler = /** @type {Remote<ProtocolHandler>} */ (
+    await E(vats.network).makeLoopbackProtocolHandler()
+  );
   // Every vat has a loopback device.
   ps.push(E(vats.network).registerProtocolHandler(['/local'], loopbackHandler));
 
@@ -42,8 +48,8 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
         ),
     );
   } else {
-    const loHandler = await E(vats.network).makeLoopbackProtocolHandler(
-      'ibc-channel/channel-',
+    const loHandler = /** @type {Remote<ProtocolHandler>} */ (
+      await E(vats.network).makeLoopbackProtocolHandler('ibc-channel/channel-')
     );
     ps.push(E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler));
   }
@@ -132,7 +138,7 @@ export const setupNetworkProtocols = async (
         lastICAPort += 1;
         bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
       }
-      const port = E(vats.network).bind(bindAddr);
+      const port = when(E(vats.network).bind(bindAddr));
       ibcportP.push(port);
     }
     return Promise.all(ibcportP);
@@ -143,15 +149,10 @@ export const setupNetworkProtocols = async (
   // ibc-port etc.
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
-  // Heap-based vow resolution is used for this module because the
-  // bootstrap vat can't yet be upgraded.
-  const powers = prepareVowTools(makeHeapZone());
-
-  const { when } = powers;
   // Add an echo listener on our ibc-port network (whether real or virtual).
   const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
   const { listener } = await E(vats.network).makeEchoConnectionKit();
-  await E(echoPort).addListener(listener);
+  await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
 
