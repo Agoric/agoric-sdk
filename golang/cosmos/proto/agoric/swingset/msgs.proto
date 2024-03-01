@@ -113,24 +113,27 @@ message MsgProvisionResponse {}
 
 // MsgInstallBundle carries a signed bundle to SwingSet.
 message MsgInstallBundle {
-    string bundle = 1 [
-        (gogoproto.jsontag)    = "bundle",
-        (gogoproto.moretags)   = "yaml:\"bundle\""
-    ];
+    // Either bundle or compressed_bundle will be set.
+    oneof bundle_option {
+        string bundle = 1 [
+            (gogoproto.jsontag)    = "bundle",
+            (gogoproto.moretags)   = "yaml:\"bundle\""
+        ];
+        // Default compression algorithm is gzip.
+        bytes compressed_bundle = 3 [
+            (gogoproto.jsontag)    = "compressedBundle",
+            (gogoproto.moretags)   = "yaml:\"compressedBundle\""
+        ];
+    };
     bytes submitter = 2 [
         (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
         (gogoproto.jsontag)    = "submitter",
         (gogoproto.moretags)   = "yaml:\"submitter\""
     ];
-    // Either bundle or compressed_bundle will be set.
-    // Default compression algorithm is gzip.
-    bytes compressed_bundle = 3 [
-        (gogoproto.jsontag)    = "compressedBundle",
-        (gogoproto.moretags)   = "yaml:\"compressedBundle\""
-    ];
     // Size in bytes of uncompression of compressed_bundle.
     int64 uncompressed_size = 4 [
-        (gogoproto.jsontag) = "uncompressedSize"
+        (gogoproto.jsontag)    = "uncompressedSize",
+        (gogoproto.moretags)   = "yaml:\"uncompressedSize\""
     ];
 }
 
