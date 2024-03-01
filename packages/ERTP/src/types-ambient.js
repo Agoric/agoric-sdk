@@ -227,9 +227,10 @@
  * upgradeIssuerKit defaults to the predecessor's `RecoverySetsOption` state, or
  * `'hasRecoverySets'` if none.
  *
- * At this time, a `'noRecoverySets'` predecessor cannot be upgraded to a
- * `'hasRecoverySets'` successor. If it turns out this transition is needed, it
- * can likely be supported in a future upgrade.
+ * At this time, issuers started in one of the states (`'noRecoverySets'`, or
+ * `'hasRecoverySets'`) cannot be converted to the other on upgrade. If this
+ * transition is needed, it can likely be supported in a future upgrade. File an
+ * issue on github and explain what you need and why.
  *
  * @typedef {'hasRecoverySets' | 'noRecoverySets'} RecoverySetsOption
  */
