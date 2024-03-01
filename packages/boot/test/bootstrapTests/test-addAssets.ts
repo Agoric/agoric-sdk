@@ -3,6 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { TimeMath } from '@agoric/time';
+import type { ExoObj } from '@agoric/internal';
 import {
   LiquidationTestContext,
   makeLiquidationTestContext,
@@ -14,7 +15,7 @@ const test = anyTest as TestFn<
     getCollateralProposal: (
       name: string,
       id: string,
-    ) => Awaited<ReturnType<ReturnType<typeof makeProposalExtractor>>>;
+    ) => ExoObj<typeof makeProposalExtractor>;
   }
 >;
 

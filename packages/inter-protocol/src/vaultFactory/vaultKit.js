@@ -44,4 +44,4 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
   return makeVaultKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVaultKit>>} VaultKit */
+/** @typedef {import('@agoric/internal').ExoObj<typeof prepareVaultKit>} VaultKit */

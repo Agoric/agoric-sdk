@@ -106,7 +106,7 @@ const build = async (log, zoe) => {
 };
 
 /**
- * @typedef {ReturnType<Awaited<ReturnType<typeof build>>['createVoter']>} EVatVoter
+ * @typedef {import('@agoric/internal').ExoObjtypeof build>>['createVoter']>} EVatVoter
  */
 
 /** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */

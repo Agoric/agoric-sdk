@@ -1,7 +1,10 @@
+// @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 const { Fail } = assert;
+
+/** @typedef {Record<string, unknown> & { '@type': string }} ProtobufJson */
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
@@ -19,7 +22,7 @@ const prepareLocalChainAccount = zone =>
     /**
      * @param {import('./types.js').ScopedBridgeManager} system
      * @param {string} address
-     * @param {{ query: (messages: any[]) => Promise<any> }} chain
+     * @param {{ query: (messages: ProtobufJson[]) => Promise<any> }} chain
      */
     (system, address, chain) => ({ system, address, chain }),
     {
@@ -41,6 +44,10 @@ const prepareLocalChainAccount = zone =>
         }
         return res[0].reply;
       },
+      /**
+       * @param {ProtobufJson[]} messages
+       * @returns {Promise<unknown>}
+       */
       async executeTx(messages) {
         const { system, address } = this.state;
         const obj = {
@@ -55,6 +62,11 @@ const prepareLocalChainAccount = zone =>
       },
     },
   );
+/**
+ * @typedef {import('@agoric/internal').ExoObj<
+ *   typeof prepareLocalChainAccount
+ * >} LocalChainAccount
+ */
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
@@ -63,9 +75,9 @@ export const LocalChainI = M.interface('LocalChain', {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<typeof prepareLocalChainAccount>} createAccount
+ * @param {ReturnType<typeof prepareLocalChainAccount>} makeLocalChainAccount
  */
-const prepareLocalChain = (zone, createAccount) =>
+const prepareLocalChain = (zone, makeLocalChainAccount) =>
   zone.exoClass(
     'LocalChain',
     LocalChainI,
@@ -81,8 +93,13 @@ const prepareLocalChain = (zone, createAccount) =>
         const address = await E(system).toBridge({
           type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
         });
-        return createAccount(system, address, this.self);
+        return makeLocalChainAccount(system, address, this.self);
       },
+
+      /**
+       * @param {ProtobufJson[]} messages
+       * @returns {Promise<unknown>}
+       */
       async query(messages) {
         const { system } = this.state;
         return E(system).toBridge({
@@ -92,6 +109,7 @@ const prepareLocalChain = (zone, createAccount) =>
       },
     },
   );
+/** @typedef {import('@agoric/internal').ExoObj<typeof prepareLocalChain>} LocalChain */
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 export const prepareLocalChainTools = zone => {
@@ -101,6 +119,4 @@ export const prepareLocalChainTools = zone => {
   return harden({ makeLocalChain });
 };
 harden(prepareLocalChainTools);
-
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
-/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */

@@ -9,21 +9,10 @@ export const createRPCQueryClient = async ({
   const tmClient = await Tendermint34Client.connect(rpcEndpoint);
   const client = new QueryClient(tmClient);
   return {
-    agoric: {
-      swingset: (
-        await import('./swingset/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      vbank: (
-        await import('./vbank/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-      vstorage: (
-        await import('./vstorage/query.rpc.Query.js')
-      ).createRpcQueryExtension(client),
-    },
     cosmos: {
       bank: {
         v1beta1: (
-          await import('../cosmos/bank/v1beta1/query.rpc.Query.js')
+          await import('./bank/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
     },

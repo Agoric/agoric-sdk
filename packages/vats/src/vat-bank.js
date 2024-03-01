@@ -35,7 +35,7 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 /**
  * @typedef {import('./virtual-purse.js').VirtualPurseController} VirtualPurseController
  *
- * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
+ * @typedef {import('@agoric/internal').ExoObj<typeof prepareVirtualPurse>} VirtualPurse
  */
 
 /**

@@ -110,7 +110,7 @@ export const prepareBridgeManager = (zone, D) => {
       /**
        * @type {MapStore<
        *   string,
-       *   ReturnType<ReturnType<typeof prepareScopedManager>>
+       *   import('@agoric/internal').ExoObj<typeof prepareScopedManager>
        * >}
        */
       scopedManagers: zone.detached().mapStore('scopedManagers'),

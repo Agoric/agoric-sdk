@@ -1280,7 +1280,7 @@ export const prepareVaultManagerKit = (
   return makeVaultManagerKit;
 };
 
-/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit */
+/** @typedef {import('@agoric/internal').ExoObj<typeof prepareVaultManagerKit>} VaultManagerKit */
 /**
  * @typedef {VaultManagerKit['self']} VaultManager Each VaultManager manages a
  *   single collateral type.
