@@ -33,15 +33,15 @@ export const getCourierPK = (key, keyToCourierPK) => {
  *
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf
- * @property {ERef<BoardDepositFacet>} board
- * @property {ERef<NameHub>} namesByAddress
+ * @property {Remote<BoardDepositFacet>} board
+ * @property {Remote<NameHub>} namesByAddress
  * @property {Denom} sendDenom
  * @property {Brand} localBrand
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} retain
  * @property {(zcfSeat: ZCFSeat, amounts: AmountKeywordRecord) => void} redeem
- * @property {ERef<TransferProtocol>} transferProtocol
+ * @property {Remote<TransferProtocol>} transferProtocol
  * @property {ReturnType<import('@agoric/vow').prepareVowTools>['when']} when
- * @param {ERef<Connection>} connection
+ * @param {Remote<Connection>} connection
  * @returns {(args: CourierArgs) => Courier}
  */
 export const makeCourierMaker =
