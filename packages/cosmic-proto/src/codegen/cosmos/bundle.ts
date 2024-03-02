@@ -8,34 +8,45 @@ import * as _21 from './bank/v1beta1/authz.js';
 import * as _22 from './bank/v1beta1/bank.js';
 import * as _23 from './bank/v1beta1/query.js';
 import * as _24 from './bank/v1beta1/tx.js';
-import * as _25 from './base/query/v1beta1/pagination.js';
-import * as _26 from './base/v1beta1/coin.js';
-import * as _27 from './staking/v1beta1/authz.js';
-import * as _28 from './staking/v1beta1/query.js';
-import * as _29 from './staking/v1beta1/staking.js';
-import * as _30 from './staking/v1beta1/tx.js';
-import * as _31 from './upgrade/v1beta1/upgrade.js';
-import * as _69 from './authz/v1beta1/tx.amino.js';
-import * as _70 from './bank/v1beta1/tx.amino.js';
-import * as _71 from './staking/v1beta1/tx.amino.js';
-import * as _72 from './authz/v1beta1/tx.registry.js';
-import * as _73 from './bank/v1beta1/tx.registry.js';
-import * as _74 from './staking/v1beta1/tx.registry.js';
-import * as _75 from './auth/v1beta1/query.rpc.Query.js';
-import * as _76 from './authz/v1beta1/query.rpc.Query.js';
-import * as _77 from './bank/v1beta1/query.rpc.Query.js';
-import * as _78 from './staking/v1beta1/query.rpc.Query.js';
-import * as _79 from './authz/v1beta1/tx.rpc.msg.js';
-import * as _80 from './bank/v1beta1/tx.rpc.msg.js';
-import * as _81 from './staking/v1beta1/tx.rpc.msg.js';
-import * as _93 from './rpc.query.js';
-import * as _94 from './rpc.tx.js';
+import * as _25 from './base/abci/v1beta1/abci.js';
+import * as _26 from './base/query/v1beta1/pagination.js';
+import * as _27 from './base/v1beta1/coin.js';
+import * as _28 from './crypto/ed25519/keys.js';
+import * as _29 from './crypto/hd/v1/hd.js';
+import * as _30 from './crypto/keyring/v1/record.js';
+import * as _31 from './crypto/multisig/keys.js';
+import * as _32 from './crypto/secp256k1/keys.js';
+import * as _33 from './crypto/secp256r1/keys.js';
+import * as _34 from './staking/v1beta1/authz.js';
+import * as _35 from './staking/v1beta1/query.js';
+import * as _36 from './staking/v1beta1/staking.js';
+import * as _37 from './staking/v1beta1/tx.js';
+import * as _38 from './tx/signing/v1beta1/signing.js';
+import * as _39 from './tx/v1beta1/service.js';
+import * as _40 from './tx/v1beta1/tx.js';
+import * as _41 from './upgrade/v1beta1/upgrade.js';
+import * as _80 from './authz/v1beta1/tx.amino.js';
+import * as _81 from './bank/v1beta1/tx.amino.js';
+import * as _82 from './staking/v1beta1/tx.amino.js';
+import * as _83 from './authz/v1beta1/tx.registry.js';
+import * as _84 from './bank/v1beta1/tx.registry.js';
+import * as _85 from './staking/v1beta1/tx.registry.js';
+import * as _86 from './auth/v1beta1/query.rpc.Query.js';
+import * as _87 from './authz/v1beta1/query.rpc.Query.js';
+import * as _88 from './bank/v1beta1/query.rpc.Query.js';
+import * as _89 from './staking/v1beta1/query.rpc.Query.js';
+import * as _90 from './tx/v1beta1/service.rpc.Service.js';
+import * as _91 from './authz/v1beta1/tx.rpc.msg.js';
+import * as _92 from './bank/v1beta1/tx.rpc.msg.js';
+import * as _93 from './staking/v1beta1/tx.rpc.msg.js';
+import * as _105 from './rpc.query.js';
+import * as _106 from './rpc.tx.js';
 export namespace cosmos {
   export namespace auth {
     export const v1beta1 = {
       ..._16,
       ..._17,
-      ..._75,
+      ..._86,
     };
   }
   export namespace authz {
@@ -43,10 +54,10 @@ export namespace cosmos {
       ..._18,
       ..._19,
       ..._20,
-      ..._69,
-      ..._72,
-      ..._76,
-      ..._79,
+      ..._80,
+      ..._83,
+      ..._87,
+      ..._91,
     };
   }
   export namespace bank {
@@ -55,41 +66,82 @@ export namespace cosmos {
       ..._22,
       ..._23,
       ..._24,
-      ..._70,
-      ..._73,
-      ..._77,
-      ..._80,
+      ..._81,
+      ..._84,
+      ..._88,
+      ..._92,
     };
   }
   export namespace base {
-    export namespace query {
+    export namespace abci {
       export const v1beta1 = {
         ..._25,
       };
     }
+    export namespace query {
+      export const v1beta1 = {
+        ..._26,
+      };
+    }
     export const v1beta1 = {
-      ..._26,
+      ..._27,
+    };
+  }
+  export namespace crypto {
+    export const ed25519 = {
+      ..._28,
+    };
+    export namespace hd {
+      export const v1 = {
+        ..._29,
+      };
+    }
+    export namespace keyring {
+      export const v1 = {
+        ..._30,
+      };
+    }
+    export const multisig = {
+      ..._31,
+    };
+    export const secp256k1 = {
+      ..._32,
+    };
+    export const secp256r1 = {
+      ..._33,
     };
   }
   export namespace staking {
     export const v1beta1 = {
-      ..._27,
-      ..._28,
-      ..._29,
-      ..._30,
-      ..._71,
-      ..._74,
-      ..._78,
-      ..._81,
+      ..._34,
+      ..._35,
+      ..._36,
+      ..._37,
+      ..._82,
+      ..._85,
+      ..._89,
+      ..._93,
+    };
+  }
+  export namespace tx {
+    export namespace signing {
+      export const v1beta1 = {
+        ..._38,
+      };
+    }
+    export const v1beta1 = {
+      ..._39,
+      ..._40,
+      ..._90,
     };
   }
   export namespace upgrade {
     export const v1beta1 = {
-      ..._31,
+      ..._41,
     };
   }
   export const ClientFactory = {
-    ..._93,
-    ..._94,
+    ..._105,
+    ..._106,
   };
 }

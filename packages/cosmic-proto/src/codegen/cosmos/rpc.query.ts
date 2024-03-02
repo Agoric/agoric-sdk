@@ -30,6 +30,11 @@ export const createRPCQueryClient = async ({
           await import('./staking/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
+      tx: {
+        v1beta1: (
+          await import('./tx/v1beta1/service.rpc.Service.js')
+        ).createRpcQueryExtension(client),
+      },
     },
   };
 };

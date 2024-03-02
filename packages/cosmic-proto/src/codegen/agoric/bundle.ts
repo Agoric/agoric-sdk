@@ -14,17 +14,17 @@ import * as _11 from './vlocalchain/vlocalchain.js';
 import * as _12 from './vstorage/genesis.js';
 import * as _13 from './vstorage/query.js';
 import * as _14 from './vstorage/vstorage.js';
-import * as _60 from './swingset/msgs.amino.js';
-import * as _61 from './vibc/msgs.amino.js';
-import * as _62 from './swingset/msgs.registry.js';
-import * as _63 from './vibc/msgs.registry.js';
-import * as _64 from './swingset/query.rpc.Query.js';
-import * as _65 from './vbank/query.rpc.Query.js';
-import * as _66 from './vstorage/query.rpc.Query.js';
-import * as _67 from './swingset/msgs.rpc.msg.js';
-import * as _68 from './vibc/msgs.rpc.msg.js';
-import * as _91 from './rpc.query.js';
-import * as _92 from './rpc.tx.js';
+import * as _71 from './swingset/msgs.amino.js';
+import * as _72 from './vibc/msgs.amino.js';
+import * as _73 from './swingset/msgs.registry.js';
+import * as _74 from './vibc/msgs.registry.js';
+import * as _75 from './swingset/query.rpc.Query.js';
+import * as _76 from './vbank/query.rpc.Query.js';
+import * as _77 from './vstorage/query.rpc.Query.js';
+import * as _78 from './swingset/msgs.rpc.msg.js';
+import * as _79 from './vibc/msgs.rpc.msg.js';
+import * as _103 from './rpc.query.js';
+import * as _104 from './rpc.tx.js';
 export namespace agoric {
   export const lien = {
     ..._0,
@@ -35,23 +35,23 @@ export namespace agoric {
     ..._3,
     ..._4,
     ..._5,
-    ..._60,
-    ..._62,
-    ..._64,
-    ..._67,
+    ..._71,
+    ..._73,
+    ..._75,
+    ..._78,
   };
   export const vbank = {
     ..._6,
     ..._7,
     ..._8,
     ..._9,
-    ..._65,
+    ..._76,
   };
   export const vibc = {
     ..._10,
-    ..._61,
-    ..._63,
-    ..._68,
+    ..._72,
+    ..._74,
+    ..._79,
   };
   export const vlocalchain = {
     ..._11,
@@ -60,10 +60,10 @@ export namespace agoric {
     ..._12,
     ..._13,
     ..._14,
-    ..._66,
+    ..._77,
   };
   export const ClientFactory = {
-    ..._91,
-    ..._92,
+    ..._103,
+    ..._104,
   };
 }
