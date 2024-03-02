@@ -1,3 +1,7 @@
+/**
+ * @file CoreEval module to set up network, IBC vats.
+ * @see {setupNetworkProtocols}
+ */
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { prepareVowTools } from '@agoric/vat-data/vow.js';
@@ -47,6 +51,24 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
+ * Create the network and IBC vats; produce `networkVat` in the core / bootstrap
+ * space.
+ *
+ * The `networkVat` is CLOSELY HELD in the core space, where later, we claim
+ * ports using `E(networkVat).bind(_path_)`. As discussed in `ProtocolHandler`
+ * docs, _path_ is:
+ *
+ * - /ibc-port/NAME for an IBC port with a known name or,
+ * - /ibc-port/ for an IBC port with a fresh name.
+ *
+ * Contracts are expected to use the services of the network and IBC vats by way
+ * of such ports.
+ *
+ * Testing facilities include:
+ *
+ * - loopback ports: `E(networkVat).bind('/local/')`
+ * - an echo port: `E(vats.network).bind('/ibc-port/echo')`
+ *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
  *   produce: { networkVat: Producer<any> };

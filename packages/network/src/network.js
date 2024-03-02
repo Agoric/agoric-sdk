@@ -484,7 +484,7 @@ const preparePort = (zone, { when }) => {
           listening.init(localAddr, harden([this.self, listenHandler]));
         }
 
-        // TODO: Check that the listener defines onAccept.
+        // ASSUME: that the listener defines onAccept.
 
         await when(
           E(protocolHandler).onListen(
@@ -945,14 +945,14 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
     },
     {
       async onCreate(_impl, _protocolHandler) {
-        // TODO
+        // noop
       },
       async generatePortID(_localAddr, _protocolHandler) {
         this.state.portNonce += 1n;
         return `port${this.state.portNonce}`;
       },
       async onBind(_port, _localAddr, _protocolHandler) {
-        // TODO: Maybe handle a bind?
+        // noop, for now; Maybe handle a bind?
       },
       async onConnect(
         _port,
@@ -988,11 +988,11 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
       async onListen(port, localAddr, listenHandler, _protocolHandler) {
         const { listeners } = this.state;
 
-        // TODO: Implement other listener replacement policies.
+        // This implementation has a simple last-one-wins replacement policy.
+        // Other handlers might use different policies.
         if (listeners.has(localAddr)) {
           const lhandler = listeners.get(localAddr)[1];
           if (lhandler !== listenHandler) {
-            // Last-one-wins.
             listeners.set(localAddr, [port, listenHandler]);
           }
         } else {
@@ -1014,7 +1014,7 @@ export function prepareLoopbackProtocolHandler(zone, { when }) {
         listeners.delete(localAddr);
       },
       async onRevoke(_port, _localAddr, _protocolHandler) {
-        // TODO: maybe clean up?
+        // This is an opportunity to clean up resources.
       },
     },
   );
