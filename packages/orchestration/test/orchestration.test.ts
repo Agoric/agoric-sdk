@@ -6,16 +6,24 @@ import { test as rawTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import { E } from '@endo/far';
 import { coins, coin } from '@cosmjs/proto-signing';
-import { makeOrchestrator } from './orchestrator.js';
+import { makeEncoders } from '../src/codecs.js';
+import { makeOrchestrator } from '../src/orchestrator.js';
 
 // eslint-disable-next-line no-use-before-define
 export type Orchestrator = ReturnType<typeof makeOrchestrator>;
+export type Encoders = ReturnType<typeof makeEncoders>;
 
-const test: TestFn<{ orchestrator: Orchestrator }> = rawTest;
+const test: TestFn<{
+  orchestrator: Orchestrator;
+  encoders: Encoders;
+}> = rawTest;
 
 test.before('setup', t => {
   // eslint-disable-next-line no-use-before-define
-  t.context = { orchestrator: makeOrchestrator() };
+  t.context = {
+    orchestrator: makeOrchestrator(),
+    encoders: makeEncoders(),
+  };
 });
 
 test('1. Create Interchain account on remote chain', async t => {
@@ -43,20 +51,18 @@ test('2. Generate Interchain Query and receive response', async t => {
 
 test('4a. Delegate tokens held by ICA on remote chain', async t => {
   // Submit a delegation message.
-  const { orchestrator: orc } = t.context;
+  const { orchestrator: orc, encoders } = t.context;
   const osmosisChain = await E(orc).getChain('osmosis');
   const ica1 = await E(osmosisChain).createAccount();
+  const { msgDelegate } = encoders.tx.staking;
 
   const result = await E(ica1.agent).perform({
     messages: [
-      {
-        typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
-        obj: {
-          amount: coin(1000, 'uatom'),
-          validatorAddress: 'cosmos1abc',
-          delegatorAddress: ica1.info.address,
-        },
-      },
+      msgDelegate({
+        amount: coin(1000, 'uatom'),
+        validatorAddress: 'cosmos1abc',
+        delegatorAddress: ica1.info.address,
+      }),
     ],
   });
   t.like(result, {
@@ -71,21 +77,19 @@ test('4a. Delegate tokens held by ICA on remote chain', async t => {
 
 test('4a. Delegate tokens held by ICA on remote chain (alt without address)', async t => {
   // Submit a delegation message.
-  const { orchestrator: orc } = t.context;
+  const { orchestrator: orc, encoders } = t.context;
   const osmosisChain = await E(orc).getChain('osmosis');
   const ica1 = await E(osmosisChain).createAccount();
+  const { msgDelegate } = encoders.tx.staking;
 
   const result = await E(ica1.agent).perform({
     messages: [
-      {
-        typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
-        obj: {
-          delegatorAddress: ica1.info.address,
-          amount: coin(1000, 'uatom'),
-          // ask validator 'cosmos1valoperabc'
-          validatorAddress: 'cosmos1valoperabc',
-        },
-      },
+      msgDelegate({
+        delegatorAddress: ica1.info.address,
+        amount: coin(1000, 'uatom'),
+        // ask validator 'cosmos1valoperabc'
+        validatorAddress: 'cosmos1valoperabc',
+      }),
     ],
   });
   t.like(result, {
@@ -99,23 +103,21 @@ test('4a. Delegate tokens held by ICA on remote chain (alt without address)', as
 });
 
 test('XXX. Send tokens from ICA to another account on same Host chain', async t => {
-  const { orchestrator: orc } = t.context;
-  const receiver = 'cosmos345';
+  const { orchestrator: orc, encoders } = t.context;
+  const toAddress = 'cosmos345';
   const amount = coins(100, 'uatom');
+  const { msgSend } = encoders.tx.bank;
 
   const osmosisChain = await E(orc).getChain('osmosis');
   const ica1 = await E(osmosisChain).createAccount();
 
   const result = await E(ica1.agent).perform({
     messages: [
-      {
-        typeUrl: '/cosmos.bank.v1beta1.MsgSend',
-        obj: {
-          sender: ica1.info.address,
-          receiver,
-          amount,
-        },
-      },
+      msgSend({
+        fromAddress: ica1.info.address,
+        toAddress,
+        amount,
+      }),
     ],
   });
   // We receive the message responses in an array.
