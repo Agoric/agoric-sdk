@@ -1,4 +1,5 @@
 /* global setTimeout */
+// eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
 // Use ambient authority only in test.before()
