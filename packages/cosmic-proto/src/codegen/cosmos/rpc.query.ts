@@ -10,9 +10,24 @@ export const createRPCQueryClient = async ({
   const client = new QueryClient(tmClient);
   return {
     cosmos: {
+      auth: {
+        v1beta1: (
+          await import('./auth/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      authz: {
+        v1beta1: (
+          await import('./authz/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
       bank: {
         v1beta1: (
           await import('./bank/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      staking: {
+        v1beta1: (
+          await import('./staking/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
     },

@@ -13,6 +13,8 @@ export * from './cosmos/client.js';
 export * from './gogoproto/bundle.js';
 export * from './google/bundle.js';
 export * from './ibc/bundle.js';
+export * from './ibc/client.js';
+export * from './tendermint/bundle.js';
 export * from './varint.js';
 export * from './utf8.js';
 export * from './binary.js';

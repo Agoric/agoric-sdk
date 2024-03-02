@@ -8,9 +8,19 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
     vibc: new (await import('./vibc/msgs.rpc.msg.js')).MsgClientImpl(rpc),
   },
   cosmos: {
+    authz: {
+      v1beta1: new (
+        await import('../cosmos/authz/v1beta1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
     bank: {
       v1beta1: new (
         await import('../cosmos/bank/v1beta1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
+    staking: {
+      v1beta1: new (
+        await import('../cosmos/staking/v1beta1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
   },
