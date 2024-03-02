@@ -4,7 +4,7 @@
 /* eslint object-shorthand: "off" */
 
 // eslint-disable-next-line import/order -- has side-effects AND exports
-import { test } from '../tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import path from 'path';
 import bundleSource from '@endo/bundle-source';

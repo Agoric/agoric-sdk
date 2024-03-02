@@ -1,4 +1,4 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { subscribeEach, makePublishKit } from '@agoric/notifier';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';

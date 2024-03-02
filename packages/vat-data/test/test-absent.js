@@ -1,4 +1,4 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 /* global globalThis */
 // @ts-expect-error VatData not optional

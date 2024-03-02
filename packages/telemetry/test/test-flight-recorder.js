@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import tmp from 'tmp';
-import { test } from './prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import {
   makeSimpleCircularBuffer,

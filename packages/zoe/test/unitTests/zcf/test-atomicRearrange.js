@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { AmountMath } from '@agoric/ertp';
 import {

@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 import '../../../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';

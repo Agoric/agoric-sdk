@@ -1,5 +1,8 @@
 // @ts-check
+// import test from '@endo/ses-ava/prepare-endo.js';
 import test from 'ava';
+
+// eslint-disable-next-line import/order
 import { E, Far } from '@endo/far';
 
 import { V, makeVowKit } from '../vow.js';

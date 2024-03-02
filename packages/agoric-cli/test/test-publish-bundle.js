@@ -1,10 +1,8 @@
 // @ts-check
 /* eslint-env node */
 
-import '@endo/init/debug.js';
-
 import * as http from 'http';
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeJsonHttpClient } from '../src/json-http-client-node.js';
 import {

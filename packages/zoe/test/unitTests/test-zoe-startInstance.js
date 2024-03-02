@@ -1,4 +1,4 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { AssetKind } from '@agoric/ertp';
 import { getStringMethodNames } from '@agoric/internal';

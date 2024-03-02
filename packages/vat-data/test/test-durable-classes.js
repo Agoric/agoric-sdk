@@ -1,6 +1,6 @@
 // Modeled on test-heap-classes.js
 
-import { test } from './prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 // eslint-disable-next-line import/order
 import { M } from '@agoric/store';

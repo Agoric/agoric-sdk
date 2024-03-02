@@ -1,4 +1,4 @@
-import '@endo/init/debug.js';
+import './prepare-test-env.js';
 
 import rawTest from 'ava';
 import { wrapTest } from '@endo/ses-ava';

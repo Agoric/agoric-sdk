@@ -1,8 +1,8 @@
 // @ts-check
-
 import tmp from 'tmp';
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
+// eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
 
 import {

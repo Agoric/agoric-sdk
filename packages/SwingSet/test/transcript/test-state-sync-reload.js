@@ -1,6 +1,7 @@
 // @ts-nocheck
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import test from 'ava';
+// eslint-disable-next-line import/order
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import tmp from 'tmp';
 import { kunser } from '@agoric/kmarshal';

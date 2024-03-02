@@ -6,7 +6,8 @@ import fs from 'fs';
 import { tmpName } from 'tmp';
 import { type as osType } from 'os';
 import sqlite3 from 'better-sqlite3';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import test from '@endo/ses-ava/prepare-endo.js';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';

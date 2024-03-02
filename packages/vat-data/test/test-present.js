@@ -1,3 +1,4 @@
+// import test from '@endo/ses-ava/prepare-endo.js';
 import test from 'ava';
 
 const mockDefineKind = /** @type {any} */ (harden({}));

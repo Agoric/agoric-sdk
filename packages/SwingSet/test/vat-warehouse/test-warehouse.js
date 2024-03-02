@@ -1,6 +1,6 @@
 // @ts-check
 
-import { test } from '../../tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';

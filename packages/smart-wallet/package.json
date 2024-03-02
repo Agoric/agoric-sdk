@@ -38,7 +38,8 @@
     "@endo/far": "^1.1.0",
     "@endo/marshal": "^1.4.0",
     "@endo/nat": "^5.0.5",
-    "@endo/promise-kit": "^1.1.0"
+    "@endo/promise-kit": "^1.1.0",
+    "@endo/ses-ava": "^1.2.0"
   },
   "files": [
     "src/"

@@ -1,5 +1,6 @@
 // @ts-nocheck
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
+
 import path from 'path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';

@@ -1,4 +1,4 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';

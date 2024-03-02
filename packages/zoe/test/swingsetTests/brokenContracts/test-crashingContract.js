@@ -1,6 +1,6 @@
 // @ts-nocheck
+import test from '@endo/ses-ava/prepare-endo.js';
 
-import test from 'ava';
 import path from 'path';
 
 import { loadBasedir, buildVatController } from '@agoric/swingset-vat';

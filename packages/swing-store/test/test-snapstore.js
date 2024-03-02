@@ -1,10 +1,10 @@
 // @ts-check
-
 import { Buffer } from 'node:buffer';
 import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';
+import test from '@endo/ses-ava/prepare-endo.js';
 
-import test from 'ava';
+// eslint-disable-next-line import/order
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 

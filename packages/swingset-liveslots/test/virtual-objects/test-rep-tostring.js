@@ -1,7 +1,9 @@
-import test from 'ava';
 // this sets process.env.DEBUG = 'label-instances'
 import './set-debug-label-instances.js';
 
+import test from '@endo/ses-ava/prepare-endo.js';
+
+// eslint-disable-next-line import/order
 import { passStyleOf } from '@endo/far';
 
 // this samples it

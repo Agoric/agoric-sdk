@@ -1,5 +1,5 @@
 // @ts-check
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeFakeStorageKit } from '../src/storage-test-utils.js';
 import { HIGH_PRIORITY_SENDERS } from '../src/chain-storage-paths.js';

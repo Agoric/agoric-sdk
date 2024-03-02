@@ -1,5 +1,5 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/far';

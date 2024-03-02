@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 // eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';

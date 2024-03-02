@@ -6,7 +6,9 @@ import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 
 import sqlite3 from 'better-sqlite3';
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
+
+// eslint-disable-next-line import/order
 import { decodeBase64 } from '@endo/base64';
 
 import { buffer } from '../src/util.js';

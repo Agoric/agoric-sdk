@@ -1,4 +1,4 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { dump } from '../src/repl.js';
 

@@ -1,4 +1,4 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeIssuerKit, AmountMath } from '../../src/index.js';
 import { combine, split } from '../../src/legacy-payment-helpers.js';
