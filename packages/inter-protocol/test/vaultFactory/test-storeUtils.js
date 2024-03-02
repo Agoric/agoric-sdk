@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';

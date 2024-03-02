@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
+import { test } from './prepare-test-env-ava.js';
 
-import test from 'ava';
-
+// eslint-disable-next-line import/order
 import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';

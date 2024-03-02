@@ -1,4 +1,6 @@
-import test from 'ava';
+import { test } from '../tools/prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
 import {
   assessFacetiousness,
   checkAndUpdateFacetiousness,

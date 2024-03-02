@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 /* eslint-disable no-void */
 
-import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from 'ava';
+import { test } from '@agoric/swingset-liveslots/tools/prepare-test-env-ava.js';
+
 import { E } from '@endo/far';
 import {
   buildKernelBundles,

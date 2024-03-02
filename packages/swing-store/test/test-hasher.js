@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { createSHA256 } from '../src/hasher.js';

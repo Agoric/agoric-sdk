@@ -1,5 +1,7 @@
 // @ts-check
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from './prepare-test-env-ava.js';
+
 import tmp from 'tmp';
 import { Buffer } from 'buffer';
 import { createSHA256 } from '../src/hasher.js';

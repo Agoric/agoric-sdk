@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';

@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 /* global globalThis */
 // @ts-expect-error VatData not optional

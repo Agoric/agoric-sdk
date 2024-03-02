@@ -1,6 +1,6 @@
 /* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
 // eslint-disable-next-line import/no-extraneous-dependencies
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';

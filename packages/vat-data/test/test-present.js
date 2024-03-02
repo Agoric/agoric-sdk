@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 const mockDefineKind = /** @type {any} */ (harden({}));
 

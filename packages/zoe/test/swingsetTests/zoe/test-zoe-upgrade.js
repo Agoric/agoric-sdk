@@ -1,5 +1,4 @@
-import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { buildVatController } from '@agoric/swingset-vat';

@@ -1,5 +1,7 @@
 // @ts-check
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
 import { E, Far } from '@endo/far';
 
 import { V, makeVowKit } from '../vow.js';

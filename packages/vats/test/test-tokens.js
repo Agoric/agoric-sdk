@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 
