@@ -148,12 +148,13 @@ export const makeVStorage = (powers, config = networkConfig) => {
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if (
-            // CosmosSDK ErrNotFound; there is no data at the path
-            (err.codespace === 'sdk' && err.code === 38) ||
-            // CosmosSDK ErrUnknownRequest; misrepresentation of the same until
-            // https://github.com/Agoric/agoric-sdk/commit/dafc7c1708977aaa55e245dc09a73859cf1df192
-            // TODO remove after upgrade-12
-            err.message.match(/unknown request/)
+            // CosmosSDK ErrInvalidRequest with particular message text;
+            // misrepresentation of pruned data
+            // TODO replace after incorporating a fix to
+            // https://github.com/cosmos/cosmos-sdk/issues/19992
+            err.codespace === 'sdk' &&
+            err.code === 18 &&
+            err.message.match(/pruned/)
           ) {
             // console.error(err);
             break;
