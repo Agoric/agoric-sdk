@@ -3,12 +3,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { createRequire } from 'module';
 import type { TestFn } from 'ava';
 import type { BridgeHandler } from '@agoric/vats';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeBridge } from './ibcBridgeMock.js';
 import { BridgeId } from '@agoric/internal';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 // import { E } from '@endo/eventual-send';
 import { V as E } from '@agoric/vat-data/vow.js';
+import { makeBridge } from './ibcBridgeMock.js';
+import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const { entries, assign } = Object;
 
@@ -113,17 +113,12 @@ test.serial('upgrade at many points in network API flow', async t => {
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
   const flow = entries({
-    bindPorts: async label => {
-      const serverPort = await EV(networkVat).bind('/ibc-port/');
-      const clientPort = await EV(networkVat).bind('/ibc-port/');
-      return [label, { serverPort, clientPort }];
-    },
     startServer: async ([label, opts]) => {
       const started = await EV(zoe).startInstance(
         installation.ibcServerMock,
         {},
         {},
-        { boundPort: opts.serverPort },
+        { address: '/ibc-port/', networkVat },
       );
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
       return [label, { ...opts, server: started.creatorFacet }];
@@ -133,21 +128,21 @@ test.serial('upgrade at many points in network API flow', async t => {
       await EV.sendOnly(opts.server).dequeue('onListen');
       return [label, opts];
     },
-    getAddresses: async ([label, opts]) => {
-      const serverAddress = await EV(opts.serverPort).getLocalAddress();
-      const clientAddress = await EV(opts.clientPort).getLocalAddress();
-      t.log(`${label} server ${serverAddress} client ${clientAddress}`);
-      return [label, { ...opts, serverAddress }];
-    },
     startClient: async ([label, opts]) => {
       const started = await EV(zoe).startInstance(
         installation.ibcClientMock,
         {},
         {},
-        { myPort: opts.clientPort },
+        { address: '/ibc-port/', networkVat },
       );
       t.truthy(started.creatorFacet, `${label} ibcClientMock`);
       return [label, { ...opts, client: started.creatorFacet }];
+    },
+    getAddresses: async ([label, opts]) => {
+      const serverAddress = await EV(opts.server).getLocalAddress();
+      const clientAddress = await EV(opts.client).getLocalAddress();
+      t.log(`${label} server ${serverAddress} client ${clientAddress}`);
+      return [label, { ...opts, serverAddress }];
     },
     startConnecting: async ([label, opts]) => {
       await EV.sendOnly(opts.client).connect(opts.serverAddress);
@@ -164,7 +159,7 @@ test.serial('upgrade at many points in network API flow', async t => {
       return [label, opts];
     },
     checkAck: async ([label, opts]) => {
-      const ack = await E.when(EV(opts.client).getAck());
+      const ack = await EV(opts.client).getAck();
       t.is(ack, `got ${label}`, `${label} expected echo`);
       return [label, { ...opts, ack }];
     },

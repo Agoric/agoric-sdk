@@ -19,7 +19,7 @@ import {
 import '../src/types.js';
 
 // eslint-disable-next-line no-constant-condition
-const log = false ? console.log : () => { };
+const log = false ? console.log : () => {};
 
 /**
  * @param {import('@agoric/zone').Zone} zone
@@ -319,6 +319,8 @@ test('loopback protocol', async t => {
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
   const { vow, resolver } = makeVowKit();
+
+  const loopback = makeLoopbackProtocolHandler();
 
   const port = await when(protocol.bind('/loopback/foo'));
 

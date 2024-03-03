@@ -1,7 +1,8 @@
 /** @file Mock IBC Server */
 // @ts-check
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import { V as E } from '@agoric/vat-data/vow.js';
 
 const { quote: q, Fail } = assert;
 const { log } = console;
@@ -10,12 +11,15 @@ const { log } = console;
  *
  * @param {ZCF} zcf
  * @param {{
- *   boundPort: Port
+ *   address: string,
+ *   networkVat: any
  * }} privateArgs
  * @param {import("@agoric/vat-data").Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { boundPort } = privateArgs;
+  const { address, networkVat } = privateArgs;
+
+  const boundPort = await E(networkVat).bind(address);
 
   /** @type {Array<[label: string, resolve: () => void, reject: () => void]>} */
   const queue = [];
@@ -74,6 +78,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     listen: async () => {
       await E(boundPort).addListener(listener);
+    },
+    getLocalAddress: async () => {
+      return E(boundPort).getLocalAddress();
     },
   });
 
