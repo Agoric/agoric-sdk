@@ -317,6 +317,7 @@ type receivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"receivePacket"`
 	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -333,7 +334,8 @@ func (im IBCModule) OnRecvPacket(
 	// the same packets.
 
 	event := receivePacketEvent{
-		Packet: packet,
+		Packet:  packet,
+		Relayer: relayer,
 	}
 
 	err := im.PushAction(ctx, event)
@@ -349,6 +351,7 @@ type acknowledgementPacketEvent struct {
 	Event            string              `json:"event" default:"acknowledgementPacket"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Acknowledgement  []byte              `json:"acknowledgement"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -360,6 +363,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 	event := acknowledgementPacketEvent{
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
+		Relayer:         relayer,
 	}
 
 	err := im.PushAction(ctx, event)
@@ -374,6 +378,7 @@ type timeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"timeoutPacket"`
 	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
@@ -382,7 +387,8 @@ func (im IBCModule) OnTimeoutPacket(
 	relayer sdk.AccAddress,
 ) error {
 	event := timeoutPacketEvent{
-		Packet: packet,
+		Packet:  packet,
+		Relayer: relayer,
 	}
 
 	err := im.PushAction(ctx, event)
