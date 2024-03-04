@@ -1,5 +1,4 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import process from 'process';
 import crypto from 'crypto';
@@ -177,7 +176,6 @@ export async function makeSwingsetController(
     slogSender(timedObj);
   }
 
-  // eslint-disable-next-line no-shadow
   const console = makeConsole(`${debugPrefix}SwingSet:controller`);
   // We can harden this 'console' because it's new, but if we were using the
   // original 'console' object (which has a unique prototype), we'd have to

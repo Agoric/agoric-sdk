@@ -277,7 +277,7 @@ export const makeOnewayPriceAuthorityKit = opts => {
           // We create a quote inline.
           let quote;
           // createQuote can throw if priceAuthority is replaced.
-          // eslint-disable-next-line no-useless-catch
+
           try {
             quote = createQuote(calcAmountOut => ({
               amountIn,

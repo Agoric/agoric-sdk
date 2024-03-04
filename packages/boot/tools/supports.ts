@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param-type, jsdoc/require-param, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
 /* global process */
 
 import childProcessAmbient from 'child_process';

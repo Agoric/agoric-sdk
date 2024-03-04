@@ -1,4 +1,3 @@
-/* eslint-disable no-undef-init */
 import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';

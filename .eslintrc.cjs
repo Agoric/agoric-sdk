@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 /* eslint-env node */
 
 const deprecatedForLoanContract = [
