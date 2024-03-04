@@ -11,10 +11,19 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
+const (
+	// AsyncVersions is a flag that indicates whether the IBC module supports
+	// asynchronous versions.  If it does, then the VM must supply an empty
+	// version string to indicate that the VM explicitly (possibly async)
+	// performs the Write* method.
+	AsyncVersions = ibckeeper.AsyncVersionNegotiation
 )
 
 var (
@@ -158,6 +167,18 @@ func (im IBCModule) PushAction(ctx sdk.Context, action vm.Action) error {
 	// fmt.Println("ibc.go upcall reply", reply, err)
 }
 
+type channelOpenInitEvent struct {
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string                    `json:"event" default:"channelOpenInit"`
+	Order            string                    `json:"order"`
+	ConnectionHops   []string                  `json:"connectionHops"`
+	PortID           string                    `json:"portID"`
+	ChannelID        string                    `json:"channelID"`
+	Counterparty     channeltypes.Counterparty `json:"counterparty"`
+	Version          string                    `json:"version"`
+	AsyncVersions    bool                      `json:"asyncVersions"`
+}
+
 // Implement IBCModule callbacks
 func (im IBCModule) OnChanOpenInit(
 	ctx sdk.Context,
@@ -169,10 +190,32 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return "", sdkioerrors.Wrap(
-		channeltypes.ErrChannelNotFound,
-		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
-	)
+	event := channelOpenInitEvent{
+		Order:          orderToString(order),
+		ConnectionHops: connectionHops,
+		PortID:         portID,
+		ChannelID:      channelID,
+		Counterparty:   counterparty,
+		Version:        version,
+		AsyncVersions:  AsyncVersions,
+	}
+
+	err := im.PushAction(ctx, event)
+	if err != nil {
+		return "", err
+	}
+
+	// Claim channel capability passed back by IBC module
+	if err := im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return "", err
+	}
+
+	if !event.AsyncVersions {
+		// We have to supply a synchronous version, so just echo back the one they sent.
+		return event.Version, nil
+	}
+
+	return "", nil
 }
 
 type channelOpenTryEvent struct {
@@ -184,6 +227,7 @@ type channelOpenTryEvent struct {
 	ChannelID        string                    `json:"channelID"`
 	Counterparty     channeltypes.Counterparty `json:"counterparty"`
 	Version          string                    `json:"version"`
+	AsyncVersions    bool                      `json:"asyncVersions"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -202,7 +246,8 @@ func (im IBCModule) OnChanOpenTry(
 		PortID:         portID,
 		ChannelID:      channelID,
 		Counterparty:   counterparty,
-		Version:        counterpartyVersion, // TODO: don't just use the counterparty version
+		Version:        counterpartyVersion,
+		AsyncVersions:  AsyncVersions,
 	}
 
 	err := im.PushAction(ctx, event)
