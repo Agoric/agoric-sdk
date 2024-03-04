@@ -57,7 +57,7 @@ export const bridgeCoreEval = async allPowers => {
     async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
-          /** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.d.ts').CoreEvalProposalSDKType} */
+          /** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').CoreEvalProposalSDKType} */
           const { evals } = obj;
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>
