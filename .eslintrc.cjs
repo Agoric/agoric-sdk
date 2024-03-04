@@ -47,6 +47,9 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier'],
   extends: ['@agoric', 'plugin:ava/recommended'],
+  // XXX false positive: Unused eslint-disable directive (no problems were reported from 'max-len')
+  reportUnusedDisableDirectives: true,
+
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/no-floating-promises': 'error',
