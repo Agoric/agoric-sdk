@@ -87,7 +87,7 @@ export const makeEncoders = () => {
             value: cosmos.staking.v1beta1.MsgDelegate.encode(args).finish(),
           };
         },
-        msgMultiSend(args: MsgUndelegate) {
+        msgUndelegate(args: MsgUndelegate) {
           return {
             typeUrl: cosmos.staking.v1beta1.MsgUndelegate.typeUrl,
             value: cosmos.staking.v1beta1.MsgUndelegate.encode(args).finish(),

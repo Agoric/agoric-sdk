@@ -2,6 +2,25 @@
 export {};
 
 /**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/bank/v1beta1/tx').MsgSend} MsgSend
+ */
+/**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/bank/v1beta1/tx').MsgSendResponse} MsgSendResponse
+ */
+/**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/staking/v1beta1/tx').MsgDelegate} MsgDelegate
+ */
+/**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/staking/v1beta1/tx').MsgDelegateResponse} MsgDelegateResponse
+ */
+/**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/staking/v1beta1/tx').MsgUndelegate} MsgUndelegate
+ */
+/**
+ * @typedef {import('@agoric/cosmic-proto/dist/codegen/cosmos/staking/v1beta1/tx').MsgUndelegateResponse} MsgUndelegateResponse
+ */
+
+/**
  * @typedef {object} Chain A fault-tolerant, consensus-based state machine.
  * @property {(codecs?: CodecRegistry) => Promise<
  *  { info: AccountInfo, agent: AccountAgent, authorizer: TxAuthorizer }
@@ -38,7 +57,12 @@ export {};
 
 /**
  * @typedef {object} AccountAgent
- * @property {(tx: Transaction) => Promise<{ results: TypedData[]}>} perform Populate missing
+ * @property {(msgs: import('@cosmjs/proto-signing').EncodeObject[]) => Promise<{ code: number; height: number; txhash: string; data: Uint8Array; rawLog: string; }>} signAndBroadcast sign and broadcast a tx
+ * @property {() => Promise<AccountInfo>} getInfo Get the account info
+ * @property {(msgSend: Omit<MsgSend, 'fromAddress'>) => Promise<MsgSendResponse>} msgSend Send tokens to an address on the same chain
+ * @property {(msgDelegate: Omit<MsgDelegate, 'delegatorAddress'>) => Promise<MsgDelegateResponse>} msgDelegate Delegate tokens to a validator
+ * @property {(msgUndelegate: Omit<MsgUndelegate, 'delegatorAddress'>) => Promise<MsgDelegateResponse>} msgUndelegate Delegate tokens to a validator
+ * @property {(tx: Transaction) => Promise<{ results: TypedData[]}>} [perform] Populate missing
  * options, authorize, and submit a transaction to the chain.  The returned data
  * is the final result of the submission, when the transaction has effectively
  * been committed.

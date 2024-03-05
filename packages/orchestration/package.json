@@ -31,6 +31,7 @@
   "dependencies": {
     "@agoric/cosmic-proto": "dev",
     "@agoric/notifier": "^0.6.2",
+    "@cosmjs/proto-signing": "^0.32.2",
     "@endo/far": "^1.0.2",
     "@endo/marshal": "^1.1.0",
     "@endo/patterns": "^1.1.0"
@@ -38,7 +39,6 @@
   "devDependencies": {
     "@agoric/zoe": "^0.26.2",
     "@cosmjs/amino": "^0.32.2",
-    "@cosmjs/proto-signing": "^0.32.2",
     "@endo/far": "^1.0.2",
     "ava": "^5.3.0",
     "cosmjs-types": "^0.7.2"
