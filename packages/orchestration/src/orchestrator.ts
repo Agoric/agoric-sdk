@@ -95,7 +95,9 @@ export const makeOrchestrator = () => {
           if (response.code !== 0) {
             throw new Error(`Failed to send: ${response.rawLog}`);
           }
-          return cosmos.bank.v1beta1.MsgSendResponse.decode(response.data);
+          return response;
+          // XXX todo: decode response
+          // return cosmos.bank.v1beta1.MsgSendResponse.decode(response.data);
         },
         async msgDelegate(msg: Omit<MsgDelegate, 'delegatorAddress'>) {
           const response = await this.signAndBroadcast([
@@ -110,9 +112,11 @@ export const makeOrchestrator = () => {
           if (response.code !== 0) {
             throw new Error(`Failed to delegate: ${response.rawLog}`);
           }
-          return cosmos.staking.v1beta1.MsgDelegateResponse.decode(
-            response.data,
-          );
+          return response;
+          // XXX todo: decode response
+          // return cosmos.staking.v1beta1.MsgDelegateResponse.decode(
+          //   response.data,
+          // );
         },
         async msgUndelegate(msg: Omit<MsgUndelegate, 'delegatorAddress'>) {
           const response = await this.signAndBroadcast([
@@ -127,9 +131,11 @@ export const makeOrchestrator = () => {
           if (response.code !== 0) {
             throw new Error(`Failed to undelegate: ${response.rawLog}`);
           }
-          return cosmos.staking.v1beta1.MsgUndelegateResponse.decode(
-            response.data,
-          );
+          return response;
+          // XXX todo: decode response
+          // return cosmos.staking.v1beta1.MsgUndelegateResponse.decode(
+          //   response.data,
+          // );
         },
         /**
          * @param {EncodeObject[]} msgs

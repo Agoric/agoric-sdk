@@ -42,10 +42,7 @@ test('2. Generate Interchain Query and receive response', async t => {
     obj: { address: 'osmosis6789' },
   });
   t.like(resp, {
-    typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesResponse',
-    obj: {
-      balances: coins(100, 'uatom'),
-    },
+    balances: coins(100, 'uatom'),
   });
 });
 
@@ -60,12 +57,7 @@ test('4a. Delegate tokens held by ICA on remote chain', async t => {
     validatorAddress: 'cosmos1abc',
   });
   t.like(result, {
-    results: [
-      {
-        typeUrl: '/cosmos.staking.v1beta1.MsgDelegateResponse',
-        obj: {},
-      },
-    ],
+    code: 0,
   });
 });
 
@@ -82,12 +74,7 @@ test('4a. Delegate tokens held by ICA on remote chain (alt without address)', as
   });
 
   t.like(result, {
-    results: [
-      {
-        typeUrl: '/cosmos.staking.v1beta1.MsgDelegateResponse',
-        obj: {},
-      },
-    ],
+    code: 0,
   });
 });
 
@@ -105,11 +92,6 @@ test('XXX. Send tokens from ICA to another account on same Host chain', async t 
   });
   // We receive the message responses in an array.
   t.like(result, {
-    results: [
-      {
-        typeUrl: '/cosmos.bank.v1beta1.MsgSendResponse',
-        obj: {},
-      },
-    ],
+    code: 0,
   });
 });
