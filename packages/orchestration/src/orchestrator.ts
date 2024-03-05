@@ -11,46 +11,6 @@ import {
 import type { Chain, Transaction, TypedData } from './types.js';
 
 export const makeOrchestrator = () => {
-  const makeCodecRegistry = () => {
-    const codecRegistry = new Map<string, any>();
-    const codecs = {
-      registerModule(module) {
-        const pkg = module.protobufPackage;
-        for (const [name, type] of Object.entries(module)) {
-          const typeUrl = `/${pkg}.${name}`;
-          codecRegistry.set(typeUrl, type);
-        }
-      },
-      encode(typeUrl: string, partial: Record<string, any>) {
-        // this could be optimized by passing the immutable address along with the object
-        const cdc = codecRegistry.get(typeUrl);
-        if (!cdc) {
-          throw new Error(`Unregistered typeUrl: ${typeUrl}`);
-        }
-        const obj = cdc.fromPartial(partial);
-        const encodedMsg = cdc.encode(obj).finish();
-        return {
-          typeUrl,
-          obj,
-          value: encodedMsg,
-        };
-      },
-      decode(data: TypedData) {
-        const { typeUrl, value } = data;
-        const cdc = codecRegistry.get(typeUrl);
-        if (!cdc) {
-          throw new Error(`Unregistered typeUrl: ${typeUrl}`);
-        }
-        const obj = cdc.decode(value);
-        return {
-          ...data,
-          obj,
-        };
-      },
-    };
-    return codecs;
-  };
-
   const createAccount: Chain['createAccount'] = async () => {
     const info = {
       address: 'osmosis123',
@@ -66,6 +26,7 @@ export const makeOrchestrator = () => {
         //   memo: '',
         //   timeoutHeight: 0n, // XX todo
         // }).finish();
+        // # broadcast tx to chain, wait for response
         // return cosmos.tx.v1beta1.BroadcastTxResponse.decode(bytes);
         return {
           code: 0,
