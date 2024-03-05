@@ -345,7 +345,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
             srcPortToOutbounds.init(portID, harden([ob]));
           }
 
-          // Initialise the channel, which automatic relayers should pick up.
+          // Initialise the channel, which a listening relayer should pick up.
           const packet = {
             source_port: portID,
             destination_port: rPortID,
@@ -397,6 +397,37 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
           console.info('IBC fromBridge', obj);
           await null;
           switch (obj.event) {
+            case 'channelOpenInit': {
+              const {
+                channelID,
+                portID,
+                counterparty: { port_id: rPortID, channel_id: rChannelID },
+                connectionHops: hops,
+                order,
+                version,
+                asyncVersions,
+              } = obj;
+              if (!asyncVersions) {
+                // Synchronous versions have already been negotiated.
+                break;
+              }
+
+              // We have async version negotiation, so we must call back before the
+              // channel can make progress.
+              // We just use the provided version without failing.
+              await util.downcall('initOpenExecuted', {
+                packet: {
+                  source_port: portID,
+                  source_channel: channelID,
+                  destination_port: rPortID,
+                  destination_channel: rChannelID,
+                },
+                order,
+                version,
+                hops,
+              });
+              break;
+            }
             case 'channelOpenTry': {
               // They're (more or less politely) asking if we are listening, so make an attempt.
               const {
@@ -407,6 +438,7 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
                 order,
                 version,
                 counterpartyVersion: rVersion,
+                asyncVersions,
               } = obj;
 
               const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
@@ -448,10 +480,23 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               channelKeyToInfo.init(channelKey, obj);
 
               try {
-                if (negotiatedVersion !== version) {
-                  // Too late; the relayer gave us a version we didn't like.
+                if (asyncVersions) {
+                  // We have async version negotiation, so we must call back now.
+                  await util.downcall('tryOpenExecuted', {
+                    packet: {
+                      source_port: rPortID,
+                      source_channel: rChannelID,
+                      destination_port: portID,
+                      destination_channel: channelID,
+                    },
+                    order,
+                    version: negotiatedVersion,
+                    hops,
+                  });
+                } else if (negotiatedVersion !== version) {
+                  // Too late; the other side gave us a version we didn't like.
                   throw Error(
-                    `${channelKey}: negotiated version was ${negotiatedVersion}; rejecting ${version}`,
+                    `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
                   );
                 }
               } catch (e) {

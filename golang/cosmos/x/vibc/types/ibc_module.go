@@ -1,161 +1,58 @@
-package vibc
+package types
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-
 	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
+	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var (
-	_ porttypes.IBCModule = IBCModule{}
+const (
+	// AsyncVersions is a flag that indicates whether the IBC module supports
+	// asynchronous versions.  If it does, then the VM must supply an empty
+	// version string to indicate that the VM explicitly (possibly async)
+	// performs the Write* method.
+	AsyncVersions = ibckeeper.AsyncVersionNegotiation
 )
 
+var (
+	_ porttypes.IBCModule = (*IBCModule)(nil)
+)
+
+type IBCModuleImpl interface {
+	ClaimCapability(ctx sdk.Context, channelCap *capability.Capability, path string) error
+	GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool)
+	PushAction(ctx sdk.Context, action vm.Action) error
+}
+
 type IBCModule struct {
-	keeper Keeper
+	impl IBCModuleImpl
 }
 
-type portMessage struct { // comes from swingset's IBC handler
-	Type              string              `json:"type"` // IBC_METHOD
-	Method            string              `json:"method"`
-	Packet            channeltypes.Packet `json:"packet"`
-	RelativeTimeoutNs uint64              `json:"relativeTimeoutNs,string"`
-	Order             string              `json:"order"`
-	Hops              []string            `json:"hops"`
-	Version           string              `json:"version"`
-	Ack               []byte              `json:"ack"`
-}
-
-func stringToOrder(order string) channeltypes.Order {
-	switch order {
-	case "ORDERED":
-		return channeltypes.ORDERED
-	case "UNORDERED":
-		return channeltypes.UNORDERED
-	default:
-		return channeltypes.NONE
-	}
-}
-
-func orderToString(order channeltypes.Order) string {
-	switch order {
-	case channeltypes.ORDERED:
-		return "ORDERED"
-	case channeltypes.UNORDERED:
-		return "UNORDERED"
-	default:
-		return "NONE"
-	}
-}
-
-func NewIBCModule(keeper Keeper) IBCModule {
+func NewIBCModule(impl IBCModuleImpl) IBCModule {
 	return IBCModule{
-		keeper: keeper,
+		impl: impl,
 	}
 }
 
-func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err error) {
-	// fmt.Println("ibc.go downcall", str)
-	ctx := sdk.UnwrapSDKContext(cctx)
-	keeper := ch.keeper
-
-	msg := new(portMessage)
-	err = json.Unmarshal([]byte(str), &msg)
-	if err != nil {
-		return ret, err
-	}
-
-	if msg.Type != "IBC_METHOD" {
-		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"`)
-	}
-
-	switch msg.Method {
-	case "sendPacket":
-		timeoutTimestamp := msg.Packet.TimeoutTimestamp
-		if msg.Packet.TimeoutHeight.IsZero() && msg.Packet.TimeoutTimestamp == 0 {
-			// Use the relative timeout if no absolute timeout is specifiied.
-			timeoutTimestamp = uint64(ctx.BlockTime().UnixNano()) + msg.RelativeTimeoutNs
-		}
-
-		seq, err := keeper.SendPacket(
-			ctx,
-			msg.Packet.SourcePort,
-			msg.Packet.SourceChannel,
-			msg.Packet.TimeoutHeight,
-			timeoutTimestamp,
-			msg.Packet.Data,
-		)
-		if err == nil {
-			// synthesize the sent packet
-			packet := channeltypes.NewPacket(
-				msg.Packet.Data, seq,
-				msg.Packet.SourcePort, msg.Packet.SourceChannel,
-				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
-				msg.Packet.TimeoutHeight, timeoutTimestamp,
-			)
-			bytes, err := json.Marshal(&packet)
-			if err == nil {
-				ret = string(bytes)
-			}
-		}
-
-	case "receiveExecuted":
-		err = keeper.WriteAcknowledgement(ctx, msg.Packet, msg.Ack)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "startChannelOpenInit":
-		err = keeper.ChanOpenInit(
-			ctx, stringToOrder(msg.Order), msg.Hops,
-			msg.Packet.SourcePort,
-			msg.Packet.DestinationPort,
-			msg.Version,
-		)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "startChannelCloseInit":
-		err = keeper.ChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "bindPort":
-		err = keeper.BindPort(ctx, msg.Packet.SourcePort)
-		if err == nil {
-			ret = "true"
-		}
-
-	case "timeoutExecuted":
-		err = keeper.TimeoutExecuted(ctx, msg.Packet)
-		if err == nil {
-			ret = "true"
-		}
-
-	default:
-		err = fmt.Errorf("unrecognized method %s", msg.Method)
-	}
-
-	// fmt.Println("ibc.go downcall reply", ret, err)
-	return
-}
-
-func (im IBCModule) PushAction(ctx sdk.Context, action vm.Action) error {
-	// fmt.Println("ibc.go upcall", send)
-	return im.keeper.PushAction(ctx, action)
-	// fmt.Println("ibc.go upcall reply", reply, err)
+type ChannelOpenInitEvent struct {
+	*vm.ActionHeader `actionType:"IBC_EVENT"`
+	Event            string                    `json:"event" default:"channelOpenInit"`
+	Target           string                    `json:"target,omitempty"`
+	Order            string                    `json:"order"`
+	ConnectionHops   []string                  `json:"connectionHops"`
+	PortID           string                    `json:"portID"`
+	ChannelID        string                    `json:"channelID"`
+	Counterparty     channeltypes.Counterparty `json:"counterparty"`
+	Version          string                    `json:"version"`
+	AsyncVersions    bool                      `json:"asyncVersions"`
 }
 
 // Implement IBCModule callbacks
@@ -169,21 +66,45 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return "", sdkioerrors.Wrap(
-		channeltypes.ErrChannelNotFound,
-		fmt.Sprintf("vibc does not allow synthetic channelOpenInit for port %s", portID),
-	)
+	event := ChannelOpenInitEvent{
+		Order:          orderToString(order),
+		ConnectionHops: connectionHops,
+		PortID:         portID,
+		ChannelID:      channelID,
+		Counterparty:   counterparty,
+		Version:        version,
+		AsyncVersions:  AsyncVersions,
+	}
+
+	err := im.impl.PushAction(ctx, event)
+	if err != nil {
+		return "", err
+	}
+
+	// Claim channel capability passed back by IBC module
+	if err := im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return "", err
+	}
+
+	if !event.AsyncVersions {
+		// We have to supply a synchronous version, so just echo back the one they sent.
+		return event.Version, nil
+	}
+
+	return "", nil
 }
 
-type channelOpenTryEvent struct {
+type ChannelOpenTryEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string                    `json:"event" default:"channelOpenTry"`
+	Target           string                    `json:"target,omitempty"`
 	Order            string                    `json:"order"`
 	ConnectionHops   []string                  `json:"connectionHops"`
 	PortID           string                    `json:"portID"`
 	ChannelID        string                    `json:"channelID"`
 	Counterparty     channeltypes.Counterparty `json:"counterparty"`
 	Version          string                    `json:"version"`
+	AsyncVersions    bool                      `json:"asyncVersions"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -196,29 +117,37 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	event := channelOpenTryEvent{
+	event := ChannelOpenTryEvent{
 		Order:          orderToString(order),
 		ConnectionHops: connectionHops,
 		PortID:         portID,
 		ChannelID:      channelID,
 		Counterparty:   counterparty,
-		Version:        counterpartyVersion, // TODO: don't just use the counterparty version
+		Version:        counterpartyVersion,
+		AsyncVersions:  AsyncVersions,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return "", err
 	}
 
 	// Claim channel capability passed back by IBC module
-	if err = im.keeper.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+	if err = im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
 		return "", sdkioerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
-	return event.Version, err
+	if !event.AsyncVersions {
+		// We have to supply a synchronous version, so just echo back the one they sent.
+		return event.Version, nil
+	}
+
+	// Use an empty version string to indicate that the VM explicitly (possibly
+	// async) performs the WriteOpenTryChannel.
+	return "", nil
 }
 
-type channelOpenAckEvent struct {
+type ChannelOpenAckEvent struct {
 	*vm.ActionHeader    `actionType:"IBC_EVENT"`
 	Event               string                    `json:"event" default:"channelOpenAck"`
 	PortID              string                    `json:"portID"`
@@ -237,10 +166,10 @@ func (im IBCModule) OnChanOpenAck(
 ) error {
 	// We don't care if the channel was found.  If it wasn't then GetChannel
 	// returns an empty channel object that we can still use without crashing.
-	channel, _ := im.keeper.GetChannel(ctx, portID, channelID)
+	channel, _ := im.impl.GetChannel(ctx, portID, channelID)
 
 	channel.Counterparty.ChannelId = counterpartyChannelID
-	event := channelOpenAckEvent{
+	event := ChannelOpenAckEvent{
 		PortID:              portID,
 		ChannelID:           channelID,
 		CounterpartyVersion: counterpartyVersion,
@@ -248,12 +177,13 @@ func (im IBCModule) OnChanOpenAck(
 		ConnectionHops:      channel.ConnectionHops,
 	}
 
-	return im.PushAction(ctx, event)
+	return im.impl.PushAction(ctx, event)
 }
 
-type channelOpenConfirmEvent struct {
+type ChannelOpenConfirmEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelOpenConfirm"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -263,17 +193,18 @@ func (im IBCModule) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	event := channelOpenConfirmEvent{
+	event := ChannelOpenConfirmEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
 
-	return im.PushAction(ctx, event)
+	return im.impl.PushAction(ctx, event)
 }
 
-type channelCloseInitEvent struct {
+type ChannelCloseInitEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelCloseInit"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -283,18 +214,19 @@ func (im IBCModule) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	event := channelCloseInitEvent{
+	event := ChannelCloseInitEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	return err
 }
 
-type channelCloseConfirmEvent struct {
+type ChannelCloseConfirmEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string `json:"event" default:"channelCloseConfirm"`
+	Target           string `json:"target,omitempty"`
 	PortID           string `json:"portID"`
 	ChannelID        string `json:"channelID"`
 }
@@ -304,19 +236,21 @@ func (im IBCModule) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	event := channelCloseConfirmEvent{
+	event := ChannelCloseConfirmEvent{
 		PortID:    portID,
 		ChannelID: channelID,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	return err
 }
 
-type receivePacketEvent struct {
+type ReceivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"receivePacket"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnRecvPacket(
@@ -332,11 +266,12 @@ func (im IBCModule) OnRecvPacket(
 	// and also "rly tx xfer"-- they both are trying to relay
 	// the same packets.
 
-	event := receivePacketEvent{
-		Packet: packet,
+	event := ReceivePacketEvent{
+		Packet:  packet,
+		Relayer: relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
@@ -344,11 +279,13 @@ func (im IBCModule) OnRecvPacket(
 	return nil
 }
 
-type acknowledgementPacketEvent struct {
+type AcknowledgementPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"acknowledgementPacket"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
 	Acknowledgement  []byte              `json:"acknowledgement"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
@@ -357,12 +294,13 @@ func (im IBCModule) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	event := acknowledgementPacketEvent{
+	event := AcknowledgementPacketEvent{
 		Packet:          packet,
 		Acknowledgement: acknowledgement,
+		Relayer:         relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -370,10 +308,12 @@ func (im IBCModule) OnAcknowledgementPacket(
 	return nil
 }
 
-type timeoutPacketEvent struct {
+type TimeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string              `json:"event" default:"timeoutPacket"`
+	Target           string              `json:"target,omitempty"`
 	Packet           channeltypes.Packet `json:"packet"`
+	Relayer          sdk.AccAddress      `json:"relayer"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
@@ -381,11 +321,12 @@ func (im IBCModule) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	event := timeoutPacketEvent{
-		Packet: packet,
+	event := TimeoutPacketEvent{
+		Packet:  packet,
+		Relayer: relayer,
 	}
 
-	err := im.PushAction(ctx, event)
+	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return err
 	}

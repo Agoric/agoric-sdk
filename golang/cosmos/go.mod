@@ -3,6 +3,7 @@ module github.com/Agoric/agoric-sdk/golang/cosmos
 go 1.20
 
 require (
+	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-rc.0
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-sdk v0.46.16
@@ -31,7 +32,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.1 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
-	cosmossdk.io/errors v1.0.0-beta.7 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -169,9 +169,6 @@ replace (
 
 	github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
 
-	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2
-
 	// https://pkg.go.dev/vuln/GO-2023-2409
 	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
 
@@ -185,13 +182,23 @@ replace (
 
 	// replace broken goleveldb.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+)
+
+// Agoric-specific replacements:
+replace (
+	// We need a fork of cosmos-sdk until all of the differences are merged.
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2
+
+	// Async version negotiation
+	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.2.1-alpha.agoric.3
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
 	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
 
-// For testing against a local cosmos-sdk or tendermint
+// For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
-// github.com/tendermint/tendermint => ../../../forks/tendermint
+// github.com/cosmos/ibc-go/v6 => ../../../forks/ibc-go/v6
+// github.com/tendermint/tendermint => ../../../forks/cometbft
 )
