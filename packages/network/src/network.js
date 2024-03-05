@@ -3,7 +3,6 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
-import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -578,6 +577,156 @@ const prepareBinderPortWatcher = zone => {
   return makeBinderPortWatcher;
 };
 
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param watch
+ * @param makeInboundAttempt
+ */
+const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
+  const makeBinderInboundInstantiateWatcher = zone.exoClass(
+    'BinderInboundInstantiateWatcher',
+    undefined,
+    ({
+      listenAddr,
+      remoteAddr,
+      listening,
+      currentConnections,
+      port,
+      listenPrefixIndex,
+    }) => ({
+      listenAddr,
+      remoteAddr,
+      listening,
+      currentConnections,
+      port,
+      listenPrefixIndex,
+    }),
+    {
+      onFulfilled(localInstance) {
+        const {
+          listenAddr,
+          remoteAddr,
+          listening,
+          currentConnections,
+          port,
+          listenPrefixIndex,
+        } = this.state;
+        const prefixes = getPrefixes(listenAddr);
+
+        const localAddr = localInstance
+          ? `${listenAddr}/${localInstance}`
+          : listenAddr;
+        const current = currentConnections.get(port);
+        const inboundAttempt = makeInboundAttempt({
+          localAddr,
+          remoteAddr,
+          currentConnections,
+          listenPrefix: prefixes[listenPrefixIndex],
+          listening,
+        });
+
+        current.add(inboundAttempt);
+        return inboundAttempt;
+      },
+    },
+  );
+  return makeBinderInboundInstantiateWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param watch
+ * @param makeBinderInboundInstantiateWatcher
+ * @param BinderInboundInstantiateCatchWatcher
+ * @param makeBinderInboundInstantiateCatchWatcher
+ */
+const prepareBinderInboundInstantiateCatchWatcher = (
+  zone,
+  watch,
+  makeBinderInboundInstantiateWatcher,
+) => {
+  const makeBinderInboundInstantiateCatchWatcher = zone.exoClass(
+    'BinderInboundInstantiateCatchWatcher',
+    undefined,
+    ({
+      listenPrefixIndex,
+      listening,
+      listenAddr,
+      protocolHandler,
+      remoteAddr,
+      currentConnections,
+    }) => ({
+      listenPrefixIndex,
+      listening,
+      listenAddr,
+      protocolHandler,
+      remoteAddr,
+      currentConnections,
+      lastFailure: Error(`No listeners for ${listenAddr}`),
+    }),
+    {
+      onRejected(e) {
+        try {
+          rethrowUnlessMissing(e);
+        } catch (innerE) {
+          this.state.lastFailure = innerE;
+        }
+
+        const {
+          listenAddr,
+          remoteAddr,
+          listening,
+          protocolHandler,
+          currentConnections,
+          lastFailure,
+        } = this.state;
+
+        const prefixes = getPrefixes(listenAddr);
+
+        let listenPrefix;
+
+        this.state.listenPrefixIndex += 1;
+
+        while (this.state.listenPrefixIndex < prefixes.length) {
+          listenPrefix = prefixes[this.state.listenPrefixIndex];
+          if (!listening.has(listenPrefix)) {
+            this.state.listenPrefixIndex += 1;
+            continue;
+          }
+
+          break;
+        }
+
+        if (this.state.listenPrefixIndex >= prefixes.length) {
+          throw lastFailure;
+        }
+
+        const [port] = listening.get(listenPrefix);
+
+        const innerVow = watch(
+          E(protocolHandler).onInstantiate(
+            port,
+            prefixes[this.state.listenPrefixIndex],
+            remoteAddr,
+            protocolHandler,
+          ),
+          makeBinderInboundInstantiateWatcher({
+            listenAddr,
+            remoteAddr,
+            listening,
+            currentConnections,
+            port,
+            listenPrefixIndex: this.state.listenPrefixIndex,
+          }),
+        );
+
+        return watch(innerVow, this.self);
+      },
+    },
+  );
+  return makeBinderInboundInstantiateCatchWatcher;
+};
+
 /** @param {import('@agoric/base-zone').Zone} zone */
 const prepareRethrowUnlessMissingWatcher = zone => {
   const makeRethrowUnlessMissingWatcher = zone.exoClass(
@@ -1109,6 +1258,16 @@ const prepareBinder = (zone, powers) => {
     },
   );
 
+  const makeBinderInboundInstantiateWatcher =
+    prepareBinderInboundInstantiateWatcher(zone, makeInboundAttempt);
+
+  const makeBinderInboundInstantiateCatchWatcher =
+    prepareBinderInboundInstantiateCatchWatcher(
+      zone,
+      watch,
+      makeBinderInboundInstantiateWatcher,
+    );
+
   const makePort = preparePort(zone, powers, {
     makeSinkWatcher,
     makeRethrowUnlessMissingWatcher,
@@ -1161,47 +1320,54 @@ const prepareBinder = (zone, powers) => {
         async inbound(listenAddr, remoteAddr) {
           const { listening, protocolHandler, currentConnections } = this.state;
 
-          let lastFailure = Error(`No listeners for ${listenAddr}`);
-          for await (const listenPrefix of getPrefixes(listenAddr)) {
-            if (!listening.has(listenPrefix)) {
-              continue;
-            }
-            const [port, _] = listening.get(listenPrefix);
-            let localAddr;
+          const prefixes = getPrefixes(listenAddr);
+          let listenPrefixIndex = 0;
+          let listenPrefix;
 
-            await (async () => {
-              // See if our protocol is willing to receive this connection.
-              const localInstance = await when(
-                E(protocolHandler).onInstantiate(
-                  port,
-                  listenPrefix,
-                  remoteAddr,
-                  protocolHandler,
-                ),
-              ).catch(rethrowUnlessMissing);
-              localAddr = localInstance
-                ? `${listenAddr}/${localInstance}`
-                : listenAddr;
-            })().catch(e => {
-              lastFailure = e;
-            });
-            if (!localAddr) {
+          while (listenPrefixIndex < prefixes.length) {
+            listenPrefix = prefixes[listenPrefixIndex];
+            if (!listening.has(listenPrefix)) {
+              listenPrefixIndex += 1;
               continue;
             }
-            // We have a legitimate inbound attempt.
-            const current = currentConnections.get(port);
-            const inboundAttempt = makeInboundAttempt({
-              localAddr,
+
+            break;
+          }
+
+          if (listenPrefixIndex >= prefixes.length) {
+            throw Error(`No listeners for ${listenAddr}`);
+          }
+
+          const [port] = listening.get(/** @type {string} **/ (listenPrefix));
+
+          const innerVow = watch(
+            E(protocolHandler).onInstantiate(
+              /** @type {Port} **/ (port),
+              prefixes[listenPrefixIndex],
+              remoteAddr,
+              protocolHandler,
+            ),
+            makeBinderInboundInstantiateWatcher({
+              listenAddr,
+              remoteAddr,
+              listening,
+              currentConnections,
+              port,
+              listenPrefixIndex,
+            }),
+          );
+
+          return watch(
+            innerVow,
+            makeBinderInboundInstantiateCatchWatcher({
+              listenPrefixIndex,
+              listening,
+              listenAddr,
+              protocolHandler,
               remoteAddr,
               currentConnections,
-              listenPrefix,
-              listening,
-            });
-
-            current.add(inboundAttempt);
-            return inboundAttempt;
-          }
-          throw lastFailure;
+            }),
+          );
         },
         /**
          * @param {Port} port

@@ -113,7 +113,7 @@ test.serial('upgrade at many points in network API flow', async t => {
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
   const flow = entries({
-    startServer: async ([label, opts]) => {
+    startServer: async label => {
       const started = await EV(zoe).startInstance(
         installation.ibcServerMock,
         {},
@@ -121,7 +121,7 @@ test.serial('upgrade at many points in network API flow', async t => {
         { address: '/ibc-port/', networkVat },
       );
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
-      return [label, { ...opts, server: started.creatorFacet }];
+      return [label, { server: started.creatorFacet }];
     },
     startListening: async ([label, opts]) => {
       await EV.sendOnly(opts.server).listen();
