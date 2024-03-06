@@ -832,8 +832,9 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"agoric-upgrade-14":     true,
-	"agorictest-upgrade-14": true,
+	"agoric-upgrade-14":         true,
+	"agorictest-upgrade-14":     true,
+	"agorictest-upgrade-14-rc1": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
