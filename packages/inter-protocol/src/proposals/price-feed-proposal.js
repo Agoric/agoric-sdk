@@ -63,8 +63,6 @@ export const ensureOracleBrands = async (
     },
   },
 ) => {
-  trace('ensureOracleBrands');
-
   const updateFreshBrand = async (brand, name, decimals) => {
     let b = await brand;
     if (!b) {
@@ -93,6 +91,7 @@ export const ensureOracleBrands = async (
  *       contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
  *       IN_BRAND_NAME: string;
  *       OUT_BRAND_NAME: string;
+ *       priceAggregatorRef: Installation;
  *     };
  *   };
  * }} config
@@ -111,6 +110,7 @@ export const createPriceFeed = async (
       priceAuthority,
       priceAuthorityAdmin,
       startGovernedUpgradable,
+      zoe,
     },
     instance: { produce: produceInstance },
   },
@@ -122,6 +122,7 @@ export const createPriceFeed = async (
         contractTerms,
         IN_BRAND_NAME,
         OUT_BRAND_NAME,
+        priceAggregatorRef,
       },
     },
   },
@@ -131,29 +132,36 @@ export const createPriceFeed = async (
 
   void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
-  const timer = await chainTimerService;
+  let installationP;
+  await null;
+  if (priceAggregatorRef) {
+    const bundleID = await E.get(priceAggregatorRef).bundleID;
+    if (bundleID) {
+      installationP = E(zoe).installBundleID(bundleID);
+    }
+  }
+  if (!installationP) {
+    installationP = E.get(
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+        'priceAggregator',
+      ]),
+    )[0];
+  }
 
   /**
-   * Values come from economy-template.json, which at this writing had IN:ATOM,
-   * OUT:USD
-   *
    * @type {[
    *   [Brand<'nat'>, Brand<'nat'>],
-   *   [
-   *     Installation<
-   *       import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]
-   *     >,
-   *   ],
+   *   Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js')['start]>,
+   *   Timer,
    * ]}
    */
-  const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
+  const [[brandIn, brandOut], installation, timer] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
       IN_BRAND_NAME,
       OUT_BRAND_NAME,
     ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-      'priceAggregator',
-    ]),
+    installationP,
+    chainTimerService,
   ]);
 
   const unitAmountIn = await unitAmount(brandIn);
@@ -165,14 +173,11 @@ export const createPriceFeed = async (
     timer,
     unitAmountIn,
   });
-  trace('got terms');
-
   const label = sanitizePathSegment(AGORIC_INSTANCE_NAME);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  trace('awaiting startInstance');
   const faKit = await E(startGovernedUpgradable)({
     governedParams: {},
     privateArgs: {
@@ -183,7 +188,7 @@ export const createPriceFeed = async (
     },
     terms,
     label,
-    installation: priceAggregator,
+    installation,
   });
 
   // Publish price feed in home.priceAuthority.
@@ -262,6 +267,7 @@ export const getManifestForPriceFeed = async (
         priceAuthority: t,
         priceAuthorityAdmin: t,
         startGovernedUpgradable: t,
+        zoe: t,
       },
       instance: {
         produce: t,
