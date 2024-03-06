@@ -164,7 +164,7 @@ test('handled protocol', async t => {
 
   await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
   await when(vow);
-  port.revoke();
+  await when(port.revoke());
 });
 
 test('protocol connection listen', async t => {
@@ -319,8 +319,6 @@ test('loopback protocol', async t => {
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
   const { vow, resolver } = makeVowKit();
-
-  const loopback = makeLoopbackProtocolHandler();
 
   const port = await when(protocol.bind('/loopback/foo'));
 

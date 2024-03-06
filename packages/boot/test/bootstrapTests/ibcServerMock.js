@@ -14,14 +14,14 @@ const { log } = console;
  *   address: string,
  *   networkVat: any
  * }} privateArgs
- * @param {import("@agoric/vat-data").Baggage} baggage
+ * @param {import("@agoric/vat-data").Baggage} _baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, _baggage) => {
   const { address, networkVat } = privateArgs;
 
   const boundPort = await E(networkVat).bind(address);
 
-  /** @type {Array<[label: string, resolve: () => void, reject: () => void]>} */
+  /** @type {Array<[label: string, resolve: (value: any) => void, reject: (reason: any) => void]>} */
   const queue = [];
 
   /** @type {ListenHandler} */

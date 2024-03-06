@@ -24,7 +24,11 @@ export const makeTestContext = async t => {
   console.time('DefaultTestContext');
   const { bridgeHandler, events } = makeBridge(t);
   const bundleDir = 'bundles/vaults';
-  const bundleCache = await makeNodeBundleCache(bundleDir, {}, s => import(s));
+  const bundleCache = await makeNodeBundleCache(
+    bundleDir,
+    { cacheSourceMaps: false },
+    s => import(s),
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
     bridgeHandlers: {

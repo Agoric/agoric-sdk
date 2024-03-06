@@ -9,21 +9,15 @@ import { V as E } from '@agoric/vat-data/vow.js';
  *   address: string,
  *   networkVat: any
  * }} privateArgs
- * @param {import("@agoric/vat-data").Baggage} baggage
+ * @param {import("@agoric/vat-data").Baggage} _baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, privateArgs, _baggage) => {
   const { address, networkVat } = privateArgs;
   const myPort = await E(networkVat).bind(address);
 
   const { log } = console;
   let connP;
   let ackP;
-
-  const ch = Far('CH', {
-    async onClose(_c, reason, _connectionHandler) {
-      debugger;
-    },
-  });
 
   const creatorFacet = Far('CF', {
     connect: remote => {

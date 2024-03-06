@@ -253,6 +253,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
+ * @param [options.bridgeHandlers]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
