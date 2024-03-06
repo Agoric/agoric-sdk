@@ -95,7 +95,7 @@ async function testRemotePeg(t) {
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const network = makeNetworkProtocol(makeLoopbackHandler());
 
-  const portP = E(network).bind('/ibc-channel/chanabc/ibc-port/portdef');
+  const portP = when(E(network).bind('/ibc-channel/chanabc/ibc-port/portdef'));
   const portName = await E(portP).getLocalAddress();
 
   /**
@@ -153,7 +153,7 @@ async function testRemotePeg(t) {
   // Pretend we're Agoric.
   const { handler: chandler, subscription: connectionSubscription } =
     await E(pegasus).makePegasusConnectionKit();
-  const connP = E(portP).connect(portName, chandler);
+  const connP = when(E(portP).connect(portName, chandler));
 
   // Get some local Atoms.
   const sendPacket = {
