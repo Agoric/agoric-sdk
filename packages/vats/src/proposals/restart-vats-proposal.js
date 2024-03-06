@@ -16,6 +16,8 @@ const vatUpgradeStatus = {
   bank: 'covered by test-upgrade-vats: upgrade vat-bank',
   board: 'covered by test-upgrade-vats: upgrade vat-board',
   bridge: 'covered by test-upgrade-vats: upgrade vat-bridge',
+  ibc: 'upgradeable',
+  network: 'upgradeable',
   priceAuthority: 'covered by test-upgrade-vats: upgrade vat-priceAuthority',
   provisioning: 'UNTESTED',
   zoe: 'tested in @agoric/zoe',
@@ -117,10 +119,18 @@ export const restartVats = async ({ consume }, { options }) => {
   }
 
   trace('iterating over vatStore');
-  for (const [name] of vatStore.entries()) {
+  for (const [name, { adminNode }] of vatStore.entries()) {
     const status = vatUpgradeStatus[name];
     if (!status) {
       Fail`unaudited vat ${name}`;
+    }
+    if (status === 'upgradeable') {
+      console.log('upgrading vat', name);
+      const { vatAdminSvc } = consume;
+      const info = await consume.vatUpgradeInfo;
+      const { bundleID } = info.get(name);
+      const bcap = await E(vatAdminSvc).getBundleCap(bundleID);
+      await E(adminNode).upgrade(bcap);
     }
     console.log('VAT', name, status);
   }
@@ -144,6 +154,8 @@ export const getManifestForRestart = (_powers, options) => ({
         loadCriticalVat: true,
         psmKit: true,
         vatStore: true,
+        vatAdminSvc: true,
+        vatUpgradeInfo: true,
         zoe: 'zoe',
         provisioning: 'provisioning',
         vaultFactoryKit: true,

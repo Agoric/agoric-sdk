@@ -15,27 +15,27 @@ import (
 )
 
 type beginBlockAction struct {
-	vm.ActionHeader `actionType:"BEGIN_BLOCK"`
-	ChainID         string       `json:"chainID"`
-	Params          types.Params `json:"params"`
+	*vm.ActionHeader `actionType:"BEGIN_BLOCK"`
+	ChainID          string       `json:"chainID"`
+	Params           types.Params `json:"params"`
 }
 
 type endBlockAction struct {
-	vm.ActionHeader `actionType:"END_BLOCK"`
+	*vm.ActionHeader `actionType:"END_BLOCK"`
 }
 
 type commitBlockAction struct {
-	vm.ActionHeader `actionType:"COMMIT_BLOCK"`
+	*vm.ActionHeader `actionType:"COMMIT_BLOCK"`
 }
 
 type afterCommitBlockAction struct {
-	vm.ActionHeader `actionType:"AFTER_COMMIT_BLOCK"`
+	*vm.ActionHeader `actionType:"AFTER_COMMIT_BLOCK"`
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
-	action := &beginBlockAction{
+	action := beginBlockAction{
 		ChainID: ctx.ChainID(),
 		Params:  keeper.GetParams(ctx),
 	}
@@ -56,7 +56,7 @@ var endBlockTime int64
 func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
-	action := &endBlockAction{}
+	action := endBlockAction{}
 	_, err := keeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
@@ -83,7 +83,7 @@ func getEndBlockContext() sdk.Context {
 func CommitBlock(keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
 
-	action := &commitBlockAction{}
+	action := commitBlockAction{}
 	_, err := keeper.BlockingSend(getEndBlockContext(), action)
 
 	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
@@ -98,7 +98,7 @@ func CommitBlock(keeper Keeper) error {
 func AfterCommitBlock(keeper Keeper) error {
 	// defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
 
-	action := &afterCommitBlockAction{}
+	action := afterCommitBlockAction{}
 	_, err := keeper.BlockingSend(getEndBlockContext(), action)
 
 	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)

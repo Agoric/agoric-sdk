@@ -41,9 +41,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     p.childProcess.stdout.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
-    Object.entries(d).forEach(([name, { location }]) =>
-      map.set(name, path.resolve(cwd, location)),
-    );
+    for (const [name, { location }] of Object.entries(d)) {
+      map.set(name, path.resolve(cwd, location));
+    }
     return map;
   }
 
@@ -268,7 +268,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     };
     await Promise.all(subdirs.map(removeNodeModulesSymlinks));
   } else {
-    DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
+    for (const name of DEFAULT_SDK_PACKAGE_NAMES) {
+      sdkPackageToPath.set(name, null);
+    }
   }
 
   if (forceSdkVersion !== undefined) {

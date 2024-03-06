@@ -125,7 +125,7 @@ if $need_nodejs; then
   esac
 fi
 
-(
+${NO_BUILD:-false} || (
   # Send the build output to stderr unless we're only building.  This prevents
   # the daemon's stdout from being polluted with build output.
   $only_build || exec 1>&2

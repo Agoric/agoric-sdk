@@ -74,6 +74,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     'set',
     undefined,
     undefined,
+    { recoverySetsOption: 'noRecoverySets' },
   );
 
   const {

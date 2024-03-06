@@ -1,2 +1,5 @@
-dist/gogoproto
-dist/google
+# cache
+.tsimp
+
+# Copy as needed from golang tree
+proto

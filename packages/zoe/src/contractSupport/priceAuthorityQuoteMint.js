@@ -17,6 +17,7 @@ export const provideQuoteMint = baggage => {
     AssetKind.SET,
     undefined,
     undefined,
+    { recoverySetsOption: 'noRecoverySets' },
   );
   return issuerKit.mint;
 };

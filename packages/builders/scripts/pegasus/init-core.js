@@ -9,7 +9,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       {
         pegasusRef: publishRef(
           install(
-            '@agoric/pegasus/src/pegasus.js',
+            '@agoric/pegasus/src/contract.js',
             '../bundles/bundle-pegasus.js',
           ),
         ),
