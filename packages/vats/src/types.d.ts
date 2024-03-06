@@ -103,8 +103,10 @@ export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
    * system to hang the bridgeId
    */
   getBridgeId?: () => BridgeId;
+  /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
-  fromBridge: (obj: any) => PromiseVow<void>;
+  /** Upcall from Golang into the VM */
+  fromBridge: (obj: any) => Promise<unknown>;
   initHandler: (handler: Remote<BridgeHandler>) => void;
   setHandler: (handler: Remote<BridgeHandler>) => void;
 }>;
