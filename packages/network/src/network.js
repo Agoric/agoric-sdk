@@ -727,6 +727,209 @@ const prepareBinderInboundInstantiateCatchWatcher = (
   return makeBinderInboundInstantiateCatchWatcher;
 };
 
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param watch
+ * @param makeInboundAttempt
+ */
+const prepareBinderOutboundInstantiateWatcher = zone => {
+  const makeBinderOutboundInstantiateWatcher = zone.exoClass(
+    'BinderOutboundInstantiateWatcher',
+    undefined,
+    ({ localAddr }) => ({
+      localAddr,
+    }),
+    {
+      onFulfilled(localInstance) {
+        const { localAddr } = this.state;
+
+        return localInstance ? `${localAddr}/${localInstance}` : localAddr;
+      },
+    },
+  );
+  return makeBinderOutboundInstantiateWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ */
+const prepareBinderOutboundInboundWatcher = zone => {
+  const makeBinderOutboundInboundWatcher = zone.exoClass(
+    'BinderOutboundInboundWatcher',
+    undefined,
+    ({ localAddr, remoteAddr, protocolImpl }) => ({
+      remoteAddr,
+      protocolImpl,
+      localAddr,
+    }),
+    {
+      onFulfilled(initialLocalAddress) {
+        const { remoteAddr, protocolImpl, localAddr } = this.state;
+
+        if (initialLocalAddress === undefined) {
+          initialLocalAddress = localAddr;
+        }
+
+        // Attempt the loopback connection.
+        return protocolImpl.inbound(remoteAddr, initialLocalAddress);
+      },
+    },
+  );
+  return makeBinderOutboundInboundWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ */
+const prepareBinderOutboundAcceptWatcher = zone => {
+  const makeBinderOutboundAcceptWatcher = zone.exoClass(
+    'BinderOutboundAcceptWatcher',
+    undefined,
+    ({ handler }) => ({
+      handler,
+    }),
+    {
+      onFulfilled(attempt) {
+        const { handler } = this.state;
+        return attempt.accept({ handler });
+      },
+    },
+  );
+  return makeBinderOutboundAcceptWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param makeConnection
+ */
+const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
+  const makeBinderOutboundConnectWatcher = zone.exoClass(
+    'BinderOutboundConnectWatcher',
+    undefined,
+    ({
+      lastFailure,
+      remoteAddr,
+      localAddr,
+      lchandler,
+      currentConnections,
+      port,
+    }) => ({
+      lastFailure,
+      remoteAddr,
+      localAddr,
+      lchandler,
+      currentConnections,
+      port,
+    }),
+    {
+      onFulfilled({ handler: rchandler }) {
+        const {
+          lastFailure,
+          remoteAddr,
+          localAddr,
+          lchandler,
+          currentConnections,
+          port,
+        } = this.state;
+
+        if (!rchandler) {
+          throw lastFailure;
+        }
+
+        const current = currentConnections.get(port);
+        // eslint-disable-next-line no-use-before-define
+        return crossoverConnection(
+          zone,
+          lchandler,
+          localAddr,
+          rchandler,
+          remoteAddr,
+          makeConnection,
+          current,
+        )[0];
+      },
+    },
+  );
+  return makeBinderOutboundConnectWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param watch
+ * @param makeBinderInboundInstantiateWatcher
+ * @param BinderInboundInstantiateCatchWatcher
+ * @param makeBinderInboundInstantiateCatchWatcher
+ * @param makeBinderOutboundConnectWatcher
+ */
+const prepareBinderOutboundCatchWatcher = (
+  zone,
+  watch,
+  makeBinderOutboundConnectWatcher,
+) => {
+  const makeBinderOutboundCatchWatcher = zone.exoClass(
+    'BinderOutboundCatchWatcher',
+    undefined,
+    ({
+      port,
+      remoteAddr,
+      lchandler,
+      protocolHandler,
+      localAddr,
+      currentConnections,
+    }) => ({
+      port,
+      remoteAddr,
+      lchandler,
+      protocolHandler,
+      localAddr,
+      currentConnections,
+    }),
+    {
+      onRejected(e) {
+        let lastFailure;
+
+        try {
+          rethrowUnlessMissing(e);
+        } catch (innerE) {
+          lastFailure = innerE;
+        }
+
+        const {
+          port,
+          remoteAddr,
+          lchandler,
+          protocolHandler,
+          localAddr,
+          currentConnections,
+        } = this.state;
+
+        const connectVow = watch(
+          E(protocolHandler).onConnect(
+            port,
+            localAddr,
+            remoteAddr,
+            lchandler,
+            protocolHandler,
+          ),
+        );
+
+        return watch(
+          connectVow,
+          makeBinderOutboundConnectWatcher({
+            lastFailure,
+            remoteAddr,
+            localAddr,
+            lchandler,
+            currentConnections,
+            port,
+          }),
+        );
+      },
+    },
+  );
+  return makeBinderOutboundCatchWatcher;
+};
+
 /** @param {import('@agoric/base-zone').Zone} zone */
 const prepareRethrowUnlessMissingWatcher = zone => {
   const makeRethrowUnlessMissingWatcher = zone.exoClass(
@@ -1268,6 +1471,26 @@ const prepareBinder = (zone, powers) => {
       makeBinderInboundInstantiateWatcher,
     );
 
+  const makeBinderOutboundInstantiateWatcher =
+    prepareBinderOutboundInstantiateWatcher(zone);
+
+  const makeBinderOutboundConnectWatcher = prepareBinderOutboundConnectWatcher(
+    zone,
+    makeConnection,
+  );
+
+  const makeBinderOutboundCatchWatcher = prepareBinderOutboundCatchWatcher(
+    zone,
+    watch,
+    makeBinderOutboundConnectWatcher,
+  );
+
+  const makeBinderOutboundInboundWatcher =
+    prepareBinderOutboundInboundWatcher(zone);
+
+  const makeBinderOutboundAcceptWatcher =
+    prepareBinderOutboundAcceptWatcher(zone);
+
   const makePort = preparePort(zone, powers, {
     makeSinkWatcher,
     makeRethrowUnlessMissingWatcher,
@@ -1380,65 +1603,52 @@ const prepareBinder = (zone, powers) => {
           const localAddr = await E(port).getLocalAddress();
 
           // Allocate a local address.
-          const initialLocalInstance = await when(
+          const instantiateInnerVow = watch(
             E(protocolHandler).onInstantiate(
               port,
               localAddr,
               remoteAddr,
               protocolHandler,
             ),
-          ).catch(rethrowUnlessMissing);
-          const initialLocalAddr = initialLocalInstance
-            ? `${localAddr}/${initialLocalInstance}`
-            : localAddr;
+            makeBinderOutboundInstantiateWatcher({
+              port,
+              localAddr,
+              remoteAddr,
+              protocolHandler,
+            }),
+          );
 
-          let lastFailure;
-          let accepted;
-          await (async () => {
-            // Attempt the loopback connection.
-            const attempt = await when(
-              this.facets.protocolImpl.inbound(remoteAddr, initialLocalAddr),
-            );
-            accepted = await when(attempt.accept({ handler: lchandler }));
-          })().catch(e => {
-            lastFailure = e;
-          });
-          if (accepted) {
-            return accepted;
-          }
+          const instantiateVow = watch(
+            instantiateInnerVow,
+            makeRethrowUnlessMissingWatcher(),
+          );
 
-          const {
-            remoteAddress = remoteAddr,
-            handler: rchandler,
-            localAddress = localAddr,
-          } =
-            /** @type {Partial<AttemptDescription>} */
-            (
-              await when(
-                E(protocolHandler).onConnect(
-                  port,
-                  initialLocalAddr,
-                  remoteAddr,
-                  lchandler,
-                  protocolHandler,
-                ),
-              )
-            );
+          const attemptVow = watch(
+            instantiateVow,
+            makeBinderOutboundInboundWatcher({
+              localAddr,
+              remoteAddr,
+              protocolImpl: this.facets.protocolImpl,
+            }),
+          );
+          const acceptedVow = watch(
+            attemptVow,
+            makeBinderOutboundAcceptWatcher({
+              handler: lchandler,
+            }),
+          );
 
-          if (!rchandler) {
-            throw lastFailure;
-          }
-
-          const current = currentConnections.get(port);
-          return crossoverConnection(
-            zone,
-            lchandler,
-            localAddress,
-            rchandler,
-            remoteAddress,
-            makeConnection,
-            current,
-          )[0];
+          return watch(
+            acceptedVow,
+            makeBinderOutboundCatchWatcher({
+              port,
+              remoteAddr,
+              lchandler,
+              protocolHandler,
+              localAddr,
+              currentConnections,
+            }),
+          );
         },
         async bind(localAddr) {
           return this.facets.binder.bind(localAddr);
