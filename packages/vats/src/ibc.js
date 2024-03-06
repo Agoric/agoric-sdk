@@ -7,6 +7,7 @@ import { dataToBase64, base64ToBytes } from '@agoric/network';
 
 import '@agoric/store/exported.js';
 import '@agoric/network/exported.js';
+import { M } from '@endo/patterns';
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
@@ -59,6 +60,190 @@ const prepareAckWatcher = zone => {
     },
   );
   return makeAckWatcher;
+};
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {ReturnType<prepareProtocolImplAttemptWatcher>} makeProtocolImplAttemptWatcher
+ */
+const prepareProtocolImplInboundWatcher = (
+  zone,
+  { watch },
+  makeProtocolImplAttemptWatcher,
+) => {
+  const makeProtocolImplInboundWatcher = zone.exoClass(
+    'ProtocolImplInboundWatcher',
+    M.interface('ProtocolImplInboundWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
+    ({
+      channelID,
+      portID,
+      channelKeyToAttempt,
+      channelKeyToInfo,
+      obj,
+      util,
+      asyncVersions,
+      rPortID,
+      rChannelID,
+      order,
+      hops,
+      version,
+    }) => ({
+      channelID,
+      portID,
+      channelKeyToAttempt,
+      channelKeyToInfo,
+      obj,
+      util,
+      asyncVersions,
+      rPortID,
+      rChannelID,
+      order,
+      hops,
+      version,
+    }),
+    {
+      onFulfilled(attempt) {
+        const {
+          channelKeyToAttempt,
+          channelKeyToInfo,
+          obj,
+          util,
+          rPortID,
+          rChannelID,
+          hops,
+        } = this.state;
+
+        const { channelID, portID, asyncVersions, order, version } = obj;
+
+        // Tell what version string we negotiated.
+        return watch(
+          E(attempt).getLocalAddress(),
+          makeProtocolImplAttemptWatcher({
+            channelID,
+            portID,
+            channelKeyToAttempt,
+            channelKeyToInfo,
+            attempt,
+            obj,
+            util,
+            asyncVersions,
+            rPortID,
+            rChannelID,
+            order,
+            hops,
+            version,
+          }),
+        );
+      },
+    },
+  );
+  return makeProtocolImplInboundWatcher;
+};
+
+/** @param {import('@agoric/base-zone').Zone} zone */
+const prepareProtocolImplAttemptWatcher = zone => {
+  const makeProtocolImplAttemptWatcher = zone.exoClass(
+    'ProtocolImplAttemptWatcher',
+    M.interface('ProtocolImplAttemptWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(),
+    }),
+    ({
+      channelID,
+      portID,
+      channelKeyToAttempt,
+      channelKeyToInfo,
+      attempt,
+      obj,
+      util,
+      asyncVersions,
+      rPortID,
+      rChannelID,
+      order,
+      hops,
+      version,
+    }) => ({
+      channelID,
+      portID,
+      channelKeyToAttempt,
+      channelKeyToInfo,
+      attempt,
+      obj,
+      util,
+      asyncVersions,
+      rPortID,
+      rChannelID,
+      order,
+      hops,
+      version,
+    }),
+    {
+      onFulfilled(attemptedLocal) {
+        const {
+          channelID,
+          portID,
+          channelKeyToAttempt,
+          channelKeyToInfo,
+          attempt,
+          obj,
+          util,
+          asyncVersions,
+          rPortID,
+          rChannelID,
+          order,
+          hops,
+          version,
+        } = this.state;
+        const match = attemptedLocal.match(
+          // Match:  ... /ORDER/VERSION ...
+          new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
+        );
+
+        const channelKey = `${channelID}:${portID}`;
+        if (!match) {
+          throw Error(
+            `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
+          );
+        }
+
+        channelKeyToAttempt.init(channelKey, attempt);
+        channelKeyToInfo.init(channelKey, obj);
+
+        const negotiatedVersion = match[3];
+
+        try {
+          if (asyncVersions) {
+            // We have async version negotiation, so we must call back now.
+            return util.downcall('tryOpenExecuted', {
+              packet: {
+                source_port: rPortID,
+                source_channel: rChannelID,
+                destination_port: portID,
+                destination_channel: channelID,
+              },
+              order,
+              version: negotiatedVersion,
+              hops,
+            });
+          } else if (negotiatedVersion !== version) {
+            // Too late; the other side gave us a version we didn't like.
+            throw Error(
+              `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
+            );
+          }
+        } catch (e) {
+          // Clean up after our failed attempt.
+          channelKeyToAttempt.delete(channelKey);
+          channelKeyToInfo.delete(channelKey);
+          void E(attempt).close();
+          throw e;
+        }
+      },
+    },
+  );
+  return makeProtocolImplAttemptWatcher;
 };
 
 /**
@@ -187,8 +372,17 @@ export const prepareIBCConnectionHandler = zone => {
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
+export const prepareIBCProtocol = (zone, powers) => {
+  const { makeVowKit, watch } = powers;
+
   const makeAckWatcher = prepareAckWatcher(zone);
+  const makeProtocolImplAttemptWatcher =
+    prepareProtocolImplAttemptWatcher(zone);
+  const makeProtocolImplInboundWatcher = prepareProtocolImplInboundWatcher(
+    zone,
+    powers,
+    makeProtocolImplAttemptWatcher,
+  );
   const makeIBCConnectionHandler = prepareIBCConnectionHandler(zone);
 
   /**
@@ -431,14 +625,12 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
             case 'channelOpenTry': {
               // They're (more or less politely) asking if we are listening, so make an attempt.
               const {
-                channelID,
                 portID,
                 counterparty: { port_id: rPortID, channel_id: rChannelID },
                 connectionHops: hops,
                 order,
                 version,
                 counterpartyVersion: rVersion,
-                asyncVersions,
               } = obj;
 
               const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
@@ -454,59 +646,21 @@ export const prepareIBCProtocol = (zone, { makeVowKit, watch, when }) => {
               //     e => console.warn('Manual packet', e, 'failed:', e),
               //   );
 
-              const attempt = await when(
+              return watch(
                 /** @type {ProtocolImpl} */ (protocolImpl).inbound(
                   localAddr,
                   remoteAddr,
                 ),
+                makeProtocolImplInboundWatcher({
+                  channelKeyToAttempt,
+                  channelKeyToInfo,
+                  obj,
+                  util,
+                  rPortID,
+                  rChannelID,
+                  hops,
+                }),
               );
-
-              // Tell what version string we negotiated.
-              const attemptedLocal = await E(attempt).getLocalAddress();
-              const match = attemptedLocal.match(
-                // Match:  ... /ORDER/VERSION ...
-                new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
-              );
-
-              const channelKey = `${channelID}:${portID}`;
-              if (!match) {
-                throw Error(
-                  `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
-                );
-              }
-              const negotiatedVersion = match[3];
-
-              channelKeyToAttempt.init(channelKey, attempt);
-              channelKeyToInfo.init(channelKey, obj);
-
-              try {
-                if (asyncVersions) {
-                  // We have async version negotiation, so we must call back now.
-                  await util.downcall('tryOpenExecuted', {
-                    packet: {
-                      source_port: rPortID,
-                      source_channel: rChannelID,
-                      destination_port: portID,
-                      destination_channel: channelID,
-                    },
-                    order,
-                    version: negotiatedVersion,
-                    hops,
-                  });
-                } else if (negotiatedVersion !== version) {
-                  // Too late; the other side gave us a version we didn't like.
-                  throw Error(
-                    `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
-                  );
-                }
-              } catch (e) {
-                // Clean up after our failed attempt.
-                channelKeyToAttempt.delete(channelKey);
-                channelKeyToInfo.delete(channelKey);
-                void E(attempt).close();
-                throw e;
-              }
-              break;
             }
 
             case 'channelOpenAck': {
