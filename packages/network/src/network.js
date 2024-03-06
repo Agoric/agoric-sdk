@@ -1333,7 +1333,7 @@ const preparePort = (
 
         // ASSUME: that the listener defines onAccept.
 
-        await when(
+        const innerVow = watch(
           E(protocolHandler).onListen(
             this.self,
             localAddr,
