@@ -187,7 +187,7 @@ const prepareOpenConnectionAckWatcher = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param makeConnection
+ * @param {(opts: ConnectionOpts) => Connection} makeConnection
  */
 const prepareInboundAttemptAcceptWatcher = (zone, makeConnection) => {
   const makeInboundAttemptAcceptWatcher = zone.exoClass(
@@ -310,7 +310,6 @@ const preparePortConnectWatcher = zone => {
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- 
  */
 const preparePortRevokeWatcher = (zone, { watch }) => {
   const makePortRevokeWatcher = zone.exoClass(
@@ -348,8 +347,6 @@ const preparePortRevokeWatcher = (zone, { watch }) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- 
  */
 const preparePortCloseAllWatcher = zone => {
   const makePortCloseAllWatcher = zone.exoClass(
@@ -418,7 +415,9 @@ const prepareProtocolHandlerAcceptWatcher = zone => {
 const prepareProtocolHandlerConnectWatcher = zone => {
   const makeProtocolHandlerConnectWatcher = zone.exoClass(
     'ProtocolHandlerConnectWatcher',
-    undefined,
+    M.interface('ProtocolHandlerConnectWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     () => ({}),
     {
       onFulfilled(results) {
@@ -436,7 +435,9 @@ const prepareProtocolHandlerConnectWatcher = zone => {
 const prepareProtocolHandlerInstantiateWatcher = zone => {
   const makeProtocolHandlerInstantiateWatcher = zone.exoClass(
     'ProtocolHandlerInstantiateWatcher',
-    undefined,
+    M.interface('ProtocolHandlerInstantiateWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     () => ({}),
     {
       onFulfilled(remoteInstance) {
@@ -449,12 +450,14 @@ const prepareProtocolHandlerInstantiateWatcher = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-const prepareBinderBindGeneratePortWatcher = (zone, watch) => {
+const prepareBinderBindGeneratePortWatcher = (zone, { watch }) => {
   const makeBinderBindGeneratePortWatcher = zone.exoClass(
     'BinderBindGeneratePortWatcher',
-    undefined,
+    M.interface('BinderBindGeneratePortWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({ underspecified, localAddr, protocolHandler, boundPorts }) => ({
       underspecified,
       localAddr,
@@ -486,19 +489,21 @@ const prepareBinderBindGeneratePortWatcher = (zone, watch) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
- * @param makePort
- * @param makwBinderPortWatcher
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {ReturnType<preparePort>} makePort
+ * @param {ReturnType<prepareBinderPortWatcher>} makeBinderPortWatcher
  */
 const prepareBinderBindWatcher = (
   zone,
-  watch,
+  { watch },
   makePort,
-  makwBinderPortWatcher,
+  makeBinderPortWatcher,
 ) => {
   const makeBinderBindWatcher = zone.exoClass(
     'BinderBindWatcher',
-    undefined,
+    M.interface('BinderBindWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({
       boundPorts,
       listening,
@@ -541,7 +546,7 @@ const prepareBinderBindWatcher = (
 
         return watch(
           E(protocolHandler).onBind(port, localAddr, protocolHandler),
-          makwBinderPortWatcher({
+          makeBinderPortWatcher({
             port,
             boundPorts,
             localAddr,
@@ -558,7 +563,9 @@ const prepareBinderBindWatcher = (
 const prepareBinderPortWatcher = zone => {
   const makeBinderPortWatcher = zone.exoClass(
     'BinderPortWatcher',
-    undefined,
+    M.interface('BinderPortWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({ port, boundPorts, localAddr, currentConnections }) => ({
       port,
       boundPorts,
@@ -579,13 +586,14 @@ const prepareBinderPortWatcher = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
- * @param makeInboundAttempt
+ * @param {ReturnType<prepareInboundAttempt>} makeInboundAttempt
  */
 const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
   const makeBinderInboundInstantiateWatcher = zone.exoClass(
     'BinderInboundInstantiateWatcher',
-    undefined,
+    M.interface('BinderInboundInstantiateWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({
       listenAddr,
       remoteAddr,
@@ -635,19 +643,19 @@ const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
- * @param makeBinderInboundInstantiateWatcher
- * @param BinderInboundInstantiateCatchWatcher
- * @param makeBinderInboundInstantiateCatchWatcher
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param { ReturnType<prepareBinderInboundInstantiateWatcher> } makeBinderInboundInstantiateWatcher
  */
 const prepareBinderInboundInstantiateCatchWatcher = (
   zone,
-  watch,
+  { watch },
   makeBinderInboundInstantiateWatcher,
 ) => {
   const makeBinderInboundInstantiateCatchWatcher = zone.exoClass(
     'BinderInboundInstantiateCatchWatcher',
-    undefined,
+    M.interface('BinderInboundInstantiateCatchWatcher', {
+      onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({
       listenPrefixIndex,
       listening,
@@ -729,13 +737,13 @@ const prepareBinderInboundInstantiateCatchWatcher = (
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
- * @param makeInboundAttempt
  */
 const prepareBinderOutboundInstantiateWatcher = zone => {
   const makeBinderOutboundInstantiateWatcher = zone.exoClass(
     'BinderOutboundInstantiateWatcher',
-    undefined,
+    M.interface('BinderOutboundInstantiateWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({ localAddr }) => ({
       localAddr,
     }),
@@ -756,7 +764,9 @@ const prepareBinderOutboundInstantiateWatcher = zone => {
 const prepareBinderOutboundInboundWatcher = zone => {
   const makeBinderOutboundInboundWatcher = zone.exoClass(
     'BinderOutboundInboundWatcher',
-    undefined,
+    M.interface('BinderOutboundInboundWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({ localAddr, remoteAddr, protocolImpl }) => ({
       remoteAddr,
       protocolImpl,
@@ -784,7 +794,9 @@ const prepareBinderOutboundInboundWatcher = zone => {
 const prepareBinderOutboundAcceptWatcher = zone => {
   const makeBinderOutboundAcceptWatcher = zone.exoClass(
     'BinderOutboundAcceptWatcher',
-    undefined,
+    M.interface('BinderOutboundAcceptWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({ handler }) => ({
       handler,
     }),
@@ -800,12 +812,14 @@ const prepareBinderOutboundAcceptWatcher = zone => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param makeConnection
+ * @param {(opts: ConnectionOpts) => Connection} makeConnection
  */
 const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
   const makeBinderOutboundConnectWatcher = zone.exoClass(
     'BinderOutboundConnectWatcher',
-    undefined,
+    M.interface('BinderOutboundConnectWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({
       lastFailure,
       remoteAddr,
@@ -855,20 +869,19 @@ const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param watch
- * @param makeBinderInboundInstantiateWatcher
- * @param BinderInboundInstantiateCatchWatcher
- * @param makeBinderInboundInstantiateCatchWatcher
- * @param makeBinderOutboundConnectWatcher
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param { ReturnType<prepareBinderOutboundConnectWatcher> } makeBinderOutboundConnectWatcher
  */
 const prepareBinderOutboundCatchWatcher = (
   zone,
-  watch,
+  { watch },
   makeBinderOutboundConnectWatcher,
 ) => {
   const makeBinderOutboundCatchWatcher = zone.exoClass(
     'BinderOutboundCatchWatcher',
-    undefined,
+    M.interface('BinderOutboundCatchWatcher', {
+      onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     ({
       port,
       remoteAddr,
@@ -934,7 +947,9 @@ const prepareBinderOutboundCatchWatcher = (
 const prepareRethrowUnlessMissingWatcher = zone => {
   const makeRethrowUnlessMissingWatcher = zone.exoClass(
     'RethrowUnlessMissingWatcher',
-    undefined,
+    M.interface('RethrowUnlessMissingWatcher', {
+      onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     () => ({}),
     {
       onRejected(e) {
@@ -949,7 +964,9 @@ const prepareRethrowUnlessMissingWatcher = zone => {
 const prepareLoopbackRethrowUnlessMissingWatcher = zone => {
   const makeLoopbackRethrowUnlessMissingWatcher = zone.exoClass(
     'LoopbackRethrowUnlessMissingWatcher',
-    undefined,
+    M.interface('LoopbackRethrowUnlessMissingWatcher', {
+      onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
     () => ({}),
     {
       onRejected(e) {
@@ -971,12 +988,16 @@ const prepareLoopbackRethrowUnlessMissingWatcher = zone => {
  */
 
 /**
+ * @typedef {object} HalfConnectionWatchers
+ * @property {ReturnType<prepareOpenConnectionAckWatcher>} makeOpenConnectionAckWatcher
+ * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
+ * @property {ReturnType<prepareSinkWatcher>} makeSinkWatcher
+ */
+
+/**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param makeAckWatcher
- * @param makeAckWatcher.makeOpenConnectionAckWatcher
- * @param makeAckWatcher.makeRethrowUnlessMissingWatcher
- * @param makeAckWatcher.makeSinkWatcher
+ * @param { HalfConnectionWatchers } watchers
  */
 const prepareHalfConnection = (
   zone,
@@ -1112,13 +1133,17 @@ export const crossoverConnection = (
 };
 
 /**
+ * @typedef {object} InboundAttemptWatchers
+ * @property {ReturnType<prepareInboundAttemptAcceptWatcher>} makeInboundAttemptAcceptWatcher
+ * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
+ * @property {ReturnType<prepareSinkWatcher>} makeSinkWatcher
+ */
+
+/**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param root0
- * @param root0.makeSinkWatcher
- * @param root0.makeRethrowUnlessMissingWatcher
- * @param root0.makeInboundAttemptAcceptWatcher
+ * @param {InboundAttemptWatchers} watchers
  */
 const prepareInboundAttempt = (
   zone,
@@ -1240,25 +1265,19 @@ const RevokeState = /** @type {const} */ ({
 });
 
 /**
+ * @typedef {object} PortWatchers
+ * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
+ */
+
+/**
  * @param {import('@agoric/zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param root0
- * @param root0.makeSinkWatcher
- * @param root0.makeRethrowUnlessMissingWatcher
- * @param root0.makePortAddListenerWatcher
- * @param root0.makePortRemoveListenerWatcher
- * @param root0.makePortConnectWatcher
- * @param root0.preparePortRevokeWatcher
- * @param root0.makePortRevokeWatcher
+ * @param {PortWatchers} watchers
  */
-const preparePort = (
-  zone,
-  powers,
-  { makeSinkWatcher, makeRethrowUnlessMissingWatcher },
-) => {
+const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
-  const { when, watch } = powers;
+  const { watch } = powers;
 
   const makePortAddListenerWatcher = preparePortAddListenerWatcher(zone);
   const makePortRemoveListenerWatcher = preparePortRemoveListenerWatcher(zone);
@@ -1445,10 +1464,10 @@ const prepareBinder = (zone, powers) => {
     makeConnection,
   );
 
-  const { when, watch } = powers;
+  const { watch } = powers;
 
   const makeBinderBindGeneratePortWatcher =
-    prepareBinderBindGeneratePortWatcher(zone, watch);
+    prepareBinderBindGeneratePortWatcher(zone, powers);
 
   const makeInboundAttempt = prepareInboundAttempt(
     zone,
@@ -1467,7 +1486,7 @@ const prepareBinder = (zone, powers) => {
   const makeBinderInboundInstantiateCatchWatcher =
     prepareBinderInboundInstantiateCatchWatcher(
       zone,
-      watch,
+      powers,
       makeBinderInboundInstantiateWatcher,
     );
 
@@ -1481,7 +1500,7 @@ const prepareBinder = (zone, powers) => {
 
   const makeBinderOutboundCatchWatcher = prepareBinderOutboundCatchWatcher(
     zone,
-    watch,
+    powers,
     makeBinderOutboundConnectWatcher,
   );
 
@@ -1492,14 +1511,13 @@ const prepareBinder = (zone, powers) => {
     prepareBinderOutboundAcceptWatcher(zone);
 
   const makePort = preparePort(zone, powers, {
-    makeSinkWatcher,
     makeRethrowUnlessMissingWatcher,
   });
 
   const makeBinderPortWatcher = prepareBinderPortWatcher(zone);
   const makeBinderBindWatcher = prepareBinderBindWatcher(
     zone,
-    watch,
+    powers,
     makePort,
     makeBinderPortWatcher,
   );
@@ -1825,7 +1843,7 @@ export const prepareEchoConnectionKit = zone => {
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export function prepareLoopbackProtocolHandler(zone, { watch, when }) {
+export function prepareLoopbackProtocolHandler(zone, { watch }) {
   const detached = zone.detached();
   const makeProtocolHandlerAcceptWatcher =
     prepareProtocolHandlerAcceptWatcher(zone);
