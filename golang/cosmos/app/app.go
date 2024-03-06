@@ -789,7 +789,6 @@ func NewAgoricApp(
 	app.SetEndBlocker(app.EndBlocker)
 
 	for name := range upgradeNamesOfThisVersion {
-
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
 			upgrade14Handler(app, name),
@@ -853,6 +852,8 @@ func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
+		// These CoreProposalSteps are not idempotent and should only be executed
+		// as part of the first upgrade-14 on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
