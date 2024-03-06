@@ -1,11 +1,17 @@
+/* eslint-disable @jessie.js/safe-await-separator -- confused by casting 'as' */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 
 import type { TestFn } from 'ava';
-import type { NameAdmin, NameHub } from '@agoric/vats';
 
-import { makeSwingsetTestKit, keyArrayEqual } from '../../tools/supports.ts';
+import type { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
+import type {
+  TransferMiddleware,
+  TransferVat,
+} from '@agoric/vats/src/vat-transfer.js';
+import { BridgeId } from '@agoric/internal';
+import { keyArrayEqual, makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const { keys } = Object;
 
@@ -76,6 +82,7 @@ test('namesByAddress contains provisioned account', async t => {
   const { EV } = t.context.runUtils;
   const addr = 'agoric1234new';
   const home = await makeHomeFor(addr, EV);
+  t.truthy(home);
   const namesByAddress =
     await EV.vat('bootstrap').consumeItem('namesByAddress');
   await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
@@ -111,3 +118,86 @@ test('demo config meets loadgen constraint: no USDC', async t => {
 
 // FIXME tests can pass when console shows "BOOTSTRAP FAILED"
 test.todo('demo config bootstrap succeeds');
+
+test('vtransfer', async t => {
+  const { buildProposal, evalProposal, getOutboundMessages, runUtils } =
+    t.context;
+  const { EV } = runUtils;
+
+  // Pull what transfer-proposal produced into local scope
+  const transferVat = (await EV.vat('bootstrap').consumeItem(
+    'transferVat',
+  )) as ERef<TransferVat>;
+  t.truthy(transferVat);
+  const transferMiddleware = (await EV.vat('bootstrap').consumeItem(
+    'transferMiddleware',
+  )) as TransferMiddleware;
+  t.truthy(transferMiddleware);
+  const vtransferBridgeManager = (await EV.vat('bootstrap').consumeItem(
+    'vtransferBridgeManager',
+  )) as ScopedBridgeManager;
+  t.truthy(vtransferBridgeManager);
+
+  // only VTRANSFER_IBC_EVENT is supported by vtransferBridgeManager
+  await t.throwsAsync(
+    EV(vtransferBridgeManager).fromBridge({
+      type: 'VTRANSFER_OTHER',
+    }),
+    {
+      message:
+        'Invalid inbound event type "VTRANSFER_OTHER"; expected "VTRANSFER_IBC_EVENT"',
+    },
+  );
+
+  const target = 'agoric1vtransfertest';
+
+  // 0 interceptors for target
+
+  // TODO see if I can make a string template for Agoric address `agoric1…`
+  // it's an error to target an address before an interceptor is registered
+  await t.throwsAsync(
+    EV(vtransferBridgeManager).fromBridge({
+      target,
+      type: 'VTRANSFER_IBC_EVENT',
+      event: 'echo',
+    }),
+    {
+      message:
+        'key "agoric1vtransfertest" not found in collection "targetToApp"',
+    },
+  );
+
+  // 1 interceptors for target
+
+  // Tap into VTRANSFER_IBC_EVENT messages
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/test-vtransfer.js'),
+  );
+
+  // simulate a Golang upcall with arbitrary payload
+  await EV(vtransferBridgeManager).fromBridge({
+    target,
+    type: 'VTRANSFER_IBC_EVENT',
+    event: 'writeAcknowledgement',
+    packet: 'thisIsPacket',
+  });
+
+  // verify the ackMethod outbound
+  const messages = getOutboundMessages(BridgeId.VTRANSFER);
+  t.deepEqual(messages, [
+    {
+      ack: 'eyJldmVudCI6IndyaXRlQWNrbm93bGVkZ2VtZW50IiwicGFja2V0IjoidGhpc0lzUGFja2V0IiwidGFyZ2V0IjoiYWdvcmljMXZ0cmFuc2ZlcnRlc3QiLCJ0eXBlIjoiVlRSQU5TRkVSX0lCQ19FVkVOVCJ9',
+      method: 'receiveExecuted',
+      packet: 'thisIsPacket',
+      type: 'IBC_METHOD',
+    },
+  ]);
+  t.deepEqual(JSON.parse(atob(messages[0].ack)), {
+    event: 'writeAcknowledgement',
+    packet: 'thisIsPacket',
+    target: 'agoric1vtransfertest',
+    type: 'VTRANSFER_IBC_EVENT',
+  });
+
+  // TODO test adding an interceptor for the same target, which should fail
+});

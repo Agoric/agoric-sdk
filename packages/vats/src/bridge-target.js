@@ -8,7 +8,7 @@ const { Fail } = assert;
 
 /**
  * @typedef {object} App
- * @property {(obj: any) => Promise<void>} upcall
+ * @property {(obj: any) => Promise<unknown>} upcall
  */
 export const AppI = M.interface('App', {
   upcall: M.call(M.any()).returns(M.promise()),

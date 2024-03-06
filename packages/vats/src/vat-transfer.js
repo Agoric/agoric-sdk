@@ -64,3 +64,4 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
 };
 
 /** @typedef {ReturnType<typeof buildRootObject>} TransferVat */
+/** @typedef {ReturnType<TransferVat['makeTransferMiddleware']>} TransferMiddleware */
