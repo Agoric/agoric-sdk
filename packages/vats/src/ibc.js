@@ -778,8 +778,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               const conn = channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              watch(conn.send(data), makeAckWatcher(util, packet));
-              break;
+              return watch(conn.send(data), makeAckWatcher(util, packet));
             }
 
             case 'acknowledgementPacket': {
