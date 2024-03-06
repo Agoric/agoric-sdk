@@ -5,16 +5,18 @@ sdkroot=$(cd -- "$(dirname "$0")/.." >/dev/null && pwd)
 
 cd "$sdkroot"
 
-proposalDir=$1
+a3pProposalDir=$1
 proposalName=$2
-outfileBase=${3:-$proposalName}
-submissionDirName=${4:-submission}
+submissionDirName=${3:-submission}
+submissionDir="./a3p-integration/$a3pProposalDir/$submissionDirName"
 
 yarn agoric run "packages/builders/scripts/vats/$proposalName.js"
-
-submissionDir="./a3p-integration/$proposalDir/$submissionDirName"
-
 mkdir -p "$submissionDir"
-cp $(grep -oh '/.*b1-.*.json' "$outfileBase"*) "$submissionDir"
 
-mv "$outfileBase"* "$submissionDir"
+plans=*-plan.json
+for plan in $plans
+do
+  base=${plan%-plan.json}
+  cp $(grep -oh '/.*b1-.*.json' "$base"-plan.json) "$submissionDir"
+  mv "$base"* "$submissionDir"
+done

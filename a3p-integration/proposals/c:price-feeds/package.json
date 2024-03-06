@@ -6,7 +6,9 @@
     "upgradeInfo": {
       "coreProposals": []
     },
-    "sdk-generate": [ "probe-zcf-bundle probe-submission" ],
+    "sdk-generate": [
+      "updatePriceFeeds priceFeed-submission"
+    ],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
@@ -24,8 +26,7 @@
     ]
   },
   "scripts": {
-    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
-    "build:submission": "../../../scripts/generate-a3p-submission.sh probe-zcf-bundle a:upgrade-next probeZcfBundle probe-submission"
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "packageManager": "yarn@4.1.0"
 }

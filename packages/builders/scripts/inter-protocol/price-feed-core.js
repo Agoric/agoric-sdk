@@ -32,11 +32,16 @@ export const defaultProposalBuilder = async (
   assert(AGORIC_INSTANCE_NAME, 'AGORIC_INSTANCE_NAME is required');
   assert(Array.isArray(oracleAddresses), 'oracleAddresses array is required');
 
-  if (!brandIn) {
+  if (brandIn) {
+    publishRef(brandIn).catch(() => {});
+  } else {
     assert.equal(IN_BRAND_LOOKUP[0], 'agoricNames');
     assert(IN_BRAND_NAME);
   }
-  if (!brandOut) {
+
+  if (brandOut) {
+    publishRef(brandOut).catch(() => {});
+  } else {
     assert.equal(OUT_BRAND_LOOKUP[0], 'agoricNames');
     assert(OUT_BRAND_NAME);
   }
@@ -50,12 +55,8 @@ export const defaultProposalBuilder = async (
         AGORIC_INSTANCE_NAME,
         contractTerms,
         oracleAddresses,
-        IN_BRAND_LOOKUP,
-        OUT_BRAND_LOOKUP,
         IN_BRAND_NAME,
         OUT_BRAND_NAME,
-        brandInRef: brandIn && publishRef(brandIn),
-        brandOutRef: brandOut && publishRef(brandOut),
         priceAggregatorRef: publishRef(
           install(
             '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
@@ -67,38 +68,49 @@ export const defaultProposalBuilder = async (
   });
 };
 
-export const createGov = async (homeP, endowments) => {
+export const getBrandsAndProposalBuilder = async (options, endowments) => {
   const { lookup } = endowments;
+
+  await null;
+  const options1 = {
+    ...options,
+    brandIn: await lookup(options.IN_BRAND_LOOKUP).catch(() => undefined),
+    brandOut: await lookup(options.OUT_BRAND_LOOKUP).catch(() => undefined),
+  };
+  return powers => defaultProposalBuilder(powers, options1);
+};
+
+export const createGov = async (homeP, endowments) => {
+  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
 
   const {
     AGORIC_INSTANCE_NAME,
     IN_BRAND_DECIMALS = '6',
-    IN_BRAND_LOOKUP = JSON.stringify(['wallet', 'brand', 'BLD']),
+    IN_BRAND_LOOKUP = ['wallet', 'brand', 'BLD'],
     OUT_BRAND_DECIMALS = '6',
-    OUT_BRAND_LOOKUP = JSON.stringify(['agoricNames', 'oracleBrand', 'USD']),
+    OUT_BRAND_LOOKUP = ['agoricNames', 'oracleBrand', 'USD'],
     ORACLE_ADDRESSES,
   } = process.env;
-
   assert(AGORIC_INSTANCE_NAME, 'AGORIC_INSTANCE_NAME is required');
   assert(ORACLE_ADDRESSES, 'ORACLE_ADDRESSES is required');
-
   const oracleAddresses = ORACLE_ADDRESSES.split(',');
 
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const options = {
+    AGORIC_INSTANCE_NAME,
+    IN_BRAND_DECIMALS: parseInt(IN_BRAND_DECIMALS, 10),
+    OUT_BRAND_DECIMALS: parseInt(OUT_BRAND_DECIMALS, 10),
+    IN_BRAND_LOOKUP,
+    OUT_BRAND_LOOKUP,
+    oracleAddresses,
+  };
 
-  const inLookup = JSON.parse(IN_BRAND_LOOKUP);
-  const outLookup = JSON.parse(OUT_BRAND_LOOKUP);
+  // gov-price-feed.js gov-price-feed-permit.json
+  const proposalBuilder = await getBrandsAndProposalBuilder(
+    options,
+    endowments,
+  );
 
-  const proposalBuilder = powers =>
-    defaultProposalBuilder(powers, {
-      AGORIC_INSTANCE_NAME,
-      IN_BRAND_DECIMALS: parseInt(IN_BRAND_DECIMALS, 10),
-      OUT_BRAND_DECIMALS: parseInt(OUT_BRAND_DECIMALS, 10),
-      oracleAddresses,
-      brandIn: lookup(inLookup).catch(() => undefined),
-      brandOut: lookup(outLookup).catch(() => undefined),
-    });
-  await writeCoreProposal('gov-price-feed', proposalBuilder); // gov-price-feed.js gov-price-feed-permit.json
+  await writeCoreProposal('gov-price-feed', proposalBuilder);
 };
 
 export default createGov;

@@ -6,7 +6,8 @@ services:
     image: agoric/agoric-sdk:${SDK_TAG}
     # ISSUE: 127.0.0.1? not a docker network?
     ports:
-      - "${HOST_PORT:-8000}:${PORT:-8000}"
+      # enable https://localhost:26657 for RPC
+      - 26657:26657
     volumes:
       - "ag-solo-state:/state"
       - "$HOME/.agoric:/root/.agoric"
