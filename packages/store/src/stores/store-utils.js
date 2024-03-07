@@ -1,4 +1,5 @@
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 /** @typedef {import('@endo/marshal').RankCompare} RankCompare */
 

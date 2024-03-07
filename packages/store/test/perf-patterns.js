@@ -1,4 +1,5 @@
-import { Far, makeTagged } from '@endo/marshal';
+import { makeTagged } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
 import {
   makeCopyBag,
   makeCopyMap,

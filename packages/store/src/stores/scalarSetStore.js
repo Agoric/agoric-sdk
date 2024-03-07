@@ -1,4 +1,4 @@
-import { Far, filterIterable } from '@endo/pass-style';
+import { filterIterable } from '@endo/pass-style';
 import { compareRank } from '@endo/marshal';
 import {
   assertScalarKey,
@@ -6,7 +6,9 @@ import {
   matches,
   mustMatch,
   assertPattern,
+  M,
 } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

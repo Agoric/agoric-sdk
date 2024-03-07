@@ -1,7 +1,8 @@
 /* eslint-disable no-use-before-define */
 
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { setTimeout } from 'timers';
 
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';

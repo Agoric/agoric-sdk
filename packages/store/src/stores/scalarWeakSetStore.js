@@ -1,10 +1,12 @@
-import { Far, passStyleOf } from '@endo/pass-style';
+import { passStyleOf } from '@endo/pass-style';
 import {
   getCopySetKeys,
   mustMatch,
   assertPattern,
   isCopySet,
+  M,
 } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
 
 const { quote: q, Fail } = assert;
 

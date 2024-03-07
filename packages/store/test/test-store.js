@@ -2,7 +2,9 @@
 
 import test from 'ava';
 
-import { Far, passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
