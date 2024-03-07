@@ -1,5 +1,6 @@
 // @ts-check
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeMarshal } from '@endo/marshal';
 import { isStreamCell } from './lib-chainStorage.js';
 

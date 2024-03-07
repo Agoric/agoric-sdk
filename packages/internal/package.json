@@ -23,6 +23,7 @@
     "@agoric/assert": "^0.6.0",
     "@agoric/base-zone": "^0.1.0",
     "@endo/common": "^1.1.0",
+    "@endo/exo": "^1.2.1",
     "@endo/far": "^1.0.4",
     "@endo/init": "^1.0.4",
     "@endo/marshal": "^1.3.0",

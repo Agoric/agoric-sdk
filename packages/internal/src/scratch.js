@@ -1,4 +1,6 @@
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 export default function makeScratchPad() {
   const map = new Map();

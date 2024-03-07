@@ -1,7 +1,8 @@
 // @ts-check
 import test from 'ava';
 
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import {
   makeMeasureSeconds,
   assertAllDefined,

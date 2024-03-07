@@ -1,5 +1,6 @@
 // @ts-check
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeMarshal, Remotable } from '@endo/marshal';
 import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';

@@ -1,7 +1,8 @@
 // @ts-check
 import test from 'ava';
 
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
 
