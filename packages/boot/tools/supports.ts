@@ -27,6 +27,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
+import type { BridgeHandler } from '@agoric/vats';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -386,6 +387,31 @@ export const makeSwingsetTestKit = async (
     fs: fsAmbientPromises,
   });
 
+  const evalProposal = async (
+    proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
+  ) => {
+    const { EV } = runUtils;
+
+    const proposal = harden(await proposalP);
+
+    for await (const bundle of proposal.bundles) {
+      await controller.validateAndInstallBundle(bundle);
+    }
+    log('installed', proposal.bundles.length, 'bundles');
+
+    log('executing proposal');
+    const bridgeMessage = {
+      type: 'CORE_EVAL',
+      evals: proposal.evals,
+    };
+    log({ bridgeMessage });
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
   console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
@@ -435,6 +461,7 @@ export const makeSwingsetTestKit = async (
     advanceTimeTo,
     buildProposal,
     controller,
+    evalProposal,
     getCrankNumber,
     jumpTimeTo,
     readLatest,

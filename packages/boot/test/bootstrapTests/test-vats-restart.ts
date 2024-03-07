@@ -92,31 +92,13 @@ test.serial('open vault', async t => {
 });
 
 test.serial('run network vat proposal', async t => {
-  const { controller, buildProposal } = t.context;
+  const { buildProposal, evalProposal } = t.context;
 
   t.log('building network proposal');
-  const proposal = await buildProposal(
-    '@agoric/builders/scripts/vats/init-network.js',
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
   );
 
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('executing proposal');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-  const { EV } = t.context.runUtils;
-  const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-    'bootstrap',
-  ).consumeItem('coreEvalBridgeHandler');
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  t.log('network proposal executed');
   t.pass(); // reached here without throws
 });
 
@@ -135,31 +117,13 @@ test.serial('register network protocol before upgrade', async t => {
 });
 
 test.serial('run restart-vats proposal', async t => {
-  const { controller, buildProposal } = t.context;
+  const { controller, buildProposal, evalProposal } = t.context;
 
   t.log('building proposal');
-  const proposal = await buildProposal(
-    '@agoric/builders/scripts/vats/restart-vats.js',
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/restart-vats.js'),
   );
 
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('launching proposal');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
-  t.log({ bridgeMessage });
-  const { EV } = t.context.runUtils;
-  const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-    'bootstrap',
-  ).consumeItem('coreEvalBridgeHandler');
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-
-  t.log('restart-vats proposal executed');
   t.pass(); // reached here without throws
 });
 
