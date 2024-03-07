@@ -1,5 +1,6 @@
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { buildSyscall } from './liveslots-helpers.js';

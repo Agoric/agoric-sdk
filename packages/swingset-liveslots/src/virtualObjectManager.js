@@ -1090,11 +1090,7 @@ export const makeVirtualObjectManager = (
     const nextInstanceID = loadNextInstanceID(kindID);
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     nextInstanceIDs.set(kindID, nextInstanceID);
-    const kindHandle = makeExo(
-      'kind',
-      M.interface('kind', {}, { defaultGuards: 'passable' }),
-      {},
-    );
+    const kindHandle = Far('kind', {});
     kindHandleToID.set(kindHandle, kindID);
     // KindHandles are held strongly for the remainder of the incarnation, so
     // their components do not provide GC sensors
@@ -1175,11 +1171,7 @@ export const makeVirtualObjectManager = (
     /** @type {import('@agoric/vat-data').DurableKindHandle} */
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
     // @ts-ignore cast
-    const kindHandle = makeExo(
-      'kind',
-      M.interface('kind', {}, { defaultGuards: 'passable' }),
-      {},
-    );
+    const kindHandle = Far('kind', {});
     kindHandleToID.set(kindHandle, kindID);
     const kindIDvref = makeBaseRef(kindIDID, kindID, true);
     registerValue(kindIDvref, kindHandle, false);

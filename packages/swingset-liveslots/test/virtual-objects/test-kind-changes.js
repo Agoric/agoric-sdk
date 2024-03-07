@@ -1,6 +1,7 @@
 // @ts-nocheck
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 import { makeLiveSlots } from '../../src/liveslots.js';

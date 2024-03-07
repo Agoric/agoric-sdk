@@ -1,7 +1,8 @@
 // @ts-nocheck
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser, kunser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { watchCollected } from '../gc-and-finalize.js';

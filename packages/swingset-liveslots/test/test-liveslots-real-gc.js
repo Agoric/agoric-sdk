@@ -2,7 +2,8 @@
 /* global process */
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser } from '@agoric/kmarshal';
 import engineGC from './engine-gc.js';
