@@ -1,7 +1,9 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 import './types-ambient.js';
 import { makePublishKit } from './publish-kit.js';

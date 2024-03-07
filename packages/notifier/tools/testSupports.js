@@ -1,5 +1,7 @@
 // eslint-disable-next-line import/order
-import { Far, makeMarshal } from '@endo/marshal';
+import { makeMarshal } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 import '../src/types-ambient.js';
 

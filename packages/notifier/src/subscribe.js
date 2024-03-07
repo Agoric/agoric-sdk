@@ -1,4 +1,6 @@
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { isObject } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 

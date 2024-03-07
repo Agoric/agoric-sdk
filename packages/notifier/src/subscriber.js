@@ -2,7 +2,9 @@
 
 /// <reference types="ses"/>
 
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { subscribeEach } from './subscribe.js';
 import { makePublishKit } from './publish-kit.js';
 

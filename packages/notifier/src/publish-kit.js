@@ -1,7 +1,8 @@
 /// <reference types="ses"/>
 
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 
