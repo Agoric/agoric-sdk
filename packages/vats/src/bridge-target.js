@@ -8,7 +8,8 @@ const { Fail } = assert;
 
 /**
  * @typedef {object} App
- * @property {(obj: any) => Promise<unknown>} upcall
+ * @property {(obj: any) => Promise<unknown>} upcall return value depends on the
+ *   bridge semantics
  */
 export const AppI = M.interface('App', {
   upcall: M.call(M.any()).returns(M.promise()),
@@ -91,6 +92,8 @@ export const prepareBridgeTargetKit = (zone, makeTargetUnregister) =>
 
           type === inboundEventType ||
             Fail`Invalid inbound event type ${type}; expected ${inboundEventType}`;
+
+          target || Fail`Missing target property in ${obj}`;
 
           const app = targetToApp.get(target);
           return E(app).upcall(obj);
