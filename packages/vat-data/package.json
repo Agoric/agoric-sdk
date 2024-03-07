@@ -21,7 +21,9 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/base-zone": "^0.1.0",
+    "@endo/exo": "^1.2.1",
     "@agoric/internal": "^0.3.2",
+    "@endo/patterns": "^1.2.0",
     "@agoric/store": "^0.9.2",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/vow": "^0.1.0"

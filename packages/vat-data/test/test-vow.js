@@ -1,6 +1,8 @@
 // @ts-check
 import test from 'ava';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 import { V, makeVowKit } from '../vow.js';
 
