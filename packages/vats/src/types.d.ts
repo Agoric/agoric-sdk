@@ -92,7 +92,7 @@ export type NamesByAddressAdmin = NameAdmin & {
 /** An object that can receive messages from the bridge device */
 export type BridgeHandler = {
   /** Handle an inbound message */
-  fromBridge: (obj: any) => PromiseVow<void>;
+  fromBridge: (obj: any) => Promise<unknown>;
 };
 
 /** An object which handles messages for a specific bridge */

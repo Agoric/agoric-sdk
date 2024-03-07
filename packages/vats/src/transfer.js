@@ -2,6 +2,7 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { btoa } from '@endo/base64';
+import { Fail } from '@agoric/assert';
 import { AppI } from './bridge-target.js';
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -17,16 +18,16 @@ export const prepareTransferInterceptor = zone =>
     {
       async upcall(obj) {
         const { system, tap } = this.state;
-        const { type } = obj;
+
+        obj.type === 'VTRANSFER_IBC_EVENT' ||
+          Fail`Invalid upcall argument type ${obj.type}; expected VTRANSFER_IBC_EVENT`;
 
         // First, call our target contract listener.
+        // A VTransfer interceptor can return a write acknowledgement
         let retP = E(tap).upcall(obj);
 
         // See if the upcall result needs special handling.
-        if (
-          type === 'VTRANSFER_IBC_EVENT' &&
-          obj.event === 'writeAcknowledgement'
-        ) {
+        if (obj.event === 'writeAcknowledgement') {
           // Allow the upcall result to trigger an ack.
           const ackMethod = {
             type: 'IBC_METHOD',
@@ -36,10 +37,13 @@ export const prepareTransferInterceptor = zone =>
           // FIXME: use the Whenable `watch` operator.
           retP = retP
             .then(rawAck => {
+              console.debug('DEBUG', { rawAck });
+              debugger;
               if (rawAck === undefined) {
                 // No ack to send.
                 return;
               }
+              // FIXME tolerate Buffers (and document in upcall return)
               // Write out the encoded ack.
               ackMethod.ack = btoa(rawAck);
               return E(system).downcall(ackMethod);
@@ -62,10 +66,9 @@ export const prepareTransferInterceptor = zone =>
 harden(prepareTransferInterceptor);
 
 const TransferMiddlewareI = M.interface('TransferMiddleware', {
-  intercept: M.callWhen(
-    M.remotable('System'),
-    M.remotable('TargetRegistry'),
-  ).returns(M.remotable('TransferInterceptor')),
+  intercept: M.callWhen(M.string(), M.remotable('TransferInterceptor')).returns(
+    M.remotable('TargetUnregister'),
+  ),
 });
 
 /**
