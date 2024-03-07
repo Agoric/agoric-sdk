@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Far } from '@endo/pass-style';
+import { Far } from '@endo/far';
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 import {
   makeScalarMapStore,
