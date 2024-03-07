@@ -62,8 +62,7 @@ test('makeFakeStorageKit', async t => {
   );
 
   // Valid path segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
-  const validSegmentChars = `${
-    Array(26)
+  const validSegmentChars = `${Array(26)
       .fill(undefined)
       .map((_, i) => 'a'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
@@ -78,7 +77,7 @@ test('makeFakeStorageKit', async t => {
       .map((_, i) => '0'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
       .join('')
-  }-_`;
+    }-_`;
   const extremeSegments =
     validSegmentChars
       .repeat(Math.ceil(100 / validSegmentChars.length))
@@ -272,22 +271,10 @@ const testUnmarshaller = test.macro((t, format) => {
   // create capdata with specific slots
   /** @typedef { { getBoardId: () => string } } SlottedRemotable */
   const foo = Far('foo');
-  const foo1 = makeExo(
-    'foo',
-    M.interface('foo', {}, { defaultGuards: 'passable' }),
-    { getBoardId: () => 'board1' },
-  );
-  const foo2 = makeExo(
-    'foo',
-    M.interface('foo', {}, { defaultGuards: 'passable' }),
-    { getBoardId: () => 'board2' },
-  );
+  const foo1 = Far('foo', { getBoardId: () => 'board1' });
+  const foo2 = Far('foo', { getBoardId: () => 'board2' });
   const bar = Far('bar');
-  const bar1 = makeExo(
-    'bar',
-    M.interface('bar', {}, { defaultGuards: 'passable' }),
-    { getBoardId: () => 'board1' },
-  );
+  const bar1 = Far('bar', { getBoardId: () => 'board1' });
   const foo1CD = m.toCapData(harden({ o: foo1 }));
   const foo2CD = m.toCapData(harden({ o: foo2 }));
   const bar1CD = m.toCapData(harden({ o: bar1 }));
