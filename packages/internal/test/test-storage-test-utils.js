@@ -62,7 +62,8 @@ test('makeFakeStorageKit', async t => {
   );
 
   // Valid path segments are strings of up to 100 ASCII alphanumeric/dash/underscore characters.
-  const validSegmentChars = `${Array(26)
+  const validSegmentChars = `${
+    Array(26)
       .fill(undefined)
       .map((_, i) => 'a'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
@@ -77,7 +78,7 @@ test('makeFakeStorageKit', async t => {
       .map((_, i) => '0'.charCodeAt(0) + i)
       .map(code => String.fromCharCode(code))
       .join('')
-    }-_`;
+  }-_`;
   const extremeSegments =
     validSegmentChars
       .repeat(Math.ceil(100 / validSegmentChars.length))
