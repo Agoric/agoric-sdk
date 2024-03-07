@@ -109,8 +109,16 @@ export const makeScalarSetStore = (
     }
   };
 
-  return makeExo(`scalar SetStore of ${q(tag)}`, M.interface(`scalar SetStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
-    ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
-  });
+  return makeExo(
+    `scalar SetStore of ${q(tag)}`,
+    M.interface(
+      `scalar SetStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
+    },
+  );
 };
 harden(makeScalarSetStore);

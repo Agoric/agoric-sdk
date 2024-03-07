@@ -109,7 +109,15 @@ export const MAKE_DEFAULT_UNSERIALIZER = () => {
     if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
       iface = iface.slice(ifaceAllegedPrefix.length);
     }
-    const obj = makeExo(`${ifaceInaccessiblePrefix}${iface}`, M.interface(`${ifaceInaccessiblePrefix}${iface}`, {}, { defaultGuards: 'passable' }), {});
+    const obj = makeExo(
+      `${ifaceInaccessiblePrefix}${iface}`,
+      M.interface(
+        `${ifaceInaccessiblePrefix}${iface}`,
+        {},
+        { defaultGuards: 'passable' },
+      ),
+      {},
+    );
     seen.set(slot, obj);
     return obj;
   };

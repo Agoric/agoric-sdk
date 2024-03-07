@@ -36,7 +36,13 @@ export const buildRootObject = () => {
   /** @type {[string, ...object]} */
   const importSensors = ['skip0'];
   for (let i = 1; i <= NUM_SENSORS; i += 1) {
-    importSensors.push(makeExo(`import-${i}`, M.interface(`import-${i}`, {}, { defaultGuards: 'passable' }), {}));
+    importSensors.push(
+      makeExo(
+        `import-${i}`,
+        M.interface(`import-${i}`, {}, { defaultGuards: 'passable' }),
+        {},
+      ),
+    );
   }
   const { promise, resolve } = makePromiseKit();
   let dur;

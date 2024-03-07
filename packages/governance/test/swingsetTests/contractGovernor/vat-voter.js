@@ -21,89 +21,98 @@ const build = async (log, zoe) => {
         const seat = E(zoe).offer(invitation);
         const { voter } = E.get(E(seat).getOfferResult());
 
-        return makeExo(`Voter ${name}`, M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }), {
-          castBallotFor: async (questionHandle, choice) => {
-            log(`Voter ${name} voted for ${q(choice)}`);
-            return E(voter).castBallotFor(questionHandle, [choice]);
-          },
-          /**
-           *
-           * @param {Instance} counterInstance
-           * @param {Instance} governedInstance
-           * @param {Instance} electorateInstance
-           * @param {Instance} governorInstance
-           * @param {Record<string, Installation>} installations
-           * @returns {Promise<void>}
-           */
-          validate: async (
-            counterInstance,
-            governedInstance,
-            electorateInstance,
-            governorInstance,
-            installations,
-          ) => {
-            const validateQuestionFromCounterP = validateQuestionFromCounter(
-              zoe,
-              electorateInstance,
+        return makeExo(
+          `Voter ${name}`,
+          M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }),
+          {
+            castBallotFor: async (questionHandle, choice) => {
+              log(`Voter ${name} voted for ${q(choice)}`);
+              return E(voter).castBallotFor(questionHandle, [choice]);
+            },
+            /**
+             *
+             * @param {Instance} counterInstance
+             * @param {Instance} governedInstance
+             * @param {Instance} electorateInstance
+             * @param {Instance} governorInstance
+             * @param {Record<string, Installation>} installations
+             * @returns {Promise<void>}
+             */
+            validate: async (
               counterInstance,
-            );
-
-            const contractGovernanceP = assertContractGovernance(
-              zoe,
               governedInstance,
-              governorInstance,
-              installations.contractGovernor,
-            );
-
-            const [
-              questionDetails,
-              electorateInstallation,
-              voteCounterInstallation,
-              governedInstallation,
-              governorInstallation,
-              validatedQuestion,
-              contractGovernance,
-            ] = await Promise.all([
-              E(E(zoe).getPublicFacet(counterInstance)).getDetails(),
-              E(zoe).getInstallationForInstance(electorateInstance),
-              E(zoe).getInstallationForInstance(counterInstance),
-              E(zoe).getInstallationForInstance(governedInstance),
-              E(zoe).getInstallationForInstance(governorInstance),
-              validateQuestionFromCounterP,
-              contractGovernanceP,
-            ]);
-
-            assertBallotConcernsParam(
-              harden({
-                paramPath: { key: 'governedParams' },
-                parameterName: MALLEABLE_NUMBER,
-              }),
-              questionDetails,
-            );
-            assert(installations.binaryVoteCounter === voteCounterInstallation);
-            assert(installations.governedContract === governedInstallation);
-            assert(installations.contractGovernor === governorInstallation);
-            assert(installations.committee === electorateInstallation);
-            await assertContractElectorate(
-              zoe,
-              governorInstance,
               electorateInstance,
-            );
+              governorInstance,
+              installations,
+            ) => {
+              const validateQuestionFromCounterP = validateQuestionFromCounter(
+                zoe,
+                electorateInstance,
+                counterInstance,
+              );
 
-            await validateQuestionDetails(
-              zoe,
-              electorateInstance,
-              questionDetails,
-            );
-            assert(validatedQuestion, 'governor failed to validate electorate');
-            assert(
-              contractGovernance,
-              "governor and governed aren't tightly linked",
-            );
+              const contractGovernanceP = assertContractGovernance(
+                zoe,
+                governedInstance,
+                governorInstance,
+                installations.contractGovernor,
+              );
 
-            log(`Voter ${name} validated all the things`);
+              const [
+                questionDetails,
+                electorateInstallation,
+                voteCounterInstallation,
+                governedInstallation,
+                governorInstallation,
+                validatedQuestion,
+                contractGovernance,
+              ] = await Promise.all([
+                E(E(zoe).getPublicFacet(counterInstance)).getDetails(),
+                E(zoe).getInstallationForInstance(electorateInstance),
+                E(zoe).getInstallationForInstance(counterInstance),
+                E(zoe).getInstallationForInstance(governedInstance),
+                E(zoe).getInstallationForInstance(governorInstance),
+                validateQuestionFromCounterP,
+                contractGovernanceP,
+              ]);
+
+              assertBallotConcernsParam(
+                harden({
+                  paramPath: { key: 'governedParams' },
+                  parameterName: MALLEABLE_NUMBER,
+                }),
+                questionDetails,
+              );
+              assert(
+                installations.binaryVoteCounter === voteCounterInstallation,
+              );
+              assert(installations.governedContract === governedInstallation);
+              assert(installations.contractGovernor === governorInstallation);
+              assert(installations.committee === electorateInstallation);
+              await assertContractElectorate(
+                zoe,
+                governorInstance,
+                electorateInstance,
+              );
+
+              await validateQuestionDetails(
+                zoe,
+                electorateInstance,
+                questionDetails,
+              );
+              assert(
+                validatedQuestion,
+                'governor failed to validate electorate',
+              );
+              assert(
+                contractGovernance,
+                "governor and governed aren't tightly linked",
+              );
+
+              log(`Voter ${name} validated all the things`);
+            },
           },
-        });
+        );
       },
     },
   );

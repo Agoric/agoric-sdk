@@ -98,8 +98,16 @@ export const makeScalarWeakSetStore = (
     }
   };
 
-  return makeExo(`scalar WeakSetStore of ${q(tag)}`, M.interface(`scalar WeakSetStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
-    ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
-  });
+  return makeExo(
+    `scalar WeakSetStore of ${q(tag)}`,
+    M.interface(
+      `scalar WeakSetStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
+    },
+  );
 };
 harden(makeScalarWeakSetStore);

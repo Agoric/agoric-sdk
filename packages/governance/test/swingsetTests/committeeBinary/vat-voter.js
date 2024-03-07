@@ -70,10 +70,14 @@ const build = async (log, zoe) => {
           votingObserver,
         );
 
-        return makeExo(`Voter ${name}`, M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }), {
-          verifyBallot: (question, instances) =>
-            verify(log, question, electoratePublicFacet, instances),
-        });
+        return makeExo(
+          `Voter ${name}`,
+          M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }),
+          {
+            verifyBallot: (question, instances) =>
+              verify(log, question, electoratePublicFacet, instances),
+          },
+        );
       },
       createMultiVoter: async (name, invitation, choices) => {
         const electorateInstance = await E(zoe).getInstance(invitation);
@@ -103,10 +107,14 @@ const build = async (log, zoe) => {
           votingObserver,
         );
 
-        return makeExo(`Voter ${name}`, M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }), {
-          verifyBallot: (question, instances) =>
-            verify(log, question, electoratePublicFacet, instances),
-        });
+        return makeExo(
+          `Voter ${name}`,
+          M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }),
+          {
+            verifyBallot: (question, instances) =>
+              verify(log, question, electoratePublicFacet, instances),
+          },
+        );
       },
     },
   );

@@ -131,14 +131,22 @@ export const makeScalarWeakMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return makeExo(`scalar WeakMapStore of ${q(tag)}`, M.interface(`scalar WeakMapStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
-    ...makeWeakMapStoreMethods(
-      jsmap,
-      assertKVOkToAdd,
-      assertKVOkToSet,
-      undefined,
-      tag,
+  return makeExo(
+    `scalar WeakMapStore of ${q(tag)}`,
+    M.interface(
+      `scalar WeakMapStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
     ),
-  });
+    {
+      ...makeWeakMapStoreMethods(
+        jsmap,
+        assertKVOkToAdd,
+        assertKVOkToSet,
+        undefined,
+        tag,
+      ),
+    },
+  );
 };
 harden(makeScalarWeakMapStore);

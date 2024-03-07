@@ -297,11 +297,19 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
       /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
       makeDepositFacetDestination: depositFacet => {
-        return makeExo(`DepositFacetDestination`, M.interface(`DepositFacetDestination`, {}, { defaultGuards: 'passable' }), {
-          pushPayment: async (payment, _issuer) => {
-            return E(depositFacet).receive(payment);
+        return makeExo(
+          `DepositFacetDestination`,
+          M.interface(
+            `DepositFacetDestination`,
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            pushPayment: async (payment, _issuer) => {
+              return E(depositFacet).receive(payment);
+            },
           },
-        });
+        );
       },
       /**
        * Create a destination that generates invitations and makes Zoe offers.
@@ -319,32 +327,40 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
         makeInvitationMethod,
         args = [],
       ) => {
-        return makeExo(`${String(makeInvitationMethod)} OfferDestination`, M.interface(`${String(makeInvitationMethod)} OfferDestination`, {}, { defaultGuards: 'passable' }), {
-          pushPayment: async (payment, issuer) => {
-            const paymentAmount = await E(issuer).getAmountOf(payment);
+        return makeExo(
+          `${String(makeInvitationMethod)} OfferDestination`,
+          M.interface(
+            `${String(makeInvitationMethod)} OfferDestination`,
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            pushPayment: async (payment, issuer) => {
+              const paymentAmount = await E(issuer).getAmountOf(payment);
 
-            // Give the payment to the contract via its invitation.
-            const invitation = E(target)[makeInvitationMethod](...args);
-            const result = E(zoe).offer(
-              invitation,
-              {
-                give: {
-                  [keyword]: paymentAmount,
+              // Give the payment to the contract via its invitation.
+              const invitation = E(target)[makeInvitationMethod](...args);
+              const result = E(zoe).offer(
+                invitation,
+                {
+                  give: {
+                    [keyword]: paymentAmount,
+                  },
                 },
-              },
-              {
-                [keyword]: payment,
-              },
-            );
+                {
+                  [keyword]: payment,
+                },
+              );
 
-            // Assert that the offer completed.
-            await E(result).getOfferResult();
+              // Assert that the offer completed.
+              await E(result).getOfferResult();
 
-            // We deliberately drop our payouts on the floor, since the ERTP purse
-            // recovery mechanism can get them back to the distributor contract.
-            return paymentAmount;
+              // We deliberately drop our payouts on the floor, since the ERTP purse
+              // recovery mechanism can get them back to the distributor contract.
+              return paymentAmount;
+            },
           },
-        });
+        );
       },
 
       /** @param {Record<Keyword, ERef<FeeDestination>>} newDestinations */

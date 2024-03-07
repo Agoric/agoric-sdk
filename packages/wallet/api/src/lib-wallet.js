@@ -1662,9 +1662,13 @@ export function makeWalletRoot({
     const makeLookup = (kind, lookup) => {
       rootPathToLookup.init(
         kind,
-        makeExo(`${kind}Lookup`, M.interface(`${kind}Lookup`, {}, { defaultGuards: 'passable' }), {
-          lookup,
-        }),
+        makeExo(
+          `${kind}Lookup`,
+          M.interface(`${kind}Lookup`, {}, { defaultGuards: 'passable' }),
+          {
+            lookup,
+          },
+        ),
       );
     };
 

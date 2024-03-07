@@ -168,14 +168,22 @@ export const makeScalarMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return makeExo(`scalar MapStore of ${q(tag)}`, M.interface(`scalar MapStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
-    ...makeMapStoreMethods(
-      jsmap,
-      assertKVOkToAdd,
-      assertKVOkToSet,
-      undefined,
-      tag,
+  return makeExo(
+    `scalar MapStore of ${q(tag)}`,
+    M.interface(
+      `scalar MapStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
     ),
-  });
+    {
+      ...makeMapStoreMethods(
+        jsmap,
+        assertKVOkToAdd,
+        assertKVOkToSet,
+        undefined,
+        tag,
+      ),
+    },
+  );
 };
 harden(makeScalarMapStore);

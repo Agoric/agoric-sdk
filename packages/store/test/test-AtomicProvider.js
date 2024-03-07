@@ -77,9 +77,13 @@ test('far keys', async t => {
 
   let i = 0;
   const makeBrand = name =>
-    makeExo(`brand ${name}`, M.interface(`brand ${name}`, {}, { defaultGuards: 'passable' }), {
-      getAllegedName: () => `${name} ${(i += 1)}`,
-    });
+    makeExo(
+      `brand ${name}`,
+      M.interface(`brand ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getAllegedName: () => `${name} ${(i += 1)}`,
+      },
+    );
 
   const makeValue = brand => Promise.resolve(brand.getAllegedName());
 

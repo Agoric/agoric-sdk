@@ -109,13 +109,17 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       return proposed;
     };
 
-    const publicMethods = makeExo(`Parameter ${name}`, M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }), {
-      getValue: () => current,
-      assertType: assertion,
-      makeDescription: () => ({ type, value: current }),
-      getVisibleValue,
-      getType: () => type,
-    });
+    const publicMethods = makeExo(
+      `Parameter ${name}`,
+      M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getValue: () => current,
+        assertType: assertion,
+        makeDescription: () => ({ type, value: current }),
+        getVisibleValue,
+        getType: () => type,
+      },
+    );
 
     // names are keywords so they will necessarily be TitleCase
     // eslint-disable-next-line no-use-before-define
@@ -281,14 +285,18 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     const getVisibleValue = async allegedInvitation =>
       E(E(zoe).getInvitationIssuer()).getAmountOf(allegedInvitation);
 
-    const publicMethods = makeExo(`Parameter ${name}`, M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }), {
-      getValue: () => currentAmount,
-      getInternalValue: () => currentInvitation,
-      assertType: assertInvitation,
-      makeDescription,
-      getType: () => ParamTypes.INVITATION,
-      getVisibleValue,
-    });
+    const publicMethods = makeExo(
+      `Parameter ${name}`,
+      M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getValue: () => currentAmount,
+        getInternalValue: () => currentInvitation,
+        assertType: assertInvitation,
+        makeDescription,
+        getType: () => ParamTypes.INVITATION,
+        getVisibleValue,
+      },
+    );
 
     // eslint-disable-next-line no-use-before-define
     getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);

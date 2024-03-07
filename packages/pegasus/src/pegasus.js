@@ -82,20 +82,24 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
    */
   const makePeg = (state, desc) => {
     /** @type {Peg} */
-    const peg = makeExo(`${desc.allegedName} peg`, M.interface(`${desc.allegedName} peg`, {}, { defaultGuards: 'passable' }), {
-      getAllegedName() {
-        return desc.allegedName;
+    const peg = makeExo(
+      `${desc.allegedName} peg`,
+      M.interface(`${desc.allegedName} peg`, {}, { defaultGuards: 'passable' }),
+      {
+        getAllegedName() {
+          return desc.allegedName;
+        },
+        getLocalBrand() {
+          return desc.localBrand;
+        },
+        getReceiveDenom() {
+          return desc.receiveDenom;
+        },
+        getSendDenom() {
+          return desc.sendDenom;
+        },
       },
-      getLocalBrand() {
-        return desc.localBrand;
-      },
-      getReceiveDenom() {
-        return desc.receiveDenom;
-      },
-      getSendDenom() {
-        return desc.sendDenom;
-      },
-    });
+    );
 
     pegToDenomState.init(peg, state);
     return peg;

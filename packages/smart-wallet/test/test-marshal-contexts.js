@@ -26,9 +26,13 @@ const makeOnChainWallet = board => {
   return harden({
     suggestIssuer: (name, boardId) => {
       brand = board.getValue(boardId);
-      const purse = makeExo(`${name} purse`, M.interface(`${name} purse`, {}, { defaultGuards: 'passable' }), {
-        getCurrentAmount: () => harden({ brand, value: 100 }),
-      });
+      const purse = makeExo(
+        `${name} purse`,
+        M.interface(`${name} purse`, {}, { defaultGuards: 'passable' }),
+        {
+          getCurrentAmount: () => harden({ brand, value: 100 }),
+        },
+      );
       // only for private brands
       //   context.initBrandId(boardId, brand);
       context.initBoardId(boardId, brand);

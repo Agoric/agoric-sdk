@@ -3,8 +3,16 @@ import { Far, E } from '@endo/far';
 export function buildRootObject() {
   let vatAdmin;
   let root;
-  const sensor0 = makeExo(`sensor-0`, M.interface(`sensor-0`, {}, { defaultGuards: 'passable' }), {});
-  const sensor1 = makeExo(`sensor-1`, M.interface(`sensor-1`, {}, { defaultGuards: 'passable' }), {});
+  const sensor0 = makeExo(
+    `sensor-0`,
+    M.interface(`sensor-0`, {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const sensor1 = makeExo(
+    `sensor-1`,
+    M.interface(`sensor-1`, {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   return makeExo(
     'root',

@@ -10,11 +10,15 @@ export function buildRootObject() {
   const fromTS = timestamp => TimeMath.absValue(timestamp);
   const events = [];
   function makeHandler(name) {
-    return makeExo(`handler-${name}`, M.interface(`handler-${name}`, {}, { defaultGuards: 'passable' }), {
-      wake(time) {
-        events.push(`${name}-${fromTS(time)}`);
+    return makeExo(
+      `handler-${name}`,
+      M.interface(`handler-${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        wake(time) {
+          events.push(`${name}-${fromTS(time)}`);
+        },
       },
-    });
+    );
   }
   const cancelToken = makeExo(
     'cancel',

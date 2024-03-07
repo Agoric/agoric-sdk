@@ -2,7 +2,11 @@ import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   // build the import sensor
-  const imp1 = makeExo(`import-1`, M.interface(`import-1`, {}, { defaultGuards: 'passable' }), {});
+  const imp1 = makeExo(
+    `import-1`,
+    M.interface(`import-1`, {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   let targetvat;
 
