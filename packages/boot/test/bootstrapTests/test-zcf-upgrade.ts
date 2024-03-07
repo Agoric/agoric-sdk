@@ -71,17 +71,11 @@ export const makeZoeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  const buildProposal = makeProposalExtractor({
-    childProcess: processAmbient,
-    fs: fsAmbientPromises,
-  });
-
   return {
     ...swingsetTestKit,
     controller,
     agoricNamesRemotes,
     zoeDriver,
-    buildProposal,
   };
 };
 

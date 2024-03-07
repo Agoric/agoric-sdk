@@ -53,16 +53,10 @@ export const makeTestContext = async t => {
 
   console.timeEnd('DefaultTestContext');
 
-  const buildProposal = makeProposalExtractor({
-    childProcess: processAmbient,
-    fs: fsAmbientPromises,
-  });
-
   return {
     ...swingsetTestKit,
     agoricNamesRemotes,
     walletFactoryDriver,
-    buildProposal,
   };
 };
 
