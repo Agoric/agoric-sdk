@@ -6,13 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	sdkmath "cosmossdk.io/math"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/gogo/protobuf/proto"
 )
 
 func TestInboundAnteHandle(t *testing.T) {
@@ -157,72 +153,4 @@ func TestInboundAnteHandle(t *testing.T) {
 			}
 		})
 	}
-}
-
-func makeTestTx(msgs ...proto.Message) sdk.Tx {
-	wrappedMsgs := make([]*types.Any, len(msgs))
-	for i, m := range msgs {
-		any, err := types.NewAnyWithValue(m)
-		if err != nil {
-			panic(err)
-		}
-		wrappedMsgs[i] = any
-	}
-	return &tx.Tx{
-		Body: &tx.TxBody{
-			Messages: wrappedMsgs,
-		},
-	}
-}
-
-func nilAnteHandler(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
-	return ctx, nil
-}
-
-type mockSwingsetKeeper struct {
-	inboundQueueLength    int32
-	inboundQueueLengthErr error
-	inboundLimit          int32
-	mempoolLimit          int32
-	emptyQueueAllowed     bool
-	isHighPriorityOwner   bool
-}
-
-var _ SwingsetKeeper = mockSwingsetKeeper{}
-var _ swingtypes.SwingSetKeeper = mockSwingsetKeeper{}
-
-func (msk mockSwingsetKeeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
-	return msk.inboundQueueLength, msk.inboundQueueLengthErr
-}
-
-func (msk mockSwingsetKeeper) GetState(ctx sdk.Context) swingtypes.State {
-	if msk.emptyQueueAllowed {
-		return swingtypes.State{}
-	}
-	return swingtypes.State{
-		QueueAllowed: []swingtypes.QueueSize{
-			swingtypes.NewQueueSize(swingtypes.QueueInbound, msk.inboundLimit),
-			swingtypes.NewQueueSize(swingtypes.QueueInboundMempool, msk.mempoolLimit),
-		},
-	}
-}
-
-func (msk mockSwingsetKeeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
-	return msk.isHighPriorityOwner, nil
-}
-
-func (msk mockSwingsetKeeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint {
-	return nil
-}
-
-func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (msk mockSwingsetKeeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) swingtypes.SmartWalletState {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
-	return fmt.Errorf("not implemented")
 }
