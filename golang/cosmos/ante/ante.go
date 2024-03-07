@@ -45,9 +45,6 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(),
 		ante.NewExtensionOptionsDecorator(nil), // reject all extensions
-		// former ante.NewMempoolFeeDecorator()
-		// replaced as in https://github.com/provenance-io/provenance/pull/1016
-		// ante.NewDeductFeeDecorator(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, nil),
 		NewMempoolFeeDecorator(),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
