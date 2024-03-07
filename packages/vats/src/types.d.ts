@@ -95,7 +95,7 @@ export type ScopedBridgeManager = {
   /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
   /** Upcall from Golang into the VM */
-  fromBridge: (obj: any) => Promise<unknown>;
+  fromBridge: (obj: any) => Promise<void>;
   initHandler: (handler: ERef<BridgeHandler>) => void;
   setHandler: (handler: ERef<BridgeHandler>) => void;
 };
