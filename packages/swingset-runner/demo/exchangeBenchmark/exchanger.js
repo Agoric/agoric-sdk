@@ -105,15 +105,23 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await postReport(quiet);
   }
 
-  return Far('exchanger', {
-    initiateTrade,
-    respondToTrade,
-  });
+  return makeExo(
+    'exchanger',
+    M.interface('exchanger', {}, { defaultGuards: 'passable' }),
+    {
+      initiateTrade,
+      respondToTrade,
+    },
+  );
 }
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  return Far('root', {
-    build: (zoe, issuers, payments, publicFacet) =>
-      build(vatParameters.name, zoe, issuers, payments, publicFacet),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      build: (zoe, issuers, payments, publicFacet) =>
+        build(vatParameters.name, zoe, issuers, payments, publicFacet),
+    },
+  );
 }

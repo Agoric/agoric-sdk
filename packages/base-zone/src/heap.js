@@ -17,15 +17,19 @@ import { isPassable } from './is-passable.js';
 /**
  * @type {import('./types.js').Stores}
  */
-const detachedHeapStores = Far('heapStores', {
-  detached: () => detachedHeapStores,
-  isStorable: isPassable,
+const detachedHeapStores = makeExo(
+  'heapStores',
+  M.interface('heapStores', {}, { defaultGuards: 'passable' }),
+  {
+    detached: () => detachedHeapStores,
+    isStorable: isPassable,
 
-  setStore: makeScalarSetStore,
-  mapStore: makeScalarMapStore,
-  weakMapStore: makeScalarWeakMapStore,
-  weakSetStore: makeScalarWeakSetStore,
-});
+    setStore: makeScalarSetStore,
+    mapStore: makeScalarMapStore,
+    weakMapStore: makeScalarWeakMapStore,
+    weakSetStore: makeScalarWeakSetStore,
+  },
+);
 
 /**
  * Create a heap (in-memory) zone that uses the default exo and store implementations.
@@ -43,20 +47,24 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
   const makeSubZone = (label, _options) =>
     makeHeapZone(`${baseLabel}.${label}`);
 
-  return Far('heapZone', {
-    exo: wrapProvider(makeExo, keys.exo),
-    exoClass: wrapProvider(defineExoClass, keys.exoClass),
-    exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
-    subZone: wrapProvider(makeSubZone),
+  return makeExo(
+    'heapZone',
+    M.interface('heapZone', {}, { defaultGuards: 'passable' }),
+    {
+      exo: wrapProvider(makeExo, keys.exo),
+      exoClass: wrapProvider(defineExoClass, keys.exoClass),
+      exoClassKit: wrapProvider(defineExoClassKit, keys.exoClassKit),
+      subZone: wrapProvider(makeSubZone),
 
-    makeOnce,
-    detached: detachedHeapStores.detached,
-    isStorable: detachedHeapStores.isStorable,
+      makeOnce,
+      detached: detachedHeapStores.detached,
+      isStorable: detachedHeapStores.isStorable,
 
-    mapStore: wrapProvider(detachedHeapStores.mapStore),
-    setStore: wrapProvider(detachedHeapStores.setStore),
-    weakMapStore: wrapProvider(detachedHeapStores.weakMapStore),
-    weakSetStore: wrapProvider(detachedHeapStores.weakSetStore),
-  });
+      mapStore: wrapProvider(detachedHeapStores.mapStore),
+      setStore: wrapProvider(detachedHeapStores.setStore),
+      weakMapStore: wrapProvider(detachedHeapStores.weakMapStore),
+      weakSetStore: wrapProvider(detachedHeapStores.weakSetStore),
+    },
+  );
 };
 harden(makeHeapZone);

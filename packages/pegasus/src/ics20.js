@@ -143,9 +143,13 @@ export const makeICS20TransferPacketAck = async (success, error) => {
 };
 
 /** @type {TransferProtocol} */
-export const ICS20TransferProtocol = Far('ics20-1 transfer protocol', {
-  makeTransferPacket: makeICS20TransferPacket,
-  assertTransferPacketAck: assertICS20TransferPacketAck,
-  parseTransferPacket: parseICS20TransferPacket,
-  makeTransferPacketAck: makeICS20TransferPacketAck,
-});
+export const ICS20TransferProtocol = makeExo(
+  'ics20-1 transfer protocol',
+  M.interface('ics20-1 transfer protocol', {}, { defaultGuards: 'passable' }),
+  {
+    makeTransferPacket: makeICS20TransferPacket,
+    assertTransferPacketAck: assertICS20TransferPacketAck,
+    parseTransferPacket: parseICS20TransferPacket,
+    makeTransferPacketAck: makeICS20TransferPacketAck,
+  },
+);

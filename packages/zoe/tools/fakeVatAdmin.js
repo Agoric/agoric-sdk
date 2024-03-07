@@ -53,76 +53,84 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts
   // to their tests.
-  const admin = Far('vatAdmin', {
-    getBundleCap: bundleID => {
-      if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, bogusBundleCap());
-      }
-      return Promise.resolve(idToBundleCap.get(bundleID));
-    },
-    waitForBundleCap: bundleID => {
-      if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, bogusBundleCap());
-      }
-      return Promise.resolve(idToBundleCap.get(bundleID));
-    },
-    getNamedBundleCap: name => {
-      if (name === 'zcf') {
-        return Promise.resolve(zcfBundleCap);
-      }
-      const id = nameToBundleID.get(name);
-      return Promise.resolve(idToBundleCap.get(id));
-    },
-    getBundleIDByName: name => {
-      return Promise.resolve().then(() => nameToBundleID.get(name));
-    },
-    createVat: (bundleCap, { vatParameters = {} } = {}) => {
-      bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
-      const exitKit = makePromiseKit();
-      handlePKitWarning(exitKit);
-      const exitVat = completion => {
-        exitMessage = completion;
-        hasExited = true;
-        exitWithFailure = false;
-        exitKit.resolve(completion);
-      };
-      const vpow = harden({
-        ...fakeVatPowers,
-        exitVat,
-      });
-      const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
-        durable: true,
-      });
+  const admin = makeExo(
+    'vatAdmin',
+    M.interface('vatAdmin', {}, { defaultGuards: 'passable' }),
+    {
+      getBundleCap: bundleID => {
+        if (!idToBundleCap.has(bundleID)) {
+          idToBundleCap.init(bundleID, bogusBundleCap());
+        }
+        return Promise.resolve(idToBundleCap.get(bundleID));
+      },
+      waitForBundleCap: bundleID => {
+        if (!idToBundleCap.has(bundleID)) {
+          idToBundleCap.init(bundleID, bogusBundleCap());
+        }
+        return Promise.resolve(idToBundleCap.get(bundleID));
+      },
+      getNamedBundleCap: name => {
+        if (name === 'zcf') {
+          return Promise.resolve(zcfBundleCap);
+        }
+        const id = nameToBundleID.get(name);
+        return Promise.resolve(idToBundleCap.get(id));
+      },
+      getBundleIDByName: name => {
+        return Promise.resolve().then(() => nameToBundleID.get(name));
+      },
+      createVat: (bundleCap, { vatParameters = {} } = {}) => {
+        bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
+        const exitKit = makePromiseKit();
+        handlePKitWarning(exitKit);
+        const exitVat = completion => {
+          exitMessage = completion;
+          hasExited = true;
+          exitWithFailure = false;
+          exitKit.resolve(completion);
+        };
+        const vpow = harden({
+          ...fakeVatPowers,
+          exitVat,
+        });
+        const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
+          durable: true,
+        });
 
-      // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
-      // doing this, but backed out when it got complex.
-      //
-      // const ns = await evalContractBundle(zcfBundle);
-      // const ns2 = makeRemote(
-      //   Far('wrappedRoot', {
-      //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
-      //   }),
-      // );
-      return Promise.resolve(
-        harden({
-          root: makeRemote(
-            E(evalContractBundle(zcfBundle)).buildRootObject(
-              vpow,
-              vatParameters,
-              vatBaggage,
+        // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
+        // doing this, but backed out when it got complex.
+        //
+        // const ns = await evalContractBundle(zcfBundle);
+        // const ns2 = makeRemote(
+        //   makeExo('wrappedRoot', M.interface('wrappedRoot', {}, { defaultGuards: 'passable' }), {
+        //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
+        //   }),
+        // );
+        return Promise.resolve(
+          harden({
+            root: makeRemote(
+              E(evalContractBundle(zcfBundle)).buildRootObject(
+                vpow,
+                vatParameters,
+                vatBaggage,
+              ),
             ),
-          ),
-          adminNode: Far('adminNode', {
-            done: () => {
-              return exitKit.promise;
-            },
-            terminateWithFailure: () => {},
-            upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
+            adminNode: makeExo(
+              'adminNode',
+              M.interface('adminNode', {}, { defaultGuards: 'passable' }),
+              {
+                done: () => {
+                  return exitKit.promise;
+                },
+                terminateWithFailure: () => {},
+                upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
+              },
+            ),
           }),
-        }),
-      );
+        );
+      },
     },
-  });
+  );
   const criticalVatKey = harden({});
   const vatPowers = harden({
     D: bcap => {

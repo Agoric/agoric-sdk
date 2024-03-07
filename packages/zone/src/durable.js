@@ -52,15 +52,19 @@ const attachDurableStores = getBaggage => {
     provideDurableWeakMapStore(getBaggage(), label, options);
 
   /** @type {import('.').Stores} */
-  return Far('durableStores', {
-    // eslint-disable-next-line no-use-before-define
-    detached: () => detachedDurableStores,
-    isStorable,
-    mapStore,
-    setStore,
-    weakMapStore,
-    weakSetStore,
-  });
+  return makeExo(
+    'durableStores',
+    M.interface('durableStores', {}, { defaultGuards: 'passable' }),
+    {
+      // eslint-disable-next-line no-use-before-define
+      detached: () => detachedDurableStores,
+      isStorable,
+      mapStore,
+      setStore,
+      weakMapStore,
+      weakSetStore,
+    },
+  );
 };
 
 /** @type {import('.').Stores} */
@@ -101,20 +105,24 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
 
-  return Far('durableZone', {
-    exo: wrapProvider(exo, keys.exo),
-    exoClass: wrapProvider(exoClass, keys.exoClass),
-    exoClassKit: wrapProvider(exoClassKit, keys.exoClassKit),
-    subZone,
+  return makeExo(
+    'durableZone',
+    M.interface('durableZone', {}, { defaultGuards: 'passable' }),
+    {
+      exo: wrapProvider(exo, keys.exo),
+      exoClass: wrapProvider(exoClass, keys.exoClass),
+      exoClassKit: wrapProvider(exoClassKit, keys.exoClassKit),
+      subZone,
 
-    makeOnce,
-    detached: attachedStores.detached,
-    isStorable: attachedStores.isStorable,
+      makeOnce,
+      detached: attachedStores.detached,
+      isStorable: attachedStores.isStorable,
 
-    mapStore: wrapProvider(attachedStores.mapStore, keys.store),
-    setStore: wrapProvider(attachedStores.setStore, keys.store),
-    weakMapStore: wrapProvider(attachedStores.weakMapStore, keys.store),
-    weakSetStore: wrapProvider(attachedStores.weakSetStore, keys.store),
-  });
+      mapStore: wrapProvider(attachedStores.mapStore, keys.store),
+      setStore: wrapProvider(attachedStores.setStore, keys.store),
+      weakMapStore: wrapProvider(attachedStores.weakMapStore, keys.store),
+      weakSetStore: wrapProvider(attachedStores.weakSetStore, keys.store),
+    },
+  );
 };
 harden(makeDurableZone);

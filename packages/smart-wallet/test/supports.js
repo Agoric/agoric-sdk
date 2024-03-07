@@ -59,32 +59,40 @@ export const subscriptionKey = subscription => {
 
 /** @returns {import('@agoric/vats').BridgeManager} */
 const makeFakeBridgeManager = () =>
-  Far('fakeBridgeManager', {
-    register(bridgeId, handler) {
-      return Far('scopedBridgeManager', {
-        fromBridge(_obj) {
-          assert.fail(`expected fromBridge`);
-        },
-        toBridge(obj) {
-          if (!handler) {
-            Fail`No handler for ${bridgeId}`;
-          }
-          // Rely on interface guard for validation.
-          // This should also be validated upstream but don't rely on it.
-          // @ts-expect-error handler possibly undefined
-          return E(handler).fromBridge(obj);
-        },
-        initHandler(newHandler) {
-          !handler || Fail`Handler already set`;
-          handler = newHandler;
-        },
-        setHandler(newHandler) {
-          !!handler || Fail`Handler not set`;
-          handler = newHandler;
-        },
-      });
+  makeExo(
+    'fakeBridgeManager',
+    M.interface('fakeBridgeManager', {}, { defaultGuards: 'passable' }),
+    {
+      register(bridgeId, handler) {
+        return makeExo(
+          'scopedBridgeManager',
+          M.interface('scopedBridgeManager', {}, { defaultGuards: 'passable' }),
+          {
+            fromBridge(_obj) {
+              assert.fail(`expected fromBridge`);
+            },
+            toBridge(obj) {
+              if (!handler) {
+                Fail`No handler for ${bridgeId}`;
+              }
+              // Rely on interface guard for validation.
+              // This should also be validated upstream but don't rely on it.
+              // @ts-expect-error handler possibly undefined
+              return E(handler).fromBridge(obj);
+            },
+            initHandler(newHandler) {
+              !handler || Fail`Handler already set`;
+              handler = newHandler;
+            },
+            setHandler(newHandler) {
+              !!handler || Fail`Handler not set`;
+              handler = newHandler;
+            },
+          },
+        );
+      },
     },
-  });
+  );
 /**
  * @param {*} log
  * @returns {Promise<ChainBootstrapSpace>}>}

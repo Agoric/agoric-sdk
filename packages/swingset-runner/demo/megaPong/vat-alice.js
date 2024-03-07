@@ -26,44 +26,52 @@ export function buildRootObject() {
     let otherNickname = 'unknown';
     let total = 0;
 
-    return Far('contact', {
-      ping(tag, count) {
-        total += 1;
-        if (count > 0) {
-          if (ppp(count)) {
-            log(
-              `=> ${myNickname} contact for ${otherNickname} receives ping: ${count} ${tag}`,
-            );
+    return makeExo(
+      'contact',
+      M.interface('contact', {}, { defaultGuards: 'passable' }),
+      {
+        ping(tag, count) {
+          total += 1;
+          if (count > 0) {
+            if (ppp(count)) {
+              log(
+                `=> ${myNickname} contact for ${otherNickname} receives ping: ${count} ${tag}`,
+              );
+            }
+            E(otherContact).ping(tag, count - 1);
+          } else if (count < 0) {
+            if (ppp(total)) {
+              log(
+                `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${tag}`,
+              );
+            }
+            E(otherContact).ping(tag, count);
           }
-          E(otherContact).ping(tag, count - 1);
-        } else if (count < 0) {
-          if (ppp(total)) {
-            log(
-              `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${tag}`,
-            );
-          }
-          E(otherContact).ping(tag, count);
-        }
+        },
+        myNameIs(nickname) {
+          otherNickname = nickname;
+          log(`=> ${myNickname} contact is now named ${otherNickname}`);
+        },
       },
-      myNameIs(nickname) {
-        otherNickname = nickname;
-        log(`=> ${myNickname} contact is now named ${otherNickname}`);
-      },
-    });
+    );
   }
 
-  return Far('root', {
-    setNickname(nickname) {
-      myNickname = nickname;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setNickname(nickname) {
+        myNickname = nickname;
+      },
+      introduceYourselfTo(other) {
+        log(`=> ${myNickname}.introduce`);
+        const myContact = makeContact();
+        otherContact = E(other).hello(myContact, myNickname);
+        return `${myNickname} setup done\n${myNickname} vat is happy\n`;
+      },
+      grind(tag, count) {
+        E(otherContact).ping(tag, count);
+      },
     },
-    introduceYourselfTo(other) {
-      log(`=> ${myNickname}.introduce`);
-      const myContact = makeContact();
-      otherContact = E(other).hello(myContact, myNickname);
-      return `${myNickname} setup done\n${myNickname} vat is happy\n`;
-    },
-    grind(tag, count) {
-      E(otherContact).ping(tag, count);
-    },
-  });
+  );
 }

@@ -57,19 +57,27 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
   });
 
   /** @type {Unserializer} */
-  const unserializer = Far('unserializer', {
-    fromCapData: data => E(marshaller).fromCapData(data),
-    unserialize: data => E(marshaller).fromCapData(data),
-  });
+  const unserializer = makeExo(
+    'unserializer',
+    M.interface('unserializer', {}, { defaultGuards: 'passable' }),
+    {
+      fromCapData: data => E(marshaller).fromCapData(data),
+      unserialize: data => E(marshaller).fromCapData(data),
+    },
+  );
 
   /** @type {StoredSubscriber<T>} */
-  const storesub = Far('StoredSubscriber', {
-    subscribeAfter: publishCount => subscriber.subscribeAfter(publishCount),
-    getUpdateSince: updateCount => subscriber.getUpdateSince(updateCount),
-    getPath: () => E(storageNode).getPath(),
-    getStoreKey: () => E(storageNode).getStoreKey(),
-    getUnserializer: () => unserializer,
-  });
+  const storesub = makeExo(
+    'StoredSubscriber',
+    M.interface('StoredSubscriber', {}, { defaultGuards: 'passable' }),
+    {
+      subscribeAfter: publishCount => subscriber.subscribeAfter(publishCount),
+      getUpdateSince: updateCount => subscriber.getUpdateSince(updateCount),
+      getPath: () => E(storageNode).getPath(),
+      getStoreKey: () => E(storageNode).getStoreKey(),
+      getUnserializer: () => unserializer,
+    },
+  );
   return storesub;
 };
 
@@ -98,10 +106,14 @@ export const makeStoredSubscription = (
   }),
 ) => {
   /** @type {Unserializer} */
-  const unserializer = Far('unserializer', {
-    fromCapData: data => E(marshaller).fromCapData(data),
-    unserialize: data => E(marshaller).fromCapData(data),
-  });
+  const unserializer = makeExo(
+    'unserializer',
+    M.interface('unserializer', {}, { defaultGuards: 'passable' }),
+    {
+      fromCapData: data => E(marshaller).fromCapData(data),
+      unserialize: data => E(marshaller).fromCapData(data),
+    },
+  );
 
   // Abort the iteration on the next observation if the publisher ever fails.
   let publishFailed = false;
@@ -140,21 +152,25 @@ export const makeStoredSubscription = (
   }
 
   /** @type {StoredSubscription<T>} */
-  const storesub = Far('StoredSubscription', {
-    // @ts-expect-error getStoreKey type does not have `subscription`
-    getStoreKey: async () => {
-      if (!storageNode) {
-        return harden({ subscription });
-      }
-      const storeKey = await E(storageNode).getStoreKey();
-      return harden({ ...storeKey, subscription });
+  const storesub = makeExo(
+    'StoredSubscription',
+    M.interface('StoredSubscription', {}, { defaultGuards: 'passable' }),
+    {
+      // @ts-expect-error getStoreKey type does not have `subscription`
+      getStoreKey: async () => {
+        if (!storageNode) {
+          return harden({ subscription });
+        }
+        const storeKey = await E(storageNode).getStoreKey();
+        return harden({ ...storeKey, subscription });
+      },
+      getUnserializer: () => unserializer,
+      getSharableSubscriptionInternals: () =>
+        subscription.getSharableSubscriptionInternals(),
+      [Symbol.asyncIterator]: () => subscription[Symbol.asyncIterator](),
+      subscribeAfter: publishCount => subscription.subscribeAfter(publishCount),
     },
-    getUnserializer: () => unserializer,
-    getSharableSubscriptionInternals: () =>
-      subscription.getSharableSubscriptionInternals(),
-    [Symbol.asyncIterator]: () => subscription[Symbol.asyncIterator](),
-    subscribeAfter: publishCount => subscription.subscribeAfter(publishCount),
-  });
+  );
   return storesub;
 };
 harden(makeStoredSubscription);

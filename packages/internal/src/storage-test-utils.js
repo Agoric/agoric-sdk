@@ -58,7 +58,10 @@ export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
  */
 const makeSlotStringUnserialize = () => {
   /** @type { (slot: string, iface: string) => any } */
-  const identitySlotToValFn = (slot, _) => Far('unk', { toJSON: () => slot });
+  const identitySlotToValFn = (slot, _) =>
+    makeExo('unk', M.interface('unk', {}, { defaultGuards: 'passable' }), {
+      toJSON: () => slot,
+    });
   const { fromCapData } = makeMarshal(undefined, identitySlotToValFn);
   /** @type { (capData: any) => any } */
   const unserialize = capData =>
@@ -205,27 +208,31 @@ harden(makeFakeStorageKit);
 
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
-  return Far('mockChainStorage', {
-    ...bindAllMethods(rootNode),
-    /**
-     * Defaults to deserializing slot references into plain Remotable
-     * objects having the specified interface name (as from `Far(iface)`),
-     * but can accept a different marshaller for producing Remotables
-     * that e.g. embed the slot string in their iface name.
-     *
-     * @param {string} path
-     * @param {import('./lib-chainStorage.js').Marshaller} marshaller
-     * @param {number} [index]
-     * @returns {unknown}
-     */
-    getBody: (path, marshaller = defaultMarshaller, index = -1) => {
-      data.size || Fail`no data in storage`;
-      /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
-      return unmarshalFromVstorage(data, path, fromCapData, index);
+  return makeExo(
+    'mockChainStorage',
+    M.interface('mockChainStorage', {}, { defaultGuards: 'passable' }),
+    {
+      ...bindAllMethods(rootNode),
+      /**
+       * Defaults to deserializing slot references into plain Remotable
+       * objects having the specified interface name (as from `Far(iface)`),
+       * but can accept a different marshaller for producing Remotables
+       * that e.g. embed the slot string in their iface name.
+       *
+       * @param {string} path
+       * @param {import('./lib-chainStorage.js').Marshaller} marshaller
+       * @param {number} [index]
+       * @returns {unknown}
+       */
+      getBody: (path, marshaller = defaultMarshaller, index = -1) => {
+        data.size || Fail`no data in storage`;
+        /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
+        const fromCapData = (...args) =>
+          Reflect.apply(marshaller.fromCapData, marshaller, args);
+        return unmarshalFromVstorage(data, path, fromCapData, index);
+      },
+      keys: () => [...data.keys()],
     },
-    keys: () => [...data.keys()],
-  });
+  );
 };
 /** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */

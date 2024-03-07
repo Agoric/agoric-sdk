@@ -398,9 +398,21 @@ const runSetMathHelpersTests = (t, [a, b, c], a2) => {
 };
 
 test('setMathHelpers with handles', t => {
-  const a = Far('iface a', {});
-  const b = Far('iface b', {});
-  const c = Far('iface c', {});
+  const a = makeExo(
+    'iface a',
+    M.interface('iface a', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const b = makeExo(
+    'iface b',
+    M.interface('iface b', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const c = makeExo(
+    'iface c',
+    M.interface('iface c', {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   runSetMathHelpersTests(t, [a, b, c]);
 });
@@ -417,18 +429,38 @@ test('setMathHelpers with basic objects', t => {
 
 test('setMathHelpers with complex objects', t => {
   const a = {
-    handle: Far('handle', {}),
-    instanceHandle: Far('ihandle', {}),
+    handle: makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+    instanceHandle: makeExo(
+      'ihandle',
+      M.interface('ihandle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
     name: 'a',
   };
   const b = {
-    handle: Far('handle', {}),
+    handle: makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
     instanceHandle: a.instanceHandle,
     name: 'b',
   };
   const c = {
-    handle: Far('handle', {}),
-    instanceHandle: Far('ihandle', {}),
+    handle: makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+    instanceHandle: makeExo(
+      'ihandle',
+      M.interface('ihandle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
     name: 'c',
   };
 

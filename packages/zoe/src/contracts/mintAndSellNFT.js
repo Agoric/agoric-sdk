@@ -111,10 +111,14 @@ const start = zcf => {
   };
 
   /** @type {MintAndSellNFTCreatorFacet} */
-  const creatorFacet = Far('creatorFacet', {
-    sellTokens,
-    getIssuer: () => issuer,
-  });
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      sellTokens,
+      getIssuer: () => issuer,
+    },
+  );
 
   return harden({ creatorFacet });
 };

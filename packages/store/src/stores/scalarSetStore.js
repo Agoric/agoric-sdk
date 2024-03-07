@@ -109,7 +109,7 @@ export const makeScalarSetStore = (
     }
   };
 
-  return Far(`scalar SetStore of ${q(tag)}`, {
+  return makeExo(`scalar SetStore of ${q(tag)}`, M.interface(`scalar SetStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
     ...makeSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
   });
 };

@@ -148,13 +148,17 @@ test('export status across new-facet upgrade', async t => {
     const bOneTwo = { one, two };
     const make = defineDurableKindMulti(kh, init, bOneTwo);
 
-    return Far('root', {
-      exportOne: () => {
-        const obj1 = make();
-        one1 = obj1.one;
-        return one1;
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        exportOne: () => {
+          const obj1 = make();
+          one1 = obj1.one;
+          return one1;
+        },
       },
-    });
+    );
   }
 
   const makeNS1 = () => ({ buildRootObject: build1 });
@@ -196,7 +200,11 @@ test('export status across new-facet upgrade', async t => {
     const bOneTwoThreeFour = { one, two, three, four };
     defineDurableKindMulti(kh, init, bOneTwoThreeFour);
 
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS2 = () => ({ buildRootObject: build2 });

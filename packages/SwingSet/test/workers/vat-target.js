@@ -73,11 +73,15 @@ export function buildRootObject(vatPowers, vatParameters) {
     return harden([...contents]);
   }
 
-  const target = Far('root', {
-    zero,
-    one,
-    append,
-  });
+  const target = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      zero,
+      one,
+      append,
+    },
+  );
 
   return target;
 }

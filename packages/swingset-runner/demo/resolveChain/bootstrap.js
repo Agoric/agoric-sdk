@@ -24,13 +24,17 @@ export function buildRootObject(_vatPowers, options) {
     );
   }
 
-  return Far('root', {
-    bootstrap(vats) {
-      count = options.argv[0] ? Number(options.argv[0]) : 3;
-      const bob = vats.bob;
-      const p = E(bob).init();
-      E(bob).gen();
-      waitFor(bob, p);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap(vats) {
+        count = options.argv[0] ? Number(options.argv[0]) : 3;
+        const bob = vats.bob;
+        const p = E(bob).init();
+        E(bob).gen();
+        waitFor(bob, p);
+      },
     },
-  });
+  );
 }

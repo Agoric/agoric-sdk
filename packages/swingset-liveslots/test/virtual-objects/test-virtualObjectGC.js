@@ -215,96 +215,104 @@ function buildRootObject(vatPowers) {
     }
   }
 
-  return Far('root', {
-    makeAndHold(isf) {
-      heldThing = makeNextThing(isf);
-      displaceCache();
-    },
-    makeAndHoldFacets() {
-      heldThing = makeFacetedThing('thing #0');
-      displaceCache();
-    },
-    makeAndHoldDualMarkers() {
-      heldThing = makeDualMarkerThing().facetA;
-      displaceCache();
-    },
-    makeAndHoldAndKey(isf) {
-      heldThing = makeNextThing(isf);
-      aWeakMap.set(heldThing, 'arbitrary');
-      aWeakSet.add(heldThing);
-      displaceCache();
-    },
-    makeAndHoldRemotable() {
-      heldThing = Far('thing', {});
-      displaceCache();
-    },
-    dropHeld() {
-      heldThing = null;
-      displaceCache();
-    },
-    storeHeld() {
-      virtualHolderObj.setValue(heldThing);
-      displaceCache();
-    },
-    dropStored() {
-      virtualHolderObj.setValue(null);
-      displaceCache();
-    },
-    fetchAndHold() {
-      heldThing = virtualHolderObj.getValue();
-      displaceCache();
-    },
-    exportHeld() {
-      return heldThing;
-    },
-    exportHeldA() {
-      return heldThing.facetA;
-    },
-    exportHeldB() {
-      return heldThing.facetB;
-    },
-    importAndHold(thing) {
-      heldThing = thing;
-      displaceCache();
-    },
-    importAndHoldAndKey(thing) {
-      heldThing = thing;
-      aWeakMap.set(heldThing, 'arbitrary');
-      aWeakSet.add(heldThing);
-      displaceCache();
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      makeAndHold(isf) {
+        heldThing = makeNextThing(isf);
+        displaceCache();
+      },
+      makeAndHoldFacets() {
+        heldThing = makeFacetedThing('thing #0');
+        displaceCache();
+      },
+      makeAndHoldDualMarkers() {
+        heldThing = makeDualMarkerThing().facetA;
+        displaceCache();
+      },
+      makeAndHoldAndKey(isf) {
+        heldThing = makeNextThing(isf);
+        aWeakMap.set(heldThing, 'arbitrary');
+        aWeakSet.add(heldThing);
+        displaceCache();
+      },
+      makeAndHoldRemotable() {
+        heldThing = makeExo(
+          'thing',
+          M.interface('thing', {}, { defaultGuards: 'passable' }),
+          {},
+        );
+        displaceCache();
+      },
+      dropHeld() {
+        heldThing = null;
+        displaceCache();
+      },
+      storeHeld() {
+        virtualHolderObj.setValue(heldThing);
+        displaceCache();
+      },
+      dropStored() {
+        virtualHolderObj.setValue(null);
+        displaceCache();
+      },
+      fetchAndHold() {
+        heldThing = virtualHolderObj.getValue();
+        displaceCache();
+      },
+      exportHeld() {
+        return heldThing;
+      },
+      exportHeldA() {
+        return heldThing.facetA;
+      },
+      exportHeldB() {
+        return heldThing.facetB;
+      },
+      importAndHold(thing) {
+        heldThing = thing;
+        displaceCache();
+      },
+      importAndHoldAndKey(thing) {
+        heldThing = thing;
+        aWeakMap.set(heldThing, 'arbitrary');
+        aWeakSet.add(heldThing);
+        displaceCache();
+      },
 
-    prepareStore3() {
-      holders.push(makeVirtualHolder(heldThing));
-      holders.push(makeVirtualHolder(heldThing));
-      holders.push(makeVirtualHolder(heldThing));
-      heldThing = null;
-      displaceCache();
+      prepareStore3() {
+        holders.push(makeVirtualHolder(heldThing));
+        holders.push(makeVirtualHolder(heldThing));
+        holders.push(makeVirtualHolder(heldThing));
+        heldThing = null;
+        displaceCache();
+      },
+      finishClearHolders() {
+        for (let i = 0; i < holders.length; i += 1) {
+          holders[i].setValue(null);
+        }
+        displaceCache();
+      },
+      finishDropHolders() {
+        for (let i = 0; i < holders.length; i += 1) {
+          holders[i] = null;
+        }
+        displaceCache();
+      },
+      prepareStoreLinked() {
+        let holder = makeVirtualHolder(heldThing);
+        holder = makeVirtualHolder(holder);
+        holder = makeVirtualHolder(holder);
+        holders.push(holder);
+        heldThing = null;
+        displaceCache();
+      },
+      noOp() {
+        // used when an extra cycle is needed to pump GC
+      },
     },
-    finishClearHolders() {
-      for (let i = 0; i < holders.length; i += 1) {
-        holders[i].setValue(null);
-      }
-      displaceCache();
-    },
-    finishDropHolders() {
-      for (let i = 0; i < holders.length; i += 1) {
-        holders[i] = null;
-      }
-      displaceCache();
-    },
-    prepareStoreLinked() {
-      let holder = makeVirtualHolder(heldThing);
-      holder = makeVirtualHolder(holder);
-      holder = makeVirtualHolder(holder);
-      holders.push(holder);
-      heldThing = null;
-      displaceCache();
-    },
-    noOp() {
-      // used when an extra cycle is needed to pump GC
-    },
-  });
+  );
 }
 
 function thingValue(label) {

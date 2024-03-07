@@ -10,8 +10,12 @@ export const scheduleClose = (closingRule, closeVoting) => {
   const { timer, deadline } = closingRule;
   void E(timer).setWakeup(
     deadline,
-    Far('close voting', {
-      wake: closeVoting,
-    }),
+    makeExo(
+      'close voting',
+      M.interface('close voting', {}, { defaultGuards: 'passable' }),
+      {
+        wake: closeVoting,
+      },
+    ),
   );
 };

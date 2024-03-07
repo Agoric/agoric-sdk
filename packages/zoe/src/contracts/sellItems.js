@@ -138,19 +138,27 @@ const start = zcf => {
   };
 
   /** @type {SellItemsPublicFacet} */
-  const publicFacet = Far('SellItemsPublicFacet', {
-    getAvailableItems,
-    getAvailableItemsNotifier,
-    getItemsIssuer: () => issuers.Items,
-    makeBuyerInvitation,
-  });
+  const publicFacet = makeExo(
+    'SellItemsPublicFacet',
+    M.interface('SellItemsPublicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getAvailableItems,
+      getAvailableItemsNotifier,
+      getItemsIssuer: () => issuers.Items,
+      makeBuyerInvitation,
+    },
+  );
 
   /** @type {SellItemsCreatorFacet} */
-  const creatorFacet = Far('SellItemsCreatorFacet', {
-    makeBuyerInvitation,
-    getAvailableItems: publicFacet.getAvailableItems,
-    getItemsIssuer: publicFacet.getItemsIssuer,
-  });
+  const creatorFacet = makeExo(
+    'SellItemsCreatorFacet',
+    M.interface('SellItemsCreatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      makeBuyerInvitation,
+      getAvailableItems: publicFacet.getAvailableItems,
+      getItemsIssuer: publicFacet.getItemsIssuer,
+    },
+  );
 
   const creatorInvitation = zcf.makeInvitation(sell, 'seller');
 

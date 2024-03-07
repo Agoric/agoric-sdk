@@ -120,7 +120,7 @@ const makeBob = (
   moolaPurse.deposit(moolaPayment);
   simoleanPurse.deposit(simoleanPayment);
   bucksPurse.deposit(bucksPayment);
-  return Far('Bob', {
+  return makeExo('Bob', M.interface('Bob', {}, { defaultGuards: 'passable' }), {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await claim(

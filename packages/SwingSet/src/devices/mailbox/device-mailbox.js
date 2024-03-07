@@ -54,39 +54,43 @@ export function buildRootDeviceNode(tools) {
   };
 
   // the Root Device Node.
-  return Far('root', {
-    registerInboundHandler(handler) {
-      !inboundHandler || Fail`already registered`;
-      inboundHandler = handler;
-      setDeviceState(harden({ inboundHandler }));
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      registerInboundHandler(handler) {
+        !inboundHandler || Fail`already registered`;
+        inboundHandler = handler;
+        setDeviceState(harden({ inboundHandler }));
+      },
 
-    unregisterInboundHander() {
-      inboundHandler = undefined;
-    },
+      unregisterInboundHander() {
+        inboundHandler = undefined;
+      },
 
-    add(peer, msgnum, body) {
-      try {
-        endowments.add(`${peer}`, Nat(msgnum), `${body}`);
-      } catch (e) {
-        Fail`error in add: ${e}`;
-      }
-    },
+      add(peer, msgnum, body) {
+        try {
+          endowments.add(`${peer}`, Nat(msgnum), `${body}`);
+        } catch (e) {
+          Fail`error in add: ${e}`;
+        }
+      },
 
-    remove(peer, msgnum) {
-      try {
-        endowments.remove(`${peer}`, Nat(msgnum));
-      } catch (e) {
-        Fail`error in remove: ${e}`;
-      }
-    },
+      remove(peer, msgnum) {
+        try {
+          endowments.remove(`${peer}`, Nat(msgnum));
+        } catch (e) {
+          Fail`error in remove: ${e}`;
+        }
+      },
 
-    ackInbound(peer, msgnum) {
-      try {
-        endowments.setAcknum(`${peer}`, Nat(msgnum));
-      } catch (e) {
-        Fail`error in ackInbound: ${e}`;
-      }
+      ackInbound(peer, msgnum) {
+        try {
+          endowments.setAcknum(`${peer}`, Nat(msgnum));
+        } catch (e) {
+          Fail`error in ackInbound: ${e}`;
+        }
+      },
     },
-  });
+  );
 }

@@ -13,20 +13,24 @@ export function buildRootObject() {
   let rX;
   let pY;
   let rY;
-  return Far('root', {
-    genPromiseX() {
-      void ([pX, rX] = makePR());
-      return pX;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      genPromiseX() {
+        void ([pX, rX] = makePR());
+        return pX;
+      },
+      genPromiseY() {
+        void ([pY, rY] = makePR());
+        return pY;
+      },
+      resPromiseX(v) {
+        rX(v);
+      },
+      resPromiseY(v) {
+        rY(v);
+      },
     },
-    genPromiseY() {
-      void ([pY, rY] = makePR());
-      return pY;
-    },
-    resPromiseX(v) {
-      rX(v);
-    },
-    resPromiseY(v) {
-      rY(v);
-    },
-  });
+  );
 }

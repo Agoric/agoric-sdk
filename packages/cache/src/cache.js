@@ -32,11 +32,15 @@ export const makeCache = (coordinator = makeScalarStoreCoordinator()) => {
       return E(coordinator).setCacheValue(key, update, guardPattern);
     }
 
-    const updater = Far('cache updater', {
-      update: oldValue => {
-        return update(oldValue);
+    const updater = makeExo(
+      'cache updater',
+      M.interface('cache updater', {}, { defaultGuards: 'passable' }),
+      {
+        update: oldValue => {
+          return update(oldValue);
+        },
       },
-    });
+    );
     return E(coordinator).updateCacheValue(key, updater, guardPattern);
   };
 

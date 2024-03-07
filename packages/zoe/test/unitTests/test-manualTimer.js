@@ -34,18 +34,22 @@ test('manualTimer makeNotifier', async t => {
 const makeHandler = () => {
   let calls = 0n;
   const args = [];
-  return Far('wake handler', {
-    getCalls() {
-      return calls;
+  return makeExo(
+    'wake handler',
+    M.interface('wake handler', {}, { defaultGuards: 'passable' }),
+    {
+      getCalls() {
+        return calls;
+      },
+      getArgs() {
+        return args;
+      },
+      wake(arg) {
+        args.push(arg);
+        calls += 1n;
+      },
     },
-    getArgs() {
-      return args;
-    },
-    wake(arg) {
-      args.push(arg);
-      calls += 1n;
-    },
-  });
+  );
 };
 
 test('manualTimer makeRepeater', async t => {
@@ -75,12 +79,16 @@ test('tick does not flush by default', async t => {
   const toTS = ts => coerceTimestampRecord(ts, manualTimer.getTimerBrand());
   let woken = toTS(666666n);
   let later = false;
-  const handler = Far('handler', {
-    wake: scheduled => {
-      woken = scheduled;
-      stallLots().then(() => (later = true));
+  const handler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    {
+      wake: scheduled => {
+        woken = scheduled;
+        stallLots().then(() => (later = true));
+      },
     },
-  });
+  );
   manualTimer.setWakeup(toTS(1n), handler);
   t.deepEqual(woken, toTS(666666n));
   t.is(later, false);
@@ -102,12 +110,16 @@ test('tick can flush promise queue', async t => {
   const toTS = ts => coerceTimestampRecord(ts, manualTimer.getTimerBrand());
   let woken = toTS(666666n);
   let later = false;
-  const handler = Far('handler', {
-    wake: scheduled => {
-      woken = scheduled;
-      stallLots().then(() => (later = true));
+  const handler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    {
+      wake: scheduled => {
+        woken = scheduled;
+        stallLots().then(() => (later = true));
+      },
     },
-  });
+  );
   manualTimer.setWakeup(toTS(1n), handler);
   t.deepEqual(woken, toTS(666666n));
   t.is(later, false);
@@ -131,12 +143,16 @@ test('tick does not await makeRepeater by default', async t => {
   const toTS = ts => coerceTimestampRecord(ts, manualTimer.getTimerBrand());
   let woken = toTS(666666n);
   let later = false;
-  const handler = Far('handler', {
-    wake: scheduled => {
-      woken = scheduled;
-      stallLots().then(() => (later = true));
+  const handler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    {
+      wake: scheduled => {
+        woken = scheduled;
+        stallLots().then(() => (later = true));
+      },
     },
-  });
+  );
 
   const r = manualTimer.makeRepeater(toRT(1n), toRT(1n));
   r.schedule(handler);
@@ -160,12 +176,16 @@ test('tick can flush makeRepeater', async t => {
   const toTS = ts => coerceTimestampRecord(ts, manualTimer.getTimerBrand());
   let woken = toTS(666666n);
   let later = false;
-  const handler = Far('handler', {
-    wake: scheduled => {
-      woken = scheduled;
-      stallLots().then(() => (later = true));
+  const handler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    {
+      wake: scheduled => {
+        woken = scheduled;
+        stallLots().then(() => (later = true));
+      },
     },
-  });
+  );
 
   const r = manualTimer.makeRepeater(toRT(1n), toRT(1n));
   r.schedule(handler);

@@ -27,12 +27,20 @@ test('serialize exports', t => {
   };
   const { m } = makeMarshaller(syscall, gcTools);
   const ser = m.serialize;
-  const o1 = Far('o1', {});
-  const o2 = Far('o2', {
-    meth1() {
-      return 4;
+  const o1 = makeExo(
+    'o1',
+    M.interface('o1', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const o2 = makeExo(
+    'o2',
+    M.interface('o2', {}, { defaultGuards: 'passable' }),
+    {
+      meth1() {
+        return 4;
+      },
     },
-  });
+  );
   t.deepEqual(ser(o1), {
     body: '#"$0.Alleged: o1"',
     slots: ['o+1'],
@@ -78,7 +86,11 @@ test('deserialize exports', t => {
     vatstoreGet: () => undefined,
   };
   const { m, unmeteredUnserialize } = makeUnmeteredMarshaller(syscall);
-  const o1 = Far('o1', {});
+  const o1 = makeExo(
+    'o1',
+    M.interface('o1', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   m.serialize(o1); // allocates slot=1
   const a = unmeteredUnserialize({
     body: '#"$0"',

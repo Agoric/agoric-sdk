@@ -18,19 +18,23 @@ export const makeFakeStorage = (path, publication) => {
     dataPrefixBytes: '',
   });
   /** @type {StorageNode & { countSetValueCalls: () => number}} */
-  const storage = Far('StorageNode', {
-    getPath: () => path,
-    getStoreKey: async () => storeKey,
-    setValue: async value => {
-      setValueCalls += 1;
-      assert.typeof(value, 'string');
-      if (publication) {
-        publication.updateState(value);
-      }
+  const storage = makeExo(
+    'StorageNode',
+    M.interface('StorageNode', {}, { defaultGuards: 'passable' }),
+    {
+      getPath: () => path,
+      getStoreKey: async () => storeKey,
+      setValue: async value => {
+        setValueCalls += 1;
+        assert.typeof(value, 'string');
+        if (publication) {
+          publication.updateState(value);
+        }
+      },
+      makeChildNode: () => storage,
+      countSetValueCalls: () => setValueCalls,
     },
-    makeChildNode: () => storage,
-    countSetValueCalls: () => setValueCalls,
-  });
+  );
   return storage;
 };
 harden(makeFakeStorage);

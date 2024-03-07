@@ -91,10 +91,22 @@ test('store', t => {
   // makeScalarMapStore
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
-  check(t, 'strong', () => Far('handle', {}));
+  check(t, 'strong', () =>
+    makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+  );
 
   // makeScalarWeakMapStore
-  check(t, 'weak', () => Far('handle', {}));
+  check(t, 'weak', () =>
+    makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+  );
 });
 
 test('reject promise keys', t => {

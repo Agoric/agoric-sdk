@@ -9,12 +9,16 @@ import { parseVatSlot } from '../src/parseVatSlots.js';
 function buildRootObject(vatPowers, vatParameters, baggage) {
   baggage.has('outside');
   baggage.init('outside', 'outer val');
-  return Far('root', {
-    doSomething() {
-      baggage.get('outside');
-      baggage.init('inside', 'inner val');
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      doSomething() {
+        baggage.get('outside');
+        baggage.init('inside', 'inner val');
+      },
     },
-  });
+  );
 }
 
 test.serial('exercise baggage', async t => {

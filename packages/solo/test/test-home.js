@@ -62,7 +62,11 @@ test.serial('home.board', async t => {
     `using a non-verified id throws`,
   );
 
-  const myValue = Far('myValue', {});
+  const myValue = makeExo(
+    'myValue',
+    M.interface('myValue', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const myId = await E(board).getId(myValue);
   t.is(typeof myId, 'string', `board key is string`);
 
@@ -166,18 +170,22 @@ test.serial('home.localTimerService makeNotifier', async t => {
 function makeHandler() {
   let calls = 0;
   const args = [];
-  return Far('wake handler', {
-    getCalls() {
-      return calls;
+  return makeExo(
+    'wake handler',
+    M.interface('wake handler', {}, { defaultGuards: 'passable' }),
+    {
+      getCalls() {
+        return calls;
+      },
+      getArgs() {
+        return args;
+      },
+      wake(arg) {
+        args.push(arg);
+        calls += 1;
+      },
     },
-    getArgs() {
-      return args;
-    },
-    wake(arg) {
-      args.push(arg);
-      calls += 1;
-    },
-  });
+  );
 }
 
 test.serial('home.localTimerService makeRepeater', async t => {

@@ -21,7 +21,7 @@ import { Far } from '@endo/far';
 
 export function buildRootObject(vatPowers) {
   let counter = 0;
-  return Far('root', {
+  return makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {
     increment() {
       counter += 1;
     },

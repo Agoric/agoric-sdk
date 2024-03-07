@@ -148,25 +148,29 @@ const watchParams = async (zoe, contractInstanceP, log) => {
   const subscription = await E(contractPublic).getSubscription();
   /** @type {any} */
   let prev = await E(contractPublic).getGovernedParams();
-  const paramChangeObserver = Far('param observer', {
-    updateState: ({ current }) => {
-      const changed = [];
-      if (
-        prev.Electorate.value.value[0].handle !==
-        current.Electorate.value.value[0].handle
-      ) {
-        changed.push('Electorate');
-      }
-      if (prev.MalleableNumber.value !== current.MalleableNumber.value) {
-        changed.push('MalleableNumber');
-      }
-      log(`params update: `, changed.join(','));
-      log(
-        `current value of MalleableNumber is ${current.MalleableNumber.value}`,
-      );
-      prev = current;
+  const paramChangeObserver = makeExo(
+    'param observer',
+    M.interface('param observer', {}, { defaultGuards: 'passable' }),
+    {
+      updateState: ({ current }) => {
+        const changed = [];
+        if (
+          prev.Electorate.value.value[0].handle !==
+          current.Electorate.value.value[0].handle
+        ) {
+          changed.push('Electorate');
+        }
+        if (prev.MalleableNumber.value !== current.MalleableNumber.value) {
+          changed.push('MalleableNumber');
+        }
+        log(`params update: `, changed.join(','));
+        log(
+          `current value of MalleableNumber is ${current.MalleableNumber.value}`,
+        );
+        prev = current;
+      },
     },
-  });
+  );
   void observeIteration(subscribeEach(subscription), paramChangeObserver);
 };
 
@@ -551,5 +555,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
 export const buildRootObject = (vatPowers, vatParameters) => {
   const { argv, contractBundles: cb } = vatParameters;
-  return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    { bootstrap: makeBootstrap(argv, cb, vatPowers) },
+  );
 };

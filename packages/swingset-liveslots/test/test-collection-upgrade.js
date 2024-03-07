@@ -39,7 +39,11 @@ test('durable collections survive upgrade', async t => {
       durable,
     });
     baggage.init('set', set1);
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
   const make1 = () => ({ buildRootObject: build1 });
 
@@ -102,7 +106,11 @@ test('durable collections survive upgrade', async t => {
     newThing2 = map2.get('thing2')[1];
     t.is(newThing2.name(), 'thing2');
     set2 = baggage.get('set');
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
   const make2 = () => ({ buildRootObject: build2 });
 

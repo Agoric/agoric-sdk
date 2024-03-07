@@ -28,12 +28,16 @@ export const start = async (zcf, { feeMintAccess }) => {
   const bootstrapPayment = await E(userSeat).getPayout('Bootstrap');
 
   return {
-    creatorFacet: Far('creator', {
-      getBootstrapPayment: () => {
-        zcf.shutdown('payment retrieved');
-        return bootstrapPayment;
+    creatorFacet: makeExo(
+      'creator',
+      M.interface('creator', {}, { defaultGuards: 'passable' }),
+      {
+        getBootstrapPayment: () => {
+          zcf.shutdown('payment retrieved');
+          return bootstrapPayment;
+        },
       },
-    }),
+    ),
   };
 };
 harden(start);

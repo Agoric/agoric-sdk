@@ -98,7 +98,7 @@ export const makeScalarWeakSetStore = (
     }
   };
 
-  return Far(`scalar WeakSetStore of ${q(tag)}`, {
+  return makeExo(`scalar WeakSetStore of ${q(tag)}`, M.interface(`scalar WeakSetStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
     ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
   });
 };

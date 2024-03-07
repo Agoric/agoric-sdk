@@ -80,6 +80,10 @@ export const buildRootObject = async (vatPowers, vatParameters, baggage) => {
     // however we do not call makeInstanceKit() again
   }
 
-  const zcfRoot = Far('zcfRoot', { start });
+  const zcfRoot = makeExo(
+    'zcfRoot',
+    M.interface('zcfRoot', {}, { defaultGuards: 'passable' }),
+    { start },
+  );
   return zcfRoot;
 };

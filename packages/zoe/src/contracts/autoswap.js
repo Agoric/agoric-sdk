@@ -376,18 +376,22 @@ const start = async zcf => {
   const getPoolAllocation = () => poolSeat.getCurrentAllocation();
 
   /** @type {AutoswapPublicFacet} */
-  const publicFacet = Far('publicFacet', {
-    getInputPrice: getOutputForGivenInput,
-    getOutputPrice: getInputForGivenOutput,
-    getLiquidityIssuer: () => liquidityIssuer,
-    getLiquiditySupply: () => liqTokenSupply,
-    getPoolAllocation,
-    makeSwapInvitation: makeSwapInInvitation,
-    makeSwapInInvitation,
-    makeSwapOutInvitation,
-    makeAddLiquidityInvitation,
-    makeRemoveLiquidityInvitation,
-  });
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getInputPrice: getOutputForGivenInput,
+      getOutputPrice: getInputForGivenOutput,
+      getLiquidityIssuer: () => liquidityIssuer,
+      getLiquiditySupply: () => liqTokenSupply,
+      getPoolAllocation,
+      makeSwapInvitation: makeSwapInInvitation,
+      makeSwapInInvitation,
+      makeSwapOutInvitation,
+      makeAddLiquidityInvitation,
+      makeRemoveLiquidityInvitation,
+    },
+  );
 
   return harden({ publicFacet });
 };

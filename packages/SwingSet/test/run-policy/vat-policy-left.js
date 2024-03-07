@@ -12,20 +12,24 @@ export function buildRootObject() {
     oldPK.resolve([nextPK.promise]);
   }
 
-  const left = Far('left', {
-    doMessage(right, seqnum) {
-      E(right).doMessage(left, seqnum);
-    },
+  const left = makeExo(
+    'left',
+    M.interface('left', {}, { defaultGuards: 'passable' }),
+    {
+      doMessage(right, seqnum) {
+        E(right).doMessage(left, seqnum);
+      },
 
-    startPromise(right) {
-      nextPK = makePromiseKit();
-      E(right)
-        .startPromise([nextPK.promise])
-        .then(args => {
-          doPromise(args);
-        })
-        .catch(err => console.log(`left startPromise err`, err));
+      startPromise(right) {
+        nextPK = makePromiseKit();
+        E(right)
+          .startPromise([nextPK.promise])
+          .then(args => {
+            doPromise(args);
+          })
+          .catch(err => console.log(`left startPromise err`, err));
+      },
     },
-  });
+  );
   return left;
 }

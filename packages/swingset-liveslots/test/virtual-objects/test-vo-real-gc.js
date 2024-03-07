@@ -20,17 +20,21 @@ test('virtual object state writes', async t => {
       // eslint-disable-next-line no-unused-vars
       ping: ({ state }) => 0,
     });
-    const root = Far('root', {
-      make: () => {
-        const thing = makeThing();
-        collected = watchCollected(thing);
-        return thing;
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        make: () => {
+          const thing = makeThing();
+          collected = watchCollected(thing);
+          return thing;
+        },
+        ping: thing => {
+          collected = watchCollected(thing);
+          return thing.ping();
+        },
       },
-      ping: thing => {
-        collected = watchCollected(thing);
-        return thing.ping();
-      },
-    });
+    );
     return root;
   }
 

@@ -51,13 +51,17 @@ harden(meta);
  */
 export const makeContractFeeCollector = (zoe, creatorFacet) => {
   /** @type {FeeCollector} */
-  return Far('feeCollector', {
-    collectFees: () => {
-      const invitation = E(creatorFacet).makeCollectFeesInvitation();
-      const collectFeesSeat = E(zoe).offer(invitation, undefined, undefined);
-      return E(collectFeesSeat).getPayout('Fee');
+  return makeExo(
+    'feeCollector',
+    M.interface('feeCollector', {}, { defaultGuards: 'passable' }),
+    {
+      collectFees: () => {
+        const invitation = E(creatorFacet).makeCollectFeesInvitation();
+        const collectFeesSeat = E(zoe).offer(invitation, undefined, undefined);
+        return E(collectFeesSeat).getPayout('Fee');
+      },
     },
-  });
+  );
 };
 
 /**
@@ -228,112 +232,136 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
     );
   };
 
-  const publicFacet = Far('feeDistributor publicFacet', {
-    distributeFees,
-    getKeywordShares: () => keywordShares,
-  });
-
-  const creatorFacet = Far('feeDistributor creatorFacet', {
-    makeContractFeeCollector,
-    /**
-     * Start distributing fees from this collector.
-     *
-     * @param {string} debugName
-     * @param {ERef<FeeCollector>} collectorP
-     */
-    startPeriodicCollection: async (debugName, collectorP) => {
-      const collector = await collectorP;
-
-      /** @type {PeriodicFeeCollector} */
-      const periodicCollector = Far('PeriodicFeeCollector', {
-        getDebugName: () => debugName,
-        getCollector: () => collector,
-        collectAndDistributeNow: async () => {
-          if (shareConfig.totalShares <= 0n) {
-            return;
-          }
-          const payment = await E(collector).collectFees();
-          await distributeFees(payment);
-        },
-        stop: () => {
-          collectors.delete(collector);
-        },
-      });
-
-      // Run once immediately for this collector, to test that the registration
-      // will work.
-      await E(periodicCollector).collectAndDistributeNow();
-
-      collectors.add(collector);
-      return periodicCollector;
+  const publicFacet = makeExo(
+    'feeDistributor publicFacet',
+    M.interface(
+      'feeDistributor publicFacet',
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      distributeFees,
+      getKeywordShares: () => keywordShares,
     },
+  );
 
-    /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
-    makeDepositFacetDestination: depositFacet => {
-      return Far(`DepositFacetDestination`, {
-        pushPayment: async (payment, _issuer) => {
-          return E(depositFacet).receive(payment);
-        },
-      });
-    },
-    /**
-     * Create a destination that generates invitations and makes Zoe offers.
-     *
-     * @param {ERef<ZoeService>} zoe
-     * @param {string} keyword
-     * @param {unknown} target
-     * @param {PropertyKey} makeInvitationMethod
-     * @param {unknown[]} [args]
-     */
-    makeOfferDestination: (
-      zoe,
-      keyword,
-      target,
-      makeInvitationMethod,
-      args = [],
-    ) => {
-      return Far(`${String(makeInvitationMethod)} OfferDestination`, {
-        pushPayment: async (payment, issuer) => {
-          const paymentAmount = await E(issuer).getAmountOf(payment);
+  const creatorFacet = makeExo(
+    'feeDistributor creatorFacet',
+    M.interface(
+      'feeDistributor creatorFacet',
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      makeContractFeeCollector,
+      /**
+       * Start distributing fees from this collector.
+       *
+       * @param {string} debugName
+       * @param {ERef<FeeCollector>} collectorP
+       */
+      startPeriodicCollection: async (debugName, collectorP) => {
+        const collector = await collectorP;
 
-          // Give the payment to the contract via its invitation.
-          const invitation = E(target)[makeInvitationMethod](...args);
-          const result = E(zoe).offer(
-            invitation,
-            {
-              give: {
-                [keyword]: paymentAmount,
+        /** @type {PeriodicFeeCollector} */
+        const periodicCollector = makeExo(
+          'PeriodicFeeCollector',
+          M.interface(
+            'PeriodicFeeCollector',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            getDebugName: () => debugName,
+            getCollector: () => collector,
+            collectAndDistributeNow: async () => {
+              if (shareConfig.totalShares <= 0n) {
+                return;
+              }
+              const payment = await E(collector).collectFees();
+              await distributeFees(payment);
+            },
+            stop: () => {
+              collectors.delete(collector);
+            },
+          },
+        );
+
+        // Run once immediately for this collector, to test that the registration
+        // will work.
+        await E(periodicCollector).collectAndDistributeNow();
+
+        collectors.add(collector);
+        return periodicCollector;
+      },
+
+      /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
+      makeDepositFacetDestination: depositFacet => {
+        return makeExo(`DepositFacetDestination`, M.interface(`DepositFacetDestination`, {}, { defaultGuards: 'passable' }), {
+          pushPayment: async (payment, _issuer) => {
+            return E(depositFacet).receive(payment);
+          },
+        });
+      },
+      /**
+       * Create a destination that generates invitations and makes Zoe offers.
+       *
+       * @param {ERef<ZoeService>} zoe
+       * @param {string} keyword
+       * @param {unknown} target
+       * @param {PropertyKey} makeInvitationMethod
+       * @param {unknown[]} [args]
+       */
+      makeOfferDestination: (
+        zoe,
+        keyword,
+        target,
+        makeInvitationMethod,
+        args = [],
+      ) => {
+        return makeExo(`${String(makeInvitationMethod)} OfferDestination`, M.interface(`${String(makeInvitationMethod)} OfferDestination`, {}, { defaultGuards: 'passable' }), {
+          pushPayment: async (payment, issuer) => {
+            const paymentAmount = await E(issuer).getAmountOf(payment);
+
+            // Give the payment to the contract via its invitation.
+            const invitation = E(target)[makeInvitationMethod](...args);
+            const result = E(zoe).offer(
+              invitation,
+              {
+                give: {
+                  [keyword]: paymentAmount,
+                },
               },
-            },
-            {
-              [keyword]: payment,
-            },
-          );
+              {
+                [keyword]: payment,
+              },
+            );
 
-          // Assert that the offer completed.
-          await E(result).getOfferResult();
+            // Assert that the offer completed.
+            await E(result).getOfferResult();
 
-          // We deliberately drop our payouts on the floor, since the ERTP purse
-          // recovery mechanism can get them back to the distributor contract.
-          return paymentAmount;
-        },
-      });
+            // We deliberately drop our payouts on the floor, since the ERTP purse
+            // recovery mechanism can get them back to the distributor contract.
+            return paymentAmount;
+          },
+        });
+      },
+
+      /** @param {Record<Keyword, ERef<FeeDestination>>} newDestinations */
+      setDestinations: async newDestinations => {
+        destinations = newDestinations;
+        shareConfig = makeShareConfig(destinations, keywordShares);
+        // Run once immediately for these destinations.
+        await schedulePayments();
+      },
+
+      /** @param {Record<Keyword, bigint>} newShares */
+      setKeywordShares: newShares => {
+        mustMatch(newShares, KeywordSharesShape);
+        keywordShares = newShares;
+      },
     },
-
-    /** @param {Record<Keyword, ERef<FeeDestination>>} newDestinations */
-    setDestinations: async newDestinations => {
-      destinations = newDestinations;
-      shareConfig = makeShareConfig(destinations, keywordShares);
-      // Run once immediately for these destinations.
-      await schedulePayments();
-    },
-
-    /** @param {Record<Keyword, bigint>} newShares */
-    setKeywordShares: newShares => {
-      mustMatch(newShares, KeywordSharesShape);
-      keywordShares = newShares;
-    },
-  });
+  );
 
   // Start processing collections.
   startDistributing(schedulePayments, timerService, collectionInterval);

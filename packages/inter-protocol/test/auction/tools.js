@@ -60,23 +60,27 @@ export const makeFakeAuctioneer = () => {
   const state = { step: 0, final: false, capturedPrices: false };
   const startRounds = [];
 
-  return Far('FakeAuctioneer', {
-    reducePriceAndTrade: () => {
-      state.step += 1;
+  return makeExo(
+    'FakeAuctioneer',
+    M.interface('FakeAuctioneer', {}, { defaultGuards: 'passable' }),
+    {
+      reducePriceAndTrade: () => {
+        state.step += 1;
+      },
+      finalize: () => {
+        state.final = true;
+        state.capturedPrices = false;
+      },
+      getState: () => state,
+      startRound: () => {
+        startRounds.push(state.step);
+        state.step += 1;
+        state.final = false;
+      },
+      getStartRounds: () => startRounds,
+      capturePrices: () => (state.capturedPrices = true),
     },
-    finalize: () => {
-      state.final = true;
-      state.capturedPrices = false;
-    },
-    getState: () => state,
-    startRound: () => {
-      startRounds.push(state.step);
-      state.step += 1;
-      state.final = false;
-    },
-    getStartRounds: () => startRounds,
-    capturePrices: () => (state.capturedPrices = true),
-  });
+  );
 };
 
 /**

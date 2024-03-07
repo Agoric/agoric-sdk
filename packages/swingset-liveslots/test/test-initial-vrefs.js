@@ -39,14 +39,18 @@ function buildRootObject(vatPowers, vatParameters, baggage) {
     store1.init('self', store1);
   }
 
-  return Far('root', {
-    start,
-    getVinstance1: () => vinstance1,
-    getKH1: () => kh1,
-    getDinstance1: () => dinstance1,
-    getDinstance2: () => dinstance2,
-    getStore1: () => store1,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      start,
+      getVinstance1: () => vinstance1,
+      getKH1: () => kh1,
+      getDinstance1: () => dinstance1,
+      getDinstance2: () => dinstance2,
+      getStore1: () => store1,
+    },
+  );
 }
 
 test('initial vatstore contents', async t => {

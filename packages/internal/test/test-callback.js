@@ -121,29 +121,33 @@ test('near method callbacks', t => {
 
 test('far method callbacks', async t => {
   const m2 = Symbol.for('m2');
-  const o = Far('MyObject', {
-    /**
-     *
-     * @param {number} a
-     * @param {number} b
-     * @param {string} c
-     * @returns {Promise<string>}
-     */
-    async m1(a, b, c) {
-      return `${a + b}${c}`;
-    },
+  const o = makeExo(
+    'MyObject',
+    M.interface('MyObject', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       *
+       * @param {number} a
+       * @param {number} b
+       * @param {string} c
+       * @returns {Promise<string>}
+       */
+      async m1(a, b, c) {
+        return `${a + b}${c}`;
+      },
 
-    /**
-     *
-     * @param {number} a
-     * @param {number} b
-     * @param {string} c
-     * @returns {Promise<string>}
-     */
-    [m2]: async (a, b, c) => {
-      return `${a + b}${c}`;
+      /**
+       *
+       * @param {number} a
+       * @param {number} b
+       * @param {string} c
+       * @returns {Promise<string>}
+       */
+      [m2]: async (a, b, c) => {
+        return `${a + b}${c}`;
+      },
     },
-  });
+  );
 
   /** @type {import('../src/callback.js').Callback<(c: string) => Promise<string>>} */
   const cbp2 = cb.makeMethodCallback(Promise.resolve(o), 'm1', 9, 10);
@@ -267,20 +271,24 @@ test('isCallback', t => {
 test('makeAttenuator', async t => {
   const zone = makeHeapZone();
   const makeAttenuator = cb.prepareAttenuator(zone, ['m0', 'm1', 'm2', 'm4']);
-  const target = Far('original', {
-    m0() {
-      return 'return original.m0';
+  const target = makeExo(
+    'original',
+    M.interface('original', {}, { defaultGuards: 'passable' }),
+    {
+      m0() {
+        return 'return original.m0';
+      },
+      m1() {
+        return 'return original.m1';
+      },
+      m2() {
+        throw Error('unexpected original.m2');
+      },
+      m3() {
+        throw Error('unexpected original.m3');
+      },
     },
-    m1() {
-      return 'return original.m1';
-    },
-    m2() {
-      throw Error('unexpected original.m2');
-    },
-    m3() {
-      throw Error('unexpected original.m3');
-    },
-  });
+  );
   // @ts-expect-error deliberate: omitted method
   t.throws(() => makeAttenuator({ target, overrides: { m3: null } }), {
     message: `"Attenuator" overrides["m3"] not allowed by methodNames`,

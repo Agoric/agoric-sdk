@@ -118,9 +118,13 @@ export const buildManualTimer = (options = {}) => {
     return advanceTo(TimeMath.addAbsRel(state.now, rel), msg);
   };
 
-  return Far('ManualTimer', {
-    ...bindAllMethods(timerService),
-    advanceTo,
-    advanceBy,
-  });
+  return makeExo(
+    'ManualTimer',
+    M.interface('ManualTimer', {}, { defaultGuards: 'passable' }),
+    {
+      ...bindAllMethods(timerService),
+      advanceTo,
+      advanceBy,
+    },
+  );
 };

@@ -137,32 +137,36 @@ export const makeScalarStoreCoordinator = (
   const defaultStateStore = withGroundState(stateStore);
 
   /** @type {import('./types.js').Coordinator} */
-  const coord = Far('store cache coordinator', {
-    getRecentValue: async key => {
-      const keyStr = await serializePassable(key);
-      return defaultStateStore.get(keyStr).value;
+  const coord = makeExo(
+    'store cache coordinator',
+    M.interface('store cache coordinator', {}, { defaultGuards: 'passable' }),
+    {
+      getRecentValue: async key => {
+        const keyStr = await serializePassable(key);
+        return defaultStateStore.get(keyStr).value;
+      },
+      setCacheValue: async (key, newValue, guardPattern) => {
+        const keyStr = await serializePassable(key);
+        return applyCacheTransaction(
+          keyStr,
+          () => newValue,
+          guardPattern,
+          sanitize,
+          defaultStateStore,
+        );
+      },
+      updateCacheValue: async (key, updater, guardPattern) => {
+        const keyStr = await serializePassable(key);
+        return applyCacheTransaction(
+          keyStr,
+          oldValue => E(updater).update(oldValue),
+          guardPattern,
+          sanitize,
+          defaultStateStore,
+        );
+      },
     },
-    setCacheValue: async (key, newValue, guardPattern) => {
-      const keyStr = await serializePassable(key);
-      return applyCacheTransaction(
-        keyStr,
-        () => newValue,
-        guardPattern,
-        sanitize,
-        defaultStateStore,
-      );
-    },
-    updateCacheValue: async (key, updater, guardPattern) => {
-      const keyStr = await serializePassable(key);
-      return applyCacheTransaction(
-        keyStr,
-        oldValue => E(updater).update(oldValue),
-        guardPattern,
-        sanitize,
-        defaultStateStore,
-      );
-    },
-  });
+  );
   return coord;
 };
 
@@ -217,33 +221,37 @@ export const makeChainStorageCoordinator = (storageNode, marshaller) => {
   );
 
   /** @type {import('./types.js').Coordinator} */
-  const coord = Far('store cache coordinator', {
-    getRecentValue: async key => {
-      const keyStr = await serializePassable(key);
-      return defaultStateStore.get(keyStr).value;
+  const coord = makeExo(
+    'store cache coordinator',
+    M.interface('store cache coordinator', {}, { defaultGuards: 'passable' }),
+    {
+      getRecentValue: async key => {
+        const keyStr = await serializePassable(key);
+        return defaultStateStore.get(keyStr).value;
+      },
+      setCacheValue: async (key, newValue, guardPattern) => {
+        const keyStr = await serializePassable(key);
+        const storedValue = await applyCacheTransaction(
+          keyStr,
+          () => newValue,
+          guardPattern,
+          sanitize,
+          defaultStateStore,
+        );
+        return updateStorageNode(storedValue);
+      },
+      updateCacheValue: async (key, updater, guardPattern) => {
+        const keyStr = await serializePassable(key);
+        const storedValue = await applyCacheTransaction(
+          keyStr,
+          oldValue => E(updater).update(oldValue),
+          guardPattern,
+          sanitize,
+          defaultStateStore,
+        );
+        return updateStorageNode(storedValue);
+      },
     },
-    setCacheValue: async (key, newValue, guardPattern) => {
-      const keyStr = await serializePassable(key);
-      const storedValue = await applyCacheTransaction(
-        keyStr,
-        () => newValue,
-        guardPattern,
-        sanitize,
-        defaultStateStore,
-      );
-      return updateStorageNode(storedValue);
-    },
-    updateCacheValue: async (key, updater, guardPattern) => {
-      const keyStr = await serializePassable(key);
-      const storedValue = await applyCacheTransaction(
-        keyStr,
-        oldValue => E(updater).update(oldValue),
-        guardPattern,
-        sanitize,
-        defaultStateStore,
-      );
-      return updateStorageNode(storedValue);
-    },
-  });
+  );
   return coord;
 };

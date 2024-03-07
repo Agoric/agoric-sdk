@@ -7,24 +7,28 @@ export function buildRootObject() {
   let bob;
   let me;
   let goCount = 3;
-  return Far('root', {
-    async bootstrap(vats) {
-      me = vats.bootstrap;
-      bob = vats.bob;
-      E(bob).prepare();
-      await E(me).go();
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats) {
+        me = vats.bootstrap;
+        bob = vats.bob;
+        E(bob).prepare();
+        await E(me).go();
+      },
+      go() {
+        if (goCount > 0) {
+          E(bob).getThing(me);
+        } else {
+          E(bob).finish();
+        }
+        goCount -= 1;
+      },
+      deliverThing(thing) {
+        other = thing;
+        E(me).go();
+      },
     },
-    go() {
-      if (goCount > 0) {
-        E(bob).getThing(me);
-      } else {
-        E(bob).finish();
-      }
-      goCount -= 1;
-    },
-    deliverThing(thing) {
-      other = thing;
-      E(me).go();
-    },
-  });
+  );
 }

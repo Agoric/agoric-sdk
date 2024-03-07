@@ -94,10 +94,14 @@ const setupFilterGovernance = (timer, getUpdatedPoserFacet, governedCF) => {
     });
   };
 
-  return Far('filterGovernor', {
-    voteOnFilter,
-    createdQuestion: b => voteCounters.has(b),
-  });
+  return makeExo(
+    'filterGovernor',
+    M.interface('filterGovernor', {}, { defaultGuards: 'passable' }),
+    {
+      voteOnFilter,
+      createdQuestion: b => voteCounters.has(b),
+    },
+  );
 };
 
 harden(setupFilterGovernance);

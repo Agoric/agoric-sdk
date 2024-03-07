@@ -143,23 +143,27 @@ const start = async (zcf, privateArgs) => {
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
   /** @type {import('@agoric/time').TimerWaker} */
-  const waker = Far('waker', {
-    async wake(timestamp) {
-      // Run all the queriers.
-      const querierPs = [];
-      oracleRecords.forEach(({ querier }) => {
-        if (querier) {
-          querierPs.push(querier(timestamp));
+  const waker = makeExo(
+    'waker',
+    M.interface('waker', {}, { defaultGuards: 'passable' }),
+    {
+      async wake(timestamp) {
+        // Run all the queriers.
+        const querierPs = [];
+        oracleRecords.forEach(({ querier }) => {
+          if (querier) {
+            querierPs.push(querier(timestamp));
+          }
+        });
+        if (!querierPs.length) {
+          // Only have push results, so publish them.
+          // eslint-disable-next-line no-use-before-define
+          querierPs.push(updateQuote(timestamp));
         }
-      });
-      if (!querierPs.length) {
-        // Only have push results, so publish them.
-        // eslint-disable-next-line no-use-before-define
-        querierPs.push(updateQuote(timestamp));
-      }
-      await Promise.all(querierPs).catch(console.error);
+        await Promise.all(querierPs).catch(console.error);
+      },
     },
-  });
+  );
   E(repeaterP).schedule(waker);
 
   /**
@@ -428,206 +432,236 @@ const start = async (zcf, privateArgs) => {
     E(oracleNotifier).getUpdateSince().then(recurse);
   };
 
-  const creatorFacet = Far('PriceAggregatorCreatorFacet', {
-    /**
-     * An "oracle invitation" is an invitation to be able to submit data to
-     * include in the priceAggregator's results.
-     *
-     * The offer result from this invitation is a OracleAdmin, which can be used
-     * directly to manage the price submissions as well as to terminate the
-     * relationship.
-     *
-     * @param {Instance | string} [oracleKey]
-     */
-    makeOracleInvitation: async oracleKey => {
+  const creatorFacet = makeExo(
+    'PriceAggregatorCreatorFacet',
+    M.interface(
+      'PriceAggregatorCreatorFacet',
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
       /**
-       * If custom arguments are supplied to the `zoe.offer` call, they can
-       * indicate an OraclePriceSubmission notifier and a corresponding
-       * `shiftValueOut` that should be adapted as part of the priceAuthority's
-       * reported data.
+       * An "oracle invitation" is an invitation to be able to submit data to
+       * include in the priceAggregator's results.
        *
-       * @param {ZCFSeat} seat
-       * @param {object} param1
-       * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
-       * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * The offer result from this invitation is a OracleAdmin, which can be used
+       * directly to manage the price submissions as well as to terminate the
+       * relationship.
+       *
+       * @param {Instance | string} [oracleKey]
        */
-      const offerHandler = async (
-        seat,
-        { notifier: oracleNotifier, scaleValueOut = 1 } = {},
-      ) => {
-        seat.exit();
-        const admin = await creatorFacet.initOracle(oracleKey);
-        const invitationMakers = Far('invitation makers', {
-          /** @param {ParsableNumber} price */
-          PushPrice(price) {
-            assertParsableNumber(price);
-            return zcf.makeInvitation(cSeat => {
-              cSeat.exit();
-              admin.pushResult(price);
-            }, 'PushPrice');
-          },
-        });
-
-        if (oracleNotifier) {
-          pushFromOracle(oracleNotifier, scaleValueOut, r =>
-            admin.pushResult(r),
-          );
-        }
-
-        return harden({
-          admin: Far('oracleAdmin', {
-            ...admin,
-            /** @override */
-            delete: async () => {
-              // Stop tracking the notifier on delete.
-              oracleNotifier = undefined;
-              return admin.delete();
+      makeOracleInvitation: async oracleKey => {
+        /**
+         * If custom arguments are supplied to the `zoe.offer` call, they can
+         * indicate an OraclePriceSubmission notifier and a corresponding
+         * `shiftValueOut` that should be adapted as part of the priceAuthority's
+         * reported data.
+         *
+         * @param {ZCFSeat} seat
+         * @param {object} param1
+         * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
+         * @param {number} [param1.scaleValueOut]
+         * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+         */
+        const offerHandler = async (
+          seat,
+          { notifier: oracleNotifier, scaleValueOut = 1 } = {},
+        ) => {
+          seat.exit();
+          const admin = await creatorFacet.initOracle(oracleKey);
+          const invitationMakers = makeExo(
+            'invitation makers',
+            M.interface('invitation makers', {}, { defaultGuards: 'passable' }),
+            {
+              /** @param {ParsableNumber} price */
+              PushPrice(price) {
+                assertParsableNumber(price);
+                return zcf.makeInvitation(cSeat => {
+                  cSeat.exit();
+                  admin.pushResult(price);
+                }, 'PushPrice');
+              },
             },
-          }),
+          );
 
-          invitationMakers,
-        });
-      };
-
-      return zcf.makeInvitation(offerHandler, 'oracle invitation');
-    },
-    /** @param {OracleKey} oracleKey */
-    deleteOracle: async oracleKey => {
-      for (const record of instanceToRecords.get(oracleKey)) {
-        oracleRecords.delete(record);
-      }
-
-      // We should remove the entry entirely, as it is empty.
-      instanceToRecords.delete(oracleKey);
-
-      // Delete complete, so try asynchronously updating the quote.
-      const deletedNow = await E(timer).getCurrentTimestamp();
-      await updateQuote(deletedNow);
-    },
-    /**
-     * @param {Instance | string} [oracleInstance]
-     * @param {OracleQuery} [query]
-     * @returns {Promise<OracleAdmin<Price>>}
-     */
-    initOracle: async (oracleInstance, query) => {
-      /** @type {OracleKey} */
-      const oracleKey = oracleInstance || Far('fresh key', {});
-
-      /** @type {OracleRecord} */
-      const record = {
-        oracleKey,
-        lastSample: makeRatio(0n, brandOut, 1n, brandIn),
-      };
-
-      /** @type {Set<OracleRecord>} */
-      let records;
-      if (instanceToRecords.has(oracleKey)) {
-        records = instanceToRecords.get(oracleKey);
-      } else {
-        records = new Set();
-        instanceToRecords.init(oracleKey, records);
-      }
-      records.add(record);
-      oracleRecords.add(record);
-
-      /**
-       * Push the current price ratio.
-       *
-       * @param {ParsableNumber | Ratio} result
-       */
-      const pushResult = result => {
-        // Sample of NaN, 0, or negative numbers get culled in the median
-        // calculation.
-        /** @type {Ratio | undefined} */
-        let ratio;
-        if (typeof result === 'object') {
-          ratio = makeRatioFromAmounts(result.numerator, result.denominator);
-          AmountMath.coerce(brandOut, ratio.numerator);
-          AmountMath.coerce(brandIn, ratio.denominator);
-        } else {
-          ratio = makeRatioFromData(result);
-        }
-        record.lastSample = ratio;
-      };
-
-      /** @type {OracleAdmin<Price>} */
-      const oracleAdmin = Far('OracleAdmin', {
-        async delete() {
-          assert(records.has(record), 'Oracle record is already deleted');
-
-          // The actual deletion is synchronous.
-          oracleRecords.delete(record);
-          records.delete(record);
-
-          if (
-            records.size === 0 &&
-            instanceToRecords.has(oracleKey) &&
-            instanceToRecords.get(oracleKey) === records
-          ) {
-            // We should remove the entry entirely, as it is empty.
-            instanceToRecords.delete(oracleKey);
+          if (oracleNotifier) {
+            pushFromOracle(oracleNotifier, scaleValueOut, r =>
+              admin.pushResult(r),
+            );
           }
 
-          // Delete complete, so try asynchronously updating the quote.
-          const deletedNow = await E(timer).getCurrentTimestamp();
-          await updateQuote(deletedNow);
-        },
-        async pushResult(result) {
-          // Sample of NaN, 0, or negative numbers get culled in
-          // the median calculation.
-          pushResult(result);
-        },
-      });
+          return harden({
+            admin: makeExo(
+              'oracleAdmin',
+              M.interface('oracleAdmin', {}, { defaultGuards: 'passable' }),
+              {
+                ...admin,
+                /** @override */
+                delete: async () => {
+                  // Stop tracking the notifier on delete.
+                  oracleNotifier = undefined;
+                  return admin.delete();
+                },
+              },
+            ),
 
-      if (query === undefined || typeof oracleInstance === 'string') {
-        // They don't want to be polled.
-        return oracleAdmin;
-      }
+            invitationMakers,
+          });
+        };
 
-      // Obtain the oracle's publicFacet.
-      assert(oracleInstance);
-      /** @type {import('./oracle.js').OracleContract['publicFacet']} */
-      const oracle = await E(zoe).getPublicFacet(oracleInstance);
-      assert(records.has(record), 'Oracle record is already deleted');
-
-      /** @type {import('@agoric/time').Timestamp} */
-      let lastWakeTimestamp = 0n;
-
-      /**
-       * @param {import('@agoric/time').Timestamp} timestamp
-       */
-      record.querier = async timestamp => {
-        // Submit the query.
-        const result = await E(oracle).query(query);
-        assertParsableNumber(result);
-        // Now that we've received the result, check if we're out of date.
-        if (timestamp < lastWakeTimestamp || !records.has(record)) {
-          return;
+        return zcf.makeInvitation(offerHandler, 'oracle invitation');
+      },
+      /** @param {OracleKey} oracleKey */
+      deleteOracle: async oracleKey => {
+        for (const record of instanceToRecords.get(oracleKey)) {
+          oracleRecords.delete(record);
         }
-        lastWakeTimestamp = timestamp;
 
-        pushResult(result);
-        await updateQuote(timestamp);
-      };
-      const now = await E(timer).getCurrentTimestamp();
-      await record.querier(now);
+        // We should remove the entry entirely, as it is empty.
+        instanceToRecords.delete(oracleKey);
 
-      // Return the oracle admin object.
-      return oracleAdmin;
-    },
-  });
+        // Delete complete, so try asynchronously updating the quote.
+        const deletedNow = await E(timer).getCurrentTimestamp();
+        await updateQuote(deletedNow);
+      },
+      /**
+       * @param {Instance | string} [oracleInstance]
+       * @param {OracleQuery} [query]
+       * @returns {Promise<OracleAdmin<Price>>}
+       */
+      initOracle: async (oracleInstance, query) => {
+        /** @type {OracleKey} */
+        const oracleKey =
+          oracleInstance ||
+          makeExo(
+            'fresh key',
+            M.interface('fresh key', {}, { defaultGuards: 'passable' }),
+            {},
+          );
 
-  const publicFacet = Far('publicFacet', {
-    getPriceAuthority() {
-      return priceAuthority;
+        /** @type {OracleRecord} */
+        const record = {
+          oracleKey,
+          lastSample: makeRatio(0n, brandOut, 1n, brandIn),
+        };
+
+        /** @type {Set<OracleRecord>} */
+        let records;
+        if (instanceToRecords.has(oracleKey)) {
+          records = instanceToRecords.get(oracleKey);
+        } else {
+          records = new Set();
+          instanceToRecords.init(oracleKey, records);
+        }
+        records.add(record);
+        oracleRecords.add(record);
+
+        /**
+         * Push the current price ratio.
+         *
+         * @param {ParsableNumber | Ratio} result
+         */
+        const pushResult = result => {
+          // Sample of NaN, 0, or negative numbers get culled in the median
+          // calculation.
+          /** @type {Ratio | undefined} */
+          let ratio;
+          if (typeof result === 'object') {
+            ratio = makeRatioFromAmounts(result.numerator, result.denominator);
+            AmountMath.coerce(brandOut, ratio.numerator);
+            AmountMath.coerce(brandIn, ratio.denominator);
+          } else {
+            ratio = makeRatioFromData(result);
+          }
+          record.lastSample = ratio;
+        };
+
+        /** @type {OracleAdmin<Price>} */
+        const oracleAdmin = makeExo(
+          'OracleAdmin',
+          M.interface('OracleAdmin', {}, { defaultGuards: 'passable' }),
+          {
+            async delete() {
+              assert(records.has(record), 'Oracle record is already deleted');
+
+              // The actual deletion is synchronous.
+              oracleRecords.delete(record);
+              records.delete(record);
+
+              if (
+                records.size === 0 &&
+                instanceToRecords.has(oracleKey) &&
+                instanceToRecords.get(oracleKey) === records
+              ) {
+                // We should remove the entry entirely, as it is empty.
+                instanceToRecords.delete(oracleKey);
+              }
+
+              // Delete complete, so try asynchronously updating the quote.
+              const deletedNow = await E(timer).getCurrentTimestamp();
+              await updateQuote(deletedNow);
+            },
+            async pushResult(result) {
+              // Sample of NaN, 0, or negative numbers get culled in
+              // the median calculation.
+              pushResult(result);
+            },
+          },
+        );
+
+        if (query === undefined || typeof oracleInstance === 'string') {
+          // They don't want to be polled.
+          return oracleAdmin;
+        }
+
+        // Obtain the oracle's publicFacet.
+        assert(oracleInstance);
+        /** @type {import('./oracle.js').OracleContract['publicFacet']} */
+        const oracle = await E(zoe).getPublicFacet(oracleInstance);
+        assert(records.has(record), 'Oracle record is already deleted');
+
+        /** @type {import('@agoric/time').Timestamp} */
+        let lastWakeTimestamp = 0n;
+
+        /**
+         * @param {import('@agoric/time').Timestamp} timestamp
+         */
+        record.querier = async timestamp => {
+          // Submit the query.
+          const result = await E(oracle).query(query);
+          assertParsableNumber(result);
+          // Now that we've received the result, check if we're out of date.
+          if (timestamp < lastWakeTimestamp || !records.has(record)) {
+            return;
+          }
+          lastWakeTimestamp = timestamp;
+
+          pushResult(result);
+          await updateQuote(timestamp);
+        };
+        const now = await E(timer).getCurrentTimestamp();
+        await record.querier(now);
+
+        // Return the oracle admin object.
+        return oracleAdmin;
+      },
     },
-    getSubscriber: () => subscriber,
-    /** Diagnostic tool */
-    async getRoundCompleteNotifier() {
-      return roundCompleteNotifier;
+  );
+
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getPriceAuthority() {
+        return priceAuthority;
+      },
+      getSubscriber: () => subscriber,
+      /** Diagnostic tool */
+      async getRoundCompleteNotifier() {
+        return roundCompleteNotifier;
+      },
     },
-  });
+  );
 
   return harden({ creatorFacet, publicFacet });
 };

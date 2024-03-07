@@ -59,79 +59,87 @@ export function buildRootObject(vatPowers) {
 
   const mainHolder = makeHolder(null);
 
-  return Far('root', {
-    makeAndHold() {
-      heldStore = makeMapStore();
-    },
-    makeAndHoldAndKey() {
-      aWeakMapStore = makeWeakMapStore();
-      aWeakSetStore = makeWeakSetStore();
-      heldStore = makeMapStore();
-      aWeakMapStore.init(heldStore, 'arbitrary');
-      aWeakSetStore.add(heldStore);
-    },
-    makeAndHoldWeakly() {
-      aWeakMapStore = makeWeakMapStore();
-      heldStore = makeMapStore();
-      const indirValue = makeMapStore();
-      aWeakMapStore.init(heldStore, indirValue);
-    },
-    makeAndHoldRemotable() {
-      heldStore = Far('thing', {});
-    },
-    dropHeld() {
-      heldStore = null;
-    },
-    storeHeld() {
-      mainHolder.set('foo', heldStore);
-    },
-    dropStored() {
-      mainHolder.set('foo', null);
-    },
-    fetchAndHold() {
-      heldStore = mainHolder.get('foo');
-    },
-    exportHeld() {
-      return heldStore;
-    },
-    importAndHold(thing) {
-      heldStore = thing;
-    },
-    importAndHoldAndKey(key) {
-      aWeakMapStore = makeWeakMapStore();
-      aWeakSetStore = makeWeakSetStore();
-      heldStore = key;
-      aWeakMapStore.init(key, 'arbitrary');
-      aWeakSetStore.add(key);
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      makeAndHold() {
+        heldStore = makeMapStore();
+      },
+      makeAndHoldAndKey() {
+        aWeakMapStore = makeWeakMapStore();
+        aWeakSetStore = makeWeakSetStore();
+        heldStore = makeMapStore();
+        aWeakMapStore.init(heldStore, 'arbitrary');
+        aWeakSetStore.add(heldStore);
+      },
+      makeAndHoldWeakly() {
+        aWeakMapStore = makeWeakMapStore();
+        heldStore = makeMapStore();
+        const indirValue = makeMapStore();
+        aWeakMapStore.init(heldStore, indirValue);
+      },
+      makeAndHoldRemotable() {
+        heldStore = makeExo(
+          'thing',
+          M.interface('thing', {}, { defaultGuards: 'passable' }),
+          {},
+        );
+      },
+      dropHeld() {
+        heldStore = null;
+      },
+      storeHeld() {
+        mainHolder.set('foo', heldStore);
+      },
+      dropStored() {
+        mainHolder.set('foo', null);
+      },
+      fetchAndHold() {
+        heldStore = mainHolder.get('foo');
+      },
+      exportHeld() {
+        return heldStore;
+      },
+      importAndHold(thing) {
+        heldStore = thing;
+      },
+      importAndHoldAndKey(key) {
+        aWeakMapStore = makeWeakMapStore();
+        aWeakSetStore = makeWeakSetStore();
+        heldStore = key;
+        aWeakMapStore.init(key, 'arbitrary');
+        aWeakSetStore.add(key);
+      },
 
-    prepareStore3() {
-      holders.push(makeHolder(heldStore));
-      holders.push(makeHolder(heldStore));
-      holders.push(makeHolder(heldStore));
-      heldStore = null;
+      prepareStore3() {
+        holders.push(makeHolder(heldStore));
+        holders.push(makeHolder(heldStore));
+        holders.push(makeHolder(heldStore));
+        heldStore = null;
+      },
+      finishClearHolders() {
+        for (let i = 0; i < holders.length; i += 1) {
+          holders[i].set('foo', null);
+        }
+      },
+      finishDropHolders() {
+        for (let i = 0; i < holders.length; i += 1) {
+          holders[i] = null;
+        }
+      },
+      prepareStoreLinked() {
+        let holder = makeHolder(heldStore); // Map7->Map6
+        holder = makeHolder(holder); // Map8->Map7
+        holder = makeHolder(holder); // Map9->Map8
+        holders.push(holder); // RAM->Map9
+        heldStore = null; // remove RAM->Map6
+      },
+      noOp() {
+        // used when an extra cycle is needed to pump GC
+      },
     },
-    finishClearHolders() {
-      for (let i = 0; i < holders.length; i += 1) {
-        holders[i].set('foo', null);
-      }
-    },
-    finishDropHolders() {
-      for (let i = 0; i < holders.length; i += 1) {
-        holders[i] = null;
-      }
-    },
-    prepareStoreLinked() {
-      let holder = makeHolder(heldStore); // Map7->Map6
-      holder = makeHolder(holder); // Map8->Map7
-      holder = makeHolder(holder); // Map9->Map8
-      holders.push(holder); // RAM->Map9
-      heldStore = null; // remove RAM->Map6
-    },
-    noOp() {
-      // used when an extra cycle is needed to pump GC
-    },
-  });
+  );
 }
 
 export function deduceCollectionID(fakestore, ctype, offset) {

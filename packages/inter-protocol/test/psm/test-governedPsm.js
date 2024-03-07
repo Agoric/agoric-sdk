@@ -180,7 +180,11 @@ test('replace electorate of Economic Committee', async t => {
     harden({}),
     electorateTerms,
     {
-      marshaller: Far('fake marshaller', { ...makeFakeMarshaller() }),
+      marshaller: makeExo(
+        'fake marshaller',
+        M.interface('fake marshaller', {}, { defaultGuards: 'passable' }),
+        { ...makeFakeMarshaller() },
+      ),
       storageNode: makeFakeStorageKit('governedPsmTest').rootNode,
     },
   );

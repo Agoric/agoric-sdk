@@ -57,10 +57,14 @@ export const start = async zcf => {
     return 'welcome to the game';
   };
 
-  const publicFacet = Far('API', {
-    makeJoinInvitation: () =>
-      zcf.makeInvitation(joinHook, 'join', undefined, joinShape),
-  });
+  const publicFacet = makeExo(
+    'API',
+    M.interface('API', {}, { defaultGuards: 'passable' }),
+    {
+      makeJoinInvitation: () =>
+        zcf.makeInvitation(joinHook, 'join', undefined, joinShape),
+    },
+  );
 
   return harden({ publicFacet });
 };

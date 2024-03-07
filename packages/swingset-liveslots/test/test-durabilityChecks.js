@@ -33,11 +33,15 @@ async function runDurabilityCheckTest(t, relaxDurabilityRules) {
   const aString = 'zorch!';
   const aVirtualObject = makeVirtualHolder();
   const aDurableObject = makeDurableHolder();
-  const aRemotableObject = Far('what', {
-    aMethod() {
-      return 'remote whatever';
+  const aRemotableObject = makeExo(
+    'what',
+    M.interface('what', {}, { defaultGuards: 'passable' }),
+    {
+      aMethod() {
+        return 'remote whatever';
+      },
     },
-  });
+  );
   const aPassablePromise = harden(Promise.resolve(aString));
   const aPassableError = harden(Error(aString));
   const aNonScalarKey = harden([]);

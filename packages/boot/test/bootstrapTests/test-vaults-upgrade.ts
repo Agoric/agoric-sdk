@@ -207,7 +207,11 @@ test.serial('audit bootstrap exports', async t => {
 
   // Map oid to iface by poring over transcript syscalls
   const toIface = new Map();
-  const anObj = Far('obj', {});
+  const anObj = makeExo(
+    'obj',
+    M.interface('obj', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const aPromise = harden(new Promise(() => {}));
   const saveBootstrapIface = (slot, iface) => {
     if (slot.startsWith('p')) return aPromise;

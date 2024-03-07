@@ -53,51 +53,57 @@ export const makePrioritySendersManager = sendersNode => {
     return r;
   };
 
-  return Far('prioritySenders manager', {
-    /**
-     * @param {string} rawNamespace
-     * @param {string} address
-     * @returns {Promise<void>}
-     */
-    add: async (rawNamespace, address) => {
-      const namespace = normalizeSenderNamespace(rawNamespace);
+  return makeExo(
+    'prioritySenders manager',
+    M.interface('prioritySenders manager', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * @param {string} rawNamespace
+       * @param {string} address
+       * @returns {Promise<void>}
+       */
+      add: async (rawNamespace, address) => {
+        const namespace = normalizeSenderNamespace(rawNamespace);
 
-      const record = await provideRecordForAddress(address);
+        const record = await provideRecordForAddress(address);
 
-      const [node, namespaces] = record;
-      if (namespaces.has(namespace)) {
-        throw Fail`namespace ${q(namespace)} already has address ${q(address)}`;
-      }
-      namespaces.add(namespace);
+        const [node, namespaces] = record;
+        if (namespaces.has(namespace)) {
+          throw Fail`namespace ${q(namespace)} already has address ${q(
+            address,
+          )}`;
+        }
+        namespaces.add(namespace);
 
-      return refreshVstorage(node, namespaces);
+        return refreshVstorage(node, namespaces);
+      },
+      /**
+       * @param {string} rawNamespace
+       * @param {string} address
+       * @returns {Promise<void>}
+       */
+      remove: (rawNamespace, address) => {
+        const namespace = normalizeSenderNamespace(rawNamespace);
+        const record = addressRecords.get(address);
+        if (!record) {
+          throw Fail`address not registered: ${q(address)}`;
+        }
+        const [node, namespaces] = record;
+        if (!namespaces.has(namespace)) {
+          throw Fail`namespace ${q(namespace)} does not have address ${q(
+            address,
+          )}`;
+        }
+
+        namespaces.delete(namespace);
+        if (namespaces.size === 0) {
+          addressRecords.delete(address);
+        }
+
+        return refreshVstorage(node, namespaces);
+      },
     },
-    /**
-     * @param {string} rawNamespace
-     * @param {string} address
-     * @returns {Promise<void>}
-     */
-    remove: (rawNamespace, address) => {
-      const namespace = normalizeSenderNamespace(rawNamespace);
-      const record = addressRecords.get(address);
-      if (!record) {
-        throw Fail`address not registered: ${q(address)}`;
-      }
-      const [node, namespaces] = record;
-      if (!namespaces.has(namespace)) {
-        throw Fail`namespace ${q(namespace)} does not have address ${q(
-          address,
-        )}`;
-      }
-
-      namespaces.delete(namespace);
-      if (namespaces.size === 0) {
-        addressRecords.delete(address);
-      }
-
-      return refreshVstorage(node, namespaces);
-    },
-  });
+  );
 };
 harden(makePrioritySendersManager);
 

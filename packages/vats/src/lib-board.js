@@ -195,7 +195,7 @@ const makeSlotToVal = state => {
     if (typeof iface === 'string' && iface.startsWith(ifaceAllegedPrefix)) {
       iface = iface.slice(ifaceAllegedPrefix.length);
     }
-    return Far(`${ifaceInaccessiblePrefix}${iface}`, {});
+    return makeExo(`${ifaceInaccessiblePrefix}${iface}`, M.interface(`${ifaceInaccessiblePrefix}${iface}`, {}, { defaultGuards: 'passable' }), {});
   };
   return slotToVal;
 };

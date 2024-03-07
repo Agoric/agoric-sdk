@@ -65,16 +65,28 @@ const reconnectAsNeeded = async (getter, seed = []) => {
  * @param {ERef<AsyncIterableIterator<T>>} itP
  */
 export const subscribe = itP =>
-  Far('AsyncIterable', {
-    [Symbol.asyncIterator]: () => {
-      const it = E(itP)[Symbol.asyncIterator]();
-      const self = Far('AsyncIterableIterator', {
-        [Symbol.asyncIterator]: () => self,
-        next: async () => E(it).next(),
-      });
-      return self;
+  makeExo(
+    'AsyncIterable',
+    M.interface('AsyncIterable', {}, { defaultGuards: 'passable' }),
+    {
+      [Symbol.asyncIterator]: () => {
+        const it = E(itP)[Symbol.asyncIterator]();
+        const self = makeExo(
+          'AsyncIterableIterator',
+          M.interface(
+            'AsyncIterableIterator',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            [Symbol.asyncIterator]: () => self,
+            next: async () => E(it).next(),
+          },
+        );
+        return self;
+      },
     },
-  });
+  );
 
 /**
  * Asyncronously iterates over the contents of a PublicationRecord chain as they
@@ -90,42 +102,46 @@ export const subscribe = itP =>
 const makeEachIterator = (topic, nextCellP) => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  const self = Far('EachIterator', {
-    [Symbol.asyncIterator]: () => self,
-    next: () => {
-      const {
-        head: resultP,
-        publishCount: publishCountP,
-        tail: tailP,
-      } = E.get(nextCellP);
+  const self = makeExo(
+    'EachIterator',
+    M.interface('EachIterator', {}, { defaultGuards: 'passable' }),
+    {
+      [Symbol.asyncIterator]: () => self,
+      next: () => {
+        const {
+          head: resultP,
+          publishCount: publishCountP,
+          tail: tailP,
+        } = E.get(nextCellP);
 
-      // If tailP is broken by upgrade, we will need to re-request it
-      // directly from `topic`.
-      const getSuccessor = async () => {
-        const publishCount = await publishCountP;
-        assert.typeof(publishCount, 'bigint');
-        const successor = await E(topic).subscribeAfter(publishCount);
-        const newPublishCount = successor.publishCount;
-        if (newPublishCount !== publishCount + 1n) {
-          Fail`eachIterator broken by gap from publishCount ${publishCount} to ${newPublishCount}`;
-        }
-        return successor;
-      };
+        // If tailP is broken by upgrade, we will need to re-request it
+        // directly from `topic`.
+        const getSuccessor = async () => {
+          const publishCount = await publishCountP;
+          assert.typeof(publishCount, 'bigint');
+          const successor = await E(topic).subscribeAfter(publishCount);
+          const newPublishCount = successor.publishCount;
+          if (newPublishCount !== publishCount + 1n) {
+            Fail`eachIterator broken by gap from publishCount ${publishCount} to ${newPublishCount}`;
+          }
+          return successor;
+        };
 
-      // Replace nextCellP on every call to next() so things work even
-      // with an eager consumer that doesn't wait for results to settle.
-      nextCellP = reconnectAsNeeded(getSuccessor, [tailP]);
+        // Replace nextCellP on every call to next() so things work even
+        // with an eager consumer that doesn't wait for results to settle.
+        nextCellP = reconnectAsNeeded(getSuccessor, [tailP]);
 
-      // Avoid unhandled rejection warnings here if the previous cell was rejected or
-      // there is no further request of this iterator.
-      // `tailP` is handled inside `reconnectAsNeeded` and `resultP` is the caller's
-      // concern, leaving only `publishCountP` and the new `nextCellP`.
-      void E.when(publishCountP, sink, sink);
-      void E.when(nextCellP, sink, sink);
-      return resultP;
+        // Avoid unhandled rejection warnings here if the previous cell was rejected or
+        // there is no further request of this iterator.
+        // `tailP` is handled inside `reconnectAsNeeded` and `resultP` is the caller's
+        // concern, leaving only `publishCountP` and the new `nextCellP`.
+        void E.when(publishCountP, sink, sink);
+        void E.when(nextCellP, sink, sink);
+        return resultP;
+      },
+      fork: () => makeEachIterator(topic, nextCellP),
     },
-    fork: () => makeEachIterator(topic, nextCellP),
-  });
+  );
   return self;
 };
 
@@ -146,12 +162,16 @@ const makeEachIterator = (topic, nextCellP) => {
  * @param {ERef<EachTopic<T>>} topic
  */
 export const subscribeEach = topic => {
-  const iterable = Far('EachIterable', {
-    [Symbol.asyncIterator]: () => {
-      const firstCellP = reconnectAsNeeded(() => E(topic).subscribeAfter());
-      return makeEachIterator(topic, firstCellP);
+  const iterable = makeExo(
+    'EachIterable',
+    M.interface('EachIterable', {}, { defaultGuards: 'passable' }),
+    {
+      [Symbol.asyncIterator]: () => {
+        const firstCellP = reconnectAsNeeded(() => E(topic).subscribeAfter());
+        return makeEachIterator(topic, firstCellP);
+      },
     },
-  });
+  );
   return iterable;
 };
 harden(subscribeEach);
@@ -195,43 +215,47 @@ const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
     return harden({ done: false, value });
   };
 
-  const self = Far('LatestIterator', {
-    fork: () => cloneLatestIterator(topic, localUpdateCount, terminalResult),
-    [Symbol.asyncIterator]: () => self,
-    next: async () => {
-      // In this adaptor, once `next()` is called and returns an unresolved
-      // promise, further `next()` calls will also return unresolved promises
-      // but each call will not trigger another `topic` request until the prior
-      // one has settled.
-      //
-      // This linear queueing behavior is only needed for code that uses the
-      // async iterator protocol explicitly. When this async iterator is
-      // consumed by a for/await/of loop, `next()` will only be called after the
-      // promise for the previous iteration result has fulfilled. If it fulfills
-      // with `done: true`, the for/await/of loop will never call `next()`
-      // again.
-      //
-      // See
-      // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
-      // for an explicit use that sends `next()` without waiting.
+  const self = makeExo(
+    'LatestIterator',
+    M.interface('LatestIterator', {}, { defaultGuards: 'passable' }),
+    {
+      fork: () => cloneLatestIterator(topic, localUpdateCount, terminalResult),
+      [Symbol.asyncIterator]: () => self,
+      next: async () => {
+        // In this adaptor, once `next()` is called and returns an unresolved
+        // promise, further `next()` calls will also return unresolved promises
+        // but each call will not trigger another `topic` request until the prior
+        // one has settled.
+        //
+        // This linear queueing behavior is only needed for code that uses the
+        // async iterator protocol explicitly. When this async iterator is
+        // consumed by a for/await/of loop, `next()` will only be called after the
+        // promise for the previous iteration result has fulfilled. If it fulfills
+        // with `done: true`, the for/await/of loop will never call `next()`
+        // again.
+        //
+        // See
+        // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
+        // for an explicit use that sends `next()` without waiting.
 
-      if (terminalResult) {
-        // We've reached the end of the topic, just keep returning the last
-        // result.
-        return terminalResult;
-      }
+        if (terminalResult) {
+          // We've reached the end of the topic, just keep returning the last
+          // result.
+          return terminalResult;
+        }
 
-      // BEGIN CRITICAL SECTION - synchronously enqueue and reassign `mutex`
-      //
-      // Use `mutex` to ensure that we have no more than a single request in
-      // flight.
-      const nextResult = mutex.then(maybeRequestNextResult);
-      mutex = nextResult.then(sink, sink);
-      // END CRITICAL SECTION
+        // BEGIN CRITICAL SECTION - synchronously enqueue and reassign `mutex`
+        //
+        // Use `mutex` to ensure that we have no more than a single request in
+        // flight.
+        const nextResult = mutex.then(maybeRequestNextResult);
+        mutex = nextResult.then(sink, sink);
+        // END CRITICAL SECTION
 
-      return nextResult;
+        return nextResult;
+      },
     },
-  });
+  );
   return self;
 };
 
@@ -256,9 +280,13 @@ const makeLatestIterator = topic => cloneLatestIterator(topic);
  * @param {ERef<LatestTopic<T>>} topic
  */
 export const subscribeLatest = topic => {
-  const iterable = Far('LatestIterable', {
-    [Symbol.asyncIterator]: () => makeLatestIterator(topic),
-  });
+  const iterable = makeExo(
+    'LatestIterable',
+    M.interface('LatestIterable', {}, { defaultGuards: 'passable' }),
+    {
+      [Symbol.asyncIterator]: () => makeLatestIterator(topic),
+    },
+  );
   return iterable;
 };
 harden(subscribeLatest);

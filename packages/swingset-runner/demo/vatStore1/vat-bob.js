@@ -69,55 +69,59 @@ export function buildRootObject() {
   let zot3;
   let zot4;
 
-  return Far('root', {
-    doYourStuff(phase) {
-      p('=> Bob: doYourStuff!');
-      switch (phase) {
-        case 0:
-          p('phase 0: start');
-          break;
-        case 1:
-          p('phase 1: object creations');
-          thing1 = makeThing('thing-1');
-          thing2 = makeThing('thing-2', 100);
-          thing3 = makeThing('thing-3', 200);
-          thing4 = makeThing('thing-4', 300);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      doYourStuff(phase) {
+        p('=> Bob: doYourStuff!');
+        switch (phase) {
+          case 0:
+            p('phase 0: start');
+            break;
+          case 1:
+            p('phase 1: object creations');
+            thing1 = makeThing('thing-1');
+            thing2 = makeThing('thing-2', 100);
+            thing3 = makeThing('thing-3', 200);
+            thing4 = makeThing('thing-4', 300);
 
-          zot1 = makeZot(23, 'Alice', 'is this on?');
-          zot2 = makeZot(29, 'Bob', 'what are you saying?');
-          zot3 = makeZot(47, 'Carol', 'as if...');
-          zot4 = makeZot(66, 'Dave', 'you and what army?');
-          break;
-        case 2:
-          p('phase 2: first batch-o-stuff');
-          thing1.inc();
-          zot1.sayHello('hello');
-          thing1.inc();
-          zot2.sayHello('hi');
-          thing1.inc();
-          zot3.sayHello('aloha');
-          zot4.sayHello('bonjour');
-          zot1.sayHello('hello again');
-          p(`${thing2.describe()}`);
-          break;
-        case 3:
-          p('phase 3: second batch-o-stuff');
-          p(`thing1 counter = ${thing1.get()}`);
-          thing1.inc();
-          thing4.reset(1000);
-          zot3.rename('Chester');
-          zot1.printInfo();
-          zot2.printInfo();
-          p(`${thing2.describe()}`);
-          zot3.printInfo();
-          zot4.printInfo();
-          thing3.inc();
-          p(`${thing4.describe()}`);
-          break;
-        default:
-          // because otherwise eslint complains
-          break;
-      }
+            zot1 = makeZot(23, 'Alice', 'is this on?');
+            zot2 = makeZot(29, 'Bob', 'what are you saying?');
+            zot3 = makeZot(47, 'Carol', 'as if...');
+            zot4 = makeZot(66, 'Dave', 'you and what army?');
+            break;
+          case 2:
+            p('phase 2: first batch-o-stuff');
+            thing1.inc();
+            zot1.sayHello('hello');
+            thing1.inc();
+            zot2.sayHello('hi');
+            thing1.inc();
+            zot3.sayHello('aloha');
+            zot4.sayHello('bonjour');
+            zot1.sayHello('hello again');
+            p(`${thing2.describe()}`);
+            break;
+          case 3:
+            p('phase 3: second batch-o-stuff');
+            p(`thing1 counter = ${thing1.get()}`);
+            thing1.inc();
+            thing4.reset(1000);
+            zot3.rename('Chester');
+            zot1.printInfo();
+            zot2.printInfo();
+            p(`${thing2.describe()}`);
+            zot3.printInfo();
+            zot4.printInfo();
+            thing3.inc();
+            p(`${thing4.describe()}`);
+            break;
+          default:
+            // because otherwise eslint complains
+            break;
+        }
+      },
     },
-  });
+  );
 }

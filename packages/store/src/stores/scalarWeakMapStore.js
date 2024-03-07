@@ -131,7 +131,7 @@ export const makeScalarWeakMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar WeakMapStore of ${q(tag)}`, {
+  return makeExo(`scalar WeakMapStore of ${q(tag)}`, M.interface(`scalar WeakMapStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
     ...makeWeakMapStoreMethods(
       jsmap,
       assertKVOkToAdd,

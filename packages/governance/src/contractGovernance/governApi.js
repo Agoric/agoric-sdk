@@ -116,10 +116,14 @@ const setupApiGovernance = (
     });
   };
 
-  return Far('paramGovernor', {
-    voteOnApiInvocation,
-    createdQuestion: b => voteCounters.has(b),
-  });
+  return makeExo(
+    'paramGovernor',
+    M.interface('paramGovernor', {}, { defaultGuards: 'passable' }),
+    {
+      voteOnApiInvocation,
+      createdQuestion: b => voteCounters.has(b),
+    },
+  );
 };
 
 harden(setupApiGovernance);

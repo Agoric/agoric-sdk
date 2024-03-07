@@ -13,7 +13,7 @@ export const buildRootObject = () => {
   const bootKit = makePromiseKit();
   const v1Kit = makePromiseKit();
 
-  return Far('B', {
+  return makeExo('B', M.interface('B', {}, { defaultGuards: 'passable' }), {
     bootstrap: async (vats, devices) => {
       const vatAdmin = await E(vats.vatAdmin).createVatAdminService(
         devices.vatAdmin,

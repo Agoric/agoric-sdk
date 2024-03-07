@@ -15,18 +15,22 @@ export function buildRootObject(vatPowers, vatParameters) {
     return E(aliceP).testSplitPayments();
   }
 
-  const obj0 = Far('root', {
-    async bootstrap(vats) {
-      switch (arg0) {
-        case 'splitPayments': {
-          const aliceMaker = await E(vats.alice).makeAliceMaker();
-          return testSplitPayments(aliceMaker);
+  const obj0 = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats) {
+        switch (arg0) {
+          case 'splitPayments': {
+            const aliceMaker = await E(vats.alice).makeAliceMaker();
+            return testSplitPayments(aliceMaker);
+          }
+          default: {
+            assert.fail(X`unrecognized argument value ${arg0}`);
+          }
         }
-        default: {
-          assert.fail(X`unrecognized argument value ${arg0}`);
-        }
-      }
+      },
     },
-  });
+  );
   return obj0;
 }

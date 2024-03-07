@@ -103,141 +103,151 @@ export function buildRootObject(vatPowers) {
     urlToHandler.set(url, commandHandler);
   }
 
-  return Far('root', {
-    setCommandDevice(d) {
-      commandDevice = d;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setCommandDevice(d) {
+        commandDevice = d;
 
-      const replHandler = getReplHandler(replObjects, send);
-      void registerURLHandler(replHandler, '/private/repl');
+        const replHandler = getReplHandler(replObjects, send);
+        void registerURLHandler(replHandler, '/private/repl');
 
-      // Assign the captp handler.
-      const captpHandler = Far('captpHandler', {
-        getBootstrap(_otherSide, _meta) {
-          // Harden only our exported objects, and fetch them afresh each time.
-          const exported = {
-            loadingNotifier,
-            ...replObjects.home,
-          };
-          if (replObjects.agoric) {
-            exported.agoric = { ...replObjects.agoric };
-          }
-          if (replObjects.local) {
-            exported.local = { ...replObjects.local };
-          }
-          return harden(exported);
-        },
-      });
-      void registerURLHandler(captpHandler, '/private/captp');
-    },
+        // Assign the captp handler.
+        const captpHandler = makeExo(
+          'captpHandler',
+          M.interface('captpHandler', {}, { defaultGuards: 'passable' }),
+          {
+            getBootstrap(_otherSide, _meta) {
+              // Harden only our exported objects, and fetch them afresh each time.
+              const exported = {
+                loadingNotifier,
+                ...replObjects.home,
+              };
+              if (replObjects.agoric) {
+                exported.agoric = { ...replObjects.agoric };
+              }
+              if (replObjects.local) {
+                exported.local = { ...replObjects.local };
+              }
+              return harden(exported);
+            },
+          },
+        );
+        void registerURLHandler(captpHandler, '/private/captp');
+      },
 
-    registerURLHandler,
-    registerAPIHandler: h => registerURLHandler(h, '/api'),
-    send,
-    doneLoading,
+      registerURLHandler,
+      registerAPIHandler: h => registerURLHandler(h, '/api'),
+      send,
+      doneLoading,
 
-    setWallet(wallet) {
-      replObjects.local.wallet = wallet;
-      replObjects.home.wallet = wallet;
-      resolveCacheCooordinator(E(E(wallet).getBridge()).getCacheCoordinator());
-    },
+      setWallet(wallet) {
+        replObjects.local.wallet = wallet;
+        replObjects.home.wallet = wallet;
+        resolveCacheCooordinator(
+          E(E(wallet).getBridge()).getCacheCoordinator(),
+        );
+      },
 
-    /**
-     * @param {object} [privateObjects]
-     * @param {object} [decentralObjects]
-     * @param {object} [deprecatedObjects]
-     */
-    setPresences(
-      privateObjects = undefined,
-      decentralObjects = undefined,
-      deprecatedObjects = undefined,
-    ) {
-      // We need to mutate the repl subobjects instead of replacing them.
-      if (privateObjects) {
-        Object.assign(replObjects.local, privateObjects);
-        doneLoading(['local']);
-      }
+      /**
+       * @param {object} [privateObjects]
+       * @param {object} [decentralObjects]
+       * @param {object} [deprecatedObjects]
+       */
+      setPresences(
+        privateObjects = undefined,
+        decentralObjects = undefined,
+        deprecatedObjects = undefined,
+      ) {
+        // We need to mutate the repl subobjects instead of replacing them.
+        if (privateObjects) {
+          Object.assign(replObjects.local, privateObjects);
+          doneLoading(['local']);
+        }
 
-      if (decentralObjects) {
-        // Assign the complete decentralObjects to `agoric`.
-        Object.assign(replObjects.agoric, decentralObjects);
-        doneLoading(['agoric']);
+        if (decentralObjects) {
+          // Assign the complete decentralObjects to `agoric`.
+          Object.assign(replObjects.agoric, decentralObjects);
+          doneLoading(['agoric']);
 
-        // Prune out the demo governance stuff from `home`; they're noisy.
+          // Prune out the demo governance stuff from `home`; they're noisy.
+          const {
+            behaviors: _,
+            governanceActions: _2,
+            ...rest
+          } = decentralObjects;
+          decentralObjects = rest;
+        }
+
+        // TODO: Maybe remove sometime; home object is deprecated.
+        Object.assign(
+          replObjects.home,
+          decentralObjects,
+          privateObjects,
+          deprecatedObjects,
+        );
+      },
+
+      // devices.command invokes our inbound() because we passed to
+      // registerInboundHandler()
+      async inbound(count, rawObj) {
+        // Launder the data, since the command device tends to pass device nodes
+        // when there are empty objects, which screw things up for us.
+        // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
+        const obj = JSON.parse(JSON.stringify(rawObj));
+        console.debug(
+          `vat-http.inbound (from browser) ${count}`,
+          JSON.stringify(obj, undefined, 2),
+        );
+
+        const { type, meta: rawMeta = {} } = obj || {};
         const {
-          behaviors: _,
-          governanceActions: _2,
-          ...rest
-        } = decentralObjects;
-        decentralObjects = rest;
-      }
+          url = '/private/repl',
+          channelID: rawChannelID,
+          dispatcher = 'onMessage',
+        } = rawMeta;
 
-      // TODO: Maybe remove sometime; home object is deprecated.
-      Object.assign(
-        replObjects.home,
-        decentralObjects,
-        privateObjects,
-        deprecatedObjects,
-      );
-    },
-
-    // devices.command invokes our inbound() because we passed to
-    // registerInboundHandler()
-    async inbound(count, rawObj) {
-      // Launder the data, since the command device tends to pass device nodes
-      // when there are empty objects, which screw things up for us.
-      // Analysis is in https://github.com/Agoric/agoric-sdk/pull/1956
-      const obj = JSON.parse(JSON.stringify(rawObj));
-      console.debug(
-        `vat-http.inbound (from browser) ${count}`,
-        JSON.stringify(obj, undefined, 2),
-      );
-
-      const { type, meta: rawMeta = {} } = obj || {};
-      const {
-        url = '/private/repl',
-        channelID: rawChannelID,
-        dispatcher = 'onMessage',
-      } = rawMeta;
-
-      await null;
-      try {
-        let channelHandle = channelIdToHandle.get(rawChannelID);
-        if (dispatcher === 'onOpen') {
-          channelHandle = Far('channelHandle');
-          channelIdToHandle.set(rawChannelID, channelHandle);
-          channelHandleToId.set(channelHandle, rawChannelID);
-        } else if (dispatcher === 'onClose') {
-          channelIdToHandle.delete(rawChannelID);
-          channelHandleToId.delete(channelHandle);
-        }
-
-        delete obj.meta;
-
-        const meta = {
-          ...rawMeta,
-          channelHandle,
-        };
-        delete meta.channelID;
-
-        const urlHandler = urlToHandler.get(url);
-        if (urlHandler) {
-          const res = await E(urlHandler)[dispatcher](obj, meta);
-          if (res) {
-            sendResponse(count, false, res);
-            return;
+        await null;
+        try {
+          let channelHandle = channelIdToHandle.get(rawChannelID);
+          if (dispatcher === 'onOpen') {
+            channelHandle = Far('channelHandle');
+            channelIdToHandle.set(rawChannelID, channelHandle);
+            channelHandleToId.set(channelHandle, rawChannelID);
+          } else if (dispatcher === 'onClose') {
+            channelIdToHandle.delete(rawChannelID);
+            channelHandleToId.delete(channelHandle);
           }
-        }
 
-        if (dispatcher === 'onMessage') {
-          sendResponse(count, false, { type: 'doesNotUnderstand', obj });
-          Fail`No handler for ${url} ${type}`;
+          delete obj.meta;
+
+          const meta = {
+            ...rawMeta,
+            channelHandle,
+          };
+          delete meta.channelID;
+
+          const urlHandler = urlToHandler.get(url);
+          if (urlHandler) {
+            const res = await E(urlHandler)[dispatcher](obj, meta);
+            if (res) {
+              sendResponse(count, false, res);
+              return;
+            }
+          }
+
+          if (dispatcher === 'onMessage') {
+            sendResponse(count, false, { type: 'doesNotUnderstand', obj });
+            Fail`No handler for ${url} ${type}`;
+          }
+          sendResponse(count, false, true);
+        } catch (rej) {
+          console.debug(`Error ${dispatcher}:`, rej);
+          const jsonable = (rej && rej.message) || rej;
+          sendResponse(count, true, jsonable);
         }
-        sendResponse(count, false, true);
-      } catch (rej) {
-        console.debug(`Error ${dispatcher}:`, rej);
-        const jsonable = (rej && rej.message) || rej;
-        sendResponse(count, true, jsonable);
-      }
+      },
     },
-  });
+  );
 }

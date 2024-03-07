@@ -273,20 +273,24 @@ export function makeWalletRoot({
         currentAmount,
       });
     const filter = state => state.map(innerFilter);
-    const pu = Far('pursesUpdater', {
-      updateState: newState => {
-        ipu.updateState(newState);
-        apu.updateState(filter(newState));
+    const pu = makeExo(
+      'pursesUpdater',
+      M.interface('pursesUpdater', {}, { defaultGuards: 'passable' }),
+      {
+        updateState: newState => {
+          ipu.updateState(newState);
+          apu.updateState(filter(newState));
+        },
+        finish: finalState => {
+          ipu.finish(finalState);
+          apu.finish(filter(finalState));
+        },
+        fail: reason => {
+          ipu.fail(reason);
+          apu.fail(reason);
+        },
       },
-      finish: finalState => {
-        ipu.finish(finalState);
-        apu.finish(filter(finalState));
-      },
-      fail: reason => {
-        ipu.fail(reason);
-        apu.fail(reason);
-      },
-    });
+    );
     return harden({
       pursesNotifier: ipn,
       attenuatedPursesNotifier: apn,
@@ -346,27 +350,31 @@ export function makeWalletRoot({
         ...jstate,
         purse,
         brand,
-        actions: Far('purse.actions', {
-          // Send a value from this purse.
-          async send(receiverP, sendValue) {
-            const amount = AmountMath.make(brand, sendValue);
-            const payment = await E(purse).withdraw(amount);
-            try {
-              await E(receiverP).receive(payment);
-            } catch (e) {
-              // Recover the failed payment.
-              await E(purse).deposit(payment);
-              throw e;
-            }
+        actions: makeExo(
+          'purse.actions',
+          M.interface('purse.actions', {}, { defaultGuards: 'passable' }),
+          {
+            // Send a value from this purse.
+            async send(receiverP, sendValue) {
+              const amount = AmountMath.make(brand, sendValue);
+              const payment = await E(purse).withdraw(amount);
+              try {
+                await E(receiverP).receive(payment);
+              } catch (e) {
+                // Recover the failed payment.
+                await E(purse).deposit(payment);
+                throw e;
+              }
+            },
+            async receive(paymentP) {
+              const payment = await paymentP;
+              return E(purse).deposit(payment);
+            },
+            deposit(payment, amount = undefined) {
+              return E(purse).deposit(payment, amount);
+            },
           },
-          async receive(paymentP) {
-            const payment = await paymentP;
-            return E(purse).deposit(payment);
-          },
-          deposit(payment, amount = undefined) {
-            return E(purse).deposit(payment, amount);
-          },
-        }),
+        ),
       }),
     );
     pursesUpdater.updateState([...pursesFullState.values()]);
@@ -1016,59 +1024,63 @@ export function makeWalletRoot({
         cacheCoordinator,
         approvalP,
         enable: false,
-        actions: Far('dapp.actions', {
-          setPetname(petname) {
-            if (dappRecord.petname === petname) {
+        actions: makeExo(
+          'dapp.actions',
+          M.interface('dapp.actions', {}, { defaultGuards: 'passable' }),
+          {
+            setPetname(petname) {
+              if (dappRecord.petname === petname) {
+                return dappRecord.actions;
+              }
+              if (edgeMapping.valToPetname.has(origin)) {
+                edgeMapping.renamePetname(petname, origin);
+              } else {
+                petname = edgeMapping.suggestPetname(petname, origin);
+              }
+              dappRecord = addMeta({
+                ...dappRecord,
+                petname,
+              });
+              updateDapp(dappRecord);
+              updateAllState();
               return dappRecord.actions;
-            }
-            if (edgeMapping.valToPetname.has(origin)) {
-              edgeMapping.renamePetname(petname, origin);
-            } else {
-              petname = edgeMapping.suggestPetname(petname, origin);
-            }
-            dappRecord = addMeta({
-              ...dappRecord,
-              petname,
-            });
-            updateDapp(dappRecord);
-            updateAllState();
-            return dappRecord.actions;
-          },
-          enable() {
-            // Enable the dapp with the attached petname.
-            dappRecord = addMeta({
-              ...dappRecord,
-              enable: true,
-            });
-            edgeMapping.suggestPetname(dappRecord.petname, origin);
-            updateDapp(dappRecord);
+            },
+            enable() {
+              // Enable the dapp with the attached petname.
+              dappRecord = addMeta({
+                ...dappRecord,
+                enable: true,
+              });
+              edgeMapping.suggestPetname(dappRecord.petname, origin);
+              updateDapp(dappRecord);
 
-            // Allow the pending requests to pass.
-            resolve();
-            return dappRecord.actions;
+              // Allow the pending requests to pass.
+              resolve();
+              return dappRecord.actions;
+            },
+            disable(reason = undefined) {
+              // Reject the pending dapp requests.
+              if (reject) {
+                reject(reason);
+              }
+              // Create a new, suspended-approval record.
+              ({ resolve, reject, promise: approvalP } = makePromiseKit());
+              dappRecord = addMeta({
+                ...dappRecord,
+                enable: false,
+                approvalP,
+              });
+              updateDapp(dappRecord);
+              return dappRecord.actions;
+            },
+            delete() {
+              if (reject) {
+                reject('Dapp deleted');
+              }
+              deleteDapp(dappRecord);
+            },
           },
-          disable(reason = undefined) {
-            // Reject the pending dapp requests.
-            if (reject) {
-              reject(reason);
-            }
-            // Create a new, suspended-approval record.
-            ({ resolve, reject, promise: approvalP } = makePromiseKit());
-            dappRecord = addMeta({
-              ...dappRecord,
-              enable: false,
-              approvalP,
-            });
-            updateDapp(dappRecord);
-            return dappRecord.actions;
-          },
-          delete() {
-            if (reject) {
-              reject('Dapp deleted');
-            }
-            deleteDapp(dappRecord);
-          },
-        }),
+        ),
       });
 
       // Prepare the table entry to be updated.
@@ -1529,33 +1541,37 @@ export function makeWalletRoot({
   const instanceManager = makeManager(instanceMapping, 'InstanceManager');
 
   /** @type {IssuerManager} */
-  const issuerManager = Far('IssuerManager', {
-    rename: async (petname, issuer) => {
-      brandTable.hasByIssuer(issuer) ||
-        Fail`issuer has not been previously added`;
-      const brandRecord = brandTable.getByIssuer(issuer);
-      brandMapping.renamePetname(petname, brandRecord.brand);
-      await updateAllState();
+  const issuerManager = makeExo(
+    'IssuerManager',
+    M.interface('IssuerManager', {}, { defaultGuards: 'passable' }),
+    {
+      rename: async (petname, issuer) => {
+        brandTable.hasByIssuer(issuer) ||
+          Fail`issuer has not been previously added`;
+        const brandRecord = brandTable.getByIssuer(issuer);
+        brandMapping.renamePetname(petname, brandRecord.brand);
+        await updateAllState();
+      },
+      get: petname => {
+        const brand = brandMapping.petnameToVal.get(petname);
+        return brandTable.getByBrand(brand).issuer;
+      },
+      getAll: () => {
+        return [...brandMapping.petnameToVal.entries()].map(
+          ([petname, brand]) => {
+            const { issuer } = brandTable.getByBrand(brand);
+            return [petname, issuer];
+          },
+        );
+      },
+      add: async (petname, issuerP) => {
+        const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
+        await initIssuerToBoardId(issuer, brand);
+        brandMapping.suggestPetname(petname, brand);
+        await updateAllIssuersState();
+      },
     },
-    get: petname => {
-      const brand = brandMapping.petnameToVal.get(petname);
-      return brandTable.getByBrand(brand).issuer;
-    },
-    getAll: () => {
-      return [...brandMapping.petnameToVal.entries()].map(
-        ([petname, brand]) => {
-          const { issuer } = brandTable.getByBrand(brand);
-          return [petname, issuer];
-        },
-      );
-    },
-    add: async (petname, issuerP) => {
-      const { brand, issuer } = await brandTable.initIssuer(issuerP, addMeta);
-      await initIssuerToBoardId(issuer, brand);
-      brandMapping.suggestPetname(petname, brand);
-      await updateAllIssuersState();
-    },
-  });
+  );
 
   function getInstallationManager() {
     return installationManager;
@@ -1646,7 +1662,7 @@ export function makeWalletRoot({
     const makeLookup = (kind, lookup) => {
       rootPathToLookup.init(
         kind,
-        Far(`${kind}Lookup`, {
+        makeExo(`${kind}Lookup`, M.interface(`${kind}Lookup`, {}, { defaultGuards: 'passable' }), {
           lookup,
         }),
       );
@@ -1735,134 +1751,142 @@ export function makeWalletRoot({
     }
   };
 
-  const wallet = Far('wallet', {
-    lookup: (...path) => {
-      // Provide an entrypoint to the wallet's naming hub.
-      if (path.length === 0) {
-        return wallet;
-      }
-      const [first, ...remaining] = path;
-      const firstValue = firstPathToLookup.get(first);
-      if (remaining.length === 0) {
-        return firstValue;
-      }
-      return E(firstValue).lookup(...remaining);
+  const wallet = makeExo(
+    'wallet',
+    M.interface('wallet', {}, { defaultGuards: 'passable' }),
+    {
+      lookup: (...path) => {
+        // Provide an entrypoint to the wallet's naming hub.
+        if (path.length === 0) {
+          return wallet;
+        }
+        const [first, ...remaining] = path;
+        const firstValue = firstPathToLookup.get(first);
+        if (remaining.length === 0) {
+          return firstValue;
+        }
+        return E(firstValue).lookup(...remaining);
+      },
+      getMarshaller: () => marshaller,
+      getDappCacheCoordinator: dappOrigin =>
+        dappOrigins.get(dappOrigin).cacheCoordinator,
+      getCacheCoordinator: () => sharedCacheCoordinator,
+      saveOfferResult,
+      getOfferResult,
+      waitForDappApproval,
+      getDappsNotifier() {
+        return dappsNotifier;
+      },
+      getPursesNotifier() {
+        return pursesNotifier;
+      },
+      getAttenuatedPursesNotifier() {
+        return attenuatedPursesNotifier;
+      },
+      getIssuersNotifier() {
+        return issuersNotifier;
+      },
+      getOffersNotifier() {
+        return offersNotifier;
+      },
+      /** @deprecated use issuerManager.add instead */
+      addIssuer: issuerManager.add,
+      getBrand,
+      getBrandPetnames,
+      publishIssuer,
+      /** @deprecated use instanceManager.add instead */
+      addInstance: instanceManager.add,
+      /** @deprecated use installationManager.add instead */
+      addInstallation: installationManager.add,
+      getInstallationManager,
+      getInstanceManager,
+      getIssuerManager,
+      /** @deprecated use issuerManager.rename instead */
+      renameIssuer: issuerManager.rename,
+      /** @deprecated use instanceManager.rename instead */
+      renameInstance: instanceManager.rename,
+      /** @deprecated use installationManager.rename instead */
+      renameInstallation: installationManager.rename,
+      getSelfContact,
+      /** @deprecated use instanceManager.get instead */
+      getInstance: instanceManager.get,
+      /** @deprecated use installationManager.get instead */
+      getInstallation: installationManager.get,
+      /** @deprecated use installationManager.getAll instead */
+      getInstallations: installationManager.getAll,
+      makeEmptyPurse,
+      deposit,
+      /** @deprecated use issuerManager.get instead */
+      getIssuer: issuerManager.get,
+      /** @deprecated use issuerManager.getAll instead */
+      getIssuers: issuerManager.getAll,
+      getPurses,
+      getPurse,
+      getPurseIssuer,
+      addOffer,
+      declineOffer,
+      cancelOffer,
+      acceptOffer,
+      getOffers,
+      getSeat: id => idToSeat.get(id),
+      getSeats: ids => ids.map(wallet.getSeat),
+      enableAutoDeposit(pursePetname) {
+        // Enable the autodeposit with intermediary state updates.
+        return doEnableAutoDeposit(pursePetname, true);
+      },
+      disableAutoDeposit,
+      performAction,
+      getDepositFacetId,
+      suggestIssuer,
+      suggestInstance,
+      suggestInstallation,
+      addContact,
+      getContactsNotifier() {
+        return contactsNotifier;
+      },
+      addPayment,
+      getPaymentsNotifier() {
+        return paymentsNotifier;
+      },
+      /** @deprecated use `getPublicSubscribers` instead. */
+      getUINotifier,
+      /** @deprecated use `getPublicSubscribers` instead. */
+      getPublicNotifiers,
+      getPublicSubscribers,
+      getZoe() {
+        return zoe;
+      },
+      getBoard() {
+        return board;
+      },
+      getAgoricNames(...path) {
+        if (!agoricNames) {
+          throw Fail`agoricNames was not supplied to the wallet maker`;
+        }
+        return E(agoricNames).lookup(...path);
+      },
+      getNamesByAddress(...path) {
+        if (namesByAddress === undefined) {
+          // TypeScript confused about `||` control flow so use `if` instead
+          // https://github.com/microsoft/TypeScript/issues/50739
+          throw Fail`namesByAddress was not supplied to the wallet maker`;
+        }
+        return E(namesByAddress).lookup(...path);
+      },
     },
-    getMarshaller: () => marshaller,
-    getDappCacheCoordinator: dappOrigin =>
-      dappOrigins.get(dappOrigin).cacheCoordinator,
-    getCacheCoordinator: () => sharedCacheCoordinator,
-    saveOfferResult,
-    getOfferResult,
-    waitForDappApproval,
-    getDappsNotifier() {
-      return dappsNotifier;
-    },
-    getPursesNotifier() {
-      return pursesNotifier;
-    },
-    getAttenuatedPursesNotifier() {
-      return attenuatedPursesNotifier;
-    },
-    getIssuersNotifier() {
-      return issuersNotifier;
-    },
-    getOffersNotifier() {
-      return offersNotifier;
-    },
-    /** @deprecated use issuerManager.add instead */
-    addIssuer: issuerManager.add,
-    getBrand,
-    getBrandPetnames,
-    publishIssuer,
-    /** @deprecated use instanceManager.add instead */
-    addInstance: instanceManager.add,
-    /** @deprecated use installationManager.add instead */
-    addInstallation: installationManager.add,
-    getInstallationManager,
-    getInstanceManager,
-    getIssuerManager,
-    /** @deprecated use issuerManager.rename instead */
-    renameIssuer: issuerManager.rename,
-    /** @deprecated use instanceManager.rename instead */
-    renameInstance: instanceManager.rename,
-    /** @deprecated use installationManager.rename instead */
-    renameInstallation: installationManager.rename,
-    getSelfContact,
-    /** @deprecated use instanceManager.get instead */
-    getInstance: instanceManager.get,
-    /** @deprecated use installationManager.get instead */
-    getInstallation: installationManager.get,
-    /** @deprecated use installationManager.getAll instead */
-    getInstallations: installationManager.getAll,
-    makeEmptyPurse,
-    deposit,
-    /** @deprecated use issuerManager.get instead */
-    getIssuer: issuerManager.get,
-    /** @deprecated use issuerManager.getAll instead */
-    getIssuers: issuerManager.getAll,
-    getPurses,
-    getPurse,
-    getPurseIssuer,
-    addOffer,
-    declineOffer,
-    cancelOffer,
-    acceptOffer,
-    getOffers,
-    getSeat: id => idToSeat.get(id),
-    getSeats: ids => ids.map(wallet.getSeat),
-    enableAutoDeposit(pursePetname) {
-      // Enable the autodeposit with intermediary state updates.
-      return doEnableAutoDeposit(pursePetname, true);
-    },
-    disableAutoDeposit,
-    performAction,
-    getDepositFacetId,
-    suggestIssuer,
-    suggestInstance,
-    suggestInstallation,
-    addContact,
-    getContactsNotifier() {
-      return contactsNotifier;
-    },
-    addPayment,
-    getPaymentsNotifier() {
-      return paymentsNotifier;
-    },
-    /** @deprecated use `getPublicSubscribers` instead. */
-    getUINotifier,
-    /** @deprecated use `getPublicSubscribers` instead. */
-    getPublicNotifiers,
-    getPublicSubscribers,
-    getZoe() {
-      return zoe;
-    },
-    getBoard() {
-      return board;
-    },
-    getAgoricNames(...path) {
-      if (!agoricNames) {
-        throw Fail`agoricNames was not supplied to the wallet maker`;
-      }
-      return E(agoricNames).lookup(...path);
-    },
-    getNamesByAddress(...path) {
-      if (namesByAddress === undefined) {
-        // TypeScript confused about `||` control flow so use `if` instead
-        // https://github.com/microsoft/TypeScript/issues/50739
-        throw Fail`namesByAddress was not supplied to the wallet maker`;
-      }
-      return E(namesByAddress).lookup(...path);
-    },
-  });
+  );
 
   const initialize = async () => {
     // Allow people to send us payments.
-    const selfDepositFacet = Far('contact', {
-      receive(payment) {
-        return addPayment(payment);
+    const selfDepositFacet = makeExo(
+      'contact',
+      M.interface('contact', {}, { defaultGuards: 'passable' }),
+      {
+        receive(payment) {
+          return addPayment(payment);
+        },
       },
-    });
+    );
 
     const address = await E(myAddressNameAdmin).getMyAddress();
     // We need to do this before we can enable auto deposit.

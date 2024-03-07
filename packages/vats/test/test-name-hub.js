@@ -156,7 +156,11 @@ test('makeNameHubKit - listen for updates', async t => {
 
   const capture = [];
   nameAdmin.onUpdate(
-    Far('Recorder', { write: entries => capture.push(entries) }),
+    makeExo(
+      'Recorder',
+      M.interface('Recorder', {}, { defaultGuards: 'passable' }),
+      { write: entries => capture.push(entries) },
+    ),
   );
 
   const brandIST = harden({ name: 'IST' });

@@ -32,7 +32,11 @@ test('droppedCollectionWeakRefs', async t => {
     // creating a WeakMap/Set should put it in droppedCollectionWeakRefs
     myVOAwareWeakMap = new WeakMap();
     myVOAwareWeakSet = new WeakSet();
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS = () => ({ buildRootObject });

@@ -1,11 +1,15 @@
 import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  const other = Far('other', {
-    something(arg) {
-      return arg;
+  const other = makeExo(
+    'other',
+    M.interface('other', {}, { defaultGuards: 'passable' }),
+    {
+      something(arg) {
+        return arg;
+      },
     },
-  });
+  );
 
   function behave(mode) {
     if (mode === 'data') {
@@ -18,12 +22,16 @@ export function buildRootObject(_vatPowers, vatParameters) {
     return undefined;
   }
 
-  return Far('root', {
-    bootstrap(_vats) {
-      return behave(vatParameters.argv[0]);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap(_vats) {
+        return behave(vatParameters.argv[0]);
+      },
+      extra(mode) {
+        return behave(mode);
+      },
     },
-    extra(mode) {
-      return behave(mode);
-    },
-  });
+  );
 }

@@ -19,15 +19,19 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
 
   const { version } = vatParameters;
 
-  return Far('root', {
-    getVersion: () => version,
-    getParameters: () => vatParameters,
-    getSubscriber: () => subscriber,
-    subscribeEach: topic => subscribeEach(topic),
-    subscribeLatest: topic => subscribeLatest(topic),
-    makeDurablePublishKit: (...args) => makeDurablePublishKit(...args),
-    publish: value => publisher.publish(value),
-    finish: finalValue => publisher.finish(finalValue),
-    fail: reason => publisher.fail(reason),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getVersion: () => version,
+      getParameters: () => vatParameters,
+      getSubscriber: () => subscriber,
+      subscribeEach: topic => subscribeEach(topic),
+      subscribeLatest: topic => subscribeLatest(topic),
+      makeDurablePublishKit: (...args) => makeDurablePublishKit(...args),
+      publish: value => publisher.publish(value),
+      finish: finalValue => publisher.finish(finalValue),
+      fail: reason => publisher.fail(reason),
+    },
+  );
 };

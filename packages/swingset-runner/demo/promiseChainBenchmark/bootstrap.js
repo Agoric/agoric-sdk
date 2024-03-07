@@ -21,14 +21,18 @@ export function buildRootObject() {
     );
   }
 
-  return Far('root', {
-    bootstrap(vats) {
-      bob = vats.bob;
-      p = E(bob).init();
-      E(bob).gen();
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap(vats) {
+        bob = vats.bob;
+        p = E(bob).init();
+        E(bob).gen();
+      },
+      runBenchmarkRound() {
+        waitForNextResolution();
+      },
     },
-    runBenchmarkRound() {
-      waitForNextResolution();
-    },
-  });
+  );
 }

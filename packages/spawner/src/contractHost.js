@@ -8,19 +8,30 @@ import { Far } from '@endo/marshal';
 import spawnBundle from '../bundles/bundle-spawn.js';
 
 function makeSpawner(vatAdminSvc) {
-  return Far('spawner', {
-    install(bundle, oldModuleFormat) {
-      assert(!oldModuleFormat, 'oldModuleFormat not supported');
-      return Far('installer', {
-        async spawn(argsP) {
-          const meter = await E(vatAdminSvc).createUnlimitedMeter();
-          const opts = { name: 'spawn', meter };
-          const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
-          return E(E(root).loadBundle(bundle)).start(argsP);
-        },
-      });
+  return makeExo(
+    'spawner',
+    M.interface('spawner', {}, { defaultGuards: 'passable' }),
+    {
+      install(bundle, oldModuleFormat) {
+        assert(!oldModuleFormat, 'oldModuleFormat not supported');
+        return makeExo(
+          'installer',
+          M.interface('installer', {}, { defaultGuards: 'passable' }),
+          {
+            async spawn(argsP) {
+              const meter = await E(vatAdminSvc).createUnlimitedMeter();
+              const opts = { name: 'spawn', meter };
+              const { root } = await E(vatAdminSvc).createVat(
+                spawnBundle,
+                opts,
+              );
+              return E(E(root).loadBundle(bundle)).start(argsP);
+            },
+          },
+        );
+      },
     },
-  });
+  );
 }
 harden(makeSpawner);
 

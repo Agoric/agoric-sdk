@@ -121,89 +121,93 @@ test('zoe - coveredCall', async t => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
     const bucksPurse = bucksKit.issuer.makeEmptyPurse();
-    return Far('bob', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+    return makeExo(
+      'bob',
+      M.interface('bob', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-        // Bob is able to use the trusted invitationIssuer from Zoe to
-        // transform an untrusted invitation that Alice also has access to
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
+          // Bob is able to use the trusted invitationIssuer from Zoe to
+          // transform an untrusted invitation that Alice also has access to
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
+          );
 
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
-        t.is(
-          invitationValue.installation,
-          installation,
-          'installation is coveredCall',
-        );
-        t.is(invitationValue.description, 'exerciseOption');
+          t.is(
+            invitationValue.installation,
+            installation,
+            'installation is coveredCall',
+          );
+          t.is(invitationValue.description, 'exerciseOption');
 
-        t.deepEqual(
-          invitationValue.customDetails?.underlyingAssets,
-          { Moola: moola(3n) },
-          `underlying assets are 3 moola`,
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.strikePrice,
-          { Simoleans: simoleans(7n), Bucks: bucks(2n) },
-          `strike price is 7 simoleans and 2 bucks, so bob must give that`,
-        );
+          t.deepEqual(
+            invitationValue.customDetails?.underlyingAssets,
+            { Moola: moola(3n) },
+            `underlying assets are 3 moola`,
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.strikePrice,
+            { Simoleans: simoleans(7n), Bucks: bucks(2n) },
+            `strike price is 7 simoleans and 2 bucks, so bob must give that`,
+          );
 
-        t.deepEqual(invitationValue.customDetails?.expirationDate, toTS(1n));
-        t.deepEqual(invitationValue.customDetails?.timeAuthority, timer);
+          t.deepEqual(invitationValue.customDetails?.expirationDate, toTS(1n));
+          t.deepEqual(invitationValue.customDetails?.timeAuthority, timer);
 
-        const proposal = harden({
-          give: { StrikePrice1: simoleans(7n), StrikePrice2: bucks(2n) },
-          want: { UnderlyingAsset: moola(3n) },
-          exit: { onDemand: null },
-        });
-        const payments = {
-          StrikePrice1: simoleanPayment,
-          StrikePrice2: bucksPayment,
-        };
+          const proposal = harden({
+            give: { StrikePrice1: simoleans(7n), StrikePrice2: bucks(2n) },
+            want: { UnderlyingAsset: moola(3n) },
+            exit: { onDemand: null },
+          });
+          const payments = {
+            StrikePrice1: simoleanPayment,
+            StrikePrice2: bucksPayment,
+          };
 
-        const seat = await E(zoe).offer(invitation, proposal, payments);
+          const seat = await E(zoe).offer(invitation, proposal, payments);
 
-        t.is(
-          await E(seat).getOfferResult(),
-          `The option was exercised. Please collect the assets in your payout.`,
-        );
-        return seat;
+          t.is(
+            await E(seat).getOfferResult(),
+            `The option was exercised. Please collect the assets in your payout.`,
+          );
+          return seat;
+        },
+        processPayouts: async seat => {
+          await E(seat)
+            .getPayout('UnderlyingAsset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, moola(3n), `Bob got what he wanted`),
+            );
+
+          await E(seat)
+            .getPayout('StrikePrice1')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                simoleans(0n),
+                `Bob didn't get anything back`,
+              ),
+            );
+
+          await E(seat)
+            .getPayout('StrikePrice2')
+            .then(payment => bucksPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                bucks(0n),
+                `Bob didn't get anything back`,
+              ),
+            );
+        },
       },
-      processPayouts: async seat => {
-        await E(seat)
-          .getPayout('UnderlyingAsset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(3n), `Bob got what he wanted`),
-          );
-
-        await E(seat)
-          .getPayout('StrikePrice1')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(0n),
-              `Bob didn't get anything back`,
-            ),
-          );
-
-        await E(seat)
-          .getPayout('StrikePrice2')
-          .then(payment => bucksPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              bucks(0n),
-              `Bob didn't get anything back`,
-            ),
-          );
-      },
-    });
+    );
   };
 
   // Setup Alice

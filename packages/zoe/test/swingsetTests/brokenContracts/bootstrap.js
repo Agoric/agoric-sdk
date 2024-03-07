@@ -36,33 +36,38 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      /** @type {{zoeService: ERef<ZoeService>}} */
-      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
-        vatAdminSvc,
-        undefined,
-        'zcf',
-      );
-      const bcap = await E(vatAdminSvc).getNamedBundleCap('crashingAutoRefund');
-      const id = D(bcap).getBundleID();
-      const installations = {
-        crashAutoRefund: await E(zoe).installBundleID(id),
-      };
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        /** @type {{zoeService: ERef<ZoeService>}} */
+        const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+          vatAdminSvc,
+          undefined,
+          'zcf',
+        );
+        const bcap =
+          await E(vatAdminSvc).getNamedBundleCap('crashingAutoRefund');
+        const id = D(bcap).getBundleID();
+        const installations = {
+          crashAutoRefund: await E(zoe).installBundleID(id),
+        };
 
-      const [testName, startingValues] = vatParameters.argv;
+        const [testName, startingValues] = vatParameters.argv;
 
-      const aliceP = makeVats(
-        vatPowers.testLog,
-        vats,
-        zoe,
-        installations,
-        startingValues,
-      );
-      await E(aliceP).startTest(testName);
+        const aliceP = makeVats(
+          vatPowers.testLog,
+          vats,
+          zoe,
+          installations,
+          startingValues,
+        );
+        await E(aliceP).startTest(testName);
+      },
     },
-  });
+  );
 }

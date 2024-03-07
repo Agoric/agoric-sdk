@@ -310,42 +310,54 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
     console.log('boot-psm fully resolved');
   };
 
-  return Far('bootstrap', {
-    bootstrap: (vats, devices) => {
-      const { D } = vatPowers;
-      D(devices.mailbox).registerInboundHandler(
-        Far('dummyInboundHandler', { deliverInboundMessages: () => {} }),
-      );
+  return makeExo(
+    'bootstrap',
+    M.interface('bootstrap', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap: (vats, devices) => {
+        const { D } = vatPowers;
+        D(devices.mailbox).registerInboundHandler(
+          makeExo(
+            'dummyInboundHandler',
+            M.interface(
+              'dummyInboundHandler',
+              {},
+              { defaultGuards: 'passable' },
+            ),
+            { deliverInboundMessages: () => {} },
+          ),
+        );
 
-      return runBootstrapParts(vats, devices).catch(e => {
-        console.error('BOOTSTRAP FAILED:', e);
-        throw e;
-      });
+        return runBootstrapParts(vats, devices).catch(e => {
+          console.error('BOOTSTRAP FAILED:', e);
+          throw e;
+        });
+      },
+      /**
+       * Allow kernel to provide things to CORE_EVAL.
+       *
+       * @param {string} name
+       * @param {unknown} resolution
+       */
+      produceItem: (name, resolution) => {
+        assert.typeof(name, 'string');
+        produce[name].resolve(resolution);
+      },
+      // expose reset in case we need to do-over
+      resetItem: name => {
+        assert.typeof(name, 'string');
+        produce[name].reset();
+      },
+      // expose consume mostly for testing
+      consumeItem: name => {
+        assert.typeof(name, 'string');
+        return consume[name];
+      },
+      /** @type {() => ChainBootstrapSpace} */
+      // @ts-expect-error cast
+      getPromiseSpace: () => ({ consume, produce, ...spaces }),
     },
-    /**
-     * Allow kernel to provide things to CORE_EVAL.
-     *
-     * @param {string} name
-     * @param {unknown} resolution
-     */
-    produceItem: (name, resolution) => {
-      assert.typeof(name, 'string');
-      produce[name].resolve(resolution);
-    },
-    // expose reset in case we need to do-over
-    resetItem: name => {
-      assert.typeof(name, 'string');
-      produce[name].reset();
-    },
-    // expose consume mostly for testing
-    consumeItem: name => {
-      assert.typeof(name, 'string');
-      return consume[name];
-    },
-    /** @type {() => ChainBootstrapSpace} */
-    // @ts-expect-error cast
-    getPromiseSpace: () => ({ consume, produce, ...spaces }),
-  });
+  );
 };
 
 harden({ buildRootObject });

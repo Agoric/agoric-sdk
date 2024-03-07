@@ -93,58 +93,62 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 };
 
 export function buildRootObject(_vatPowers, vatParameters) {
-  const obj0 = Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      /** @type {{zoeService: ERef<ZoeService>}} */
-      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
-        vatAdminSvc,
-        undefined,
-        'zcf',
-      );
-      const installations = {
-        automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
-        coveredCall: await E(zoe).install(coveredCallBundle.bundle),
-        secondPriceAuction: await E(zoe).install(
-          secondPriceAuctionBundle.bundle,
-        ),
-        atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
-        simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
-        autoswap: await E(zoe).install(autoswapBundle.bundle),
-        sellItems: await E(zoe).install(sellItemsBundle.bundle),
-        mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
-        otcDesk: await E(zoe).install(otcDeskBundle.bundle),
-      };
-
-      const testName = vatParameters.argv[0] || 'simpleExchangeOk';
-      const startingValuesStr = vatParameters.argv[1];
-      let startingValues;
-      if (startingValuesStr) {
-        startingValues = JSON.parse(startingValuesStr);
-      } else if (
-        vatParameters.startingValues &&
-        vatParameters.startingValues[testName]
-      ) {
-        startingValues = vatParameters.startingValues[testName];
-      } else {
-        throw Error(
-          `Cannot find startingValues for ${testName} in ${JSON.stringify(
-            vatParameters,
-          )}`,
+  const obj0 = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
         );
-      }
+        /** @type {{zoeService: ERef<ZoeService>}} */
+        const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+          vatAdminSvc,
+          undefined,
+          'zcf',
+        );
+        const installations = {
+          automaticRefund: await E(zoe).install(automaticRefundBundle.bundle),
+          coveredCall: await E(zoe).install(coveredCallBundle.bundle),
+          secondPriceAuction: await E(zoe).install(
+            secondPriceAuctionBundle.bundle,
+          ),
+          atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
+          simpleExchange: await E(zoe).install(simpleExchangeBundle.bundle),
+          autoswap: await E(zoe).install(autoswapBundle.bundle),
+          sellItems: await E(zoe).install(sellItemsBundle.bundle),
+          mintAndSellNFT: await E(zoe).install(mintAndSellNFTBundle.bundle),
+          otcDesk: await E(zoe).install(otcDeskBundle.bundle),
+        };
 
-      const { aliceP, bobP, carolP, daveP } = makeVats(
-        makePrintLog(),
-        vats,
-        zoe,
-        installations,
-        startingValues,
-      );
-      await E(aliceP).startTest(testName, bobP, carolP, daveP);
+        const testName = vatParameters.argv[0] || 'simpleExchangeOk';
+        const startingValuesStr = vatParameters.argv[1];
+        let startingValues;
+        if (startingValuesStr) {
+          startingValues = JSON.parse(startingValuesStr);
+        } else if (
+          vatParameters.startingValues &&
+          vatParameters.startingValues[testName]
+        ) {
+          startingValues = vatParameters.startingValues[testName];
+        } else {
+          throw Error(
+            `Cannot find startingValues for ${testName} in ${JSON.stringify(
+              vatParameters,
+            )}`,
+          );
+        }
+
+        const { aliceP, bobP, carolP, daveP } = makeVats(
+          makePrintLog(),
+          vats,
+          zoe,
+          installations,
+          startingValues,
+        );
+        await E(aliceP).startTest(testName, bobP, carolP, daveP);
+      },
     },
-  });
+  );
   return obj0;
 }

@@ -4,22 +4,30 @@ import { makePromiseKit } from '@endo/promise-kit';
 export function buildRootObject() {
   const pk3 = makePromiseKit();
   const pk4 = makePromiseKit();
-  const t2 = Far('t2', {
-    four(arg) {
-      // arg should be a Promise that promptly resolves to 4
-      const argP = Promise.resolve(arg);
-      const wasP = argP === arg;
-      return argP.then(newArg => pk4.resolve([wasP, newArg]));
+  const t2 = makeExo(
+    't2',
+    M.interface('t2', {}, { defaultGuards: 'passable' }),
+    {
+      four(arg) {
+        // arg should be a Promise that promptly resolves to 4
+        const argP = Promise.resolve(arg);
+        const wasP = argP === arg;
+        return argP.then(newArg => pk4.resolve([wasP, newArg]));
+      },
     },
-  });
+  );
 
-  return Far('root', {
-    one() {
-      return pk3.promise;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      one() {
+        return pk3.promise;
+      },
+      three() {
+        pk3.resolve(t2);
+        return pk4.promise;
+      },
     },
-    three() {
-      pk3.resolve(t2);
-      return pk4.promise;
-    },
-  });
+  );
 }

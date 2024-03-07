@@ -7,28 +7,32 @@ export function buildRootDeviceNode(tools) {
   const { registerPassOneMessage, deliverMode } = endowments;
 
   function makeSender(sender) {
-    return Far('sender', {
-      add(peer, msgnum, body) {
-        const oldDS = getDeviceState();
-        oldDS.inboundHandlers[peer] || Fail`unregistered peer '${peer}'`;
-        const h = oldDS.inboundHandlers[peer];
-        const newDS = { ...oldDS };
-        if (deliverMode === 'immediate') {
-          SO(h).deliverInboundMessages(
-            sender,
-            harden([[oldDS.counts[sender], body]]),
-          );
-        } else {
-          newDS.queuedMessages = Array.from(newDS.queuedMessages);
-          newDS.queuedMessages.push([h, sender, oldDS.counts[sender], body]);
-        }
-        newDS.counts = { ...newDS.counts };
-        newDS.counts[sender] += 1;
-        setDeviceState(harden(newDS));
+    return makeExo(
+      'sender',
+      M.interface('sender', {}, { defaultGuards: 'passable' }),
+      {
+        add(peer, msgnum, body) {
+          const oldDS = getDeviceState();
+          oldDS.inboundHandlers[peer] || Fail`unregistered peer '${peer}'`;
+          const h = oldDS.inboundHandlers[peer];
+          const newDS = { ...oldDS };
+          if (deliverMode === 'immediate') {
+            SO(h).deliverInboundMessages(
+              sender,
+              harden([[oldDS.counts[sender], body]]),
+            );
+          } else {
+            newDS.queuedMessages = Array.from(newDS.queuedMessages);
+            newDS.queuedMessages.push([h, sender, oldDS.counts[sender], body]);
+          }
+          newDS.counts = { ...newDS.counts };
+          newDS.counts[sender] += 1;
+          setDeviceState(harden(newDS));
+        },
+        remove(_peer, _msgnum) {},
+        ackInbound(_peer, _msgnum) {},
       },
-      remove(_peer, _msgnum) {},
-      ackInbound(_peer, _msgnum) {},
-    });
+    );
   }
 
   let deviceState = getDeviceState();
@@ -86,18 +90,22 @@ export function buildRootDeviceNode(tools) {
   }
   registerPassOneMessage(loopboxPassOneMessage);
 
-  return Far('root', {
-    registerInboundHandler(name, handler) {
-      const oldDS = getDeviceState();
-      !oldDS.inboundHandlers[name] || Fail`already registered`;
-      const newDS = { ...oldDS };
-      newDS.inboundHandlers = { ...newDS.inboundHandlers };
-      newDS.inboundHandlers[name] = handler;
-      setDeviceState(harden(newDS));
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      registerInboundHandler(name, handler) {
+        const oldDS = getDeviceState();
+        !oldDS.inboundHandlers[name] || Fail`already registered`;
+        const newDS = { ...oldDS };
+        newDS.inboundHandlers = { ...newDS.inboundHandlers };
+        newDS.inboundHandlers[name] = handler;
+        setDeviceState(harden(newDS));
+      },
 
-    getSender(sender) {
-      return senderMap.get(sender);
+      getSender(sender) {
+        return senderMap.get(sender);
+      },
     },
-  });
+  );
 }

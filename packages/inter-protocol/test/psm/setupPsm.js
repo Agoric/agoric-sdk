@@ -100,11 +100,15 @@ export const setupPsm = async (
 
   space.produce.provisionPoolStartResult.resolve({
     // @ts-expect-error mock
-    creatorFacet: Far('dummy', {
-      initPSM: () => {
-        t.log('dummy provisionPool.initPSM');
+    creatorFacet: makeExo(
+      'dummy',
+      M.interface('dummy', {}, { defaultGuards: 'passable' }),
+      {
+        initPSM: () => {
+          t.log('dummy provisionPool.initPSM');
+        },
       },
-    }),
+    ),
   });
 
   await Promise.all([

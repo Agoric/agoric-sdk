@@ -59,16 +59,20 @@ const start = async zcf => {
         Fee: feeAmount,
       });
 
-      const wakeHandler = Far('wakeHandler', {
-        wake: async () => {
-          const reply = await E(oracle).query('state');
-          if (reply.event === condition) {
-            payOffBounty(bountySeat);
-          } else {
-            refundBounty(bountySeat);
-          }
+      const wakeHandler = makeExo(
+        'wakeHandler',
+        M.interface('wakeHandler', {}, { defaultGuards: 'passable' }),
+        {
+          wake: async () => {
+            const reply = await E(oracle).query('state');
+            if (reply.event === condition) {
+              payOffBounty(bountySeat);
+            } else {
+              refundBounty(bountySeat);
+            }
+          },
         },
-      });
+      );
       timer.setWakeup(deadline, wakeHandler);
     }
 

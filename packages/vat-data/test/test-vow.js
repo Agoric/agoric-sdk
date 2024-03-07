@@ -5,9 +5,13 @@ import { E, Far } from '@endo/far';
 import { V, makeVowKit } from '../vow.js';
 
 test('heap messages', async t => {
-  const greeter = Far('Greeter', {
-    hello: /** @param {string} name */ name => `Hello, ${name}!`,
-  });
+  const greeter = makeExo(
+    'Greeter',
+    M.interface('Greeter', {}, { defaultGuards: 'passable' }),
+    {
+      hello: /** @param {string} name */ name => `Hello, ${name}!`,
+    },
+  );
 
   /** @type {ReturnType<typeof makeVowKit<typeof greeter>>} */
   const { vow, resolver } = makeVowKit();

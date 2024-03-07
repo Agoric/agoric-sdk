@@ -82,14 +82,18 @@ function resolvePR(pr, mode, targets) {
       break;
     case 'local-object':
       pr.resolve(
-        Far('local-object', {
-          two() {
-            /* console.log(`local two() called`); */
+        makeExo(
+          'local-object',
+          M.interface('local-object', {}, { defaultGuards: 'passable' }),
+          {
+            two() {
+              /* console.log(`local two() called`); */
+            },
+            four() {
+              /* console.log(`local four() called`); */
+            },
           },
-          four() {
-            /* console.log(`local four() called`); */
-          },
-        }),
+        ),
       );
       break;
     case 'data':
@@ -158,17 +162,21 @@ async function doVatResolveCase1(t, mode) {
 
   function build(_vatPowers) {
     const pr = makePromiseKit();
-    return Far('root', {
-      async run(target1, target2) {
-        const p1 = pr.promise;
-        E(target1).one(p1);
-        resolvePR(pr, mode, { target2, p1 });
-        // TODO: this stall shouldn't be necessary, but if I omit it, the
-        // resolution happens *after* two() is sent
-        await Promise.resolve();
-        E(target1).two(p1);
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        async run(target1, target2) {
+          const p1 = pr.promise;
+          E(target1).one(p1);
+          resolvePR(pr, mode, { target2, p1 });
+          // TODO: this stall shouldn't be necessary, but if I omit it, the
+          // resolution happens *after* two() is sent
+          await Promise.resolve();
+          E(target1).two(p1);
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -252,74 +260,78 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     let p1;
     const pr = makePromiseKit();
     const p0 = pr.promise;
-    return Far('root', {
-      promise(p) {
-        p1 = p;
-        stashP1 = p1;
-        p1.then(
-          x => {
-            // console.log(`p1 resolved to`, x);
-            resolutionOfP1 = x;
-          },
-          _ => {
-            // console.log(`p1 rejected`);
-            resolutionOfP1 = 'rejected';
-          },
-        );
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        promise(p) {
+          p1 = p;
+          stashP1 = p1;
+          p1.then(
+            x => {
+              // console.log(`p1 resolved to`, x);
+              resolutionOfP1 = x;
+            },
+            _ => {
+              // console.log(`p1 rejected`);
+              resolutionOfP1 = 'rejected';
+            },
+          );
+        },
+        result() {
+          return p0;
+        },
+        async run(target1, target2) {
+          // console.log(`calling one()`);
+          const p2 = E(target1).one(p1);
+          hush(p2);
+          // console.log(`calling two()`);
+          const p3 = E(p1).two();
+          hush(p3);
+          // The call to our result() method gave our vat access to p1 (along
+          // with resolution authority), but it didn't give this user-level
+          // code access to p1. When we resolve the p0 we returned from
+          // `result`, liveslots will resolve p1 for us. But remember that p0
+          // !== p1 . This resolution will eventually cause a
+          // `syscall.resolve` call into the kernel, and
+          // will eventually cause `p1` to be resolved to something, which may
+          // affect both where previously-queued messages (two) wind up, and
+          // where subsequently sent messages (four) wind up.
+
+          resolvePR(pr, mode, { target2, p1 });
+
+          // We've started the resolution process, but it cannot complete for
+          // another few turns. We wait some number of turns before using p1
+          // again, to exercise as many race conditions as possible.
+          for (let i = 0; i < stalls; i += 1) {
+            await Promise.resolve();
+          }
+
+          // If we don't stall here, then all four messages get
+          // processed before we tell the kernel about the resolution
+          // (syscall.resolve).
+
+          // If we stall two or more turns, then the resolve goes to the
+          // kernel before three() and four() are processed. We've
+          // retired the VPID for p1 when three() goes to serialize it,
+          // so a new VPID is created.
+
+          // In all cases, two() and four() are queued on a local
+          // Promise object, so they do not get pipelined into the
+          // kernel. They are sent to directly to the resolved target
+          // (or not sent at all, if p1 was rejected or resolved to
+          // something else).
+
+          // console.log(`calling three()`);
+          const p4 = E(target1).three(p1);
+          hush(p4);
+          // console.log(`calling four()`);
+          const p5 = E(p1).four();
+          hush(p5);
+          // console.log(`did all calls`);
+        },
       },
-      result() {
-        return p0;
-      },
-      async run(target1, target2) {
-        // console.log(`calling one()`);
-        const p2 = E(target1).one(p1);
-        hush(p2);
-        // console.log(`calling two()`);
-        const p3 = E(p1).two();
-        hush(p3);
-        // The call to our result() method gave our vat access to p1 (along
-        // with resolution authority), but it didn't give this user-level
-        // code access to p1. When we resolve the p0 we returned from
-        // `result`, liveslots will resolve p1 for us. But remember that p0
-        // !== p1 . This resolution will eventually cause a
-        // `syscall.resolve` call into the kernel, and
-        // will eventually cause `p1` to be resolved to something, which may
-        // affect both where previously-queued messages (two) wind up, and
-        // where subsequently sent messages (four) wind up.
-
-        resolvePR(pr, mode, { target2, p1 });
-
-        // We've started the resolution process, but it cannot complete for
-        // another few turns. We wait some number of turns before using p1
-        // again, to exercise as many race conditions as possible.
-        for (let i = 0; i < stalls; i += 1) {
-          await Promise.resolve();
-        }
-
-        // If we don't stall here, then all four messages get
-        // processed before we tell the kernel about the resolution
-        // (syscall.resolve).
-
-        // If we stall two or more turns, then the resolve goes to the
-        // kernel before three() and four() are processed. We've
-        // retired the VPID for p1 when three() goes to serialize it,
-        // so a new VPID is created.
-
-        // In all cases, two() and four() are queued on a local
-        // Promise object, so they do not get pipelined into the
-        // kernel. They are sent to directly to the resolved target
-        // (or not sent at all, if p1 was rejected or resolved to
-        // something else).
-
-        // console.log(`calling three()`);
-        const p4 = E(target1).three(p1);
-        hush(p4);
-        // console.log(`calling four()`);
-        const p5 = E(p1).four();
-        hush(p5);
-        // console.log(`did all calls`);
-      },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -546,30 +558,34 @@ async function doVatResolveCase4(t, mode) {
 
   function build(_vatPowers) {
     let p1;
-    return Far('local-object', {
-      async get(p) {
-        p1 = p;
-        // if we don't add this, node will complain when the kernel notifies
-        // us of the rejection
-        hush(p1);
+    return makeExo(
+      'local-object',
+      M.interface('local-object', {}, { defaultGuards: 'passable' }),
+      {
+        async get(p) {
+          p1 = p;
+          // if we don't add this, node will complain when the kernel notifies
+          // us of the rejection
+          hush(p1);
+        },
+        async first(target1) {
+          const p2 = E(target1).one(p1);
+          hush(p2);
+          const p3 = E(p1).two();
+          hush(p3);
+        },
+        async second(target1) {
+          const p4 = E(target1).three(p1);
+          hush(p4);
+          const p5 = E(p1).four();
+          hush(p5);
+        },
+        // we re-use this root object as a resolution of p1 the 'local-object'
+        // case, so make sure it can accept the messages
+        two() {},
+        four() {},
       },
-      async first(target1) {
-        const p2 = E(target1).one(p1);
-        hush(p2);
-        const p3 = E(p1).two();
-        hush(p3);
-      },
-      async second(target1) {
-        const p4 = E(target1).three(p1);
-        hush(p4);
-        const p5 = E(p1).four();
-        hush(p5);
-      },
-      // we re-use this root object as a resolution of p1 the 'local-object'
-      // case, so make sure it can accept the messages
-      two() {},
-      four() {},
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -683,29 +699,33 @@ async function doVatResolveCase7(t, mode) {
   function build(_vatPowers) {
     let p1;
     const pr = makePromiseKit();
-    return Far('root', {
-      acceptPromise(p) {
-        p1 = p;
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        acceptPromise(p) {
+          p1 = p;
+        },
+        send1(target1) {
+          hush(E(target1).one(p1));
+          hush(E(p1).two());
+        },
+        becomeDecider() {
+          return pr.promise;
+        },
+        send2(target1) {
+          hush(E(target1).three(p1));
+          hush(E(p1).four());
+        },
+        resolve(target2) {
+          resolvePR(pr, mode, { target2, p1 });
+        },
+        send3(target1) {
+          hush(E(target1).five(p1));
+          hush(E(p1).six());
+        },
       },
-      send1(target1) {
-        hush(E(target1).one(p1));
-        hush(E(p1).two());
-      },
-      becomeDecider() {
-        return pr.promise;
-      },
-      send2(target1) {
-        hush(E(target1).three(p1));
-        hush(E(p1).four());
-      },
-      resolve(target2) {
-        resolvePR(pr, mode, { target2, p1 });
-      },
-      send3(target1) {
-        hush(E(target1).five(p1));
-        hush(E(p1).six());
-      },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -855,15 +875,19 @@ test('inter-vat circular promise references', async t => {
   function build(_vatPowers) {
     let p;
     let r;
-    return Far('root', {
-      genPromise() {
-        void ([p, r] = makePR());
-        return p;
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        genPromise() {
+          void ([p, r] = makePR());
+          return p;
+        },
+        usePromise(pa) {
+          r(pa);
+        },
       },
-      usePromise(pa) {
-        r(pa);
-      },
-    });
+    );
   }
   const { dispatch: dispatchA } = await makeDispatch(syscall, build, 'vatA');
   // const { dispatch: dispatchB } = await makeDispatch(syscall, build, 'vatB');

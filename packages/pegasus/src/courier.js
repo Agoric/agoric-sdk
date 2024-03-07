@@ -130,5 +130,9 @@ export const makeCourierMaker =
       return E(transferProtocol).makeTransferPacketAck(true);
     };
 
-    return Far('courier', { send, receive });
+    return makeExo(
+      'courier',
+      M.interface('courier', {}, { defaultGuards: 'passable' }),
+      { send, receive },
+    );
   };

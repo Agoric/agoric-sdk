@@ -25,10 +25,14 @@ const start = zcf => {
   };
   const makeRefundInvitation = () => zcf.makeInvitation(refund, 'getRefund');
 
-  const publicFacet = Far('publicFacet', {
-    getOffersCount: () => offersCount,
-    makeInvitation: makeRefundInvitation,
-  });
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getOffersCount: () => offersCount,
+      makeInvitation: makeRefundInvitation,
+    },
+  );
 
   const creatorInvitation = makeRefundInvitation();
 

@@ -14,62 +14,72 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   let secondPriceAuctionSeatP;
 
-  return Far('build', {
-    doSecondPriceAuctionBid: async invitationP => {
-      const invitation = await claim(
-        E(invitationIssuer).makeEmptyPurse(),
-        invitationP,
-      );
-      const instance = await E(zoe).getInstance(invitation);
-      const installation = await E(zoe).getInstallation(invitation);
-      const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const { value: invitationValue } =
-        await E(invitationIssuer).getAmountOf(invitation);
-      installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
-      assert(
-        keyEQ(
-          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
-      assert(
-        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
-      );
-      assert(
-        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
-      );
+  return makeExo(
+    'build',
+    M.interface('build', {}, { defaultGuards: 'passable' }),
+    {
+      doSecondPriceAuctionBid: async invitationP => {
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          invitationP,
+        );
+        const instance = await E(zoe).getInstance(invitation);
+        const installation = await E(zoe).getInstallation(invitation);
+        const issuerKeywordRecord = await E(zoe).getIssuers(instance);
+        const { value: invitationValue } =
+          await E(invitationIssuer).getAmountOf(invitation);
+        installation === installations.secondPriceAuction ||
+          assert.fail(X`wrong installation`);
+        assert(
+          keyEQ(
+            harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
+            issuerKeywordRecord,
+          ),
+          X`issuerKeywordRecord were not as expected`,
+        );
+        assert(
+          keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+        );
+        assert(
+          keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
+        );
 
-      const proposal = harden({
-        want: { Asset: moola(1n) },
-        give: { Bid: simoleans(7n) },
-        exit: { onDemand: null },
-      });
-      const paymentKeywordRecord = { Bid: simoleanPayment };
+        const proposal = harden({
+          want: { Asset: moola(1n) },
+          give: { Bid: simoleans(7n) },
+          exit: { onDemand: null },
+        });
+        const paymentKeywordRecord = { Bid: simoleanPayment };
 
-      secondPriceAuctionSeatP = await E(zoe).offer(
-        invitation,
-        proposal,
-        paymentKeywordRecord,
-      );
-      log(`Carol: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
+        secondPriceAuctionSeatP = await E(zoe).offer(
+          invitation,
+          proposal,
+          paymentKeywordRecord,
+        );
+        log(`Carol: ${await E(secondPriceAuctionSeatP).getOfferResult()}`);
+      },
+      doSecondPriceAuctionGetPayout: async () => {
+        const moolaPayout = await E(secondPriceAuctionSeatP).getPayout('Asset');
+        const simoleanPayout = await E(secondPriceAuctionSeatP).getPayout(
+          'Bid',
+        );
+
+        await E(moolaPurseP).deposit(moolaPayout);
+        await E(simoleanPurseP).deposit(simoleanPayout);
+
+        await showPurseBalance(moolaPurseP, 'carolMoolaPurse', log);
+        await showPurseBalance(simoleanPurseP, 'carolSimoleanPurse', log);
+      },
     },
-    doSecondPriceAuctionGetPayout: async () => {
-      const moolaPayout = await E(secondPriceAuctionSeatP).getPayout('Asset');
-      const simoleanPayout = await E(secondPriceAuctionSeatP).getPayout('Bid');
-
-      await E(moolaPurseP).deposit(moolaPayout);
-      await E(simoleanPurseP).deposit(simoleanPayout);
-
-      await showPurseBalance(moolaPurseP, 'carolMoolaPurse', log);
-      await showPurseBalance(simoleanPurseP, 'carolSimoleanPurse', log);
-    },
-  });
+  );
 };
 
 export function buildRootObject(vatPowers) {
-  return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      build: (...args) => build(vatPowers.testLog, ...args),
+    },
+  );
 }

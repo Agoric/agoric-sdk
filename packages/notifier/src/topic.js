@@ -18,17 +18,21 @@ export const makePinnedHistoryTopic = topic => {
   // We need to take an immediate snapshot of the topic's current state.
   const pinnedPubList = topic.subscribeAfter();
 
-  return Far('PinnedHistoryTopic', {
-    subscribeAfter: async (publishCount = -1n) => {
-      if (publishCount === -1n) {
-        return pinnedPubList;
-      }
-      return topic.subscribeAfter(publishCount);
+  return makeExo(
+    'PinnedHistoryTopic',
+    M.interface('PinnedHistoryTopic', {}, { defaultGuards: 'passable' }),
+    {
+      subscribeAfter: async (publishCount = -1n) => {
+        if (publishCount === -1n) {
+          return pinnedPubList;
+        }
+        return topic.subscribeAfter(publishCount);
+      },
+      getUpdateSince: async (updateCount = undefined) => {
+        // TODO: Build this out of EachTopic<T>.
+        return topic.getUpdateSince(updateCount);
+      },
     },
-    getUpdateSince: async (updateCount = undefined) => {
-      // TODO: Build this out of EachTopic<T>.
-      return topic.getUpdateSince(updateCount);
-    },
-  });
+  );
 };
 harden(makePinnedHistoryTopic);

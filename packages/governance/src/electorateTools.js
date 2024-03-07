@@ -89,7 +89,7 @@ const getQuestion = (questionHandleP, questionStore) =>
 const getPoserInvitation = (zcf, addQuestion) => {
   const questionPoserHandler = seat => {
     seat.exit();
-    return Far(`questionPoser`, { addQuestion });
+    return makeExo(`questionPoser`, M.interface(`questionPoser`, {}, { defaultGuards: 'passable' }), { addQuestion });
   };
   return zcf.makeInvitation(
     questionPoserHandler,

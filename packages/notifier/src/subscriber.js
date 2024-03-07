@@ -16,20 +16,25 @@ import './types-ambient.js';
  * @returns {Subscription<T>}
  */
 const makeSubscription = topic => {
-  const subscription = Far('Subscription', {
-    ...subscribeEach(topic),
-    subscribeAfter: async publishCount => E(topic).subscribeAfter(publishCount),
+  const subscription = makeExo(
+    'Subscription',
+    M.interface('Subscription', {}, { defaultGuards: 'passable' }),
+    {
+      ...subscribeEach(topic),
+      subscribeAfter: async publishCount =>
+        E(topic).subscribeAfter(publishCount),
 
-    /**
-     * Use this to distribute a Subscription efficiently over the network,
-     * by obtaining this from the Subscription to be replicated, and applying
-     * `makeSubscription` to it at the new site to get an equivalent local
-     * Subscription at that site.
-     */
-    getSharableSubscriptionInternals: async () => topic,
+      /**
+       * Use this to distribute a Subscription efficiently over the network,
+       * by obtaining this from the Subscription to be replicated, and applying
+       * `makeSubscription` to it at the new site to get an equivalent local
+       * Subscription at that site.
+       */
+      getSharableSubscriptionInternals: async () => topic,
 
-    getStoreKey: () => harden({ subscription }),
-  });
+      getStoreKey: () => harden({ subscription }),
+    },
+  );
   return subscription;
 };
 harden(makeSubscription);
@@ -63,11 +68,15 @@ const makeSubscriptionKit = () => {
   const subscription = makeSubscription(pinnedHistoryTopic);
 
   /** @type {IterationObserver<T>} */
-  const publication = Far('publication', {
-    updateState: nonFinalValue => publisher.publish(nonFinalValue),
-    finish: completion => publisher.finish(completion),
-    fail: reason => publisher.fail(reason),
-  });
+  const publication = makeExo(
+    'publication',
+    M.interface('publication', {}, { defaultGuards: 'passable' }),
+    {
+      updateState: nonFinalValue => publisher.publish(nonFinalValue),
+      finish: completion => publisher.finish(completion),
+      fail: reason => publisher.fail(reason),
+    },
+  );
 
   return harden({ publication, subscription });
 };

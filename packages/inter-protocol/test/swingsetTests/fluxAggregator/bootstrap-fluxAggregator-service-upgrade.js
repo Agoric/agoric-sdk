@@ -106,187 +106,197 @@ export const buildRootObject = async () => {
     namesByAddressAdmin,
   };
 
-  return Far('root', {
-    bootstrap: async (vats, devices) => {
-      vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      const { zoeService } = await E(vats.zoe).buildZoe(
-        vatAdmin,
-        undefined,
-        'zcf',
-      );
-      zoePK.resolve(zoeService);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap: async (vats, devices) => {
+        vatAdmin = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        const { zoeService } = await E(vats.zoe).buildZoe(
+          vatAdmin,
+          undefined,
+          'zcf',
+        );
+        zoePK.resolve(zoeService);
 
-      const v1BundleId = await E(vatAdmin).getBundleIDByName(faV1BundleName);
-      v1BundleId || Fail`bundleId must not be empty`;
-      installations.fluxAggregatorV1 = await E(zoe).installBundleID(v1BundleId);
+        const v1BundleId = await E(vatAdmin).getBundleIDByName(faV1BundleName);
+        v1BundleId || Fail`bundleId must not be empty`;
+        installations.fluxAggregatorV1 =
+          await E(zoe).installBundleID(v1BundleId);
 
-      installations.puppetContractGovernor = await E(zoe).installBundleID(
-        await E(vatAdmin).getBundleIDByName('puppetContractGovernor'),
-      );
+        installations.puppetContractGovernor = await E(zoe).installBundleID(
+          await E(vatAdmin).getBundleIDByName('puppetContractGovernor'),
+        );
 
-      installations.committee = await E(zoe).installBundleID(
-        await E(vatAdmin).getBundleIDByName('committee'),
-      );
-      const ccStartResult = await E(zoe).startInstance(
-        installations.committee,
-        harden({}),
-        {
-          committeeName: 'Demos',
-          committeeSize: 1,
-        },
-        {
-          storageNode: storageKit.rootNode.makeChildNode('thisCommittee'),
-          marshaller,
-        },
-      );
-      ccPK.resolve(ccStartResult.creatorFacet);
-
-      const poserInvitationP = E(committeeCreator).getPoserInvitation();
-      [initialPoserInvitation, poserInvitationAmount] = await Promise.all([
-        poserInvitationP,
-        E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      ]);
-    },
-
-    buildV1: async () => {
-      trace(`BOOT buildV1 start`);
-      // build the contract vat from ZCF and the contract bundlecap
-
-      // @ts-expect-error xxx
-      faTerms.governedParams[CONTRACT_ELECTORATE].value = poserInvitationAmount;
-
-      const governorTerms = await deeplyFulfilledObject(
-        harden({
-          timer,
-          governedContractInstallation: NonNullish(
-            installations.fluxAggregatorV1,
-          ),
-          governed: {
-            terms: faTerms,
-            label: 'fluxAggregatorV1',
+        installations.committee = await E(zoe).installBundleID(
+          await E(vatAdmin).getBundleIDByName('committee'),
+        );
+        const ccStartResult = await E(zoe).startInstance(
+          installations.committee,
+          harden({}),
+          {
+            committeeName: 'Demos',
+            committeeSize: 1,
           },
-        }),
-      );
-      trace('got governorTerms', governorTerms);
-
-      // Complete round-trip without upgrade
-      trace(`BOOT buildV1 startInstance`);
-      governorFacets = await E(zoe).startInstance(
-        NonNullish(installations.puppetContractGovernor),
-        undefined,
-        // @ts-expect-error
-        governorTerms,
-        {
-          governed: {
-            ...staticPrivateArgs,
-            initialPoserInvitation,
+          {
+            storageNode: storageKit.rootNode.makeChildNode('thisCommittee'),
+            marshaller,
           },
-        },
-      );
-      trace('BOOT buildV1 started instance');
+        );
+        ccPK.resolve(ccStartResult.creatorFacet);
 
-      // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
-      faLimitedFacet = await E(governorFacets.creatorFacet).getCreatorFacet();
+        const poserInvitationP = E(committeeCreator).getPoserInvitation();
+        [initialPoserInvitation, poserInvitationAmount] = await Promise.all([
+          poserInvitationP,
+          E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+        ]);
+      },
 
-      oracleA = await E(faLimitedFacet).initOracle('oracleA');
+      buildV1: async () => {
+        trace(`BOOT buildV1 start`);
+        // build the contract vat from ZCF and the contract bundlecap
 
-      trace('BOOT buildV1 made oracleA');
+        // @ts-expect-error xxx
+        faTerms.governedParams[CONTRACT_ELECTORATE].value =
+          poserInvitationAmount;
 
-      return true;
-    },
+        const governorTerms = await deeplyFulfilledObject(
+          harden({
+            timer,
+            governedContractInstallation: NonNullish(
+              installations.fluxAggregatorV1,
+            ),
+            governed: {
+              terms: faTerms,
+              label: 'fluxAggregatorV1',
+            },
+          }),
+        );
+        trace('got governorTerms', governorTerms);
 
-    testFunctionality1: async () => {
-      const faPublicFacet = await E(
-        governorFacets.creatorFacet,
-      ).getPublicFacet();
+        // Complete round-trip without upgrade
+        trace(`BOOT buildV1 startInstance`);
+        governorFacets = await E(zoe).startInstance(
+          NonNullish(installations.puppetContractGovernor),
+          undefined,
+          // @ts-expect-error
+          governorTerms,
+          {
+            governed: {
+              ...staticPrivateArgs,
+              initialPoserInvitation,
+            },
+          },
+        );
+        trace('BOOT buildV1 started instance');
 
-      const publicTopics = await E(faPublicFacet).getPublicTopics();
-      assert.equal(
-        publicTopics.latestRound.description,
-        'Notification of each round',
-      );
-      assert.equal(
-        publicTopics.quotes.description,
-        'Quotes from this price aggregator',
-      );
+        // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+        faLimitedFacet = await E(governorFacets.creatorFacet).getCreatorFacet();
 
-      trace('testFunctionality pushing price');
-      await timer.tickN(1);
-      const unitPrice = 123n;
-      await E(oracleA.oracle).pushPrice({ roundId: 1, unitPrice });
-      quoteSubscriber1 = await publicTopics.quotes.subscriber;
+        oracleA = await E(faLimitedFacet).initOracle('oracleA');
 
-      const quoteNotifier = makeNotifierFromSubscriber(quoteSubscriber1);
+        trace('BOOT buildV1 made oracleA');
 
-      trace('testFunctionality awaiting quoteNotifier1');
-      lastQuote = await quoteNotifier.getUpdateSince();
-      assert.equal(lastQuote.updateCount, 1n);
-      assert.equal(lastQuote.value.amountOut.value, unitPrice);
+        return true;
+      },
 
-      // XXX t.throwsAsync sure would be nice
-      await E(governorFacets.creatorFacet)
-        .invokeAPI('removeOracles', [['oracleB']])
-        .then(() => Error('this should have errored'))
-        .catch(reason => {
-          assert.equal(
-            reason.message,
-            'key oracleB not found in collection oracles',
-          );
+      testFunctionality1: async () => {
+        const faPublicFacet = await E(
+          governorFacets.creatorFacet,
+        ).getPublicFacet();
+
+        const publicTopics = await E(faPublicFacet).getPublicTopics();
+        assert.equal(
+          publicTopics.latestRound.description,
+          'Notification of each round',
+        );
+        assert.equal(
+          publicTopics.quotes.description,
+          'Quotes from this price aggregator',
+        );
+
+        trace('testFunctionality pushing price');
+        await timer.tickN(1);
+        const unitPrice = 123n;
+        await E(oracleA.oracle).pushPrice({ roundId: 1, unitPrice });
+        quoteSubscriber1 = await publicTopics.quotes.subscriber;
+
+        const quoteNotifier = makeNotifierFromSubscriber(quoteSubscriber1);
+
+        trace('testFunctionality awaiting quoteNotifier1');
+        lastQuote = await quoteNotifier.getUpdateSince();
+        assert.equal(lastQuote.updateCount, 1n);
+        assert.equal(lastQuote.value.amountOut.value, unitPrice);
+
+        // XXX t.throwsAsync sure would be nice
+        await E(governorFacets.creatorFacet)
+          .invokeAPI('removeOracles', [['oracleB']])
+          .then(() => Error('this should have errored'))
+          .catch(reason => {
+            assert.equal(
+              reason.message,
+              'key oracleB not found in collection oracles',
+            );
+          });
+        await timer.tickN(1);
+      },
+
+      nullUpgradeV1: async () => {
+        trace(`BOOT nullUpgradeV1 start`);
+
+        const bundleId = await E(vatAdmin).getBundleIDByName(faV1BundleName);
+
+        trace(`BOOT nullUpgradeV1 upgradeContract`);
+        const faAdminFacet = await E(
+          governorFacets.creatorFacet,
+        ).getAdminFacet();
+        const upgradeResult = await E(faAdminFacet).upgradeContract(bundleId, {
+          ...staticPrivateArgs,
+          initialPoserInvitation,
         });
-      await timer.tickN(1);
+        assert.equal(upgradeResult.incarnationNumber, 1);
+        trace(`BOOT nullUpgradeV1 upgradeContract completed`);
+
+        await timer.tickN(1);
+        return true;
+      },
+
+      testFunctionality2: async () => {
+        const faPublicFacet = await E(
+          governorFacets.creatorFacet,
+        ).getPublicFacet();
+
+        const publicTopics = await E(faPublicFacet).getPublicTopics();
+        const quoteSubscriber2 = await publicTopics.quotes.subscriber;
+        assert(
+          quoteSubscriber2 === quoteSubscriber1,
+          'same subscriber object after upgrade',
+        );
+
+        trace('testFunctionality2 pushing price');
+        // advance time to allow new round
+        await timer.tickN(1);
+        const unitPrice = 234n;
+        await E(oracleA.oracle).pushPrice({ roundId: 2, unitPrice });
+        await null; // xxx
+
+        trace('testFunctionality awaiting quotes');
+        const quoteNotifier = makeNotifierFromSubscriber(
+          publicTopics.quotes.subscriber,
+        );
+        lastQuote = await quoteNotifier.getUpdateSince(lastQuote.updateCount);
+        assert.equal(lastQuote.updateCount, 2n); // incremented durable subscriber
+
+        trace('testFunctionality awaiting quote again');
+        lastQuote = await quoteNotifier.getUpdateSince(lastQuote.updateCount);
+        assert.equal(lastQuote.updateCount, 3n);
+        assert.equal(lastQuote.value.amountOut.value, unitPrice);
+      },
+
+      // this test doesn't upgrade to a new bundle because we have coverage elsewhere that
+      // a new bundle will replace the behavior of the prior bundle
     },
-
-    nullUpgradeV1: async () => {
-      trace(`BOOT nullUpgradeV1 start`);
-
-      const bundleId = await E(vatAdmin).getBundleIDByName(faV1BundleName);
-
-      trace(`BOOT nullUpgradeV1 upgradeContract`);
-      const faAdminFacet = await E(governorFacets.creatorFacet).getAdminFacet();
-      const upgradeResult = await E(faAdminFacet).upgradeContract(bundleId, {
-        ...staticPrivateArgs,
-        initialPoserInvitation,
-      });
-      assert.equal(upgradeResult.incarnationNumber, 1);
-      trace(`BOOT nullUpgradeV1 upgradeContract completed`);
-
-      await timer.tickN(1);
-      return true;
-    },
-
-    testFunctionality2: async () => {
-      const faPublicFacet = await E(
-        governorFacets.creatorFacet,
-      ).getPublicFacet();
-
-      const publicTopics = await E(faPublicFacet).getPublicTopics();
-      const quoteSubscriber2 = await publicTopics.quotes.subscriber;
-      assert(
-        quoteSubscriber2 === quoteSubscriber1,
-        'same subscriber object after upgrade',
-      );
-
-      trace('testFunctionality2 pushing price');
-      // advance time to allow new round
-      await timer.tickN(1);
-      const unitPrice = 234n;
-      await E(oracleA.oracle).pushPrice({ roundId: 2, unitPrice });
-      await null; // xxx
-
-      trace('testFunctionality awaiting quotes');
-      const quoteNotifier = makeNotifierFromSubscriber(
-        publicTopics.quotes.subscriber,
-      );
-      lastQuote = await quoteNotifier.getUpdateSince(lastQuote.updateCount);
-      assert.equal(lastQuote.updateCount, 2n); // incremented durable subscriber
-
-      trace('testFunctionality awaiting quote again');
-      lastQuote = await quoteNotifier.getUpdateSince(lastQuote.updateCount);
-      assert.equal(lastQuote.updateCount, 3n);
-      assert.equal(lastQuote.value.amountOut.value, unitPrice);
-    },
-
-    // this test doesn't upgrade to a new bundle because we have coverage elsewhere that
-    // a new bundle will replace the behavior of the prior bundle
-  });
+  );
 };

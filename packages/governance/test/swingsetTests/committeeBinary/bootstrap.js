@@ -263,5 +263,9 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
 
 export const buildRootObject = (vatPowers, vatParameters) => {
   const { argv, contractBundles: cb } = vatParameters;
-  return Far('root', { bootstrap: makeBootstrap(argv, cb, vatPowers) });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    { bootstrap: makeBootstrap(argv, cb, vatPowers) },
+  );
 };

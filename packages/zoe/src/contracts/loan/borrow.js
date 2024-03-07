@@ -127,17 +127,21 @@ export const makeBorrowInvitation = (zcf, config) => {
     // TODO: Add ability to repay partially
 
     /** @type {BorrowFacet} */
-    const borrowFacet = Far('borrowFacet', {
-      makeCloseLoanInvitation: () =>
-        makeCloseLoanInvitation(zcf, configWithBorrower),
-      makeAddCollateralInvitation: () =>
-        makeAddCollateralInvitation(zcf, configWithBorrower),
-      getLiquidationPromise: () => liquidationPromiseKit.promise,
-      getDebtNotifier,
-      getLastCalculationTimestamp,
-      getRecentCollateralAmount: () =>
-        collateralSeat.getAmountAllocated('Collateral'),
-    });
+    const borrowFacet = makeExo(
+      'borrowFacet',
+      M.interface('borrowFacet', {}, { defaultGuards: 'passable' }),
+      {
+        makeCloseLoanInvitation: () =>
+          makeCloseLoanInvitation(zcf, configWithBorrower),
+        makeAddCollateralInvitation: () =>
+          makeAddCollateralInvitation(zcf, configWithBorrower),
+        getLiquidationPromise: () => liquidationPromiseKit.promise,
+        getDebtNotifier,
+        getLastCalculationTimestamp,
+        getRecentCollateralAmount: () =>
+          collateralSeat.getAmountAllocated('Collateral'),
+      },
+    );
 
     return borrowFacet;
   };

@@ -60,28 +60,40 @@ export async function buildRootObject(powers, vatParameters, baggage) {
 
   if (!firstTime) {
     return E.when(E(zcfZygote).restartContract(vatParameters.privateArgs), () =>
-      Far('upgraded contractRunner', {}),
+      makeExo(
+        'upgraded contractRunner',
+        M.interface(
+          'upgraded contractRunner',
+          {},
+          { defaultGuards: 'passable' },
+        ),
+        {},
+      ),
     );
   }
 
-  return Far('contractRunner', {
-    // initialize instance-specific state of the contract
-    /** @type {StartZcf} */
-    startZcf: (
-      zoeInstanceAdmin,
-      instanceRecordFromZoe,
-      issuerStorageFromZoe,
-      privateArgs = undefined,
-    ) => {
-      /** @type {ZCFZygote} */
-      return E(zcfZygote).startContract(
+  return makeExo(
+    'contractRunner',
+    M.interface('contractRunner', {}, { defaultGuards: 'passable' }),
+    {
+      // initialize instance-specific state of the contract
+      /** @type {StartZcf} */
+      startZcf: (
         zoeInstanceAdmin,
         instanceRecordFromZoe,
         issuerStorageFromZoe,
-        privateArgs,
-      );
+        privateArgs = undefined,
+      ) => {
+        /** @type {ZCFZygote} */
+        return E(zcfZygote).startContract(
+          zoeInstanceAdmin,
+          instanceRecordFromZoe,
+          issuerStorageFromZoe,
+          privateArgs,
+        );
+      },
     },
-  });
+  );
 }
 
 harden(buildRootObject);

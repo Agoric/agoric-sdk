@@ -140,10 +140,14 @@ const setupParamGovernance = (
     };
   };
 
-  return Far('paramGovernor', {
-    voteOnParamChanges,
-    createdQuestion: b => voteCounters.has(b),
-  });
+  return makeExo(
+    'paramGovernor',
+    M.interface('paramGovernor', {}, { defaultGuards: 'passable' }),
+    {
+      voteOnParamChanges,
+      createdQuestion: b => voteCounters.has(b),
+    },
+  );
 };
 
 harden(setupParamGovernance);

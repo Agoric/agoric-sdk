@@ -17,7 +17,7 @@ const { Fail } = assert;
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
-  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
+  return makeExo(`BoardRemote${nonalleged}`, M.interface(`BoardRemote${nonalleged}`, {}, { defaultGuards: 'passable' }), { getBoardId: () => boardId });
 };
 
 /**

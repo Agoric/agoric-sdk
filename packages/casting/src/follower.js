@@ -17,37 +17,45 @@ const makeSubscriptionFollower = spec => {
   const transform = value =>
     harden({ value, blockHeight: NaN, currentBlockHeight: NaN });
   /** @type {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} */
-  const follower = Far('subscription/notifier follower', {
-    getLatestIterable: async () => {
-      const { notifier, subscription } = await spec;
-      let ai;
-      if (notifier) {
-        ai = subscribeLatest(notifier);
-      } else {
-        assert(subscription);
-        ai = subscribeEach(subscription);
-      }
-      return mapAsyncIterable(ai, transform);
-    },
+  const follower = makeExo(
+    'subscription/notifier follower',
+    M.interface(
+      'subscription/notifier follower',
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      getLatestIterable: async () => {
+        const { notifier, subscription } = await spec;
+        let ai;
+        if (notifier) {
+          ai = subscribeLatest(notifier);
+        } else {
+          assert(subscription);
+          ai = subscribeEach(subscription);
+        }
+        return mapAsyncIterable(ai, transform);
+      },
 
-    getEachIterable: async () => {
-      const { notifier, subscription } = await spec;
-      let ai;
-      if (subscription) {
-        ai = subscribeEach(subscription);
-      } else {
-        assert(notifier);
-        ai = subscribeLatest(notifier);
-      }
-      return mapAsyncIterable(ai, transform);
-    },
+      getEachIterable: async () => {
+        const { notifier, subscription } = await spec;
+        let ai;
+        if (subscription) {
+          ai = subscribeEach(subscription);
+        } else {
+          assert(notifier);
+          ai = subscribeLatest(notifier);
+        }
+        return mapAsyncIterable(ai, transform);
+      },
 
-    getReverseIterable: async () => {
-      throw Error(
-        'reverse iteration not implemented for subscription follower',
-      );
+      getReverseIterable: async () => {
+        throw Error(
+          'reverse iteration not implemented for subscription follower',
+        );
+      },
     },
-  });
+  );
   return follower;
 };
 

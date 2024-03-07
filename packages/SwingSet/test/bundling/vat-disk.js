@@ -1,9 +1,13 @@
 import { Far } from '@endo/far';
 
 export function buildRootObject() {
-  return Far('root', {
-    disk() {
-      return 'otech';
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      disk() {
+        return 'otech';
+      },
     },
-  });
+  );
 }

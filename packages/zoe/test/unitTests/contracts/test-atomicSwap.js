@@ -86,73 +86,77 @@ test('zoe - atomicSwap', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return Far('bob', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+    return makeExo(
+      'bob',
+      M.interface('bob', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-        // Bob is able to use the trusted invitationIssuer from Zoe to
-        // transform an untrusted invitation that Alice also has access to, to
-        // an
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
-        t.is(
-          invitationValue.installation,
-          installation,
-          'installation is atomicSwap',
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.asset,
-          moola(3n),
-          `asset to be traded is 3 moola`,
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.price,
-          simoleans(7n),
-          `price is 7 simoleans, so bob must give that`,
-        );
-
-        const proposal = harden({
-          give: { Price: simoleans(7n) },
-          want: { Asset: moola(3n) },
-          exit: { onDemand: null },
-        });
-        const payments = { Price: simoleanPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-
-        const r1 = E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              proposal.want.Asset,
-              `Bob got what he wanted`,
-            ),
+          // Bob is able to use the trusted invitationIssuer from Zoe to
+          // transform an untrusted invitation that Alice also has access to, to
+          // an
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
+          );
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
+          t.is(
+            invitationValue.installation,
+            installation,
+            'installation is atomicSwap',
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.asset,
+            moola(3n),
+            `asset to be traded is 3 moola`,
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.price,
+            simoleans(7n),
+            `price is 7 simoleans, so bob must give that`,
           );
 
-        const r2 = E(seat)
-          .getPayout('Price')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(0n),
-              `Bob didn't get anything back`,
-            ),
+          const proposal = harden({
+            give: { Price: simoleans(7n) },
+            want: { Asset: moola(3n) },
+            exit: { onDemand: null },
+          });
+          const payments = { Price: simoleanPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
-        await r1;
-        await r2;
+
+          const r1 = E(seat)
+            .getPayout('Asset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                proposal.want.Asset,
+                `Bob got what he wanted`,
+              ),
+            );
+
+          const r2 = E(seat)
+            .getPayout('Price')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                simoleans(0n),
+                `Bob didn't get anything back`,
+              ),
+            );
+          await r1;
+          await r2;
+        },
       },
-    });
+    );
   };
 
   const alice = await makeAlice(await E(moolaKit.mint).mintPayment(moola(3n)));
@@ -250,75 +254,79 @@ test('zoe - non-fungible atomicSwap', async t => {
   };
 
   const makeBob = (installation, rpgPayment) => {
-    return Far('bob', {
-      offer: async (untrustedInvitation, calico37Amount, vorpalAmount) => {
-        const ccPurse = ccIssuer.makeEmptyPurse();
-        const rpgPurse = rpgIssuer.makeEmptyPurse();
+    return makeExo(
+      'bob',
+      M.interface('bob', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async (untrustedInvitation, calico37Amount, vorpalAmount) => {
+          const ccPurse = ccIssuer.makeEmptyPurse();
+          const rpgPurse = rpgIssuer.makeEmptyPurse();
 
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-        // Bob is able to use the trusted invitationIssuer from Zoe to
-        // transform an untrusted invitation that Alice also has access to, to
-        // an
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
+          // Bob is able to use the trusted invitationIssuer from Zoe to
+          // transform an untrusted invitation that Alice also has access to, to
+          // an
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
+          );
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
-        t.is(
-          invitationValue.installation,
-          installation,
-          'installation is atomicSwap',
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.asset,
-          calico37Amount,
-          `asset to be traded is a particular crypto cat`,
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.price,
-          vorpalAmount,
-          `price is vorpalAmount, so bob must give that`,
-        );
-
-        const proposal = harden({
-          give: { Price: vorpalAmount },
-          want: { Asset: calico37Amount },
-          exit: { onDemand: null },
-        });
-        const payments = { Price: rpgPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-
-        await seat
-          .getPayout('Asset')
-          .then(payment => ccPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              proposal.want.Asset,
-              `Bob got what he wanted`,
-            ),
+          t.is(
+            invitationValue.installation,
+            installation,
+            'installation is atomicSwap',
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.asset,
+            calico37Amount,
+            `asset to be traded is a particular crypto cat`,
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.price,
+            vorpalAmount,
+            `price is vorpalAmount, so bob must give that`,
           );
 
-        await seat
-          .getPayout('Price')
-          .then(payment => rpgPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              rpgItems(harden([])),
-              `Bob didn't get anything back`,
-            ),
+          const proposal = harden({
+            give: { Price: vorpalAmount },
+            want: { Asset: calico37Amount },
+            exit: { onDemand: null },
+          });
+          const payments = { Price: rpgPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
+
+          await seat
+            .getPayout('Asset')
+            .then(payment => ccPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                proposal.want.Asset,
+                `Bob got what he wanted`,
+              ),
+            );
+
+          await seat
+            .getPayout('Price')
+            .then(payment => rpgPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                rpgItems(harden([])),
+                `Bob didn't get anything back`,
+              ),
+            );
+        },
       },
-    });
+    );
   };
 
   const calico37Amount = cryptoCats(harden(['calico #37']));

@@ -92,7 +92,11 @@ test('makeChainStorageCoordinator with non-remote values', async t => {
 test('makeChainStorageCoordinator with remote values', async t => {
   const { cache, storageNodeState } = setup();
 
-  const farThing = Far('farThing', { getAllegedName: () => 'dollaz' });
+  const farThing = makeExo(
+    'farThing',
+    M.interface('farThing', {}, { defaultGuards: 'passable' }),
+    { getAllegedName: () => 'dollaz' },
+  );
 
   t.is(await cache('brand', farThing), farThing);
   t.deepEqual(Object.keys(storageNodeState), ['cache']);
@@ -144,11 +148,15 @@ test('makeChainStorageCoordinator with remote updater', async t => {
   const { cache, storageNodeState } = setup();
 
   let counter = 0;
-  const counterObj = Far('counterObj', {
-    increment: () => {
-      return (counter += 1);
+  const counterObj = makeExo(
+    'counterObj',
+    M.interface('counterObj', {}, { defaultGuards: 'passable' }),
+    {
+      increment: () => {
+        return (counter += 1);
+      },
     },
-  });
+  );
 
   // Initial
   t.is(await cache('counter', counterObj.increment), 1);

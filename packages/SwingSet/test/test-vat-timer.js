@@ -67,9 +67,21 @@ test('cancels', t => {
   const removeCancel = (cancelToken, event) =>
     debugTools.removeCancel(cancels, cancelToken, event);
 
-  const cancel1 = Far('cancel token', {});
-  const cancel2 = Far('cancel token', {});
-  const cancel3 = Far('cancel token', {});
+  const cancel1 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const cancel2 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const cancel3 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   addCancel(cancel1, 'e10');
   addCancel(cancel2, 'e20');
   addCancel(cancel3, 'e30');
@@ -174,17 +186,21 @@ const setup = async (t, allowRefire = false) => {
 
   const fired = {};
   const makeHandler = which =>
-    Far('handler', {
-      wake(time) {
-        // handlers/promises get the most recent timestamp
-        if (!allowRefire) {
-          // some tests re-use the handler, but the rest should not
-          // observe handler.wake() called more than once
-          t.is(fired[which], undefined, 'wake() called multiple times');
-        }
-        fired[which] = time;
+    makeExo(
+      'handler',
+      M.interface('handler', {}, { defaultGuards: 'passable' }),
+      {
+        wake(time) {
+          // handlers/promises get the most recent timestamp
+          if (!allowRefire) {
+            // some tests re-use the handler, but the rest should not
+            // observe handler.wake() called more than once
+            t.is(fired[which], undefined, 'wake() called multiple times');
+          }
+          fired[which] = time;
+        },
       },
-    });
+    );
 
   const thenFire = (p, which) => {
     p.then(
@@ -233,12 +249,20 @@ test('brand', async t => {
   t.false(brand.isMyClock(brand));
   t.false(brand.isMyClock(ts));
 
-  const handler = Far('handler', { wake: _time => 0 });
+  const handler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    { wake: _time => 0 },
+  );
   const right = ts.getTimerBrand();
-  const wrong = Far('wrong', {
-    isMyTimerService: () => false,
-    isMyClock: () => false,
-  });
+  const wrong = makeExo(
+    'wrong',
+    M.interface('wrong', {}, { defaultGuards: 'passable' }),
+    {
+      isMyTimerService: () => false,
+      isMyClock: () => false,
+    },
+  );
   t.not(right, wrong);
 
   const when = TimeMath.coerceTimestampRecord(1000n, wrong);
@@ -313,7 +337,11 @@ test('setWakeup', async t => {
   t.not(state.currentHandler, undefined);
 
   // an earlier setWakeup brings the alarm forward
-  const cancel20 = Far('cancel token', {});
+  const cancel20 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.setWakeup(toTS(20n), makeHandler(20), cancel20);
   t.is(state.currentWakeup, 20n);
 
@@ -326,7 +354,11 @@ test('setWakeup', async t => {
   ts.setWakeup(toTS(50n), makeHandler(50));
   ts.setWakeup(toTS(50n), makeHandler('50x'));
   // cancel tokens can be shared
-  const cancel6x = Far('cancel token', {});
+  const cancel6x = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.setWakeup(toTS(60n), makeHandler(60n), cancel6x);
   ts.setWakeup(toTS(60n), makeHandler('60x'));
   ts.setWakeup(toTS(61n), makeHandler(61n), cancel6x);
@@ -377,8 +409,16 @@ test('wakeAt', async t => {
   // p = ts.wakeAt(absolute, cancelToken=undefined)
   const { ts, state, fired, thenFire, toTS } = await setup(t);
 
-  const cancel10 = Far('cancel token', {});
-  const cancel20 = Far('cancel token', {});
+  const cancel10 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const cancel20 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   thenFire(ts.wakeAt(toTS(10n), cancel10), '10');
   thenFire(ts.wakeAt(toTS(10n)), '10x');
   thenFire(ts.wakeAt(toTS(20n), cancel20), '20');
@@ -420,8 +460,16 @@ test('delay', async t => {
 
   state.now = 100n;
 
-  const cancel10 = Far('cancel token', {});
-  const cancel20 = Far('cancel token', {});
+  const cancel10 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const cancel20 = makeExo(
+    'cancel token',
+    M.interface('cancel token', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   thenFire(ts.delay(toRT(10n), cancel10), '10'); // =110
   thenFire(ts.delay(toRT(10n)), '10x'); // =110
   thenFire(ts.delay(toRT(20n), cancel20), '20'); // =120
@@ -525,12 +573,16 @@ test('makeRepeater', async t => {
 
   let pk = makePromiseKit();
   let slowState = 'uncalled';
-  const slowHandler = Far('slow', {
-    wake(time) {
-      slowState = time;
-      return pk.promise;
+  const slowHandler = makeExo(
+    'slow',
+    M.interface('slow', {}, { defaultGuards: 'passable' }),
+    {
+      wake(time) {
+        slowState = time;
+        return pk.promise;
+      },
     },
-  });
+  );
   // we can .schedule a new handler if the repeater is not active
   r1.schedule(slowHandler);
   await waitUntilQuiescent();
@@ -554,11 +606,15 @@ test('makeRepeater', async t => {
   r1.disable();
 
   // if the handler rejects, the repeater is cancelled
-  const brokenHandler = Far('broken', {
-    wake(_time) {
-      throw Error('deliberate handler error');
+  const brokenHandler = makeExo(
+    'broken',
+    M.interface('broken', {}, { defaultGuards: 'passable' }),
+    {
+      wake(_time) {
+        throw Error('deliberate handler error');
+      },
     },
-  });
+  );
   r1.schedule(brokenHandler);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 105n);
@@ -637,7 +693,11 @@ test('repeatAfter', async t => {
   state.now = 3n;
 
   // fire at T=25,35,45,..
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.repeatAfter(toRT(22n), toRT(10n), makeHandler(1), cancel1);
   t.is(state.currentWakeup, 25n);
 
@@ -691,14 +751,22 @@ test('repeatAfter', async t => {
 
   let pk = makePromiseKit();
   let slowState = 'uncalled';
-  const slowHandler = Far('slow', {
-    wake(time) {
-      slowState = time;
-      return pk.promise;
+  const slowHandler = makeExo(
+    'slow',
+    M.interface('slow', {}, { defaultGuards: 'passable' }),
+    {
+      wake(time) {
+        slowState = time;
+        return pk.promise;
+      },
     },
-  });
+  );
 
-  const cancel2 = Far('cancel', {});
+  const cancel2 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.repeatAfter(toRT(5n), toRT(10n), slowHandler, cancel2);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 75n);
@@ -722,11 +790,15 @@ test('repeatAfter', async t => {
   await waitUntilQuiescent();
 
   // if the handler rejects, the repeater is cancelled
-  const brokenHandler = Far('broken', {
-    wake(_time) {
-      throw Error('expected error');
+  const brokenHandler = makeExo(
+    'broken',
+    M.interface('broken', {}, { defaultGuards: 'passable' }),
+    {
+      wake(_time) {
+        throw Error('expected error');
+      },
     },
-  });
+  );
   // we can re-use cancel tokens too
   ts.repeatAfter(toRT(5n), toRT(10n), brokenHandler, cancel1);
   await waitUntilQuiescent();
@@ -744,7 +816,11 @@ test('repeatAfter', async t => {
   // we can cancel while the handler is running
   pk = makePromiseKit();
   slowState = 'uncalled';
-  const cancel3 = Far('cancel', {});
+  const cancel3 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.repeatAfter(toRT(5n), toRT(10n), slowHandler, cancel3);
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 115n);
@@ -767,7 +843,11 @@ test('repeatAfter from now', async t => {
   state.now = 3n;
 
   // delay=0 fires right away
-  const cancel1 = Far('cancel1', {});
+  const cancel1 = makeExo(
+    'cancel1',
+    M.interface('cancel1', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   ts.repeatAfter(toRT(0n), toRT(10n), makeHandler(3), cancel1);
   t.is(state.currentWakeup, undefined);
   await waitUntilQuiescent();
@@ -779,15 +859,23 @@ test('repeatAfter from now', async t => {
   t.is(state.currentWakeup, undefined); // unscheduled
 
   // delay=0 can be cancelled during slow handler
-  const cancel2 = Far('cancel2', {});
+  const cancel2 = makeExo(
+    'cancel2',
+    M.interface('cancel2', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const pk2 = makePromiseKit();
   let slowState2 = 'uncalled';
-  const slowHandler2 = Far('slow', {
-    wake(time) {
-      slowState2 = time;
-      return pk2.promise;
+  const slowHandler2 = makeExo(
+    'slow',
+    M.interface('slow', {}, { defaultGuards: 'passable' }),
+    {
+      wake(time) {
+        slowState2 = time;
+        return pk2.promise;
+      },
     },
-  });
+  );
   ts.repeatAfter(toRT(0n), toRT(10n), slowHandler2, cancel2); // 3,13,..
   await waitUntilQuiescent();
   t.deepEqual(slowState2, toTS(3n));
@@ -798,15 +886,23 @@ test('repeatAfter from now', async t => {
   t.is(state.currentWakeup, undefined); // not rescheduled
 
   // cancellation during slow handler which rejects (thus cancels again)
-  const cancel3 = Far('cancel3', {});
+  const cancel3 = makeExo(
+    'cancel3',
+    M.interface('cancel3', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const pk3 = makePromiseKit();
   let slowState3 = 'uncalled';
-  const slowHandler3 = Far('slow', {
-    wake(time) {
-      slowState3 = time;
-      return pk3.promise;
+  const slowHandler3 = makeExo(
+    'slow',
+    M.interface('slow', {}, { defaultGuards: 'passable' }),
+    {
+      wake(time) {
+        slowState3 = time;
+        return pk3.promise;
+      },
     },
-  });
+  );
   ts.repeatAfter(toRT(0n), toRT(10n), slowHandler3, cancel3); // 3,13,..
   await waitUntilQuiescent();
   t.deepEqual(slowState3, toTS(3n));
@@ -823,14 +919,22 @@ test('repeatAfter shared cancel token', async t => {
 
   state.now = 0n;
 
-  const throwingHandler = Far('handler', {
-    wake(time) {
-      fired.thrower = time;
-      throw Error('boom');
+  const throwingHandler = makeExo(
+    'handler',
+    M.interface('handler', {}, { defaultGuards: 'passable' }),
+    {
+      wake(time) {
+        fired.thrower = time;
+        throw Error('boom');
+      },
     },
-  });
+  );
 
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   // first repeater fires at T=5,15,25,35
   ts.repeatAfter(toRT(5n), toRT(10n), makeHandler(1), cancel1);
   // second repeater fires at T=10,20,30,40
@@ -869,7 +973,11 @@ test('notifier in future', async t => {
   state.now = 100n;
 
   // fire at T=125,135,145,..
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n = ts.makeNotifier(toRT(25n), toRT(10n), cancel1);
   t.is(state.currentWakeup, undefined); // not active yet
 
@@ -976,7 +1084,11 @@ test('cancel notifier', async t => {
   state.now = 0n;
 
   // cancel n1 while inactive, before it ever fires
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n1 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel1); // T=5,15,
   t.is(state.currentWakeup, undefined); // not active yet
   const p1a = n1.getUpdateSince(undefined);
@@ -990,7 +1102,11 @@ test('cancel notifier', async t => {
   t.deepEqual(await p1c, { value: toTS(1n), updateCount: undefined });
 
   // cancel n2 while active, but before it ever fires
-  const cancel2 = Far('cancel', {});
+  const cancel2 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n2 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel2); // T=5,15,
   t.is(state.currentWakeup, undefined); // not active yet
   const p2a = n2.getUpdateSince(undefined);
@@ -1008,7 +1124,11 @@ test('cancel notifier', async t => {
   t.deepEqual(await p2d, { value: toTS(3n), updateCount: undefined });
 
   // cancel n3 while idle, immediately after first firing
-  const cancel3 = Far('cancel', {});
+  const cancel3 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n3 = ts.makeNotifier(toRT(5n - state.now), toRT(10n), cancel3); // T=5,15,
   const p3a = n3.getUpdateSince(undefined);
   t.is(state.currentWakeup, 5n); // primed
@@ -1027,7 +1147,11 @@ test('cancel notifier', async t => {
 
   // cancel n4 while idle, slightly after first firing
 
-  const cancel4 = Far('cancel', {});
+  const cancel4 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n4 = ts.makeNotifier(toRT(10n - state.now), toRT(10n), cancel4); // T=10,20,
   const p4a = n4.getUpdateSince(undefined);
   t.is(state.currentWakeup, 10n); // primed
@@ -1048,7 +1172,11 @@ test('cancel notifier', async t => {
   t.deepEqual(await p4d, { value: toTS(11n), updateCount: undefined });
 
   // cancel n5 while active, after first firing
-  const cancel5 = Far('cancel', {});
+  const cancel5 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n5 = ts.makeNotifier(toRT(20n - state.now), toRT(10n), cancel5); // fire at T=20,30,
   const p5a = n5.getUpdateSince(undefined);
   t.is(state.currentWakeup, 20n); // primed
@@ -1212,7 +1340,11 @@ test('cancel active iterator', async t => {
   state.now = 100n;
 
   // fire at T=125,135,145,..
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n = ts.makeNotifier(toRT(25n), toRT(10n), cancel1);
 
   // Cancellation halts the iterator, and the "return value" is the
@@ -1246,7 +1378,11 @@ test('cancel idle iterator', async t => {
   state.now = 100n;
 
   // fire at T=125,135,145,..
-  const cancel1 = Far('cancel', {});
+  const cancel1 = makeExo(
+    'cancel',
+    M.interface('cancel', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const n = ts.makeNotifier(toRT(25), toRT(10), cancel1);
   ts.cancel(cancel1); // before first event
 

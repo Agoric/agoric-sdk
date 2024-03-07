@@ -58,24 +58,30 @@ test.before(
      */
     const makePingOracle = async _t => {
       /** @type {OracleHandler} */
-      const oracleHandler = Far('OracleHandler', {
-        async onQuery(query, fee) {
-          let requiredFee;
-          if (query.kind === 'Paid') {
-            requiredFee = feeAmount;
-            AmountMath.isGTE(fee, requiredFee) ||
-              assert.fail(X`Minimum fee of ${feeAmount} not met; have ${fee}`);
-          }
-          const reply = { pong: query };
-          return harden({ reply, requiredFee });
+      const oracleHandler = makeExo(
+        'OracleHandler',
+        M.interface('OracleHandler', {}, { defaultGuards: 'passable' }),
+        {
+          async onQuery(query, fee) {
+            let requiredFee;
+            if (query.kind === 'Paid') {
+              requiredFee = feeAmount;
+              AmountMath.isGTE(fee, requiredFee) ||
+                assert.fail(
+                  X`Minimum fee of ${feeAmount} not met; have ${fee}`,
+                );
+            }
+            const reply = { pong: query };
+            return harden({ reply, requiredFee });
+          },
+          async onError(_query, _reason) {
+            // do nothing
+          },
+          async onReply(_query, _reply, _fee) {
+            // do nothing
+          },
         },
-        async onError(_query, _reason) {
-          // do nothing
-        },
-        async onReply(_query, _reply, _fee) {
-          // do nothing
-        },
-      });
+      );
 
       const startResult = await E(zoe).startInstance(
         installation,

@@ -160,109 +160,121 @@ export const makePriceAuthorityTransform = async ({
       );
 
       /** @type {EOnly<MutableQuote>} */
-      const mutableQuote = Far('MutableQuote', {
-        cancel: e => E(sourceMutableQuote).cancel(e),
-        updateLevel: (newAmountIn, newAmountOutLimit) => {
-          AmountMath.coerce(actualBrandIn, newAmountIn);
-          AmountMath.coerce(actualBrandOut, newAmountOutLimit);
+      const mutableQuote = makeExo(
+        'MutableQuote',
+        M.interface('MutableQuote', {}, { defaultGuards: 'passable' }),
+        {
+          cancel: e => E(sourceMutableQuote).cancel(e),
+          updateLevel: (newAmountIn, newAmountOutLimit) => {
+            AmountMath.coerce(actualBrandIn, newAmountIn);
+            AmountMath.coerce(actualBrandOut, newAmountOutLimit);
 
-          return E(sourceMutableQuote).updateLevel(
-            makeSourceAmountIn(newAmountIn),
-            makeSourceAmountOut(newAmountOutLimit),
-          );
+            return E(sourceMutableQuote).updateLevel(
+              makeSourceAmountIn(newAmountIn),
+              makeSourceAmountOut(newAmountOutLimit),
+            );
+          },
+          getPromise: () => E(sourceMutableQuote).getPromise().then(scaleQuote),
         },
-        getPromise: () => E(sourceMutableQuote).getPromise().then(scaleQuote),
-      });
+      );
       return mutableQuote;
     };
     return mutableQuoteWhenOut;
   };
 
   /** @type {PriceAuthority} */
-  const priceAuthority = Far('PriceAuthority', {
-    getQuoteIssuer(brandIn, brandOut) {
-      assertBrands(brandIn, brandOut);
-      return quoteIssuer;
+  const priceAuthority = makeExo(
+    'PriceAuthority',
+    M.interface('PriceAuthority', {}, { defaultGuards: 'passable' }),
+    {
+      getQuoteIssuer(brandIn, brandOut) {
+        assertBrands(brandIn, brandOut);
+        return quoteIssuer;
+      },
+      getTimerService(brandIn, brandOut) {
+        assertBrands(brandIn, brandOut);
+        return E(sourcePriceAuthority).getTimerService(
+          sourceBrandIn,
+          sourceBrandOut,
+        );
+      },
+      makeQuoteNotifier(amountIn, brandOut) {
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
+
+        const notifier = E(sourcePriceAuthority).makeQuoteNotifier(
+          makeSourceAmountIn(amountIn),
+          sourceBrandOut,
+        );
+
+        // Wrap our underlying notifier with scaled quotes.
+        const scaledBaseNotifier = harden({
+          async getUpdateSince(updateCount = undefined) {
+            // We use the same updateCount as our underlying notifier.
+            const record = await E(notifier).getUpdateSince(updateCount);
+
+            const quote = await scaleQuote(record.value);
+            return harden({
+              value: quote,
+              updateCount: record.updateCount,
+            });
+          },
+        });
+
+        /** @type {Notifier<PriceQuote>} */
+        const scaledNotifier = makeExo(
+          'QuoteNotifier',
+          M.interface('QuoteNotifier', {}, { defaultGuards: 'passable' }),
+          {
+            ...makeNotifier(scaledBaseNotifier),
+            // TODO stop exposing baseNotifier methods directly.
+            ...scaledBaseNotifier,
+          },
+        );
+        return scaledNotifier;
+      },
+      async quoteGiven(amountIn, brandOut) {
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
+
+        const sourceQuote = await E(sourcePriceAuthority).quoteGiven(
+          makeSourceAmountIn(amountIn),
+          sourceBrandOut,
+        );
+        return scaleQuote(sourceQuote);
+      },
+      async quoteWanted(brandIn, amountOut) {
+        AmountMath.coerce(actualBrandOut, amountOut);
+        assertBrands(brandIn, amountOut.brand);
+
+        const sourceQuote = await E(sourcePriceAuthority).quoteWanted(
+          sourceBrandIn,
+          makeSourceAmountOut(amountOut),
+        );
+        return scaleQuote(sourceQuote);
+      },
+      async quoteAtTime(deadline, amountIn, brandOut) {
+        assert.typeof(deadline, 'bigint');
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
+
+        const sourceQuote = await E(sourcePriceAuthority).quoteAtTime(
+          deadline,
+          makeSourceAmountIn(amountIn),
+          sourceBrandOut,
+        );
+        return scaleQuote(sourceQuote);
+      },
+      quoteWhenLT: makeQuoteWhenOut('quoteWhenLT'),
+      quoteWhenLTE: makeQuoteWhenOut('quoteWhenLTE'),
+      quoteWhenGTE: makeQuoteWhenOut('quoteWhenGTE'),
+      quoteWhenGT: makeQuoteWhenOut('quoteWhenGT'),
+      mutableQuoteWhenLT: makeMutableQuote('mutableQuoteWhenLT'),
+      mutableQuoteWhenLTE: makeMutableQuote('mutableQuoteWhenLTE'),
+      mutableQuoteWhenGT: makeMutableQuote('mutableQuoteWhenGT'),
+      mutableQuoteWhenGTE: makeMutableQuote('mutableQuoteWhenGTE'),
     },
-    getTimerService(brandIn, brandOut) {
-      assertBrands(brandIn, brandOut);
-      return E(sourcePriceAuthority).getTimerService(
-        sourceBrandIn,
-        sourceBrandOut,
-      );
-    },
-    makeQuoteNotifier(amountIn, brandOut) {
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
-
-      const notifier = E(sourcePriceAuthority).makeQuoteNotifier(
-        makeSourceAmountIn(amountIn),
-        sourceBrandOut,
-      );
-
-      // Wrap our underlying notifier with scaled quotes.
-      const scaledBaseNotifier = harden({
-        async getUpdateSince(updateCount = undefined) {
-          // We use the same updateCount as our underlying notifier.
-          const record = await E(notifier).getUpdateSince(updateCount);
-
-          const quote = await scaleQuote(record.value);
-          return harden({
-            value: quote,
-            updateCount: record.updateCount,
-          });
-        },
-      });
-
-      /** @type {Notifier<PriceQuote>} */
-      const scaledNotifier = Far('QuoteNotifier', {
-        ...makeNotifier(scaledBaseNotifier),
-        // TODO stop exposing baseNotifier methods directly.
-        ...scaledBaseNotifier,
-      });
-      return scaledNotifier;
-    },
-    async quoteGiven(amountIn, brandOut) {
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
-
-      const sourceQuote = await E(sourcePriceAuthority).quoteGiven(
-        makeSourceAmountIn(amountIn),
-        sourceBrandOut,
-      );
-      return scaleQuote(sourceQuote);
-    },
-    async quoteWanted(brandIn, amountOut) {
-      AmountMath.coerce(actualBrandOut, amountOut);
-      assertBrands(brandIn, amountOut.brand);
-
-      const sourceQuote = await E(sourcePriceAuthority).quoteWanted(
-        sourceBrandIn,
-        makeSourceAmountOut(amountOut),
-      );
-      return scaleQuote(sourceQuote);
-    },
-    async quoteAtTime(deadline, amountIn, brandOut) {
-      assert.typeof(deadline, 'bigint');
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
-
-      const sourceQuote = await E(sourcePriceAuthority).quoteAtTime(
-        deadline,
-        makeSourceAmountIn(amountIn),
-        sourceBrandOut,
-      );
-      return scaleQuote(sourceQuote);
-    },
-    quoteWhenLT: makeQuoteWhenOut('quoteWhenLT'),
-    quoteWhenLTE: makeQuoteWhenOut('quoteWhenLTE'),
-    quoteWhenGTE: makeQuoteWhenOut('quoteWhenGTE'),
-    quoteWhenGT: makeQuoteWhenOut('quoteWhenGT'),
-    mutableQuoteWhenLT: makeMutableQuote('mutableQuoteWhenLT'),
-    mutableQuoteWhenLTE: makeMutableQuote('mutableQuoteWhenLTE'),
-    mutableQuoteWhenGT: makeMutableQuote('mutableQuoteWhenGT'),
-    mutableQuoteWhenGTE: makeMutableQuote('mutableQuoteWhenGTE'),
-  });
+  );
 
   return priceAuthority;
 };

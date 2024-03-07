@@ -257,19 +257,27 @@ export const prepareFluxAggregatorKit = async (
           const offerHandler = async seat => {
             seat.exit();
             const { oracle } = await facets.creator.initOracle(oracleId);
-            const invitationMakers = Far('invitation makers', {
-              /** @param {import('./roundsManager.js').PriceRound} result */
-              PushPrice(result) {
-                return zcf.makeInvitation(
-                  /** @param {ZCFSeat} cSeat */
-                  async cSeat => {
-                    cSeat.exit();
-                    await oracle.pushPrice(result);
-                  },
-                  'PushPrice',
-                );
+            const invitationMakers = makeExo(
+              'invitation makers',
+              M.interface(
+                'invitation makers',
+                {},
+                { defaultGuards: 'passable' },
+              ),
+              {
+                /** @param {import('./roundsManager.js').PriceRound} result */
+                PushPrice(result) {
+                  return zcf.makeInvitation(
+                    /** @param {ZCFSeat} cSeat */
+                    async cSeat => {
+                      cSeat.exit();
+                      await oracle.pushPrice(result);
+                    },
+                    'PushPrice',
+                  );
+                },
               },
-            });
+            );
 
             return harden({
               invitationMakers,

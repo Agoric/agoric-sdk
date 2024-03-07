@@ -79,12 +79,16 @@ const start = zcf => {
     E(timeAuthority)
       .setWakeup(
         closesAfter,
-        Far('wakeObj', {
-          wake: () => {
-            isClosed = true;
-            priceLogic.calcWinnerAndClose(zcf, sellSeat, bidSeats);
+        makeExo(
+          'wakeObj',
+          M.interface('wakeObj', {}, { defaultGuards: 'passable' }),
+          {
+            wake: () => {
+              isClosed = true;
+              priceLogic.calcWinnerAndClose(zcf, sellSeat, bidSeats);
+            },
           },
-        }),
+        ),
       )
       .catch(err => {
         console.error(
@@ -151,13 +155,21 @@ const start = zcf => {
 
     // The bid invitations can only be sent out after the assets to be
     // auctioned are escrowed.
-    return Far('offerResult', { makeBidInvitation, getSessionDetails });
+    return makeExo(
+      'offerResult',
+      M.interface('offerResult', {}, { defaultGuards: 'passable' }),
+      { makeBidInvitation, getSessionDetails },
+    );
   };
 
-  const publicFacet = Far('auctioneerPublicFacet', {
-    getCurrentBids,
-    getSessionDetails,
-  });
+  const publicFacet = makeExo(
+    'auctioneerPublicFacet',
+    M.interface('auctioneerPublicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getCurrentBids,
+      getSessionDetails,
+    },
+  );
 
   const creatorInvitation = zcf.makeInvitation(sell, 'sellAssets');
 

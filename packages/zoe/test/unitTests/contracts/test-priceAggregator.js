@@ -123,20 +123,24 @@ test.before('setup aggregator and oracles', async t => {
    */
   const makeFakePriceOracle = async (valueOut = 0n) => {
     /** @type {OracleHandler} */
-    const oracleHandler = Far('OracleHandler', {
-      async onQuery({ increment }, _fee) {
-        assert(increment);
-        valueOut += increment;
-        return harden({
-          reply: `${valueOut}`,
-          requiredFee: AmountMath.makeEmpty(link.brand),
-        });
+    const oracleHandler = makeExo(
+      'OracleHandler',
+      M.interface('OracleHandler', {}, { defaultGuards: 'passable' }),
+      {
+        async onQuery({ increment }, _fee) {
+          assert(increment);
+          valueOut += increment;
+          return harden({
+            reply: `${valueOut}`,
+            requiredFee: AmountMath.makeEmpty(link.brand),
+          });
+        },
+        onError(query, reason) {
+          console.error('query', query, 'failed with', reason);
+        },
+        onReply(_query, _reply) {},
       },
-      onError(query, reason) {
-        console.error('query', query, 'failed with', reason);
-      },
-      onReply(_query, _reply) {},
-    });
+    );
 
     const startResult = await E(zoe).startInstance(
       oracleInstallation,
@@ -158,7 +162,11 @@ test.before('setup aggregator and oracles', async t => {
    */
   const makeMedianAggregator = async (unitValueIn = 1n) => {
     // ??? why do we need the Far here and not in VaultFactory tests?
-    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const marshaller = makeExo(
+      'fake marshaller',
+      M.interface('fake marshaller', {}, { defaultGuards: 'passable' }),
+      { ...makeFakeMarshaller() },
+    );
     const storageRoot = makeMockChainStorageRoot();
 
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
@@ -616,14 +624,18 @@ test('quoteAtTime', async t => {
   const userQuotePK = makePromiseKit();
   await E(userTimer).setWakeup(
     manualTS(1n),
-    Far('wakeHandler', {
-      async wake(_timestamp) {
-        userQuotePK.resolve(
-          E(pa).quoteGiven(AmountMath.make(brandIn, 23n), usdBrand),
-        );
-        await userQuotePK.promise;
+    makeExo(
+      'wakeHandler',
+      M.interface('wakeHandler', {}, { defaultGuards: 'passable' }),
+      {
+        async wake(_timestamp) {
+          userQuotePK.resolve(
+            E(pa).quoteGiven(AmountMath.make(brandIn, 23n), usdBrand),
+          );
+          await userQuotePK.promise;
+        },
       },
-    }),
+    ),
   );
   const quoteAtUserTime = userQuotePK.promise;
 

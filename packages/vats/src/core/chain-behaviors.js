@@ -53,49 +53,53 @@ export const bridgeCoreEval = async allPowers => {
   harden(evaluateBundleCap);
 
   // Register a coreEval handler over the bridge.
-  const handler = Far('coreHandler', {
-    async fromBridge(obj) {
-      switch (obj.type) {
-        case 'CORE_EVAL': {
-          /** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.d.ts').CoreEvalProposalSDKType} */
-          const { evals } = obj;
-          return Promise.all(
-            evals.map(({ json_permits: jsonPermit, js_code: code }) =>
-              // Run in a new turn to avoid crosstalk of the evaluations.
-              Promise.resolve()
-                .then(() => {
-                  const permit = JSON.parse(jsonPermit);
-                  const powers = extractPowers(permit, {
-                    evaluateBundleCap,
-                    ...allPowers,
-                  });
+  const handler = makeExo(
+    'coreHandler',
+    M.interface('coreHandler', {}, { defaultGuards: 'passable' }),
+    {
+      async fromBridge(obj) {
+        switch (obj.type) {
+          case 'CORE_EVAL': {
+            /** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.d.ts').CoreEvalProposalSDKType} */
+            const { evals } = obj;
+            return Promise.all(
+              evals.map(({ json_permits: jsonPermit, js_code: code }) =>
+                // Run in a new turn to avoid crosstalk of the evaluations.
+                Promise.resolve()
+                  .then(() => {
+                    const permit = JSON.parse(jsonPermit);
+                    const powers = extractPowers(permit, {
+                      evaluateBundleCap,
+                      ...allPowers,
+                    });
 
-                  // Inspired by ../repl.js:
-                  const globals = harden({
-                    ...allPowers.modules,
-                    ...farExports,
-                    ...endowments,
-                  });
+                    // Inspired by ../repl.js:
+                    const globals = harden({
+                      ...allPowers.modules,
+                      ...farExports,
+                      ...endowments,
+                    });
 
-                  // Evaluate the code in the context of the globals.
-                  const compartment = new Compartment(globals);
-                  harden(compartment.globalThis);
-                  const behavior = compartment.evaluate(code);
-                  return behavior(powers);
-                })
-                .catch(err => {
-                  console.error('CORE_EVAL failed:', err);
-                  throw err;
-                }),
-            ),
-          ).then(_ => {});
+                    // Evaluate the code in the context of the globals.
+                    const compartment = new Compartment(globals);
+                    harden(compartment.globalThis);
+                    const behavior = compartment.evaluate(code);
+                    return behavior(powers);
+                  })
+                  .catch(err => {
+                    console.error('CORE_EVAL failed:', err);
+                    throw err;
+                  }),
+              ),
+            ).then(_ => {});
+          }
+          default: {
+            throw Fail`Unrecognized request ${obj.type}`;
+          }
         }
-        default: {
-          throw Fail`Unrecognized request ${obj.type}`;
-        }
-      }
+      },
     },
-  });
+  );
   coreEvalBridgeHandler.resolve(handler);
 
   const bridgeManager = await bridgeManagerP;
@@ -149,39 +153,43 @@ export const bridgeProvisioner = async ({
 
   // Register a provisioning handler over the bridge.
   const handler = provisioning
-    ? Far('provisioningHandler', {
-        async fromBridge(obj) {
-          switch (obj.type) {
-            case 'PLEASE_PROVISION': {
-              const { nickname, address, powerFlags: rawPowerFlags } = obj;
-              const powerFlags = rawPowerFlags || [];
-              let provisionP;
-              if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
-                // Only provision a smart wallet.
-                provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
-              } else {
-                // Provision a mailbox and REPL.
-                provisionP = E(provisioning).pleaseProvision(
-                  nickname,
-                  address,
-                  powerFlags,
-                );
+    ? makeExo(
+        'provisioningHandler',
+        M.interface('provisioningHandler', {}, { defaultGuards: 'passable' }),
+        {
+          async fromBridge(obj) {
+            switch (obj.type) {
+              case 'PLEASE_PROVISION': {
+                const { nickname, address, powerFlags: rawPowerFlags } = obj;
+                const powerFlags = rawPowerFlags || [];
+                let provisionP;
+                if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
+                  // Only provision a smart wallet.
+                  provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
+                } else {
+                  // Provision a mailbox and REPL.
+                  provisionP = E(provisioning).pleaseProvision(
+                    nickname,
+                    address,
+                    powerFlags,
+                  );
+                }
+                return provisionP
+                  .catch(e =>
+                    console.error(
+                      `Error provisioning ${nickname} ${address}:`,
+                      e,
+                    ),
+                  )
+                  .then(_ => {});
               }
-              return provisionP
-                .catch(e =>
-                  console.error(
-                    `Error provisioning ${nickname} ${address}:`,
-                    e,
-                  ),
-                )
-                .then(_ => {});
+              default: {
+                throw Fail`Unrecognized request ${obj.type}`;
+              }
             }
-            default: {
-              throw Fail`Unrecognized request ${obj.type}`;
-            }
-          }
+          },
         },
-      })
+      )
     : provisionWalletBridgeManager;
   await E(provisionBridgeManager).initHandler(handler);
 };
@@ -217,67 +225,79 @@ export const setupClientManager = async (
   const { subscription, publication } = makeSubscriptionKit();
 
   /** @type {ClientManager} */
-  const clientManager = Far('chainClientManager', {
-    assignBundle: newPropertyMakers => {
-      // Write the property makers to the cache, and update the subscription.
-      publication.updateState(newPropertyMakers);
+  const clientManager = makeExo(
+    'chainClientManager',
+    M.interface('chainClientManager', {}, { defaultGuards: 'passable' }),
+    {
+      assignBundle: newPropertyMakers => {
+        // Write the property makers to the cache, and update the subscription.
+        publication.updateState(newPropertyMakers);
+      },
     },
-  });
+  );
 
   /** @type {ClientCreator} */
-  const clientCreator = Far('clientCreator', {
-    createUserBundle: (nickname, clientAddress, powerFlags) => {
-      const c = E(clientCreator).createClientFacet(
-        nickname,
-        clientAddress,
-        powerFlags,
-      );
-      return E(c).getChainBundle();
-    },
-    createClientFacet: async (_nickname, clientAddress, powerFlags) => {
-      /** @type {Record<string, unknown>} */
-      let clientHome = {};
-      const bundleReady = makePromiseKit();
-
-      const makeUpdatedConfiguration = async (newPropertyMakers = []) => {
-        // Specialize the property makers with the client address.
-        const newProperties = callProperties(
-          newPropertyMakers,
+  const clientCreator = makeExo(
+    'clientCreator',
+    M.interface('clientCreator', {}, { defaultGuards: 'passable' }),
+    {
+      createUserBundle: (nickname, clientAddress, powerFlags) => {
+        const c = E(clientCreator).createClientFacet(
+          nickname,
           clientAddress,
           powerFlags,
         );
-        clientHome = { ...clientHome, ...newProperties };
+        return E(c).getChainBundle();
+      },
+      createClientFacet: async (_nickname, clientAddress, powerFlags) => {
+        /** @type {Record<string, unknown>} */
+        let clientHome = {};
+        const bundleReady = makePromiseKit();
 
-        const todo = missingKeys(template, clientHome);
-        if (todo.length === 0) {
-          bundleReady.resolve(undefined);
-        }
+        const makeUpdatedConfiguration = async (newPropertyMakers = []) => {
+          // Specialize the property makers with the client address.
+          const newProperties = callProperties(
+            newPropertyMakers,
+            clientAddress,
+            powerFlags,
+          );
+          clientHome = { ...clientHome, ...newProperties };
 
-        return harden({ clientAddress, clientHome });
-      };
+          const todo = missingKeys(template, clientHome);
+          if (todo.length === 0) {
+            bundleReady.resolve(undefined);
+          }
 
-      // Publish new configurations.
-      const newConfig = await makeUpdatedConfiguration([]);
-      const { notifier, updater } = makeNotifierKit(newConfig);
+          return harden({ clientAddress, clientHome });
+        };
 
-      /** @type {ClientFacet} */
-      const clientFacet = Far('chainProvisioner', {
-        getChainBundle: () =>
-          bundleReady.promise.then(_ => allValues(clientHome)),
-        getConfiguration: () => notifier,
-      });
+        // Publish new configurations.
+        const newConfig = await makeUpdatedConfiguration([]);
+        const { notifier, updater } = makeNotifierKit(newConfig);
 
-      void observeIteration(subscription, {
-        updateState(newPropertyMakers) {
-          makeUpdatedConfiguration(newPropertyMakers)
-            .then(x => updater.updateState(x))
-            .catch(reason => console.error(reason)); // TODO: catch and log OK?
-        },
-      });
+        /** @type {ClientFacet} */
+        const clientFacet = makeExo(
+          'chainProvisioner',
+          M.interface('chainProvisioner', {}, { defaultGuards: 'passable' }),
+          {
+            getChainBundle: () =>
+              bundleReady.promise.then(_ => allValues(clientHome)),
+            getConfiguration: () => notifier,
+          },
+        );
 
-      return clientFacet;
+        void observeIteration(subscription, {
+          updateState(newPropertyMakers) {
+            makeUpdatedConfiguration(newPropertyMakers)
+              .then(x => updater.updateState(x))
+              .catch(reason => console.error(reason)); // TODO: catch and log OK?
+          },
+        });
+
+        return clientFacet;
+      },
     },
-  });
+  );
 
   clientCreatorP.resolve(clientCreator);
   client.resolve(clientManager);
@@ -486,7 +506,11 @@ export const publishAgoricNames = async (
  * @param {BootstrapPowers} powers
  */
 export const connectChainFaucet = async ({ consume: { client } }) => {
-  const faucet = Far('faucet', { tapFaucet: () => harden([]) });
+  const faucet = makeExo(
+    'faucet',
+    M.interface('faucet', {}, { defaultGuards: 'passable' }),
+    { tapFaucet: () => harden([]) },
+  );
 
   return E(client).assignBundle([_addr => ({ faucet })]);
 };

@@ -82,7 +82,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
    */
   const makePeg = (state, desc) => {
     /** @type {Peg} */
-    const peg = Far(`${desc.allegedName} peg`, {
+    const peg = makeExo(`${desc.allegedName} peg`, M.interface(`${desc.allegedName} peg`, {}, { defaultGuards: 'passable' }), {
       getAllegedName() {
         return desc.allegedName;
       },
@@ -121,377 +121,397 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
     const pegs = new Set();
 
     /** @type {PegasusConnectionActions} */
-    const pegasusConnectionActions = Far('pegasusConnectionActions', {
-      async rejectTransfersWaitingForPegRemote(remoteDenom) {
-        checkAbort();
-        const { receiveDenomToCourierPK } = localDenomState;
+    const pegasusConnectionActions = makeExo(
+      'pegasusConnectionActions',
+      M.interface(
+        'pegasusConnectionActions',
+        {},
+        { defaultGuards: 'passable' },
+      ),
+      {
+        async rejectTransfersWaitingForPegRemote(remoteDenom) {
+          checkAbort();
+          const { receiveDenomToCourierPK } = localDenomState;
 
-        const { receiveDenom } = await E(
-          denomTransformer,
-        ).getDenomsForRemotePeg(
-          remoteDenom,
-          localDenomState.localAddr,
-          localDenomState.remoteAddr,
-        );
-        checkAbort();
-
-        const { reject, promise } = receiveDenomToCourierPK.get(receiveDenom);
-
-        // Only continue if the promise isn't already resolved.
-        const raceWinner = await Promise.race([promise, null]);
-        checkAbort();
-        !raceWinner || Fail`${receiveDenom} is already resolved`;
-
-        // If rejected, the rejection is returned to our caller, so we have
-        // handled it correctly and that flow doesn't need to trigger an
-        // additional UnhandledRejectionWarning in our vat.
-        promise.catch(() => {});
-        reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
-
-        // Allow new transfers to be initiated after this rejection.
-        receiveDenomToCourierPK.delete(receiveDenom);
-      },
-      async pegRemote(
-        allegedName,
-        remoteDenom,
-        assetKind = undefined,
-        displayInfo = undefined,
-      ) {
-        checkAbort();
-        const { receiveDenomToCourierPK } = localDenomState;
-
-        // Create the issuer for the local erights corresponding to the remote values.
-        const localKeyword = createLocalIssuerKeyword();
-        const zcfMint = await zcf.makeZCFMint(
-          localKeyword,
-          assetKind,
-          displayInfo,
-        );
-        checkAbort();
-        const { brand: localBrand } = zcfMint.getIssuerRecord();
-
-        const { sendDenom, receiveDenom } = await E(
-          denomTransformer,
-        ).getDenomsForRemotePeg(
-          remoteDenom,
-          localDenomState.localAddr,
-          localDenomState.remoteAddr,
-        );
-        checkAbort();
-
-        // Describe how to retain/redeem pegged shadow erights.
-        const courier = makeCourier({
-          zcf,
-          localBrand,
-          board,
-          namesByAddress,
-          sendDenom,
-          retain: (zcfSeat, amounts) =>
-            zcfMint.burnLosses(harden(amounts), zcfSeat),
-          redeem: (zcfSeat, amounts) => {
-            zcfMint.mintGains(harden(amounts), zcfSeat);
-          },
-          transferProtocol,
-          when,
-        });
-
-        const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
-        courierPK.resolve(courier);
-
-        checkAbort();
-        const peg = makePeg(localDenomState, {
-          localBrand,
-          sendDenom,
-          receiveDenom,
-          allegedName,
-        });
-        pegs.add(peg);
-        return peg;
-      },
-
-      async pegLocal(allegedName, localIssuer) {
-        checkAbort();
-
-        localDenomState.lastDenomNonce += 1n;
-        const remoteDenom = `pegasus${localDenomState.lastDenomNonce}`;
-
-        // Create a seat in which to keep our escrowed ERTP assets of this denomination.
-        const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-
-        // Ensure the issuer can be used in Zoe offers.
-        const localKeyword = createLocalIssuerKeyword();
-        const { brand: localBrand } = await zcf.saveIssuer(
-          localIssuer,
-          localKeyword,
-        );
-        checkAbort();
-
-        const { sendDenom, receiveDenom } = await E(
-          denomTransformer,
-        ).getDenomsForLocalPeg(
-          remoteDenom,
-          localDenomState.localAddr,
-          localDenomState.remoteAddr,
-        );
-        checkAbort();
-
-        /**
-         * Transfer amount (of localBrand) from loser to winner seats.
-         *
-         * @param {Amount} amount amount to transfer
-         * @param {Keyword} loserKeyword the keyword to take from the loser
-         * @param {ZCFSeat} loser seat to transfer from
-         * @param {Keyword} winnerKeyword the keyword to give to the winner
-         * @param {ZCFSeat} winner seat to transfer to
-         */
-        const transferAmountFrom = (
-          amount,
-          loserKeyword,
-          loser,
-          winnerKeyword,
-          winner,
-        ) => {
-          // Transfer the amount to our backing seat.
-          atomicTransfer(
-            zcf,
-            loser,
-            winner,
-            { [loserKeyword]: amount },
-            { [winnerKeyword]: amount },
+          const { receiveDenom } = await E(
+            denomTransformer,
+          ).getDenomsForRemotePeg(
+            remoteDenom,
+            localDenomState.localAddr,
+            localDenomState.remoteAddr,
           );
-        };
+          checkAbort();
 
-        // Describe how to retain/redeem real local erights.
-        const courier = makeCourier({
-          zcf,
-          board,
-          namesByAddress,
-          sendDenom,
-          localBrand,
-          retain: (transferSeat, amounts) =>
-            transferAmountFrom(
-              amounts.Transfer,
-              'Transfer',
-              transferSeat,
-              'Pool',
-              poolSeat,
-            ),
-          redeem: (transferSeat, amounts) =>
-            transferAmountFrom(
-              amounts.Transfer,
-              'Pool',
-              poolSeat,
-              'Transfer',
-              transferSeat,
-            ),
-          transferProtocol,
-          when,
-        });
+          const { reject, promise } = receiveDenomToCourierPK.get(receiveDenom);
 
-        const { receiveDenomToCourierPK } = localDenomState;
+          // Only continue if the promise isn't already resolved.
+          const raceWinner = await Promise.race([promise, null]);
+          checkAbort();
+          !raceWinner || Fail`${receiveDenom} is already resolved`;
 
-        const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
-        courierPK.resolve(courier);
+          // If rejected, the rejection is returned to our caller, so we have
+          // handled it correctly and that flow doesn't need to trigger an
+          // additional UnhandledRejectionWarning in our vat.
+          promise.catch(() => {});
+          reject(assert.error(X`${receiveDenom} is temporarily unavailable`));
 
-        const peg = makePeg(localDenomState, {
-          localBrand,
-          sendDenom,
-          receiveDenom,
+          // Allow new transfers to be initiated after this rejection.
+          receiveDenomToCourierPK.delete(receiveDenom);
+        },
+        async pegRemote(
           allegedName,
-        });
-        pegs.add(peg);
-        return peg;
+          remoteDenom,
+          assetKind = undefined,
+          displayInfo = undefined,
+        ) {
+          checkAbort();
+          const { receiveDenomToCourierPK } = localDenomState;
+
+          // Create the issuer for the local erights corresponding to the remote values.
+          const localKeyword = createLocalIssuerKeyword();
+          const zcfMint = await zcf.makeZCFMint(
+            localKeyword,
+            assetKind,
+            displayInfo,
+          );
+          checkAbort();
+          const { brand: localBrand } = zcfMint.getIssuerRecord();
+
+          const { sendDenom, receiveDenom } = await E(
+            denomTransformer,
+          ).getDenomsForRemotePeg(
+            remoteDenom,
+            localDenomState.localAddr,
+            localDenomState.remoteAddr,
+          );
+          checkAbort();
+
+          // Describe how to retain/redeem pegged shadow erights.
+          const courier = makeCourier({
+            zcf,
+            localBrand,
+            board,
+            namesByAddress,
+            sendDenom,
+            retain: (zcfSeat, amounts) =>
+              zcfMint.burnLosses(harden(amounts), zcfSeat),
+            redeem: (zcfSeat, amounts) => {
+              zcfMint.mintGains(harden(amounts), zcfSeat);
+            },
+            transferProtocol,
+            when,
+          });
+
+          const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
+          courierPK.resolve(courier);
+
+          checkAbort();
+          const peg = makePeg(localDenomState, {
+            localBrand,
+            sendDenom,
+            receiveDenom,
+            allegedName,
+          });
+          pegs.add(peg);
+          return peg;
+        },
+
+        async pegLocal(allegedName, localIssuer) {
+          checkAbort();
+
+          localDenomState.lastDenomNonce += 1n;
+          const remoteDenom = `pegasus${localDenomState.lastDenomNonce}`;
+
+          // Create a seat in which to keep our escrowed ERTP assets of this denomination.
+          const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
+
+          // Ensure the issuer can be used in Zoe offers.
+          const localKeyword = createLocalIssuerKeyword();
+          const { brand: localBrand } = await zcf.saveIssuer(
+            localIssuer,
+            localKeyword,
+          );
+          checkAbort();
+
+          const { sendDenom, receiveDenom } = await E(
+            denomTransformer,
+          ).getDenomsForLocalPeg(
+            remoteDenom,
+            localDenomState.localAddr,
+            localDenomState.remoteAddr,
+          );
+          checkAbort();
+
+          /**
+           * Transfer amount (of localBrand) from loser to winner seats.
+           *
+           * @param {Amount} amount amount to transfer
+           * @param {Keyword} loserKeyword the keyword to take from the loser
+           * @param {ZCFSeat} loser seat to transfer from
+           * @param {Keyword} winnerKeyword the keyword to give to the winner
+           * @param {ZCFSeat} winner seat to transfer to
+           */
+          const transferAmountFrom = (
+            amount,
+            loserKeyword,
+            loser,
+            winnerKeyword,
+            winner,
+          ) => {
+            // Transfer the amount to our backing seat.
+            atomicTransfer(
+              zcf,
+              loser,
+              winner,
+              { [loserKeyword]: amount },
+              { [winnerKeyword]: amount },
+            );
+          };
+
+          // Describe how to retain/redeem real local erights.
+          const courier = makeCourier({
+            zcf,
+            board,
+            namesByAddress,
+            sendDenom,
+            localBrand,
+            retain: (transferSeat, amounts) =>
+              transferAmountFrom(
+                amounts.Transfer,
+                'Transfer',
+                transferSeat,
+                'Pool',
+                poolSeat,
+              ),
+            redeem: (transferSeat, amounts) =>
+              transferAmountFrom(
+                amounts.Transfer,
+                'Pool',
+                poolSeat,
+                'Transfer',
+                transferSeat,
+              ),
+            transferProtocol,
+            when,
+          });
+
+          const { receiveDenomToCourierPK } = localDenomState;
+
+          const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
+          courierPK.resolve(courier);
+
+          const peg = makePeg(localDenomState, {
+            localBrand,
+            sendDenom,
+            receiveDenom,
+            allegedName,
+          });
+          pegs.add(peg);
+          return peg;
+        },
+        abort: reason => {
+          checkAbort();
+          checkAbort = () => {
+            throw reason;
+          };
+          for (const peg of pegs) {
+            pegToDenomState.delete(peg);
+          }
+        },
       },
-      abort: reason => {
-        checkAbort();
-        checkAbort = () => {
-          throw reason;
-        };
-        for (const peg of pegs) {
-          pegToDenomState.delete(peg);
-        }
-      },
-    });
+    );
     return pegasusConnectionActions;
   };
 
-  return Far('pegasus', {
-    /**
-     * Return a handler that can be used with the Network API.
-     *
-     * @param {ERef<TransferProtocol>} [transferProtocol]
-     * @param {ERef<DenomTransformer>} [denomTransformer]
-     * @returns {PegasusConnectionKit}
-     */
-    makePegasusConnectionKit(
-      transferProtocol = DEFAULT_TRANSFER_PROTOCOL,
-      denomTransformer = DEFAULT_DENOM_TRANSFORMER,
-    ) {
+  return makeExo(
+    'pegasus',
+    M.interface('pegasus', {}, { defaultGuards: 'passable' }),
+    {
       /**
-       * @type {LegacyWeakMap<Connection, LocalDenomState>}
-       */
-      // Legacy because the value contains a JS Set
-      const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
-
-      /**
-       * @type {SubscriptionRecord<PegasusConnection>}
-       */
-      const {
-        subscription: connectionSubscription,
-        publication: connectionPublication,
-      } = makeSubscriptionKit();
-
-      /** @type {ConnectionHandler} */
-      const handler = {
-        async onOpen(c, localAddr, remoteAddr) {
-          // Register `c` with the table of Peg receivers.
-          const {
-            subscription: remoteDenomSubscription,
-            publication: receiveDenomPublication,
-          } = makeSubscriptionKit();
-          const receiveDenomToCourierPK = makeLegacyMap('Denomination');
-
-          /** @type {LocalDenomState} */
-          const localDenomState = {
-            localAddr,
-            remoteAddr,
-            receiveDenomToCourierPK,
-            lastDenomNonce: 0n,
-            receiveDenomPublication,
-            remoteDenomSubscription,
-            abort: reason => {
-              // eslint-disable-next-line no-use-before-define
-              actions.abort(reason);
-            },
-          };
-
-          // The courier is the only thing that we use to send messages to `c`.
-          const makeCourier = makeCourierMaker(c);
-          const actions = makePegasusConnectionActions({
-            localDenomState,
-            makeCourier,
-            transferProtocol,
-            denomTransformer,
-          });
-
-          connectionToLocalDenomState.init(c, localDenomState);
-
-          /** @type {PegasusConnection} */
-          const state = harden({
-            localAddr,
-            remoteAddr,
-            actions,
-            remoteDenomSubscription,
-          });
-          connectionPublication.updateState(state);
-        },
-        async onReceive(c, packetBytes) {
-          const doReceive = async () => {
-            // Dispatch the packet to the appropriate Peg for this connection.
-            const parts =
-              await E(transferProtocol).parseTransferPacket(packetBytes);
-
-            const { remoteDenom: receiveDenom } = parts;
-            assert.typeof(receiveDenom, 'string');
-
-            const { receiveDenomToCourierPK, receiveDenomPublication } =
-              connectionToLocalDenomState.get(c);
-
-            if (!receiveDenomToCourierPK.has(receiveDenom)) {
-              // This is the first time we've heard of this denomination.
-              receiveDenomPublication.updateState(receiveDenom);
-            }
-
-            // Wait for the courier to be instantiated.
-            const courierPK = getCourierPK(
-              receiveDenom,
-              receiveDenomToCourierPK,
-            );
-            const { receive } = await courierPK.promise;
-            return receive(parts);
-          };
-
-          return doReceive().catch(error =>
-            E(transferProtocol).makeTransferPacketAck(false, error),
-          );
-        },
-        async onClose(c) {
-          // Unregister `c`.  Pending transfers will be rejected by the Network
-          // API.
-          const {
-            receiveDenomPublication,
-            receiveDenomToCourierPK,
-            localAddr,
-            remoteAddr,
-            abort,
-          } = connectionToLocalDenomState.get(c);
-          connectionToLocalDenomState.delete(c);
-          const err = assert.error(X`pegasusConnectionHandler closed`);
-          receiveDenomPublication.fail(err);
-          /** @type {PegasusConnection} */
-          const state = harden({
-            localAddr,
-            remoteAddr,
-          });
-          connectionPublication.updateState(state);
-          for (const courierPK of receiveDenomToCourierPK.values()) {
-            try {
-              courierPK.reject(err);
-            } catch (e) {
-              // Already resolved/rejected, so ignore.
-            }
-          }
-          abort(err);
-        },
-      };
-
-      return harden({
-        handler: Far('pegasusConnectionHandler', handler),
-        subscription: connectionSubscription,
-      });
-    },
-
-    getLocalIssuer(localBrand) {
-      return zcf.getIssuerForBrand(localBrand);
-    },
-
-    /**
-     * Create a Zoe invitation to transfer assets over network to a deposit address.
-     *
-     * @param {ERef<Peg>} pegP the peg over which to transfer
-     * @param {DepositAddress} depositAddress the remote receiver's address
-     * @param {string} [memo] the memo to attach to ics transfer packet
-     * @param {SenderOptions} [opts] additional sender options
-     * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
-     */
-    async makeInvitationToTransfer(pegP, depositAddress, memo = '', opts = {}) {
-      // Verify the peg.
-      const peg = await pegP;
-      const denomState = pegToDenomState.get(peg);
-
-      // Get details from the peg.
-      const [receiveDenom, sendDenom] = await Promise.all([
-        E(peg).getReceiveDenom(),
-        E(peg).getSendDenom(),
-      ]);
-      const { receiveDenomToCourierPK } = denomState;
-
-      const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
-      const { send } = await courierPK.promise;
-
-      /**
-       * Attempt the transfer, returning a refund if failed.
+       * Return a handler that can be used with the Network API.
        *
-       * @type {OfferHandler}
+       * @param {ERef<TransferProtocol>} [transferProtocol]
+       * @param {ERef<DenomTransformer>} [denomTransformer]
+       * @returns {PegasusConnectionKit}
        */
-      const offerHandler = zcfSeat => {
-        assertProposalShape(zcfSeat, TRANSFER_PROPOSAL_SHAPE);
-        send(zcfSeat, depositAddress, memo, opts);
-      };
+      makePegasusConnectionKit(
+        transferProtocol = DEFAULT_TRANSFER_PROTOCOL,
+        denomTransformer = DEFAULT_DENOM_TRANSFORMER,
+      ) {
+        /**
+         * @type {LegacyWeakMap<Connection, LocalDenomState>}
+         */
+        // Legacy because the value contains a JS Set
+        const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
 
-      return zcf.makeInvitation(offerHandler, `pegasus ${sendDenom} transfer`);
+        /**
+         * @type {SubscriptionRecord<PegasusConnection>}
+         */
+        const {
+          subscription: connectionSubscription,
+          publication: connectionPublication,
+        } = makeSubscriptionKit();
+
+        /** @type {ConnectionHandler} */
+        const handler = {
+          async onOpen(c, localAddr, remoteAddr) {
+            // Register `c` with the table of Peg receivers.
+            const {
+              subscription: remoteDenomSubscription,
+              publication: receiveDenomPublication,
+            } = makeSubscriptionKit();
+            const receiveDenomToCourierPK = makeLegacyMap('Denomination');
+
+            /** @type {LocalDenomState} */
+            const localDenomState = {
+              localAddr,
+              remoteAddr,
+              receiveDenomToCourierPK,
+              lastDenomNonce: 0n,
+              receiveDenomPublication,
+              remoteDenomSubscription,
+              abort: reason => {
+                // eslint-disable-next-line no-use-before-define
+                actions.abort(reason);
+              },
+            };
+
+            // The courier is the only thing that we use to send messages to `c`.
+            const makeCourier = makeCourierMaker(c);
+            const actions = makePegasusConnectionActions({
+              localDenomState,
+              makeCourier,
+              transferProtocol,
+              denomTransformer,
+            });
+
+            connectionToLocalDenomState.init(c, localDenomState);
+
+            /** @type {PegasusConnection} */
+            const state = harden({
+              localAddr,
+              remoteAddr,
+              actions,
+              remoteDenomSubscription,
+            });
+            connectionPublication.updateState(state);
+          },
+          async onReceive(c, packetBytes) {
+            const doReceive = async () => {
+              // Dispatch the packet to the appropriate Peg for this connection.
+              const parts =
+                await E(transferProtocol).parseTransferPacket(packetBytes);
+
+              const { remoteDenom: receiveDenom } = parts;
+              assert.typeof(receiveDenom, 'string');
+
+              const { receiveDenomToCourierPK, receiveDenomPublication } =
+                connectionToLocalDenomState.get(c);
+
+              if (!receiveDenomToCourierPK.has(receiveDenom)) {
+                // This is the first time we've heard of this denomination.
+                receiveDenomPublication.updateState(receiveDenom);
+              }
+
+              // Wait for the courier to be instantiated.
+              const courierPK = getCourierPK(
+                receiveDenom,
+                receiveDenomToCourierPK,
+              );
+              const { receive } = await courierPK.promise;
+              return receive(parts);
+            };
+
+            return doReceive().catch(error =>
+              E(transferProtocol).makeTransferPacketAck(false, error),
+            );
+          },
+          async onClose(c) {
+            // Unregister `c`.  Pending transfers will be rejected by the Network
+            // API.
+            const {
+              receiveDenomPublication,
+              receiveDenomToCourierPK,
+              localAddr,
+              remoteAddr,
+              abort,
+            } = connectionToLocalDenomState.get(c);
+            connectionToLocalDenomState.delete(c);
+            const err = assert.error(X`pegasusConnectionHandler closed`);
+            receiveDenomPublication.fail(err);
+            /** @type {PegasusConnection} */
+            const state = harden({
+              localAddr,
+              remoteAddr,
+            });
+            connectionPublication.updateState(state);
+            for (const courierPK of receiveDenomToCourierPK.values()) {
+              try {
+                courierPK.reject(err);
+              } catch (e) {
+                // Already resolved/rejected, so ignore.
+              }
+            }
+            abort(err);
+          },
+        };
+
+        return harden({
+          handler: Far('pegasusConnectionHandler', handler),
+          subscription: connectionSubscription,
+        });
+      },
+
+      getLocalIssuer(localBrand) {
+        return zcf.getIssuerForBrand(localBrand);
+      },
+
+      /**
+       * Create a Zoe invitation to transfer assets over network to a deposit address.
+       *
+       * @param {ERef<Peg>} pegP the peg over which to transfer
+       * @param {DepositAddress} depositAddress the remote receiver's address
+       * @param {string} [memo] the memo to attach to ics transfer packet
+       * @param {SenderOptions} [opts] additional sender options
+       * @returns {Promise<Invitation>} to transfer, make an offer of { give: { Transfer: pegAmount } } to this invitation
+       */
+      async makeInvitationToTransfer(
+        pegP,
+        depositAddress,
+        memo = '',
+        opts = {},
+      ) {
+        // Verify the peg.
+        const peg = await pegP;
+        const denomState = pegToDenomState.get(peg);
+
+        // Get details from the peg.
+        const [receiveDenom, sendDenom] = await Promise.all([
+          E(peg).getReceiveDenom(),
+          E(peg).getSendDenom(),
+        ]);
+        const { receiveDenomToCourierPK } = denomState;
+
+        const courierPK = getCourierPK(receiveDenom, receiveDenomToCourierPK);
+        const { send } = await courierPK.promise;
+
+        /**
+         * Attempt the transfer, returning a refund if failed.
+         *
+         * @type {OfferHandler}
+         */
+        const offerHandler = zcfSeat => {
+          assertProposalShape(zcfSeat, TRANSFER_PROPOSAL_SHAPE);
+          send(zcfSeat, depositAddress, memo, opts);
+        };
+
+        return zcf.makeInvitation(
+          offerHandler,
+          `pegasus ${sendDenom} transfer`,
+        );
+      },
     },
-  });
+  );
 };
 harden(makePegasus);
 

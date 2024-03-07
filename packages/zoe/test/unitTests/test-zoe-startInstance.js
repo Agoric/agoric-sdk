@@ -109,17 +109,25 @@ test('terms, issuerKeywordRecord switched', async t => {
 test('bad issuer, makeEmptyPurse throws', async t => {
   const { zoe } = setup();
   const installation = await E(zoe).installBundleID('b1-contract');
-  const brand = Far('brand', {
-    // eslint-disable-next-line no-use-before-define
-    isMyIssuer: i => i === badIssuer,
-    getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
-  });
-  const badIssuer = Far('issuer', {
-    makeEmptyPurse: async () => {
-      throw Error('bad issuer');
+  const brand = makeExo(
+    'brand',
+    M.interface('brand', {}, { defaultGuards: 'passable' }),
+    {
+      // eslint-disable-next-line no-use-before-define
+      isMyIssuer: i => i === badIssuer,
+      getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
     },
-    getBrand: () => brand,
-  });
+  );
+  const badIssuer = makeExo(
+    'issuer',
+    M.interface('issuer', {}, { defaultGuards: 'passable' }),
+    {
+      makeEmptyPurse: async () => {
+        throw Error('bad issuer');
+      },
+      getBrand: () => brand,
+    },
+  );
   await t.throwsAsync(
     () => E(zoe).startInstance(installation, { Money: badIssuer }),
     {

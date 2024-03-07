@@ -17,35 +17,41 @@ export function buildRootObject() {
     return testLog;
   }
 
-  const self = Far('root', {
-    async bootstrap(vats, devices) {
-      vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-    },
+  const self = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        vatAdmin = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+      },
 
-    log(message) {
-      testLog.push(message);
-    },
+      log(message) {
+        testLog.push(message);
+      },
 
-    testComplete() {
-      doneP.resolve(true);
-    },
+      testComplete() {
+        doneP.resolve(true);
+      },
 
-    async buildV1(vatParameters) {
-      const bcap = await E(vatAdmin).getNamedBundleCap('testVat');
-      const options = { vatParameters };
-      const res = await E(vatAdmin).createVat(bcap, options);
-      testVatRoot = res.root;
-      testVatAdmin = res.adminNode;
-      await runTests('before');
-      return testLog;
-    },
+      async buildV1(vatParameters) {
+        const bcap = await E(vatAdmin).getNamedBundleCap('testVat');
+        const options = { vatParameters };
+        const res = await E(vatAdmin).createVat(bcap, options);
+        testVatRoot = res.root;
+        testVatAdmin = res.adminNode;
+        await runTests('before');
+        return testLog;
+      },
 
-    async upgradeV2(vatParameters) {
-      const bcap = await E(vatAdmin).getNamedBundleCap('testVat');
-      await E(testVatAdmin).upgrade(bcap, { vatParameters });
-      await runTests('after');
-      return testLog;
+      async upgradeV2(vatParameters) {
+        const bcap = await E(vatAdmin).getNamedBundleCap('testVat');
+        await E(testVatAdmin).upgrade(bcap, { vatParameters });
+        await runTests('after');
+        return testLog;
+      },
     },
-  });
+  );
   return self;
 }

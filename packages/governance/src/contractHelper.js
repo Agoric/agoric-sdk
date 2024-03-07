@@ -89,11 +89,15 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {GovernedPublicFacet<PF>}
    */
   const augmentPublicFacet = originalPublicFacet => {
-    return Far('publicFacet', {
-      ...originalPublicFacet,
-      ...commonPublicMethods,
-      ...typedAccessors,
-    });
+    return makeExo(
+      'publicFacet',
+      M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+      {
+        ...originalPublicFacet,
+        ...commonPublicMethods,
+        ...typedAccessors,
+      },
+    );
   };
 
   /**
@@ -103,11 +107,15 @@ const facetHelpers = (zcf, paramManager) => {
    * @template {{}} OPF
    */
   const augmentVirtualPublicFacet = originalPublicFacet => {
-    return Far('publicFacet', {
-      ...originalPublicFacet,
-      ...commonPublicMethods,
-      ...objectMap(typedAccessors, ignoreContext),
-    });
+    return makeExo(
+      'publicFacet',
+      M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+      {
+        ...originalPublicFacet,
+        ...commonPublicMethods,
+        ...objectMap(typedAccessors, ignoreContext),
+      },
+    );
   };
 
   /**
@@ -117,21 +125,29 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {GovernedCreatorFacet<CF>}
    */
   const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
-    const governorFacet = Far('governorFacet', {
-      getParamMgrRetriever: () =>
-        Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: name => paramManager.getInternalParamValue(name),
-      getLimitedCreatorFacet: () => limitedCreatorFacet,
-      // The contract provides a facet with the APIs that can be invoked by
-      // governance
-      /** @type {() => GovernedApis} */
-      getGovernedApis: () => Far('governedAPIs', governedApis),
-      // The facet returned by getGovernedApis is Far, so we can't see what
-      // methods it has. There's no clean way to have contracts specify the APIs
-      // without also separately providing their names.
-      getGovernedApiNames: () => Object.keys(governedApis),
-      setOfferFilter: strings => zcf.setOfferFilter(strings),
-    });
+    const governorFacet = makeExo(
+      'governorFacet',
+      M.interface('governorFacet', {}, { defaultGuards: 'passable' }),
+      {
+        getParamMgrRetriever: () =>
+          makeExo(
+            'paramRetriever',
+            M.interface('paramRetriever', {}, { defaultGuards: 'passable' }),
+            { get: () => paramManager },
+          ),
+        getInvitation: name => paramManager.getInternalParamValue(name),
+        getLimitedCreatorFacet: () => limitedCreatorFacet,
+        // The contract provides a facet with the APIs that can be invoked by
+        // governance
+        /** @type {() => GovernedApis} */
+        getGovernedApis: () => Far('governedAPIs', governedApis),
+        // The facet returned by getGovernedApis is Far, so we can't see what
+        // methods it has. There's no clean way to have contracts specify the APIs
+        // without also separately providing their names.
+        getGovernedApiNames: () => Object.keys(governedApis),
+        setOfferFilter: strings => zcf.setOfferFilter(strings),
+      },
+    );
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
     return governorFacet;
@@ -159,7 +175,11 @@ const facetHelpers = (zcf, paramManager) => {
     /** @type {import('@agoric/swingset-liveslots').FunctionsPlusContext<unknown, GovernedCreatorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
-        Far('paramRetriever', { get: () => paramManager }),
+        makeExo(
+          'paramRetriever',
+          M.interface('paramRetriever', {}, { defaultGuards: 'passable' }),
+          { get: () => paramManager },
+        ),
       getInvitation: (_context, /** @type {string} */ name) =>
         paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: ({ facets }) => facets.limitedCreatorFacet,
@@ -198,7 +218,11 @@ const facetHelpers = (zcf, paramManager) => {
       M.interface('governorFacet', GovernorFacetShape),
       {
         getParamMgrRetriever: () =>
-          Far('paramRetriever', { get: () => paramManager }),
+          makeExo(
+            'paramRetriever',
+            M.interface('paramRetriever', {}, { defaultGuards: 'passable' }),
+            { get: () => paramManager },
+          ),
         getInvitation: name => paramManager.getInternalParamValue(name),
         getLimitedCreatorFacet: () => limitedCreatorFacet,
         // The contract provides a facet with the APIs that can be invoked by

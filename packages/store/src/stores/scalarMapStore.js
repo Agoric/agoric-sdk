@@ -168,7 +168,7 @@ export const makeScalarMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar MapStore of ${q(tag)}`, {
+  return makeExo(`scalar MapStore of ${q(tag)}`, M.interface(`scalar MapStore of ${q(tag)}`, {}, { defaultGuards: 'passable' }), {
     ...makeMapStoreMethods(
       jsmap,
       assertKVOkToAdd,

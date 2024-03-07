@@ -32,7 +32,11 @@ const PARAM_ISSUE = harden({
     paramPath: { key: 'something' },
     changes: { arbitrary: 37 },
   },
-  contract: Far('contract', {}),
+  contract: makeExo(
+    'contract',
+    M.interface('contract', {}, { defaultGuards: 'passable' }),
+    {},
+  ),
 });
 const { positive, negative } = makeParamChangePositions({ Arbitrary: 37 });
 const PARAM_CHANGE_ISSUE = harden({

@@ -90,10 +90,14 @@ test('makeDehydrator', async t => {
   );
 
   const makeMockBrand = () =>
-    Far('mock brand', {
-      isMyIssuer: _allegedIssuer => {},
-      getAllegedName: () => {},
-    });
+    makeExo(
+      'mock brand',
+      M.interface('mock brand', {}, { defaultGuards: 'passable' }),
+      {
+        isMyIssuer: _allegedIssuer => {},
+        getAllegedName: () => {},
+      },
+    );
 
   const brand1 = makeMockBrand();
   const brand2 = makeMockBrand();
@@ -159,7 +163,11 @@ test('makeDehydrator', async t => {
     },
     exit: {
       afterDeadline: {
-        timer: Far('timer', {}),
+        timer: makeExo(
+          'timer',
+          M.interface('timer', {}, { defaultGuards: 'passable' }),
+          {},
+        ),
         deadline: 55,
       },
     },

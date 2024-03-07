@@ -34,28 +34,32 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     oldPK.resolve([nextPKR.promise]);
   }
 
-  const right = Far('right', {
-    doMessage(left, seqnum) {
-      increment();
-      if (seqnum !== 'disabled') {
-        // if enbled, do extra work once every 5 cranks, to exercise the
-        // limited-computron policy
-        seqnum += 1;
-        baggage.set('seqnum', seqnum);
-        if (seqnum % 5 === 0) {
-          consumeCPU();
+  const right = makeExo(
+    'right',
+    M.interface('right', {}, { defaultGuards: 'passable' }),
+    {
+      doMessage(left, seqnum) {
+        increment();
+        if (seqnum !== 'disabled') {
+          // if enbled, do extra work once every 5 cranks, to exercise the
+          // limited-computron policy
+          seqnum += 1;
+          baggage.set('seqnum', seqnum);
+          if (seqnum % 5 === 0) {
+            consumeCPU();
+          }
         }
-      }
-      E(left).doMessage(right, seqnum);
-    },
+        E(left).doMessage(right, seqnum);
+      },
 
-    startPromise(args) {
-      nextPKR = makePromiseKit();
-      args[0]
-        .then(doPromise)
-        .catch(err => console.log(`right startPromise err`, err));
-      return harden([nextPKR.promise]);
+      startPromise(args) {
+        nextPKR = makePromiseKit();
+        args[0]
+          .then(doPromise)
+          .catch(err => console.log(`right startPromise err`, err));
+        return harden([nextPKR.promise]);
+      },
     },
-  });
+  );
   return right;
 }

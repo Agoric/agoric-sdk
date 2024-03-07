@@ -20,15 +20,19 @@ export function buildSerializationTools(syscall, deviceName) {
     const { type, allocatedByVat } = parseVatSlot(slot);
     assert.equal(type, 'object');
     assert.equal(allocatedByVat, false);
-    const p = Far('presence', {
-      send(method, args) {
-        assert.typeof(method, 'string');
-        assert(Array.isArray(args), args);
-        // eslint-disable-next-line no-use-before-define
-        const capdata = serialize([method, args]);
-        syscall.sendOnly(slot, capdata);
+    const p = makeExo(
+      'presence',
+      M.interface('presence', {}, { defaultGuards: 'passable' }),
+      {
+        send(method, args) {
+          assert.typeof(method, 'string');
+          assert(Array.isArray(args), args);
+          // eslint-disable-next-line no-use-before-define
+          const capdata = serialize([method, args]);
+          syscall.sendOnly(slot, capdata);
+        },
       },
-    });
+    );
     presences.set(p, slot);
     return p;
   }
@@ -40,7 +44,11 @@ export function buildSerializationTools(syscall, deviceName) {
     const { type, allocatedByVat } = parseVatSlot(slot);
     assert.equal(type, 'device');
     assert.equal(allocatedByVat, true);
-    const dn = Far('device node', {});
+    const dn = makeExo(
+      'device node',
+      M.interface('device node', {}, { defaultGuards: 'passable' }),
+      {},
+    );
     myDeviceNodes.set(dn, slot);
     return dn;
   }

@@ -55,23 +55,31 @@ async function testRemotePeg(t) {
    */
   const { promise: localDepositFacet, resolve: resolveLocalDepositFacet } =
     makePromiseKit();
-  const fakeBoard = Far('fakeBoard', {
-    getValue(id) {
-      if (id === '0x1234') {
+  const fakeBoard = makeExo(
+    'fakeBoard',
+    M.interface('fakeBoard', {}, { defaultGuards: 'passable' }),
+    {
+      getValue(id) {
+        if (id === '0x1234') {
+          return localDepositFacet;
+        }
+        t.is(id, 'agoric1234567', 'tried bech32 first in board');
+        throw Error(`unrecognized board id ${id}`);
+      },
+    },
+  );
+  const fakeNamesByAddress = makeExo(
+    'fakeNamesByAddress',
+    M.interface('fakeNamesByAddress', {}, { defaultGuards: 'passable' }),
+    {
+      lookup(...keys) {
+        t.is(keys[0], 'agoric1234567', 'unrecognized fakeNamesByAddress');
+        t.is(keys[1], 'depositFacet', 'lookup not for the depositFacet');
+        t.is(keys.length, 2);
         return localDepositFacet;
-      }
-      t.is(id, 'agoric1234567', 'tried bech32 first in board');
-      throw Error(`unrecognized board id ${id}`);
+      },
     },
-  });
-  const fakeNamesByAddress = Far('fakeNamesByAddress', {
-    lookup(...keys) {
-      t.is(keys[0], 'agoric1234567', 'unrecognized fakeNamesByAddress');
-      t.is(keys[1], 'depositFacet', 'lookup not for the depositFacet');
-      t.is(keys.length, 2);
-      return localDepositFacet;
-    },
-  });
+  );
 
   const zoe = makeZoeForTest();
 
@@ -106,47 +114,55 @@ async function testRemotePeg(t) {
   let gaiaConnection;
   E(portP)
     .addListener(
-      Far('acceptor', {
-        async onAccept(_p, _localAddr, _remoteAddr) {
-          return Far('handler', {
-            async onOpen(c) {
-              gaiaConnection = c;
-            },
-            async onReceive(_c, packetBytes) {
-              const { resolver, vow } = makeVowKit();
-              const packet = JSON.parse(packetBytes);
-              if (packet.memo) {
-                t.deepEqual(
-                  packet,
-                  {
-                    amount: '100000000000000000001',
-                    denom: 'portdef/chanabc/uatom',
-                    memo: 'I am a memo!',
-                    receiver: 'markaccount',
-                    sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
-                  },
-                  'expected transfer packet',
-                );
-                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
-              } else {
-                t.deepEqual(
-                  packet,
-                  {
-                    amount: '100000000000000000001',
-                    denom: 'portdef/chanabc/uatom',
-                    memo: '',
-                    receiver: 'markaccount',
-                    sender: 'pegasus',
-                  },
-                  'expected transfer packet',
-                );
-                resolver.resolve(JSON.stringify({ result: 'AQ==' }));
-              }
-              return vow;
-            },
-          });
+      makeExo(
+        'acceptor',
+        M.interface('acceptor', {}, { defaultGuards: 'passable' }),
+        {
+          async onAccept(_p, _localAddr, _remoteAddr) {
+            return makeExo(
+              'handler',
+              M.interface('handler', {}, { defaultGuards: 'passable' }),
+              {
+                async onOpen(c) {
+                  gaiaConnection = c;
+                },
+                async onReceive(_c, packetBytes) {
+                  const { resolver, vow } = makeVowKit();
+                  const packet = JSON.parse(packetBytes);
+                  if (packet.memo) {
+                    t.deepEqual(
+                      packet,
+                      {
+                        amount: '100000000000000000001',
+                        denom: 'portdef/chanabc/uatom',
+                        memo: 'I am a memo!',
+                        receiver: 'markaccount',
+                        sender: 'agoric1jmd7lwdyykrxm5h83nlhg74fctwnky04ufpqtc',
+                      },
+                      'expected transfer packet',
+                    );
+                    resolver.resolve(JSON.stringify({ result: 'AQ==' }));
+                  } else {
+                    t.deepEqual(
+                      packet,
+                      {
+                        amount: '100000000000000000001',
+                        denom: 'portdef/chanabc/uatom',
+                        memo: '',
+                        receiver: 'markaccount',
+                        sender: 'pegasus',
+                      },
+                      'expected transfer packet',
+                    );
+                    resolver.resolve(JSON.stringify({ result: 'AQ==' }));
+                  }
+                  return vow;
+                },
+              },
+            );
+          },
         },
-      }),
+      ),
     )
     .catch(e => t.fail(e));
 

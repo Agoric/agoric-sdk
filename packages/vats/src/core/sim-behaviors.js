@@ -33,7 +33,11 @@ export const grantRunBehaviors = async ({
   consume: { client },
 }) => {
   const bundle = {
-    behaviors: Far('behaviors', { run: manifest => runBehaviors(manifest) }),
+    behaviors: makeExo(
+      'behaviors',
+      M.interface('behaviors', {}, { defaultGuards: 'passable' }),
+      { run: manifest => runBehaviors(manifest) },
+    ),
   };
   return E(client).assignBundle([_addr => bundle]);
 };

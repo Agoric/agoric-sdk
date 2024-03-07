@@ -38,71 +38,83 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
  * @param {ZoeService} zoe
  */
 const build = async (log, zoe) => {
-  return Far('voter', {
-    createVoter: async (name, invitation, choice) => {
-      /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('@agoric/governance/src/committee.js').start>} */
-      const electorateInstance = await E(zoe).getInstance(invitation);
-      const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
-      const seat = E(zoe).offer(invitation);
-      const { voter } = E.get(E(seat).getOfferResult());
-      void E.when(E(seat).getPayouts(), async () => {
-        void E.when(E(seat).hasExited(), exited => {
-          log(`Seat ${name} ${exited ? 'has exited' : 'is open'}`);
+  return makeExo(
+    'voter',
+    M.interface('voter', {}, { defaultGuards: 'passable' }),
+    {
+      createVoter: async (name, invitation, choice) => {
+        /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('@agoric/governance/src/committee.js').start>} */
+        const electorateInstance = await E(zoe).getInstance(invitation);
+        const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
+        const seat = E(zoe).offer(invitation);
+        const { voter } = E.get(E(seat).getOfferResult());
+        void E.when(E(seat).getPayouts(), async () => {
+          void E.when(E(seat).hasExited(), exited => {
+            log(`Seat ${name} ${exited ? 'has exited' : 'is open'}`);
+          });
         });
-      });
 
-      const votingObserver = Far('voting observer', {
-        updateState: details => {
-          log(`${name} voted for ${q(choice)}`);
-          return E(voter).castBallotFor(details.questionHandle, [choice]);
-        },
-      });
-      const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
-      void observeNotifier(
-        makeNotifierFromSubscriber(subscriber),
-        votingObserver,
-      );
+        const votingObserver = makeExo(
+          'voting observer',
+          M.interface('voting observer', {}, { defaultGuards: 'passable' }),
+          {
+            updateState: details => {
+              log(`${name} voted for ${q(choice)}`);
+              return E(voter).castBallotFor(details.questionHandle, [choice]);
+            },
+          },
+        );
+        const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
+        void observeNotifier(
+          makeNotifierFromSubscriber(subscriber),
+          votingObserver,
+        );
 
-      return Far(`Voter ${name}`, {
-        verifyBallot: (question, instances) =>
-          verify(log, question, electoratePublicFacet, instances),
-      });
+        return makeExo(`Voter ${name}`, M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }), {
+          verifyBallot: (question, instances) =>
+            verify(log, question, electoratePublicFacet, instances),
+        });
+      },
+      createMultiVoter: async (name, invitation, choices) => {
+        const electorateInstance = await E(zoe).getInstance(invitation);
+        /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
+        const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
+        const seat = E(zoe).offer(invitation);
+        const { voter } = E.get(E(seat).getOfferResult());
+
+        const voteMap = new Map();
+        for (const [issue, position] of choices) {
+          voteMap.set(issue.text, position);
+        }
+        const votingObserver = makeExo(
+          'voting observer',
+          M.interface('voting observer', {}, { defaultGuards: 'passable' }),
+          {
+            updateState: details => {
+              const choice = voteMap.get(details.issue.text);
+              log(`${name} voted on ${q(details.issue)} for ${q(choice)}`);
+              return E(voter).castBallotFor(details.questionHandle, [choice]);
+            },
+          },
+        );
+        const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
+        void observeNotifier(
+          makeNotifierFromSubscriber(subscriber),
+          votingObserver,
+        );
+
+        return makeExo(`Voter ${name}`, M.interface(`Voter ${name}`, {}, { defaultGuards: 'passable' }), {
+          verifyBallot: (question, instances) =>
+            verify(log, question, electoratePublicFacet, instances),
+        });
+      },
     },
-    createMultiVoter: async (name, invitation, choices) => {
-      const electorateInstance = await E(zoe).getInstance(invitation);
-      /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
-      const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
-      const seat = E(zoe).offer(invitation);
-      const { voter } = E.get(E(seat).getOfferResult());
-
-      const voteMap = new Map();
-      for (const [issue, position] of choices) {
-        voteMap.set(issue.text, position);
-      }
-      const votingObserver = Far('voting observer', {
-        updateState: details => {
-          const choice = voteMap.get(details.issue.text);
-          log(`${name} voted on ${q(details.issue)} for ${q(choice)}`);
-          return E(voter).castBallotFor(details.questionHandle, [choice]);
-        },
-      });
-      const subscriber = E(electoratePublicFacet).getQuestionSubscriber();
-      void observeNotifier(
-        makeNotifierFromSubscriber(subscriber),
-        votingObserver,
-      );
-
-      return Far(`Voter ${name}`, {
-        verifyBallot: (question, instances) =>
-          verify(log, question, electoratePublicFacet, instances),
-      });
-    },
-  });
+  );
 };
 
 /** @type {import('@agoric/swingset-vat/src/kernel/vat-loader/types.js').BuildRootObjectForTestVat} */
 export const buildRootObject = vatPowers =>
-  Far('root', {
+  makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {
     /** @param {ZoeService} zoe */
     build: zoe => build(vatPowers.testLog, zoe),
   });

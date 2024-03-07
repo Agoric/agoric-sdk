@@ -49,11 +49,15 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     makeDurableCounter(),
   );
 
-  return Far('root', {
-    getVersion: () => version,
-    getParameters: () => vatParameters,
-    getEphemeralCounter: () => ephemeralCounter,
-    getVirtualCounter: () => virtualCounter,
-    getDurableCounter: () => durableCounter,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getVersion: () => version,
+      getParameters: () => vatParameters,
+      getEphemeralCounter: () => ephemeralCounter,
+      getVirtualCounter: () => virtualCounter,
+      getDurableCounter: () => durableCounter,
+    },
+  );
 };

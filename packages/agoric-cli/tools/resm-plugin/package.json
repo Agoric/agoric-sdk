@@ -4,7 +4,9 @@
   "type": "commonjs",
   "dependencies": {
     "@endo/eventual-send": "^0.17.2",
-    "@endo/marshal": "^0.8.5"
+    "@endo/exo": "^1.2.1",
+    "@endo/marshal": "^0.8.5",
+    "@endo/patterns": "^1.2.0"
   },
   "typeCoverage": {
     "atLeast": 0

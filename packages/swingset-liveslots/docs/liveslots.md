@@ -17,7 +17,7 @@ import { Far } from '@endo/far';
 
 export function buildRootObject(vatPowers) {
   let counter = 0;
-  return Far('root', {
+  return makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {
     increment() {
       counter += 1;
     },
@@ -38,7 +38,7 @@ The root object *must* be a hardened "ephemeral" object (e.g., created with `Far
 
 ```js
     foo(arg1) {
-      const obj2 = Far('obj2', {
+      const obj2 = makeExo('obj2', M.interface('obj2', {}, { defaultGuards: 'passable' }), {
         bar(arg2) { return 'barbar'; }
       });
       return obj2;

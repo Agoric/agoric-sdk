@@ -26,7 +26,11 @@ const shapetest = test.macro(async (t, collectionType, remotableType) => {
     const makeDurableThing = VatData.defineDurableKind(handle, initData, {});
     switch (remotableType) {
       case 'ephemeral':
-        remotable = Far('thing', {});
+        remotable = makeExo(
+          'thing',
+          M.interface('thing', {}, { defaultGuards: 'passable' }),
+          {},
+        );
         break;
       case 'virtual':
         remotable = makeVirtualThing();
@@ -41,7 +45,11 @@ const shapetest = test.macro(async (t, collectionType, remotableType) => {
     const valueShape = remotable;
     const durable = collectionType === 'durable';
     map = VatData.makeScalarBigMapStore('map', { valueShape, durable });
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS = () => ({ buildRootObject });

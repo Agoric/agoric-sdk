@@ -119,60 +119,64 @@ export async function start(zcf, privateArgs, baggage) {
   };
 
   /** @type {Parameters<typeof makeVault>[0]} */
-  const managerMock = Far('vault manager mock', {
-    getGovernedParams() {
-      return {
-        getDebtLimit() {
-          throw Error('not implemented');
-        },
-        getLiquidationMargin() {
-          return LIQUIDATION_MARGIN;
-        },
-        getLiquidationPenalty() {
-          throw Error('not implemented');
-        },
-        getMintFee() {
-          return makeRatio(500n, stableBrand, BASIS_POINTS);
-        },
-        getInterestRate() {
-          return currentInterest;
-        },
-        getChargingPeriod() {
-          return DAY;
-        },
-        getLiquidationPadding() {
-          // XXX re-use
-          return LIQUIDATION_MARGIN;
-        },
-        getMinInitialDebt() {
-          return AmountMath.makeEmpty(stableBrand);
-        },
-        getRecordingPeriod() {
-          return DAY;
-        },
-      };
-    },
-    getCollateralBrand() {
-      return collateralBrand;
-    },
-    getDebtBrand: () => stableBrand,
+  const managerMock = makeExo(
+    'vault manager mock',
+    M.interface('vault manager mock', {}, { defaultGuards: 'passable' }),
+    {
+      getGovernedParams() {
+        return {
+          getDebtLimit() {
+            throw Error('not implemented');
+          },
+          getLiquidationMargin() {
+            return LIQUIDATION_MARGIN;
+          },
+          getLiquidationPenalty() {
+            throw Error('not implemented');
+          },
+          getMintFee() {
+            return makeRatio(500n, stableBrand, BASIS_POINTS);
+          },
+          getInterestRate() {
+            return currentInterest;
+          },
+          getChargingPeriod() {
+            return DAY;
+          },
+          getLiquidationPadding() {
+            // XXX re-use
+            return LIQUIDATION_MARGIN;
+          },
+          getMinInitialDebt() {
+            return AmountMath.makeEmpty(stableBrand);
+          },
+          getRecordingPeriod() {
+            return DAY;
+          },
+        };
+      },
+      getCollateralBrand() {
+        return collateralBrand;
+      },
+      getDebtBrand: () => stableBrand,
 
-    getAssetSubscriber: () => assetSubscriber,
-    maxDebtFor,
-    mintAndTransfer,
-    burn,
-    getCollateralQuote() {
-      return Promise.reject(Error('Not implemented'));
+      getAssetSubscriber: () => assetSubscriber,
+      maxDebtFor,
+      mintAndTransfer,
+      burn,
+      getCollateralQuote() {
+        return Promise.reject(Error('Not implemented'));
+      },
+      getCompoundedInterest: () => compoundedInterest,
+      scopeDescription: base => `VCW: ${base}`,
+      handleBalanceChange: () => {
+        console.warn('mock handleBalanceChange does nothing');
+      },
+      mintforVault: async amount => {
+        stableMint.mintGains({ Minted: amount });
+      },
     },
-    getCompoundedInterest: () => compoundedInterest,
-    scopeDescription: base => `VCW: ${base}`,
-    handleBalanceChange: () => {
-      console.warn('mock handleBalanceChange does nothing');
-    },
-    mintforVault: async amount => {
-      stableMint.mintGains({ Minted: amount });
-    },
-  });
+  );
 
   const makeRecorderKit = prepareRecorderKit(baggage, marshaller);
 
@@ -217,24 +221,32 @@ export async function start(zcf, privateArgs, baggage) {
       vault,
       stableMint,
       collateralKit,
-      actions: Far('vault actions', {
-        add() {
-          return vaultKit.invitationMakers.AdjustBalances();
+      actions: makeExo(
+        'vault actions',
+        M.interface('vault actions', {}, { defaultGuards: 'passable' }),
+        {
+          add() {
+            return vaultKit.invitationMakers.AdjustBalances();
+          },
         },
-      }),
+      ),
     };
   }
 
   console.log(`makeContract returning`);
 
-  const vaultAPI = Far('vaultAPI', {
-    makeAdjustBalancesInvitation() {
-      return vault.makeAdjustBalancesInvitation();
+  const vaultAPI = makeExo(
+    'vaultAPI',
+    M.interface('vaultAPI', {}, { defaultGuards: 'passable' }),
+    {
+      makeAdjustBalancesInvitation() {
+        return vault.makeAdjustBalancesInvitation();
+      },
+      mintRun(amount) {
+        return paymentFromZCFMint(zcf, stableMint, amount);
+      },
     },
-    mintRun(amount) {
-      return paymentFromZCFMint(zcf, stableMint, amount);
-    },
-  });
+  );
 
   const testInvitation = zcf.makeInvitation(makeHook, 'foo');
   return harden({ creatorInvitation: testInvitation, creatorFacet: vaultAPI });

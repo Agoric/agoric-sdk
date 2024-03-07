@@ -331,17 +331,21 @@ export const connectFaucet = async ({
 
     const userFeePurse = await E(E(zoe).getFeeIssuer()).makeEmptyPurse();
 
-    const faucet = Far('faucet', {
-      /**
-       * reap the spoils of our on-chain provisioning.
-       *
-       * @returns {Promise<UserPaymentRecord[]>}
-       */
-      tapFaucet: async () => faucetPaymentInfo,
-      getFeePurse() {
-        return userFeePurse;
+    const faucet = makeExo(
+      'faucet',
+      M.interface('faucet', {}, { defaultGuards: 'passable' }),
+      {
+        /**
+         * reap the spoils of our on-chain provisioning.
+         *
+         * @returns {Promise<UserPaymentRecord[]>}
+         */
+        tapFaucet: async () => faucetPaymentInfo,
+        getFeePurse() {
+          return userFeePurse;
+        },
       },
-    });
+    );
 
     return faucet;
   };

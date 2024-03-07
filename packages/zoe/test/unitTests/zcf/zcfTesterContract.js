@@ -10,9 +10,13 @@ const start = async zcf => {
   const instance = zcf.getInstance();
   zcf.setTestJig(() => harden({ instance }));
 
-  const publicFacet = Far('public facet', {
-    makeInvitation: () => zcf.makeInvitation(() => 17, 'simple'),
-  });
+  const publicFacet = makeExo(
+    'public facet',
+    M.interface('public facet', {}, { defaultGuards: 'passable' }),
+    {
+      makeInvitation: () => zcf.makeInvitation(() => 17, 'simple'),
+    },
+  );
 
   return { publicFacet };
 };

@@ -183,35 +183,39 @@ export async function makeFakePriceAuthority(options) {
 
   async function startTicker() {
     let firstTime = true;
-    const handler = Far('wake handler', {
-      wake: async t => {
-        if (t === 0n) {
-          // just in case makeRepeater() was called with delay=0,
-          // which schedules an immediate wakeup
-          return;
-        }
-        if (firstTime) {
-          firstTime = false;
-        } else {
-          currentPriceIndex += 1;
-        }
-        latestTick = t;
-        tickUpdater.updateState(t);
-        const remainingTimeClients = [];
-        for (const entry of timeClients) {
-          const [when, resolve] = entry;
-          if (timestampGTE(latestTick, when)) {
-            resolve(latestTick);
-          } else {
-            remainingTimeClients.push(entry);
+    const handler = makeExo(
+      'wake handler',
+      M.interface('wake handler', {}, { defaultGuards: 'passable' }),
+      {
+        wake: async t => {
+          if (t === 0n) {
+            // just in case makeRepeater() was called with delay=0,
+            // which schedules an immediate wakeup
+            return;
           }
-        }
-        timeClients = remainingTimeClients;
-        for (const req of comparisonQueue) {
-          checkComparisonRequest(req);
-        }
+          if (firstTime) {
+            firstTime = false;
+          } else {
+            currentPriceIndex += 1;
+          }
+          latestTick = t;
+          tickUpdater.updateState(t);
+          const remainingTimeClients = [];
+          for (const entry of timeClients) {
+            const [when, resolve] = entry;
+            if (timestampGTE(latestTick, when)) {
+              resolve(latestTick);
+            } else {
+              remainingTimeClients.push(entry);
+            }
+          }
+          timeClients = remainingTimeClients;
+          for (const req of comparisonQueue) {
+            checkComparisonRequest(req);
+          }
+        },
       },
-    });
+    );
     const timerBrand = await E(timer).getTimerBrand();
     const soonRT = coerceRelativeTimeRecord(1n, timerBrand);
     const quoteIntervalRT = coerceRelativeTimeRecord(quoteInterval, timerBrand);
@@ -262,72 +266,78 @@ export async function makeFakePriceAuthority(options) {
   harden(generateQuotes);
 
   /** @type {PriceAuthority} */
-  const priceAuthority = Far('fake price authority', {
-    getQuoteIssuer: (brandIn, brandOut) => {
-      assertBrands(brandIn, brandOut);
-      return quoteIssuer;
+  const priceAuthority = makeExo(
+    'fake price authority',
+    M.interface('fake price authority', {}, { defaultGuards: 'passable' }),
+    {
+      getQuoteIssuer: (brandIn, brandOut) => {
+        assertBrands(brandIn, brandOut);
+        return quoteIssuer;
+      },
+      getTimerService: (brandIn, brandOut) => {
+        assertBrands(brandIn, brandOut);
+        return timer;
+      },
+      makeQuoteNotifier: async (amountIn, brandOut) => {
+        assertBrands(amountIn.brand, brandOut);
+        return makeNotifierFromAsyncIterable(
+          generateQuotes(amountIn, brandOut),
+        );
+      },
+      quoteAtTime: (timeStamp, amountIn, brandOut) => {
+        timeStamp = TimeMath.absValue(timeStamp);
+        assert.typeof(timeStamp, 'bigint');
+        assertBrands(amountIn.brand, brandOut);
+        if (latestTick && timestampLTE(timeStamp, latestTick)) {
+          return Promise.resolve(priceInQuote(amountIn, brandOut, timeStamp));
+        } else {
+          // follow ticker until it fires with >= timeStamp
+          const { promise, resolve } = makePromiseKit();
+          timeClients.push([timeStamp, resolve]);
+          return promise.then(ts => {
+            return priceInQuote(amountIn, brandOut, ts);
+          });
+        }
+      },
+      quoteGiven: async (amountIn, brandOut) => {
+        assertBrands(amountIn.brand, brandOut);
+        const timestamp = await E(timer).getCurrentTimestamp();
+        return priceInQuote(amountIn, brandOut, timestamp);
+      },
+      quoteWanted: async (brandIn, amountOut) => {
+        assertBrands(brandIn, amountOut.brand);
+        const timestamp = await E(timer).getCurrentTimestamp();
+        return priceOutQuote(brandIn, amountOut, timestamp);
+      },
+      quoteWhenGTE: (amountIn, amountOutLimit) => {
+        const compareGTE = amount => AmountMath.isGTE(amount, amountOutLimit);
+        return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
+      },
+      quoteWhenGT: (amountIn, amountOutLimit) => {
+        const compareGT = amount => !AmountMath.isGTE(amountOutLimit, amount);
+        return resolveQuoteWhen(compareGT, amountIn, amountOutLimit);
+      },
+      quoteWhenLTE: (amountIn, amountOutLimit) => {
+        const compareLTE = amount => AmountMath.isGTE(amountOutLimit, amount);
+        return resolveQuoteWhen(compareLTE, amountIn, amountOutLimit);
+      },
+      quoteWhenLT: (amountIn, amountOutLimit) => {
+        const compareLT = amount => !AmountMath.isGTE(amount, amountOutLimit);
+        return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
+      },
+      mutableQuoteWhenLT: () => {
+        throw Error('use ScriptedPriceAuthority');
+      },
+      mutableQuoteWhenLTE: () => {
+        throw Error('use ScriptedPriceAuthority');
+      },
+      mutableQuoteWhenGT: () => {
+        throw Error('use ScriptedPriceAuthority');
+      },
+      mutableQuoteWhenGTE: () => {
+        throw Error('use ScriptedPriceAuthority');
+      },
     },
-    getTimerService: (brandIn, brandOut) => {
-      assertBrands(brandIn, brandOut);
-      return timer;
-    },
-    makeQuoteNotifier: async (amountIn, brandOut) => {
-      assertBrands(amountIn.brand, brandOut);
-      return makeNotifierFromAsyncIterable(generateQuotes(amountIn, brandOut));
-    },
-    quoteAtTime: (timeStamp, amountIn, brandOut) => {
-      timeStamp = TimeMath.absValue(timeStamp);
-      assert.typeof(timeStamp, 'bigint');
-      assertBrands(amountIn.brand, brandOut);
-      if (latestTick && timestampLTE(timeStamp, latestTick)) {
-        return Promise.resolve(priceInQuote(amountIn, brandOut, timeStamp));
-      } else {
-        // follow ticker until it fires with >= timeStamp
-        const { promise, resolve } = makePromiseKit();
-        timeClients.push([timeStamp, resolve]);
-        return promise.then(ts => {
-          return priceInQuote(amountIn, brandOut, ts);
-        });
-      }
-    },
-    quoteGiven: async (amountIn, brandOut) => {
-      assertBrands(amountIn.brand, brandOut);
-      const timestamp = await E(timer).getCurrentTimestamp();
-      return priceInQuote(amountIn, brandOut, timestamp);
-    },
-    quoteWanted: async (brandIn, amountOut) => {
-      assertBrands(brandIn, amountOut.brand);
-      const timestamp = await E(timer).getCurrentTimestamp();
-      return priceOutQuote(brandIn, amountOut, timestamp);
-    },
-    quoteWhenGTE: (amountIn, amountOutLimit) => {
-      const compareGTE = amount => AmountMath.isGTE(amount, amountOutLimit);
-      return resolveQuoteWhen(compareGTE, amountIn, amountOutLimit);
-    },
-    quoteWhenGT: (amountIn, amountOutLimit) => {
-      const compareGT = amount => !AmountMath.isGTE(amountOutLimit, amount);
-      return resolveQuoteWhen(compareGT, amountIn, amountOutLimit);
-    },
-    quoteWhenLTE: (amountIn, amountOutLimit) => {
-      const compareLTE = amount => AmountMath.isGTE(amountOutLimit, amount);
-      return resolveQuoteWhen(compareLTE, amountIn, amountOutLimit);
-    },
-    quoteWhenLT: (amountIn, amountOutLimit) => {
-      const compareLT = amount => !AmountMath.isGTE(amount, amountOutLimit);
-      return resolveQuoteWhen(compareLT, amountIn, amountOutLimit);
-    },
-    mutableQuoteWhenLT: () => {
-      throw Error('use ScriptedPriceAuthority');
-    },
-    mutableQuoteWhenLTE: () => {
-      throw Error('use ScriptedPriceAuthority');
-    },
-    mutableQuoteWhenGT: () => {
-      throw Error('use ScriptedPriceAuthority');
-    },
-    mutableQuoteWhenGTE: () => {
-      throw Error('use ScriptedPriceAuthority');
-    },
-  });
+  );
   return priceAuthority;
 }

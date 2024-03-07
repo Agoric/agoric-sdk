@@ -21,27 +21,31 @@ function hush(p) {
 export function buildRootObject() {
   let p1;
   const [p0, r0] = makePR();
-  return Far('root', {
-    promise(p) {
-      p1 = p;
-      p1.then(
-        x => {
-          log(`p1 resolved to ${x}`);
-        },
-        _ => {
-          log(`p1 rejected`);
-        },
-      );
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      promise(p) {
+        p1 = p;
+        p1.then(
+          x => {
+            log(`p1 resolved to ${x}`);
+          },
+          _ => {
+            log(`p1 rejected`);
+          },
+        );
+      },
+      result() {
+        return p0;
+      },
+      async run(target) {
+        const p2 = E(p1).one();
+        hush(p2);
+        r0(target);
+        const p3 = E(p1).two();
+        hush(p3);
+      },
     },
-    result() {
-      return p0;
-    },
-    async run(target) {
-      const p2 = E(p1).one();
-      hush(p2);
-      r0(target);
-      const p3 = E(p1).two();
-      hush(p3);
-    },
-  });
+  );
 }

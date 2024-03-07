@@ -13,24 +13,36 @@ test('makeInstanceAdminStorage', async t => {
   );
 
   const { moolaKit } = setup();
-  const mockInstallation1 = Far('mockInstallation', {});
-  const mockInstance1 = Far('mockInstance', {});
+  const mockInstallation1 = makeExo(
+    'mockInstallation',
+    M.interface('mockInstallation', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const mockInstance1 = makeExo(
+    'mockInstance',
+    M.interface('mockInstance', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const mockBrandRecord = harden({ M: moolaKit.brand });
   const mockIssuerRecord = harden({ M: moolaKit.issuer });
   const mockTerms = harden({ something: 'anything' });
   const mockFacet = harden(
-    Far('mock', {
+    makeExo('mock', M.interface('mock', {}, { defaultGuards: 'passable' }), {
       identity: a => a,
     }),
   );
-  const mockInstanceAdmin = Far('mockInstanceAdmin', {
-    getInstallation: () => mockInstallation1,
-    getBrands: () => mockBrandRecord,
-    getPublicFacet: () => mockFacet,
-    getIssuers: () => mockIssuerRecord,
-    getTerms: () => mockTerms,
-    getOfferFilter: () => ['filter'],
-  });
+  const mockInstanceAdmin = makeExo(
+    'mockInstanceAdmin',
+    M.interface('mockInstanceAdmin', {}, { defaultGuards: 'passable' }),
+    {
+      getInstallation: () => mockInstallation1,
+      getBrands: () => mockBrandRecord,
+      getPublicFacet: () => mockFacet,
+      getIssuers: () => mockIssuerRecord,
+      getTerms: () => mockTerms,
+      getOfferFilter: () => ['filter'],
+    },
+  );
 
   ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin);
   t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
@@ -45,21 +57,37 @@ test('add another instance admin for same instance', async t => {
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
-  const mockInstallation1 = Far('mockInstallation', {});
-  const mockInstance1 = Far('mockInstance', {});
-  const mockInstanceAdmin1 = Far('mockInstanceAdmin', {
-    getInstallation: () => mockInstallation1,
-    getBrands: () => 'brands',
-    getPublicFacet: () => 'publicFacet',
-    getIssuers: () => 'issuers',
-    getTerms: () => 'terms',
-    getOfferFilter: () => 'filter',
-  });
+  const mockInstallation1 = makeExo(
+    'mockInstallation',
+    M.interface('mockInstallation', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const mockInstance1 = makeExo(
+    'mockInstance',
+    M.interface('mockInstance', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const mockInstanceAdmin1 = makeExo(
+    'mockInstanceAdmin',
+    M.interface('mockInstanceAdmin', {}, { defaultGuards: 'passable' }),
+    {
+      getInstallation: () => mockInstallation1,
+      getBrands: () => 'brands',
+      getPublicFacet: () => 'publicFacet',
+      getIssuers: () => 'issuers',
+      getTerms: () => 'terms',
+      getOfferFilter: () => 'filter',
+    },
+  );
 
   ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
   t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
 
-  const mockInstanceAdmin2 = Far('mockInstanceAdmin', {});
+  const mockInstanceAdmin2 = makeExo(
+    'mockInstanceAdmin',
+    M.interface('mockInstanceAdmin', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   await t.throwsAsync(
     () => ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin2),
     { message: /"\[Alleged: mockInstance\]" already registered/ },

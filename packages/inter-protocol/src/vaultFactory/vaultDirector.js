@@ -164,70 +164,82 @@ const prepareVaultDirector = (
     }
   };
 
-  const factoryPowers = Far('vault factory powers', {
-    /**
-     * Get read-only params for this manager and its director. This grants all
-     * managers access to params from all managers. It's not POLA but it's a
-     * public authority and it reduces the number of distinct power objects to
-     * create.
-     *
-     * @param {Brand} brand
-     */
-    getGovernedParams: brand => {
-      const vaultParamManager = vaultParamManagers.get(brand);
-      return Far('vault manager param manager', {
-        // merge director and manager params
-        ...directorParamManager.readonly(),
-        ...vaultParamManager.readonly(),
-        // redeclare these getters as to specify the kind of the Amount
-        getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
-          directorParamManager.readonly().getMinInitialDebt
-        ),
-        getDebtLimit: /** @type {() => Amount<'nat'>} */ (
-          vaultParamManager.readonly().getDebtLimit
-        ),
-      });
-    },
+  const factoryPowers = makeExo(
+    'vault factory powers',
+    M.interface('vault factory powers', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * Get read-only params for this manager and its director. This grants all
+       * managers access to params from all managers. It's not POLA but it's a
+       * public authority and it reduces the number of distinct power objects to
+       * create.
+       *
+       * @param {Brand} brand
+       */
+      getGovernedParams: brand => {
+        const vaultParamManager = vaultParamManagers.get(brand);
+        return makeExo(
+          'vault manager param manager',
+          M.interface(
+            'vault manager param manager',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            // merge director and manager params
+            ...directorParamManager.readonly(),
+            ...vaultParamManager.readonly(),
+            // redeclare these getters as to specify the kind of the Amount
+            getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
+              directorParamManager.readonly().getMinInitialDebt
+            ),
+            getDebtLimit: /** @type {() => Amount<'nat'>} */ (
+              vaultParamManager.readonly().getDebtLimit
+            ),
+          },
+        );
+      },
 
-    /**
-     * Let the manager add rewards to the rewardPoolSeat without exposing the
-     * rewardPoolSeat to them.
-     *
-     * @type {MintAndTransfer}
-     */
-    mintAndTransfer: (mintReceiver, toMint, fee, nonMintTransfers) => {
-      const kept = AmountMath.subtract(toMint, fee);
-      debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
-      /** @type {TransferPart[]} */
-      const transfers = [
-        ...nonMintTransfers,
-        [mintSeat, rewardPoolSeat, { Minted: fee }],
-        [mintSeat, mintReceiver, { Minted: kept }],
-      ];
-      try {
-        atomicRearrange(zcf, harden(transfers));
-      } catch (e) {
-        console.error('mintAndTransfer failed to rearrange', e);
-        // If the rearrange fails, burn the newly minted tokens.
-        // Assume this won't fail because it relies on the internal mint.
-        // (Failure would imply much larger problems.)
-        debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
-        throw e;
-      }
-      void writeMetrics();
+      /**
+       * Let the manager add rewards to the rewardPoolSeat without exposing the
+       * rewardPoolSeat to them.
+       *
+       * @type {MintAndTransfer}
+       */
+      mintAndTransfer: (mintReceiver, toMint, fee, nonMintTransfers) => {
+        const kept = AmountMath.subtract(toMint, fee);
+        debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
+        /** @type {TransferPart[]} */
+        const transfers = [
+          ...nonMintTransfers,
+          [mintSeat, rewardPoolSeat, { Minted: fee }],
+          [mintSeat, mintReceiver, { Minted: kept }],
+        ];
+        try {
+          atomicRearrange(zcf, harden(transfers));
+        } catch (e) {
+          console.error('mintAndTransfer failed to rearrange', e);
+          // If the rearrange fails, burn the newly minted tokens.
+          // Assume this won't fail because it relies on the internal mint.
+          // (Failure would imply much larger problems.)
+          debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
+          throw e;
+        }
+        void writeMetrics();
+      },
+      getShortfallReporter: async () => {
+        await updateShortfallReporter();
+        return shortfallReporter;
+      },
+      /**
+       * @param {Amount<'nat'>} toBurn
+       * @param {ZCFSeat} seat
+       */
+      burnDebt: (toBurn, seat) => {
+        debtMint.burnLosses(harden({ Minted: toBurn }), seat);
+      },
     },
-    getShortfallReporter: async () => {
-      await updateShortfallReporter();
-      return shortfallReporter;
-    },
-    /**
-     * @param {Amount<'nat'>} toBurn
-     * @param {ZCFSeat} seat
-     */
-    burnDebt: (toBurn, seat) => {
-      debtMint.burnLosses(harden({ Minted: toBurn }), seat);
-    },
-  });
+  );
 
   const makeVaultManagerKit = prepareVaultManagerKit(baggage, {
     makeERecorderKit,
@@ -317,20 +329,28 @@ const prepareVaultDirector = (
     {
       creator: {
         getParamMgrRetriever: () =>
-          Far('paramManagerRetriever', {
-            /** @param {VaultFactoryParamPath} paramPath */
-            get: (
-              paramPath = { key: /** @type {const} */ 'governedParams' },
-            ) => {
-              if (paramPath.key === 'governedParams') {
-                return directorParamManager;
-              } else if (paramPath.key.collateralBrand) {
-                return vaultParamManagers.get(paramPath.key.collateralBrand);
-              } else {
-                assert.fail('Unsupported paramPath');
-              }
+          makeExo(
+            'paramManagerRetriever',
+            M.interface(
+              'paramManagerRetriever',
+              {},
+              { defaultGuards: 'passable' },
+            ),
+            {
+              /** @param {VaultFactoryParamPath} paramPath */
+              get: (
+                paramPath = { key: /** @type {const} */ 'governedParams' },
+              ) => {
+                if (paramPath.key === 'governedParams') {
+                  return directorParamManager;
+                } else if (paramPath.key.collateralBrand) {
+                  return vaultParamManagers.get(paramPath.key.collateralBrand);
+                } else {
+                  assert.fail('Unsupported paramPath');
+                }
+              },
             },
-          }),
+          ),
         /** @param {string} name */
         getInvitation(name) {
           return directorParamManager.getInternalParamValue(name);
@@ -341,7 +361,11 @@ const prepareVaultDirector = (
         /** @returns {ERef<GovernedApis>} */
         getGovernedApis() {
           // @ts-expect-error cast
-          return Far('governedAPIs', {});
+          return makeExo(
+            'governedAPIs',
+            M.interface('governedAPIs', {}, { defaultGuards: 'passable' }),
+            {},
+          );
         },
         getGovernedApiNames() {
           return harden([]);

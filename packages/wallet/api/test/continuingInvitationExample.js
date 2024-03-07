@@ -24,9 +24,13 @@ export const start = zcf => {
     return harden({
       uiNotifier: notifier,
       publicSubscribers: { offers: subscriber },
-      invitationMakers: Far('second thing inviter', {
-        SecondThing: makeDoSecondThingInvitation,
-      }),
+      invitationMakers: makeExo(
+        'second thing inviter',
+        M.interface('second thing inviter', {}, { defaultGuards: 'passable' }),
+        {
+          SecondThing: makeDoSecondThingInvitation,
+        },
+      ),
     });
   };
 
