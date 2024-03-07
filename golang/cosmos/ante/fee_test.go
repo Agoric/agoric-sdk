@@ -60,8 +60,7 @@ func TestDoubleFee(t *testing.T) {
 	fk := mockFeegrantKeeper{}
 	handler := sdk.ChainAnteDecorators(
 		// ante.NewDeductFeeDecorator(ak, bk, fk, nil),
-		NewMempoolFeeDecorator(),
-		NewDeductFeeDecorator(ak, bk, fk, feeCollector),
+		NewDeductFeeDecorator(ak, bk, fk, feeCollector, nil),
 	)
 
 	checkTx := false
