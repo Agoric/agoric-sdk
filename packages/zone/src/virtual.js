@@ -47,18 +47,14 @@ const makeVirtualExo = (
 };
 
 /** @type {import('.').Stores} */
-const detachedVirtualStores = makeExo(
-  'virtualStores',
-  M.interface('virtualStores', {}, { defaultGuards: 'passable' }),
-  {
-    detached: () => detachedVirtualStores,
-    isStorable: isPassable,
-    mapStore: makeScalarBigMapStore,
-    setStore: makeScalarBigSetStore,
-    weakMapStore: makeScalarBigWeakMapStore,
-    weakSetStore: makeScalarBigWeakSetStore,
-  },
-);
+const detachedVirtualStores = Far('virtualStores', {
+  detached: () => detachedVirtualStores,
+  isStorable: isPassable,
+  mapStore: makeScalarBigMapStore,
+  setStore: makeScalarBigSetStore,
+  weakMapStore: makeScalarBigWeakMapStore,
+  weakSetStore: makeScalarBigWeakSetStore,
+});
 
 /**
  * A zone that utilizes external storage to reduce the memory footprint of the
@@ -80,23 +76,19 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
   const makeSubZone = (label, _options) =>
     makeVirtualZone(`${baseLabel}.${label}`);
 
-  return makeExo(
-    'virtualZone',
-    M.interface('virtualZone', {}, { defaultGuards: 'passable' }),
-    {
-      exo: wrapProvider(makeVirtualExo, keys.exo),
-      exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
-      exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
-      subZone: wrapProvider(makeSubZone),
+  return Far('virtualZone', {
+    exo: wrapProvider(makeVirtualExo, keys.exo),
+    exoClass: wrapProvider(defineVirtualExoClass, keys.exoClass),
+    exoClassKit: wrapProvider(defineVirtualExoClassKit, keys.exoClassKit),
+    subZone: wrapProvider(makeSubZone),
 
-      makeOnce,
-      detached: detachedVirtualStores.detached,
-      isStorable: detachedVirtualStores.isStorable,
+    makeOnce,
+    detached: detachedVirtualStores.detached,
+    isStorable: detachedVirtualStores.isStorable,
 
-      mapStore: wrapProvider(detachedVirtualStores.mapStore),
-      setStore: wrapProvider(detachedVirtualStores.setStore),
-      weakMapStore: wrapProvider(detachedVirtualStores.weakMapStore),
-      weakSetStore: wrapProvider(detachedVirtualStores.weakSetStore),
-    },
-  );
+    mapStore: wrapProvider(detachedVirtualStores.mapStore),
+    setStore: wrapProvider(detachedVirtualStores.setStore),
+    weakMapStore: wrapProvider(detachedVirtualStores.weakMapStore),
+    weakSetStore: wrapProvider(detachedVirtualStores.weakSetStore),
+  });
 };
