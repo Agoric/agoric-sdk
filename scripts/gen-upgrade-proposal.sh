@@ -20,7 +20,7 @@ curl -L "$ZIPURL" -o "$zipfile"
 echo "Generating SHA-256 checksum..." 1>&2
 checksum=sha256:$(shasum -a 256 "$zipfile" | cut -d' ' -f1)
 
-info="{\"binaries\":{\"any\":\"$ZIPURL?checksum=$checksum\"}}"
+info="{\"binaries\":{\"any\":\"$ZIPURL//agoric-sdk-$COMMIT_ID?checksum=$checksum\"},\"source\":\"$ZIPURL?checksum=$checksum\"}"
 
 cat <<EOF 1>&2
 ------------------------------------------------------------
