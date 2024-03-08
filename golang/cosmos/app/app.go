@@ -594,7 +594,6 @@ func NewAgoricApp(
 	transferApp := transfer.NewAppModule(app.TransferKeeper)
 	var transferStack ibcporttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
@@ -603,6 +602,7 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
@@ -622,9 +622,9 @@ func NewAgoricApp(
 	// PortIDs) to modules.
 	ibcRouter := ibcporttypes.NewRouter()
 
-	// transfer stack contains (from top to bottom):
+	// IBC routes contain (from top to bottom):
 	// - ICA Host
-	// - Packet Forward Middleware wrapping ibc-hooks, then transfer IBC
+	// - ibc-hooks wrapping Packet Forward Middleware, then IBC transfer
 	// - vIBC
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
 		AddRoute(ibctransfertypes.ModuleName, transferStack).
