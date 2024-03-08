@@ -1,5 +1,7 @@
 // @ts-nocheck
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava.js';
+
 import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
 import { buildSyscall } from './liveslots-helpers.js';

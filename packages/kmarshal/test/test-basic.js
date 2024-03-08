@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 import { kser, kunser, krefOf, kslot } from '../src/kmarshal.js';
 

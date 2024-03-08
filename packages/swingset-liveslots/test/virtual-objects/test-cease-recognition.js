@@ -1,6 +1,7 @@
 // @ts-nocheck
 /* global FinalizationRegistry WeakRef */
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { buildSyscall } from '../liveslots-helpers.js';
 import { makeVirtualReferenceManager } from '../../src/virtualReferences.js';

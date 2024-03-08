@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { dump } from '../src/repl.js';
 

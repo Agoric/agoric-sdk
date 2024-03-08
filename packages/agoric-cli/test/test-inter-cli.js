@@ -1,7 +1,7 @@
 // @ts-check
 /* global Buffer */
-import '@endo/init';
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from './prepare-test-env-ava.js';
 import { createCommand, CommanderError } from 'commander';
 
 import { Far } from '@endo/far';

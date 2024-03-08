@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
+// eslint-disable-next-line import/order
+import { test } from './prepare-test-env-ava.js';
 
-import test from 'ava';
 import { Far } from '@endo/marshal';
 import { setTimeout } from 'timers';
 

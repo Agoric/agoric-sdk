@@ -1,5 +1,6 @@
 // @ts-nocheck
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';

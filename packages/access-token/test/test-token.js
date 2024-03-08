@@ -1,4 +1,4 @@
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 import { tmpDir } from './tmp.js';
 
 import { getAccessToken } from '../src/access-token.js';

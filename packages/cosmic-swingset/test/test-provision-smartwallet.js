@@ -1,5 +1,6 @@
 /* global setTimeout */
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from './prepare-test-env-ava.js';
 
 // Use ambient authority only in test.before()
 import { spawn as ambientSpawn } from 'child_process';

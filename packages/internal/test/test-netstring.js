@@ -1,5 +1,5 @@
 /* global Buffer */
-import test from 'ava';
+import { test } from './prepare-test-env-ava.js';
 
 import {
   encode,

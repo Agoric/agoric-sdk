@@ -1,6 +1,7 @@
 // @ts-nocheck
 /* global process */
-import test from 'ava';
+// eslint-disable-next-line import/order
+import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
