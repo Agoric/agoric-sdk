@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePrintLog } from './printLog.js';
 
-/* eslint-disable-next-line import/no-unresolved, import/extensions */
+/* eslint-disable-next-line import/no-unresolved */
 import atomicSwapBundle from './bundle-atomicSwap.js';
 
 const log = makePrintLog();

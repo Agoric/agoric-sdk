@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
 type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 /**

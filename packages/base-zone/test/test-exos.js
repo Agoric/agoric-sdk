@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
 import { makeHeapZone } from '../heap.js';

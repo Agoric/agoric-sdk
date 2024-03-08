@@ -1,8 +1,7 @@
 import process from 'process';
-// eslint-disable-next-line import/order
+
 import { handleUnhandledRejections } from './unhandledRejectionDetector.js';
 
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order

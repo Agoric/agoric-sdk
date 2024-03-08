@@ -1,7 +1,6 @@
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import { makeMarshal } from '@endo/marshal';
 import { initSwingStore } from '@agoric/swing-store';

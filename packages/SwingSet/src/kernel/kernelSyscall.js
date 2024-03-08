@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-
 import { assert, Fail } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';

@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
 /** This type conflicts with packages/SwingSet/src/vats/plugin-manager.js */

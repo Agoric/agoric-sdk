@@ -268,7 +268,6 @@ function build(
       const deadSet = new Set();
 
       for (const baseRef of possiblyDeadSet) {
-        // eslint-disable-next-line no-use-before-define
         if (slotToVal.has(baseRef)) {
           continue; // RAM pillar remains
         }

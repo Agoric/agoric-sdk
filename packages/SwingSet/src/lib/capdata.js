@@ -2,7 +2,6 @@ import { Fail } from '@agoric/assert';
 import { passStyleOf } from '@endo/far';
 import { kunser, krefOf } from '@agoric/kmarshal';
 
-/* eslint-disable jsdoc/require-returns-check */
 /**
  * Assert function to ensure that something expected to be a capdata object
  * actually is.  A capdata object should have a .body property that's a string

@@ -327,7 +327,7 @@ const prepareInboundAttempt = (zone, makeConnection, { when }) => {
       listenPrefix,
       listening,
     }) => {
-      /** @type {String | undefined} */
+      /** @type {string | undefined} */
       let consummated;
 
       return {
@@ -531,7 +531,7 @@ const preparePort = (zone, { when }) => {
         !revoked || Fail`Port ${localAddr} is revoked`;
         /** @type {Endpoint} */
         const dst = harden(remotePort);
-        // eslint-disable-next-line no-use-before-define
+
         const conn = await when(
           protocolImpl.outbound(this.self, dst, connectionHandler),
         );
