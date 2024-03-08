@@ -31,7 +31,10 @@ export const testLocalChain = async (
     console.info('created account', lca);
     const address = await E(lca).getAddress();
     console.info('address', address);
-    const balances = await E(lca).allBalances();
+    const balances = await E(localchain).query({
+      '@type': '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+      address,
+    });
     console.info('balances', balances);
     await E(lca)
       .executeTx([

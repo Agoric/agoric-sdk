@@ -45,7 +45,7 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		}
 		ret = string(bz)
 
-	case "VLOCALCHAIN_QUERY":
+	case "VLOCALCHAIN_QUERY_MANY":
 		// Copy the JSON messages string into a CosmosTx object so we can
 		// deserialize it with just proto3 JSON.
 		cosmosTxBz := []byte(`{"messages":` + string(msg.Messages) + `}`)

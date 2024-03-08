@@ -6,9 +6,6 @@ const { Fail } = assert;
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
-  // An example of a high-level query.  TODO: Move this functionality to a higher
-  // layer that implements the Orchestration API.
-  allBalances: M.callWhen().returns(M.record()),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -27,20 +24,6 @@ const prepareLocalChainAccount = zone =>
       async getAddress() {
         return this.state.address;
       },
-      async allBalances() {
-        // We make a balance request, scoped to our own address.
-        const { address, chain } = this.state;
-        const res = await chain.query([
-          {
-            '@type': '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-            address,
-          },
-        ]);
-        if (res[0].error) {
-          throw Fail`query failed: ${res[0].error}`;
-        }
-        return res[0].reply;
-      },
       async executeTx(messages) {
         const { system, address } = this.state;
         const obj = {
@@ -58,7 +41,8 @@ const prepareLocalChainAccount = zone =>
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
-  query: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  query: M.callWhen(M.record()).returns(M.record()),
+  queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
 /**
@@ -83,11 +67,20 @@ const prepareLocalChain = (zone, createAccount) =>
         });
         return createAccount(system, address, this.self);
       },
-      async query(messages) {
+      async query(request) {
+        const requests = harden([request]);
+        const results = await E(this.self).queryMany(requests);
+        const { error, reply } = results[0];
+        if (error) {
+          throw Error(`query failed: ${error}`);
+        }
+        return reply;
+      },
+      async queryMany(requests) {
         const { system } = this.state;
         return E(system).toBridge({
-          type: 'VLOCALCHAIN_QUERY',
-          messages,
+          type: 'VLOCALCHAIN_QUERY_MANY',
+          messages: requests,
         });
       },
     },
