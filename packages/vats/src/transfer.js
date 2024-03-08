@@ -1,9 +1,10 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { btoa } from '@endo/base64';
-import { Fail } from '@agoric/assert';
+import { coerceToData, dataToBase64 } from '@agoric/network';
 import { AppI } from './bridge-target.js';
+
+const { Fail } = assert;
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 export const prepareTransferInterceptor = zone =>
@@ -34,24 +35,18 @@ export const prepareTransferInterceptor = zone =>
             method: 'receiveExecuted',
             packet: obj.packet,
           };
-          // FIXME: use the Whenable `watch` operator.
+          // FIXME: use the Vow `watch` operator.
           retP = retP
             .then(rawAck => {
-              console.debug('DEBUG', { rawAck });
-              debugger;
-              if (rawAck === undefined) {
-                // No ack to send.
-                return;
-              }
-              // FIXME tolerate Buffers (and document in upcall return)
               // Write out the encoded ack.
-              ackMethod.ack = btoa(rawAck);
+              const ack = dataToBase64(coerceToData(rawAck));
+              ackMethod.ack = ack;
               return E(system).downcall(ackMethod);
             })
             .catch(error => {
               console.error(`Error sending ack:`, error);
               const rawAck = JSON.stringify({ error: error.message });
-              ackMethod.ack = btoa(rawAck);
+              ackMethod.ack = dataToBase64(rawAck);
               return E(system).downcall(ackMethod);
             });
         }
@@ -98,6 +93,7 @@ const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
       },
     },
   );
+/** @typedef {ReturnType<ReturnType<typeof prepareTransferMiddleware>>} TransferMiddleware */
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 export const prepareTransferTools = zone => {
