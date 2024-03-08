@@ -36,141 +36,63 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  */
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareAckWatcher = zone => {
-  const makeAckWatcher = zone.exoClass(
-    'AckWatcher',
-    undefined,
-    (protocolUtils, packet) => ({ protocolUtils, packet }),
-    {
-      onFulfilled(ack) {
-        const { protocolUtils, packet } = this.state;
+const makeAckWatcher = zone =>
+  zone.exo('AckWatcher', undefined, {
+    onFulfilled(ack, watcherContext) {
+      const { protocolUtils, packet } = watcherContext;
 
-        const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
-        const ack64 = dataToBase64(realAck);
-        protocolUtils
-          .downcall('receiveExecuted', {
-            packet,
-            ack: ack64,
-          })
-          .catch(e => this.self.onRejected(e));
-      },
-      onRejected(e) {
-        console.error(e);
-      },
+      const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
+      const ack64 = dataToBase64(realAck);
+      protocolUtils
+        .downcall('receiveExecuted', {
+          packet,
+          ack: ack64,
+        })
+        .catch(e => this.onRejected(e));
     },
-  );
-  return makeAckWatcher;
-};
+    onRejected(e) {
+      console.error(e);
+    },
+  });
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param {ReturnType<prepareProtocolImplAttemptWatcher>} makeProtocolImplAttemptWatcher
+ * @param {ReturnType<makeProtocolImplAttemptWatcher>} protocolImplAttemptWatcher
  */
-const prepareProtocolImplInboundWatcher = (
+const makeProtocolImplInboundWatcher = (
   zone,
   { watch },
-  makeProtocolImplAttemptWatcher,
-) => {
-  const makeProtocolImplInboundWatcher = zone.exoClass(
+  protocolImplAttemptWatcher,
+) =>
+  zone.exo(
     'ProtocolImplInboundWatcher',
     M.interface('ProtocolImplInboundWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      channelKeyToAttempt,
-      channelKeyToInfo,
-      obj,
-      util,
-      rPortID,
-      rChannelID,
-      hops,
-    }) => ({
-      channelKeyToAttempt,
-      channelKeyToInfo,
-      obj,
-      util,
-      rPortID,
-      rChannelID,
-      hops,
-    }),
     {
-      onFulfilled(attempt) {
-        const {
-          channelKeyToAttempt,
-          channelKeyToInfo,
-          obj,
-          util,
-          rPortID,
-          rChannelID,
-          hops,
-        } = this.state;
-
-        const { channelID, portID, asyncVersions, order, version } = obj;
+      onFulfilled(attempt, watchContext) {
+        const { obj } = watchContext;
 
         // Tell what version string we negotiated.
-        return watch(
-          E(attempt).getLocalAddress(),
-          makeProtocolImplAttemptWatcher({
-            channelID,
-            portID,
-            channelKeyToAttempt,
-            channelKeyToInfo,
-            attempt,
-            obj,
-            util,
-            asyncVersions,
-            rPortID,
-            rChannelID,
-            order,
-            hops,
-            version,
-          }),
-        );
+        return watch(E(attempt).getLocalAddress(), protocolImplAttemptWatcher, {
+          ...obj,
+          ...watchContext,
+          attempt,
+        });
       },
     },
   );
-  return makeProtocolImplInboundWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareProtocolImplAttemptWatcher = zone => {
-  const makeProtocolImplAttemptWatcher = zone.exoClass(
+const makeProtocolImplAttemptWatcher = zone =>
+  zone.exo(
     'ProtocolImplAttemptWatcher',
     M.interface('ProtocolImplAttemptWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(),
     }),
-    ({
-      channelID,
-      portID,
-      channelKeyToAttempt,
-      channelKeyToInfo,
-      attempt,
-      obj,
-      util,
-      asyncVersions,
-      rPortID,
-      rChannelID,
-      order,
-      hops,
-      version,
-    }) => ({
-      channelID,
-      portID,
-      channelKeyToAttempt,
-      channelKeyToInfo,
-      attempt,
-      obj,
-      util,
-      asyncVersions,
-      rPortID,
-      rChannelID,
-      order,
-      hops,
-      version,
-    }),
     {
-      onFulfilled(attemptedLocal) {
+      onFulfilled(attemptedLocal, watcherContext) {
         const {
           channelID,
           portID,
@@ -185,7 +107,8 @@ const prepareProtocolImplAttemptWatcher = zone => {
           order,
           hops,
           version,
-        } = this.state;
+        } = watcherContext;
+
         const match = attemptedLocal.match(
           // Match:  ... /ORDER/VERSION ...
           new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
@@ -233,8 +156,6 @@ const prepareProtocolImplAttemptWatcher = zone => {
       },
     },
   );
-  return makeProtocolImplAttemptWatcher;
-};
 
 /**
  * @typedef {object} Counterparty
@@ -365,13 +286,12 @@ export const prepareIBCConnectionHandler = zone => {
 export const prepareIBCProtocol = (zone, powers) => {
   const { makeVowKit, watch } = powers;
 
-  const makeAckWatcher = prepareAckWatcher(zone);
-  const makeProtocolImplAttemptWatcher =
-    prepareProtocolImplAttemptWatcher(zone);
-  const makeProtocolImplInboundWatcher = prepareProtocolImplInboundWatcher(
+  const ackWatcher = makeAckWatcher(zone);
+  const protocolImplAttemptWatcher = makeProtocolImplAttemptWatcher(zone);
+  const protocolImplInboundWatcher = makeProtocolImplInboundWatcher(
     zone,
     powers,
-    makeProtocolImplAttemptWatcher,
+    protocolImplAttemptWatcher,
   );
   const makeIBCConnectionHandler = prepareIBCConnectionHandler(zone);
 
@@ -641,7 +561,8 @@ export const prepareIBCProtocol = (zone, powers) => {
                   localAddr,
                   remoteAddr,
                 ),
-                makeProtocolImplInboundWatcher({
+                protocolImplInboundWatcher,
+                {
                   channelKeyToAttempt,
                   channelKeyToInfo,
                   obj,
@@ -649,7 +570,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                   rPortID,
                   rChannelID,
                   hops,
-                }),
+                },
               );
             }
 
@@ -768,7 +689,10 @@ export const prepareIBCProtocol = (zone, powers) => {
               const conn = channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              return watch(conn.send(data), makeAckWatcher(util, packet));
+              return watch(conn.send(data), ackWatcher, {
+                protocolUtils: util,
+                packet,
+              });
             }
 
             case 'acknowledgementPacket': {
