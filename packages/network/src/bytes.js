@@ -8,6 +8,30 @@ import { encodeBase64, decodeBase64 } from '@endo/base64';
  */
 
 /** @typedef {Bytes | Buffer | Uint8Array | Iterable<number>} ByteSource */
+const { details: X } = assert;
+
+/**
+ * @param {unknown} specimen
+ * @returns {ByteSource}
+ */
+export function coerceToData(specimen) {
+  if (typeof specimen === 'string') {
+    return specimen;
+  }
+
+  assert.typeof(specimen, 'object');
+
+  if (specimen == null) {
+    throw assert.fail(X`specimen ${specimen} is nullish`, TypeError);
+  }
+
+  if (!(Symbol.iterator in specimen)) {
+    throw assert.fail(X`specimen ${specimen} is not iterable`, TypeError);
+  }
+
+  // Good enough... it's iterable and can be converted later.
+  return /** @type {ByteSource} */ (specimen);
+}
 
 /**
  * @param {ByteSource} contents
