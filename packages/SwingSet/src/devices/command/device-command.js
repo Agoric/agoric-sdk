@@ -22,26 +22,30 @@ export function buildRootDeviceNode(tools) {
     }
   });
 
-  return Far('root', {
-    registerInboundHandler(handler) {
-      inboundHandler = handler;
-      setDeviceState(harden({ inboundHandler }));
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      registerInboundHandler(handler) {
+        inboundHandler = handler;
+        setDeviceState(harden({ inboundHandler }));
+      },
 
-    sendResponse(count, isReject, obj) {
-      try {
-        deliverResponse(count, isReject, JSON.stringify(obj));
-      } catch (e) {
-        console.error(`error during sendResponse:`, e);
-      }
-    },
+      sendResponse(count, isReject, obj) {
+        try {
+          deliverResponse(count, isReject, JSON.stringify(obj));
+        } catch (e) {
+          console.error(`error during sendResponse:`, e);
+        }
+      },
 
-    sendBroadcast(obj) {
-      try {
-        sendBroadcast(JSON.stringify(obj));
-      } catch (e) {
-        console.error(`error during sendBroadcast:`, e);
-      }
+      sendBroadcast(obj) {
+        try {
+          sendBroadcast(JSON.stringify(obj));
+        } catch (e) {
+          console.error(`error during sendBroadcast:`, e);
+        }
+      },
     },
-  });
+  );
 }

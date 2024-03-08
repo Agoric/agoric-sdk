@@ -516,12 +516,16 @@ export function buildPatterns(log) {
       p2.then(() => log('p2 resolved'));
     };
     objB.b66_flush = () => 0;
-    const target = Far('target', {
-      msg2: () => {
-        log('two');
-        return 'res';
+    const target = makeExo(
+      'target',
+      M.interface('target', {}, { defaultGuards: 'passable' }),
+      {
+        msg2: () => {
+          log('two');
+          return 'res';
+        },
       },
-    });
+    );
     objB.b66_resolve = () => {
       pk.resolve(target);
     };
@@ -541,17 +545,25 @@ export function buildPatterns(log) {
     };
     objB.b70_pipe1 = async () => {
       log(`pipe1`);
-      const pipe2 = Far('pipe2', {
-        pipe2() {
-          log(`pipe2`);
-          const pipe3 = Far('pipe3', {
-            pipe3() {
-              log(`pipe3`);
-            },
-          });
-          return pipe3;
+      const pipe2 = makeExo(
+        'pipe2',
+        M.interface('pipe2', {}, { defaultGuards: 'passable' }),
+        {
+          pipe2() {
+            log(`pipe2`);
+            const pipe3 = makeExo(
+              'pipe3',
+              M.interface('pipe3', {}, { defaultGuards: 'passable' }),
+              {
+                pipe3() {
+                  log(`pipe3`);
+                },
+              },
+            );
+            return pipe3;
+          },
         },
-      });
+      );
       return pipe2;
     };
   }
@@ -585,23 +597,35 @@ export function buildPatterns(log) {
     const p1 = makePromiseKit();
     objB.b71_getpx = async () => p1.promise;
     objB.b71_resolvex = async () => {
-      const x = Far('x', {
-        pipe1() {
-          log(`pipe1`);
-          const pipe2 = Far('pipe2', {
-            pipe2() {
-              log(`pipe2`);
-              const pipe3 = Far('pipe3', {
-                pipe3() {
-                  log(`pipe3`);
+      const x = makeExo(
+        'x',
+        M.interface('x', {}, { defaultGuards: 'passable' }),
+        {
+          pipe1() {
+            log(`pipe1`);
+            const pipe2 = makeExo(
+              'pipe2',
+              M.interface('pipe2', {}, { defaultGuards: 'passable' }),
+              {
+                pipe2() {
+                  log(`pipe2`);
+                  const pipe3 = makeExo(
+                    'pipe3',
+                    M.interface('pipe3', {}, { defaultGuards: 'passable' }),
+                    {
+                      pipe3() {
+                        log(`pipe3`);
+                      },
+                    },
+                  );
+                  return pipe3;
                 },
-              });
-              return pipe3;
-            },
-          });
-          return pipe2;
+              },
+            );
+            return pipe2;
+          },
         },
-      });
+      );
       p1.resolve(x);
     };
   }
@@ -636,23 +660,35 @@ export function buildPatterns(log) {
     objB.b72_wait = async () => 0;
     objB.b72_getpx = async () => p1.promise;
     objB.b72_resolvex = async () => {
-      const x = Far('x', {
-        pipe1() {
-          log(`pipe1`);
-          const pipe2 = Far('pipe2', {
-            pipe2() {
-              log(`pipe2`);
-              const pipe3 = Far('pipe3', {
-                pipe3() {
-                  log(`pipe3`);
+      const x = makeExo(
+        'x',
+        M.interface('x', {}, { defaultGuards: 'passable' }),
+        {
+          pipe1() {
+            log(`pipe1`);
+            const pipe2 = makeExo(
+              'pipe2',
+              M.interface('pipe2', {}, { defaultGuards: 'passable' }),
+              {
+                pipe2() {
+                  log(`pipe2`);
+                  const pipe3 = makeExo(
+                    'pipe3',
+                    M.interface('pipe3', {}, { defaultGuards: 'passable' }),
+                    {
+                      pipe3() {
+                        log(`pipe3`);
+                      },
+                    },
+                  );
+                  return pipe3;
                 },
-              });
-              return pipe3;
-            },
-          });
-          return pipe2;
+              },
+            );
+            return pipe2;
+          },
         },
-      });
+      );
       p1.resolve(x);
     };
   }
@@ -681,7 +717,7 @@ export function buildPatterns(log) {
       ignore(p2);
     };
     objB.b73_one = () =>
-      Far('one', {
+      makeExo('one', M.interface('one', {}, { defaultGuards: 'passable' }), {
         two: () => log('two'),
       });
   }

@@ -733,20 +733,28 @@ test('extra give wantMintedInvitation', async t => {
 // XXX copied (with minor tweak) from packages/inter-protocol/test/test-gov-collateral.js
 const makeMockBankManager = t => {
   /** @type {BankManager} */
-  const bankManager = Far('mock BankManager', {
-    __getInterfaceGuard__: () => undefined,
-    getAssetSubscription: () => assert.fail('not impl'),
-    getModuleAccountAddress: () => assert.fail('not impl'),
-    getRewardDistributorDepositFacet: () =>
-      Far('depositFacet', {
-        receive: () => /** @type {any} */ (null),
-      }),
-    addAsset: async (denom, keyword, proposedName, kit) => {
-      t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
-      t.truthy(kit.mint);
+  const bankManager = makeExo(
+    'mock BankManager',
+    M.interface('mock BankManager', {}, { defaultGuards: 'passable' }),
+    {
+      __getInterfaceGuard__: () => undefined,
+      getAssetSubscription: () => assert.fail('not impl'),
+      getModuleAccountAddress: () => assert.fail('not impl'),
+      getRewardDistributorDepositFacet: () =>
+        makeExo(
+          'depositFacet',
+          M.interface('depositFacet', {}, { defaultGuards: 'passable' }),
+          {
+            receive: () => /** @type {any} */ (null),
+          },
+        ),
+      addAsset: async (denom, keyword, proposedName, kit) => {
+        t.log('addAsset', { denom, keyword, issuer: `${kit.issuer}` });
+        t.truthy(kit.mint);
+      },
+      getBankForAddress: () => assert.fail('not impl'),
     },
-    getBankForAddress: () => assert.fail('not impl'),
-  });
+  );
   return bankManager;
 };
 

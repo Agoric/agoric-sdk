@@ -26,21 +26,25 @@ export async function makeScriptedOracle(
   feeIssuer,
 ) {
   /** @type {OracleHandler} */
-  const oracleHandler = Far('oracleHandler', {
-    async onQuery(query) {
-      const timeRecord = await E(timer).getCurrentTimestamp();
-      const time = TimeMath.absValue(timeRecord);
-      const event = script[`${time}`] || 'Nothing to report';
-      const reply = { event, time, query };
-      return harden({ reply });
+  const oracleHandler = makeExo(
+    'oracleHandler',
+    M.interface('oracleHandler', {}, { defaultGuards: 'passable' }),
+    {
+      async onQuery(query) {
+        const timeRecord = await E(timer).getCurrentTimestamp();
+        const time = TimeMath.absValue(timeRecord);
+        const event = script[`${time}`] || 'Nothing to report';
+        const reply = { event, time, query };
+        return harden({ reply });
+      },
+      async onError(_query, _reason) {
+        // do nothing
+      },
+      async onReply(_query, _reply, _fee) {
+        // do nothing
+      },
     },
-    async onError(_query, _reason) {
-      // do nothing
-    },
-    async onReply(_query, _reply, _fee) {
-      // do nothing
-    },
-  });
+  );
 
   const startResult = await E(zoe).startInstance(oracleInstallation, {
     Fee: feeIssuer,

@@ -269,47 +269,51 @@ export function buildRootDeviceNode(tools) {
   // guarantee that the handler will be called at the precise desired time,
   // but the repeated calls won't accumulate timing drift, so the trigger
   // point will be reached at consistent intervals.
-  return Far('root', {
-    setWakeup(baseTime, handler) {
-      baseTime = Nat(baseTime);
-      deadlines.add(baseTime, handler);
-      saveState();
-      return baseTime;
-    },
-    removeWakeup(handler) {
-      const times = deadlines.remove(handler);
-      saveState();
-      return harden(times);
-    },
-    getLastPolled,
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setWakeup(baseTime, handler) {
+        baseTime = Nat(baseTime);
+        deadlines.add(baseTime, handler);
+        saveState();
+        return baseTime;
+      },
+      removeWakeup(handler) {
+        const times = deadlines.remove(handler);
+        saveState();
+        return harden(times);
+      },
+      getLastPolled,
 
-    // We can't persist device objects at this point
-    // (https://github.com/Agoric/SwingSet/issues/175), so we represent the
-    // identity of Repeaters using unique indexes. The indexes are exposed
-    // directly to the wrapper vat, and we rely on the wrapper vat to manage
-    // the authority they represent as capabilities.
-    makeRepeater(startTime, interval) {
-      const index = nextRepeater;
-      repeaters.push({
-        startTime: Nat(startTime),
-        interval: Nat(interval),
-      });
-      nextRepeater += 1;
-      saveState();
-      return index;
+      // We can't persist device objects at this point
+      // (https://github.com/Agoric/SwingSet/issues/175), so we represent the
+      // identity of Repeaters using unique indexes. The indexes are exposed
+      // directly to the wrapper vat, and we rely on the wrapper vat to manage
+      // the authority they represent as capabilities.
+      makeRepeater(startTime, interval) {
+        const index = nextRepeater;
+        repeaters.push({
+          startTime: Nat(startTime),
+          interval: Nat(interval),
+        });
+        nextRepeater += 1;
+        saveState();
+        return index;
+      },
+      deleteRepeater(index) {
+        repeaters[index] = undefined;
+        saveState();
+        return index;
+      },
+      schedule(index, handler) {
+        const nextTime = nextScheduleTime(index, repeaters, lastPolled);
+        deadlines.add(nextTime, handler, index);
+        saveState();
+        return nextTime;
+      },
     },
-    deleteRepeater(index) {
-      repeaters[index] = undefined;
-      saveState();
-      return index;
-    },
-    schedule(index, handler) {
-      const nextTime = nextScheduleTime(index, repeaters, lastPolled);
-      deadlines.add(nextTime, handler, index);
-      saveState();
-      return nextTime;
-    },
-  });
+  );
 }
 
 // exported for testing. Only buildRootDeviceNode is intended for production

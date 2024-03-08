@@ -90,119 +90,127 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return Far('bob', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+    return makeExo(
+      'bob',
+      M.interface('bob', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-        // Bob is able to use the trusted invitationIssuer from Zoe to
-        // transform an untrusted invitation that Alice also has access to, to
-        // an
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
-
-        t.is(
-          invitationValue.installation,
-          installation,
-          'installation is secondPriceAuction',
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.auctionedAssets,
-          moola(1n),
-          `asset to be auctioned is 1 moola`,
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.minimumBid,
-          simoleans(3n),
-          `minimum bid is 3 simoleans`,
-        );
-
-        t.deepEqual(
-          invitationValue.customDetails?.bidDuration,
-          1n,
-          `auction will be closed after 1 tick according to the timeAuthority`,
-        );
-
-        const proposal = harden({
-          give: { Bid: simoleans(11n) },
-          want: { Asset: moola(1n) },
-        });
-        const payments = { Bid: simoleanPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-        return seat;
-      },
-      collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
+          // Bob is able to use the trusted invitationIssuer from Zoe to
+          // transform an untrusted invitation that Alice also has access to, to
+          // an
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
           );
 
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(4n),
-              `Bob gets the difference between the second-price bid (Carol's 7 simoleans) and his bid back`,
-            ),
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
+
+          t.is(
+            invitationValue.installation,
+            installation,
+            'installation is secondPriceAuction',
           );
+          t.deepEqual(
+            invitationValue.customDetails?.auctionedAssets,
+            moola(1n),
+            `asset to be auctioned is 1 moola`,
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.minimumBid,
+            simoleans(3n),
+            `minimum bid is 3 simoleans`,
+          );
+
+          t.deepEqual(
+            invitationValue.customDetails?.bidDuration,
+            1n,
+            `auction will be closed after 1 tick according to the timeAuthority`,
+          );
+
+          const proposal = harden({
+            give: { Bid: simoleans(11n) },
+            want: { Asset: moola(1n) },
+          });
+          const payments = { Bid: simoleanPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
+          );
+          return seat;
+        },
+        collectPayout: async seat => {
+          await E(seat)
+            .getPayout('Asset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
+            );
+
+          await E(seat)
+            .getPayout('Bid')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                simoleans(4n),
+                `Bob gets the difference between the second-price bid (Carol's 7 simoleans) and his bid back`,
+              ),
+            );
+        },
       },
-    });
+    );
   };
 
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return Far('losing bidder', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-
-        const proposal = harden({
-          give: { Bid: bidAmount },
-          want: { Asset: moola(1n) },
-        });
-        const payments = { Bid: simoleanPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-        return seat;
-      },
-      collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
+    return makeExo(
+      'losing bidder',
+      M.interface('losing bidder', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
           );
 
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, bidAmount, `full refund`),
+          const proposal = harden({
+            give: { Bid: bidAmount },
+            want: { Asset: moola(1n) },
+          });
+          const payments = { Bid: simoleanPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
+          return seat;
+        },
+        collectPayout: async seat => {
+          await E(seat)
+            .getPayout('Asset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
+            );
+
+          await E(seat)
+            .getPayout('Bid')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, bidAmount, `full refund`),
+            );
+        },
       },
-    });
+    );
   };
 
   // Setup Alice
@@ -917,119 +925,127 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
   const makeBob = (installation, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return Far('bob', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
+    return makeExo(
+      'bob',
+      M.interface('bob', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
 
-        // Bob is able to use the trusted invitationIssuer from Zoe to
-        // transform an untrusted invitation that Alice also has access to, to
-        // an
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-
-        const invitationValue = await E(zoe).getInvitationDetails(invitation);
-
-        t.is(
-          invitationValue.installation,
-          installation,
-          'installation is secondPriceAuction',
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.auctionedAssets,
-          moola(1n),
-          `asset to be auctioned is 1 moola`,
-        );
-        t.deepEqual(
-          invitationValue.customDetails?.minimumBid,
-          simoleans(3n),
-          `minimum bid is 3 simoleans`,
-        );
-
-        t.deepEqual(
-          invitationValue.customDetails?.bidDuration,
-          1n,
-          `auction will be closed after 1 tick according to the timeAuthority`,
-        );
-
-        const proposal = harden({
-          give: { Bid: simoleans(11n) },
-          want: { Asset: moola(1n) },
-        });
-        const payments = { Bid: simoleanPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-        return seat;
-      },
-      collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
+          // Bob is able to use the trusted invitationIssuer from Zoe to
+          // transform an untrusted invitation that Alice also has access to, to
+          // an
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
           );
 
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(0n),
-              `Bob gets the difference between his bid back`,
-            ),
+          const invitationValue = await E(zoe).getInvitationDetails(invitation);
+
+          t.is(
+            invitationValue.installation,
+            installation,
+            'installation is secondPriceAuction',
           );
+          t.deepEqual(
+            invitationValue.customDetails?.auctionedAssets,
+            moola(1n),
+            `asset to be auctioned is 1 moola`,
+          );
+          t.deepEqual(
+            invitationValue.customDetails?.minimumBid,
+            simoleans(3n),
+            `minimum bid is 3 simoleans`,
+          );
+
+          t.deepEqual(
+            invitationValue.customDetails?.bidDuration,
+            1n,
+            `auction will be closed after 1 tick according to the timeAuthority`,
+          );
+
+          const proposal = harden({
+            give: { Bid: simoleans(11n) },
+            want: { Asset: moola(1n) },
+          });
+          const payments = { Bid: simoleanPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
+          );
+          return seat;
+        },
+        collectPayout: async seat => {
+          await E(seat)
+            .getPayout('Asset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
+            );
+
+          await E(seat)
+            .getPayout('Bid')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(
+                amountDeposited,
+                simoleans(0n),
+                `Bob gets the difference between his bid back`,
+              ),
+            );
+        },
       },
-    });
+    );
   };
 
   const makeLosingBidder = (bidAmount, simoleanPayment) => {
     const moolaPurse = moolaKit.issuer.makeEmptyPurse();
     const simoleanPurse = simoleanKit.issuer.makeEmptyPurse();
-    return Far('losing bidder', {
-      offer: async untrustedInvitation => {
-        const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await claim(
-          E(invitationIssuer).makeEmptyPurse(),
-          untrustedInvitation,
-        );
-
-        const proposal = harden({
-          give: { Bid: bidAmount },
-          want: { Asset: moola(1n) },
-        });
-        const payments = { Bid: simoleanPayment };
-
-        const seat = await E(zoe).offer(invitation, proposal, payments);
-
-        t.is(
-          await E(seat).getOfferResult(),
-          'The offer has been accepted. Once the contract has been completed, please check your payout',
-        );
-        return seat;
-      },
-      collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
+    return makeExo(
+      'losing bidder',
+      M.interface('losing bidder', {}, { defaultGuards: 'passable' }),
+      {
+        offer: async untrustedInvitation => {
+          const invitationIssuer = await E(zoe).getInvitationIssuer();
+          const invitation = await claim(
+            E(invitationIssuer).makeEmptyPurse(),
+            untrustedInvitation,
           );
 
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, bidAmount, `full refund`),
+          const proposal = harden({
+            give: { Bid: bidAmount },
+            want: { Asset: moola(1n) },
+          });
+          const payments = { Bid: simoleanPayment };
+
+          const seat = await E(zoe).offer(invitation, proposal, payments);
+
+          t.is(
+            await E(seat).getOfferResult(),
+            'The offer has been accepted. Once the contract has been completed, please check your payout',
           );
+          return seat;
+        },
+        collectPayout: async seat => {
+          await E(seat)
+            .getPayout('Asset')
+            .then(payment => moolaPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
+            );
+
+          await E(seat)
+            .getPayout('Bid')
+            .then(payment => simoleanPurse.deposit(payment))
+            .then(amountDeposited =>
+              t.deepEqual(amountDeposited, bidAmount, `full refund`),
+            );
+        },
       },
-    });
+    );
   };
 
   // Setup Alice

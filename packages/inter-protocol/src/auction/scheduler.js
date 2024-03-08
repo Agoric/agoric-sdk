@@ -220,17 +220,21 @@ export const makeScheduler = async (
     void E(timer).repeatAfter(
       delayFromNow,
       liveSchedule.clockStep,
-      Far('PriceStepWaker', {
-        wake(time) {
-          try {
-            setTimeMonotonically(time);
-            trace('wake step', now);
-            clockTick(liveSchedule);
-          } catch (e) {
-            console.error(`⚠️ Auction threw ${e}. Caught in PriceStepWaker.`);
-          }
+      makeExo(
+        'PriceStepWaker',
+        M.interface('PriceStepWaker', {}, { defaultGuards: 'passable' }),
+        {
+          wake(time) {
+            try {
+              setTimeMonotonically(time);
+              trace('wake step', now);
+              clockTick(liveSchedule);
+            } catch (e) {
+              console.error(`⚠️ Auction threw ${e}. Caught in PriceStepWaker.`);
+            }
+          },
         },
-      }),
+      ),
       stepCancelToken,
     );
   };
@@ -240,18 +244,22 @@ export const makeScheduler = async (
     trace(`nextRound`, start);
     void E(timer).setWakeup(
       start,
-      Far('SchedulerWaker', {
-        wake(time) {
-          try {
-            setTimeMonotonically(time);
-            auctionDriver.capturePrices();
-            // eslint-disable-next-line no-use-before-define
-            return startAuction();
-          } catch (e) {
-            console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);
-          }
+      makeExo(
+        'SchedulerWaker',
+        M.interface('SchedulerWaker', {}, { defaultGuards: 'passable' }),
+        {
+          wake(time) {
+            try {
+              setTimeMonotonically(time);
+              auctionDriver.capturePrices();
+              // eslint-disable-next-line no-use-before-define
+              return startAuction();
+            } catch (e) {
+              console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);
+            }
+          },
         },
-      }),
+      ),
     );
     void publishSchedule();
   };
@@ -350,14 +358,18 @@ export const makeScheduler = async (
     }),
   );
 
-  return Far('scheduler', {
-    getSchedule: () =>
-      harden({
-        liveAuctionSchedule: liveSchedule,
-        nextAuctionSchedule: nextSchedule,
-      }),
-    getAuctionState: () => auctionState,
-  });
+  return makeExo(
+    'scheduler',
+    M.interface('scheduler', {}, { defaultGuards: 'passable' }),
+    {
+      getSchedule: () =>
+        harden({
+          liveAuctionSchedule: liveSchedule,
+          nextAuctionSchedule: nextSchedule,
+        }),
+      getAuctionState: () => auctionState,
+    },
+  );
 };
 
 /**

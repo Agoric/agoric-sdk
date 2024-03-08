@@ -185,20 +185,27 @@ export const makeOnewayPriceAuthorityKit = opts => {
       const triggerPK = makePromiseKit();
 
       /** @type {MutableQuote} */
-      const mutableQuote = Far('MutableQuote', {
-        cancel: e => triggerPK.reject(e),
-        updateLevel: (newAmountIn, newAmountOutLimit) => {
-          const coercedAmountIn = AmountMath.coerce(actualBrandIn, newAmountIn);
-          const coercedAmountOutLimit = AmountMath.coerce(
-            actualBrandOut,
-            newAmountOutLimit,
-          );
-          amountIn = coercedAmountIn;
-          amountOutLimit = coercedAmountOutLimit;
-          fireTriggers(createQuote);
+      const mutableQuote = makeExo(
+        'MutableQuote',
+        M.interface('MutableQuote', {}, { defaultGuards: 'passable' }),
+        {
+          cancel: e => triggerPK.reject(e),
+          updateLevel: (newAmountIn, newAmountOutLimit) => {
+            const coercedAmountIn = AmountMath.coerce(
+              actualBrandIn,
+              newAmountIn,
+            );
+            const coercedAmountOutLimit = AmountMath.coerce(
+              actualBrandOut,
+              newAmountOutLimit,
+            );
+            amountIn = coercedAmountIn;
+            amountOutLimit = coercedAmountOutLimit;
+            fireTriggers(createQuote);
+          },
+          getPromise: () => triggerPK.promise,
         },
-        getPromise: () => triggerPK.promise,
-      });
+      );
 
       /** @type {PriceQuoteTrigger} */
       const mutableTrigger = async createInstantQuote => {
@@ -255,128 +262,140 @@ export const makeOnewayPriceAuthorityKit = opts => {
   };
 
   /** @type {PriceAuthority} */
-  const priceAuthority = Far('PriceAuthority', {
-    getQuoteIssuer(brandIn, brandOut) {
-      assertBrands(brandIn, brandOut);
-      return quoteIssuer;
-    },
-    getTimerService(brandIn, brandOut) {
-      assertBrands(brandIn, brandOut);
-      return timer;
-    },
-    makeQuoteNotifier(amountIn, brandOut) {
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
+  const priceAuthority = makeExo(
+    'PriceAuthority',
+    M.interface('PriceAuthority', {}, { defaultGuards: 'passable' }),
+    {
+      getQuoteIssuer(brandIn, brandOut) {
+        assertBrands(brandIn, brandOut);
+        return quoteIssuer;
+      },
+      getTimerService(brandIn, brandOut) {
+        assertBrands(brandIn, brandOut);
+        return timer;
+      },
+      makeQuoteNotifier(amountIn, brandOut) {
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
 
-      // Wrap our underlying notifier with specific quotes.
-      const specificBaseNotifier = harden({
-        async getUpdateSince(updateCount = undefined) {
-          // We use the same updateCount as our underlying notifier.
-          const record = await E(notifier).getUpdateSince(updateCount);
+        // Wrap our underlying notifier with specific quotes.
+        const specificBaseNotifier = harden({
+          async getUpdateSince(updateCount = undefined) {
+            // We use the same updateCount as our underlying notifier.
+            const record = await E(notifier).getUpdateSince(updateCount);
 
-          // We create a quote inline.
-          let quote;
-          // createQuote can throw if priceAuthority is replaced.
-          // eslint-disable-next-line no-useless-catch
-          try {
-            quote = createQuote(calcAmountOut => ({
-              amountIn,
-              amountOut: calcAmountOut(amountIn),
-            }));
-          } catch (e) {
-            // fall through
-          }
-
-          if (!quote) {
-            throw Fail`createQuote returned nothing`;
-          }
-
-          const value = await quote;
-          return harden({
-            value,
-            updateCount: record.updateCount,
-          });
-        },
-      });
-
-      /** @type {Notifier<PriceQuote>} */
-      const specificNotifier = Far('QuoteNotifier', {
-        ...makeNotifier(specificBaseNotifier),
-        // TODO stop exposing baseNotifier methods directly.
-        ...specificBaseNotifier,
-      });
-      return specificNotifier;
-    },
-    async quoteGiven(amountIn, brandOut) {
-      trace('quoteGiven', amountIn, brandOut);
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
-
-      await E(notifier).getUpdateSince();
-      const quote = createQuote(calcAmountOut => ({
-        amountIn,
-        amountOut: calcAmountOut(amountIn),
-      }));
-      assert(quote);
-      return quote;
-    },
-    async quoteWanted(brandIn, amountOut) {
-      AmountMath.coerce(actualBrandOut, amountOut);
-      assertBrands(brandIn, amountOut.brand);
-
-      await E(notifier).getUpdateSince();
-      const quote = createQuote((calcAmountOut, calcAmountIn) => {
-        // We need to determine an amountIn that guarantees at least the amountOut.
-        const amountIn = calcAmountIn(amountOut);
-        const actualAmountOut = calcAmountOut(amountIn);
-        AmountMath.isGTE(actualAmountOut, amountOut) ||
-          Fail`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`;
-        return { amountIn, amountOut };
-      });
-      assert(quote);
-      return quote;
-    },
-    async quoteAtTime(deadline, amountIn, brandOut) {
-      AmountMath.coerce(actualBrandIn, amountIn);
-      assertBrands(amountIn.brand, brandOut);
-
-      await E(notifier).getUpdateSince();
-      const quotePK = makePromiseKit();
-      await E(timer).setWakeup(
-        deadline,
-        Far('wakeObj', {
-          async wake(timestamp) {
-            await null;
+            // We create a quote inline.
+            let quote;
+            // createQuote can throw if priceAuthority is replaced.
+            // eslint-disable-next-line no-useless-catch
             try {
-              const quoteP = createQuote(calcAmountOut => ({
+              quote = createQuote(calcAmountOut => ({
                 amountIn,
                 amountOut: calcAmountOut(amountIn),
-                timestamp,
               }));
-
-              // We don't wait for the quote to be authenticated; resolve
-              // immediately.
-              quotePK.resolve(quoteP);
-              await quotePK.promise;
             } catch (e) {
-              quotePK.reject(e);
+              // fall through
             }
-          },
-        }),
-      );
 
-      // Wait until the wakeup passes.
-      return quotePK.promise;
+            if (!quote) {
+              throw Fail`createQuote returned nothing`;
+            }
+
+            const value = await quote;
+            return harden({
+              value,
+              updateCount: record.updateCount,
+            });
+          },
+        });
+
+        /** @type {Notifier<PriceQuote>} */
+        const specificNotifier = makeExo(
+          'QuoteNotifier',
+          M.interface('QuoteNotifier', {}, { defaultGuards: 'passable' }),
+          {
+            ...makeNotifier(specificBaseNotifier),
+            // TODO stop exposing baseNotifier methods directly.
+            ...specificBaseNotifier,
+          },
+        );
+        return specificNotifier;
+      },
+      async quoteGiven(amountIn, brandOut) {
+        trace('quoteGiven', amountIn, brandOut);
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
+
+        await E(notifier).getUpdateSince();
+        const quote = createQuote(calcAmountOut => ({
+          amountIn,
+          amountOut: calcAmountOut(amountIn),
+        }));
+        assert(quote);
+        return quote;
+      },
+      async quoteWanted(brandIn, amountOut) {
+        AmountMath.coerce(actualBrandOut, amountOut);
+        assertBrands(brandIn, amountOut.brand);
+
+        await E(notifier).getUpdateSince();
+        const quote = createQuote((calcAmountOut, calcAmountIn) => {
+          // We need to determine an amountIn that guarantees at least the amountOut.
+          const amountIn = calcAmountIn(amountOut);
+          const actualAmountOut = calcAmountOut(amountIn);
+          AmountMath.isGTE(actualAmountOut, amountOut) ||
+            Fail`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`;
+          return { amountIn, amountOut };
+        });
+        assert(quote);
+        return quote;
+      },
+      async quoteAtTime(deadline, amountIn, brandOut) {
+        AmountMath.coerce(actualBrandIn, amountIn);
+        assertBrands(amountIn.brand, brandOut);
+
+        await E(notifier).getUpdateSince();
+        const quotePK = makePromiseKit();
+        await E(timer).setWakeup(
+          deadline,
+          makeExo(
+            'wakeObj',
+            M.interface('wakeObj', {}, { defaultGuards: 'passable' }),
+            {
+              async wake(timestamp) {
+                await null;
+                try {
+                  const quoteP = createQuote(calcAmountOut => ({
+                    amountIn,
+                    amountOut: calcAmountOut(amountIn),
+                    timestamp,
+                  }));
+
+                  // We don't wait for the quote to be authenticated; resolve
+                  // immediately.
+                  quotePK.resolve(quoteP);
+                  await quotePK.promise;
+                } catch (e) {
+                  quotePK.reject(e);
+                }
+              },
+            },
+          ),
+        );
+
+        // Wait until the wakeup passes.
+        return quotePK.promise;
+      },
+      quoteWhenLT: makeQuoteWhenOut(isLT),
+      quoteWhenLTE: makeQuoteWhenOut(isLTE),
+      quoteWhenGTE: makeQuoteWhenOut(isGTE),
+      quoteWhenGT: makeQuoteWhenOut(isGT),
+      mutableQuoteWhenLT: makeMutableQuote(isLT),
+      mutableQuoteWhenLTE: makeMutableQuote(isLTE),
+      mutableQuoteWhenGT: makeMutableQuote(isGT),
+      mutableQuoteWhenGTE: makeMutableQuote(isGTE),
     },
-    quoteWhenLT: makeQuoteWhenOut(isLT),
-    quoteWhenLTE: makeQuoteWhenOut(isLTE),
-    quoteWhenGTE: makeQuoteWhenOut(isGTE),
-    quoteWhenGT: makeQuoteWhenOut(isGT),
-    mutableQuoteWhenLT: makeMutableQuote(isLT),
-    mutableQuoteWhenLTE: makeMutableQuote(isLTE),
-    mutableQuoteWhenGT: makeMutableQuote(isGT),
-    mutableQuoteWhenGTE: makeMutableQuote(isGTE),
-  });
+  );
 
   return { priceAuthority, adminFacet: { fireTriggers } };
 };

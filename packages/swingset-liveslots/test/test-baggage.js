@@ -1,6 +1,7 @@
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kunser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
@@ -9,12 +10,16 @@ import { parseVatSlot } from '../src/parseVatSlots.js';
 function buildRootObject(vatPowers, vatParameters, baggage) {
   baggage.has('outside');
   baggage.init('outside', 'outer val');
-  return Far('root', {
-    doSomething() {
-      baggage.get('outside');
-      baggage.init('inside', 'inner val');
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      doSomething() {
+        baggage.get('outside');
+        baggage.init('inside', 'inner val');
+      },
     },
-  });
+  );
 }
 
 test.serial('exercise baggage', async t => {

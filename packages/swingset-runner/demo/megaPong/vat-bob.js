@@ -23,37 +23,45 @@ export function buildRootObject() {
   let total = 0;
 
   function makeContact(otherContact, otherNickname) {
-    return Far('contact', {
-      ping(tag, count) {
-        total += 1;
-        if (count > 0) {
-          if (ppp(count)) {
-            log(
-              `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${count} ${tag}`,
-            );
+    return makeExo(
+      'contact',
+      M.interface('contact', {}, { defaultGuards: 'passable' }),
+      {
+        ping(tag, count) {
+          total += 1;
+          if (count > 0) {
+            if (ppp(count)) {
+              log(
+                `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${count} ${tag}`,
+              );
+            }
+            E(otherContact).ping(tag, count - 1);
+          } else if (count < 0) {
+            if (ppp(total)) {
+              log(
+                `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${tag}`,
+              );
+            }
+            E(otherContact).ping(tag, count);
           }
-          E(otherContact).ping(tag, count - 1);
-        } else if (count < 0) {
-          if (ppp(total)) {
-            log(
-              `=> ${myNickname} contact for ${otherNickname} receives ping #${total}: ${tag}`,
-            );
-          }
-          E(otherContact).ping(tag, count);
-        }
+        },
       },
-    });
+    );
   }
 
-  return Far('root', {
-    setNickname(nickname) {
-      myNickname = nickname;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setNickname(nickname) {
+        myNickname = nickname;
+      },
+      hello(otherContact, otherNickname) {
+        const myContact = makeContact(otherContact, otherNickname);
+        E(otherContact).myNameIs(myNickname);
+        log(`=> ${myNickname}.hello sees ${otherNickname}`);
+        return myContact;
+      },
     },
-    hello(otherContact, otherNickname) {
-      const myContact = makeContact(otherContact, otherNickname);
-      E(otherContact).myNameIs(myNickname);
-      log(`=> ${myNickname}.hello sees ${otherNickname}`);
-      return myContact;
-    },
-  });
+  );
 }

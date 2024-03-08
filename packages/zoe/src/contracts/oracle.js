@@ -24,79 +24,91 @@ const start = async zcf => {
   const { zcfSeat: feeSeat } = zcf.makeEmptySeatKit();
 
   /** @type {OracleCreatorFacet} */
-  const realCreatorFacet = Far('realCreatorFacet', {
-    makeWithdrawInvitation(total = false) {
-      return zcf.makeInvitation(seat => {
-        const gains = total
-          ? feeSeat.getCurrentAllocation()
-          : seat.getProposal().want;
+  const realCreatorFacet = makeExo(
+    'realCreatorFacet',
+    M.interface('realCreatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      makeWithdrawInvitation(total = false) {
+        return zcf.makeInvitation(seat => {
+          const gains = total
+            ? feeSeat.getCurrentAllocation()
+            : seat.getProposal().want;
 
-        atomicTransfer(zcf, feeSeat, seat, gains);
+          atomicTransfer(zcf, feeSeat, seat, gains);
 
-        seat.exit();
-        return 'Successfully withdrawn';
-      }, 'withdraw');
-    },
-    getCurrentFees() {
-      return feeSeat.getCurrentAllocation();
-    },
-    makeShutdownInvitation: () => {
-      const shutdown = seat => {
-        revoked = true;
-        atomicTransfer(zcf, feeSeat, seat, feeSeat.getCurrentAllocation());
+          seat.exit();
+          return 'Successfully withdrawn';
+        }, 'withdraw');
+      },
+      getCurrentFees() {
+        return feeSeat.getCurrentAllocation();
+      },
+      makeShutdownInvitation: () => {
+        const shutdown = seat => {
+          revoked = true;
+          atomicTransfer(zcf, feeSeat, seat, feeSeat.getCurrentAllocation());
 
-        zcf.shutdown(revokedMsg);
-      };
-      return zcf.makeInvitation(shutdown, 'shutdown');
+          zcf.shutdown(revokedMsg);
+        };
+        return zcf.makeInvitation(shutdown, 'shutdown');
+      },
     },
-  });
+  );
 
-  const creatorFacet = Far('creatorFacet', {
-    initialize(privateParams) {
-      ({ oracleHandler: handler } = privateParams);
-      return realCreatorFacet;
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      initialize(privateParams) {
+        ({ oracleHandler: handler } = privateParams);
+        return realCreatorFacet;
+      },
     },
-  });
+  );
 
-  const publicFacet = Far('publicFacet', {
-    /** @param {OracleQuery} query */
-    async query(query) {
-      await null;
-      try {
-        assert(!revoked, revokedMsg);
-        const noFee = AmountMath.makeEmpty(feeBrand);
-        const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
-        !requiredFee ||
-          AmountMath.isGTE(noFee, requiredFee) ||
-          Fail`Oracle required a fee but the query had none`;
-        return reply;
-      } catch (e) {
-        E(handler).onError(query, e);
-        throw e;
-      }
-    },
-    /** @param {OracleQuery} query */
-    async makeQueryInvitation(query) {
-      /** @type {OfferHandler} */
-      const doQuery = async querySeat => {
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      /** @param {OracleQuery} query */
+      async query(query) {
         await null;
         try {
-          const fee = querySeat.getAmountAllocated('Fee', feeBrand);
-          const { requiredFee, reply } = await E(handler).onQuery(query, fee);
-          if (requiredFee) {
-            atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
-          }
-          querySeat.exit();
-          E(handler).onReply(query, reply, requiredFee);
+          assert(!revoked, revokedMsg);
+          const noFee = AmountMath.makeEmpty(feeBrand);
+          const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
+          !requiredFee ||
+            AmountMath.isGTE(noFee, requiredFee) ||
+            Fail`Oracle required a fee but the query had none`;
           return reply;
         } catch (e) {
           E(handler).onError(query, e);
           throw e;
         }
-      };
-      return zcf.makeInvitation(doQuery, 'oracle query', { query });
+      },
+      /** @param {OracleQuery} query */
+      async makeQueryInvitation(query) {
+        /** @type {OfferHandler} */
+        const doQuery = async querySeat => {
+          await null;
+          try {
+            const fee = querySeat.getAmountAllocated('Fee', feeBrand);
+            const { requiredFee, reply } = await E(handler).onQuery(query, fee);
+            if (requiredFee) {
+              atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
+            }
+            querySeat.exit();
+            E(handler).onReply(query, reply, requiredFee);
+            return reply;
+          } catch (e) {
+            E(handler).onError(query, e);
+            throw e;
+          }
+        };
+        return zcf.makeInvitation(doQuery, 'oracle query', { query });
+      },
     },
-  });
+  );
 
   return harden({ creatorFacet, publicFacet });
 };

@@ -20,28 +20,32 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
     },
   });
 
-  return Far('VowRoot', {
-    getWatcherResults() {
-      return harden(Object.fromEntries(nameToResult.entries()));
-    },
-    /** @param {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} localPromises */
-    async makeLocalPromiseWatchers(localPromises) {
-      for (const [name, settlement] of Object.entries(localPromises)) {
-        nameToResult.init(name, harden({ status: 'unsettled' }));
-        let p;
-        if (!settlement.length) {
-          // Never settle.
-          p = new Promise(() => {});
-        } else {
-          const [settlementValue, isRejection] = settlement;
-          if (isRejection) {
-            p = Promise.reject(settlementValue);
+  return makeExo(
+    'VowRoot',
+    M.interface('VowRoot', {}, { defaultGuards: 'passable' }),
+    {
+      getWatcherResults() {
+        return harden(Object.fromEntries(nameToResult.entries()));
+      },
+      /** @param {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} localPromises */
+      async makeLocalPromiseWatchers(localPromises) {
+        for (const [name, settlement] of Object.entries(localPromises)) {
+          nameToResult.init(name, harden({ status: 'unsettled' }));
+          let p;
+          if (!settlement.length) {
+            // Never settle.
+            p = new Promise(() => {});
           } else {
-            p = Promise.resolve(settlementValue);
+            const [settlementValue, isRejection] = settlement;
+            if (isRejection) {
+              p = Promise.reject(settlementValue);
+            } else {
+              p = Promise.resolve(settlementValue);
+            }
           }
+          watch(p, makeWatcher(name));
         }
-        watch(p, makeWatcher(name));
-      }
+      },
     },
-  });
+  );
 };

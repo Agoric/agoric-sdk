@@ -114,9 +114,13 @@ test('params one installation', async t => {
   // isInstallation() (#3344), we'll need to make a mockZoe.
   /** @type {Installation} */
   // @ts-expect-error cast
-  const installationHandle = Far('fake Installation', {
-    getBundle: () => ({ obfuscated: 42 }),
-  });
+  const installationHandle = makeExo(
+    'fake Installation',
+    M.interface('fake Installation', {}, { defaultGuards: 'passable' }),
+    {
+      getBundle: () => ({ obfuscated: 42 }),
+    },
+  );
 
   const paramManager = makeParamManagerBuilder(makeStoredPublisherKit())
     .addInstallation('PName', installationHandle)
@@ -132,9 +136,13 @@ test('params one installation', async t => {
   );
   /** @type {Installation} */
   // @ts-expect-error cast
-  const handle2 = Far('another fake Installation', {
-    getBundle: () => ({ condensed: '() => {})' }),
-  });
+  const handle2 = makeExo(
+    'another fake Installation',
+    M.interface('another fake Installation', {}, { defaultGuards: 'passable' }),
+    {
+      getBundle: () => ({ condensed: '() => {})' }),
+    },
+  );
   await paramManager.updateParams({ PName: handle2 });
   t.deepEqual(paramManager.getInstallation('PName'), handle2);
 

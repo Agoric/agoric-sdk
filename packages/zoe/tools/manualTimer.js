@@ -104,12 +104,16 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
     return timerService.setWakeup(when, handler, cancelToken);
   };
 
-  return Far('ManualTimer', {
-    ...bindAllMethods(timerService),
-    tick,
-    tickN,
-    setWakeup,
-  });
+  return makeExo(
+    'ManualTimer',
+    M.interface('ManualTimer', {}, { defaultGuards: 'passable' }),
+    {
+      ...bindAllMethods(timerService),
+      tick,
+      tickN,
+      setWakeup,
+    },
+  );
 };
 harden(buildManualTimer);
 

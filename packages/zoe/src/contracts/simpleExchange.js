@@ -131,10 +131,14 @@ const start = zcf => {
   const makeExchangeInvitation = () =>
     zcf.makeInvitation(exchangeOfferHandler, 'exchange');
 
-  const publicFacet = Far('SimpleExchangePublicFacet', {
-    makeInvitation: makeExchangeInvitation,
-    getNotifier: () => notifier,
-  });
+  const publicFacet = makeExo(
+    'SimpleExchangePublicFacet',
+    M.interface('SimpleExchangePublicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      makeInvitation: makeExchangeInvitation,
+      getNotifier: () => notifier,
+    },
+  );
 
   // set the initial state of the notifier
   bookOrdersChanged();

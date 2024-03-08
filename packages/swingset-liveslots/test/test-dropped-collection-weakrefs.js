@@ -1,5 +1,6 @@
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { buildSyscall } from './liveslots-helpers.js';
@@ -32,7 +33,11 @@ test('droppedCollectionWeakRefs', async t => {
     // creating a WeakMap/Set should put it in droppedCollectionWeakRefs
     myVOAwareWeakMap = new WeakMap();
     myVOAwareWeakSet = new WeakSet();
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS = () => ({ buildRootObject });

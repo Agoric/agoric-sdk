@@ -114,16 +114,20 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   }
 
   if (proof !== 'none') {
-    followerOptions.crasher = Far('follower crasher', {
-      crash: (...args) => {
-        console.error(...args);
-        console.warn(`You are running with '--proof=${proof}'`);
-        console.warn(
-          `If you trust your RPC nodes, you can turn off proofs with '--proof=none'`,
-        );
-        process.exit(1);
+    followerOptions.crasher = makeExo(
+      'follower crasher',
+      M.interface('follower crasher', {}, { defaultGuards: 'passable' }),
+      {
+        crash: (...args) => {
+          console.error(...args);
+          console.warn(`You are running with '--proof=${proof}'`);
+          console.warn(
+            `If you trust your RPC nodes, you can turn off proofs with '--proof=none'`,
+          );
+          process.exit(1);
+        },
       },
-    });
+    );
   }
 
   const leaderOptions = makeLeaderOptions({

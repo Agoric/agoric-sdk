@@ -1,7 +1,8 @@
 // @ts-nocheck
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kslot, kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
@@ -20,17 +21,21 @@ test('dropImports', async t => {
   const gcTools = makeMockGC();
 
   function build(_vatPowers) {
-    const root = Far('root', {
-      hold(imp) {
-        imports.push(imp);
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        hold(imp) {
+          imports.push(imp);
+        },
+        free() {
+          gcTools.kill(imports.pop());
+        },
+        ignore(imp) {
+          gcTools.kill(imp);
+        },
       },
-      free() {
-        gcTools.kill(imports.pop());
-      },
-      ignore(imp) {
-        gcTools.kill(imp);
-      },
-    });
+    );
     return root;
   }
 
@@ -163,14 +168,22 @@ test('retention counters', async t => {
   const gcTools = makeMockGC();
 
   function buildRootObject(_vatPowers) {
-    const root = Far('root', {
-      hold(imp) {
-        held = imp;
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        hold(imp) {
+          held = imp;
+        },
+        exportRemotable() {
+          return makeExo(
+            'exported',
+            M.interface('exported', {}, { defaultGuards: 'passable' }),
+            {},
+          );
+        },
       },
-      exportRemotable() {
-        return Far('exported', {});
-      },
-    });
+    );
     return root;
   }
 
@@ -351,7 +364,7 @@ const doublefreetest = test.macro(async (t, mode) => {
     // mockGC to drop them
 
     // things.object1.set(things.collection3); // vdata ref A -> B
-    // return Far('root', {});
+    // return makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {});
 
     let firstName;
     let lastName;
@@ -395,7 +408,11 @@ const doublefreetest = test.macro(async (t, mode) => {
       fromThing.init('key', toThing);
     }
 
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS = () => ({ buildRootObject });

@@ -121,9 +121,14 @@ const start = zcf => {
     return 'Trade completed.';
   };
 
-  const publicFacet = Far('publicFacet', {
-    makeInvitation: () => zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
-  });
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      makeInvitation: () =>
+        zcf.makeInvitation(exchangeOfferHandler, 'exchange'),
+    },
+  );
 
   return { publicFacet };
 };

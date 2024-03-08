@@ -26,7 +26,7 @@ export const buildRootObject = (vatPowers, _args, baggage) => {
   const makeFrobulator = prepareFrobulator(frobZone);
   const widgetToFrob = frobZone.mapStore('widgetToFrob');
 
-  return Far('WidgetFrobulator', {
+  return makeExo('WidgetFrobulator', M.interface('WidgetFrobulator', {}, { defaultGuards: 'passable' }), {
     makeWidget,
     registerWidget(w) {
       const frobulator = makeFrobulator();

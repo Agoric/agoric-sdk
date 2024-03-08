@@ -15,18 +15,22 @@ export function buildRootObject(vatPowers, vatParameters) {
     return E(aliceP).testBasicFunctionality();
   }
 
-  const obj0 = Far('root', {
-    async bootstrap(vats) {
-      switch (arg0) {
-        case 'basicFunctionality': {
-          const aliceMaker = await E(vats.alice).makeAliceMaker();
-          return testBasicFunctionality(aliceMaker);
+  const obj0 = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats) {
+        switch (arg0) {
+          case 'basicFunctionality': {
+            const aliceMaker = await E(vats.alice).makeAliceMaker();
+            return testBasicFunctionality(aliceMaker);
+          }
+          default: {
+            assert.fail(X`unrecognized argument value ${arg0}`);
+          }
         }
-        default: {
-          assert.fail(X`unrecognized argument value ${arg0}`);
-        }
-      }
+      },
     },
-  });
+  );
   return obj0;
 }

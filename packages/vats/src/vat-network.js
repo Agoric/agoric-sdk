@@ -26,16 +26,20 @@ export function buildRootObject(_vatPowers, _args, baggage) {
   );
   const makeEchoConnectionKit = prepareEchoConnectionKit(zone);
 
-  return Far('RouterProtocol', {
-    makeLoopbackProtocolHandler,
-    makeEchoConnectionKit,
-    /** @param {Parameters<typeof protocol.registerProtocolHandler>} args */
-    registerProtocolHandler: (...args) =>
-      protocol.registerProtocolHandler(...args),
-    /** @param {Parameters<typeof protocol.unregisterProtocolHandler>} args */
-    unregisterProtocolHandler: (...args) =>
-      protocol.unregisterProtocolHandler(...args),
-    /** @param {Parameters<typeof protocol.bind>} args */
-    bind: (...args) => protocol.bind(...args),
-  });
+  return makeExo(
+    'RouterProtocol',
+    M.interface('RouterProtocol', {}, { defaultGuards: 'passable' }),
+    {
+      makeLoopbackProtocolHandler,
+      makeEchoConnectionKit,
+      /** @param {Parameters<typeof protocol.registerProtocolHandler>} args */
+      registerProtocolHandler: (...args) =>
+        protocol.registerProtocolHandler(...args),
+      /** @param {Parameters<typeof protocol.unregisterProtocolHandler>} args */
+      unregisterProtocolHandler: (...args) =>
+        protocol.unregisterProtocolHandler(...args),
+      /** @param {Parameters<typeof protocol.bind>} args */
+      bind: (...args) => protocol.bind(...args),
+    },
+  );
 }

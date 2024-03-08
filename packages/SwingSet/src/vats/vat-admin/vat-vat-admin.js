@@ -584,16 +584,20 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     }
   }
 
-  return Far('root', {
-    createVatAdminService,
-    getCriticalVatKey,
-    bundleInstalled,
-    newVatCallback,
-    vatUpgradeCallback,
-    vatTerminated,
-    meterCrossedThreshold,
-    pauseService,
-    resumeService,
-    upgradeStaticVat,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      createVatAdminService,
+      getCriticalVatKey,
+      bundleInstalled,
+      newVatCallback,
+      vatUpgradeCallback,
+      vatTerminated,
+      meterCrossedThreshold,
+      pauseService,
+      resumeService,
+      upgradeStaticVat,
+    },
+  );
 }

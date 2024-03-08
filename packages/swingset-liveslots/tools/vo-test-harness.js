@@ -1,4 +1,5 @@
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
 
 // This file contains a test harness for virtual objects. runVOTest()
@@ -99,32 +100,36 @@ export async function runVOTest(t, prepare, makeTestObject, testTestObject) {
       return cacheDisplacer.getLabel();
     }
 
-    return Far('root', {
-      makeAndHold() {
-        held = makeTestObject();
-        freeChecker.add(held);
-        displaceCache();
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        makeAndHold() {
+          held = makeTestObject();
+          freeChecker.add(held);
+          displaceCache();
+        },
+        storeHeld() {
+          holder.setValue(held);
+          displaceCache();
+        },
+        dropHeld() {
+          held = null;
+          displaceCache();
+        },
+        fetchAndHold() {
+          held = holder.getValue();
+          t.falsy(
+            freeChecker.has(held),
+            'somebody continues to hold test object',
+          );
+          displaceCache();
+        },
+        testHeld(phase) {
+          testTestObject(held, phase);
+        },
       },
-      storeHeld() {
-        holder.setValue(held);
-        displaceCache();
-      },
-      dropHeld() {
-        held = null;
-        displaceCache();
-      },
-      fetchAndHold() {
-        held = holder.getValue();
-        t.falsy(
-          freeChecker.has(held),
-          'somebody continues to hold test object',
-        );
-        displaceCache();
-      },
-      testHeld(phase) {
-        testTestObject(held, phase);
-      },
-    });
+    );
   }
 
   const { dispatchMessage } = await setupTestLiveslots(

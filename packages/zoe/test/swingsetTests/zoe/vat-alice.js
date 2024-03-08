@@ -509,7 +509,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       want: { StrikePrice: simoleans(7n) },
       exit: {
         afterDeadline: {
-          timer: Far('timer', { setWakeup: () => {} }),
+          timer: makeExo(
+            'timer',
+            M.interface('timer', {}, { defaultGuards: 'passable' }),
+            { setWakeup: () => {} },
+          ),
           deadline: 1n,
         },
       },
@@ -540,52 +544,60 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
   };
 
-  return Far('build', {
-    startTest: async (testName, bobP, carolP, daveP) => {
-      switch (testName) {
-        case 'automaticRefundOk': {
-          return doAutomaticRefund(bobP);
+  return makeExo(
+    'build',
+    M.interface('build', {}, { defaultGuards: 'passable' }),
+    {
+      startTest: async (testName, bobP, carolP, daveP) => {
+        switch (testName) {
+          case 'automaticRefundOk': {
+            return doAutomaticRefund(bobP);
+          }
+          case 'coveredCallOk': {
+            return doCoveredCall(bobP);
+          }
+          case 'swapForOptionOk': {
+            return doSwapForOption(bobP, carolP, daveP);
+          }
+          case 'secondPriceAuctionOk': {
+            return doSecondPriceAuction(bobP, carolP, daveP);
+          }
+          case 'atomicSwapOk': {
+            return doAtomicSwap(bobP);
+          }
+          case 'simpleExchangeOk': {
+            return doSimpleExchange(bobP);
+          }
+          case 'simpleExchangeNotifier': {
+            return doSimpleExchangeWithNotification(bobP);
+          }
+          case 'autoswapOk': {
+            return doAutoswap(bobP);
+          }
+          case 'sellTicketsOk': {
+            return doSellTickets(bobP);
+          }
+          case 'otcDeskOk': {
+            return doOTCDesk(bobP);
+          }
+          case 'badTimer': {
+            return doBadTimer();
+          }
+          default: {
+            assert.fail(X`testName ${testName} not recognized`);
+          }
         }
-        case 'coveredCallOk': {
-          return doCoveredCall(bobP);
-        }
-        case 'swapForOptionOk': {
-          return doSwapForOption(bobP, carolP, daveP);
-        }
-        case 'secondPriceAuctionOk': {
-          return doSecondPriceAuction(bobP, carolP, daveP);
-        }
-        case 'atomicSwapOk': {
-          return doAtomicSwap(bobP);
-        }
-        case 'simpleExchangeOk': {
-          return doSimpleExchange(bobP);
-        }
-        case 'simpleExchangeNotifier': {
-          return doSimpleExchangeWithNotification(bobP);
-        }
-        case 'autoswapOk': {
-          return doAutoswap(bobP);
-        }
-        case 'sellTicketsOk': {
-          return doSellTickets(bobP);
-        }
-        case 'otcDeskOk': {
-          return doOTCDesk(bobP);
-        }
-        case 'badTimer': {
-          return doBadTimer();
-        }
-        default: {
-          assert.fail(X`testName ${testName} not recognized`);
-        }
-      }
+      },
     },
-  });
+  );
 };
 
 export function buildRootObject(vatPowers) {
-  return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      build: (...args) => build(vatPowers.testLog, ...args),
+    },
+  );
 }

@@ -259,7 +259,11 @@ const whenQuiescent = async (schedules, timer, thunk) => {
   const { nextAuctionSchedule, liveAuctionSchedule } = schedules;
   const now = await E(timer).getCurrentTimestamp();
 
-  const waker = Far('addAssetWaker', { wake: () => thunk() });
+  const waker = makeExo(
+    'addAssetWaker',
+    M.interface('addAssetWaker', {}, { defaultGuards: 'passable' }),
+    { wake: () => thunk() },
+  );
 
   if (liveAuctionSchedule) {
     const safeStart = TimeMath.subtractAbsRel(

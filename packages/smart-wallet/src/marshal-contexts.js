@@ -350,8 +350,16 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
       }
       initSlotVal(boardObjects, id, val);
     },
-    fromMyWallet: Far('wallet marshaller', { ...marshal.fromMyWallet }),
-    fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
+    fromMyWallet: makeExo(
+      'wallet marshaller',
+      M.interface('wallet marshaller', {}, { defaultGuards: 'passable' }),
+      { ...marshal.fromMyWallet },
+    ),
+    fromBoard: makeExo(
+      'board marshaller',
+      M.interface('board marshaller', {}, { defaultGuards: 'passable' }),
+      { ...marshal.fromBoard },
+    ),
   });
 };
 /** @typedef {ReturnType<typeof makeImportContext>} ImportContext */

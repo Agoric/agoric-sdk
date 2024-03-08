@@ -1,9 +1,13 @@
 import { Far } from '@endo/far';
 
 export function buildRootDeviceNode() {
-  return Far('root', {
-    add(x, y) {
-      return x + y;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      add(x, y) {
+        return x + y;
+      },
     },
-  });
+  );
 }

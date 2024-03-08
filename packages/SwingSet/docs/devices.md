@@ -237,7 +237,7 @@ This will push a delivery onto the kernel run-queue.
 
 ```js
 // vat does
-  const callbackObj = Far('cb', {
+  const callbackObj = makeExo('cb', M.interface('cb', {}, { defaultGuards: 'passable' }), {
     hello(arg) {
       console.log('they called me!', arg);
     },

@@ -592,15 +592,19 @@ export const makeCosmjsFollower = (
   harden(getReverseIterableAtHeight);
 
   /** @type {ValueFollower<T>} */
-  return Far('chain follower', {
-    async getLatestIterable() {
-      return getLatestIterable();
+  return makeExo(
+    'chain follower',
+    M.interface('chain follower', {}, { defaultGuards: 'passable' }),
+    {
+      async getLatestIterable() {
+        return getLatestIterable();
+      },
+      async getEachIterable({ height = undefined } = {}) {
+        return getEachIterableAtHeight(height);
+      },
+      async getReverseIterable({ height = undefined } = {}) {
+        return getReverseIterableAtHeight(height);
+      },
     },
-    async getEachIterable({ height = undefined } = {}) {
-      return getEachIterableAtHeight(height);
-    },
-    async getReverseIterable({ height = undefined } = {}) {
-      return getReverseIterableAtHeight(height);
-    },
-  });
+  );
 };

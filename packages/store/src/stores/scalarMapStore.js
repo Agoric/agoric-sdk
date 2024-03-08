@@ -1,9 +1,4 @@
-import {
-  Far,
-  assertPassable,
-  filterIterable,
-  mapIterable,
-} from '@endo/pass-style';
+import { assertPassable, filterIterable, mapIterable } from '@endo/pass-style';
 import { compareRank } from '@endo/marshal';
 import {
   assertScalarKey,
@@ -11,7 +6,9 @@ import {
   matches,
   mustMatch,
   assertPattern,
+  M,
 } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
@@ -168,14 +165,22 @@ export const makeScalarMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar MapStore of ${q(tag)}`, {
-    ...makeMapStoreMethods(
-      jsmap,
-      assertKVOkToAdd,
-      assertKVOkToSet,
-      undefined,
-      tag,
+  return makeExo(
+    `scalar MapStore of ${q(tag)}`,
+    M.interface(
+      `scalar MapStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
     ),
-  });
+    {
+      ...makeMapStoreMethods(
+        jsmap,
+        assertKVOkToAdd,
+        assertKVOkToSet,
+        undefined,
+        tag,
+      ),
+    },
+  );
 };
 harden(makeScalarMapStore);

@@ -22,33 +22,37 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
     }));
   }
 
-  return Far('root', {
-    buildZoe: async (adminVat, feeIssuerConfig, zcfBundleName) => {
-      assert(zcfBundleName, `vat-zoe requires zcfBundleName`);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      buildZoe: async (adminVat, feeIssuerConfig, zcfBundleName) => {
+        assert(zcfBundleName, `vat-zoe requires zcfBundleName`);
 
-      const vatAdminSvc = await adminVat;
+        const vatAdminSvc = await adminVat;
 
-      /** @type {ZCFSpec} */
-      const zcfSpec = { name: zcfBundleName };
+        /** @type {ZCFSpec} */
+        const zcfSpec = { name: zcfBundleName };
 
-      zoeBaggage.init(
-        BUILD_PARAMS_KEY,
-        harden({ vatAdminSvc, feeIssuerConfig, zcfSpec }),
-      );
+        zoeBaggage.init(
+          BUILD_PARAMS_KEY,
+          harden({ vatAdminSvc, feeIssuerConfig, zcfSpec }),
+        );
 
-      const { zoeService, feeMintAccess } = makeDurableZoeKit({
-        vatAdminSvc,
-        shutdownZoeVat,
-        feeIssuerConfig,
-        zcfSpec,
-        zoeBaggage,
-      });
+        const { zoeService, feeMintAccess } = makeDurableZoeKit({
+          vatAdminSvc,
+          shutdownZoeVat,
+          feeIssuerConfig,
+          zcfSpec,
+          zoeBaggage,
+        });
 
-      return harden({
-        zoeService,
-        feeMintAccess,
-      });
+        return harden({
+          zoeService,
+          feeMintAccess,
+        });
+      },
+      getZoeConfigFacet: () => zoeConfigFacet,
     },
-    getZoeConfigFacet: () => zoeConfigFacet,
-  });
+  );
 }

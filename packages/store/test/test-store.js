@@ -2,7 +2,9 @@
 
 import test from 'ava';
 
-import { Far, passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
@@ -91,10 +93,22 @@ test('store', t => {
   // makeScalarMapStore
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
-  check(t, 'strong', () => Far('handle', {}));
+  check(t, 'strong', () =>
+    makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+  );
 
   // makeScalarWeakMapStore
-  check(t, 'weak', () => Far('handle', {}));
+  check(t, 'weak', () =>
+    makeExo(
+      'handle',
+      M.interface('handle', {}, { defaultGuards: 'passable' }),
+      {},
+    ),
+  );
 });
 
 test('reject promise keys', t => {

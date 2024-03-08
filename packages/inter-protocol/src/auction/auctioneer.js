@@ -546,44 +546,48 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
-  const driver = Far('Auctioneer', {
-    reducePriceAndTrade: () => {
-      trace('reducePriceAndTrade');
+  const driver = makeExo(
+    'Auctioneer',
+    M.interface('Auctioneer', {}, { defaultGuards: 'passable' }),
+    {
+      reducePriceAndTrade: () => {
+        trace('reducePriceAndTrade');
 
-      natSafeMath.isGTE(currentDiscountRateBP, params.getDiscountStep()) ||
-        Fail`rates must fall ${currentDiscountRateBP}`;
+        natSafeMath.isGTE(currentDiscountRateBP, params.getDiscountStep()) ||
+          Fail`rates must fall ${currentDiscountRateBP}`;
 
-      currentDiscountRateBP = natSafeMath.subtract(
-        currentDiscountRateBP,
-        params.getDiscountStep(),
-      );
+        currentDiscountRateBP = natSafeMath.subtract(
+          currentDiscountRateBP,
+          params.getDiscountStep(),
+        );
 
-      tradeEveryBook();
+        tradeEveryBook();
+      },
+      finalize: () => {
+        trace('finalize');
+
+        for (const book of books.values()) {
+          book.endAuction();
+        }
+        distributeProceeds();
+      },
+      startRound() {
+        trace('startRound');
+
+        currentDiscountRateBP = params.getStartingRate();
+        for (const book of books.values()) {
+          book.setStartingRate(makeBPRatio(currentDiscountRateBP, brands.Bid));
+        }
+
+        tradeEveryBook();
+      },
+      capturePrices() {
+        for (const book of books.values()) {
+          book.captureOraclePriceForRound();
+        }
+      },
     },
-    finalize: () => {
-      trace('finalize');
-
-      for (const book of books.values()) {
-        book.endAuction();
-      }
-      distributeProceeds();
-    },
-    startRound() {
-      trace('startRound');
-
-      currentDiscountRateBP = params.getStartingRate();
-      for (const book of books.values()) {
-        book.setStartingRate(makeBPRatio(currentDiscountRateBP, brands.Bid));
-      }
-
-      tradeEveryBook();
-    },
-    capturePrices() {
-      for (const book of books.values()) {
-        book.captureOraclePriceForRound();
-      }
-    },
-  });
+  );
 
   // eslint-disable-next-line no-use-before-define
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
@@ -688,38 +692,42 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   const creatorFacet = makeFarGovernorFacet(
-    Far('Auctioneer creatorFacet', {
-      /**
-       * @param {Issuer} issuer
-       * @param {Keyword} kwd
-       */
-      async addBrand(issuer, kwd) {
-        zcf.assertUniqueKeyword(kwd);
-        !baggage.has(kwd) ||
-          Fail`cannot add brand with keyword ${kwd}. it's in use`;
-        const { brand } = await zcf.saveIssuer(issuer, kwd);
+    makeExo(
+      'Auctioneer creatorFacet',
+      M.interface('Auctioneer creatorFacet', {}, { defaultGuards: 'passable' }),
+      {
+        /**
+         * @param {Issuer} issuer
+         * @param {Keyword} kwd
+         */
+        async addBrand(issuer, kwd) {
+          zcf.assertUniqueKeyword(kwd);
+          !baggage.has(kwd) ||
+            Fail`cannot add brand with keyword ${kwd}. it's in use`;
+          const { brand } = await zcf.saveIssuer(issuer, kwd);
 
-        const bookId = `book${bookCounter}`;
-        bookCounter += 1;
-        const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
+          const bookId = `book${bookCounter}`;
+          bookCounter += 1;
+          const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
 
-        const newBook = await makeAuctionBook(
-          brands.Bid,
-          brand,
-          priceAuthority,
-          bNode,
-        );
+          const newBook = await makeAuctionBook(
+            brands.Bid,
+            brand,
+            priceAuthority,
+            bNode,
+          );
 
-        // These three store.init() calls succeed or fail atomically
-        deposits.init(brand, harden([]));
-        books.init(brand, newBook);
-        brandToKeyword.init(brand, kwd);
+          // These three store.init() calls succeed or fail atomically
+          deposits.init(brand, harden([]));
+          books.init(brand, newBook);
+          brandToKeyword.init(brand, kwd);
+        },
+        /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
+        getSchedule() {
+          return E(scheduler).getSchedule();
+        },
       },
-      /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
-      getSchedule() {
-        return E(scheduler).getSchedule();
-      },
-    }),
+    ),
   );
 
   return { publicFacet, creatorFacet };

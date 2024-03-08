@@ -45,7 +45,11 @@ harden(prepareErtpService);
 
 export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
   const ertpService = prepareErtpService(baggage, vatPowers.exitVatWithFailure);
-  return Far('root', {
-    getErtpService: () => ertpService,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getErtpService: () => ertpService,
+    },
+  );
 };

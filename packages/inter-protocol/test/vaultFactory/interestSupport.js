@@ -38,21 +38,25 @@ export const makeFakeVault = (
   );
   let collateral = initCollateral;
   const fakeSeat = {};
-  const vault = Far('Vault', {
-    getCollateralAmount: () => collateral,
-    getNormalizedDebt: () => normalizedDebt,
-    getCurrentDebt: () =>
-      floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
-    setDebt: newDebt =>
-      (normalizedDebt = reverseInterest(
-        newDebt,
-        manager.getCompoundedInterest(),
-      )),
-    setCollateral: newCollateral => (collateral = newCollateral),
-    getIdInManager: () => vaultId,
-    liquidate: () => {},
-    getVaultSeat: () => fakeSeat,
-  });
+  const vault = makeExo(
+    'Vault',
+    M.interface('Vault', {}, { defaultGuards: 'passable' }),
+    {
+      getCollateralAmount: () => collateral,
+      getNormalizedDebt: () => normalizedDebt,
+      getCurrentDebt: () =>
+        floorMultiplyBy(normalizedDebt, manager.getCompoundedInterest()),
+      setDebt: newDebt =>
+        (normalizedDebt = reverseInterest(
+          newDebt,
+          manager.getCompoundedInterest(),
+        )),
+      setCollateral: newCollateral => (collateral = newCollateral),
+      getIdInManager: () => vaultId,
+      liquidate: () => {},
+      getVaultSeat: () => fakeSeat,
+    },
+  );
   // @ts-expect-error cast
   return vault;
 };

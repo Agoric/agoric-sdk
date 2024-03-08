@@ -1,7 +1,8 @@
 // @ts-check
 import test from 'ava';
 
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import {
   makeMeasureSeconds,
   assertAllDefined,
@@ -13,7 +14,11 @@ import {
 } from '../src/utils.js';
 
 test('deeplyFulfilledObject', async t => {
-  const someFar = Far('somefar', { getAsync: () => Promise.resolve('async') });
+  const someFar = makeExo(
+    'somefar',
+    M.interface('somefar', {}, { defaultGuards: 'passable' }),
+    { getAsync: () => Promise.resolve('async') },
+  );
   const unfulfilled = harden({
     obj1: {
       obj2a: {

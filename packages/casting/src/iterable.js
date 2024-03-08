@@ -27,16 +27,28 @@ export const mapAsyncIterable = (iterable, transform) => {
  */
 export const iterateLatest = follower =>
   // For now, just pass through the iterable.
-  Far('iterateLatest iterable', {
-    /** @returns {AsyncIterator<T>} */
-    [Symbol.asyncIterator]: () => {
-      const latestIterable = E(follower).getLatestIterable();
-      const iterator = E(latestIterable)[Symbol.asyncIterator]();
-      return Far('iterateLatest iterator', {
-        next: () => E(iterator).next(),
-      });
+  makeExo(
+    'iterateLatest iterable',
+    M.interface('iterateLatest iterable', {}, { defaultGuards: 'passable' }),
+    {
+      /** @returns {AsyncIterator<T>} */
+      [Symbol.asyncIterator]: () => {
+        const latestIterable = E(follower).getLatestIterable();
+        const iterator = E(latestIterable)[Symbol.asyncIterator]();
+        return makeExo(
+          'iterateLatest iterator',
+          M.interface(
+            'iterateLatest iterator',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            next: () => E(iterator).next(),
+          },
+        );
+      },
     },
-  });
+  );
 
 /**
  * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
@@ -47,16 +59,28 @@ export const iterateLatest = follower =>
  */
 export const iterateEach = (follower, options) =>
   // For now, just pass through the iterable.
-  Far('iterateEach iterable', {
-    /** @returns {AsyncIterator<T>} */
-    [Symbol.asyncIterator]: () => {
-      const eachIterable = E(follower).getEachIterable(options);
-      const iterator = E(eachIterable)[Symbol.asyncIterator]();
-      return Far('iterateEach iterator', {
-        next: () => E(iterator).next(),
-      });
+  makeExo(
+    'iterateEach iterable',
+    M.interface('iterateEach iterable', {}, { defaultGuards: 'passable' }),
+    {
+      /** @returns {AsyncIterator<T>} */
+      [Symbol.asyncIterator]: () => {
+        const eachIterable = E(follower).getEachIterable(options);
+        const iterator = E(eachIterable)[Symbol.asyncIterator]();
+        return makeExo(
+          'iterateEach iterator',
+          M.interface(
+            'iterateEach iterator',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            next: () => E(iterator).next(),
+          },
+        );
+      },
     },
-  });
+  );
 
 /**
  * @template T
@@ -65,13 +89,25 @@ export const iterateEach = (follower, options) =>
  */
 export const iterateReverse = (follower, options) =>
   // For now, just pass through the iterable.
-  Far('iterateReverse iterable', {
-    /** @returns {AsyncIterator<T>} */
-    [Symbol.asyncIterator]: () => {
-      const eachIterable = E(follower).getReverseIterable(options);
-      const iterator = E(eachIterable)[Symbol.asyncIterator]();
-      return Far('iterateEach iterator', {
-        next: () => E(iterator).next(),
-      });
+  makeExo(
+    'iterateReverse iterable',
+    M.interface('iterateReverse iterable', {}, { defaultGuards: 'passable' }),
+    {
+      /** @returns {AsyncIterator<T>} */
+      [Symbol.asyncIterator]: () => {
+        const eachIterable = E(follower).getReverseIterable(options);
+        const iterator = E(eachIterable)[Symbol.asyncIterator]();
+        return makeExo(
+          'iterateEach iterator',
+          M.interface(
+            'iterateEach iterator',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            next: () => E(iterator).next(),
+          },
+        );
+      },
     },
-  });
+  );

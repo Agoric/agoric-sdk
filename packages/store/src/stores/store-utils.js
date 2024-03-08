@@ -1,4 +1,5 @@
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 /** @typedef {import('@endo/marshal').RankCompare} RankCompare */
 
@@ -48,32 +49,41 @@ export const makeCurrentKeysKit = (
     return sortedKeysMemo;
   };
 
-  const iterableKeys = Far('Iterable of keys', {
-    [Symbol.iterator]: () => {
-      const generation = updateCount;
-      getSortedKeys();
-      const len = sortedKeysMemo.length;
-      let i = 0;
-      return Far('Iterator of keys', {
-        next: () => {
-          generation === updateCount || Fail`Store ${q(keyName)} cursor stale`;
-          // If they're equal, then the sortedKeyMemo is the same one
-          // we started with.
-          for (;;) {
-            if (i < len) {
-              const value = sortedKeysMemo[i];
-              i += 1;
-              if (checkHas(value)) {
-                return harden({ done: false, value });
+  const iterableKeys = makeExo(
+    'Iterable of keys',
+    M.interface('Iterable of keys', {}, { defaultGuards: 'passable' }),
+    {
+      [Symbol.iterator]: () => {
+        const generation = updateCount;
+        getSortedKeys();
+        const len = sortedKeysMemo.length;
+        let i = 0;
+        return makeExo(
+          'Iterator of keys',
+          M.interface('Iterator of keys', {}, { defaultGuards: 'passable' }),
+          {
+            next: () => {
+              generation === updateCount ||
+                Fail`Store ${q(keyName)} cursor stale`;
+              // If they're equal, then the sortedKeyMemo is the same one
+              // we started with.
+              for (;;) {
+                if (i < len) {
+                  const value = sortedKeysMemo[i];
+                  i += 1;
+                  if (checkHas(value)) {
+                    return harden({ done: false, value });
+                  }
+                } else {
+                  return harden({ done: true, value: undefined });
+                }
               }
-            } else {
-              return harden({ done: true, value: undefined });
-            }
-          }
-        },
-      });
+            },
+          },
+        );
+      },
     },
-  });
+  );
 
   return harden({
     assertUpdateOnAdd,

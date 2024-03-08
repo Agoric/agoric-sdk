@@ -81,15 +81,19 @@ export function makeScriptedPriceAuthority(options) {
     adminFacet: { fireTriggers },
   } = makeOnewayPriceAuthorityKit(priceAuthorityOptions);
 
-  const priceObserver = Far('priceObserver', {
-    updateState: t => {
-      t = TimeMath.absValue(t);
-      currentPrice =
-        priceList[Number(Number(t / quoteInterval) % priceList.length)];
+  const priceObserver = makeExo(
+    'priceObserver',
+    M.interface('priceObserver', {}, { defaultGuards: 'passable' }),
+    {
+      updateState: t => {
+        t = TimeMath.absValue(t);
+        currentPrice =
+          priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
-      fireTriggers(createQuote);
+        fireTriggers(createQuote);
+      },
     },
-  });
+  );
   observeNotifier(notifier, priceObserver);
 
   return priceAuthority;

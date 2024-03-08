@@ -182,22 +182,26 @@ const makeScenario = t => {
     };
 
     const { entries } = Object;
-    const uiBridge = Far('UIBridge', {
-      /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
-      proposeOffer: async offerEncoding => {
-        /** @type {import('../src/offers.js').OfferSpec} */
-        const offer = ctx.fromBoard.fromCapData(offerEncoding);
-        const { give, want } = offer.proposal;
-        for await (const [kw, amt] of entries({ ...give, ...want })) {
-          // @ts-expect-error
-          const { displayInfo } = await auxInfo(amt.brand);
-          const kind = displayInfo?.assetKind === 'nat' ? 'fungible' : 'NFT';
-          t.log('wallet:', kind, 'display for', kw, amt.brand);
-        }
-        t.log(addr, 'walletUI: approve offer:', offer.id);
-        await signAndBroadcast(harden({ method: 'executeOffer', offer }));
+    const uiBridge = makeExo(
+      'UIBridge',
+      M.interface('UIBridge', {}, { defaultGuards: 'passable' }),
+      {
+        /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
+        proposeOffer: async offerEncoding => {
+          /** @type {import('../src/offers.js').OfferSpec} */
+          const offer = ctx.fromBoard.fromCapData(offerEncoding);
+          const { give, want } = offer.proposal;
+          for await (const [kw, amt] of entries({ ...give, ...want })) {
+            // @ts-expect-error
+            const { displayInfo } = await auxInfo(amt.brand);
+            const kind = displayInfo?.assetKind === 'nat' ? 'fungible' : 'NFT';
+            t.log('wallet:', kind, 'display for', kw, amt.brand);
+          }
+          t.log(addr, 'walletUI: approve offer:', offer.id);
+          await signAndBroadcast(harden({ method: 'executeOffer', offer }));
+        },
       },
-    });
+    );
     bridgeKit.resolve(uiBridge);
     return walletUpdates;
   };
@@ -233,13 +237,17 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
       assert(namesNode);
       for (const kind of ['brand', 'instance']) {
         const kindNode = await E(namesNode).makeChildNode(kind);
-        const kindUpdater = Far('Updater', {
-          write: async x => {
-            // console.log('marshal for vstorage write', x);
-            const capData = await E(pubm).toCapData(x);
-            await E(kindNode).setValue(JSON.stringify(capData));
+        const kindUpdater = makeExo(
+          'Updater',
+          M.interface('Updater', {}, { defaultGuards: 'passable' }),
+          {
+            write: async x => {
+              // console.log('marshal for vstorage write', x);
+              const capData = await E(pubm).toCapData(x);
+              await E(kindNode).setValue(JSON.stringify(capData));
+            },
           },
-        });
+        );
         await E(kindAdmin(kind)).onUpdate(kindUpdater);
       }
       t.log('bootstrap: share agoricNames updates via vstorage RPC');

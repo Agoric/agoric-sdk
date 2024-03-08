@@ -109,13 +109,17 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       return proposed;
     };
 
-    const publicMethods = Far(`Parameter ${name}`, {
-      getValue: () => current,
-      assertType: assertion,
-      makeDescription: () => ({ type, value: current }),
-      getVisibleValue,
-      getType: () => type,
-    });
+    const publicMethods = makeExo(
+      `Parameter ${name}`,
+      M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getValue: () => current,
+        assertType: assertion,
+        makeDescription: () => ({ type, value: current }),
+        getVisibleValue,
+        getType: () => type,
+      },
+    );
 
     // names are keywords so they will necessarily be TitleCase
     // eslint-disable-next-line no-use-before-define
@@ -281,14 +285,18 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     const getVisibleValue = async allegedInvitation =>
       E(E(zoe).getInvitationIssuer()).getAmountOf(allegedInvitation);
 
-    const publicMethods = Far(`Parameter ${name}`, {
-      getValue: () => currentAmount,
-      getInternalValue: () => currentInvitation,
-      assertType: assertInvitation,
-      makeDescription,
-      getType: () => ParamTypes.INVITATION,
-      getVisibleValue,
-    });
+    const publicMethods = makeExo(
+      `Parameter ${name}`,
+      M.interface(`Parameter ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getValue: () => currentAmount,
+        getInternalValue: () => currentInvitation,
+        assertType: assertInvitation,
+        makeDescription,
+        getType: () => ParamTypes.INVITATION,
+        getVisibleValue,
+      },
+    );
 
     // eslint-disable-next-line no-use-before-define
     getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);
@@ -383,29 +391,33 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by
     // contractGovernor. The getParams method can be shared widely.
-    return Far('param manager', {
-      getParams,
-      getSubscription: () => subscriber,
-      getAmount: name => getTypedParam(ParamTypes.AMOUNT, name),
-      getBrand: name => getTypedParam(ParamTypes.BRAND, name),
-      getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
-      getInstallation: name => getTypedParam(ParamTypes.INSTALLATION, name),
-      getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
-      getNat: name => getTypedParam(ParamTypes.NAT, name),
-      getRatio: name => getTypedParam(ParamTypes.RATIO, name),
-      getRecord: name => getTypedParam(ParamTypes.PASSABLE_RECORD, name),
-      getString: name => getTypedParam(ParamTypes.STRING, name),
-      getTimestamp: name => getTypedParam(ParamTypes.TIMESTAMP, name),
-      getRelativeTime: name => getTypedParam(ParamTypes.RELATIVE_TIME, name),
-      getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
-      getVisibleValue,
-      getInternalParamValue,
-      // Getters and setters for each param value
-      ...getters,
-      updateParams,
-      // Collection of all getters for passing to read-only contexts
-      readonly: () => harden(getters),
-    });
+    return makeExo(
+      'param manager',
+      M.interface('param manager', {}, { defaultGuards: 'passable' }),
+      {
+        getParams,
+        getSubscription: () => subscriber,
+        getAmount: name => getTypedParam(ParamTypes.AMOUNT, name),
+        getBrand: name => getTypedParam(ParamTypes.BRAND, name),
+        getInstance: name => getTypedParam(ParamTypes.INSTANCE, name),
+        getInstallation: name => getTypedParam(ParamTypes.INSTALLATION, name),
+        getInvitationAmount: name => getTypedParam(ParamTypes.INVITATION, name),
+        getNat: name => getTypedParam(ParamTypes.NAT, name),
+        getRatio: name => getTypedParam(ParamTypes.RATIO, name),
+        getRecord: name => getTypedParam(ParamTypes.PASSABLE_RECORD, name),
+        getString: name => getTypedParam(ParamTypes.STRING, name),
+        getTimestamp: name => getTypedParam(ParamTypes.TIMESTAMP, name),
+        getRelativeTime: name => getTypedParam(ParamTypes.RELATIVE_TIME, name),
+        getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
+        getVisibleValue,
+        getInternalParamValue,
+        // Getters and setters for each param value
+        ...getters,
+        updateParams,
+        // Collection of all getters for passing to read-only contexts
+        readonly: () => harden(getters),
+      },
+    );
   };
 
   /** @type {ParamManagerBuilder} */

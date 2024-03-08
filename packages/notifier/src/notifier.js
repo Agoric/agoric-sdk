@@ -1,7 +1,9 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 import './types-ambient.js';
 import { makePublishKit } from './publish-kit.js';
@@ -14,25 +16,29 @@ import { subscribeLatest } from './subscribe.js';
  */
 export const makeNotifier = sharableInternalsP => {
   /** @type {Notifier<T>} */
-  const notifier = Far('notifier', {
-    ...subscribeLatest(sharableInternalsP),
-    getUpdateSince: async updateCount =>
-      E(sharableInternalsP).getUpdateSince(updateCount),
+  const notifier = makeExo(
+    'notifier',
+    M.interface('notifier', {}, { defaultGuards: 'passable' }),
+    {
+      ...subscribeLatest(sharableInternalsP),
+      getUpdateSince: async updateCount =>
+        E(sharableInternalsP).getUpdateSince(updateCount),
 
-    /**
-     * Use this to distribute a Notifier efficiently over the network,
-     * by obtaining this from the Notifier to be replicated, and applying
-     * `makeNotifier` to it at the new site to get an equivalent local
-     * Notifier at that site.
-     */
-    getSharableNotifierInternals: async () => sharableInternalsP,
-    /**
-     * @deprecated
-     * Used only by `makeCastingSpecFromRef`.  Instead that function should use
-     * the `StoredFacet` API.
-     */
-    getStoreKey: () => harden({ notifier }),
-  });
+      /**
+       * Use this to distribute a Notifier efficiently over the network,
+       * by obtaining this from the Notifier to be replicated, and applying
+       * `makeNotifier` to it at the new site to get an equivalent local
+       * Notifier at that site.
+       */
+      getSharableNotifierInternals: async () => sharableInternalsP,
+      /**
+       * @deprecated
+       * Used only by `makeCastingSpecFromRef`.  Instead that function should use
+       * the `StoredFacet` API.
+       */
+      getStoreKey: () => harden({ notifier }),
+    },
+  );
   return notifier;
 };
 
@@ -51,10 +57,14 @@ export const makeNotifierFromSubscriber = subscriber => {
   });
 
   /** @type {Notifier<T>} */
-  const notifier = Far('notifier', {
-    ...makeNotifier(baseNotifier),
-    ...baseNotifier,
-  });
+  const notifier = makeExo(
+    'notifier',
+    M.interface('notifier', {}, { defaultGuards: 'passable' }),
+    {
+      ...makeNotifier(baseNotifier),
+      ...baseNotifier,
+    },
+  );
   return notifier;
 };
 harden(makeNotifierFromSubscriber);
@@ -82,11 +92,15 @@ export const makeNotifierKit = (...initialStateArr) => {
 
   const notifier = makeNotifierFromSubscriber(subscriber);
 
-  const updater = Far('updater', {
-    updateState: state => publisher.publish(state),
-    finish: completion => publisher.finish(completion),
-    fail: reason => publisher.fail(reason),
-  });
+  const updater = makeExo(
+    'updater',
+    M.interface('updater', {}, { defaultGuards: 'passable' }),
+    {
+      updateState: state => publisher.publish(state),
+      finish: completion => publisher.finish(completion),
+      fail: reason => publisher.fail(reason),
+    },
+  );
 
   assert(initialStateArr.length <= 1, 'too many arguments');
   if (initialStateArr.length === 1) {
@@ -123,61 +137,69 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
   /**
    * @type {LatestTopic<T>}
    */
-  const baseNotifier = Far('baseNotifier', {
-    getUpdateSince(updateCount = -1n) {
-      if (updateCount < currentUpdateCount) {
-        if (currentResponse) {
+  const baseNotifier = makeExo(
+    'baseNotifier',
+    M.interface('baseNotifier', {}, { defaultGuards: 'passable' }),
+    {
+      getUpdateSince(updateCount = -1n) {
+        if (updateCount < currentUpdateCount) {
+          if (currentResponse) {
+            return Promise.resolve(currentResponse);
+          }
+        } else if (updateCount !== currentUpdateCount) {
+          throw Error(
+            'getUpdateSince argument must be a previously-issued updateCount.',
+          );
+        }
+
+        // Return a final response if we have one, otherwise a promise for the next state.
+        if (final) {
+          assert(currentResponse !== undefined);
           return Promise.resolve(currentResponse);
         }
-      } else if (updateCount !== currentUpdateCount) {
-        throw Error(
-          'getUpdateSince argument must be a previously-issued updateCount.',
-        );
-      }
-
-      // Return a final response if we have one, otherwise a promise for the next state.
-      if (final) {
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
-      }
-      if (!optNextPromise) {
-        const nextIterResultP = E(iteratorP).next();
-        optNextPromise = E.when(
-          nextIterResultP,
-          ({ done, value }) => {
-            assert(!final);
-            if (done) {
+        if (!optNextPromise) {
+          const nextIterResultP = E(iteratorP).next();
+          optNextPromise = E.when(
+            nextIterResultP,
+            ({ done, value }) => {
+              assert(!final);
+              if (done) {
+                final = true;
+              }
+              currentUpdateCount += 1n;
+              currentResponse = harden({
+                value,
+                updateCount: done ? undefined : currentUpdateCount,
+              });
+              optNextPromise = undefined;
+              return currentResponse;
+            },
+            _reason => {
               final = true;
-            }
-            currentUpdateCount += 1n;
-            currentResponse = harden({
-              value,
-              updateCount: done ? undefined : currentUpdateCount,
-            });
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-          _reason => {
-            final = true;
-            currentResponse =
-              /** @type {Promise<UpdateRecord<T>>} */
-              (nextIterResultP);
-            optNextPromise = undefined;
-            return currentResponse;
-          },
-        );
-      }
-      return optNextPromise;
+              currentResponse =
+                /** @type {Promise<UpdateRecord<T>>} */
+                (nextIterResultP);
+              optNextPromise = undefined;
+              return currentResponse;
+            },
+          );
+        }
+        return optNextPromise;
+      },
     },
-  });
+  );
 
   /** @type {Notifier<T>} */
-  const notifier = Far('notifier', {
-    // Don't leak the original asyncIterableP since it may be remote and we also
-    // want the same semantics for this exposed iterable and the baseNotifier.
-    ...makeNotifier(baseNotifier),
-    ...baseNotifier,
-  });
+  const notifier = makeExo(
+    'notifier',
+    M.interface('notifier', {}, { defaultGuards: 'passable' }),
+    {
+      // Don't leak the original asyncIterableP since it may be remote and we also
+      // want the same semantics for this exposed iterable and the baseNotifier.
+      ...makeNotifier(baseNotifier),
+      ...baseNotifier,
+    },
+  );
   return notifier;
 };
 harden(makeNotifierFromAsyncIterable);

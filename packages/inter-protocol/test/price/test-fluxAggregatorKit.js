@@ -40,7 +40,11 @@ const makeContext = async () => {
     const zcfTestKit = await setupZCFTest(undefined, terms);
 
     // ??? why do we need the Far here and not in VaultFactory tests?
-    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const marshaller = makeExo(
+      'fake marshaller',
+      M.interface('fake marshaller', {}, { defaultGuards: 'passable' }),
+      { ...makeFakeMarshaller() },
+    );
     const mockStorageRoot = makeMockChainStorageRoot();
     const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
 

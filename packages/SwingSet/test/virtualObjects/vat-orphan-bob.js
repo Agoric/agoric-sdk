@@ -74,37 +74,41 @@ export function buildRootObject() {
 
   reset();
 
-  return Far('root', {
-    reset,
-    retain(kind, what, how) {
-      const thing = makeThing();
-      const { regularFacet, emptyFacet } = makeMultiThing();
-      const things = { thing, regularFacet, emptyFacet };
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      reset,
+      retain(kind, what, how) {
+        const thing = makeThing();
+        const { regularFacet, emptyFacet } = makeMultiThing();
+        const things = { thing, regularFacet, emptyFacet };
 
-      const hold = extract(things, kind, what);
-      switch (how) {
-        case 'retain':
-          strongRetainer = hold;
-          break;
-        case 'weakset':
-          weakRetainer.add(hold);
-          break;
-        default:
-          throw Error(`unknown how ${how}`);
-      }
-      return things;
-    },
+        const hold = extract(things, kind, what);
+        switch (how) {
+          case 'retain':
+            strongRetainer = hold;
+            break;
+          case 'weakset':
+            weakRetainer.add(hold);
+            break;
+          default:
+            throw Error(`unknown how ${how}`);
+        }
+        return things;
+      },
 
-    compare(things, kind, what, how) {
-      const sample = extract(things, kind, what);
-      switch (how) {
-        case 'retain':
-          return strongRetainer === sample;
-        case 'weakset':
-          return weakRetainer.has(sample);
-        default:
-          throw Error(`unknown how ${how}`);
-      }
+      compare(things, kind, what, how) {
+        const sample = extract(things, kind, what);
+        switch (how) {
+          case 'retain':
+            return strongRetainer === sample;
+          case 'weakset':
+            return weakRetainer.has(sample);
+          default:
+            throw Error(`unknown how ${how}`);
+        }
+      },
     },
-  });
+  );
 }

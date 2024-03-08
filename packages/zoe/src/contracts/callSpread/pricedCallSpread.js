@@ -166,7 +166,11 @@ const start = zcf => {
     return { longInvitation, shortInvitation };
   }
 
-  const creatorFacet = Far('creatorFacet', { makeInvitationPair });
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    { makeInvitationPair },
+  );
   return harden({ creatorFacet });
 };
 

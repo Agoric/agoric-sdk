@@ -1,10 +1,12 @@
-import { Far, passStyleOf } from '@endo/pass-style';
+import { passStyleOf } from '@endo/pass-style';
 import {
   getCopySetKeys,
   mustMatch,
   assertPattern,
   isCopySet,
+  M,
 } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
 
 const { quote: q, Fail } = assert;
 
@@ -98,8 +100,16 @@ export const makeScalarWeakSetStore = (
     }
   };
 
-  return Far(`scalar WeakSetStore of ${q(tag)}`, {
-    ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
-  });
+  return makeExo(
+    `scalar WeakSetStore of ${q(tag)}`,
+    M.interface(
+      `scalar WeakSetStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      ...makeWeakSetStoreMethods(jsset, assertKeyOkToAdd, undefined, tag),
+    },
+  );
 };
 harden(makeScalarWeakSetStore);

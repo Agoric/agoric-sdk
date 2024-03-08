@@ -6,40 +6,52 @@ const log = console.log;
 log(`=> loading bootstrap.js`);
 
 export function buildRootObject() {
-  const target1 = Far('target1', {
-    one(_p) {
-      log(`target1 in one`);
+  const target1 = makeExo(
+    'target1',
+    M.interface('target1', {}, { defaultGuards: 'passable' }),
+    {
+      one(_p) {
+        log(`target1 in one`);
+      },
+      two() {
+        log(`target1 in two`);
+      },
+      three(_p) {
+        log(`target1 in three`);
+      },
+      four() {
+        log(`target1 in four`);
+      },
     },
-    two() {
-      log(`target1 in two`);
+  );
+  const target2 = makeExo(
+    'target2',
+    M.interface('target2', {}, { defaultGuards: 'passable' }),
+    {
+      one(_p) {
+        log(`target2 in one`);
+      },
+      two() {
+        log(`target2 in two`);
+      },
+      three(_p) {
+        log(`target2 in three`);
+      },
+      four() {
+        log(`target2 in four`);
+      },
     },
-    three(_p) {
-      log(`target1 in three`);
+  );
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap(vats) {
+        const bob = vats.bob;
+        const p1 = E(bob).result();
+        E(bob).promise(p1);
+        E(bob).run(target1, target2);
+      },
     },
-    four() {
-      log(`target1 in four`);
-    },
-  });
-  const target2 = Far('target2', {
-    one(_p) {
-      log(`target2 in one`);
-    },
-    two() {
-      log(`target2 in two`);
-    },
-    three(_p) {
-      log(`target2 in three`);
-    },
-    four() {
-      log(`target2 in four`);
-    },
-  });
-  return Far('root', {
-    bootstrap(vats) {
-      const bob = vats.bob;
-      const p1 = E(bob).result();
-      E(bob).promise(p1);
-      E(bob).run(target1, target2);
-    },
-  });
+  );
 }

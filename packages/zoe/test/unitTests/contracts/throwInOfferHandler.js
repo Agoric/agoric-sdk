@@ -29,10 +29,14 @@ const start = zcf => {
   const makeThrowInDepositToSeatInvitation = () =>
     zcf.makeInvitation(throwInDepositToSeat, 'throwInDepositToSeat');
 
-  const creatorFacet = Far('creatorFacet', {
-    makeThrowInOfferHandlerInvitation,
-    makeThrowInDepositToSeatInvitation,
-  });
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      makeThrowInOfferHandlerInvitation,
+      makeThrowInDepositToSeatInvitation,
+    },
+  );
   return harden({ creatorFacet });
 };
 

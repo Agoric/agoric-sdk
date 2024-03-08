@@ -268,25 +268,33 @@ export function getReplHandler(replObjects, send) {
     },
   };
 
-  const commandHandler = Far('commandHandler', {
-    onOpen(_obj, meta) {
-      replHandles.add(meta.channelHandle);
-    },
-    onClose(_obj, meta) {
-      replHandles.delete(meta.channelHandle);
-    },
+  const commandHandler = makeExo(
+    'commandHandler',
+    M.interface('commandHandler', {}, { defaultGuards: 'passable' }),
+    {
+      onOpen(_obj, meta) {
+        replHandles.add(meta.channelHandle);
+      },
+      onClose(_obj, meta) {
+        replHandles.delete(meta.channelHandle);
+      },
 
-    onMessage(obj, meta) {
-      if (!handler[obj.type]) {
-        return false;
-      }
-      return handler[obj.type](obj, meta);
+      onMessage(obj, meta) {
+        if (!handler[obj.type]) {
+          return false;
+        }
+        return handler[obj.type](obj, meta);
+      },
     },
-  });
+  );
 
-  return Far('replHandler', {
-    getCommandHandler() {
-      return commandHandler;
+  return makeExo(
+    'replHandler',
+    M.interface('replHandler', {}, { defaultGuards: 'passable' }),
+    {
+      getCommandHandler() {
+        return commandHandler;
+      },
     },
-  });
+  );
 }

@@ -27,6 +27,10 @@ export async function start(zcf, { feeMintAccess }) {
     return zcf.makeInvitation(faucetHook, 'provide RUN');
   }
 
-  const creatorFacet = Far('faucetInvitationMaker', { makeFaucetInvitation });
+  const creatorFacet = makeExo(
+    'faucetInvitationMaker',
+    M.interface('faucetInvitationMaker', {}, { defaultGuards: 'passable' }),
+    { makeFaucetInvitation },
+  );
   return harden({ creatorFacet });
 }

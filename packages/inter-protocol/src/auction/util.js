@@ -51,5 +51,14 @@ export const priceFrom = quote =>
 export const makeCancelTokenMaker = name => {
   let tokenCount = 1;
 
-  return () => Far(`cancelToken-${name}-${(tokenCount += 1)}`, {});
+  return () =>
+    makeExo(
+      `cancelToken-${name}-${(tokenCount += 1)}`,
+      M.interface(
+        `cancelToken-${name}-${(tokenCount += 1)}`,
+        {},
+        { defaultGuards: 'passable' },
+      ),
+      {},
+    );
 };

@@ -11,5 +11,9 @@ import { providePriceAuthorityRegistry } from './priceAuthorityRegistry.js';
  */
 export function buildRootObject(_vatPowers, _vatParams, baggage) {
   const registry = providePriceAuthorityRegistry(baggage);
-  return Far('root', { getRegistry: () => registry });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    { getRegistry: () => registry },
+  );
 }

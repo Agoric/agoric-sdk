@@ -23,19 +23,23 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
     },
   });
 
-  return Far('root', {
-    watchLocalPromise: (name, fulfillment, rejection) => {
-      const { promise, resolve, reject } = makePromiseKit();
-      if (fulfillment !== undefined) {
-        resolve(fulfillment);
-      } else if (rejection !== undefined) {
-        reject(rejection);
-      }
-      watchPromise(promise, watcher, name);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      watchLocalPromise: (name, fulfillment, rejection) => {
+        const { promise, resolve, reject } = makePromiseKit();
+        if (fulfillment !== undefined) {
+          resolve(fulfillment);
+        } else if (rejection !== undefined) {
+          reject(rejection);
+        }
+        watchPromise(promise, watcher, name);
+      },
+      getSettlements: () => {
+        const settlementsCopyMap = settlements.snapshot();
+        return Object.fromEntries(getCopyMapEntries(settlementsCopyMap));
+      },
     },
-    getSettlements: () => {
-      const settlementsCopyMap = settlements.snapshot();
-      return Object.fromEntries(getCopyMapEntries(settlementsCopyMap));
-    },
-  });
+  );
 }

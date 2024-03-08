@@ -1,8 +1,9 @@
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
-import { M, provideLazy as provide } from '@agoric/store';
+import { provideLazy as provide } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.
 // import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';
@@ -105,25 +106,29 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
 
   const localPromises = new Map();
 
-  return Far('root', {
-    exportPromise: () => [Promise.resolve()],
-    createLocalPromise: (name, fulfillment, rejection) => {
-      !localPromises.has(name) || Fail`local promise already exists: ${name}`;
-      const { promise, resolve, reject } = makePromiseKit();
-      if (fulfillment !== undefined) {
-        resolve(fulfillment);
-      } else if (rejection !== undefined) {
-        reject(rejection);
-      }
-      localPromises.set(name, promise);
-      return `created local promise: ${name}`;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      exportPromise: () => [Promise.resolve()],
+      createLocalPromise: (name, fulfillment, rejection) => {
+        !localPromises.has(name) || Fail`local promise already exists: ${name}`;
+        const { promise, resolve, reject } = makePromiseKit();
+        if (fulfillment !== undefined) {
+          resolve(fulfillment);
+        } else if (rejection !== undefined) {
+          reject(rejection);
+        }
+        localPromises.set(name, promise);
+        return `created local promise: ${name}`;
+      },
+      watchLocalPromise: name => {
+        localPromises.has(name) || Fail`local promise not found: ${name}`;
+        watchPromise(localPromises.get(name), watcher, name);
+        return `watched local promise: ${name}`;
+      },
     },
-    watchLocalPromise: name => {
-      localPromises.has(name) || Fail`local promise not found: ${name}`;
-      watchPromise(localPromises.get(name), watcher, name);
-      return `watched local promise: ${name}`;
-    },
-  });
+  );
 };
 const kvStoreDataV1 = Object.entries({
   baggageID: 'o+d6/1',

@@ -256,10 +256,14 @@ const makeSubscriberFromAsyncIterable = (
       prior = value;
     }
   })();
-  return Far('HeapSubscriber', {
-    ...subscriber,
-    ...subscribeEach(subscriber),
-  });
+  return makeExo(
+    'HeapSubscriber',
+    M.interface('HeapSubscriber', {}, { defaultGuards: 'passable' }),
+    {
+      ...subscriber,
+      ...subscribeEach(subscriber),
+    },
+  );
 };
 
 /**
@@ -847,51 +851,55 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     makeBridgeChannelAttenuator,
   } = prepareFromBaggage(baggage);
 
-  return Far('bankMaker', {
-    /**
-     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP]
-     *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
-     *   supplied (such as on sim-chain), we just use local purses.
-     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
-     *   update facet of a NameAdmin; see addAsset() for detail.
-     */
-    async makeBankManager(
-      bankBridgeManagerP = undefined,
-      nameAdminP = undefined,
-    ) {
-      const bankBridgeManager = await bankBridgeManagerP;
+  return makeExo(
+    'bankMaker',
+    M.interface('bankMaker', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP]
+       *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
+       *   supplied (such as on sim-chain), we just use local purses.
+       * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
+       *   update facet of a NameAdmin; see addAsset() for detail.
+       */
+      async makeBankManager(
+        bankBridgeManagerP = undefined,
+        nameAdminP = undefined,
+      ) {
+        const bankBridgeManager = await bankBridgeManagerP;
 
-      /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
-      const denomToAddressUpdater = detachedZone.mapStore(
-        'denomToAddressUpdater',
-      );
+        /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
+        const denomToAddressUpdater = detachedZone.mapStore(
+          'denomToAddressUpdater',
+        );
 
-      /** @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr] */
-      async function getBankChannel(bankBridgeMgr) {
-        // We do the logic here if the bridge manager is available.  Otherwise,
-        // the bank is not "remote" (such as on sim-chain), so we just use
-        // immediate purses instead of virtual ones.
-        if (!bankBridgeMgr) {
-          return undefined;
+        /** @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr] */
+        async function getBankChannel(bankBridgeMgr) {
+          // We do the logic here if the bridge manager is available.  Otherwise,
+          // the bank is not "remote" (such as on sim-chain), so we just use
+          // immediate purses instead of virtual ones.
+          if (!bankBridgeMgr) {
+            return undefined;
+          }
+
+          // We need to synchronise with the remote bank.
+          const handler = makeBankChannelHandler(denomToAddressUpdater);
+          await E(bankBridgeMgr).initHandler(handler);
+
+          // We can only downcall to the bank if there exists a bridge manager.
+          return makeBridgeChannelAttenuator({ target: bankBridgeMgr });
         }
 
-        // We need to synchronise with the remote bank.
-        const handler = makeBankChannelHandler(denomToAddressUpdater);
-        await E(bankBridgeMgr).initHandler(handler);
-
-        // We can only downcall to the bank if there exists a bridge manager.
-        return makeBridgeChannelAttenuator({ target: bankBridgeMgr });
-      }
-
-      const [bankChannel, nameAdmin] = await Promise.all([
-        getBankChannel(bankBridgeManager),
-        nameAdminP,
-      ]);
-      return makeBankManager({
-        bankChannel,
-        denomToAddressUpdater,
-        nameAdmin,
-      });
+        const [bankChannel, nameAdmin] = await Promise.all([
+          getBankChannel(bankBridgeManager),
+          nameAdminP,
+        ]);
+        return makeBankManager({
+          bankChannel,
+          denomToAddressUpdater,
+          nameAdmin,
+        });
+      },
     },
-  });
+  );
 }

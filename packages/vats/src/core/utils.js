@@ -300,10 +300,14 @@ export const makeMyAddressNameAdminKit = address => {
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
   /** @type {import('../types.js').MyAddressNameAdmin} */
-  const myAddressNameAdmin = Far('myAddressNameAdmin', {
-    ...rawMyAddressNameAdmin,
-    getMyAddress: () => address,
-  });
+  const myAddressNameAdmin = makeExo(
+    'myAddressNameAdmin',
+    M.interface('myAddressNameAdmin', {}, { defaultGuards: 'passable' }),
+    {
+      ...rawMyAddressNameAdmin,
+      getMyAddress: () => address,
+    },
+  );
   // reserve space for deposit facet
   // XXX deprecated utility used only in solo
   void myAddressNameAdmin.reserve(WalletName.depositFacet);

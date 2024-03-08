@@ -41,23 +41,27 @@ export function buildRootDeviceNode(tools) {
   }
   registerInboundCallback(inboundCallback);
 
-  return Far('root', {
-    registerInboundHandler(handler) {
-      if (inboundHandler) {
-        throw Error('inboundHandler already registered');
-      }
-      inboundHandler = handler;
-      setDeviceState(harden({ inboundHandler }));
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      registerInboundHandler(handler) {
+        if (inboundHandler) {
+          throw Error('inboundHandler already registered');
+        }
+        inboundHandler = handler;
+        setDeviceState(harden({ inboundHandler }));
+      },
+      unregisterInboundHandler() {
+        inboundHandler = undefined;
+        setDeviceState(harden({ inboundHandler }));
+      },
+      callOutbound(...args) {
+        // invoke our endowment of the same name, with a sync return value
+        const retval = callOutbound(...args);
+        // we can return anything JSON-serializable, plus 'undefined'
+        return harden(sanitize(retval));
+      },
     },
-    unregisterInboundHandler() {
-      inboundHandler = undefined;
-      setDeviceState(harden({ inboundHandler }));
-    },
-    callOutbound(...args) {
-      // invoke our endowment of the same name, with a sync return value
-      const retval = callOutbound(...args);
-      // we can return anything JSON-serializable, plus 'undefined'
-      return harden(sanitize(retval));
-    },
-  });
+  );
 }

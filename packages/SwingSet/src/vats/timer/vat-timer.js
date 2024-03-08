@@ -474,7 +474,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     const { resolve, reject, promise } = makePromiseKit();
     // these 'controls' are never shared off-vat, but we wrap them as
     // Far to appease WeakMapStore's value requirements
-    const controls = Far('controls', { resolve, reject });
+    const controls = makeExo(
+      'controls',
+      M.interface('controls', {}, { defaultGuards: 'passable' }),
+      { resolve, reject },
+    );
     wakeupPromises.init(event, controls);
     event.scheduleYourself();
     return promise; // disconnects upon upgrade
@@ -957,7 +961,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     return timerService;
   };
 
-  return Far('root', { createTimerService });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    { createTimerService },
+  );
 };
 
 export const debugTools = harden({

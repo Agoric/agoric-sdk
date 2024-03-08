@@ -282,8 +282,12 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   };
 
   // Expose the service
-  return Far('vat-tp handler', {
-    ...serviceMailboxFunctions,
-    ...serviceNetworkFunctions,
-  });
+  return makeExo(
+    'vat-tp handler',
+    M.interface('vat-tp handler', {}, { defaultGuards: 'passable' }),
+    {
+      ...serviceMailboxFunctions,
+      ...serviceNetworkFunctions,
+    },
+  );
 }

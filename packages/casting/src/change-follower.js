@@ -10,44 +10,64 @@ import { DEFAULT_KEEP_POLLING } from './defaults.js';
 export const makePollingChangeFollower = async leader => {
   const { keepPolling = DEFAULT_KEEP_POLLING } = await E(leader).getOptions();
 
-  const iterable = Far('polling change follower iterable', {
-    [Symbol.asyncIterator]: () => {
-      /** @type {Promise<boolean> | undefined} */
-      let nextPollPromise;
-      return Far('polling change follower iterator', {
-        next: async () => {
-          if (!nextPollPromise) {
-            nextPollPromise = keepPolling('polling change follower').then(
-              cont => {
-                if (cont) {
-                  return E(leader)
-                    .jitter('polling change follower')
-                    .then(() => cont);
-                }
-                return cont;
-              },
-            );
-          }
-          const keepGoing = await nextPollPromise;
-          nextPollPromise = undefined;
-          const change = harden({
-            // Make no warrant as to the values.
-            values: [],
-          });
-          return harden({
-            value: change,
-            done: !keepGoing,
-          });
-        },
-      });
+  const iterable = makeExo(
+    'polling change follower iterable',
+    M.interface(
+      'polling change follower iterable',
+      {},
+      { defaultGuards: 'passable' },
+    ),
+    {
+      [Symbol.asyncIterator]: () => {
+        /** @type {Promise<boolean> | undefined} */
+        let nextPollPromise;
+        return makeExo(
+          'polling change follower iterator',
+          M.interface(
+            'polling change follower iterator',
+            {},
+            { defaultGuards: 'passable' },
+          ),
+          {
+            next: async () => {
+              if (!nextPollPromise) {
+                nextPollPromise = keepPolling('polling change follower').then(
+                  cont => {
+                    if (cont) {
+                      return E(leader)
+                        .jitter('polling change follower')
+                        .then(() => cont);
+                    }
+                    return cont;
+                  },
+                );
+              }
+              const keepGoing = await nextPollPromise;
+              nextPollPromise = undefined;
+              const change = harden({
+                // Make no warrant as to the values.
+                values: [],
+              });
+              return harden({
+                value: change,
+                done: !keepGoing,
+              });
+            },
+          },
+        );
+      },
     },
-  });
+  );
 
-  return Far('polling change follower', {
-    getLatestIterable: async () => iterable,
-    getEachIterable: async () => iterable,
-    getReverseIterable: async () => {
-      throw Error('not implemented for polling change follower');
+  return makeExo(
+    'polling change follower',
+    M.interface('polling change follower', {}, { defaultGuards: 'passable' }),
+    {
+      getLatestIterable: async () => iterable,
+      getEachIterable: async () => iterable,
+      getReverseIterable: async () => {
+        throw Error('not implemented for polling change follower');
+      },
     },
-  });
+  );
 };

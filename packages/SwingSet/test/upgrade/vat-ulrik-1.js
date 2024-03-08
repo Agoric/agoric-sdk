@@ -144,49 +144,53 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     E(vatParameters.handler).ping('hello from v1');
   }
 
-  return Far('root', {
-    getVersion: () => 'v1',
-    getParameters: () => vatParameters,
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getVersion: () => 'v1',
+      getParameters: () => vatParameters,
 
-    acceptPresence: pres => {
-      baggage.init('presence', pres);
-    },
-    getPresence: () => baggage.get('presence'),
-    getData: () => baggage.get('data'),
-    getDurandal: arg => makeDur('durandal', 0, arg),
-    getExports: imports => buildExports(baggage, imports),
+      acceptPresence: pres => {
+        baggage.init('presence', pres);
+      },
+      getPresence: () => baggage.get('presence'),
+      getData: () => baggage.get('data'),
+      getDurandal: arg => makeDur('durandal', 0, arg),
+      getExports: imports => buildExports(baggage, imports),
 
-    acceptPromise: p => {
-      // upgrade will reject the promises that we decide, but should
-      // not touch the ones we don't decide, so we hold onto this
-      // until upgrade, to probe for bugs in that process
-      heldPromise = p;
-      heldPromise.catch(() => 'hush');
-    },
-    getEternalPromiseInArray: () => [p1],
-    getEternalPromise: () => p2,
+      acceptPromise: p => {
+        // upgrade will reject the promises that we decide, but should
+        // not touch the ones we don't decide, so we hold onto this
+        // until upgrade, to probe for bugs in that process
+        heldPromise = p;
+        heldPromise.catch(() => 'hush');
+      },
+      getEternalPromiseInArray: () => [p1],
+      getEternalPromise: () => p2,
 
-    makeLostKind: () => {
-      makeKindHandle('unhandled');
-    },
+      makeLostKind: () => {
+        makeKindHandle('unhandled');
+      },
 
-    makeSingleKind: () => {
-      const kh = makeKindHandle('kind');
-      baggage.init('kh', kh);
-      defineDurableKind(kh, initEmpty, {});
-    },
+      makeSingleKind: () => {
+        const kh = makeKindHandle('kind');
+        baggage.init('kh', kh);
+        defineDurableKind(kh, initEmpty, {});
+      },
 
-    makeMultiKind: () => {
-      const kh = makeKindHandle('kind');
-      baggage.init('kh', kh);
-      defineDurableKindMulti(kh, initEmpty, {
-        foo: {},
-        bar: {},
-      });
+      makeMultiKind: () => {
+        const kh = makeKindHandle('kind');
+        baggage.init('kh', kh);
+        defineDurableKindMulti(kh, initEmpty, {
+          foo: {},
+          bar: {},
+        });
+      },
+      pingback: handler => {
+        counter += 1;
+        return E(handler).ping(`ping ${counter}`);
+      },
     },
-    pingback: handler => {
-      counter += 1;
-      return E(handler).ping(`ping ${counter}`);
-    },
-  });
+  );
 };

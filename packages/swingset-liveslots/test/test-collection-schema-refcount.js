@@ -1,6 +1,7 @@
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
@@ -26,7 +27,11 @@ const shapetest = test.macro(async (t, collectionType, remotableType) => {
     const makeDurableThing = VatData.defineDurableKind(handle, initData, {});
     switch (remotableType) {
       case 'ephemeral':
-        remotable = Far('thing', {});
+        remotable = makeExo(
+          'thing',
+          M.interface('thing', {}, { defaultGuards: 'passable' }),
+          {},
+        );
         break;
       case 'virtual':
         remotable = makeVirtualThing();
@@ -41,7 +46,11 @@ const shapetest = test.macro(async (t, collectionType, remotableType) => {
     const valueShape = remotable;
     const durable = collectionType === 'durable';
     map = VatData.makeScalarBigMapStore('map', { valueShape, durable });
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const makeNS = () => ({ buildRootObject });

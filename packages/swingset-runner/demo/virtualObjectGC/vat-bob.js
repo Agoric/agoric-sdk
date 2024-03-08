@@ -26,37 +26,41 @@ export function buildRootObject() {
     return thing;
   }
 
-  return Far('root', {
-    makeAndHold() {
-      heldThing = makeNextThing();
-      displaceCache();
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      makeAndHold() {
+        heldThing = makeNextThing();
+        displaceCache();
+      },
+      dropHeld() {
+        heldThing = null;
+        displaceCache();
+      },
+      storeHeld() {
+        virtualHolder = makeVirtualHolder(heldThing);
+        displaceCache();
+      },
+      fetchAndHold() {
+        heldThing = virtualHolder.getValue();
+        displaceCache();
+      },
+      exportHeld() {
+        return heldThing;
+      },
+      importAndHold(thing) {
+        heldThing = thing;
+        displaceCache();
+      },
+      tellMeToContinueTest(other, testTag) {
+        displaceCache();
+        E(other).continueTest(testTag);
+      },
+      assess() {
+        displaceCache();
+        console.log('assess here');
+      },
     },
-    dropHeld() {
-      heldThing = null;
-      displaceCache();
-    },
-    storeHeld() {
-      virtualHolder = makeVirtualHolder(heldThing);
-      displaceCache();
-    },
-    fetchAndHold() {
-      heldThing = virtualHolder.getValue();
-      displaceCache();
-    },
-    exportHeld() {
-      return heldThing;
-    },
-    importAndHold(thing) {
-      heldThing = thing;
-      displaceCache();
-    },
-    tellMeToContinueTest(other, testTag) {
-      displaceCache();
-      E(other).continueTest(testTag);
-    },
-    assess() {
-      displaceCache();
-      console.log('assess here');
-    },
-  });
+  );
 }

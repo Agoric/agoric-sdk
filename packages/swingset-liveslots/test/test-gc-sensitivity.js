@@ -1,6 +1,7 @@
 // @ts-nocheck
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
 import { buildSyscall } from './liveslots-helpers.js';
 import { makeLiveSlots } from '../src/liveslots.js';
@@ -17,21 +18,25 @@ test.failing('kind handle reanimation', async t => {
     VatData.defineDurableKind(kh0, () => ({}), {});
     baggage.init('kh', kh0);
 
-    const root = Far('root', {
-      fetch1() {
-        // console.log(`--fetch1`);
-        baggage.get('kh');
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        fetch1() {
+          // console.log(`--fetch1`);
+          baggage.get('kh');
+        },
+        gc() {
+          // console.log(`--gc`);
+          gcTools.kill(kh0);
+          gcTools.flushAllFRs();
+        },
+        fetch2() {
+          // console.log(`--fetch2`);
+          baggage.get('kh');
+        },
       },
-      gc() {
-        // console.log(`--gc`);
-        gcTools.kill(kh0);
-        gcTools.flushAllFRs();
-      },
-      fetch2() {
-        // console.log(`--fetch2`);
-        baggage.get('kh');
-      },
-    });
+    );
     return root;
   }
 
@@ -84,24 +89,28 @@ test('representative reanimation', async t => {
     make();
     r1.get();
 
-    const root = Far('root', {
-      fetch1() {
-        // console.log(`--fetch1`);
-        baggage.get('k');
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        fetch1() {
+          // console.log(`--fetch1`);
+          baggage.get('k');
+        },
+        gc() {
+          // console.log(`--gc`);
+          gcTools.kill(r0);
+          gcTools.flushAllFRs();
+          // knock r0.innerSelf out of the cache, leave only r1
+          make();
+          r1.get();
+        },
+        fetch2() {
+          // console.log(`--fetch2`);
+          baggage.get('k');
+        },
       },
-      gc() {
-        // console.log(`--gc`);
-        gcTools.kill(r0);
-        gcTools.flushAllFRs();
-        // knock r0.innerSelf out of the cache, leave only r1
-        make();
-        r1.get();
-      },
-      fetch2() {
-        // console.log(`--fetch2`);
-        baggage.get('k');
-      },
-    });
+    );
     return root;
   }
 
@@ -155,21 +164,25 @@ test('collection reanimation', async t => {
     const c0 = VatData.makeScalarBigMapStore('c', { durable: true });
     baggage.init('c', c0);
 
-    const root = Far('root', {
-      fetch1() {
-        // console.log(`--fetch1`);
-        baggage.get('c');
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        fetch1() {
+          // console.log(`--fetch1`);
+          baggage.get('c');
+        },
+        gc() {
+          // console.log(`--gc`);
+          gcTools.kill(c0);
+          gcTools.flushAllFRs();
+        },
+        fetch2() {
+          // console.log(`--fetch2`);
+          baggage.get('c');
+        },
       },
-      gc() {
-        // console.log(`--gc`);
-        gcTools.kill(c0);
-        gcTools.flushAllFRs();
-      },
-      fetch2() {
-        // console.log(`--fetch2`);
-        baggage.get('c');
-      },
-    });
+    );
     return root;
   }
 

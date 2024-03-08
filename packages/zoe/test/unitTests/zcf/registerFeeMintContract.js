@@ -28,13 +28,17 @@ const start = async (zcf, privateArgs) => {
     zcfSeat,
   );
 
-  const creatorFacet = Far('mint creator facet', {
-    getMintedAmount: () => zcfSeat.getAmountAllocated('Winnings'),
-    getMintedPayout: () => {
-      zcfSeat.exit();
-      return E(userSeat).getPayout('Winnings');
+  const creatorFacet = makeExo(
+    'mint creator facet',
+    M.interface('mint creator facet', {}, { defaultGuards: 'passable' }),
+    {
+      getMintedAmount: () => zcfSeat.getAmountAllocated('Winnings'),
+      getMintedPayout: () => {
+        zcfSeat.exit();
+        return E(userSeat).getPayout('Winnings');
+      },
     },
-  });
+  );
 
   return harden({ creatorFacet });
 };

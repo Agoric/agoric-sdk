@@ -187,17 +187,32 @@ test(
   },
 );
 
-test('board ids', toCapData, Far('iface', { getBoardId: () => 'board123' }), {
-  body: '#"$0.Alleged: iface"',
-  slots: ['board123'],
-});
+test(
+  'board ids',
+  toCapData,
+  makeExo('iface', M.interface('iface', {}, { defaultGuards: 'passable' }), {
+    getBoardId: () => 'board123',
+  }),
+  {
+    body: '#"$0.Alleged: iface"',
+    slots: ['board123'],
+  },
+);
 
 test(
   'nested board ids',
   toCapData,
   {
-    istBrand: Far('iface', { getBoardId: () => 'board123Ist' }),
-    atomBrand: Far('iface', { getBoardId: () => 'board123Atom' }),
+    istBrand: makeExo(
+      'iface',
+      M.interface('iface', {}, { defaultGuards: 'passable' }),
+      { getBoardId: () => 'board123Ist' },
+    ),
+    atomBrand: makeExo(
+      'iface',
+      M.interface('iface', {}, { defaultGuards: 'passable' }),
+      { getBoardId: () => 'board123Atom' },
+    ),
   },
   {
     body: '#{"atomBrand":"$0.Alleged: iface","istBrand":"$1.Alleged: iface"}',

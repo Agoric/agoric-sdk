@@ -31,9 +31,13 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
     board.getReadonlyMarshaller(),
   );
 
-  return Far('vat-board', {
-    getBoard: () => board,
-    makePublishingRecorderKit,
-    makeReadOnlyRecorderKit,
-  });
+  return makeExo(
+    'vat-board',
+    M.interface('vat-board', {}, { defaultGuards: 'passable' }),
+    {
+      getBoard: () => board,
+      makePublishingRecorderKit,
+      makeReadOnlyRecorderKit,
+    },
+  );
 }

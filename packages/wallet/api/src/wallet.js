@@ -168,98 +168,102 @@ export function buildRootObject(vatPowers) {
     harden(makeApprovedNotifier);
 
     /** @type {WalletBridge} */
-    const bridge = Far('bridge', {
-      async getPursesNotifier() {
-        await approve();
-        const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
-        const { notifier, updater } = makeNotifierKit();
-        observeIteration(makeApprovedNotifier(pursesNotifier), updater);
-        return notifier;
-      },
-      async getCacheCoordinator() {
-        await approve();
-        return walletAdmin.getDappCacheCoordinator(dappOrigin);
-      },
-      async getIssuersNotifier() {
-        await approve();
-        return walletAdmin.getIssuersNotifier();
-      },
-      async addOffer(offer) {
-        await approve();
-        return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
-      },
-      async getOffersNotifier(status = null) {
-        await approve();
-        const { notifier, updater } = makeNotifierKit(inboxState);
-        const filter = offer =>
-          (status === null || offer.status === status) &&
-          offer.requestContext &&
-          offer.requestContext.dappOrigin === dappOrigin;
-        const filteredOffers = offers => {
-          return offers.filter(filter).map(({ rawId, ...v }) => ({
-            ...v,
-            id: rawId,
-          }));
-        };
+    const bridge = makeExo(
+      'bridge',
+      M.interface('bridge', {}, { defaultGuards: 'passable' }),
+      {
+        async getPursesNotifier() {
+          await approve();
+          const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
+          const { notifier, updater } = makeNotifierKit();
+          observeIteration(makeApprovedNotifier(pursesNotifier), updater);
+          return notifier;
+        },
+        async getCacheCoordinator() {
+          await approve();
+          return walletAdmin.getDappCacheCoordinator(dappOrigin);
+        },
+        async getIssuersNotifier() {
+          await approve();
+          return walletAdmin.getIssuersNotifier();
+        },
+        async addOffer(offer) {
+          await approve();
+          return walletAdmin.addOffer(offer, { ...meta, dappOrigin });
+        },
+        async getOffersNotifier(status = null) {
+          await approve();
+          const { notifier, updater } = makeNotifierKit(inboxState);
+          const filter = offer =>
+            (status === null || offer.status === status) &&
+            offer.requestContext &&
+            offer.requestContext.dappOrigin === dappOrigin;
+          const filteredOffers = offers => {
+            return offers.filter(filter).map(({ rawId, ...v }) => ({
+              ...v,
+              id: rawId,
+            }));
+          };
 
-        observeIteration(makeApprovedNotifier(offerNotifier), {
-          updateState(offers) {
-            updater.updateState(filteredOffers(offers));
-          },
-          finish(offers) {
-            updater.finish(filteredOffers(offers));
-          },
-          fail(e) {
-            updater.fail(e);
-          },
-        });
-        return notifier;
+          observeIteration(makeApprovedNotifier(offerNotifier), {
+            updateState(offers) {
+              updater.updateState(filteredOffers(offers));
+            },
+            finish(offers) {
+              updater.finish(filteredOffers(offers));
+            },
+            fail(e) {
+              updater.fail(e);
+            },
+          });
+          return notifier;
+        },
+        async getDepositFacetId(brandBoardId) {
+          await approve();
+          return walletAdmin.getDepositFacetId(brandBoardId);
+        },
+        async suggestIssuer(petname, boardId) {
+          await approve();
+          return walletAdmin.suggestIssuer(petname, boardId, dappOrigin);
+        },
+        async suggestInstallation(petname, boardId) {
+          await approve();
+          return walletAdmin.suggestInstallation(petname, boardId, dappOrigin);
+        },
+        async suggestInstance(petname, boardId) {
+          await approve();
+          return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
+        },
+        async getUINotifier(rawId) {
+          await approve();
+          return walletAdmin.getUINotifier(rawId, dappOrigin);
+        },
+        async getPublicNotifiers(rawId) {
+          await approve();
+          return walletAdmin.getPublicNotifiers(rawId, dappOrigin);
+        },
+        async getZoe() {
+          await approve();
+          return walletAdmin.getZoe();
+        },
+        async getBoard() {
+          await approve();
+          return walletAdmin.getBoard();
+        },
+        async getAgoricNames(...path) {
+          await approve();
+          return walletAdmin.getAgoricNames(...path);
+        },
+        async getNamesByAddress(...path) {
+          await approve();
+          return walletAdmin.getNamesByAddress(...path);
+        },
+        async getBrandPetnames(brands) {
+          await approve();
+          return walletAdmin.getBrandPetnames(brands);
+        },
       },
-      async getDepositFacetId(brandBoardId) {
-        await approve();
-        return walletAdmin.getDepositFacetId(brandBoardId);
-      },
-      async suggestIssuer(petname, boardId) {
-        await approve();
-        return walletAdmin.suggestIssuer(petname, boardId, dappOrigin);
-      },
-      async suggestInstallation(petname, boardId) {
-        await approve();
-        return walletAdmin.suggestInstallation(petname, boardId, dappOrigin);
-      },
-      async suggestInstance(petname, boardId) {
-        await approve();
-        return walletAdmin.suggestInstance(petname, boardId, dappOrigin);
-      },
-      async getUINotifier(rawId) {
-        await approve();
-        return walletAdmin.getUINotifier(rawId, dappOrigin);
-      },
-      async getPublicNotifiers(rawId) {
-        await approve();
-        return walletAdmin.getPublicNotifiers(rawId, dappOrigin);
-      },
-      async getZoe() {
-        await approve();
-        return walletAdmin.getZoe();
-      },
-      async getBoard() {
-        await approve();
-        return walletAdmin.getBoard();
-      },
-      async getAgoricNames(...path) {
-        await approve();
-        return walletAdmin.getAgoricNames(...path);
-      },
-      async getNamesByAddress(...path) {
-        await approve();
-        return walletAdmin.getNamesByAddress(...path);
-      },
-      async getBrandPetnames(brands) {
-        await approve();
-        return walletAdmin.getBrandPetnames(brands);
-      },
-    });
+    );
     return bridge;
   };
 
@@ -270,60 +274,64 @@ export function buildRootObject(vatPowers) {
    *
    * @type {WalletBridge}
    */
-  const preapprovedBridge = Far('preapprovedBridge', {
-    /**
-     * @param {unknown} offer
-     * @param {{}} [meta]
-     */
-    addOffer(offer, meta) {
-      return walletAdmin.addOffer(offer, meta);
+  const preapprovedBridge = makeExo(
+    'preapprovedBridge',
+    M.interface('preapprovedBridge', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * @param {unknown} offer
+       * @param {{}} [meta]
+       */
+      addOffer(offer, meta) {
+        return walletAdmin.addOffer(offer, meta);
+      },
+      getDepositFacetId(brandBoardId) {
+        return walletAdmin.getDepositFacetId(brandBoardId);
+      },
+      async getOffersNotifier() {
+        return walletAdmin.getOffersNotifier();
+      },
+      async getPursesNotifier() {
+        return walletAdmin.getAttenuatedPursesNotifier();
+      },
+      async getIssuersNotifier() {
+        return walletAdmin.getIssuersNotifier();
+      },
+      async getCacheCoordinator() {
+        return walletAdmin.getCacheCoordinator();
+      },
+      suggestInstallation(petname, installationBoardId) {
+        return walletAdmin.suggestInstallation(petname, installationBoardId);
+      },
+      suggestInstance(petname, instanceBoardId) {
+        return walletAdmin.suggestInstance(petname, instanceBoardId);
+      },
+      suggestIssuer(petname, issuerBoardId) {
+        return walletAdmin.suggestIssuer(petname, issuerBoardId);
+      },
+      getUINotifier(rawId) {
+        return walletAdmin.getUINotifier(rawId);
+      },
+      getPublicNotifiers(rawId) {
+        return walletAdmin.getPublicNotifiers(rawId);
+      },
+      async getZoe() {
+        return walletAdmin.getZoe();
+      },
+      async getBoard() {
+        return walletAdmin.getBoard();
+      },
+      async getAgoricNames(...path) {
+        return walletAdmin.getAgoricNames(...path);
+      },
+      async getNamesByAddress(...path) {
+        return walletAdmin.getNamesByAddress(...path);
+      },
+      async getBrandPetnames(brands) {
+        return walletAdmin.getBrandPetnames(brands);
+      },
     },
-    getDepositFacetId(brandBoardId) {
-      return walletAdmin.getDepositFacetId(brandBoardId);
-    },
-    async getOffersNotifier() {
-      return walletAdmin.getOffersNotifier();
-    },
-    async getPursesNotifier() {
-      return walletAdmin.getAttenuatedPursesNotifier();
-    },
-    async getIssuersNotifier() {
-      return walletAdmin.getIssuersNotifier();
-    },
-    async getCacheCoordinator() {
-      return walletAdmin.getCacheCoordinator();
-    },
-    suggestInstallation(petname, installationBoardId) {
-      return walletAdmin.suggestInstallation(petname, installationBoardId);
-    },
-    suggestInstance(petname, instanceBoardId) {
-      return walletAdmin.suggestInstance(petname, instanceBoardId);
-    },
-    suggestIssuer(petname, issuerBoardId) {
-      return walletAdmin.suggestIssuer(petname, issuerBoardId);
-    },
-    getUINotifier(rawId) {
-      return walletAdmin.getUINotifier(rawId);
-    },
-    getPublicNotifiers(rawId) {
-      return walletAdmin.getPublicNotifiers(rawId);
-    },
-    async getZoe() {
-      return walletAdmin.getZoe();
-    },
-    async getBoard() {
-      return walletAdmin.getBoard();
-    },
-    async getAgoricNames(...path) {
-      return walletAdmin.getAgoricNames(...path);
-    },
-    async getNamesByAddress(...path) {
-      return walletAdmin.getNamesByAddress(...path);
-    },
-    async getBrandPetnames(brands) {
-      return walletAdmin.getBrandPetnames(brands);
-    },
-  });
+  );
   harden(preapprovedBridge);
 
   async function getWallet(bank) {
@@ -332,38 +340,46 @@ export function buildRootObject(vatPowers) {
     /**
      * @type {WalletAdmin}
      */
-    const wallet = Far('wallet', {
-      addPayment: walletAdmin.addPayment,
-      async getScopedBridge(suggestedDappPetname, dappOrigin) {
-        const approve = async () => {
-          await walletAdmin.waitForDappApproval(
-            suggestedDappPetname,
-            dappOrigin,
+    const wallet = makeExo(
+      'wallet',
+      M.interface('wallet', {}, { defaultGuards: 'passable' }),
+      {
+        addPayment: walletAdmin.addPayment,
+        async getScopedBridge(suggestedDappPetname, dappOrigin) {
+          const approve = async () => {
+            await walletAdmin.waitForDappApproval(
+              suggestedDappPetname,
+              dappOrigin,
+            );
+          };
+
+          return makeBridge(approve, dappOrigin);
+        },
+        async getBridge() {
+          return preapprovedBridge;
+        },
+        getDepositFacetId: walletAdmin.getDepositFacetId,
+        getAdminFacet() {
+          return makeExo(
+            'adminFacet',
+            M.interface('adminFacet', {}, { defaultGuards: 'passable' }),
+            {
+              ...walletAdmin,
+              ...notifiers,
+              getScopedBridge: wallet.getScopedBridge,
+            },
           );
-        };
+        },
+        getIssuer: walletAdmin.getIssuer,
+        getIssuers: walletAdmin.getIssuers,
+        getPurse: walletAdmin.getPurse,
+        getPurses: walletAdmin.getPurses,
 
-        return makeBridge(approve, dappOrigin);
-      },
-      async getBridge() {
-        return preapprovedBridge;
-      },
-      getDepositFacetId: walletAdmin.getDepositFacetId,
-      getAdminFacet() {
-        return Far('adminFacet', {
-          ...walletAdmin,
-          ...notifiers,
-          getScopedBridge: wallet.getScopedBridge,
-        });
-      },
-      getIssuer: walletAdmin.getIssuer,
-      getIssuers: walletAdmin.getIssuers,
-      getPurse: walletAdmin.getPurse,
-      getPurses: walletAdmin.getPurses,
+        getMarshaller: walletAdmin.getMarshaller,
 
-      getMarshaller: walletAdmin.getMarshaller,
-
-      lookup: walletAdmin.lookup,
-    });
+        lookup: walletAdmin.lookup,
+      },
+    );
     return harden(wallet);
   }
 
@@ -401,248 +417,260 @@ export function buildRootObject(vatPowers) {
   }
 
   function getBridgeURLHandler() {
-    return Far('bridgeURLHandler', {
-      /**
-       * @typedef {object} WalletOtherSide
-       * The callbacks from a CapTP wallet client.
-       * @property {(dappOrigin: string,
-       *             suggestedDappPetname: Petname
-       * ) => void} needDappApproval
-       * Let the other side know that this dapp is still unapproved
-       * @property {(dappOrigin: string) => void} dappApproved
-       * Let the other side know that the dapp has been approved
-       */
+    return makeExo(
+      'bridgeURLHandler',
+      M.interface('bridgeURLHandler', {}, { defaultGuards: 'passable' }),
+      {
+        /**
+         * @typedef {object} WalletOtherSide
+         * The callbacks from a CapTP wallet client.
+         * @property {(dappOrigin: string,
+         *             suggestedDappPetname: Petname
+         * ) => void} needDappApproval
+         * Let the other side know that this dapp is still unapproved
+         * @property {(dappOrigin: string) => void} dappApproved
+         * Let the other side know that the dapp has been approved
+         */
 
-      /**
-       * Use CapTP over WebSocket for a dapp to interact with the wallet.
-       *
-       * @param {ERef<WalletOtherSide>} otherSide
-       * @param {Record<string, any>} meta
-       * @param {Record<string, any>} obj
-       */
-      async getBootstrap(otherSide, meta, obj) {
-        const { dappOrigin = meta.origin } = obj;
-        const suggestedDappPetname = String(
-          (meta.query && meta.query.suggestedDappPetname) ||
-            meta.dappOrigin ||
-            dappOrigin,
-        );
-
-        const approve = async () => {
-          let notYetEnabled = false;
-          await walletAdmin.waitForDappApproval(
-            suggestedDappPetname,
-            dappOrigin,
-            () => {
-              notYetEnabled = true;
-              E(otherSide)
-                .needDappApproval(dappOrigin, suggestedDappPetname)
-                .catch(_ => {});
-            },
+        /**
+         * Use CapTP over WebSocket for a dapp to interact with the wallet.
+         *
+         * @param {ERef<WalletOtherSide>} otherSide
+         * @param {Record<string, any>} meta
+         * @param {Record<string, any>} obj
+         */
+        async getBootstrap(otherSide, meta, obj) {
+          const { dappOrigin = meta.origin } = obj;
+          const suggestedDappPetname = String(
+            (meta.query && meta.query.suggestedDappPetname) ||
+              meta.dappOrigin ||
+              dappOrigin,
           );
-          if (notYetEnabled) {
-            E(otherSide).dappApproved(dappOrigin);
-          }
-        };
 
-        return makeBridge(approve, dappOrigin, meta);
-      },
-
-      /**
-       * This is the legacy WebSocket wrapper for an origin-specific
-       * WalletBridge.  This wrapper is accessible from a dapp UI via the
-       * wallet-bridge.html iframe.
-       *
-       * This custom RPC protocol must maintain compatibility with existing
-       * dapps.  It would be preferable not to add to it either, since that
-       * means more legacy code that must be supported.
-       *
-       * We hope to migrate dapps to use the ocap interfaces (such as
-       * getBootstrap() above) so that they can interact with the WalletBridge
-       * methods directly.  Then we would like to deprecate this handler.
-       */
-      getCommandHandler() {
-        return Far('commandHandler', {
-          onOpen(_obj, meta) {
-            bridgeHandles.add(meta.channelHandle);
-          },
-          onClose(_obj, meta) {
-            bridgeHandles.delete(meta.channelHandle);
-            offerSubscriptions.delete(meta.channelHandle);
-          },
-
-          async onMessage(obj, meta) {
-            const {
-              type,
-              dappOrigin = meta.origin,
-              suggestedDappPetname = (meta.query &&
-                meta.query.suggestedDappPetname) ||
-                obj.dappOrigin ||
-                meta.origin,
-            } = obj;
-
-            // When we haven't been enabled, tell our caller.
-            let needApproval = false;
+          const approve = async () => {
+            let notYetEnabled = false;
             await walletAdmin.waitForDappApproval(
               suggestedDappPetname,
               dappOrigin,
               () => {
-                needApproval = true;
-                httpSend(
-                  {
-                    type: 'walletNeedDappApproval',
-                    data: {
-                      dappOrigin,
-                      suggestedDappPetname,
-                    },
-                  },
-                  [meta.channelHandle],
-                );
+                notYetEnabled = true;
+                E(otherSide)
+                  .needDappApproval(dappOrigin, suggestedDappPetname)
+                  .catch(_ => {});
               },
             );
-            if (needApproval) {
-              httpSend(
-                {
-                  type: 'walletHaveDappApproval',
-                  data: {
-                    dappOrigin,
-                  },
-                },
-                [meta.channelHandle],
-              );
+            if (notYetEnabled) {
+              E(otherSide).dappApproved(dappOrigin);
             }
+          };
 
-            switch (type) {
-              case 'walletGetPurses': {
-                return {
-                  type: 'walletUpdatePurses',
-                  data: bigintStringify(pursesState),
-                };
-              }
-              case 'walletAddOffer': {
-                let handled = false;
-                const actions = Far('actions', {
-                  handled(offer) {
-                    if (handled) {
-                      return;
-                    }
-                    handled = true;
+          return makeBridge(approve, dappOrigin, meta);
+        },
+
+        /**
+         * This is the legacy WebSocket wrapper for an origin-specific
+         * WalletBridge.  This wrapper is accessible from a dapp UI via the
+         * wallet-bridge.html iframe.
+         *
+         * This custom RPC protocol must maintain compatibility with existing
+         * dapps.  It would be preferable not to add to it either, since that
+         * means more legacy code that must be supported.
+         *
+         * We hope to migrate dapps to use the ocap interfaces (such as
+         * getBootstrap() above) so that they can interact with the WalletBridge
+         * methods directly.  Then we would like to deprecate this handler.
+         */
+        getCommandHandler() {
+          return makeExo(
+            'commandHandler',
+            M.interface('commandHandler', {}, { defaultGuards: 'passable' }),
+            {
+              onOpen(_obj, meta) {
+                bridgeHandles.add(meta.channelHandle);
+              },
+              onClose(_obj, meta) {
+                bridgeHandles.delete(meta.channelHandle);
+                offerSubscriptions.delete(meta.channelHandle);
+              },
+
+              async onMessage(obj, meta) {
+                const {
+                  type,
+                  dappOrigin = meta.origin,
+                  suggestedDappPetname = (meta.query &&
+                    meta.query.suggestedDappPetname) ||
+                    obj.dappOrigin ||
+                    meta.origin,
+                } = obj;
+
+                // When we haven't been enabled, tell our caller.
+                let needApproval = false;
+                await walletAdmin.waitForDappApproval(
+                  suggestedDappPetname,
+                  dappOrigin,
+                  () => {
+                    needApproval = true;
                     httpSend(
                       {
-                        type: 'walletOfferHandled',
-                        data: offer.id,
+                        type: 'walletNeedDappApproval',
+                        data: {
+                          dappOrigin,
+                          suggestedDappPetname,
+                        },
                       },
                       [meta.channelHandle],
                     );
                   },
-                });
-                return {
-                  type: 'walletOfferAdded',
-                  data: await walletAdmin.addOffer(
-                    { ...obj.data, actions },
-                    { ...meta, dappOrigin },
-                  ),
-                };
-              }
-
-              case 'walletSubscribeOffers': {
-                const { status = null } = obj;
-                const { channelHandle } = meta;
-
-                if (!channelHandle) {
-                  return {
-                    type: 'walletSubscribedOffers',
-                    data: false,
-                  };
-                }
-
-                // TODO: Maybe use the contract instanceId instead.
-                subscribeToOffers(channelHandle, {
-                  origin: dappOrigin,
-                  status,
-                });
-                return {
-                  type: 'walletSubscribedOffers',
-                  data: true,
-                };
-              }
-
-              case 'walletGetOffers': {
-                const { status = null } = obj;
-
-                // Override the origin since we got it from the bridge.
-                let result = await walletAdmin.getOffers({
-                  origin: dappOrigin,
-                });
-                if (status !== null) {
-                  // Filter by status.
-                  result = harden(
-                    result.filter(offer => offer.status === status),
+                );
+                if (needApproval) {
+                  httpSend(
+                    {
+                      type: 'walletHaveDappApproval',
+                      data: {
+                        dappOrigin,
+                      },
+                    },
+                    [meta.channelHandle],
                   );
                 }
 
-                return {
-                  type: 'walletOfferDescriptions',
-                  data: result,
-                };
-              }
+                switch (type) {
+                  case 'walletGetPurses': {
+                    return {
+                      type: 'walletUpdatePurses',
+                      data: bigintStringify(pursesState),
+                    };
+                  }
+                  case 'walletAddOffer': {
+                    let handled = false;
+                    const actions = makeExo(
+                      'actions',
+                      M.interface('actions', {}, { defaultGuards: 'passable' }),
+                      {
+                        handled(offer) {
+                          if (handled) {
+                            return;
+                          }
+                          handled = true;
+                          httpSend(
+                            {
+                              type: 'walletOfferHandled',
+                              data: offer.id,
+                            },
+                            [meta.channelHandle],
+                          );
+                        },
+                      },
+                    );
+                    return {
+                      type: 'walletOfferAdded',
+                      data: await walletAdmin.addOffer(
+                        { ...obj.data, actions },
+                        { ...meta, dappOrigin },
+                      ),
+                    };
+                  }
 
-              case 'walletGetDepositFacetId': {
-                const { brandBoardId } = obj;
-                const result =
-                  await walletAdmin.getDepositFacetId(brandBoardId);
-                return {
-                  type: 'walletDepositFacetIdResponse',
-                  data: result,
-                };
-              }
+                  case 'walletSubscribeOffers': {
+                    const { status = null } = obj;
+                    const { channelHandle } = meta;
 
-              case 'walletSuggestIssuer': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestIssuer(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestIssuerResponse',
-                  data: result,
-                };
-              }
+                    if (!channelHandle) {
+                      return {
+                        type: 'walletSubscribedOffers',
+                        data: false,
+                      };
+                    }
 
-              case 'walletSuggestInstance': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestInstance(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestInstanceResponse',
-                  data: result,
-                };
-              }
+                    // TODO: Maybe use the contract instanceId instead.
+                    subscribeToOffers(channelHandle, {
+                      origin: dappOrigin,
+                      status,
+                    });
+                    return {
+                      type: 'walletSubscribedOffers',
+                      data: true,
+                    };
+                  }
 
-              case 'walletSuggestInstallation': {
-                const { petname, boardId } = obj;
-                const result = await walletAdmin.suggestInstallation(
-                  petname,
-                  boardId,
-                  dappOrigin,
-                );
-                return {
-                  type: 'walletSuggestInstallationResponse',
-                  data: result,
-                };
-              }
+                  case 'walletGetOffers': {
+                    const { status = null } = obj;
 
-              default:
-                return Promise.resolve(false);
-            }
-          },
-        });
+                    // Override the origin since we got it from the bridge.
+                    let result = await walletAdmin.getOffers({
+                      origin: dappOrigin,
+                    });
+                    if (status !== null) {
+                      // Filter by status.
+                      result = harden(
+                        result.filter(offer => offer.status === status),
+                      );
+                    }
+
+                    return {
+                      type: 'walletOfferDescriptions',
+                      data: result,
+                    };
+                  }
+
+                  case 'walletGetDepositFacetId': {
+                    const { brandBoardId } = obj;
+                    const result =
+                      await walletAdmin.getDepositFacetId(brandBoardId);
+                    return {
+                      type: 'walletDepositFacetIdResponse',
+                      data: result,
+                    };
+                  }
+
+                  case 'walletSuggestIssuer': {
+                    const { petname, boardId } = obj;
+                    const result = await walletAdmin.suggestIssuer(
+                      petname,
+                      boardId,
+                      dappOrigin,
+                    );
+                    return {
+                      type: 'walletSuggestIssuerResponse',
+                      data: result,
+                    };
+                  }
+
+                  case 'walletSuggestInstance': {
+                    const { petname, boardId } = obj;
+                    const result = await walletAdmin.suggestInstance(
+                      petname,
+                      boardId,
+                      dappOrigin,
+                    );
+                    return {
+                      type: 'walletSuggestInstanceResponse',
+                      data: result,
+                    };
+                  }
+
+                  case 'walletSuggestInstallation': {
+                    const { petname, boardId } = obj;
+                    const result = await walletAdmin.suggestInstallation(
+                      petname,
+                      boardId,
+                      dappOrigin,
+                    );
+                    return {
+                      type: 'walletSuggestInstallationResponse',
+                      data: result,
+                    };
+                  }
+
+                  default:
+                    return Promise.resolve(false);
+                }
+              },
+            },
+          );
+        },
       },
-    });
+    );
   }
 
   startSubscriptions();
@@ -654,13 +682,17 @@ export function buildRootObject(vatPowers) {
     );
   }
 
-  return Far('root', {
-    startup,
-    getWallet,
-    setHTTPObject,
-    getBridgeURLHandler,
-    getCommandHandler,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      startup,
+      getWallet,
+      setHTTPObject,
+      getBridgeURLHandler,
+      getCommandHandler,
+    },
+  );
 }
 
 /**

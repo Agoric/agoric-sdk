@@ -10,5 +10,9 @@ export function buildRootObject() {
     return uploads;
   }
 
-  return Far('root', { getUploads });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    { getUploads },
+  );
 }

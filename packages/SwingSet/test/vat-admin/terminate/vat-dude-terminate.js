@@ -6,43 +6,47 @@ export function buildRootObject(vatPowers) {
   // to be cut off
   const { testLog } = vatPowers;
 
-  return Far('root', {
-    foo(arg) {
-      testLog(`FOO ${arg}`);
-      return `FOO SAYS ${arg}`;
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      foo(arg) {
+        testLog(`FOO ${arg}`);
+        return `FOO SAYS ${arg}`;
+      },
 
-    never() {
-      return makePromiseKit().promise; // never fires
-    },
+      never() {
+        return makePromiseKit().promise; // never fires
+      },
 
-    dieHappy(completion) {
-      vatPowers.exitVat(completion);
-    },
+      dieHappy(completion) {
+        vatPowers.exitVat(completion);
+      },
 
-    dieSad(reason) {
-      vatPowers.exitVatWithFailure(reason);
-    },
+      dieSad(reason) {
+        vatPowers.exitVatWithFailure(reason);
+      },
 
-    dieHappyButTalkToMeFirst(other, completion) {
-      vatPowers.exitVat(completion);
-      E(other).query('not dead quite yet');
-    },
+      dieHappyButTalkToMeFirst(other, completion) {
+        vatPowers.exitVat(completion);
+        E(other).query('not dead quite yet');
+      },
 
-    dieSadButTalkToMeFirst(other, reason) {
-      vatPowers.exitVatWithFailure(reason);
-      E(other).query('not dead quite yet (but soon)');
-    },
+      dieSadButTalkToMeFirst(other, reason) {
+        vatPowers.exitVatWithFailure(reason);
+        E(other).query('not dead quite yet (but soon)');
+      },
 
-    dieReturningAPresence(other) {
-      vatPowers.exitVat({ message: 'your ad here', emissary: other });
-    },
+      dieReturningAPresence(other) {
+        vatPowers.exitVat({ message: 'your ad here', emissary: other });
+      },
 
-    async elsewhere(other, arg) {
-      testLog(`QUERY ${arg}`);
-      const answer = await E(other).query(arg);
-      testLog(`ANSWER ${answer}`);
-      return answer;
+      async elsewhere(other, arg) {
+        testLog(`QUERY ${arg}`);
+        const answer = await E(other).query(arg);
+        testLog(`ANSWER ${answer}`);
+        return answer;
+      },
     },
-  });
+  );
 }

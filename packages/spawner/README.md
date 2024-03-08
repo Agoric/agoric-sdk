@@ -34,7 +34,7 @@ in the new vat). Your `vat-spawner.js` should look like:
 import { Far } from '@endo/marshal';
 import { makeSpawner } from '@agoric/spawner';
 function buildRootObject() {
-  return Far('root', {
+  return makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {
     buildSpawner(vatAdminSvc) {
       return makeSpawner(vatAdminSvc);
     }
@@ -47,7 +47,7 @@ export { buildRootObject };
 And your bootstrap function needs something like this:
 
 ```js
-return Far('root', {
+return makeExo('root', M.interface('root', {}, { defaultGuards: 'passable' }), {
   async bootstrap(vats, devices) {
     const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
       devices.vatAdmin,

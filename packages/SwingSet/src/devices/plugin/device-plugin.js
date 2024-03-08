@@ -140,16 +140,20 @@ export function buildRootDeviceNode(tools) {
     }
   });
 
-  return Far('root', {
-    getPluginDir() {
-      return endowments.getPluginDir();
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getPluginDir() {
+        return endowments.getPluginDir();
+      },
+      connect,
+      send,
+      registerReceiver(receiver) {
+        !registeredReceiver || Fail`registered receiver already set`;
+        registeredReceiver = receiver;
+        saveState();
+      },
     },
-    connect,
-    send,
-    registerReceiver(receiver) {
-      !registeredReceiver || Fail`registered receiver already set`;
-      registeredReceiver = receiver;
-      saveState();
-    },
-  });
+  );
 }

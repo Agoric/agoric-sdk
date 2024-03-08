@@ -120,16 +120,20 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   async function pleaseProvision(nickname, address, powerFlags) {
     /** @type {ERef<ClientFacet>} */
     let clientFacet;
-    const fetch = Far('fetch', {
-      async getChainBundle() {
-        console.warn('getting chain bundle');
-        return E(clientFacet).getChainBundle();
+    const fetch = makeExo(
+      'fetch',
+      M.interface('fetch', {}, { defaultGuards: 'passable' }),
+      {
+        async getChainBundle() {
+          console.warn('getting chain bundle');
+          return E(clientFacet).getChainBundle();
+        },
+        getConfiguration() {
+          console.warn('getting configuration');
+          return E(clientFacet).getConfiguration();
+        },
       },
-      getConfiguration() {
-        console.warn('getting configuration');
-        return E(clientFacet).getConfiguration();
-      },
-    });
+    );
 
     // Add a remote and egress for the pubkey.
     const { transmitter, setReceiver } = await E(vattp).addRemote(address);
@@ -155,19 +159,27 @@ export function buildRootObject(_vatPowers, _vatParameters, baggage) {
         void E.when(chainBundle, clientHome => {
           updater.updateState(harden({ clientHome, clientAddress: address }));
         });
-        return Far('emulatedClientFacet', {
-          getChainBundle: () => chainBundle,
-          getConfiguration: () => notifier,
-        });
+        return makeExo(
+          'emulatedClientFacet',
+          M.interface('emulatedClientFacet', {}, { defaultGuards: 'passable' }),
+          {
+            getChainBundle: () => chainBundle,
+            getConfiguration: () => notifier,
+          },
+        );
       });
 
     return { ingressIndex: INDEX };
   }
 
-  return Far('root', {
-    register,
-    pleaseProvision,
-    getNamesByAddressKit: () =>
-      harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      register,
+      pleaseProvision,
+      getNamesByAddressKit: () =>
+        harden({ namesByAddress: nameHubKit.nameHub, namesByAddressAdmin }),
+    },
+  );
 }

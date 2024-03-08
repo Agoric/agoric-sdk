@@ -88,11 +88,15 @@ export const makeInitialTransform = (
     });
 
     /** @type {Notifier<PriceQuote>} */
-    const farNotifier = Far('QuoteNotifier', {
-      ...makeNotifier(prefixedNotifier),
-      // TODO stop exposing baseNotifier methods directly.
-      ...prefixedNotifier,
-    });
+    const farNotifier = makeExo(
+      'QuoteNotifier',
+      M.interface('QuoteNotifier', {}, { defaultGuards: 'passable' }),
+      {
+        ...makeNotifier(prefixedNotifier),
+        // TODO stop exposing baseNotifier methods directly.
+        ...prefixedNotifier,
+      },
+    );
     return farNotifier;
   };
 
@@ -108,9 +112,13 @@ export const makeInitialTransform = (
       : quoteP;
   };
 
-  return Far('PriceAuthority', {
-    ...priceAuthority,
-    makeQuoteNotifier,
-    quoteGiven,
-  });
+  return makeExo(
+    'PriceAuthority',
+    M.interface('PriceAuthority', {}, { defaultGuards: 'passable' }),
+    {
+      ...priceAuthority,
+      makeQuoteNotifier,
+      quoteGiven,
+    },
+  );
 };

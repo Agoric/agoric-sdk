@@ -30,12 +30,16 @@ const makeFakeFeeDepositFacetKit = feeIssuer => {
 
 const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
   const feePayments = [];
-  return Far('feeCollector', {
-    collectFees: () => feePayments.shift() || makeEmptyPayment(),
+  return makeExo(
+    'feeCollector',
+    M.interface('feeCollector', {}, { defaultGuards: 'passable' }),
+    {
+      collectFees: () => feePayments.shift() || makeEmptyPayment(),
 
-    // tools for the fake:
-    pushFees: payment => feePayments.push(payment),
-  });
+      // tools for the fake:
+      pushFees: payment => feePayments.push(payment),
+    },
+  );
 };
 /**
  * @param {any} t
@@ -245,7 +249,11 @@ test('fee distribution, leftovers', async t => {
 });
 
 test('feeDistributor custom terms shape catches non-Nat bigint', t => {
-  const timerService = Far('MockTimer', {});
+  const timerService = makeExo(
+    'MockTimer',
+    M.interface('MockTimer', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   t.throws(
     () =>
       mustMatch(

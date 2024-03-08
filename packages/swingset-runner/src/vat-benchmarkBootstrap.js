@@ -14,25 +14,30 @@ import { Far } from '@endo/marshal';
 export function buildRootObject(_vatPowers, vatParameters) {
   let benchmarkDriverVat;
 
-  return Far('root', {
-    async bootstrap(vatsExtended, devices) {
-      const {
-        benchmarkBootstrap: _benchmarkBootstrap,
-        benchmarkDriver,
-        ...vats
-      } = vatsExtended;
-      benchmarkDriverVat = benchmarkDriver;
-      const originalBootstrapVat = vatsExtended[vatParameters.config.bootstrap];
-      harden(vats);
-      const bootstrapResult = await E(originalBootstrapVat).bootstrap(
-        vats,
-        devices,
-      );
-      await E(benchmarkDriverVat).setup(vats, devices);
-      return bootstrapResult;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vatsExtended, devices) {
+        const {
+          benchmarkBootstrap: _benchmarkBootstrap,
+          benchmarkDriver,
+          ...vats
+        } = vatsExtended;
+        benchmarkDriverVat = benchmarkDriver;
+        const originalBootstrapVat =
+          vatsExtended[vatParameters.config.bootstrap];
+        harden(vats);
+        const bootstrapResult = await E(originalBootstrapVat).bootstrap(
+          vats,
+          devices,
+        );
+        await E(benchmarkDriverVat).setup(vats, devices);
+        return bootstrapResult;
+      },
+      runBenchmarkRound() {
+        return E(benchmarkDriverVat).runBenchmarkRound();
+      },
     },
-    runBenchmarkRound() {
-      return E(benchmarkDriverVat).runBenchmarkRound();
-    },
-  });
+  );
 }

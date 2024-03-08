@@ -18,8 +18,12 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     return harden(ibcHandler);
   }
 
-  return Far('root', {
-    createHandlers,
-    makeCallbacks,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      createHandlers,
+      makeCallbacks,
+    },
+  );
 }

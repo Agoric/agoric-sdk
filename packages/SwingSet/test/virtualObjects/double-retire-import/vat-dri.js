@@ -58,12 +58,16 @@ function buildVirtuals(sensor0, sensor1) {
 }
 
 export function buildRootObject() {
-  return Far('root', {
-    ping() {
-      return 0;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      ping() {
+        return 0;
+      },
+      buildVir(sensor0, sensor1) {
+        return buildVirtuals(sensor0, sensor1);
+      },
     },
-    buildVir(sensor0, sensor1) {
-      return buildVirtuals(sensor0, sensor1);
-    },
-  });
+  );
 }

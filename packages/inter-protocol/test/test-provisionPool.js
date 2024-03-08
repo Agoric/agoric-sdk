@@ -310,12 +310,24 @@ const makeWalletFactoryKitForAddresses = async addresses => {
   const wallets = new Map(
     addresses.map(addr => {
       const purse = /** @type {Purse} */ (purses.get(addr));
-      const mockWallet = Far('mock wallet', {
-        getDepositFacet: () =>
-          Far('mock depositFacet', {
-            receive: payment => E(purse).deposit(payment),
-          }),
-      });
+      const mockWallet = makeExo(
+        'mock wallet',
+        M.interface('mock wallet', {}, { defaultGuards: 'passable' }),
+        {
+          getDepositFacet: () =>
+            makeExo(
+              'mock depositFacet',
+              M.interface(
+                'mock depositFacet',
+                {},
+                { defaultGuards: 'passable' },
+              ),
+              {
+                receive: payment => E(purse).deposit(payment),
+              },
+            ),
+        },
+      );
       return [addr, mockWallet];
     }),
   );
@@ -329,25 +341,29 @@ const makeWalletFactoryKitForAddresses = async addresses => {
 
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']} */
-  const walletFactory = Far('mock walletFactory', {
-    provideSmartWallet: async (addr, _b, nameAdmin) => {
-      const wallet = wallets.get(addr);
-      assert(wallet);
+  const walletFactory = makeExo(
+    'mock walletFactory',
+    M.interface('mock walletFactory', {}, { defaultGuards: 'passable' }),
+    {
+      provideSmartWallet: async (addr, _b, nameAdmin) => {
+        const wallet = wallets.get(addr);
+        assert(wallet);
 
-      let isNew = !done.has(addr);
-      if (isNew) {
-        const isRevive =
-          walletReviver && (await E(walletReviver).ackWallet(addr));
-        if (isRevive) {
-          isNew = false;
-        } else {
-          await publishDepositFacet(addr, wallet, nameAdmin);
+        let isNew = !done.has(addr);
+        if (isNew) {
+          const isRevive =
+            walletReviver && (await E(walletReviver).ackWallet(addr));
+          if (isRevive) {
+            isNew = false;
+          } else {
+            await publishDepositFacet(addr, wallet, nameAdmin);
+          }
+          done.add(addr);
         }
-        done.add(addr);
-      }
-      return [wallet, isNew];
+        return [wallet, isNew];
+      },
     },
-  });
+  );
 
   return {
     fees,

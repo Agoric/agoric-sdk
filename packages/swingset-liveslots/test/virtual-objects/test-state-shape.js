@@ -2,8 +2,9 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser, kslot } from '@agoric/kmarshal';
-import { M } from '@agoric/store';
 import { makeLiveSlots } from '../../src/liveslots.js';
 import { buildSyscall } from '../liveslots-helpers.js';
 import { makeStartVat, makeMessage } from '../util.js';
@@ -138,15 +139,19 @@ test('durable stateShape refcounts', async t => {
     const { VatData } = vatPowers;
     const { makeKindHandle, defineDurableKind } = VatData;
 
-    return Far('root', {
-      accept: _standard1 => 0, // assign it a vref
-      create: standard1 => {
-        const kh = makeKindHandle('shaped');
-        baggage.init('kh', kh);
-        const stateShape = { value: standard1 };
-        defineDurableKind(kh, init, behavior, { stateShape });
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        accept: _standard1 => 0, // assign it a vref
+        create: standard1 => {
+          const kh = makeKindHandle('shaped');
+          baggage.init('kh', kh);
+          const stateShape = { value: standard1 };
+          defineDurableKind(kh, init, behavior, { stateShape });
+        },
       },
-    });
+    );
   }
 
   const makeNS1 = () => ({ buildRootObject: build1 });
@@ -179,7 +184,11 @@ test('durable stateShape refcounts', async t => {
     const stateShape = { value: standard2 };
     defineDurableKind(kh, init, behavior, { stateShape });
 
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   // to test refcount increment/decrement, we need to override the
@@ -219,14 +228,18 @@ test('durable stateShape must match', async t => {
     const { VatData } = vatPowers;
     const { makeKindHandle, defineDurableKind } = VatData;
 
-    return Far('root', {
-      create: (obj1, obj2) => {
-        const kh = makeKindHandle('shaped');
-        baggage.init('kh', kh);
-        const stateShape = { x: obj1, y: obj2 };
-        defineDurableKind(kh, init, behavior, { stateShape });
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        create: (obj1, obj2) => {
+          const kh = makeKindHandle('shaped');
+          baggage.init('kh', kh);
+          const stateShape = { x: obj1, y: obj2 };
+          defineDurableKind(kh, init, behavior, { stateShape });
+        },
       },
-    });
+    );
   }
 
   const makeNS1 = () => ({ buildRootObject: build1 });
@@ -275,7 +288,11 @@ test('durable stateShape must match', async t => {
     defineDurableKind(kh, init, behavior, { stateShape });
     t.pass();
 
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   // we do *not* override allowStateShapeChanges

@@ -1,7 +1,8 @@
 // @ts-nocheck
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser, kunser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { watchCollected } from '../gc-and-finalize.js';
@@ -20,17 +21,21 @@ test('virtual object state writes', async t => {
       // eslint-disable-next-line no-unused-vars
       ping: ({ state }) => 0,
     });
-    const root = Far('root', {
-      make: () => {
-        const thing = makeThing();
-        collected = watchCollected(thing);
-        return thing;
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        make: () => {
+          const thing = makeThing();
+          collected = watchCollected(thing);
+          return thing;
+        },
+        ping: thing => {
+          collected = watchCollected(thing);
+          return thing.ping();
+        },
       },
-      ping: thing => {
-        collected = watchCollected(thing);
-        return thing.ping();
-      },
-    });
+    );
     return root;
   }
 

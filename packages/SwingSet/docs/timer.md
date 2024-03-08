@@ -82,7 +82,7 @@ The `timerService` object can be distributed to other vats as necessary.
   await p1;
 
   // same, but cancellable
-  const cancelToken = Far('cancel', {}); // any pass-by-reference object
+  const cancelToken = makeExo('cancel', M.interface('cancel', {}, { defaultGuards: 'passable' }), {}); // any pass-by-reference object
   // the cancel token is always optional
   const p2 = E(timerService).delay(toRT(30n), cancelToken);
   // E(timerService).cancel(cancelToken) will cancel that
@@ -93,7 +93,7 @@ The `timerService` object can be distributed to other vats as necessary.
   await p3; // fires Tue, 19 Jan 2038 03:14:08 GMT
 
   // callback-based API functions need a handler object
-  const handler = Far('handler', {
+  const handler = makeExo('handler', M.interface('handler', {}, { defaultGuards: 'passable' }), {
     // t is a TimestampRecord
     wake(t) { console.log(`woken up, scheduled for ${fromTS(t)}`); },
   });

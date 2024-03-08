@@ -1,10 +1,18 @@
 import { Far } from '@endo/far';
 
 export function buildRootObject() {
-  const C = Far('Zoe Invitation payment', { hello() {} });
-  return Far('root', {
-    async makeInvitationZoe() {
-      return C;
+  const C = makeExo(
+    'Zoe Invitation payment',
+    M.interface('Zoe Invitation payment', {}, { defaultGuards: 'passable' }),
+    { hello() {} },
+  );
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async makeInvitationZoe() {
+        return C;
+      },
     },
-  });
+  );
 }

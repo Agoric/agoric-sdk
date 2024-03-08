@@ -112,30 +112,34 @@ const start = zcf => {
     return 'Inventory removed';
   };
 
-  const creatorFacet = Far('creatorFacet', {
-    /**
-     * The inventory can be added in bulk before any quotes are made
-     * or can be added immediately before a quote.
-     *
-     * @param {IssuerKeywordRecord} [issuerKeywordRecord]
-     * @returns {Promise<Payment>}
-     */
-    makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {
-      await saveAllIssuers(zcf, issuerKeywordRecord);
-      return zcf.makeInvitation(addInventory, 'addInventory');
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * The inventory can be added in bulk before any quotes are made
+       * or can be added immediately before a quote.
+       *
+       * @param {IssuerKeywordRecord} [issuerKeywordRecord]
+       * @returns {Promise<Payment>}
+       */
+      makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {
+        await saveAllIssuers(zcf, issuerKeywordRecord);
+        return zcf.makeInvitation(addInventory, 'addInventory');
+      },
+      /**
+       * The inventory can be removed at any time, since the inventory
+       * used for active quotes is escrowed separately within the coveredCall
+       * instance.
+       *
+       * @returns {Promise<Payment>}
+       */
+      makeRemoveInventoryInvitation: () => {
+        return zcf.makeInvitation(removeInventory, 'removeInventory');
+      },
+      makeQuote,
     },
-    /**
-     * The inventory can be removed at any time, since the inventory
-     * used for active quotes is escrowed separately within the coveredCall
-     * instance.
-     *
-     * @returns {Promise<Payment>}
-     */
-    makeRemoveInventoryInvitation: () => {
-      return zcf.makeInvitation(removeInventory, 'removeInventory');
-    },
-    makeQuote,
-  });
+  );
 
   return harden({ creatorFacet });
 };

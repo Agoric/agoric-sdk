@@ -44,39 +44,43 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   const config = { ...configMinusGetDebt, getDebt };
 
-  const periodObserver = Far('periodObserver', {
-    /** @type {(timestamp: import('@agoric/time').TimestampRecord) => void} */
-    updateState: timestamp => {
-      let updatedLoan = false;
-      // we could calculate the number of required updates and multiply by a power
-      // of the interest rate, but this seems easier to read.
-      while (
-        TimeMath.compareAbs(
-          TimeMath.addAbsRel(lastCalculationTimestamp, interestPeriod),
-          timestamp,
-        ) <= 0
-      ) {
-        lastCalculationTimestamp = TimeMath.addAbsRel(
-          lastCalculationTimestamp,
-          interestPeriod,
+  const periodObserver = makeExo(
+    'periodObserver',
+    M.interface('periodObserver', {}, { defaultGuards: 'passable' }),
+    {
+      /** @type {(timestamp: import('@agoric/time').TimestampRecord) => void} */
+      updateState: timestamp => {
+        let updatedLoan = false;
+        // we could calculate the number of required updates and multiply by a power
+        // of the interest rate, but this seems easier to read.
+        while (
+          TimeMath.compareAbs(
+            TimeMath.addAbsRel(lastCalculationTimestamp, interestPeriod),
+            timestamp,
+          ) <= 0
+        ) {
+          lastCalculationTimestamp = TimeMath.addAbsRel(
+            lastCalculationTimestamp,
+            interestPeriod,
+          );
+          const interest = calcInterestFn(debt, interestRate);
+          debt = AmountMath.add(debt, interest);
+          updatedLoan = true;
+        }
+        if (updatedLoan) {
+          debtNotifierUpdater.updateState(debt);
+          scheduleLiquidation(zcf, config);
+        }
+      },
+      fail: reason => {
+        assert.note(
+          reason,
+          X`Period problem: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
         );
-        const interest = calcInterestFn(debt, interestRate);
-        debt = AmountMath.add(debt, interest);
-        updatedLoan = true;
-      }
-      if (updatedLoan) {
-        debtNotifierUpdater.updateState(debt);
-        scheduleLiquidation(zcf, config);
-      }
+        console.error(reason);
+      },
     },
-    fail: reason => {
-      assert.note(
-        reason,
-        X`Period problem: ${originalDebt}, started: ${basetime}, debt: ${debt}`,
-      );
-      console.error(reason);
-    },
-  });
+  );
 
   observeNotifier(periodNotifier, periodObserver).catch(reason => {
     assert.note(
@@ -88,9 +92,13 @@ export const makeDebtCalculator = debtCalculatorConfig => {
 
   debtNotifierUpdater.updateState(debt);
 
-  return Far('debtCalculator', {
-    getDebt,
-    getLastCalculationTimestamp: _ => lastCalculationTimestamp,
-    getDebtNotifier: _ => debtNotifier,
-  });
+  return makeExo(
+    'debtCalculator',
+    M.interface('debtCalculator', {}, { defaultGuards: 'passable' }),
+    {
+      getDebt,
+      getLastCalculationTimestamp: _ => lastCalculationTimestamp,
+      getDebtNotifier: _ => debtNotifier,
+    },
+  );
 };

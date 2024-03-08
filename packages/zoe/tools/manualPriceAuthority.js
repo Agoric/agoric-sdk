@@ -84,17 +84,21 @@ export function makeManualPriceAuthority(options) {
     adminFacet: { fireTriggers },
   } = makeOnewayPriceAuthorityKit(priceAuthorityOptions);
 
-  return Far('ManualPriceAuthority', {
-    setPrice: newPrice => {
-      currentPrice = newPrice;
-      updater.updateState(currentPrice);
-      fireTriggers(createQuote);
+  return makeExo(
+    'ManualPriceAuthority',
+    M.interface('ManualPriceAuthority', {}, { defaultGuards: 'passable' }),
+    {
+      setPrice: newPrice => {
+        currentPrice = newPrice;
+        updater.updateState(currentPrice);
+        fireTriggers(createQuote);
+      },
+      disable: () => {
+        disabled = true;
+        updater.updateState(false);
+      },
+      ...priceAuthority,
     },
-    disable: () => {
-      disabled = true;
-      updater.updateState(false);
-    },
-    ...priceAuthority,
-  });
+  );
 }
 /** @typedef {ReturnType<typeof makeManualPriceAuthority>} ManualPriceAuthority */

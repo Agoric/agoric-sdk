@@ -375,40 +375,48 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(publicFacet).zcfShutdownWithFailure('Sadness');
   };
 
-  return Far('build', {
-    startTest: async testName => {
-      switch (testName) {
-        case 'throwInOfferHook': {
-          return doThrowInHook();
+  return makeExo(
+    'build',
+    M.interface('build', {}, { defaultGuards: 'passable' }),
+    {
+      startTest: async testName => {
+        switch (testName) {
+          case 'throwInOfferHook': {
+            return doThrowInHook();
+          }
+          case 'throwInApiCall': {
+            return doThrowInApiCall();
+          }
+          case 'throwInStart': {
+            return doThrowInStart();
+          }
+          case 'happyTermination': {
+            return doHappyTermination();
+          }
+          case 'happyTerminationWOffers': {
+            return doHappyTerminationWithOffers();
+          }
+          case 'doHappyTerminationRefusesContact': {
+            return doHappyTerminationRefusesContact();
+          }
+          case 'sadTermination': {
+            return doSadTermination();
+          }
+          default: {
+            assert.fail(X`testName ${testName} not recognized`);
+          }
         }
-        case 'throwInApiCall': {
-          return doThrowInApiCall();
-        }
-        case 'throwInStart': {
-          return doThrowInStart();
-        }
-        case 'happyTermination': {
-          return doHappyTermination();
-        }
-        case 'happyTerminationWOffers': {
-          return doHappyTerminationWithOffers();
-        }
-        case 'doHappyTerminationRefusesContact': {
-          return doHappyTerminationRefusesContact();
-        }
-        case 'sadTermination': {
-          return doSadTermination();
-        }
-        default: {
-          assert.fail(X`testName ${testName} not recognized`);
-        }
-      }
+      },
     },
-  });
+  );
 };
 
 export function buildRootObject(vatPowers) {
-  return Far('root', {
-    build: (...args) => build(vatPowers.testLog, ...args),
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      build: (...args) => build(vatPowers.testLog, ...args),
+    },
+  );
 }

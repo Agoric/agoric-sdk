@@ -143,7 +143,13 @@ test('brand.isMyIssuer bad issuer', async t => {
       /In "isMyIssuer" method of \(myTokens brand\): arg 0: .*"not an issuer" - Must be a remotable/,
   });
   const fakeIssuer = /** @type {Issuer} */ (
-    /** @type {unknown} */ (Far('myTokens issuer', {}))
+    /** @type {unknown} */ (
+      makeExo(
+        'myTokens issuer',
+        M.interface('myTokens issuer', {}, { defaultGuards: 'passable' }),
+        {},
+      )
+    )
   );
   const result = await brand.isMyIssuer(fakeIssuer);
   t.false(result);
@@ -186,10 +192,14 @@ test('issuer.combine bad payments array', async t => {
     message: 'srcPaymentsPs is not iterable',
   });
 
-  const notAnArray2 = Far('notAnArray2', {
-    length: () => 2,
-    split: () => {},
-  });
+  const notAnArray2 = makeExo(
+    'notAnArray2',
+    M.interface('notAnArray2', {}, { defaultGuards: 'passable' }),
+    {
+      length: () => 2,
+      split: () => {},
+    },
+  );
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray2), {
     message: 'srcPaymentsPs is not iterable',

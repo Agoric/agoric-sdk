@@ -245,15 +245,19 @@ export const startWalletFactory = async (
 
   // TODO: move to its own producer, omitted in some configurations
   client.resolve(
-    Far('dummy client', {
-      assignBundle: (propertyMakers = []) => {
-        console.warn(
-          'dummy mailbox client home: ignoring',
-          propertyMakers.length,
-          'propertyMakers',
-        );
+    makeExo(
+      'dummy client',
+      M.interface('dummy client', {}, { defaultGuards: 'passable' }),
+      {
+        assignBundle: (propertyMakers = []) => {
+          console.warn(
+            'dummy mailbox client home: ignoring',
+            propertyMakers.length,
+            'propertyMakers',
+          );
+        },
       },
-    }),
+    ),
   );
 };
 

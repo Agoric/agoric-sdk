@@ -7,9 +7,13 @@ export function buildRootObject(_vatPowers, _vatParameters) {
     return harden([...contents]);
   }
 
-  const target = Far('root', {
-    append,
-  });
+  const target = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      append,
+    },
+  );
 
   return target;
 }

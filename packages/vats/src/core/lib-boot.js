@@ -168,53 +168,57 @@ export const makeBootstrap = (
   // For testing supports
   const vatData = new Map();
 
-  return Far('bootstrap', {
-    /**
-     * Bootstrap vats and devices.
-     *
-     * @param {SwingsetVats} vats
-     * @param {SoloDevices | ChainDevices} devices
-     */
-    bootstrap: (vats, devices) => {
-      for (const [name, root] of Object.entries(vats)) {
-        if (name !== 'vatAdmin') {
-          vatData.set(name, { root });
+  return makeExo(
+    'bootstrap',
+    M.interface('bootstrap', {}, { defaultGuards: 'passable' }),
+    {
+      /**
+       * Bootstrap vats and devices.
+       *
+       * @param {SwingsetVats} vats
+       * @param {SoloDevices | ChainDevices} devices
+       */
+      bootstrap: (vats, devices) => {
+        for (const [name, root] of Object.entries(vats)) {
+          if (name !== 'vatAdmin') {
+            vatData.set(name, { root });
+          }
         }
-      }
-      return rawBootstrap(vats, devices).catch(e => {
-        // Terminate because the vat is in an irrecoverable state.
-        vatPowers.exitVatWithFailure(e);
-        // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.
-        throw e;
-      });
-    },
-    consumeItem: name => {
-      assert.typeof(name, 'string');
-      return consume[name];
-    },
-    produceItem: (name, resolution) => {
-      assert.typeof(name, 'string');
-      produce[name].resolve(resolution);
-    },
-    resetItem: name => {
-      assert.typeof(name, 'string');
-      produce[name].reset();
-    },
+        return rawBootstrap(vats, devices).catch(e => {
+          // Terminate because the vat is in an irrecoverable state.
+          vatPowers.exitVatWithFailure(e);
+          // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.
+          throw e;
+        });
+      },
+      consumeItem: name => {
+        assert.typeof(name, 'string');
+        return consume[name];
+      },
+      produceItem: (name, resolution) => {
+        assert.typeof(name, 'string');
+        produce[name].resolve(resolution);
+      },
+      resetItem: name => {
+        assert.typeof(name, 'string');
+        produce[name].reset();
+      },
 
-    //#region testing supports
-    awaitVatObject: async (presence, path = []) => {
-      let value = await presence;
-      for (const key of path) {
-        value = await value[key];
-      }
-      return value;
+      //#region testing supports
+      awaitVatObject: async (presence, path = []) => {
+        let value = await presence;
+        for (const key of path) {
+          value = await value[key];
+        }
+        return value;
+      },
+      /**
+       * @template K, V
+       * @param {MapStore<K, V>} store
+       */
+      snapshotStore: store => harden([...store.entries()]),
+      //#endregion
     },
-    /**
-     * @template K, V
-     * @param {MapStore<K, V>} store
-     */
-    snapshotStore: store => harden([...store.entries()]),
-    //#endregion
-  });
+  );
 };
 /** @typedef {Awaited<ReturnType<typeof makeBootstrap>>} BootstrapRootObject */

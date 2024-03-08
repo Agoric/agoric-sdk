@@ -9,30 +9,38 @@ export function buildRootObject() {
   let otherContact = null;
 
   function makeContact() {
-    return Far('contact', {
-      myNameIs(nickname) {
-        otherNickname = nickname;
-        log(`${myNickname}: contact is now named ${otherNickname}`);
+    return makeExo(
+      'contact',
+      M.interface('contact', {}, { defaultGuards: 'passable' }),
+      {
+        myNameIs(nickname) {
+          otherNickname = nickname;
+          log(`${myNickname}: contact is now named ${otherNickname}`);
+        },
+        pong(tag, ponger) {
+          log(`${myNickname}: ponged with "${tag}" by ${ponger}`);
+        },
       },
-      pong(tag, ponger) {
-        log(`${myNickname}: ponged with "${tag}" by ${ponger}`);
-      },
-    });
+    );
   }
 
-  return Far('root', {
-    setNickname(nickname) {
-      myNickname = nickname;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setNickname(nickname) {
+        myNickname = nickname;
+      },
+      introduceYourselfTo(other) {
+        log(`${myNickname}.introduce`);
+        const myContact = makeContact();
+        otherContact = E(other).hello(myContact, myNickname);
+        return `${myNickname} setup done\n${myNickname} vat is happy\n`;
+      },
+      doPing(tag) {
+        log(`${myNickname}: pings ${otherNickname} with ${tag}`);
+        E(otherContact).ping(tag);
+      },
     },
-    introduceYourselfTo(other) {
-      log(`${myNickname}.introduce`);
-      const myContact = makeContact();
-      otherContact = E(other).hello(myContact, myNickname);
-      return `${myNickname} setup done\n${myNickname} vat is happy\n`;
-    },
-    doPing(tag) {
-      log(`${myNickname}: pings ${otherNickname} with ${tag}`);
-      E(otherContact).ping(tag);
-    },
-  });
+  );
 }

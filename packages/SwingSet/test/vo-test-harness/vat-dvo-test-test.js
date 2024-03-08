@@ -19,19 +19,23 @@ export function buildRootObject(_vatPowers, vatParameters, baggage) {
     makeThing('test thing'),
   );
 
-  return Far('root', {
-    runTests(testDriver, phase) {
-      other = testDriver;
-      log(`start test`);
-      log(phase);
-      if (vatParameters.mode === phase) {
-        log(`fail during "${phase}"`);
-      } else {
-        log(testThing.getTag());
-      }
-      log(vatParameters);
-      log(`end test`);
-      testComplete();
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      runTests(testDriver, phase) {
+        other = testDriver;
+        log(`start test`);
+        log(phase);
+        if (vatParameters.mode === phase) {
+          log(`fail during "${phase}"`);
+        } else {
+          log(testThing.getTag());
+        }
+        log(vatParameters);
+        log(`end test`);
+        testComplete();
+      },
     },
-  });
+  );
 }

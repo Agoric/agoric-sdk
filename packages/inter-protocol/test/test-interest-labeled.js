@@ -8,11 +8,15 @@ import { TimeMath } from '@agoric/time';
 
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
-const timerBrand = Far('fake timer brand', {
-  isMyTimerService: () => true,
-  isMyClock: () => true,
-});
-// const otherTimerBrand = Far('other fake timer brand', {});
+const timerBrand = makeExo(
+  'fake timer brand',
+  M.interface('fake timer brand', {}, { defaultGuards: 'passable' }),
+  {
+    isMyTimerService: () => true,
+    isMyClock: () => true,
+  },
+);
+// const otherTimerBrand = makeExo('other fake timer brand', M.interface('other fake timer brand', {}, { defaultGuards: 'passable' }), {});
 
 const ONE_DAY = TimeMath.coerceRelativeTimeRecord(60n * 60n * 24n, timerBrand);
 const ONE_MONTH = TimeMath.multiplyRelNat(ONE_DAY, 30n);

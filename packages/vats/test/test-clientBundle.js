@@ -79,22 +79,30 @@ test('connectFaucet produces payments', async t => {
   produce.bankManager.resolve(
     Promise.resolve(
       // @ts-expect-error never mind other methods
-      Far('mockBankManager', {
-        getBankForAddress: _a =>
-          Far('mockBank', {
-            // @ts-expect-error never mind other methods
-            getPurse: brand => ({
-              deposit: async (pmt, _x) => {
-                const isBLD = brand === bldKit.brand;
-                const issuer = isBLD ? bldKit.issuer : stableIssuer;
-                const amt = await E(issuer).getAmountOf(pmt);
-                t.is(showAmount(amt), isBLD ? '5_000 BLD' : '53 IST');
-                return amt;
+      makeExo(
+        'mockBankManager',
+        M.interface('mockBankManager', {}, { defaultGuards: 'passable' }),
+        {
+          getBankForAddress: _a =>
+            makeExo(
+              'mockBank',
+              M.interface('mockBank', {}, { defaultGuards: 'passable' }),
+              {
+                // @ts-expect-error never mind other methods
+                getPurse: brand => ({
+                  deposit: async (pmt, _x) => {
+                    const isBLD = brand === bldKit.brand;
+                    const issuer = isBLD ? bldKit.issuer : stableIssuer;
+                    const amt = await E(issuer).getAmountOf(pmt);
+                    t.is(showAmount(amt), isBLD ? '5_000 BLD' : '53 IST');
+                    return amt;
+                  },
+                }),
+                getAssetSubscription: () => null,
               },
-            }),
-            getAssetSubscription: () => null,
-          }),
-      }),
+            ),
+        },
+      ),
     ),
   );
 

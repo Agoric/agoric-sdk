@@ -80,14 +80,18 @@ export const addPegasusTransferPort = async (
     console.error('Error observing Pegasus connection kit:', err),
   );
   return E(port).addListener(
-    Far('listener', {
-      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
-        return handler;
+    makeExo(
+      'listener',
+      M.interface('listener', {}, { defaultGuards: 'passable' }),
+      {
+        async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+          return handler;
+        },
+        async onListen(p, _listenHandler) {
+          console.debug(`Listening on Pegasus transfer port: ${p}`);
+        },
       },
-      async onListen(p, _listenHandler) {
-        console.debug(`Listening on Pegasus transfer port: ${p}`);
-      },
-    }),
+    ),
   );
 };
 harden(addPegasusTransferPort);

@@ -2,7 +2,9 @@
 
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { observeNotifier } from './asyncIterableAdaptor.js';
 
 /**
@@ -44,16 +46,24 @@ export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
   });
 
   /** @type {Unserializer} */
-  const unserializer = Far('unserializer', {
-    fromCapData: data => E(marshaller).fromCapData(data),
-    unserialize: data => E(marshaller).fromCapData(data),
-  });
+  const unserializer = makeExo(
+    'unserializer',
+    M.interface('unserializer', {}, { defaultGuards: 'passable' }),
+    {
+      fromCapData: data => E(marshaller).fromCapData(data),
+      unserialize: data => E(marshaller).fromCapData(data),
+    },
+  );
 
   /** @type {StoredNotifier<T>} */
-  const storedNotifier = Far('StoredNotifier', {
-    getUpdateSince: updateCount => E(notifier).getUpdateSince(updateCount),
-    getPath: () => E(storageNode).getPath(),
-    getUnserializer: () => unserializer,
-  });
+  const storedNotifier = makeExo(
+    'StoredNotifier',
+    M.interface('StoredNotifier', {}, { defaultGuards: 'passable' }),
+    {
+      getUpdateSince: updateCount => E(notifier).getUpdateSince(updateCount),
+      getPath: () => E(storageNode).getPath(),
+      getUnserializer: () => unserializer,
+    },
+  );
   return storedNotifier;
 };

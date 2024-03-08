@@ -3,9 +3,13 @@ import { Far } from '@endo/marshal';
 
 /** @type {ContractStartFn<undefined, {usePrivateArgs: unknown}>} */
 const start = (_zcf, privateArgs) => {
-  const creatorFacet = Far('creatorFacet', {
-    usePrivateArgs: () => E(privateArgs.myArg).doTest(),
-  });
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      usePrivateArgs: () => E(privateArgs.myArg).doTest(),
+    },
+  );
   // @ts-expect-error missing publicFacet for ContractStartFn
   return harden({ creatorFacet });
 };

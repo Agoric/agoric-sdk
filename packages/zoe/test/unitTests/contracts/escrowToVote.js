@@ -49,59 +49,67 @@ const start = zcf => {
     assertProposalShape(voterSeat, {
       give: { Assets: null },
     });
-    const voter = Far('voter', {
-      /**
-       * Vote on a particular issue
-       *
-       * @param {string} response - 'YES' || 'NO'
-       */
-      vote: response => {
-        // Throw if the offer is no longer active, i.e. the user has
-        // completed their offer and the assets are no longer escrowed.
-        assert(!voterSeat.hasExited(), 'the voter seat has exited');
+    const voter = makeExo(
+      'voter',
+      M.interface('voter', {}, { defaultGuards: 'passable' }),
+      {
+        /**
+         * Vote on a particular issue
+         *
+         * @param {string} response - 'YES' || 'NO'
+         */
+        vote: response => {
+          // Throw if the offer is no longer active, i.e. the user has
+          // completed their offer and the assets are no longer escrowed.
+          assert(!voterSeat.hasExited(), 'the voter seat has exited');
 
-        assertResponse(response);
+          assertResponse(response);
 
-        // Record the response
-        if (seatToResponse.has(voterSeat)) {
-          seatToResponse.set(voterSeat, response);
-        } else {
-          seatToResponse.init(voterSeat, response);
-        }
-        return `Successfully voted '${response}'`;
+          // Record the response
+          if (seatToResponse.has(voterSeat)) {
+            seatToResponse.set(voterSeat, response);
+          } else {
+            seatToResponse.init(voterSeat, response);
+          }
+          return `Successfully voted '${response}'`;
+        },
       },
-    });
+    );
     return voter;
   };
 
-  const creatorFacet = Far('creatorFacet', {
-    closeElection: () => {
-      assert(electionOpen, 'the election is already closed');
-      // YES | NO to Nat
-      const tally = new Map();
-      tally.set('YES', AmountMath.makeEmpty(assetsBrand));
-      tally.set('NO', AmountMath.makeEmpty(assetsBrand));
+  const creatorFacet = makeExo(
+    'creatorFacet',
+    M.interface('creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      closeElection: () => {
+        assert(electionOpen, 'the election is already closed');
+        // YES | NO to Nat
+        const tally = new Map();
+        tally.set('YES', AmountMath.makeEmpty(assetsBrand));
+        tally.set('NO', AmountMath.makeEmpty(assetsBrand));
 
-      for (const [seat, response] of seatToResponse.entries()) {
-        if (!seat.hasExited()) {
-          const escrowedAmount = seat.getAmountAllocated('Assets');
-          const sumSoFar = tally.get(response);
-          tally.set(response, AmountMath.add(escrowedAmount, sumSoFar));
-          seat.exit('Thank you for voting');
+        for (const [seat, response] of seatToResponse.entries()) {
+          if (!seat.hasExited()) {
+            const escrowedAmount = seat.getAmountAllocated('Assets');
+            const sumSoFar = tally.get(response);
+            tally.set(response, AmountMath.add(escrowedAmount, sumSoFar));
+            seat.exit('Thank you for voting');
+          }
         }
-      }
-      electionOpen = false;
+        electionOpen = false;
 
-      return harden({
-        YES: tally.get('YES'),
-        NO: tally.get('NO'),
-      });
+        return harden({
+          YES: tally.get('YES'),
+          NO: tally.get('NO'),
+        });
+      },
+      makeVoterInvitation: () => {
+        assert(electionOpen, 'the election is closed');
+        return zcf.makeInvitation(voteHandler, 'voter');
+      },
     },
-    makeVoterInvitation: () => {
-      assert(electionOpen, 'the election is closed');
-      return zcf.makeInvitation(voteHandler, 'voter');
-    },
-  });
+  );
 
   // Return the creatorFacet so that the creator of the
   // contract instance can hand out scarce votes and close the election.

@@ -172,7 +172,11 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       // non-empty object as vatObj0s, since an empty object would be
       // serialized as pass-by-presence. It wouldn't make much sense for the
       // bootstrap object to call itself, though.
-      const vref = Far('root', {});
+      const vref = makeExo(
+        'root',
+        M.interface('root', {}, { defaultGuards: 'passable' }),
+        {},
+      );
       vatObj0s[name] = vref;
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       const kernelSlot = vatKeeper.mapVatSlotToKernelSlot(vatSlot);
@@ -183,7 +187,11 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
     const drefs = new Map();
     const deviceObj0s = {};
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
-      const dref = Far('device', {});
+      const dref = makeExo(
+        'device',
+        M.interface('device', {}, { defaultGuards: 'passable' }),
+        {},
+      );
       deviceObj0s[name] = dref;
       const devSlot = makeVatSlot('device', true, 0);
       const devKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);

@@ -11,16 +11,20 @@ function makePR() {
 export function buildRootObject() {
   let p1;
   let r1;
-  return Far('root', {
-    genPromise1() {
-      return 'Hello!';
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      genPromise1() {
+        return 'Hello!';
+      },
+      genPromise2() {
+        void ([p1, r1] = makePR());
+        return p1;
+      },
+      usePromise(pa) {
+        r1(pa);
+      },
     },
-    genPromise2() {
-      void ([p1, r1] = makePR());
-      return p1;
-    },
-    usePromise(pa) {
-      r1(pa);
-    },
-  });
+  );
 }

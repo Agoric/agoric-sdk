@@ -135,17 +135,21 @@ export const makePrioritizedVaults = store => {
     return vaultsRemoved;
   };
 
-  return Far('PrioritizedVaults', {
-    addVault,
-    entries: vaults.entries,
-    getCount: vaults.getSize,
-    hasVaultByAttributes,
-    highestRatio,
-    removeVault,
-    removeVaultByAttributes,
-    removeVaultsBelow,
+  return makeExo(
+    'PrioritizedVaults',
+    M.interface('PrioritizedVaults', {}, { defaultGuards: 'passable' }),
+    {
+      addVault,
+      entries: vaults.entries,
+      getCount: vaults.getSize,
+      hasVaultByAttributes,
+      highestRatio,
+      removeVault,
+      removeVaultByAttributes,
+      removeVaultsBelow,
 
-    // visible for testing
-    countVaultsBelow: crKey => vaults.getSize(M.lte(crKey)),
-  });
+      // visible for testing
+      countVaultsBelow: crKey => vaults.getSize(M.lte(crKey)),
+    },
+  );
 };

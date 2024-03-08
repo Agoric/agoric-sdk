@@ -1,7 +1,8 @@
 /// <reference types="ses"/>
 
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { makeExo } from '@endo/exo';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -152,49 +153,57 @@ export const makePublishKit = () => {
    * @template T
    * @type {Subscriber<T>}
    */
-  const subscriber = Far('Subscriber', {
-    subscribeAfter: (publishCount = -1n) => {
-      assert.typeof(publishCount, 'bigint');
-      if (publishCount === currentPublishCount) {
-        return tailP;
-      } else if (publishCount < currentPublishCount) {
-        return currentP;
-      } else {
-        throw Error(
-          'subscribeAfter argument must be a previously-issued publishCount.',
+  const subscriber = makeExo(
+    'Subscriber',
+    M.interface('Subscriber', {}, { defaultGuards: 'passable' }),
+    {
+      subscribeAfter: (publishCount = -1n) => {
+        assert.typeof(publishCount, 'bigint');
+        if (publishCount === currentPublishCount) {
+          return tailP;
+        } else if (publishCount < currentPublishCount) {
+          return currentP;
+        } else {
+          throw Error(
+            'subscribeAfter argument must be a previously-issued publishCount.',
+          );
+        }
+      },
+      getUpdateSince: updateCount => {
+        if (updateCount === undefined) {
+          return subscriber.subscribeAfter().then(makeMemoizedUpdateRecord);
+        }
+        updateCount = BigInt(updateCount);
+        return (
+          subscriber
+            // `subscribeAfter` may resolve with the update record numbered
+            // `updateCount + 1`, even if several updates are published in the
+            // same crank...
+            .subscribeAfter(updateCount)
+            // ... so we poll the latest published update, without waiting for any
+            // further ones.
+            .then(() => subscriber.getUpdateSince())
         );
-      }
+      },
     },
-    getUpdateSince: updateCount => {
-      if (updateCount === undefined) {
-        return subscriber.subscribeAfter().then(makeMemoizedUpdateRecord);
-      }
-      updateCount = BigInt(updateCount);
-      return (
-        subscriber
-          // `subscribeAfter` may resolve with the update record numbered
-          // `updateCount + 1`, even if several updates are published in the
-          // same crank...
-          .subscribeAfter(updateCount)
-          // ... so we poll the latest published update, without waiting for any
-          // further ones.
-          .then(() => subscriber.getUpdateSince())
-      );
-    },
-  });
+  );
 
   /** @type {Publisher<T>} */
-  const publisher = Far('Publisher', {
-    publish: value => {
-      advanceCurrent(false, value);
+  const publisher = makeExo(
+    'Publisher',
+    M.interface('Publisher', {}, { defaultGuards: 'passable' }),
+    {
+      publish: value => {
+        advanceCurrent(false, value);
+      },
+      finish: finalValue => {
+        advanceCurrent(true, finalValue);
+      },
+      fail: reason => {
+        advanceCurrent(true, undefined, makeQuietRejection(reason));
+      },
     },
-    finish: finalValue => {
-      advanceCurrent(true, finalValue);
-    },
-    fail: reason => {
-      advanceCurrent(true, undefined, makeQuietRejection(reason));
-    },
-  });
+  );
   return harden({ publisher, subscriber });
 };
 harden(makePublishKit);

@@ -3,11 +3,15 @@ import { Far } from '@endo/marshal';
 import { makeSpawner } from '../../../src/contractHost.js';
 
 function buildRootObject() {
-  return Far('root', {
-    buildSpawner(vatAdminSvc) {
-      return makeSpawner(vatAdminSvc);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      buildSpawner(vatAdminSvc) {
+        return makeSpawner(vatAdminSvc);
+      },
     },
-  });
+  );
 }
 harden(buildRootObject);
 export { buildRootObject };

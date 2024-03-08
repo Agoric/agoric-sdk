@@ -7,13 +7,17 @@ export function buildRootDeviceNode({
 }) {
   testLog(typeof getDeviceState());
 
-  return Far('root', {
-    setState(arg) {
-      setDeviceState(arg);
-      return 'ok';
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      setState(arg) {
+        setDeviceState(arg);
+        return 'ok';
+      },
+      getState() {
+        return harden(getDeviceState());
+      },
     },
-    getState() {
-      return harden(getDeviceState());
-    },
-  });
+  );
 }

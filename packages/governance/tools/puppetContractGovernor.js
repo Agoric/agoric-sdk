@@ -86,20 +86,28 @@ export const start = async (zcf, privateArgs) => {
       .then(() => positive);
   };
 
-  const creatorFacet = Far('governor creatorFacet', {
-    changeParams,
-    invokeAPI,
-    setFilters,
-    getCreatorFacet: () => limitedCreatorFacet,
-    getAdminFacet: () => adminFacet,
-    getInstance: () => governedInstance,
-    /** @returns {Awaited<ReturnType<SF>>['publicFacet']} */
-    getPublicFacet: () => governedPF,
-  });
+  const creatorFacet = makeExo(
+    'governor creatorFacet',
+    M.interface('governor creatorFacet', {}, { defaultGuards: 'passable' }),
+    {
+      changeParams,
+      invokeAPI,
+      setFilters,
+      getCreatorFacet: () => limitedCreatorFacet,
+      getAdminFacet: () => adminFacet,
+      getInstance: () => governedInstance,
+      /** @returns {Awaited<ReturnType<SF>>['publicFacet']} */
+      getPublicFacet: () => governedPF,
+    },
+  );
 
-  const publicFacet = Far('contract governor public', {
-    getGovernedContract: () => governedInstance,
-  });
+  const publicFacet = makeExo(
+    'contract governor public',
+    M.interface('contract governor public', {}, { defaultGuards: 'passable' }),
+    {
+      getGovernedContract: () => governedInstance,
+    },
+  );
 
   return { creatorFacet, publicFacet };
 };

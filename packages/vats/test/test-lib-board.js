@@ -6,8 +6,16 @@ import { makeFakeBoard } from '../tools/board-utils.js';
 test('makeBoard', async t => {
   const board = makeFakeBoard();
 
-  const obj1 = Far('obj1', { lookup: async (...path) => path });
-  const obj2 = Far('obj2', {});
+  const obj1 = makeExo(
+    'obj1',
+    M.interface('obj1', {}, { defaultGuards: 'passable' }),
+    { lookup: async (...path) => path },
+  );
+  const obj2 = makeExo(
+    'obj2',
+    M.interface('obj2', {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   t.deepEqual(board.ids(), [], `board is empty to start`);
   t.is(await board.lookup(), board, 'empty lookup returns board');
@@ -57,8 +65,16 @@ test('board values must be scalar keys', async t => {
 });
 
 const testBoardMarshaller = async (t, board, marshaller, publishing) => {
-  const published = Far('published', {});
-  const unpublished = Far('unpublished', {});
+  const published = makeExo(
+    'published',
+    M.interface('published', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const unpublished = makeExo(
+    'unpublished',
+    M.interface('unpublished', {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   const published1id = board.getId(published);
   const ser = marshaller.toCapData(

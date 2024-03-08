@@ -13,10 +13,18 @@ import '@agoric/store/exported.js';
  */
 
 /** @type {{ onReset: (firstTime: Promise<boolean>) => void}} */
-const DEFAULT_RESETTER = Far('resetter', { onReset: _ => {} });
+const DEFAULT_RESETTER = makeExo(
+  'resetter',
+  M.interface('resetter', {}, { defaultGuards: 'passable' }),
+  { onReset: _ => {} },
+);
 
 /** @type {{ walk: (pluginRootP: any) => any }} */
-const DEFAULT_WALKER = Far('walker', { walk: pluginRootP => pluginRootP });
+const DEFAULT_WALKER = makeExo(
+  'walker',
+  M.interface('walker', {}, { defaultGuards: 'passable' }),
+  { walk: pluginRootP => pluginRootP },
+);
 
 /**
  * @template T
@@ -75,146 +83,164 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(
-    Far('receiver', {
-      dispatch(index, obj) {
-        const conn = modConnection.get(index);
-        conn.dispatch(obj);
+    makeExo(
+      'receiver',
+      M.interface('receiver', {}, { defaultGuards: 'passable' }),
+      {
+        dispatch(index, obj) {
+          const conn = modConnection.get(index);
+          conn.dispatch(obj);
+        },
+        reset(index, epoch) {
+          const conn = modConnection.get(index);
+          conn.reset(epoch);
+        },
       },
-      reset(index, epoch) {
-        const conn = modConnection.get(index);
-        conn.reset(epoch);
-      },
-    }),
+    ),
   );
 
-  return Far('plugin-manager', {
-    getPluginDir() {
-      return D(pluginDevice).getPluginDir();
-    },
-    /**
-     * Load a module, and call resetter.onReset(pluginRootP) every time
-     * it is instantiated.
-     *
-     * @type {LoadPlugin}
-     */
-    load(specifier, opts = undefined, resetter = DEFAULT_RESETTER) {
-      // This is the internal state: a promise kit that doesn't
-      // resolve until we are connected.  It is replaced by
-      // a new promise kit when we abort the prior module connection.
-      let pluginRootPK = makePromiseKit();
-      let nextEpoch = 0;
+  return makeExo(
+    'plugin-manager',
+    M.interface('plugin-manager', {}, { defaultGuards: 'passable' }),
+    {
+      getPluginDir() {
+        return D(pluginDevice).getPluginDir();
+      },
+      /**
+       * Load a module, and call resetter.onReset(pluginRootP) every time
+       * it is instantiated.
+       *
+       * @type {LoadPlugin}
+       */
+      load(specifier, opts = undefined, resetter = DEFAULT_RESETTER) {
+        // This is the internal state: a promise kit that doesn't
+        // resolve until we are connected.  It is replaced by
+        // a new promise kit when we abort the prior module connection.
+        let pluginRootPK = makePromiseKit();
+        let nextEpoch = 0;
 
-      let currentEpoch;
-      let currentDispatch = _ => {};
-      let currentReset = _ => {};
+        let currentEpoch;
+        let currentDispatch = _ => {};
+        let currentReset = _ => {};
 
-      // Connect to the module.
-      const index = D(pluginDevice).connect(specifier);
-      if (typeof index !== 'number') {
-        // An error string.
-        throw Error(index);
-      }
+        // Connect to the module.
+        const index = D(pluginDevice).connect(specifier);
+        if (typeof index !== 'number') {
+          // An error string.
+          throw Error(index);
+        }
 
-      // Register our stable callbacks for this connect index.
-      modConnection.init(
-        index,
-        Far('connection', {
-          dispatch(obj) {
-            if (obj.epoch !== currentEpoch) {
-              return false;
-            }
-            return currentDispatch(obj);
-          },
-          reset(epoch) {
-            return currentReset(epoch);
-          },
-        }),
-      );
-
-      const connect = () => {
-        // Create a CapTP channel.
-        const myEpoch = nextEpoch;
-        nextEpoch += 1;
-        console.debug(
-          `Connecting to ${specifier}.${index} with epoch ${myEpoch}`,
-        );
-        const { getBootstrap, dispatch } = makeCapTP(
-          specifier,
-          obj => {
-            // console.warn('sending', index, obj);
-            D(pluginDevice).send(index, obj);
-          },
-          undefined,
-          { ...vatPowers, epoch: myEpoch },
+        // Register our stable callbacks for this connect index.
+        modConnection.init(
+          index,
+          makeExo(
+            'connection',
+            M.interface('connection', {}, { defaultGuards: 'passable' }),
+            {
+              dispatch(obj) {
+                if (obj.epoch !== currentEpoch) {
+                  return false;
+                }
+                return currentDispatch(obj);
+              },
+              reset(epoch) {
+                return currentReset(epoch);
+              },
+            },
+          ),
         );
 
-        currentReset = _epoch => {
-          pluginRootPK = makePromiseKit();
+        const connect = () => {
+          // Create a CapTP channel.
+          const myEpoch = nextEpoch;
+          nextEpoch += 1;
+          console.debug(
+            `Connecting to ${specifier}.${index} with epoch ${myEpoch}`,
+          );
+          const { getBootstrap, dispatch } = makeCapTP(
+            specifier,
+            obj => {
+              // console.warn('sending', index, obj);
+              D(pluginDevice).send(index, obj);
+            },
+            undefined,
+            { ...vatPowers, epoch: myEpoch },
+          );
 
-          // Tell our clients we are resetting.
-          void E(resetter).onReset(pluginRootPK.promise.then(_ => true));
+          currentReset = _epoch => {
+            pluginRootPK = makePromiseKit();
 
-          // Attempt to restart the protocol using the same device connection.
-          connect();
+            // Tell our clients we are resetting.
+            void E(resetter).onReset(pluginRootPK.promise.then(_ => true));
+
+            // Attempt to restart the protocol using the same device connection.
+            connect();
+          };
+
+          currentDispatch = obj => {
+            // console.warn('receiving', index, obj);
+            dispatch(obj);
+          };
+
+          currentEpoch = myEpoch;
+
+          // Publish our started plugin.
+          pluginRootPK.resolve(E(getBootstrap()).start(opts));
         };
 
-        currentDispatch = obj => {
-          // console.warn('receiving', index, obj);
-          dispatch(obj);
-        };
-
-        currentEpoch = myEpoch;
-
-        // Publish our started plugin.
-        pluginRootPK.resolve(E(getBootstrap()).start(opts));
-      };
-
-      const actions = Far('actions', {
-        /**
-         * Create a stable identity that just forwards to the current
-         * implementation.
-         *
-         * @type {MakeStableForwarder}
-         */
-        makeStableForwarder(walker = DEFAULT_WALKER) {
-          let pr;
-          // eslint-disable-next-line no-new
-          void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
-            // Use Remotable rather than Far to make a remote from a presence
-            pr = Remotable(
-              'Alleged: stableForwarder',
-              undefined,
-              resolveWithPresence({
-                applyMethod(_p, name, args) {
-                  // console.warn('applying method epoch', currentEpoch);
-                  const targetP = E(walker).walk(pluginRootPK.promise);
-                  return HandledPromise.applyMethod(targetP, name, args);
+        const actions = makeExo(
+          'actions',
+          M.interface('actions', {}, { defaultGuards: 'passable' }),
+          {
+            /**
+             * Create a stable identity that just forwards to the current
+             * implementation.
+             *
+             * @type {MakeStableForwarder}
+             */
+            makeStableForwarder(walker = DEFAULT_WALKER) {
+              let pr;
+              // eslint-disable-next-line no-new
+              void new HandledPromise(
+                (_resolve, _reject, resolveWithPresence) => {
+                  // Use Remotable rather than Far to make a remote from a presence
+                  pr = Remotable(
+                    'Alleged: stableForwarder',
+                    undefined,
+                    resolveWithPresence({
+                      applyMethod(_p, name, args) {
+                        // console.warn('applying method epoch', currentEpoch);
+                        const targetP = E(walker).walk(pluginRootPK.promise);
+                        return HandledPromise.applyMethod(targetP, name, args);
+                      },
+                      get(_p, name) {
+                        // console.warn('applying get epoch', currentEpoch);
+                        const targetP = E(walker).walk(pluginRootPK.promise);
+                        return HandledPromise.get(targetP, name);
+                      },
+                    }),
+                  );
                 },
-                get(_p, name) {
-                  // console.warn('applying get epoch', currentEpoch);
-                  const targetP = E(walker).walk(pluginRootPK.promise);
-                  return HandledPromise.get(targetP, name);
-                },
-              }),
-            );
-          });
-          return pr;
-        },
-      });
+              );
+              return pr;
+            },
+          },
+        );
 
-      // Declare the first reset.
-      void E(resetter).onReset(Promise.resolve(false));
+        // Declare the first reset.
+        void E(resetter).onReset(Promise.resolve(false));
 
-      // Start the first connection.
-      connect();
+        // Start the first connection.
+        connect();
 
-      // Give up our plugin root object for the caller to use.
-      return harden({
-        // This is the public state, a promise that never resolves,
-        // but pipelines messages to the pluginRootPK.promise.
-        pluginRoot: actions.makeStableForwarder(),
-        actions,
-      });
+        // Give up our plugin root object for the caller to use.
+        return harden({
+          // This is the public state, a promise that never resolves,
+          // but pipelines messages to the pluginRootPK.promise.
+          pluginRoot: actions.makeStableForwarder(),
+          actions,
+        });
+      },
     },
-  });
+  );
 }

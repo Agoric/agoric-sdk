@@ -1,5 +1,6 @@
 // @ts-check
-import { Far } from '@endo/far';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makeMarshal } from '@endo/marshal';
 import { isStreamCell } from './lib-chainStorage.js';
 
@@ -17,7 +18,11 @@ const { Fail } = assert;
  */
 export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged = iface ? iface.replace(/^Alleged: /, '') : '';
-  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
+  return makeExo(
+    `BoardRemote${nonalleged}`,
+    M.interface(`BoardRemote${nonalleged}`, {}, { defaultGuards: 'passable' }),
+    { getBoardId: () => boardId },
+  );
 };
 
 /**

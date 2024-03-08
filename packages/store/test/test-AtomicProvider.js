@@ -1,7 +1,8 @@
 /* eslint-disable no-use-before-define */
 
 import test from 'ava';
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { setTimeout } from 'timers';
 
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
@@ -77,9 +78,13 @@ test('far keys', async t => {
 
   let i = 0;
   const makeBrand = name =>
-    Far(`brand ${name}`, {
-      getAllegedName: () => `${name} ${(i += 1)}`,
-    });
+    makeExo(
+      `brand ${name}`,
+      M.interface(`brand ${name}`, {}, { defaultGuards: 'passable' }),
+      {
+        getAllegedName: () => `${name} ${(i += 1)}`,
+      },
+    );
 
   const makeValue = brand => Promise.resolve(brand.getAllegedName());
 

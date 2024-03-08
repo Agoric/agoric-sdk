@@ -64,30 +64,34 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
     namesByAddressAdmin,
     walletFactory,
   }) =>
-    Far('provisioningHandler', {
-      fromBridge: async obj => {
-        obj.type === 'PLEASE_PROVISION' ||
-          Fail`Unrecognized request ${obj.type}`;
-        console.info('PLEASE_PROVISION', obj);
-        const { address, powerFlags } = obj;
-        powerFlags.includes(PowerFlags.SMART_WALLET) ||
-          Fail`missing SMART_WALLET in powerFlags`;
+    makeExo(
+      'provisioningHandler',
+      M.interface('provisioningHandler', {}, { defaultGuards: 'passable' }),
+      {
+        fromBridge: async obj => {
+          obj.type === 'PLEASE_PROVISION' ||
+            Fail`Unrecognized request ${obj.type}`;
+          console.info('PLEASE_PROVISION', obj);
+          const { address, powerFlags } = obj;
+          powerFlags.includes(PowerFlags.SMART_WALLET) ||
+            Fail`missing SMART_WALLET in powerFlags`;
 
-        const bank = E(bankManager).getBankForAddress(address);
-        // only proceed if we can provide funds
-        await sendInitialPayment(bank);
+          const bank = E(bankManager).getBankForAddress(address);
+          // only proceed if we can provide funds
+          await sendInitialPayment(bank);
 
-        const [_, created] = await E(walletFactory).provideSmartWallet(
-          address,
-          bank,
-          namesByAddressAdmin,
-        );
-        if (created) {
-          onProvisioned();
-        }
-        console.info(created ? 'provisioned' : 're-provisioned', address);
+          const [_, created] = await E(walletFactory).provideSmartWallet(
+            address,
+            bank,
+            namesByAddressAdmin,
+          );
+          if (created) {
+            onProvisioned();
+          }
+          console.info(created ? 'provisioned' : 're-provisioned', address);
+        },
       },
-    });
+    );
   return makeBridgeHandler;
 };
 

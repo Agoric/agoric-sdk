@@ -65,21 +65,25 @@ const start = zcf => {
     zcf.makeInvitation(makeMatchingInvitation, 'firstOffer');
 
   offersCount += 1n;
-  const publicFacet = Far('publicFacet', {
-    getOffersCount: () => {
-      offersCount += 1n;
-      return offersCount;
+  const publicFacet = makeExo(
+    'publicFacet',
+    M.interface('publicFacet', {}, { defaultGuards: 'passable' }),
+    {
+      getOffersCount: () => {
+        offersCount += 1n;
+        return offersCount;
+      },
+      makeSafeInvitation,
+      makeSwapInvitation,
+      makeThrowingInvitation,
+      zcfShutdown,
+      zcfShutdownWithFailure,
+      throwSomething: () => {
+        offersCount += 1n;
+        throw Error('someException');
+      },
     },
-    makeSafeInvitation,
-    makeSwapInvitation,
-    makeThrowingInvitation,
-    zcfShutdown,
-    zcfShutdownWithFailure,
-    throwSomething: () => {
-      offersCount += 1n;
-      throw Error('someException');
-    },
-  });
+  );
 
   const creatorInvitation = makeSafeInvitation();
 

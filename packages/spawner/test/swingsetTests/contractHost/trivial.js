@@ -8,25 +8,29 @@ export default function start(terms) {
       // Do nothing.
     }
   }
-  return Far('trivial', {
-    getTerms() {
-      return `terms were: ${terms}`;
+  return makeExo(
+    'trivial',
+    M.interface('trivial', {}, { defaultGuards: 'passable' }),
+    {
+      getTerms() {
+        return `terms were: ${terms}`;
+      },
+      bar(x) {
+        return x + 1;
+      },
+      loopForever() {
+        for (;;) {
+          // Do nothing.
+        }
+      },
+      areYouOk() {
+        return 'yes';
+      },
+      failureToFar() {
+        return harden({
+          failureReturn() {},
+        });
+      },
     },
-    bar(x) {
-      return x + 1;
-    },
-    loopForever() {
-      for (;;) {
-        // Do nothing.
-      }
-    },
-    areYouOk() {
-      return 'yes';
-    },
-    failureToFar() {
-      return harden({
-        failureReturn() {},
-      });
-    },
-  });
+  );
 }

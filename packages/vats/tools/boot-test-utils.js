@@ -49,33 +49,58 @@ export const makeMock = log =>
     },
     vats: {
       vattp: /** @type {any} */ (
-        Far('vattp', {
-          registerMailboxDevice: noop,
-          addRemote: () => harden({}),
-        })
+        makeExo(
+          'vattp',
+          M.interface('vattp', {}, { defaultGuards: 'passable' }),
+          {
+            registerMailboxDevice: noop,
+            addRemote: () => harden({}),
+          },
+        )
       ),
-      comms: Far('comms', {
-        addRemote: noop,
-        addEgress: noop,
-        addIngress: async () =>
-          harden({
-            getConfiguration: () => harden({ _: 'client configuration' }),
-          }),
-      }),
+      comms: makeExo(
+        'comms',
+        M.interface('comms', {}, { defaultGuards: 'passable' }),
+        {
+          addRemote: noop,
+          addEgress: noop,
+          addIngress: async () =>
+            harden({
+              getConfiguration: () => harden({ _: 'client configuration' }),
+            }),
+        },
+      ),
       http: { setPresences: noop, setCommandDevice: noop },
       spawner: {
         buildSpawner: () => harden({ _: 'spawner' }),
       },
-      timer: Far('TimerVat', {
-        createTimerService: async () => buildManualTimer(log),
-      }),
+      timer: makeExo(
+        'TimerVat',
+        M.interface('TimerVat', {}, { defaultGuards: 'passable' }),
+        {
+          createTimerService: async () => buildManualTimer(log),
+        },
+      ),
       uploads: { getUploads: () => harden({ _: 'uploads' }) },
 
-      network: Far('network', {
-        registerProtocolHandler: noop,
-        makeLoopbackProtocolHandler: noop,
-        bind: () => Far('network - listener', { addListener: noop }),
-      }),
+      network: makeExo(
+        'network',
+        M.interface('network', {}, { defaultGuards: 'passable' }),
+        {
+          registerProtocolHandler: noop,
+          makeLoopbackProtocolHandler: noop,
+          bind: () =>
+            makeExo(
+              'network - listener',
+              M.interface(
+                'network - listener',
+                {},
+                { defaultGuards: 'passable' },
+              ),
+              { addListener: noop },
+            ),
+        },
+      ),
     },
   });
 
@@ -133,11 +158,15 @@ export const makePopulatedFakeVatAdmin = () => {
     return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);
   };
 
-  const vatAdminService = Far('vatAdminSvc', {
-    ...fakeVatAdmin,
-    createVat,
-    createVatByName,
-  });
+  const vatAdminService = makeExo(
+    'vatAdminSvc',
+    M.interface('vatAdminSvc', {}, { defaultGuards: 'passable' }),
+    {
+      ...fakeVatAdmin,
+      createVat,
+      createVatByName,
+    },
+  );
   const criticalVatKey = vatAdminState.getCriticalVatKey();
   const getCriticalVatKey = () => criticalVatKey;
   const createVatAdminService = () => vatAdminService;

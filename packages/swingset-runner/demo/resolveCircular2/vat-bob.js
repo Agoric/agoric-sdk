@@ -14,21 +14,25 @@ export function buildRootObject() {
   let p2;
   let r2;
   let savepa;
-  return Far('root', {
-    genPromise1() {
-      void ([p1, r1] = makePR());
-      return p1;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      genPromise1() {
+        void ([p1, r1] = makePR());
+        return p1;
+      },
+      genPromise2() {
+        void ([p2, r2] = makePR());
+        return p2;
+      },
+      usePromises(pa, pb) {
+        r1(pb);
+        savepa = pa;
+      },
+      finish() {
+        r2(savepa);
+      },
     },
-    genPromise2() {
-      void ([p2, r2] = makePR());
-      return p2;
-    },
-    usePromises(pa, pb) {
-      r1(pb);
-      savepa = pa;
-    },
-    finish() {
-      r2(savepa);
-    },
-  });
+  );
 }

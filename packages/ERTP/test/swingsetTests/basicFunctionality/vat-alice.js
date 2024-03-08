@@ -8,69 +8,85 @@ import {
 } from '../../../src/legacy-payment-helpers.js';
 
 function makeAliceMaker(log) {
-  return Far('aliceMaker', {
-    make(issuer, brand, oldPaymentP) {
-      const alice = Far('alice', {
-        async testBasicFunctionality() {
-          // isLive
-          const alive = await E(issuer).isLive(oldPaymentP);
-          log('isLive: ', alive);
+  return makeExo(
+    'aliceMaker',
+    M.interface('aliceMaker', {}, { defaultGuards: 'passable' }),
+    {
+      make(issuer, brand, oldPaymentP) {
+        const alice = makeExo(
+          'alice',
+          M.interface('alice', {}, { defaultGuards: 'passable' }),
+          {
+            async testBasicFunctionality() {
+              // isLive
+              const alive = await E(issuer).isLive(oldPaymentP);
+              log('isLive: ', alive);
 
-          // getAmountOf
-          const amount = await E(issuer).getAmountOf(oldPaymentP);
-          log('getAmountOf: ', amount);
+              // getAmountOf
+              const amount = await E(issuer).getAmountOf(oldPaymentP);
+              log('getAmountOf: ', amount);
 
-          // Make Purse
+              // Make Purse
 
-          const purse = E(issuer).makeEmptyPurse();
+              const purse = E(issuer).makeEmptyPurse();
 
-          // Deposit Payment
+              // Deposit Payment
 
-          const payment = await oldPaymentP;
-          await E(purse).deposit(payment);
+              const payment = await oldPaymentP;
+              await E(purse).deposit(payment);
 
-          // Withdraw Payment
-          const newPayment = E(purse).withdraw(amount);
-          const newAmount = await E(issuer).getAmountOf(newPayment);
-          log('newPayment amount: ', newAmount);
+              // Withdraw Payment
+              const newPayment = E(purse).withdraw(amount);
+              const newAmount = await E(issuer).getAmountOf(newPayment);
+              log('newPayment amount: ', newAmount);
 
-          // splitMany
-          const moola200 = AmountMath.make(brand, 200n);
-          const [paymentToBurn, paymentToClaim, ...payments] = await splitMany(
-            E(issuer).makeEmptyPurse(),
-            newPayment,
-            harden([moola200, moola200, moola200, moola200, moola200]),
-          );
+              // splitMany
+              const moola200 = AmountMath.make(brand, 200n);
+              const [paymentToBurn, paymentToClaim, ...payments] =
+                await splitMany(
+                  E(issuer).makeEmptyPurse(),
+                  newPayment,
+                  harden([moola200, moola200, moola200, moola200, moola200]),
+                );
 
-          // burn
-          const burnedAmount = await E(issuer).burn(paymentToBurn);
-          log('burned amount: ', burnedAmount);
+              // burn
+              const burnedAmount = await E(issuer).burn(paymentToBurn);
+              log('burned amount: ', burnedAmount);
 
-          // claim
-          const claimedPayment = await claim(
-            E(issuer).makeEmptyPurse(),
-            paymentToClaim,
-          );
-          const claimedPaymentAmount =
-            await E(issuer).getAmountOf(claimedPayment);
-          log('claimedPayment amount: ', claimedPaymentAmount);
+              // claim
+              const claimedPayment = await claim(
+                E(issuer).makeEmptyPurse(),
+                paymentToClaim,
+              );
+              const claimedPaymentAmount =
+                await E(issuer).getAmountOf(claimedPayment);
+              log('claimedPayment amount: ', claimedPaymentAmount);
 
-          // combine
-          const combinedPayment = combine(E(issuer).makeEmptyPurse(), payments);
-          const combinedPaymentAmount =
-            await E(issuer).getAmountOf(combinedPayment);
-          log('combinedPayment amount: ', combinedPaymentAmount);
-        },
-      });
-      return alice;
+              // combine
+              const combinedPayment = combine(
+                E(issuer).makeEmptyPurse(),
+                payments,
+              );
+              const combinedPaymentAmount =
+                await E(issuer).getAmountOf(combinedPayment);
+              log('combinedPayment amount: ', combinedPaymentAmount);
+            },
+          },
+        );
+        return alice;
+      },
     },
-  });
+  );
 }
 
 export function buildRootObject(vatPowers) {
-  return Far('root', {
-    makeAliceMaker() {
-      return harden(makeAliceMaker(vatPowers.testLog));
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      makeAliceMaker() {
+        return harden(makeAliceMaker(vatPowers.testLog));
+      },
     },
-  });
+  );
 }

@@ -62,39 +62,43 @@ export function buildRootObject(_vatPowers, vatParameters) {
   let alice;
   let bob;
   let round = 0;
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      /** @type {{zoeService: ERef<ZoeService>}} */
-      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
-        vatAdminSvc,
-        undefined,
-        'zcf',
-      );
-      const installations = {
-        atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
-      };
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        /** @type {{zoeService: ERef<ZoeService>}} */
+        const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+          vatAdminSvc,
+          undefined,
+          'zcf',
+        );
+        const installations = {
+          atomicSwap: await E(zoe).install(atomicSwapBundle.bundle),
+        };
 
-      const startingValues = [
-        [3n, 0n], // Alice: 3 moola, no simoleans
-        [0n, 3n], // Bob:   no moola, 3 simoleans
-      ];
+        const startingValues = [
+          [3n, 0n], // Alice: 3 moola, no simoleans
+          [0n, 3n], // Bob:   no moola, 3 simoleans
+        ];
 
-      ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
-      // Zoe appears to do some one-time setup the first time it's used, so this
-      // is a sacrificial benchmark round to prime the pump.
-      if (vatParameters.argv[0] === '--prime') {
+        ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));
+        // Zoe appears to do some one-time setup the first time it's used, so this
+        // is a sacrificial benchmark round to prime the pump.
+        if (vatParameters.argv[0] === '--prime') {
+          await E(alice).initiateSwap(bob);
+          await E(bob).initiateSwap(alice);
+        }
+      },
+      async runBenchmarkRound() {
+        round += 1;
         await E(alice).initiateSwap(bob);
         await E(bob).initiateSwap(alice);
-      }
+        return `round ${round} complete`;
+      },
     },
-    async runBenchmarkRound() {
-      round += 1;
-      await E(alice).initiateSwap(bob);
-      await E(bob).initiateSwap(alice);
-      return `round ${round} complete`;
-    },
-  });
+  );
 }

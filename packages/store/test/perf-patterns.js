@@ -1,4 +1,5 @@
-import { Far, makeTagged } from '@endo/marshal';
+import { makeTagged } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
 import {
   makeCopyBag,
   makeCopyMap,
@@ -223,12 +224,20 @@ const measure = async (title, specimen, yesPattern, factor = 1) => {
   );
 };
 
-const brand = Far('fungible brand', {});
+const brand = makeExo(
+  'fungible brand',
+  M.interface('fungible brand', {}, { defaultGuards: 'passable' }),
+  {},
+);
 const amount1000 = harden({
   brand,
   value: 1000n,
 });
-const payment1000 = Far('fungible payment', {});
+const payment1000 = makeExo(
+  'fungible payment',
+  M.interface('fungible payment', {}, { defaultGuards: 'passable' }),
+  {},
+);
 
 const proposal = harden({
   give: { In: amount1000 },

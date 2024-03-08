@@ -3,19 +3,23 @@ import { Far } from '@endo/far';
 import { meterMe } from './metered-code.js';
 
 export function buildRootObject(_dynamicVatPowers) {
-  return Far('root', {
-    never() {
-      return makePromiseKit().promise;
-    },
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      never() {
+        return makePromiseKit().promise;
+      },
 
-    async run() {
-      meterMe([], 'no');
-      return 42;
-    },
+      async run() {
+        meterMe([], 'no');
+        return 42;
+      },
 
-    async explode(how) {
-      meterMe([], how);
-      return -1;
+      async explode(how) {
+        meterMe([], how);
+        return -1;
+      },
     },
-  });
+  );
 }

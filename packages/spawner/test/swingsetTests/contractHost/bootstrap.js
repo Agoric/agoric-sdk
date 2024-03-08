@@ -61,27 +61,31 @@ export function buildRootObject(vatPowers, vatParameters) {
     log(`++ DONE`);
   }
 
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      const spawner = await E(vats.spawner).buildSpawner(vatAdminSvc);
-      const [mode, trivialBundle] = vatParameters.argv;
-      switch (mode) {
-        case 'trivial': {
-          return trivialContractTest(spawner, trivialBundle);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        const spawner = await E(vats.spawner).buildSpawner(vatAdminSvc);
+        const [mode, trivialBundle] = vatParameters.argv;
+        switch (mode) {
+          case 'trivial': {
+            return trivialContractTest(spawner, trivialBundle);
+          }
+          case 'exhaust': {
+            return exhaustedContractTest(spawner, trivialBundle);
+          }
+          case 'farFailure': {
+            return farFailureContractTest(spawner, trivialBundle);
+          }
+          default: {
+            throw Fail`unrecognized argument value ${mode}`;
+          }
         }
-        case 'exhaust': {
-          return exhaustedContractTest(spawner, trivialBundle);
-        }
-        case 'farFailure': {
-          return farFailureContractTest(spawner, trivialBundle);
-        }
-        default: {
-          throw Fail`unrecognized argument value ${mode}`;
-        }
-      }
+      },
     },
-  });
+  );
 }

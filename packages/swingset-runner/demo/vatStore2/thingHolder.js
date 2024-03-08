@@ -44,28 +44,32 @@ function build(name) {
     }
   }
 
-  return Far('root', {
-    async introduce(other) {
-      const otherName = await E(other).getName();
-      const thing = makeThing(`thing-${nextThingNumber}`, other, otherName);
-      nextThingNumber += 1;
-      ensureCollection();
-      myThings.init(thing, 0);
-      return thing;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async introduce(other) {
+        const otherName = await E(other).getName();
+        const thing = makeThing(`thing-${nextThingNumber}`, other, otherName);
+        nextThingNumber += 1;
+        ensureCollection();
+        myThings.init(thing, 0);
+        return thing;
+      },
+      doYouHave(thing) {
+        ensureCollection();
+        if (myThings.has(thing)) {
+          const queryCount = myThings.get(thing) + 1;
+          myThings.set(thing, queryCount);
+          p(`${name}: ${queryCount} queries about ${thing.getLabel()}`);
+          return true;
+        } else {
+          p(`${name}: query about unknown thing`);
+          return false;
+        }
+      },
     },
-    doYouHave(thing) {
-      ensureCollection();
-      if (myThings.has(thing)) {
-        const queryCount = myThings.get(thing) + 1;
-        myThings.set(thing, queryCount);
-        p(`${name}: ${queryCount} queries about ${thing.getLabel()}`);
-        return true;
-      } else {
-        p(`${name}: query about unknown thing`);
-        return false;
-      }
-    },
-  });
+  );
 }
 
 export function buildRootObject(_vatPowers, vatParameters) {

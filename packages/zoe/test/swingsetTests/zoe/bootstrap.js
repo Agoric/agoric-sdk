@@ -81,38 +81,42 @@ const makeVats = (log, vats, zoe, installations, startingValues) => {
 export function buildRootObject(vatPowers, vatParameters) {
   const { D } = vatPowers;
   const { argv } = vatParameters;
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
-        devices.vatAdmin,
-      );
-      /** @type {{zoeService: ERef<ZoeService>}} */
-      const { zoeService: zoe } = await E(vats.zoe).buildZoe(
-        vatAdminSvc,
-        undefined,
-        'zcf',
-      );
-      const installations = {};
-      const installedPs = vatParameters.contractNames.map(name =>
-        E(vatAdminSvc)
-          .getNamedBundleCap(name)
-          .then(bcap => E(zoe).installBundleID(D(bcap).getBundleID()))
-          .then(installation => {
-            installations[name] = installation;
-          }),
-      );
-      await Promise.all(installedPs);
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        /** @type {{zoeService: ERef<ZoeService>}} */
+        const { zoeService: zoe } = await E(vats.zoe).buildZoe(
+          vatAdminSvc,
+          undefined,
+          'zcf',
+        );
+        const installations = {};
+        const installedPs = vatParameters.contractNames.map(name =>
+          E(vatAdminSvc)
+            .getNamedBundleCap(name)
+            .then(bcap => E(zoe).installBundleID(D(bcap).getBundleID()))
+            .then(installation => {
+              installations[name] = installation;
+            }),
+        );
+        await Promise.all(installedPs);
 
-      const [testName, startingValues] = argv;
+        const [testName, startingValues] = argv;
 
-      const { aliceP, bobP, carolP, daveP } = makeVats(
-        vatPowers.testLog,
-        vats,
-        zoe,
-        installations,
-        startingValues,
-      );
-      await E(aliceP).startTest(testName, bobP, carolP, daveP);
+        const { aliceP, bobP, carolP, daveP } = makeVats(
+          vatPowers.testLog,
+          vats,
+          zoe,
+          installations,
+          startingValues,
+        );
+        await E(aliceP).startTest(testName, bobP, carolP, daveP);
+      },
     },
-  });
+  );
 }

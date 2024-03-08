@@ -61,35 +61,39 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     }
   }
 
-  const root = Far('root', {
-    getVersion: () => 'v2',
-    getParameters: () => vatParameters,
-    getPresence: () => baggage.get('presence'),
-    getData: () => baggage.get('data'),
-    getEntries: collection => Array.from(collection.entries()),
-    checkBaggage: (imp32, imp36) => {
-      // console.log(`baggage:`, Array.from(baggage.keys()));
-      const dc5 = baggage.get('dc5');
-      const dc6 = baggage.get('dc6');
-      const imp33 = dc5.get(imp32).getImport();
-      let dur34;
-      for (const key of dc6.keys()) {
-        if (key !== imp36) {
-          dur34 = key;
+  const root = makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      getVersion: () => 'v2',
+      getParameters: () => vatParameters,
+      getPresence: () => baggage.get('presence'),
+      getData: () => baggage.get('data'),
+      getEntries: collection => Array.from(collection.entries()),
+      checkBaggage: (imp32, imp36) => {
+        // console.log(`baggage:`, Array.from(baggage.keys()));
+        const dc5 = baggage.get('dc5');
+        const dc6 = baggage.get('dc6');
+        const imp33 = dc5.get(imp32).getImport();
+        let dur34;
+        for (const key of dc6.keys()) {
+          if (key !== imp36) {
+            dur34 = key;
+          }
         }
-      }
-      const imp35 = dc6.get(dur34).getImport();
-      assert.equal(imp36, dc6.get(imp36).getImport());
-      const imp37 = baggage.get('dur37').getImport();
-      const imp38 = baggage.get('imp38');
-      return { imp33, imp35, imp37, imp38 };
+        const imp35 = dc6.get(dur34).getImport();
+        assert.equal(imp36, dc6.get(imp36).getImport());
+        const imp37 = baggage.get('dur37').getImport();
+        const imp38 = baggage.get('imp38');
+        return { imp33, imp35, imp37, imp38 };
+      },
+      pingback: handler => {
+        counter += 1;
+        return E(handler).ping(`ping ${counter}`);
+      },
+      getNewDurandal: () => newDur,
     },
-    pingback: handler => {
-      counter += 1;
-      return E(handler).ping(`ping ${counter}`);
-    },
-    getNewDurandal: () => newDur,
-  });
+  );
   // buildRootObject() is allowed to return a Promise, as long as it fulfills
   // promptly (we added this in #5246 to allow ZCF to use the async
   // importBundle() during contract upgrade).  We return a pre-fulfilled Promise

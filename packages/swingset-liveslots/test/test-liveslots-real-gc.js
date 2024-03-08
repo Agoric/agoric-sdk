@@ -2,7 +2,8 @@
 /* global process */
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser } from '@agoric/kmarshal';
 import engineGC from './engine-gc.js';
@@ -31,21 +32,25 @@ test.serial('liveslots retains pending exported promise', async t => {
   let collected;
   const success = [];
   function build(_vatPowers) {
-    const root = Far('root', {
-      make() {
-        const pk = makePromiseKit();
-        collected = watchCollected(pk.promise);
-        // we export the Promise, but do not retain resolve/reject
-        return [pk.promise];
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        make() {
+          const pk = makePromiseKit();
+          collected = watchCollected(pk.promise);
+          // we export the Promise, but do not retain resolve/reject
+          return [pk.promise];
+        },
+        // if liveslots fails to keep a strongref to the Promise, it will have
+        // been collected by now, and calling check() will fail, because
+        // liveslots can't create a new Promise import when the allocatedByVat
+        // says it was an export
+        check(_p) {
+          success.push('yes');
+        },
       },
-      // if liveslots fails to keep a strongref to the Promise, it will have
-      // been collected by now, and calling check() will fail, because
-      // liveslots can't create a new Promise import when the allocatedByVat
-      // says it was an export
-      check(_p) {
-        success.push('yes');
-      },
-    });
+    );
     return root;
   }
 
@@ -70,15 +75,19 @@ test.serial('liveslots retains device nodes', async t => {
   const recognize = new WeakSet(); // real WeakSet
   const success = [];
   function build(_vatPowers) {
-    const root = Far('root', {
-      first(dn) {
-        collected = watchCollected(dn);
-        recognize.add(dn);
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        first(dn) {
+          collected = watchCollected(dn);
+          recognize.add(dn);
+        },
+        second(dn) {
+          success.push(recognize.has(dn));
+        },
       },
-      second(dn) {
-        success.push(recognize.has(dn));
-      },
-    });
+    );
     return root;
   }
 
@@ -97,16 +106,20 @@ test.serial('GC syscall.dropImports', async t => {
   let collected;
   function build(_vatPowers) {
     const holder = new Set();
-    const root = Far('root', {
-      one(arg) {
-        holder.add(arg);
-        collected = watchCollected(arg);
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one(arg) {
+          holder.add(arg);
+          collected = watchCollected(arg);
+        },
+        two() {},
+        three() {
+          holder.clear(); // drops the import
+        },
       },
-      two() {},
-      three() {
-        holder.clear(); // drops the import
-      },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -182,11 +195,15 @@ test.serial('GC dispatch.retireImports', async t => {
   function build(_vatPowers) {
     // eslint-disable-next-line no-unused-vars
     let presence1;
-    const root = Far('root', {
-      one(arg) {
-        presence1 = arg;
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one(arg) {
+          presence1 = arg;
+        },
       },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -213,12 +230,20 @@ test.serial('GC dispatch.retireImports', async t => {
 test.serial('GC dispatch.retireExports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
-    const ex1 = Far('export', {});
-    const root = Far('root', {
-      one() {
-        return ex1;
+    const ex1 = makeExo(
+      'export',
+      M.interface('export', {}, { defaultGuards: 'passable' }),
+      {},
+    );
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one() {
+          return ex1;
+        },
       },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -257,15 +282,23 @@ test.serial('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
-    const root = Far('root', {
-      one() {
-        const ex1 = Far('export', {});
-        collected = watchCollected(ex1);
-        return ex1;
-        // ex1 goes out of scope, dropping last userspace strongref
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one() {
+          const ex1 = makeExo(
+            'export',
+            M.interface('export', {}, { defaultGuards: 'passable' }),
+            {},
+          );
+          collected = watchCollected(ex1);
+          return ex1;
+          // ex1 goes out of scope, dropping last userspace strongref
+        },
+        two() {},
       },
-      two() {},
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -325,18 +358,26 @@ test.serial(
     let collected;
     function build(_vatPowers) {
       const holder = new Set();
-      const root = Far('root', {
-        hold() {
-          const ex1 = Far('export', {});
-          holder.add(ex1);
-          collected = watchCollected(ex1);
-          return ex1;
+      const root = makeExo(
+        'root',
+        M.interface('root', {}, { defaultGuards: 'passable' }),
+        {
+          hold() {
+            const ex1 = makeExo(
+              'export',
+              M.interface('export', {}, { defaultGuards: 'passable' }),
+              {},
+            );
+            holder.add(ex1);
+            collected = watchCollected(ex1);
+            return ex1;
+          },
+          two() {},
+          drop() {
+            holder.clear(); // drop the last userspace strongref
+          },
         },
-        two() {},
-        drop() {
-          holder.clear(); // drop the last userspace strongref
-        },
-      });
+      );
       return root;
     }
     const { dispatch } = await makeDispatch(syscall, build, 'vatA', {

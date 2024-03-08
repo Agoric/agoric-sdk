@@ -10,7 +10,11 @@ import {
 
 /** @param {import('@agoric/vats').Board} board */
 const makeAMM = board => {
-  const atom = Far('ATOM brand', {});
+  const atom = makeExo(
+    'ATOM brand',
+    M.interface('ATOM brand', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const pub = board.getPublishingMarshaller();
   return harden({ getMetrics: () => pub.toCapData(harden([atom])) });
 };
@@ -22,9 +26,13 @@ const makeOnChainWallet = board => {
   return harden({
     suggestIssuer: (name, boardId) => {
       brand = board.getValue(boardId);
-      const purse = Far(`${name} purse`, {
-        getCurrentAmount: () => harden({ brand, value: 100 }),
-      });
+      const purse = makeExo(
+        `${name} purse`,
+        M.interface(`${name} purse`, {}, { defaultGuards: 'passable' }),
+        {
+          getCurrentAmount: () => harden({ brand, value: 100 }),
+        },
+      );
       // only for private brands
       //   context.initBrandId(boardId, brand);
       context.initBoardId(boardId, brand);
@@ -95,7 +103,14 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
   );
 
   t.throws(
-    () => context.fromMyWallet.toCapData(Far('widget', {})),
+    () =>
+      context.fromMyWallet.toCapData(
+        makeExo(
+          'widget',
+          M.interface('widget', {}, { defaultGuards: 'passable' }),
+          {},
+        ),
+      ),
     {
       message: /unregistered/,
     },
@@ -104,8 +119,16 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
 });
 
 test('ensureBoardId allows re-registration; initBoardId does not', t => {
-  const brandM = Far('Moola brand', {});
-  const brandS = Far('Semolean brand', {});
+  const brandM = makeExo(
+    'Moola brand',
+    M.interface('Moola brand', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const brandS = makeExo(
+    'Semolean brand',
+    M.interface('Semolean brand', {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   const context = makeExportContext();
   context.initBoardId('board01', brandM);
@@ -117,8 +140,16 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
 });
 
 test('makeExportContext.serialize handles unregistered identities', t => {
-  const brand = Far('Zoe invitation brand', {});
-  const instance = Far('amm instance', {});
+  const brand = makeExo(
+    'Zoe invitation brand',
+    M.interface('Zoe invitation brand', {}, { defaultGuards: 'passable' }),
+    {},
+  );
+  const instance = makeExo(
+    'amm instance',
+    M.interface('amm instance', {}, { defaultGuards: 'passable' }),
+    {},
+  );
   const invitationAmount = harden({ brand, value: [{ instance }] });
 
   const context = makeExportContext();
@@ -140,7 +171,11 @@ test('makeExportContext.serialize handles unregistered identities', t => {
   t.deepEqual(context.fromCapData(actual), invitationAmount);
 
   const myPayment = /** @type {Payment} */ (
-    Far('payment', { getAllegedBrand: () => assert.fail('no impl') })
+    makeExo(
+      'payment',
+      M.interface('payment', {}, { defaultGuards: 'passable' }),
+      { getAllegedBrand: () => assert.fail('no impl') },
+    )
   );
   context.savePaymentActions(myPayment);
   const cap2 = context.toCapData(myPayment);

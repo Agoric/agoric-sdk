@@ -68,19 +68,23 @@ export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
     );
   };
 
-  return Far('vat-agoricNames', {
-    getNameHub: () => agoricNames,
-    getNameHubKit: () => kit,
-    publishNameHubs,
-    /**
-     * Provide a brand, with no associated mint nor issuer.
-     *
-     * @param {string} keyword
-     * @param {DisplayInfo} displayInfo
-     */
-    provideInertBrand: (keyword, displayInfo) =>
-      provideLazy(brandStore, keyword, () =>
-        makeNatBrand(keyword, displayInfo),
-      ),
-  });
+  return makeExo(
+    'vat-agoricNames',
+    M.interface('vat-agoricNames', {}, { defaultGuards: 'passable' }),
+    {
+      getNameHub: () => agoricNames,
+      getNameHubKit: () => kit,
+      publishNameHubs,
+      /**
+       * Provide a brand, with no associated mint nor issuer.
+       *
+       * @param {string} keyword
+       * @param {DisplayInfo} displayInfo
+       */
+      provideInertBrand: (keyword, displayInfo) =>
+        provideLazy(brandStore, keyword, () =>
+          makeNatBrand(keyword, displayInfo),
+        ),
+    },
+  );
 };

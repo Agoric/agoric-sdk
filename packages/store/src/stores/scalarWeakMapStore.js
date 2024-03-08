@@ -1,10 +1,12 @@
-import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
+import { assertPassable, passStyleOf } from '@endo/pass-style';
 import {
   getCopyMapEntries,
   mustMatch,
   assertPattern,
   isCopyMap,
+  M,
 } from '@endo/patterns';
+import { makeExo } from '@endo/exo';
 
 const { quote: q, Fail } = assert;
 
@@ -131,14 +133,22 @@ export const makeScalarWeakMapStore = (
     assertKVOkToSet(key, value);
   };
 
-  return Far(`scalar WeakMapStore of ${q(tag)}`, {
-    ...makeWeakMapStoreMethods(
-      jsmap,
-      assertKVOkToAdd,
-      assertKVOkToSet,
-      undefined,
-      tag,
+  return makeExo(
+    `scalar WeakMapStore of ${q(tag)}`,
+    M.interface(
+      `scalar WeakMapStore of ${q(tag)}`,
+      {},
+      { defaultGuards: 'passable' },
     ),
-  });
+    {
+      ...makeWeakMapStoreMethods(
+        jsmap,
+        assertKVOkToAdd,
+        assertKVOkToSet,
+        undefined,
+        tag,
+      ),
+    },
+  );
 };
 harden(makeScalarWeakMapStore);

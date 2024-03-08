@@ -47,11 +47,15 @@ export const makeFakeBankKit = issuerKits => {
   };
 
   /** @type {import('../src/vat-bank.js').Bank} */
-  const bank = Far('mock bank', {
-    /** @param {Brand} brand */
-    getPurse: async brand => purses.get(brand),
-    getAssetSubscription: () => subscription,
-  });
+  const bank = makeExo(
+    'mock bank',
+    M.interface('mock bank', {}, { defaultGuards: 'passable' }),
+    {
+      /** @param {Brand} brand */
+      getPurse: async brand => purses.get(brand),
+      getAssetSubscription: () => subscription,
+    },
+  );
 
   return { addAsset, assetPublication: publication, bank };
 };

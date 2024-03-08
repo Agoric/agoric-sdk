@@ -3,10 +3,11 @@ import test from 'ava';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@agoric/assert';
 import { kslot, kser, kunser } from '@agoric/kmarshal';
-import { M } from '@agoric/store';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeStartVat, makeResolve, makeReject } from './util.js';
@@ -26,18 +27,22 @@ test('calls', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return Far('root', {
-      one() {
-        log.push('one');
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one() {
+          log.push('one');
+        },
+        two(p) {
+          log.push(`two ${E.resolve(p) === p}`);
+          p.then(
+            res => log.push(['res', res]),
+            rej => log.push(['rej', rej]),
+          );
+        },
       },
-      two(p) {
-        log.push(`two ${E.resolve(p) === p}`);
-        p.then(
-          res => log.push(['res', res]),
-          rej => log.push(['rej', rej]),
-        );
-      },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -75,14 +80,18 @@ test('liveslots pipelines to syscall.send', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return Far('root', {
-      one(x) {
-        const p1 = E(x).pipe1();
-        const p2 = E(p1).pipe2();
-        E(p2).pipe3();
-        log.push('sent p1p2p3');
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one(x) {
+          const p1 = E(x).pipe1();
+          const p2 = E(p1).pipe2();
+          E(p2).pipe3();
+          log.push('sent p1p2p3');
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -128,16 +137,20 @@ test('liveslots pipeline/non-pipeline calls', async t => {
 
   function build(_vatPowers) {
     let p1;
-    return Far('onetwo', {
-      one(p) {
-        p1 = p;
-        E(p1).pipe1();
-        p1.then(o2 => E(o2).nonpipe2());
+    return makeExo(
+      'onetwo',
+      M.interface('onetwo', {}, { defaultGuards: 'passable' }),
+      {
+        one(p) {
+          p1 = p;
+          E(p1).pipe1();
+          p1.then(o2 => E(o2).nonpipe2());
+        },
+        two() {
+          E(p1).nonpipe3();
+        },
       },
-      two() {
-        E(p1).nonpipe3();
-      },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -195,24 +208,28 @@ async function doOutboundPromise(t, mode) {
   const { log, syscall } = buildSyscall();
 
   function build(_vatPowers) {
-    return Far('root', {
-      run(target, resolution) {
-        let p; // vat creates the promise
-        if (resolution === 'reject') {
-          // eslint-disable-next-line prefer-promise-reject-errors
-          p = Promise.reject('reject');
-        } else {
-          p = Promise.resolve(resolution); // resolves in future turn
-        }
-        E(target).one(p); // sends promise
-        // then sends resolution/rejection
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        run(target, resolution) {
+          let p; // vat creates the promise
+          if (resolution === 'reject') {
+            // eslint-disable-next-line prefer-promise-reject-errors
+            p = Promise.reject('reject');
+          } else {
+            p = Promise.resolve(resolution); // resolves in future turn
+          }
+          E(target).one(p); // sends promise
+          // then sends resolution/rejection
 
-        // Queue up a call that includes the promise again. This will run
-        // *after* the promise has been resolved. Our current implementation
-        // will use the same promise identifier.
-        void Promise.resolve().then(() => E(target).two(p));
+          // Queue up a call that includes the promise again. This will run
+          // *after* the promise has been resolved. Our current implementation
+          // will use the same promise identifier.
+          void Promise.resolve().then(() => E(target).two(p));
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -307,20 +324,24 @@ async function doResultPromise(t, mode) {
     // inhibit GC of the Presence, so the tests see stable syscalls
     // eslint-disable-next-line no-unused-vars
     let pin;
-    return Far('root', {
-      async run(target1) {
-        pin = target1;
-        const p1 = E(target1).getTarget2();
-        hush(p1);
-        const p2 = E(p1).one();
-        // p1 resolves first, then p2 resolves on a subsequent crank
-        await p2;
-        // the second call to p1 should be sent to the object, not the
-        // promise, since the resolution of p1 is now known
-        const p3 = E(p1).two();
-        hush(p3);
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        async run(target1) {
+          pin = target1;
+          const p1 = E(target1).getTarget2();
+          hush(p1);
+          const p2 = E(p1).one();
+          // p1 resolves first, then p2 resolves on a subsequent crank
+          await p2;
+          // the second call to p1 should be sent to the object, not the
+          // promise, since the resolution of p1 is now known
+          const p3 = E(p1).two();
+          hush(p3);
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -413,20 +434,24 @@ test('liveslots vs symbols', async t => {
   const arbitrarySymbol = Symbol.for('arbitrary');
 
   function build(_vatPowers) {
-    return Far('root', {
-      [Symbol.asyncIterator](arg) {
-        return ['ok', 'asyncIterator', arg];
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        [Symbol.asyncIterator](arg) {
+          return ['ok', 'asyncIterator', arg];
+        },
+        [arbitrarySymbol](arg) {
+          return ['ok', 'arbitrary', arg];
+        },
+        sendAsyncIterator(target) {
+          E(target)[Symbol.asyncIterator]('arg');
+        },
+        sendArbitrary(target) {
+          E(target)[arbitrarySymbol]('arg');
+        },
       },
-      [arbitrarySymbol](arg) {
-        return ['ok', 'arbitrary', arg];
-      },
-      sendAsyncIterator(target) {
-        E(target)[Symbol.asyncIterator]('arg');
-      },
-      sendArbitrary(target) {
-        E(target)[arbitrarySymbol]('arg');
-      },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
 
@@ -483,11 +508,15 @@ test('remote function call', async t => {
   function build(_vatPowers) {
     const fun = Far('fun', arg => ['ok', 'funcall', arg]);
 
-    return Far('root', {
-      getFun() {
-        return fun;
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        getFun() {
+          return fun;
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -520,8 +549,16 @@ test('capdata size limit on syscalls', async t => {
   function build(vatPowers) {
     const { D, VatData, exitVat, exitVatWithFailure } = vatPowers;
     const { makeScalarBigMapStore, defineKind } = VatData;
-    const obj1 = Far('obj1', {});
-    const obj2 = Far('obj2', {});
+    const obj1 = makeExo(
+      'obj1',
+      M.interface('obj1', {}, { defaultGuards: 'passable' }),
+      {},
+    );
+    const obj2 = makeExo(
+      'obj2',
+      M.interface('obj2', {}, { defaultGuards: 'passable' }),
+      {},
+    );
     const store = makeScalarBigMapStore('test');
 
     async function doFail(f) {
@@ -533,98 +570,102 @@ test('capdata size limit on syscalls', async t => {
       }
     }
 
-    return Far('root', {
-      async sendTooManySlots(target) {
-        await doFail(() => E(target).willFail(obj1, obj2));
-      },
-      async sendBodyTooBig(target) {
-        await doFail(() => E(target).willFail(longString));
-      },
-      async resolveTooManySlots(target) {
-        const pk = makePromiseKit();
-        await E(target).takeThis(pk.promise);
-        pk.resolve([obj1, obj2]);
-      },
-      async resolveBodyTooBig(target) {
-        const pk = makePromiseKit();
-        await E(target).takeThis(pk.promise);
-        pk.resolve(longString);
-      },
-      returnTooManySlots() {
-        return [obj1, obj2];
-      },
-      returnBodyTooBig() {
-        return longString;
-      },
-      async callTooManySlots(dev) {
-        await doFail(() => D(dev).willFail(obj1, obj2));
-      },
-      async callBodyTooBig(dev) {
-        await doFail(() => D(dev).willFail(longString));
-      },
-      async voInitTooManySlots() {
-        await doFail(() => {
-          const maker = defineKind(
-            'test',
-            () => ({ x: harden([obj1, obj2]) }),
-            {},
-          );
-          maker();
-        });
-      },
-      async voInitBodyTooBig() {
-        await doFail(() => {
-          const maker = defineKind('test', () => ({ x: longString }), {});
-          maker();
-        });
-      },
-      async voSetTooManySlots() {
-        await doFail(() => {
-          const maker = defineKind('test', () => ({ x: 0 }), {
-            setx: ({ state }, x) => {
-              state.x = x;
-            },
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        async sendTooManySlots(target) {
+          await doFail(() => E(target).willFail(obj1, obj2));
+        },
+        async sendBodyTooBig(target) {
+          await doFail(() => E(target).willFail(longString));
+        },
+        async resolveTooManySlots(target) {
+          const pk = makePromiseKit();
+          await E(target).takeThis(pk.promise);
+          pk.resolve([obj1, obj2]);
+        },
+        async resolveBodyTooBig(target) {
+          const pk = makePromiseKit();
+          await E(target).takeThis(pk.promise);
+          pk.resolve(longString);
+        },
+        returnTooManySlots() {
+          return [obj1, obj2];
+        },
+        returnBodyTooBig() {
+          return longString;
+        },
+        async callTooManySlots(dev) {
+          await doFail(() => D(dev).willFail(obj1, obj2));
+        },
+        async callBodyTooBig(dev) {
+          await doFail(() => D(dev).willFail(longString));
+        },
+        async voInitTooManySlots() {
+          await doFail(() => {
+            const maker = defineKind(
+              'test',
+              () => ({ x: harden([obj1, obj2]) }),
+              {},
+            );
+            maker();
           });
-          const vo = maker();
-          vo.setx(harden([obj1, obj2]));
-        });
-      },
-      async voSetBodyTooBig() {
-        await doFail(() => {
-          const maker = defineKind('test', () => ({ x: 0 }), {
-            setx: ({ state }, x) => {
-              state.x = x;
-            },
+        },
+        async voInitBodyTooBig() {
+          await doFail(() => {
+            const maker = defineKind('test', () => ({ x: longString }), {});
+            maker();
           });
-          const vo = maker();
-          vo.setx(longString);
-        });
+        },
+        async voSetTooManySlots() {
+          await doFail(() => {
+            const maker = defineKind('test', () => ({ x: 0 }), {
+              setx: ({ state }, x) => {
+                state.x = x;
+              },
+            });
+            const vo = maker();
+            vo.setx(harden([obj1, obj2]));
+          });
+        },
+        async voSetBodyTooBig() {
+          await doFail(() => {
+            const maker = defineKind('test', () => ({ x: 0 }), {
+              setx: ({ state }, x) => {
+                state.x = x;
+              },
+            });
+            const vo = maker();
+            vo.setx(longString);
+          });
+        },
+        async storeInitTooManySlots() {
+          await doFail(() => store.init('key', harden([obj1, obj2])));
+        },
+        async storeInitBodyTooBig() {
+          await doFail(() => store.init('key', longString));
+        },
+        async storeSetTooManySlots() {
+          await doFail(() => store.set('key', harden([obj1, obj2])));
+        },
+        async storeSetBodyTooBig() {
+          await doFail(() => store.set('key', longString));
+        },
+        exitVatTooManySlots() {
+          exitVat([obj1, obj2]);
+        },
+        exitVatBodyTooBig() {
+          exitVat(longString);
+        },
+        exitVatFailTooManySlots() {
+          exitVatWithFailure([obj1, obj2]);
+        },
+        exitVatFailBodyTooBig() {
+          exitVatWithFailure(longString);
+        },
       },
-      async storeInitTooManySlots() {
-        await doFail(() => store.init('key', harden([obj1, obj2])));
-      },
-      async storeInitBodyTooBig() {
-        await doFail(() => store.init('key', longString));
-      },
-      async storeSetTooManySlots() {
-        await doFail(() => store.set('key', harden([obj1, obj2])));
-      },
-      async storeSetBodyTooBig() {
-        await doFail(() => store.set('key', longString));
-      },
-      exitVatTooManySlots() {
-        exitVat([obj1, obj2]);
-      },
-      exitVatBodyTooBig() {
-        exitVat(longString);
-      },
-      exitVatFailTooManySlots() {
-        exitVatWithFailure([obj1, obj2]);
-      },
-      exitVatFailBodyTooBig() {
-        exitVatWithFailure(longString);
-      },
-    });
+    );
   }
   const { dispatch, testHooks } = await makeDispatch(
     syscall,
@@ -893,11 +934,15 @@ test('disable disavow', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(vatPowers) {
-    return Far('root', {
-      one() {
-        log.push(!!vatPowers.disavow);
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one() {
+          log.push(!!vatPowers.disavow);
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {});
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -913,47 +958,51 @@ test('disavow', async t => {
   const { log, syscall } = buildSyscall();
 
   function build(vatPowers) {
-    const root = Far('root', {
-      async one(pres1) {
-        vatPowers.disavow(pres1);
-        log.push('disavowed pres1');
-
-        try {
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        async one(pres1) {
           vatPowers.disavow(pres1);
-          log.push('oops duplicate disavow worked');
-        } catch (err) {
-          log.push(err); // forbidden to disavow twice
-        }
-        log.push('tried duplicate disavow');
+          log.push('disavowed pres1');
 
-        try {
-          const pr = Promise.resolve();
-          vatPowers.disavow(pr);
-          log.push('oops disavow Promise worked');
-        } catch (err) {
-          log.push(err); // forbidden to disavow promises
-        }
-        log.push('tried to disavow Promise');
+          try {
+            vatPowers.disavow(pres1);
+            log.push('oops duplicate disavow worked');
+          } catch (err) {
+            log.push(err); // forbidden to disavow twice
+          }
+          log.push('tried duplicate disavow');
 
-        try {
-          vatPowers.disavow(root);
-          log.push('oops disavow export worked');
-        } catch (err) {
-          log.push(err); // forbidden to disavow exports
-        }
-        log.push('tried to disavow export');
+          try {
+            const pr = Promise.resolve();
+            vatPowers.disavow(pr);
+            log.push('oops disavow Promise worked');
+          } catch (err) {
+            log.push(err); // forbidden to disavow promises
+          }
+          log.push('tried to disavow Promise');
 
-        const p1 = E(pres1).foo();
-        // this does a syscall.exit on a subsequent turn
-        try {
-          await p1;
-          log.push('oops send to disavowed worked');
-        } catch (err) {
-          log.push(err); // fatal to send to disavowed
-        }
-        log.push('tried to send to disavowed');
+          try {
+            vatPowers.disavow(root);
+            log.push('oops disavow export worked');
+          } catch (err) {
+            log.push(err); // forbidden to disavow exports
+          }
+          log.push('tried to disavow export');
+
+          const p1 = E(pres1).foo();
+          // this does a syscall.exit on a subsequent turn
+          try {
+            await p1;
+            log.push('oops send to disavowed worked');
+          } catch (err) {
+            log.push(err); // fatal to send to disavowed
+          }
+          log.push('tried to send to disavowed');
+        },
       },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -997,7 +1046,11 @@ test('buildVatNamespace not called until after startVat', async t => {
 
   function buildRootObject() {
     buildCalled = true;
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
 
   const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, () => ({
@@ -1014,14 +1067,18 @@ test('simple promise resolution', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     const pkA = makePromiseKit();
-    const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        export() {
+          return harden({ p: pkA.promise });
+        },
+        resolve() {
+          pkA.resolve('data');
+        },
       },
-      resolve() {
-        pkA.resolve('data');
-      },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -1058,14 +1115,18 @@ test('promise cycle', async t => {
     const pkB = makePromiseKit();
     pkA.resolve([pkB.promise]);
     pkB.resolve([pkA.promise]);
-    const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        export() {
+          return harden({ p: pkA.promise });
+        },
+        resolve() {
+          pkA.resolve('data');
+        },
       },
-      resolve() {
-        pkA.resolve('data');
-      },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -1121,14 +1182,18 @@ test('unserializable promise resolution', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     const pkA = makePromiseKit();
-    const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        export() {
+          return harden({ p: pkA.promise });
+        },
+        resolve() {
+          pkA.resolve(unserializable); // causes serialization error
+        },
       },
-      resolve() {
-        pkA.resolve(unserializable); // causes serialization error
-      },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -1181,14 +1246,18 @@ test('unserializable promise rejection', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
     const pkA = makePromiseKit();
-    const root = Far('root', {
-      export() {
-        return harden({ p: pkA.promise });
+    const root = makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        export() {
+          return harden({ p: pkA.promise });
+        },
+        resolve() {
+          pkA.reject(unserializable); // causes serialization error
+        },
       },
-      resolve() {
-        pkA.reject(unserializable); // causes serialization error
-      },
-    });
+    );
     return root;
   }
   const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
@@ -1288,19 +1357,23 @@ test('result promise in args', async t => {
   //   is good, because we won't recognize the vpid by that point.
 
   function build(_vatPowers) {
-    return Far('root', {
-      one(p, target) {
-        // the promise we receive should have the same identity as our
-        // result promise
-        E(target).two(p);
-        // we should be able to pipeline messages to it
-        E(p).three();
-        // we can subscribe to it, even though we're the decider
-        p.then(res => vatlog.push(`res: ${res === target}`));
-        // and we should be able to resolve it
-        return target;
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {
+        one(p, target) {
+          // the promise we receive should have the same identity as our
+          // result promise
+          E(target).two(p);
+          // we should be able to pipeline messages to it
+          E(p).three();
+          // we can subscribe to it, even though we're the decider
+          p.then(res => vatlog.push(`res: ${res === target}`));
+          // and we should be able to resolve it
+          return target;
+        },
       },
-    });
+    );
   }
   const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // ignore pre-build vatstore operations

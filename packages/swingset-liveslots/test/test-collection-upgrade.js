@@ -1,8 +1,8 @@
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
+import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 import { kser } from '@agoric/kmarshal';
-import { M } from '@agoric/store';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
@@ -39,7 +39,11 @@ test('durable collections survive upgrade', async t => {
       durable,
     });
     baggage.init('set', set1);
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
   const make1 = () => ({ buildRootObject: build1 });
 
@@ -102,7 +106,11 @@ test('durable collections survive upgrade', async t => {
     newThing2 = map2.get('thing2')[1];
     t.is(newThing2.name(), 'thing2');
     set2 = baggage.get('set');
-    return Far('root', {});
+    return makeExo(
+      'root',
+      M.interface('root', {}, { defaultGuards: 'passable' }),
+      {},
+    );
   }
   const make2 = () => ({ buildRootObject: build2 });
 

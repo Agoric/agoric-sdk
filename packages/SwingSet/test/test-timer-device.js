@@ -45,40 +45,52 @@ test('multiMap remove key', t => {
 });
 
 function fakeSO(o) {
-  return Far('fake SO', {
-    wake(arg = null) {
-      o.wake(arg);
+  return makeExo(
+    'fake SO',
+    M.interface('fake SO', {}, { defaultGuards: 'passable' }),
+    {
+      wake(arg = null) {
+        o.wake(arg);
+      },
     },
-  });
+  );
 }
 
 function makeHandler() {
   let calls = 0;
   const args = [];
-  return Far('wake handler', {
-    getCalls() {
-      return calls;
+  return makeExo(
+    'wake handler',
+    M.interface('wake handler', {}, { defaultGuards: 'passable' }),
+    {
+      getCalls() {
+        return calls;
+      },
+      getArgs() {
+        return args;
+      },
+      wake(arg) {
+        args.push(arg);
+        calls += 1;
+      },
     },
-    getArgs() {
-      return args;
-    },
-    wake(arg) {
-      args.push(arg);
-      calls += 1;
-    },
-  });
+  );
 }
 
 function makeFakeTimer(initialVal) {
   let fakeTime = initialVal;
-  return Far('fake timer', {
-    getLastPolled() {
-      return fakeTime;
+  return makeExo(
+    'fake timer',
+    M.interface('fake timer', {}, { defaultGuards: 'passable' }),
+    {
+      getLastPolled() {
+        return fakeTime;
+      },
+      setTime(t) {
+        fakeTime = t;
+      },
     },
-    setTime(t) {
-      fakeTime = t;
-    },
-  });
+  );
 }
 
 test('Timer schedule single event', t => {

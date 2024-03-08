@@ -196,14 +196,19 @@ export const providePriceAuthorityRegistry = baggage => {
           priceStore.init(brandOut, harden(record));
         }
 
-        return Far('deleter', {
-          // @ts-expect-error XXX callWhen
-          delete() {
-            (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
-              Fail`Price authority already dropped`;
-            priceStore.delete(brandOut);
+        return makeExo(
+          'deleter',
+          M.interface('deleter', {}, { defaultGuards: 'passable' }),
+          {
+            // @ts-expect-error XXX callWhen
+            delete() {
+              (priceStore.has(brandOut) &&
+                priceStore.get(brandOut) === record) ||
+                Fail`Price authority already dropped`;
+              priceStore.delete(brandOut);
+            },
           },
-        });
+        );
       },
     },
   );

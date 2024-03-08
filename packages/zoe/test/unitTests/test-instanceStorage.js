@@ -32,9 +32,17 @@ const setupIssuersForTest = () => {
 test('makeInstanceRecordStorage', async t => {
   const { stableKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
-  const fakeInstallation = Far('fakeInstallation', { getBundle: () => bundle });
+  const fakeInstallation = makeExo(
+    'fakeInstallation',
+    M.interface('fakeInstallation', {}, { defaultGuards: 'passable' }),
+    { getBundle: () => bundle },
+  );
   const fakeInstance = /** @type {Instance} */ (
-    Far('fakeInstance', { a: () => 0 })
+    makeExo(
+      'fakeInstance',
+      M.interface('fakeInstance', {}, { defaultGuards: 'passable' }),
+      { a: () => 0 },
+    )
   );
   const issuers = harden({
     Stable: stableKit.issuer,

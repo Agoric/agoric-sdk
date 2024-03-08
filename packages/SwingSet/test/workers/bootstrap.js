@@ -2,17 +2,25 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
-  const callbackObj = Far('callback', {
-    callback(_arg1, _arg2) {
-      // console.log(`callback`, arg1, arg2);
-      return ['data', callbackObj]; // four, resolves pF
+  const callbackObj = makeExo(
+    'callback',
+    M.interface('callback', {}, { defaultGuards: 'passable' }),
+    {
+      callback(_arg1, _arg2) {
+        // console.log(`callback`, arg1, arg2);
+        return ['data', callbackObj]; // four, resolves pF
+      },
     },
-  });
+  );
 
   const precD = makePromiseKit();
   const precE = makePromiseKit();
 
-  const dropMe = Far('dropMe', {});
+  const dropMe = makeExo(
+    'dropMe',
+    M.interface('dropMe', {}, { defaultGuards: 'passable' }),
+    {},
+  );
 
   function checkResB(resB) {
     if (resB === callbackObj) {
@@ -57,21 +65,25 @@ export function buildRootObject() {
     ]);
   }
 
-  return Far('root', {
-    bootstrap(vats, devices) {
-      const pA = E(vats.target).zero(
-        callbackObj,
-        precD.promise,
-        precE.promise,
-        devices.add,
-        dropMe,
-      );
-      const rp3 = E(vats.target).one();
-      precD.resolve(callbackObj); // two
-      precE.reject(Error('four')); // three
-      const done = Promise.all([pA.then(checkA), rp3]);
-      // expect: [['B good', 'C good', 'F good', 'three good', 'exit good', 'exitWF good'], 'rp3 good']
-      return done;
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      bootstrap(vats, devices) {
+        const pA = E(vats.target).zero(
+          callbackObj,
+          precD.promise,
+          precE.promise,
+          devices.add,
+          dropMe,
+        );
+        const rp3 = E(vats.target).one();
+        precD.resolve(callbackObj); // two
+        precE.reject(Error('four')); // three
+        const done = Promise.all([pA.then(checkA), rp3]);
+        // expect: [['B good', 'C good', 'F good', 'three good', 'exit good', 'exitWF good'], 'rp3 good']
+        return done;
+      },
     },
-  });
+  );
 }

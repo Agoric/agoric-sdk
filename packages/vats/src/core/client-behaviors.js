@@ -11,11 +11,15 @@ const PROVISIONER_INDEX = 1;
 
 function makeVattpFrom(vats) {
   const { vattp, comms } = vats;
-  return Far('vattp', {
-    makeNetworkHost(allegedName, console = undefined) {
-      return E(vattp).makeNetworkHost(allegedName, comms, console);
+  return makeExo(
+    'vattp',
+    M.interface('vattp', {}, { defaultGuards: 'passable' }),
+    {
+      makeNetworkHost(allegedName, console = undefined) {
+        return E(vattp).makeNetworkHost(allegedName, comms, console);
+      },
     },
-  });
+  );
 }
 
 // objects that live in the client's solo vat. Some services should only
@@ -44,30 +48,34 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
   }
 
   // This will allow dApp developers to register in their api/deploy.js
-  const httpRegCallback = Far('httpRegCallback', {
-    doneLoading(subsystems) {
-      return E(vats.http).doneLoading(subsystems);
+  const httpRegCallback = makeExo(
+    'httpRegCallback',
+    M.interface('httpRegCallback', {}, { defaultGuards: 'passable' }),
+    {
+      doneLoading(subsystems) {
+        return E(vats.http).doneLoading(subsystems);
+      },
+      send(obj, connectionHandles) {
+        return E(vats.http).send(obj, connectionHandles);
+      },
+      registerURLHandler(handler, path) {
+        return E(vats.http).registerURLHandler(handler, path);
+      },
+      registerAPIHandler(handler) {
+        return E(vats.http).registerURLHandler(handler, '/api');
+      },
+      async registerWallet(wallet, privateWallet, privateWalletBridge) {
+        await Promise.all([
+          E(vats.http).registerURLHandler(privateWallet, '/private/wallet'),
+          E(vats.http).registerURLHandler(
+            privateWalletBridge,
+            '/private/wallet-bridge',
+          ),
+          E(vats.http).setWallet(wallet),
+        ]);
+      },
     },
-    send(obj, connectionHandles) {
-      return E(vats.http).send(obj, connectionHandles);
-    },
-    registerURLHandler(handler, path) {
-      return E(vats.http).registerURLHandler(handler, path);
-    },
-    registerAPIHandler(handler) {
-      return E(vats.http).registerURLHandler(handler, '/api');
-    },
-    async registerWallet(wallet, privateWallet, privateWalletBridge) {
-      await Promise.all([
-        E(vats.http).registerURLHandler(privateWallet, '/private/wallet'),
-        E(vats.http).registerURLHandler(
-          privateWalletBridge,
-          '/private/wallet-bridge',
-        ),
-        E(vats.http).setWallet(wallet),
-      ]);
-    },
-  });
+  );
 
   const bundleP = harden({
     ...(plugin ? { plugin } : {}),

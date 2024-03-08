@@ -43,8 +43,12 @@ export function buildRootObject(vatPowers, _args, baggage) {
 
   // We colocate these functions in this vat so that we don't pay extra cranks
   // to shuffle messages between a chainStorage node and the bridgeManager.
-  return Far('root', {
-    makeBridgedChainStorageRoot,
-    provideManagerForBridge,
-  });
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      makeBridgedChainStorageRoot,
+      provideManagerForBridge,
+    },
+  );
 }

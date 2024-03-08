@@ -11,5 +11,9 @@ export const makeQuorumCounter = quorumThreshold => {
     return votes >= quorumThreshold;
   };
   /** @type {QuorumCounter} */
-  return Far('checker', { check });
+  return makeExo(
+    'checker',
+    M.interface('checker', {}, { defaultGuards: 'passable' }),
+    { check },
+  );
 };

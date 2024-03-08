@@ -24,38 +24,44 @@ import { Far } from '@endo/marshal';
 export function buildRootObject(_vatPowers, vatParameters) {
   let bootstrapRoot;
 
-  return Far('root', {
-    async bootstrap(vats, devices) {
-      const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-      const vatRoots = {};
-      for (const vatName of Object.keys(vatParameters.config.vats)) {
-        const vatDesc = vatParameters.config.vats[vatName];
-        const bundleName = vatDesc.bundleName;
-        const subvatParameters = vatDesc.parameters
-          ? { ...vatDesc.parameters }
-          : {};
-        if (vatParameters.config.bootstrap === vatName) {
-          subvatParameters.argv = vatParameters.argv;
-        }
-        let critical = vatDesc.critical;
-        if (critical) {
-          critical = criticalVatKey;
-        }
-        // prettier-ignore
-        const vat = await E(vatMaker).createVatByName(
+  return makeExo(
+    'root',
+    M.interface('root', {}, { defaultGuards: 'passable' }),
+    {
+      async bootstrap(vats, devices) {
+        const vatMaker = E(vats.vatAdmin).createVatAdminService(
+          devices.vatAdmin,
+        );
+        const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+        const vatRoots = {};
+        for (const vatName of Object.keys(vatParameters.config.vats)) {
+          const vatDesc = vatParameters.config.vats[vatName];
+          const bundleName = vatDesc.bundleName;
+          const subvatParameters = vatDesc.parameters
+            ? { ...vatDesc.parameters }
+            : {};
+          if (vatParameters.config.bootstrap === vatName) {
+            subvatParameters.argv = vatParameters.argv;
+          }
+          let critical = vatDesc.critical;
+          if (critical) {
+            critical = criticalVatKey;
+          }
+          // prettier-ignore
+          const vat = await E(vatMaker).createVatByName(
           bundleName,
           { vatParameters: harden(subvatParameters), critical },
         );
-        vatRoots[vatName] = vat.root;
-      }
-      vatRoots.vatAdmin = vats.vatAdmin;
-      bootstrapRoot = vatRoots[vatParameters.config.bootstrap];
-      // prettier-ignore
-      return E(bootstrapRoot).bootstrap(harden(vatRoots), devices);
+          vatRoots[vatName] = vat.root;
+        }
+        vatRoots.vatAdmin = vats.vatAdmin;
+        bootstrapRoot = vatRoots[vatParameters.config.bootstrap];
+        // prettier-ignore
+        return E(bootstrapRoot).bootstrap(harden(vatRoots), devices);
+      },
+      runBenchmarkRound() {
+        return E(bootstrapRoot).runBenchmarkRound();
+      },
     },
-    runBenchmarkRound() {
-      return E(bootstrapRoot).runBenchmarkRound();
-    },
-  });
+  );
 }
