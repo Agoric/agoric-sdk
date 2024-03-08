@@ -169,41 +169,33 @@ export function getPrefixes(addr) {
 }
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareOpenConnectionAckWatcher = zone => {
-  const makeOpenConnectionAckWatcher = zone.exoClass(
+const makeOpenConnectionAckWatcher = zone =>
+  zone.exo(
     'OpenConnectionAckWatcher',
     M.interface('OpenConnectionAckWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onFulfilled(ack) {
         return toBytes(ack || '');
       },
     },
   );
-  return makeOpenConnectionAckWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
  */
-const prepareInboundAttemptAcceptWatcher = (zone, makeConnection) => {
-  const makeInboundAttemptAcceptWatcher = zone.exoClass(
+const makeInboundAttemptAcceptWatcher = (zone, makeConnection) =>
+  zone.exo(
     'InboundAttemptAcceptWatcher',
     M.interface('InboundAttemptAcceptWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ localAddress, rchandler, remoteAddress, current }) => ({
-      localAddress,
-      rchandler,
-      remoteAddress,
-      current,
-    }),
     {
-      onFulfilled(lchandler) {
-        const { localAddress, rchandler, remoteAddress, current } = this.state;
+      onFulfilled(lchandler, watchContext) {
+        const { localAddress, rchandler, remoteAddress, current } =
+          watchContext;
 
         // eslint-disable-next-line no-use-before-define
         return crossoverConnection(
@@ -218,82 +210,61 @@ const prepareInboundAttemptAcceptWatcher = (zone, makeConnection) => {
       },
     },
   );
-  return makeInboundAttemptAcceptWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareSinkWatcher = zone => {
-  const makeSinkWatcher = zone.exoClass(
+const makeSinkWatcher = zone =>
+  zone.exo(
     'SinkWatcher',
-    M.interface('OpenConnectionAckWatcher', {
+    M.interface('SinkWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(),
     }),
-    () => ({}),
     {
       onFulfilled(_value) {
         return undefined;
       },
     },
   );
-  return makeSinkWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const preparePortAddListenerWatcher = zone => {
-  const makePortAddListenerWatcher = zone.exoClass(
+const makePortAddListenerWatcher = zone =>
+  zone.exo(
     'PortAddListenerWatcher',
     M.interface('PortAddListenerWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ port, listenHandler }) => ({
-      port,
-      listenHandler,
-    }),
     {
-      onFulfilled(_value) {
-        const { port, listenHandler } = this.state;
+      onFulfilled(_value, watcherContext) {
+        const { port, listenHandler } = watcherContext;
         return E(listenHandler).onListen(port, listenHandler);
       },
     },
   );
-  return makePortAddListenerWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const preparePortRemoveListenerWatcher = zone => {
-  const makePortRemoveListenerWatcher = zone.exoClass(
+const makePortRemoveListenerWatcher = zone =>
+  zone.exo(
     'PortRemoveListenerWatcher',
     M.interface('PortRemoveListenerWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ port, listenHandler }) => ({
-      port,
-      listenHandler,
-    }),
     {
-      onFulfilled(_value) {
-        const { port, listenHandler } = this.state;
+      onFulfilled(_value, watcherContext) {
+        const { port, listenHandler } = watcherContext;
         return E(listenHandler).onRemove(port, listenHandler);
       },
     },
   );
-  return makePortRemoveListenerWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const preparePortConnectWatcher = zone => {
-  const makePortConnectWatcher = zone.exoClass(
+const makePortConnectWatcher = zone =>
+  zone.exo(
     'PortConnectWatcher',
     M.interface('PortConnectWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ revoked, openConnections }) => ({
-      revoked,
-      openConnections,
-    }),
     {
-      onFulfilled(conn) {
-        const { revoked, openConnections } = this.state;
+      onFulfilled(conn, watchContext) {
+        const { revoked, openConnections } = watchContext;
 
         if (revoked) {
           void E(conn).close();
@@ -304,28 +275,20 @@ const preparePortConnectWatcher = zone => {
       },
     },
   );
-  return makePortConnectWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-const preparePortRevokeWatcher = (zone, { watch }) => {
-  const makePortRevokeWatcher = zone.exoClass(
+const makePortRevokeWatcher = (zone, { watch }) =>
+  zone.exo(
     'PortRevokeWatcher',
     M.interface('PortRevokeWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ currentConnections, port, listening, localAddr }) => ({
-      currentConnections,
-      port,
-      listening,
-      localAddr,
-    }),
     {
-      onFulfilled(_value) {
-        const { currentConnections, port, listening, localAddr } = this.state;
+      onFulfilled(_value, watchContext) {
+        const { currentConnections, port, listening, localAddr } = watchContext;
 
         // Clean up everything we did.
         const values = [...currentConnections.get(port).values()];
@@ -342,46 +305,33 @@ const preparePortRevokeWatcher = (zone, { watch }) => {
       },
     },
   );
-  return makePortRevokeWatcher;
-};
-
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  */
-const preparePortCloseAllWatcher = zone => {
-  const makePortCloseAllWatcher = zone.exoClass(
+const makePortCloseAllWatcher = zone =>
+  zone.exo(
     'PortCloseAllWatcher',
     M.interface('PortCloseAllWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onFulfilled(vows) {
         return Promise.all(vows);
       },
     },
   );
-  return makePortCloseAllWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const preparePortRevokeCleanupWatcher = zone => {
-  const makePortRevokeCleanupWatcher = zone.exoClass(
+const makePortRevokeCleanupWatcher = zone =>
+  zone.exo(
     'PortRevokeCleanupWatcher',
     M.interface('PortRevokeCleanupWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(),
     }),
-    ({ currentConnections, boundPorts, localAddr, port, store }) => ({
-      currentConnections,
-      boundPorts,
-      localAddr,
-      port,
-      store,
-    }),
     {
-      onFulfilled(_value) {
+      onFulfilled(_value, watchContext) {
         const { currentConnections, boundPorts, localAddr, port, store } =
-          this.state;
+          watchContext;
 
         // eslint-disable-next-line no-use-before-define
         store.set('revoked', RevokeState.REVOKED);
@@ -391,34 +341,28 @@ const preparePortRevokeCleanupWatcher = zone => {
       },
     },
   );
-  return makePortRevokeCleanupWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareProtocolHandlerAcceptWatcher = zone => {
-  const makeProtocolHandlerAcceptWatcher = zone.exoClass(
+const makeProtocolHandlerAcceptWatcher = zone =>
+  zone.exo(
     'ProtocolHandlerAcceptWatcher',
     M.interface('ProtocolHandlerAcceptWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(),
     }),
-    () => ({}),
     {
       onFulfilled(rchandler) {
         return rchandler;
       },
     },
   );
-  return makeProtocolHandlerAcceptWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareProtocolHandlerConnectWatcher = zone => {
-  const makeProtocolHandlerConnectWatcher = zone.exoClass(
+const makeProtocolHandlerConnectWatcher = zone =>
+  zone.exo(
     'ProtocolHandlerConnectWatcher',
     M.interface('ProtocolHandlerConnectWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onFulfilled(results) {
         return {
@@ -428,46 +372,35 @@ const prepareProtocolHandlerConnectWatcher = zone => {
       },
     },
   );
-  return makeProtocolHandlerConnectWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareProtocolHandlerInstantiateWatcher = zone => {
-  const makeProtocolHandlerInstantiateWatcher = zone.exoClass(
+const makeProtocolHandlerInstantiateWatcher = zone =>
+  zone.exo(
     'ProtocolHandlerInstantiateWatcher',
     M.interface('ProtocolHandlerInstantiateWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onFulfilled(remoteInstance) {
         return remoteInstance;
       },
     },
   );
-  return makeProtocolHandlerInstantiateWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-const prepareBinderBindGeneratePortWatcher = (zone, { watch }) => {
-  const makeBinderBindGeneratePortWatcher = zone.exoClass(
+const makeBinderBindGeneratePortWatcher = (zone, { watch }) =>
+  zone.exo(
     'BinderBindGeneratePortWatcher',
     M.interface('BinderBindGeneratePortWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ underspecified, localAddr, protocolHandler, boundPorts }) => ({
-      underspecified,
-      localAddr,
-      protocolHandler,
-      boundPorts,
-    }),
     {
-      onFulfilled(portID) {
+      onFulfilled(portID, watchContext) {
         const { localAddr, protocolHandler, boundPorts, underspecified } =
-          this.state;
+          watchContext;
 
         if (!underspecified) {
           return localAddr;
@@ -479,48 +412,27 @@ const prepareBinderBindGeneratePortWatcher = (zone, { watch }) => {
         }
         return watch(
           E(protocolHandler).generatePortID(localAddr, protocolHandler),
-          this.self,
+          this,
+          watchContext,
         );
       },
     },
   );
-  return makeBinderBindGeneratePortWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  * @param {ReturnType<preparePort>} makePort
- * @param {ReturnType<prepareBinderPortWatcher>} makeBinderPortWatcher
+ * @param {ReturnType<makeBinderPortWatcher>} binderPortWatcher
  */
-const prepareBinderBindWatcher = (
-  zone,
-  { watch },
-  makePort,
-  makeBinderPortWatcher,
-) => {
-  const makeBinderBindWatcher = zone.exoClass(
+const makeBinderBindWatcher = (zone, { watch }, makePort, binderPortWatcher) =>
+  zone.exo(
     'BinderBindWatcher',
     M.interface('BinderBindWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      boundPorts,
-      listening,
-      openConnections,
-      currentConnections,
-      protocolHandler,
-      protocolImpl,
-    }) => ({
-      boundPorts,
-      listening,
-      openConnections,
-      currentConnections,
-      protocolHandler,
-      protocolImpl,
-    }),
     {
-      onFulfilled(localAddr) {
+      onFulfilled(localAddr, watchContext) {
         const {
           boundPorts,
           listening,
@@ -528,7 +440,7 @@ const prepareBinderBindWatcher = (
           currentConnections,
           protocolHandler,
           protocolImpl,
-        } = this.state;
+        } = watchContext;
 
         if (boundPorts.has(localAddr)) {
           return boundPorts.get(localAddr);
@@ -546,71 +458,48 @@ const prepareBinderBindWatcher = (
 
         return watch(
           E(protocolHandler).onBind(port, localAddr, protocolHandler),
-          makeBinderPortWatcher({
+          binderPortWatcher,
+          {
             port,
             boundPorts,
             localAddr,
             currentConnections,
-          }),
+          },
         );
       },
     },
   );
-  return makeBinderBindWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareBinderPortWatcher = zone => {
-  const makeBinderPortWatcher = zone.exoClass(
+const makeBinderPortWatcher = zone =>
+  zone.exo(
     'BinderPortWatcher',
     M.interface('BinderPortWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ port, boundPorts, localAddr, currentConnections }) => ({
-      port,
-      boundPorts,
-      localAddr,
-      currentConnections,
-    }),
     {
-      onFulfilled(_value) {
-        const { port, boundPorts, localAddr, currentConnections } = this.state;
+      onFulfilled(_value, watchContext) {
+        const { port, boundPorts, localAddr, currentConnections } =
+          watchContext;
         boundPorts.init(localAddr, harden(port));
         currentConnections.init(port, zone.detached().setStore('connections'));
         return port;
       },
     },
   );
-  return makeBinderPortWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<prepareInboundAttempt>} makeInboundAttempt
  */
-const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
-  const makeBinderInboundInstantiateWatcher = zone.exoClass(
+const makeBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) =>
+  zone.exo(
     'BinderInboundInstantiateWatcher',
     M.interface('BinderInboundInstantiateWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      listenAddr,
-      remoteAddr,
-      listening,
-      currentConnections,
-      port,
-      listenPrefixIndex,
-    }) => ({
-      listenAddr,
-      remoteAddr,
-      listening,
-      currentConnections,
-      port,
-      listenPrefixIndex,
-    }),
     {
-      onFulfilled(localInstance) {
+      onFulfilled(localInstance, watchContext) {
         const {
           listenAddr,
           remoteAddr,
@@ -618,7 +507,7 @@ const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
           currentConnections,
           port,
           listenPrefixIndex,
-        } = this.state;
+        } = watchContext;
         const prefixes = getPrefixes(listenAddr);
 
         const localAddr = localInstance
@@ -638,46 +527,30 @@ const prepareBinderInboundInstantiateWatcher = (zone, makeInboundAttempt) => {
       },
     },
   );
-  return makeBinderInboundInstantiateWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param { ReturnType<prepareBinderInboundInstantiateWatcher> } makeBinderInboundInstantiateWatcher
+ * @param { ReturnType<makeBinderInboundInstantiateWatcher> } binderInboundInstantiateWatcher
  */
-const prepareBinderInboundInstantiateCatchWatcher = (
+const makeBinderInboundInstantiateCatchWatcher = (
   zone,
   { watch },
-  makeBinderInboundInstantiateWatcher,
-) => {
-  const makeBinderInboundInstantiateCatchWatcher = zone.exoClass(
+  binderInboundInstantiateWatcher,
+) =>
+  zone.exo(
     'BinderInboundInstantiateCatchWatcher',
     M.interface('BinderInboundInstantiateCatchWatcher', {
       onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      listenPrefixIndex,
-      listening,
-      listenAddr,
-      protocolHandler,
-      remoteAddr,
-      currentConnections,
-    }) => ({
-      listenPrefixIndex,
-      listening,
-      listenAddr,
-      protocolHandler,
-      remoteAddr,
-      currentConnections,
-      lastFailure: Error(`No listeners for ${listenAddr}`),
-    }),
     {
-      onRejected(e) {
+      onRejected(e, watchContext) {
+        let { lastFailure, listenPrefixIndex } = watchContext;
+
         try {
           rethrowUnlessMissing(e);
         } catch (innerE) {
-          this.state.lastFailure = innerE;
+          lastFailure = innerE;
         }
 
         const {
@@ -686,26 +559,25 @@ const prepareBinderInboundInstantiateCatchWatcher = (
           listening,
           protocolHandler,
           currentConnections,
-          lastFailure,
-        } = this.state;
+        } = watchContext;
 
         const prefixes = getPrefixes(listenAddr);
 
         let listenPrefix;
 
-        this.state.listenPrefixIndex += 1;
+        listenPrefixIndex += 1;
 
-        while (this.state.listenPrefixIndex < prefixes.length) {
-          listenPrefix = prefixes[this.state.listenPrefixIndex];
+        while (listenPrefixIndex < prefixes.length) {
+          listenPrefix = prefixes[listenPrefixIndex];
           if (!listening.has(listenPrefix)) {
-            this.state.listenPrefixIndex += 1;
+            listenPrefixIndex += 1;
             continue;
           }
 
           break;
         }
 
-        if (this.state.listenPrefixIndex >= prefixes.length) {
+        if (listenPrefixIndex >= prefixes.length) {
           throw lastFailure;
         }
 
@@ -714,67 +586,60 @@ const prepareBinderInboundInstantiateCatchWatcher = (
         const innerVow = watch(
           E(protocolHandler).onInstantiate(
             port,
-            prefixes[this.state.listenPrefixIndex],
+            prefixes[listenPrefixIndex],
             remoteAddr,
             protocolHandler,
           ),
-          makeBinderInboundInstantiateWatcher({
+          binderInboundInstantiateWatcher,
+          {
             listenAddr,
             remoteAddr,
             listening,
             currentConnections,
             port,
-            listenPrefixIndex: this.state.listenPrefixIndex,
-          }),
+            listenPrefixIndex,
+          },
         );
 
-        return watch(innerVow, this.self);
+        return watch(innerVow, this, {
+          ...watchContext,
+          lastFailure,
+          listenPrefixIndex,
+        });
       },
     },
   );
-  return makeBinderInboundInstantiateCatchWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  */
-const prepareBinderOutboundInstantiateWatcher = zone => {
-  const makeBinderOutboundInstantiateWatcher = zone.exoClass(
+const makeBinderOutboundInstantiateWatcher = zone =>
+  zone.exo(
     'BinderOutboundInstantiateWatcher',
     M.interface('BinderOutboundInstantiateWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ localAddr }) => ({
-      localAddr,
-    }),
     {
-      onFulfilled(localInstance) {
-        const { localAddr } = this.state;
+      onFulfilled(localInstance, watchContext) {
+        const { localAddr } = watchContext;
 
         return localInstance ? `${localAddr}/${localInstance}` : localAddr;
       },
     },
   );
-  return makeBinderOutboundInstantiateWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  */
-const prepareBinderOutboundInboundWatcher = zone => {
-  const makeBinderOutboundInboundWatcher = zone.exoClass(
+const makeBinderOutboundInboundWatcher = zone =>
+  zone.exo(
     'BinderOutboundInboundWatcher',
     M.interface('BinderOutboundInboundWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ localAddr, remoteAddr, protocolImpl }) => ({
-      remoteAddr,
-      protocolImpl,
-      localAddr,
-    }),
     {
-      onFulfilled(initialLocalAddress) {
-        const { remoteAddr, protocolImpl, localAddr } = this.state;
+      onFulfilled(initialLocalAddress, watchContext) {
+        const { remoteAddr, protocolImpl, localAddr } = watchContext;
 
         if (initialLocalAddress === undefined) {
           initialLocalAddress = localAddr;
@@ -785,58 +650,36 @@ const prepareBinderOutboundInboundWatcher = zone => {
       },
     },
   );
-  return makeBinderOutboundInboundWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  */
-const prepareBinderOutboundAcceptWatcher = zone => {
-  const makeBinderOutboundAcceptWatcher = zone.exoClass(
+const makeBinderOutboundAcceptWatcher = zone =>
+  zone.exo(
     'BinderOutboundAcceptWatcher',
     M.interface('BinderOutboundAcceptWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({ handler }) => ({
-      handler,
-    }),
     {
-      onFulfilled(attempt) {
-        const { handler } = this.state;
+      onFulfilled(attempt, watchContext) {
+        const { handler } = watchContext;
         return attempt.accept({ handler });
       },
     },
   );
-  return makeBinderOutboundAcceptWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
  */
-const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
-  const makeBinderOutboundConnectWatcher = zone.exoClass(
+const makeBinderOutboundConnectWatcher = (zone, makeConnection) =>
+  zone.exo(
     'BinderOutboundConnectWatcher',
     M.interface('BinderOutboundConnectWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      lastFailure,
-      remoteAddr,
-      localAddr,
-      lchandler,
-      currentConnections,
-      port,
-    }) => ({
-      lastFailure,
-      remoteAddr,
-      localAddr,
-      lchandler,
-      currentConnections,
-      port,
-    }),
     {
-      onFulfilled({ handler: rchandler }) {
+      onFulfilled({ handler: rchandler }, watchContext) {
         const {
           lastFailure,
           remoteAddr,
@@ -844,7 +687,7 @@ const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
           lchandler,
           currentConnections,
           port,
-        } = this.state;
+        } = watchContext;
 
         if (!rchandler) {
           throw lastFailure;
@@ -864,41 +707,24 @@ const prepareBinderOutboundConnectWatcher = (zone, makeConnection) => {
       },
     },
   );
-  return makeBinderOutboundConnectWatcher;
-};
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param { ReturnType<prepareBinderOutboundConnectWatcher> } makeBinderOutboundConnectWatcher
+ * @param { ReturnType<makeBinderOutboundConnectWatcher> } binderOutboundConnectWatcher
  */
-const prepareBinderOutboundCatchWatcher = (
+const makeBinderOutboundCatchWatcher = (
   zone,
   { watch },
-  makeBinderOutboundConnectWatcher,
-) => {
-  const makeBinderOutboundCatchWatcher = zone.exoClass(
+  binderOutboundConnectWatcher,
+) =>
+  zone.exo(
     'BinderOutboundCatchWatcher',
     M.interface('BinderOutboundCatchWatcher', {
       onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    ({
-      port,
-      remoteAddr,
-      lchandler,
-      protocolHandler,
-      localAddr,
-      currentConnections,
-    }) => ({
-      port,
-      remoteAddr,
-      lchandler,
-      protocolHandler,
-      localAddr,
-      currentConnections,
-    }),
     {
-      onRejected(e) {
+      onRejected(e, watchContext) {
         let lastFailure;
 
         try {
@@ -914,7 +740,7 @@ const prepareBinderOutboundCatchWatcher = (
           protocolHandler,
           localAddr,
           currentConnections,
-        } = this.state;
+        } = watchContext;
 
         const connectVow = watch(
           E(protocolHandler).onConnect(
@@ -926,56 +752,45 @@ const prepareBinderOutboundCatchWatcher = (
           ),
         );
 
-        return watch(
-          connectVow,
-          makeBinderOutboundConnectWatcher({
-            lastFailure,
-            remoteAddr,
-            localAddr,
-            lchandler,
-            currentConnections,
-            port,
-          }),
-        );
+        return watch(connectVow, binderOutboundConnectWatcher, {
+          lastFailure,
+          remoteAddr,
+          localAddr,
+          lchandler,
+          currentConnections,
+          port,
+        });
       },
     },
   );
-  return makeBinderOutboundCatchWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareRethrowUnlessMissingWatcher = zone => {
-  const makeRethrowUnlessMissingWatcher = zone.exoClass(
+const makeRethrowUnlessMissingWatcher = zone =>
+  zone.exo(
     'RethrowUnlessMissingWatcher',
     M.interface('RethrowUnlessMissingWatcher', {
       onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onRejected(e) {
         rethrowUnlessMissing(e);
       },
     },
   );
-  return makeRethrowUnlessMissingWatcher;
-};
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-const prepareLoopbackRethrowUnlessMissingWatcher = zone => {
-  const makeLoopbackRethrowUnlessMissingWatcher = zone.exoClass(
+const makeLoopbackRethrowUnlessMissingWatcher = zone =>
+  zone.exo(
     'LoopbackRethrowUnlessMissingWatcher',
     M.interface('LoopbackRethrowUnlessMissingWatcher', {
       onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    () => ({}),
     {
       onRejected(e) {
         rethrowUnlessMissing(e);
       },
     },
   );
-  return makeLoopbackRethrowUnlessMissingWatcher;
-};
 
 /**
  * @typedef {object} ConnectionOpts
@@ -989,9 +804,9 @@ const prepareLoopbackRethrowUnlessMissingWatcher = zone => {
 
 /**
  * @typedef {object} HalfConnectionWatchers
- * @property {ReturnType<prepareOpenConnectionAckWatcher>} makeOpenConnectionAckWatcher
- * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
- * @property {ReturnType<prepareSinkWatcher>} makeSinkWatcher
+ * @property {ReturnType<makeOpenConnectionAckWatcher>} openConnectionAckWatcher
+ * @property {ReturnType<makeRethrowUnlessMissingWatcher>} rethrowUnlessMissingWatcher
+ * @property {ReturnType<makeSinkWatcher>} sinkWatcher
  */
 
 /**
@@ -1002,11 +817,7 @@ const prepareLoopbackRethrowUnlessMissingWatcher = zone => {
 const prepareHalfConnection = (
   zone,
   { watch },
-  {
-    makeOpenConnectionAckWatcher,
-    makeRethrowUnlessMissingWatcher,
-    makeSinkWatcher,
-  },
+  { openConnectionAckWatcher, rethrowUnlessMissingWatcher, sinkWatcher },
 ) => {
   const makeHalfConnection = zone.exoClass(
     'Connection',
@@ -1048,9 +859,9 @@ const prepareHalfConnection = (
             toBytes(packetBytes),
             handlers[r],
           ),
-          makeOpenConnectionAckWatcher(),
+          openConnectionAckWatcher,
         );
-        return watch(innerVow, makeRethrowUnlessMissingWatcher());
+        return watch(innerVow, rethrowUnlessMissingWatcher);
       },
       async close() {
         const { closed, current, conns, l, handlers } = this.state;
@@ -1065,10 +876,10 @@ const prepareHalfConnection = (
             undefined,
             handlers[l],
           ),
-          makeSinkWatcher(),
+          sinkWatcher,
         );
 
-        return watch(innerVow, makeRethrowUnlessMissingWatcher());
+        return watch(innerVow, rethrowUnlessMissingWatcher);
       },
     },
   );
@@ -1134,9 +945,9 @@ export const crossoverConnection = (
 
 /**
  * @typedef {object} InboundAttemptWatchers
- * @property {ReturnType<prepareInboundAttemptAcceptWatcher>} makeInboundAttemptAcceptWatcher
- * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
- * @property {ReturnType<prepareSinkWatcher>} makeSinkWatcher
+ * @property {ReturnType<makeInboundAttemptAcceptWatcher>} inboundAttemptAcceptWatcher
+ * @property {ReturnType<makeRethrowUnlessMissingWatcher>} rethrowUnlessMissingWatcher
+ * @property {ReturnType<makeSinkWatcher>} sinkWatcher
  */
 
 /**
@@ -1149,11 +960,7 @@ const prepareInboundAttempt = (
   zone,
   makeConnection,
   { watch },
-  {
-    makeSinkWatcher,
-    makeRethrowUnlessMissingWatcher,
-    makeInboundAttemptAcceptWatcher,
-  },
+  { sinkWatcher, rethrowUnlessMissingWatcher, inboundAttemptAcceptWatcher },
 ) => {
   const makeInboundAttempt = zone.exoClass(
     'InboundAttempt',
@@ -1209,10 +1016,10 @@ const prepareInboundAttempt = (
 
         const innerVow = watch(
           E(listener).onReject(port, localAddr, remoteAddr, listener),
-          makeSinkWatcher(),
+          sinkWatcher,
         );
 
-        return watch(innerVow, makeRethrowUnlessMissingWatcher());
+        return watch(innerVow, rethrowUnlessMissingWatcher);
       },
       /**
        * @param {object} opts
@@ -1243,12 +1050,13 @@ const prepareInboundAttempt = (
 
         return watch(
           E(listener).onAccept(port, localAddress, remoteAddress, listener),
-          makeInboundAttemptAcceptWatcher({
+          inboundAttemptAcceptWatcher,
+          {
             localAddress,
             rchandler,
             remoteAddress,
             current,
-          }),
+          },
         );
       },
     },
@@ -1266,7 +1074,7 @@ const RevokeState = /** @type {const} */ ({
 
 /**
  * @typedef {object} PortWatchers
- * @property {ReturnType<prepareRethrowUnlessMissingWatcher>} makeRethrowUnlessMissingWatcher
+ * @property {ReturnType<makeRethrowUnlessMissingWatcher>} rethrowUnlessMissingWatcher
  */
 
 /**
@@ -1274,17 +1082,17 @@ const RevokeState = /** @type {const} */ ({
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  * @param {PortWatchers} watchers
  */
-const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
+const preparePort = (zone, powers, { rethrowUnlessMissingWatcher }) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
   const { watch } = powers;
 
-  const makePortAddListenerWatcher = preparePortAddListenerWatcher(zone);
-  const makePortRemoveListenerWatcher = preparePortRemoveListenerWatcher(zone);
-  const makePortConnectWatcher = preparePortConnectWatcher(zone);
-  const makePortRevokeWatcher = preparePortRevokeWatcher(zone, powers);
-  const makePortCloseAllWatcher = preparePortCloseAllWatcher(zone);
-  const makePortRevokeCleanupWatcher = preparePortRevokeCleanupWatcher(zone);
+  const portAddListenerWatcher = makePortAddListenerWatcher(zone);
+  const portRemoveListenerWatcher = makePortRemoveListenerWatcher(zone);
+  const portConnectWatcher = makePortConnectWatcher(zone);
+  const portRevokeWatcher = makePortRevokeWatcher(zone, powers);
+  const portCloseAllWatcher = makePortCloseAllWatcher(zone);
+  const portRevokeCleanupWatcher = makePortRevokeCleanupWatcher(zone);
 
   const makePort = zone.exoClass(
     'Port',
@@ -1359,10 +1167,10 @@ const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
             listenHandler,
             protocolHandler,
           ),
-          makePortAddListenerWatcher({ port: this.self, listenHandler }),
-          listenHandler,
+          portAddListenerWatcher,
+          { port: this.self, listenHandler },
         );
-        return watch(innerVow, makeRethrowUnlessMissingWatcher());
+        return watch(innerVow, rethrowUnlessMissingWatcher);
       },
       /** @param {ListenHandler} listenHandler */
       async removeListener(listenHandler) {
@@ -1379,10 +1187,10 @@ const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
             listenHandler,
             protocolHandler,
           ),
-          makePortRemoveListenerWatcher({ port: this.self, listenHandler }),
-          listenHandler,
+          portRemoveListenerWatcher,
+          { port: this.self, listenHandler },
         );
-        return watch(innerVow, makeRethrowUnlessMissingWatcher());
+        return watch(innerVow, rethrowUnlessMissingWatcher);
       },
       /**
        * @param {Endpoint} remotePort
@@ -1401,7 +1209,8 @@ const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
         const dst = harden(remotePort);
         return watch(
           protocolImpl.outbound(this.self, dst, connectionHandler),
-          makePortConnectWatcher({ revoked, openConnections }),
+          portConnectWatcher,
+          { revoked, openConnections },
         );
       },
       async revoke() {
@@ -1417,25 +1226,23 @@ const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
 
         const revokeVow = watch(
           E(protocolHandler).onRevoke(this.self, localAddr, protocolHandler),
-          makePortRevokeWatcher({
+          portRevokeWatcher,
+          {
             currentConnections,
             listening,
             localAddr,
             port: this.self,
-          }),
+          },
         );
 
-        const closeVow = watch(revokeVow, makePortCloseAllWatcher());
-        return watch(
-          closeVow,
-          makePortRevokeCleanupWatcher({
-            currentConnections,
-            boundPorts,
-            localAddr,
-            port: this.self,
-            store,
-          }),
-        );
+        const closeVow = watch(revokeVow, portCloseAllWatcher);
+        return watch(closeVow, portRevokeCleanupWatcher, {
+          currentConnections,
+          boundPorts,
+          localAddr,
+          port: this.self,
+          store,
+        });
       },
     },
   );
@@ -1448,78 +1255,79 @@ const preparePort = (zone, powers, { makeRethrowUnlessMissingWatcher }) => {
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
 const prepareBinder = (zone, powers) => {
-  const makeOpenConnectionAckWatcher = prepareOpenConnectionAckWatcher(zone);
-  const makeRethrowUnlessMissingWatcher =
-    prepareRethrowUnlessMissingWatcher(zone);
-  const makeSinkWatcher = prepareSinkWatcher(zone);
+  const openConnectionAckWatcher = makeOpenConnectionAckWatcher(zone);
+  const rethrowUnlessMissingWatcher = makeRethrowUnlessMissingWatcher(zone);
+  const sinkWatcher = makeSinkWatcher(zone);
 
   const makeConnection = prepareHalfConnection(zone, powers, {
-    makeOpenConnectionAckWatcher,
-    makeRethrowUnlessMissingWatcher,
-    makeSinkWatcher,
+    openConnectionAckWatcher,
+    rethrowUnlessMissingWatcher,
+    sinkWatcher,
   });
 
-  const makeInboundAttemptAcceptWatcher = prepareInboundAttemptAcceptWatcher(
+  const inboundAttemptAcceptWatcher = makeInboundAttemptAcceptWatcher(
     zone,
     makeConnection,
   );
 
   const { watch } = powers;
 
-  const makeBinderBindGeneratePortWatcher =
-    prepareBinderBindGeneratePortWatcher(zone, powers);
+  const binderBindGeneratePortWatcher = makeBinderBindGeneratePortWatcher(
+    zone,
+    powers,
+  );
 
   const makeInboundAttempt = prepareInboundAttempt(
     zone,
     makeConnection,
     powers,
     {
-      makeSinkWatcher,
-      makeRethrowUnlessMissingWatcher,
-      makeInboundAttemptAcceptWatcher,
+      sinkWatcher,
+      rethrowUnlessMissingWatcher,
+      inboundAttemptAcceptWatcher,
     },
   );
 
-  const makeBinderInboundInstantiateWatcher =
-    prepareBinderInboundInstantiateWatcher(zone, makeInboundAttempt);
+  const binderInboundInstantiateWatcher = makeBinderInboundInstantiateWatcher(
+    zone,
+    makeInboundAttempt,
+  );
 
-  const makeBinderInboundInstantiateCatchWatcher =
-    prepareBinderInboundInstantiateCatchWatcher(
+  const binderInboundInstantiateCatchWatcher =
+    makeBinderInboundInstantiateCatchWatcher(
       zone,
       powers,
-      makeBinderInboundInstantiateWatcher,
+      binderInboundInstantiateWatcher,
     );
 
-  const makeBinderOutboundInstantiateWatcher =
-    prepareBinderOutboundInstantiateWatcher(zone);
+  const binderOutboundInstantiateWatcher =
+    makeBinderOutboundInstantiateWatcher(zone);
 
-  const makeBinderOutboundConnectWatcher = prepareBinderOutboundConnectWatcher(
+  const binderOutboundConnectWatcher = makeBinderOutboundConnectWatcher(
     zone,
     makeConnection,
   );
 
-  const makeBinderOutboundCatchWatcher = prepareBinderOutboundCatchWatcher(
+  const binderOutboundCatchWatcher = makeBinderOutboundCatchWatcher(
     zone,
     powers,
-    makeBinderOutboundConnectWatcher,
+    binderOutboundConnectWatcher,
   );
 
-  const makeBinderOutboundInboundWatcher =
-    prepareBinderOutboundInboundWatcher(zone);
+  const binderOutboundInboundWatcher = makeBinderOutboundInboundWatcher(zone);
 
-  const makeBinderOutboundAcceptWatcher =
-    prepareBinderOutboundAcceptWatcher(zone);
+  const binderOutboundAcceptWatcher = makeBinderOutboundAcceptWatcher(zone);
 
   const makePort = preparePort(zone, powers, {
-    makeRethrowUnlessMissingWatcher,
+    rethrowUnlessMissingWatcher,
   });
 
-  const makeBinderPortWatcher = prepareBinderPortWatcher(zone);
-  const makeBinderBindWatcher = prepareBinderBindWatcher(
+  const binderPortWatcher = makeBinderPortWatcher(zone);
+  const binderBindWatcher = makeBinderBindWatcher(
     zone,
     powers,
     makePort,
-    makeBinderPortWatcher,
+    binderPortWatcher,
   );
 
   const detached = zone.detached();
@@ -1588,27 +1396,26 @@ const prepareBinder = (zone, powers) => {
               remoteAddr,
               protocolHandler,
             ),
-            makeBinderInboundInstantiateWatcher({
+            binderInboundInstantiateWatcher,
+            {
               listenAddr,
               remoteAddr,
               listening,
               currentConnections,
               port,
               listenPrefixIndex,
-            }),
+            },
           );
 
-          return watch(
-            innerVow,
-            makeBinderInboundInstantiateCatchWatcher({
-              listenPrefixIndex,
-              listening,
-              listenAddr,
-              protocolHandler,
-              remoteAddr,
-              currentConnections,
-            }),
-          );
+          return watch(innerVow, binderInboundInstantiateCatchWatcher, {
+            listenPrefixIndex,
+            listening,
+            listenAddr,
+            protocolHandler,
+            remoteAddr,
+            currentConnections,
+            lastFailure: Error(`No listeners for ${listenAddr}`),
+          });
         },
         /**
          * @param {Port} port
@@ -1628,45 +1435,41 @@ const prepareBinder = (zone, powers) => {
               remoteAddr,
               protocolHandler,
             ),
-            makeBinderOutboundInstantiateWatcher({
+            binderOutboundInstantiateWatcher,
+            {
               port,
               localAddr,
               remoteAddr,
               protocolHandler,
-            }),
+            },
           );
 
           const instantiateVow = watch(
             instantiateInnerVow,
-            makeRethrowUnlessMissingWatcher(),
+            rethrowUnlessMissingWatcher,
           );
 
           const attemptVow = watch(
             instantiateVow,
-            makeBinderOutboundInboundWatcher({
+            binderOutboundInboundWatcher,
+            {
               localAddr,
               remoteAddr,
               protocolImpl: this.facets.protocolImpl,
-            }),
+            },
           );
-          const acceptedVow = watch(
-            attemptVow,
-            makeBinderOutboundAcceptWatcher({
-              handler: lchandler,
-            }),
-          );
+          const acceptedVow = watch(attemptVow, binderOutboundAcceptWatcher, {
+            handler: lchandler,
+          });
 
-          return watch(
-            acceptedVow,
-            makeBinderOutboundCatchWatcher({
-              port,
-              remoteAddr,
-              lchandler,
-              protocolHandler,
-              localAddr,
-              currentConnections,
-            }),
-          );
+          return watch(acceptedVow, binderOutboundCatchWatcher, {
+            port,
+            remoteAddr,
+            lchandler,
+            protocolHandler,
+            localAddr,
+            currentConnections,
+          });
         },
         async bind(localAddr) {
           return this.facets.binder.bind(localAddr);
@@ -1688,25 +1491,23 @@ const prepareBinder = (zone, powers) => {
 
           const localAddrVow = watch(
             E(protocolHandler).generatePortID(localAddr, protocolHandler),
-            makeBinderBindGeneratePortWatcher({
+            binderBindGeneratePortWatcher,
+            {
               underspecified,
               localAddr,
               protocolHandler,
               boundPorts,
-            }),
+            },
           );
 
-          return watch(
-            localAddrVow,
-            makeBinderBindWatcher({
-              listening,
-              openConnections,
-              currentConnections,
-              boundPorts,
-              protocolHandler,
-              protocolImpl: this.facets.protocolImpl,
-            }),
-          );
+          return watch(localAddrVow, binderBindWatcher, {
+            listening,
+            openConnections,
+            currentConnections,
+            boundPorts,
+            protocolHandler,
+            protocolImpl: this.facets.protocolImpl,
+          });
         },
       },
     },
@@ -1845,14 +1646,12 @@ export const prepareEchoConnectionKit = zone => {
  */
 export function prepareLoopbackProtocolHandler(zone, { watch }) {
   const detached = zone.detached();
-  const makeProtocolHandlerAcceptWatcher =
-    prepareProtocolHandlerAcceptWatcher(zone);
-  const makeProtocolHandlerInstantiateWatcher =
-    prepareProtocolHandlerInstantiateWatcher(zone);
-  const makeProtocolHandlerConnectWatcher =
-    prepareProtocolHandlerConnectWatcher(zone);
-  const makeRethrowUnlessMissingWatcher =
-    prepareLoopbackRethrowUnlessMissingWatcher(zone);
+  const protocolHandlerAcceptWatcher = makeProtocolHandlerAcceptWatcher(zone);
+  const protocolHandlerInstantiateWatcher =
+    makeProtocolHandlerInstantiateWatcher(zone);
+  const protocolHandlerConnectWatcher = makeProtocolHandlerConnectWatcher(zone);
+  const loopbackRethrowUnlessMissingWatcher =
+    makeLoopbackRethrowUnlessMissingWatcher(zone);
 
   const makeLoopbackProtocolHandler = zone.exoClass(
     'ProtocolHandler',
@@ -1892,7 +1691,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch }) {
 
         const acceptVow = watch(
           E(lhandler).onAccept(lport, remoteAddr, localAddr, lhandler),
-          makeProtocolHandlerAcceptWatcher(),
+          protocolHandlerAcceptWatcher,
         );
 
         const instantiateInnerVow = watch(
@@ -1902,16 +1701,16 @@ export function prepareLoopbackProtocolHandler(zone, { watch }) {
             localAddr,
             protocolHandler,
           ),
-          makeProtocolHandlerInstantiateWatcher(),
+          protocolHandlerInstantiateWatcher,
         );
 
         const instantiateVow = watch(
           instantiateInnerVow,
-          makeRethrowUnlessMissingWatcher(),
+          loopbackRethrowUnlessMissingWatcher,
         );
         return watch(
           Promise.all([acceptVow, instantiateVow]),
-          makeProtocolHandlerConnectWatcher(),
+          protocolHandlerConnectWatcher,
         );
       },
       async onInstantiate(_port, _localAddr, _remote, _protocol) {
