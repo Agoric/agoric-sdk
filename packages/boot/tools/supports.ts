@@ -12,9 +12,9 @@ import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { krefOf } from '@agoric/kmarshal';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import '@agoric/vats/exported.js';
@@ -27,6 +27,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
+import type { BridgeHandler } from '@agoric/vats';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -280,11 +281,19 @@ export const makeSwingsetTestKit = async (
 
   let lastNonce = 0n;
 
+  const outboundMessages = new Map();
+
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
    */
   const bridgeOutbound = (bridgeId: string, obj: any) => {
+    // store all messages for querying by tests
+    if (!outboundMessages.has(bridgeId)) {
+      outboundMessages.set(bridgeId, []);
+    }
+    outboundMessages.get(bridgeId).push(obj);
+
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
@@ -340,6 +349,7 @@ export const makeSwingsetTestKit = async (
       case BridgeId.DIBC:
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
+      case BridgeId.VTRANSFER:
       case BridgeId.WALLET:
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
@@ -386,6 +396,31 @@ export const makeSwingsetTestKit = async (
     fs: fsAmbientPromises,
   });
 
+  const evalProposal = async (
+    proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
+  ) => {
+    const { EV } = runUtils;
+
+    const proposal = harden(await proposalP);
+
+    for await (const bundle of proposal.bundles) {
+      await controller.validateAndInstallBundle(bundle);
+    }
+    log('installed', proposal.bundles.length, 'bundles');
+
+    log('executing proposal');
+    const bridgeMessage = {
+      type: 'CORE_EVAL',
+      evals: proposal.evals,
+    };
+    log({ bridgeMessage });
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
   console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
@@ -430,12 +465,17 @@ export const makeSwingsetTestKit = async (
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
+  const getOutboundMessages = (bridgeId: string) =>
+    harden([...outboundMessages.get(bridgeId)]);
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     controller,
+    evalProposal,
     getCrankNumber,
+    getOutboundMessages,
     jumpTimeTo,
     readLatest,
     runUtils,

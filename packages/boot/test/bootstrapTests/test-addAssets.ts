@@ -26,14 +26,6 @@ test.before(async t => {
     '@agoric/builders/scripts/inter-protocol/add-STARS.js',
   );
 
-  t.log('installing proposal');
-  // share a single proposal so tests don't stomp on each other's files; It has
-  // to be edited by each so as not to re-use keywords.
-  for await (const bundle of proposal.bundles) {
-    await context.controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
   const getCollateralProposal = (name, id) => {
     // stringify, modify and parse because modifying a deep copy was fragile.
     const proposalJSON = JSON.stringify(proposal);
@@ -46,7 +38,6 @@ test.before(async t => {
     ...context,
     getCollateralProposal,
   };
-  t.log('installed', proposal.bundles.length, 'bundles');
 });
 
 test.after.always(t => {
@@ -59,13 +50,9 @@ test.after.always(t => {
 });
 
 test('addAsset to quiescent auction', async t => {
-  const { advanceTimeTo, readLatest } = t.context;
+  const { advanceTimeTo, evalProposal, readLatest } = t.context;
 
-  const proposal = t.context.getCollateralProposal('COMETS', 'A');
-  const bridgeMessage = {
-    type: 'CORE_EVAL',
-    evals: proposal.evals,
-  };
+  await evalProposal(t.context.getCollateralProposal('COMETS', 'A'));
 
   const { EV } = t.context.runUtils;
 
@@ -81,12 +68,6 @@ test('addAsset to quiescent auction', async t => {
   });
   const nextQuiescentTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(nextQuiescentTime);
-
-  const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-  t.log('proposal executed');
 
   t.like(readLatest(`${auctioneerPath}.book1`), {
     currentPriceLevel: null,
