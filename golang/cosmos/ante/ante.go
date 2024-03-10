@@ -49,7 +49,6 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewValidateMemoDecorator(opts.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(opts.AccountKeeper),
 		NewInboundDecorator(opts.SwingsetKeeper),
-		// subsumes former MempoolFeeDecorator
 		ante.NewDeductFeeDecoratorWithName(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, nil, opts.FeeCollectorName),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(opts.AccountKeeper),
