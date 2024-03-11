@@ -110,9 +110,13 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const importSpec = spec =>
     importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-  const runPackageScript = async (outputDir, scriptPath, env) => {
+  const runPackageScript = (
+    outputDir: string,
+    scriptPath: string,
+    env: NodeJS.ProcessEnv,
+  ) => {
     console.info('running package script:', scriptPath);
-    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
       cwd: outputDir,
       env,
     });
@@ -150,15 +154,17 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   };
 
   const buildAndExtract = async (builderPath: string) => {
-    const scriptEnv = Object.assign(Object.create(process.env));
+    const tmpDir = await fsAmbientPromises.mkdtemp(
+      join(getPkgPath('builders'), 'proposal-'),
+    );
 
-    const pkgPath = getPkgPath('builders');
-    const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
-
-    const scriptPath = await importSpec(builderPath);
-
-    const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
-    const built = parseProposalParts(out.toString());
+    const built = parseProposalParts(
+      runPackageScript(
+        tmpDir,
+        await importSpec(builderPath),
+        process.env,
+      ).toString(),
+    );
 
     const loadPkgFile = fileName => fs.readFile(join(tmpDir, fileName), 'utf8');
 
