@@ -30,7 +30,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     init: initOptions = [],
     install: installOptions = [],
     start: startOptions = [],
-    testUnsafePlugins = false,
   } = options;
   // FIXME: Do a search for an unused port or allow specification.
   const PORT = '7999';
