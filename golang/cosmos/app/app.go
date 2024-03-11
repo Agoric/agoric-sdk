@@ -799,7 +799,7 @@ func NewAgoricApp(
 	if err != nil {
 		panic(err)
 	}
-	if upgradeInfo.Name != "" && upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
