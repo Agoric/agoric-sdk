@@ -157,23 +157,21 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
 
     const scriptPath = await importSpec(builderPath);
 
-    // XXX use '@agoric/inter-protocol'?
     const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
     const built = parseProposalParts(out.toString());
 
-    const loadAndRmPkgFile = async fileName => {
-      const filePath = join(tmpDir, fileName);
-      const content = await fs.readFile(filePath, 'utf8');
-      await fs.rm(filePath);
-      return content;
-    };
+    const loadPkgFile = fileName => fs.readFile(join(tmpDir, fileName), 'utf8');
 
     const evalsP = Promise.all(
       built.evals.map(async ({ permit, script }) => {
         const [permits, code] = await Promise.all([
-          loadAndRmPkgFile(permit),
-          loadAndRmPkgFile(script),
+          loadPkgFile(permit),
+          loadPkgFile(script),
         ]);
+        // Fire and forget. There's a chance the Node process could terminate
+        // before the deletion completes. This is a minor inconvenience to clean
+        // up manually and not worth slowing down the test execution to prevent.
+        void fsAmbientPromises.rm(tmpDir, { recursive: true, force: true });
         return { json_permits: permits, js_code: code } as CoreEvalSDKType;
       }),
     );
