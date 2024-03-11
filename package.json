@@ -34,7 +34,7 @@
     "prettier-plugin-jsdoc": "^1.0.0",
     "type-coverage": "^2.27.1",
     "typedoc": "^0.25.7",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "resolutions": {
     "**/protobufjs": "^7.2.4"
