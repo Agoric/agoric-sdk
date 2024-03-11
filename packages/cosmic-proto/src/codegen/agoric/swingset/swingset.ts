@@ -9,7 +9,7 @@ import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
- * See `agoric-sdk/packages/vats/src/core/eval.js`.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
  */
 export interface CoreEvalProposal {
   title: string;
@@ -27,7 +27,7 @@ export interface CoreEvalProposalProtoMsg {
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
- * See `agoric-sdk/packages/vats/src/core/eval.js`.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
  */
 export interface CoreEvalProposalAmino {
   title?: string;
@@ -45,7 +45,7 @@ export interface CoreEvalProposalAminoMsg {
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
- * See `agoric-sdk/packages/vats/src/core/eval.js`.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
  */
 export interface CoreEvalProposalSDKType {
   title: string;
