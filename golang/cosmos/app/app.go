@@ -788,25 +788,18 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	const (
-		upgradeName     = "agoric-upgrade-14"
-		upgradeNameTest = "agorictest-upgrade-14"
-	)
-
-	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeName,
-		upgrade14Handler(app, upgradeName),
-	)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeNameTest,
-		upgrade14Handler(app, upgradeNameTest),
-	)
+	for name := range upgradeNamesOfThisVersion {
+		app.UpgradeKeeper.SetUpgradeHandler(
+			name,
+			upgrade14Handler(app, name),
+		)
+	}
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(err)
 	}
-	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
@@ -837,20 +830,41 @@ func NewAgoricApp(
 	return app
 }
 
+var upgradeNamesOfThisVersion = map[string]bool{
+	"agoric-upgrade-14":       true,
+	"agorictest-upgrade-14":   true,
+	"agorictest-upgrade-14-2": true,
+}
+
+func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
+	for name := range upgradeNamesOfThisVersion {
+		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // upgrade14Handler performs standard upgrade actions plus custom actions for upgrade-14.
 func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
-		// Each CoreProposalStep runs sequentially, and can be constructed from
-		// one or more modules executing in parallel within the step.
-		CoreProposalSteps := []vm.CoreProposalStep{
-			// First, upgrade wallet factory
-			vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
-			// Then, upgrade Zoe and ZCF
-			vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
-			// Next revive KREAd characters
-			vm.CoreProposalStepForModules("@agoric/vats/scripts/revive-kread.js"),
+		CoreProposalSteps := []vm.CoreProposalStep{}
+
+		// These CoreProposalSteps are not idempotent and should only be executed
+		// as part of the first upgrade-14 on any given chain.
+		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
+			// Each CoreProposalStep runs sequentially, and can be constructed from
+			// one or more modules executing in parallel within the step.
+			CoreProposalSteps = []vm.CoreProposalStep{
+				// First, upgrade wallet factory
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
+				// Then, upgrade Zoe and ZCF
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
+				// Next revive KREAd characters
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/revive-kread.js"),
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
