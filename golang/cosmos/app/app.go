@@ -861,6 +861,7 @@ func NewAgoricApp(
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
 				vlocalchain.ModuleName,        // Agoric added vlocalchain
+				vtransfer.ModuleName,          // Agoric added vtransfer
 			},
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
