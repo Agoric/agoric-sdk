@@ -70,13 +70,13 @@
     "publish-scripts": "0.1.0",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "dependencies": {
-    "@cosmjs/amino": "^0.32.2",
-    "@cosmjs/proto-signing": "^0.32.2",
-    "@cosmjs/stargate": "^0.32.2",
-    "@cosmjs/tendermint-rpc": "^0.32.2",
+    "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
+    "@cosmjs/stargate": "^0.32.3",
+    "@cosmjs/tendermint-rpc": "^0.32.3",
     "@endo/init": "^1.0.3",
     "axios": "^1.6.7"
   },
