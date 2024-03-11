@@ -169,7 +169,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			"1000000",
 			s.chainA.SenderAccount.GetAddress().String(),
 			s.chainB.SenderAccount.GetAddress().String(),
-			"memo",
+			`{"invokeWriteAcknowledgement": {}}`,
 		)
 
 		// send a transfer packet
