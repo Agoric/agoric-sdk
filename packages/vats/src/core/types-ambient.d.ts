@@ -283,7 +283,7 @@ type StartUpgradableOpts<
     import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
     'brands' | 'issuers'
   >;
-  privateArgs?: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'];
+  privateArgs?: Parameters<SF>[1];
   label: string;
 };
 
