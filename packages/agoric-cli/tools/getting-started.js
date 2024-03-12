@@ -50,7 +50,6 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
   const agoricCmd = JSON.parse(AGORIC_CMD);
   function myMain(args, opts = {}) {
-    // console.error('running agoric-cli', ...extraArgs, ...args);
     return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric:debug' },
@@ -116,8 +115,8 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // yarn start:docker
     t.is(await yarn(['start:docker']), 0, 'yarn start:docker works');
 
-    // TODO: use abci_info endpoint to get block height
-    // sleep for 180 seconds for now
+    // XXX: use abci_info endpoint to get block height
+    // sleep to let contract start
     await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
 
     // ==============
@@ -126,8 +125,8 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn start:ui
-    const uiStartP = yarn(['start:ui']);
-    finalizers.push(() => pkill(uiStartP.childProcess, 'SIGINT'));
+    const startUiP = yarn(['start:ui']);
+    finalizers.push(() => pkill(startUiP.childProcess, 'SIGINT'));
     const uiListening = makePromiseKit();
     let retries = 0;
     const ival = setInterval(() => {
@@ -158,7 +157,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       }
     }, 3000);
     t.is(
-      await Promise.race([uiStartP, uiListening.promise]),
+      await Promise.race([startUiP, uiListening.promise]),
       'listening',
       `yarn start:ui succeeded`,
     );
