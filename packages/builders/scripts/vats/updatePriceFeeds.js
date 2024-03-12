@@ -1,26 +1,105 @@
+/* global process */
+
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getBrandsAndProposalBuilder as pricefeedProposalBuilder } from '../inter-protocol/price-feed-core.js';
+import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
 const ORACLE_ADDRESSES = [
-  // 'agoric1cn8dwvv3ac329sujgpqmccv6xd9d3sagd2t5l9',
-  // 'agoric1dxe9dqu4ejpctnp2un7s4l7l8hny6dzr8juur3',
-  // 'agoric1y750klm8sh8yh4h4mcssx5m7rmvuu8mhk89t0c',
+  'agoric1cn8dwvv3ac329sujgpqmccv6xd9d3sagd2t5l9',
+  'agoric1dxe9dqu4ejpctnp2un7s4l7l8hny6dzr8juur3',
+  'agoric1y750klm8sh8yh4h4mcssx5m7rmvuu8mhk89t0c',
 
-  // XXX These are the GOV1ADDR, etc addresses. What should this file specify?
-  'agoric1mefw5jhvqh60la7mltgny2pnn2dpgrs5yjlcqt',
-  'agoric1l4u888p0wtgh2m8q0uzgxry06lm6ct4nyaz3py',
-  'agoric1k8y8l8996p9ldzt9kng8uwz6ttjhhl49uzjdt8',
+  // TODO(CTH)  discard
+
+  // // XXX These are the GOV1ADDR, etc addresses.
+  // 'agoric1mefw5jhvqh60la7mltgny2pnn2dpgrs5yjlcqt',
+  // 'agoric1l4u888p0wtgh2m8q0uzgxry06lm6ct4nyaz3py',
+  // 'agoric1k8y8l8996p9ldzt9kng8uwz6ttjhhl49uzjdt8',
 ];
+
+/**
+ * modified copy of ../inter-protocol/price-feed-core.js
+ *
+ * @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder}
+ */
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  options = {},
+) => {
+  const {
+    brandIn,
+    brandOut,
+    contractTerms = DEFAULT_CONTRACT_TERMS,
+    AGORIC_INSTANCE_NAME,
+    IN_BRAND_LOOKUP,
+    OUT_BRAND_LOOKUP,
+    IN_BRAND_NAME = IN_BRAND_LOOKUP[IN_BRAND_LOOKUP.length - 1],
+    OUT_BRAND_NAME = OUT_BRAND_LOOKUP[OUT_BRAND_LOOKUP.length - 1],
+    oracleAddresses,
+    ...optionsRest
+  } = options;
+
+  assert(AGORIC_INSTANCE_NAME, 'AGORIC_INSTANCE_NAME is required');
+  assert(Array.isArray(oracleAddresses), 'oracleAddresses array is required');
+
+  if (brandIn) {
+    publishRef(brandIn).catch(() => {});
+  } else {
+    assert.equal(IN_BRAND_LOOKUP[0], 'agoricNames');
+    assert(IN_BRAND_NAME);
+  }
+
+  if (brandOut) {
+    publishRef(brandOut).catch(() => {});
+  } else {
+    assert.equal(OUT_BRAND_LOOKUP[0], 'agoricNames');
+    assert(OUT_BRAND_NAME);
+  }
+
+  return harden({
+    sourceSpec: '@agoric/inter-protocol/src/proposals/price-feed-proposal.js',
+    getManifestCall: [
+      'getManifestForPriceFeed',
+      {
+        ...optionsRest,
+        AGORIC_INSTANCE_NAME,
+        contractTerms,
+        oracleAddresses,
+        IN_BRAND_NAME,
+        OUT_BRAND_NAME,
+        priceAggregatorRef: publishRef(
+          install(
+            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
+            '../bundles/bundle-fluxAggregatorKit.js',
+          ),
+        ),
+      },
+    ],
+  });
+};
+
+export const pricefeedProposalBuilder = async (options, endowments) => {
+  const { lookup } = endowments;
+
+  const { ORACLE_ADDRESSES: ENV_ORACLE_ADDRESSES } = process.env;
+
+  await null;
+  const options1 = {
+    ...options,
+    IN_BRAND_DECIMALS: 6,
+    OUT_BRAND_DECIMALS: 4,
+    OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
+    oracleAddresses: ENV_ORACLE_ADDRESSES || ORACLE_ADDRESSES,
+    brandIn: await lookup(options.IN_BRAND_LOOKUP).catch(() => undefined),
+    brandOut: await lookup(options.OUT_BRAND_LOOKUP).catch(() => undefined),
+  };
+  return powers => defaultProposalBuilder(powers, options1);
+};
 
 export const getAtomFeedProposalBuilder = async endowments => {
   return pricefeedProposalBuilder(
     {
       AGORIC_INSTANCE_NAME: 'ATOM-USD price feed',
-      IN_BRAND_DECIMALS: 6,
       IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'ATOM'],
-      OUT_BRAND_DECIMALS: 4,
-      OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
-      oracleAddresses: ORACLE_ADDRESSES,
     },
     endowments,
   );
@@ -30,11 +109,7 @@ export const getStAtomFeedProposalBuilder = async endowments => {
   return pricefeedProposalBuilder(
     {
       AGORIC_INSTANCE_NAME: 'stATOM-USD price feed',
-      IN_BRAND_DECIMALS: 6,
       IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'stATOM'],
-      OUT_BRAND_DECIMALS: 4,
-      OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
-      oracleAddresses: ORACLE_ADDRESSES,
     },
     endowments,
   );
@@ -44,11 +119,7 @@ export const getStTiaFeedProposalBuilder = async endowments => {
   return pricefeedProposalBuilder(
     {
       AGORIC_INSTANCE_NAME: 'stTIA-USD price feed',
-      IN_BRAND_DECIMALS: 6,
       IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'stTIA'],
-      OUT_BRAND_DECIMALS: 4,
-      OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
-      oracleAddresses: ORACLE_ADDRESSES,
     },
     endowments,
   );
@@ -58,11 +129,7 @@ export const getStOsmoFeedProposalBuilder = async endowments => {
   return pricefeedProposalBuilder(
     {
       AGORIC_INSTANCE_NAME: 'stOSMO-USD price feed',
-      IN_BRAND_DECIMALS: 6,
       IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'stOSMO'],
-      OUT_BRAND_DECIMALS: 4,
-      OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
-      oracleAddresses: ORACLE_ADDRESSES,
     },
     endowments,
   );

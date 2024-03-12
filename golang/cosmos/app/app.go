@@ -902,8 +902,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/vats/init-network.js",
 					"@agoric/builders/scripts/vats/init-localchain.js",
 				),
+                // Add new vats for price feeds. The existing ones will be retired shortly.
+                vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/updatePriceFeeds.js"),
 			}
-		}
 
 		app.upgradeDetails = &upgradeDetails{
 			// Record the plan to send to SwingSet

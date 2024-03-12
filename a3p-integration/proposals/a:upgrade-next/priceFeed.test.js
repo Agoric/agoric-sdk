@@ -1,3 +1,5 @@
+/* global process */
+
 import test from 'ava';
 
 import {
@@ -19,6 +21,8 @@ const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 test('update all priceFeed vats', async t => {
   await null;
+  process.env.ORACLE_ADDRESSES = JSON.stringify(ORACLE_ADDRESSES);
+
   await evalBundles(SUBMISSION_DIR);
 
   await waitForBlock(2); // enough time for 4 vats to start
