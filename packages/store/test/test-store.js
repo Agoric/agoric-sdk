@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 import test from 'ava';
 
 import { Far, passStyleOf } from '@endo/marshal';

@@ -227,7 +227,7 @@ export function getReplHandler(replObjects, send) {
       commands[histnum] = body;
 
       // Need this concatenation to bypass direct eval test in realms-shim.
-      // eslint-disable-next-line no-useless-concat
+
       consoleOffset = histnum * 2;
       consoleRegions[consoleOffset] = [];
       consoleRegions[consoleOffset + 1] = [];

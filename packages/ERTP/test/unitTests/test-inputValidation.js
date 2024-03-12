@@ -181,7 +181,7 @@ test('issuer.combine bad payments array', async t => {
     split: () => {},
   };
   // @ts-expect-error Intentional wrong type for testing
-  // eslint-disable-next-line no-undef
+
   await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray), {
     message: 'srcPaymentsPs is not iterable',
   });

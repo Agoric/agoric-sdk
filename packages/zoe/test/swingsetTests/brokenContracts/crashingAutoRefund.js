@@ -83,7 +83,6 @@ const start = zcf => {
 
   const creatorInvitation = makeSafeInvitation();
 
-  // @ts-expect-error missing creatorFacet of ContractStartFn
   return harden({ creatorInvitation, publicFacet });
 };
 

@@ -25,7 +25,6 @@ function makeVictim() {
 }
 
 async function provokeGC(myGC) {
-  // eslint-disable-next-line no-undef
   const gcAndFinalize = makeGcAndFinalize(myGC);
   // the transition from REACHABLE to UNREACHABLE happens as soon as makeVictim()
   // finishes, and the local 'victim' binding goes out of scope

@@ -584,7 +584,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           helper.assertCloseable();
           seat.exit();
 
-          // eslint-disable-next-line no-use-before-define
           const vaultKit = makeVaultKit(self, state.storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();

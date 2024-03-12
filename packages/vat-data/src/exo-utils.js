@@ -106,7 +106,6 @@ export const makeExoUtils = VatData => {
    * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
     // @ts-ignore cast
     defineKind(tag, init, methods, {
       ...options,

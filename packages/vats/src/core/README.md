@@ -1,7 +1,7 @@
 # Core vats and supports
 
 This directory contains modules that build vats that boot other vats. If that's all it did, it could terminate but it also has persistent responsibilities:
-- hold the `CORE_EVAL` bridge handler
+- hold the `CORE_EVAL` bridge handler (see `bridgeCoreEval` in [chain-behaviors.js](./chain-behaviors.js)
 - hold a PrioritySenderManager handed out to some contracts
 
 Bootstrap vats must not hold precious state (see https://github.com/Agoric/agoric-sdk/issues/4548). These state aren't _precious_ because they can be reconstructed.

@@ -67,7 +67,7 @@ test('meter details', async t => {
 // test disabled until rewritten to tolerate fast CI hosts getting
 // multiple events within the same microsecond, #5951
 // (globalThis.performance ? test : test.skip)('meter timestamps', async t => {
-// eslint-disable-next-line ava/no-skip-test
+
 test.skip('meter timestamps', async t => {
   const kernelTimes = [];
   function addTimestamp(name) {
@@ -297,7 +297,7 @@ function dataStructurePerformance(logn) {
 // Rather than have a very low-probability failing test, we skip this, but
 // retain the benchmark for future verification in the unlikely event that the
 // performance character of XS collections regresses.
-// eslint-disable-next-line ava/no-skip-test
+
 test.skip('Array, Map, Set growth is O(log(n))', async t => {
   const opts = options(io);
   const vat = await xsnap({ ...opts, meteringLimit: 0 });

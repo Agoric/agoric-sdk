@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-redeclare
 /* global setImmediate setTimeout */
 import { test } from '../tools/prepare-test-env-ava.js';
 

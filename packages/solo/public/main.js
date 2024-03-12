@@ -238,7 +238,6 @@ function run() {
     }
     call({ type: 'getHighestHistory' })
       .then(res => {
-        // eslint-disable-next-line no-use-before-define
         setNextHistNum(res.highestHistory + 1);
         // console.debug(`nextHistNum is now ${nextHistNum}`, res);
       })

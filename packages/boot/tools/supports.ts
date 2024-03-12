@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param-type, jsdoc/require-param, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
 /* global process */
 
 import childProcessAmbient from 'child_process';
@@ -12,9 +12,9 @@ import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { krefOf } from '@agoric/kmarshal';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import '@agoric/vats/exported.js';
@@ -27,6 +27,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
+import type { BridgeHandler } from '@agoric/vats';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -109,9 +110,13 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const importSpec = spec =>
     importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-  const runPackageScript = async (outputDir, scriptPath, env) => {
+  const runPackageScript = (
+    outputDir: string,
+    scriptPath: string,
+    env: NodeJS.ProcessEnv,
+  ) => {
     console.info('running package script:', scriptPath);
-    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
       cwd: outputDir,
       env,
     });
@@ -149,30 +154,30 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   };
 
   const buildAndExtract = async (builderPath: string) => {
-    const scriptEnv = Object.assign(Object.create(process.env));
+    const tmpDir = await fsAmbientPromises.mkdtemp(
+      join(getPkgPath('builders'), 'proposal-'),
+    );
 
-    const pkgPath = getPkgPath('builders');
-    const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
+    const built = parseProposalParts(
+      runPackageScript(
+        tmpDir,
+        await importSpec(builderPath),
+        process.env,
+      ).toString(),
+    );
 
-    const scriptPath = await importSpec(builderPath);
-
-    // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
-    const built = parseProposalParts(out.toString());
-
-    const loadAndRmPkgFile = async fileName => {
-      const filePath = join(tmpDir, fileName);
-      const content = await fs.readFile(filePath, 'utf8');
-      await fs.rm(filePath);
-      return content;
-    };
+    const loadPkgFile = fileName => fs.readFile(join(tmpDir, fileName), 'utf8');
 
     const evalsP = Promise.all(
       built.evals.map(async ({ permit, script }) => {
         const [permits, code] = await Promise.all([
-          loadAndRmPkgFile(permit),
-          loadAndRmPkgFile(script),
+          loadPkgFile(permit),
+          loadPkgFile(script),
         ]);
+        // Fire and forget. There's a chance the Node process could terminate
+        // before the deletion completes. This is a minor inconvenience to clean
+        // up manually and not worth slowing down the test execution to prevent.
+        void fsAmbientPromises.rm(tmpDir, { recursive: true, force: true });
         return { json_permits: permits, js_code: code } as CoreEvalSDKType;
       }),
     );
@@ -280,11 +285,19 @@ export const makeSwingsetTestKit = async (
 
   let lastNonce = 0n;
 
+  const outboundMessages = new Map();
+
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
    */
   const bridgeOutbound = (bridgeId: string, obj: any) => {
+    // store all messages for querying by tests
+    if (!outboundMessages.has(bridgeId)) {
+      outboundMessages.set(bridgeId, []);
+    }
+    outboundMessages.get(bridgeId).push(obj);
+
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
@@ -340,6 +353,7 @@ export const makeSwingsetTestKit = async (
       case BridgeId.DIBC:
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
+      case BridgeId.VTRANSFER:
       case BridgeId.WALLET:
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
@@ -386,6 +400,31 @@ export const makeSwingsetTestKit = async (
     fs: fsAmbientPromises,
   });
 
+  const evalProposal = async (
+    proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
+  ) => {
+    const { EV } = runUtils;
+
+    const proposal = harden(await proposalP);
+
+    for await (const bundle of proposal.bundles) {
+      await controller.validateAndInstallBundle(bundle);
+    }
+    log('installed', proposal.bundles.length, 'bundles');
+
+    log('executing proposal');
+    const bridgeMessage = {
+      type: 'CORE_EVAL',
+      evals: proposal.evals,
+    };
+    log({ bridgeMessage });
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
   console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
@@ -430,12 +469,17 @@ export const makeSwingsetTestKit = async (
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
+  const getOutboundMessages = (bridgeId: string) =>
+    harden([...outboundMessages.get(bridgeId)]);
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     controller,
+    evalProposal,
     getCrankNumber,
+    getOutboundMessages,
     jumpTimeTo,
     readLatest,
     runUtils,

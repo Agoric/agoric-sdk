@@ -116,7 +116,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
   const messages = [];
   /** @param {import('../src/lib-chainStorage.js').StorageMessage} message */
-  // eslint-disable-next-line consistent-return
+
   const toStorage = message => {
     messages.push(message);
     switch (message.method) {

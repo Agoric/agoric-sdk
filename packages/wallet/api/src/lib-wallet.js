@@ -1408,11 +1408,13 @@ export function makeWalletRoot({
     boardId,
     dappOrigin = undefined,
   ) {
+    /** @type {Petname} */
     let petname;
     if (dappOrigin === undefined) {
       petname = suggestedPetname;
     } else {
       const edgename = edgeMapping.valToPetname.get(dappOrigin);
+      // @ts-expect-error if suggestedPetname is itself an array, this nests
       petname = [edgename, suggestedPetname];
     }
 

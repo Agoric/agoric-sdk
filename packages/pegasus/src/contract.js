@@ -7,10 +7,10 @@ import '@agoric/zoe/exported.js';
 import '../exported.js';
 
 /**
- * @type {ContractStartFn<Pegasus, never, {}, {
+ * @type {ContractStartFn<import('./pegasus.js').Pegasus, never, {}, {
  *   board: ERef<BoardDepositFacet>,
  *   namesByAddress: ERef<import('@agoric/vats').NameHub>
- * }}
+ * }>}
  */
 export const start = (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);

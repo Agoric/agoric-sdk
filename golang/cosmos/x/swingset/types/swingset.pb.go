@@ -27,7 +27,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
 // core.
-// See `agoric-sdk/packages/vats/src/core/eval.js`.
+// See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
 type CoreEvalProposal struct {
 	Title       string `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`

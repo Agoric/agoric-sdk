@@ -89,7 +89,6 @@ const choose = (array, randomNumber) => {
   return array[index];
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is HttpConnectionSpec}
@@ -117,7 +116,6 @@ const assertHttpConnectionSpec = connectionSpec => {
     Fail`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`;
 };
 
-// eslint-disable-next-line jsdoc/require-returns-check
 /**
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is CosmosConnectionSpec}

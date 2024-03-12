@@ -365,7 +365,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
  */
 const makePresence = (iface, handler) => {
   let obj;
-  // eslint-disable-next-line no-new
+
   void new HandledPromise((resolve, reject, resolveWithPresence) => {
     obj = resolveWithPresence(handler);
   });
