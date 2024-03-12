@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';

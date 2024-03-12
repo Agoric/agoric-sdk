@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
 type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 /**
@@ -239,11 +237,11 @@ type ContractStartFn<
 > = (
   zcf: ZCF<CT>,
   privateArgs: PA,
-  baggage?: MapStore<any, any> | undefined,
+  baggage: import('@agoric/vat-data').Baggage,
 ) => ContractStartFnResult<PF, CF>;
 type ContractStartFnResult<PF, CF> = {
-  publicFacet: PF;
-  creatorFacet: CF;
+  publicFacet?: PF;
+  creatorFacet?: CF;
   creatorInvitation?: Promise<Invitation<R, A>> | undefined;
 };
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;

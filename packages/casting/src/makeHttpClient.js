@@ -44,7 +44,6 @@ export const makeHttpClient = (url, fetch) => {
         method: 'POST',
         body: request ? JSON.stringify(request) : undefined,
         headers: {
-          // eslint-disable-next-line @typescript-eslint/naming-convention
           'Content-Type': 'application/json',
           ...headers,
         },

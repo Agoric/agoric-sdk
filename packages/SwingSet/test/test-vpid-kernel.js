@@ -178,7 +178,6 @@ function clistVatToKernel(kernel, vatID, vpid) {
   return undefined;
 }
 
-// eslint-disable-next-line no-unused-vars
 function clistKernelToVat(kernel, vatID, kpid) {
   for (const row of kernel.dump().kernelTable) {
     const [kid0, vatID0, vid0] = row;

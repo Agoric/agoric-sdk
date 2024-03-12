@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
-// eslint-disable-next-line import/order
+
 import anylogger from 'anylogger';
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';

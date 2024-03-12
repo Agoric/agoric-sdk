@@ -5,7 +5,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import { makePrintLog } from './printLog.js';
 
-/* eslint-disable import/no-unresolved, import/extensions */
+/* eslint-disable import/no-unresolved */
 import automaticRefundBundle from './bundle-automaticRefund.js';
 import coveredCallBundle from './bundle-coveredCall.js';
 import secondPriceAuctionBundle from './bundle-secondPriceAuction.js';
@@ -15,7 +15,7 @@ import autoswapBundle from './bundle-autoswap.js';
 import sellItemsBundle from './bundle-sellItems.js';
 import mintAndSellNFTBundle from './bundle-mintAndSellNFT.js';
 import otcDeskBundle from './bundle-otcDesk.js';
-/* eslint-enable import/no-unresolved, import/extensions */
+/* eslint-enable import/no-unresolved */
 
 const setupBasicMints = () => {
   const all = [

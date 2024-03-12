@@ -60,37 +60,19 @@ test.serial('wallet survives zoe null upgrade', async t => {
   const collateralBrandKey = 'ATOM';
   const managerIndex = 0;
 
-  const { walletFactoryDriver, setupVaults, controller, buildProposal } =
+  const { walletFactoryDriver, setupVaults, buildProposal, evalProposal } =
     t.context;
 
-  const { EV } = t.context.runUtils;
-
   const buyer = await walletFactoryDriver.provideSmartWallet('agoric1buyer');
-
-  const buildAndExecuteProposal = async (packageSpec: string) => {
-    const proposal = await buildProposal(packageSpec);
-
-    for await (const bundle of proposal.bundles) {
-      await controller.validateAndInstallBundle(bundle);
-    }
-
-    const bridgeMessage = {
-      type: 'CORE_EVAL',
-      evals: proposal.evals,
-    };
-
-    const coreEvalBridgeHandler: ERef<BridgeHandler> = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
-    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-  };
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
   // restart Zoe
 
   // /////// Upgrading ////////////////////////////////
-  await buildAndExecuteProposal('@agoric/builders/scripts/vats/upgrade-zoe.js');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/upgrade-zoe.js'),
+  );
 
   t.like(await buyer.getLatestUpdateRecord(), {
     currentAmount: {

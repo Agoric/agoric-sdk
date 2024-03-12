@@ -334,7 +334,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         }
       }
       addrs[keyName] = statusOut[1].trimRight();
-      /* eslint-enable no-await-in-loop */
     }
 
     const genesisFile = `${serverDir}/config/genesis.json`;

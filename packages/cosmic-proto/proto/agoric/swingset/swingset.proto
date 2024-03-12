@@ -8,7 +8,7 @@ option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types
 
 // CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
 // core.
-// See `agoric-sdk/packages/vats/src/core/eval.js`.
+// See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
 message CoreEvalProposal {
   option (gogoproto.goproto_getters) = false;
 

@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
 >['board'];
