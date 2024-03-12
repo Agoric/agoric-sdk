@@ -1,6 +1,6 @@
 {
   "name": "@agoric/solo",
-  "version": "0.10.4-u14.0",
+  "version": "0.10.4-u14.1",
   "description": "Agoric's Solo vat runner",
   "type": "module",
   "bin": {
@@ -25,7 +25,7 @@
     "@agoric/access-token": "^0.4.22-u11wf.0",
     "@agoric/assert": "^0.6.1-u11wf.0",
     "@agoric/cache": "^0.3.3-u14.0",
-    "@agoric/cosmic-swingset": "^0.42.0-u14.0",
+    "@agoric/cosmic-swingset": "^0.42.0-u14.1",
     "@agoric/internal": "^0.4.0-u14.0",
     "@agoric/notifier": "^0.6.3-u14.0",
     "@agoric/spawner": "^0.6.9-u14.0",
@@ -34,7 +34,7 @@
     "@agoric/swingset-vat": "^0.32.3-u14.0",
     "@agoric/telemetry": "^0.6.3-u14.0",
     "@agoric/time": "^0.3.3-u14.0",
-    "@agoric/vats": "^0.15.2-u14.0",
+    "@agoric/vats": "^0.15.2-u14.1",
     "@agoric/wallet": "^0.18.4-u13.0",
     "@endo/captp": "3.1.1",
     "@endo/eventual-send": "0.17.2",

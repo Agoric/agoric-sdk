@@ -1,6 +1,6 @@
 {
   "name": "@agoric/inter-protocol",
-  "version": "0.16.2-u14.0",
+  "version": "0.16.2-u14.1",
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/index.js",
@@ -31,13 +31,13 @@
   "dependencies": {
     "@agoric/assert": "^0.6.1-u11wf.0",
     "@agoric/ertp": "^0.16.3-u14.0",
-    "@agoric/governance": "^0.10.4-u14.0",
+    "@agoric/governance": "^0.10.4-u14.1",
     "@agoric/internal": "^0.4.0-u14.0",
     "@agoric/notifier": "^0.6.3-u14.0",
     "@agoric/store": "^0.9.3-u14.0",
     "@agoric/time": "^0.3.3-u14.0",
     "@agoric/vat-data": "^0.5.3-u14.0",
-    "@agoric/vats": "^0.15.2-u14.0",
+    "@agoric/vats": "^0.15.2-u14.1",
     "@agoric/zoe": "^0.26.3-u14.0",
     "@endo/captp": "3.1.1",
     "@endo/eventual-send": "0.17.2",
@@ -47,8 +47,8 @@
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.4-u14.0",
-    "@agoric/smart-wallet": "^0.5.4-u14.0",
+    "@agoric/deploy-script-support": "^0.10.4-u14.1",
+    "@agoric/smart-wallet": "^0.5.4-u14.1",
     "@agoric/swingset-liveslots": "^0.10.3-u14.0",
     "@agoric/swingset-vat": "^0.32.3-u14.0",
     "@endo/bundle-source": "2.5.2-upstream-rollup",

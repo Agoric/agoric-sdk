@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.1-u14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/create-dapp@0.1.1-u14.0...@agoric/create-dapp@0.1.1-u14.1) (2024-03-12)
+
+**Note:** Version bump only for package @agoric/create-dapp
+
+
+
+
+
 ### 0.1.1-u14.0 (2024-02-27)
 
 
