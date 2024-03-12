@@ -116,13 +116,14 @@ export const Shape = /** @type {const} */ harden({
     portRevokeWatcher: M.interface('PortRevokeWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
-    portCloseAllWatcher: M.interface('PortCloseAllWatcher', {
-      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
-    }),
     portRevokeCleanupWatcher: M.interface('PortRevokeCleanupWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
     rethrowUnlessMissingWatcher: M.interface('RethrowUnlessMissingWatcher', {
+      onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+    }),
+    sinkWatcher: M.interface('SinkWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(),
       onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
   },
@@ -572,7 +573,8 @@ const RevokeState = /** @type {const} */ ({
 const preparePort = (zone, powers) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
-  const { watch } = powers;
+  const { watch, watchUtils } = powers;
+  const utils = watchUtils();
 
   const makePortKit = zone.exoClassKit(
     'Port',
@@ -707,8 +709,7 @@ const preparePort = (zone, powers) => {
             this.facets.portRevokeWatcher,
           );
 
-          const closeVow = watch(revokeVow, this.facets.portCloseAllWatcher);
-          return watch(closeVow, this.facets.portRevokeCleanupWatcher);
+          return watch(revokeVow, this.facets.portRevokeCleanupWatcher);
         },
       },
       portAddListenerWatcher: {
@@ -743,21 +744,31 @@ const preparePort = (zone, powers) => {
 
           // Clean up everything we did.
           const values = [...currentConnections.get(port).values()];
-          const ps = values.map(conn => {
-            return watch(E(conn).close(), harden({}));
-          });
+          const ps = [];
+
+          ps.push(
+            ...values.map(conn =>
+              watch(E(conn).close(), this.facets.sinkWatcher),
+            ),
+          );
 
           if (listening.has(localAddr)) {
             const listener = listening.get(localAddr)[1];
             ps.push(port.removeListener(listener));
           }
 
-          return ps;
+          return watch(
+            utils.awaitAll(ps),
+            this.facets.rethrowUnlessMissingWatcher,
+          );
         },
       },
-      portCloseAllWatcher: {
-        onFulfilled(vows) {
-          return Promise.all(vows);
+      sinkWatcher: {
+        onFulfilled() {
+          return undefined;
+        },
+        onRejected() {
+          return undefined;
         },
       },
       portRevokeCleanupWatcher: {
