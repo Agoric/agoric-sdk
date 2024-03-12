@@ -7,6 +7,8 @@ import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
+import './types-ambient.js';
+
 const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
 

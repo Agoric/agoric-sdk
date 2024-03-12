@@ -1,5 +1,3 @@
-import '@agoric/vats/src/core/types-ambient.js';
-
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
