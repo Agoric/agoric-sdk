@@ -35,128 +35,6 @@ const DEFAULT_PACKET_TIMEOUT_NS = 10n * 60n * 1_000_000_000n;
  * @property {IBCPortID} destination_port
  */
 
-/** @param {import('@agoric/base-zone').Zone} zone */
-const makeAckWatcher = zone =>
-  zone.exo('AckWatcher', undefined, {
-    onFulfilled(ack, watcherContext) {
-      const { protocolUtils, packet } = watcherContext;
-
-      const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
-      const ack64 = dataToBase64(realAck);
-      protocolUtils
-        .downcall('receiveExecuted', {
-          packet,
-          ack: ack64,
-        })
-        .catch(e => this.onRejected(e));
-    },
-    onRejected(e) {
-      console.error(e);
-    },
-  });
-
-/**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
- * @param {ReturnType<makeProtocolImplAttemptWatcher>} protocolImplAttemptWatcher
- */
-const makeProtocolImplInboundWatcher = (
-  zone,
-  { watch },
-  protocolImplAttemptWatcher,
-) =>
-  zone.exo(
-    'ProtocolImplInboundWatcher',
-    M.interface('ProtocolImplInboundWatcher', {
-      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
-    }),
-    {
-      onFulfilled(attempt, watchContext) {
-        const { obj } = watchContext;
-
-        // Tell what version string we negotiated.
-        return watch(E(attempt).getLocalAddress(), protocolImplAttemptWatcher, {
-          ...obj,
-          ...watchContext,
-          attempt,
-        });
-      },
-    },
-  );
-
-/** @param {import('@agoric/base-zone').Zone} zone */
-const makeProtocolImplAttemptWatcher = zone =>
-  zone.exo(
-    'ProtocolImplAttemptWatcher',
-    M.interface('ProtocolImplAttemptWatcher', {
-      onFulfilled: M.call(M.any()).rest(M.any()).returns(),
-    }),
-    {
-      onFulfilled(attemptedLocal, watcherContext) {
-        const {
-          channelID,
-          portID,
-          channelKeyToAttempt,
-          channelKeyToInfo,
-          attempt,
-          obj,
-          util,
-          asyncVersions,
-          rPortID,
-          rChannelID,
-          order,
-          hops,
-          version,
-        } = watcherContext;
-
-        const match = attemptedLocal.match(
-          // Match:  ... /ORDER/VERSION ...
-          new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
-        );
-
-        const channelKey = `${channelID}:${portID}`;
-        if (!match) {
-          throw Error(
-            `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
-          );
-        }
-
-        channelKeyToAttempt.init(channelKey, attempt);
-        channelKeyToInfo.init(channelKey, obj);
-
-        const negotiatedVersion = match[3];
-
-        try {
-          if (asyncVersions) {
-            // We have async version negotiation, so we must call back now.
-            return util.downcall('tryOpenExecuted', {
-              packet: {
-                source_port: rPortID,
-                source_channel: rChannelID,
-                destination_port: portID,
-                destination_channel: channelID,
-              },
-              order,
-              version: negotiatedVersion,
-              hops,
-            });
-          } else if (negotiatedVersion !== version) {
-            // Too late; the other side gave us a version we didn't like.
-            throw Error(
-              `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
-            );
-          }
-        } catch (e) {
-          // Clean up after our failed attempt.
-          channelKeyToAttempt.delete(channelKey);
-          channelKeyToInfo.delete(channelKey);
-          void E(attempt).close();
-          throw e;
-        }
-      },
-    },
-  );
-
 /**
  * @typedef {object} Counterparty
  * @property {string} port_id
@@ -286,13 +164,6 @@ export const prepareIBCConnectionHandler = zone => {
 export const prepareIBCProtocol = (zone, powers) => {
   const { makeVowKit, watch } = powers;
 
-  const ackWatcher = makeAckWatcher(zone);
-  const protocolImplAttemptWatcher = makeProtocolImplAttemptWatcher(zone);
-  const protocolImplInboundWatcher = makeProtocolImplInboundWatcher(
-    zone,
-    powers,
-    protocolImplAttemptWatcher,
-  );
   const makeIBCConnectionHandler = prepareIBCConnectionHandler(zone);
 
   /**
@@ -561,7 +432,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                   localAddr,
                   remoteAddr,
                 ),
-                protocolImplInboundWatcher,
+                this.facets.protocolImplInboundWatcher,
                 {
                   channelKeyToAttempt,
                   channelKeyToInfo,
@@ -689,7 +560,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               const conn = channelKeyToConnP.get(channelKey);
               const data = base64ToBytes(data64);
 
-              return watch(conn.send(data), ackWatcher, {
+              return watch(conn.send(data), this.facets.ackWatcher, {
                 protocolUtils: util,
                 packet,
               });
@@ -800,6 +671,103 @@ export const prepareIBCProtocol = (zone, powers) => {
           const kit = makeVowKit();
           seqToAck.init(sequence, harden(kit));
           return kit;
+        },
+      },
+      ackWatcher: {
+        onFulfilled(ack, watcherContext) {
+          const { protocolUtils, packet } = watcherContext;
+
+          const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
+          const ack64 = dataToBase64(realAck);
+          protocolUtils
+            .downcall('receiveExecuted', {
+              packet,
+              ack: ack64,
+            })
+            .catch(e => this.facets.ackWatcher.onRejected(e));
+        },
+        onRejected(e) {
+          console.log(e);
+        },
+      },
+      protocolImplAttemptWatcher: {
+        onFulfilled(attemptedLocal, watcherContext) {
+          const {
+            channelID,
+            portID,
+            channelKeyToAttempt,
+            channelKeyToInfo,
+            attempt,
+            obj,
+            util,
+            asyncVersions,
+            rPortID,
+            rChannelID,
+            order,
+            hops,
+            version,
+          } = watcherContext;
+
+          const match = attemptedLocal.match(
+            // Match:  ... /ORDER/VERSION ...
+            new RegExp('^(/[^/]+/[^/]+)*/(ordered|unordered)/([^/]+)(/|$)'),
+          );
+
+          const channelKey = `${channelID}:${portID}`;
+          if (!match) {
+            throw Error(
+              `${channelKey}: cannot determine version from attempted local address ${attemptedLocal}`,
+            );
+          }
+
+          channelKeyToAttempt.init(channelKey, attempt);
+          channelKeyToInfo.init(channelKey, obj);
+
+          const negotiatedVersion = match[3];
+
+          try {
+            if (asyncVersions) {
+              // We have async version negotiation, so we must call back now.
+              return util.downcall('tryOpenExecuted', {
+                packet: {
+                  source_port: rPortID,
+                  source_channel: rChannelID,
+                  destination_port: portID,
+                  destination_channel: channelID,
+                },
+                order,
+                version: negotiatedVersion,
+                hops,
+              });
+            } else if (negotiatedVersion !== version) {
+              // Too late; the other side gave us a version we didn't like.
+              throw Error(
+                `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
+              );
+            }
+          } catch (e) {
+            // Clean up after our failed attempt.
+            channelKeyToAttempt.delete(channelKey);
+            channelKeyToInfo.delete(channelKey);
+            void E(attempt).close();
+            throw e;
+          }
+        },
+      },
+      protocolImplInboundWatcher: {
+        onFulfilled(attempt, watchContext) {
+          const { obj } = watchContext;
+
+          // Tell what version string we negotiated.
+          return watch(
+            E(attempt).getLocalAddress(),
+            this.facets.protocolImplAttemptWatcher,
+            {
+              ...obj,
+              ...watchContext,
+              attempt,
+            },
+          );
         },
       },
     },
