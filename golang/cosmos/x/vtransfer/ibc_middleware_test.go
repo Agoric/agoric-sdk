@@ -51,7 +51,7 @@ func SetupAgoricTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage)
 		jsonReply := `true`
 		return jsonReply, nil
 	}
-	appd := app.NewAgoricApp(controller, log.NewNopLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+	appd := app.NewAgoricApp(controller, log.TestingLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
 	gensisState := app.NewDefaultGenesisState()
 	return appd, gensisState
 }
@@ -169,7 +169,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			"1000000",
 			s.chainA.SenderAccount.GetAddress().String(),
 			s.chainB.SenderAccount.GetAddress().String(),
-			`{"invokeWriteAcknowledgement": {}}`,
+			`{"invokeWriteAcknowledgement": "foo"}`,
 		)
 
 		// send a transfer packet
@@ -181,25 +181,36 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		s.coordinator.CommitBlock(s.chainA)
 
 		// Update Clients
-		path.EndpointA.UpdateClient()
-		path.EndpointB.UpdateClient()
+		err = path.EndpointA.UpdateClient()
+		s.Require().NoError(err)
+		err = path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
 
 		// receive the transfer packet
 		packet := channeltypes.NewPacket(transfer.GetBytes(), sequence, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
 		err = path.EndpointB.RecvPacket(packet)
 		s.Require().NoError(err)
 		// commit the receive on chainB
-		s.coordinator.CommitBlock(s.chainB)
+		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 		// Update Clients
-		path.EndpointA.UpdateClient()
-		path.EndpointB.UpdateClient()
+		// Update Clients
+		err = path.EndpointA.UpdateClient()
+		s.Require().NoError(err)
+		err = path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
+		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 		// acknowledge the transfer packet
 		ack := s.chainB.GetAcknowledgement(packet)
 		err = path.EndpointB.AcknowledgePacket(packet, ack)
 		s.Require().NoError(err)
-		// commit the receive on chainB
-		s.coordinator.CommitBlock(s.chainB)
+		// commit the receive on chainA
+		// Update Clients
+		err = path.EndpointA.UpdateClient()
+		s.Require().NoError(err)
+		err = path.EndpointB.UpdateClient()
+		s.Require().NoError(err)
+		s.coordinator.CommitBlock(s.chainA, s.chainB)
 	})
 }
