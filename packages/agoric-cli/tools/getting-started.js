@@ -24,9 +24,7 @@ const dirname = new URL('./', import.meta.url).pathname;
 // yarn start:ui
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const {
-    init: initOptions = [],
-  } = options;
+  const { init: initOptions = [] } = options;
   const pspawn = makePspawn({ spawn });
 
   // Kill an entire process group.
