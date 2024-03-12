@@ -122,8 +122,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn start:docker
+    t.is(await yarn(['start:docker']), 0, 'yarn start:docker works');
 
-    // Do nothing, as the container is started via GitHub Action service containers
+    // TODO: use abci_info endpoint to get block height
+    // sleep for 180 seconds for now
+    await new Promise(resolve => setTimeout(resolve, 180000));
 
     // ==============
     // yarn start:contract

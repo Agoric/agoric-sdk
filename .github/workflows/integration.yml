@@ -95,26 +95,6 @@ jobs:
           git config user.email "noreply@agoric.com"
           REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
 
-      - name: Wait for a3p container to be ready
-        run: |
-          timeout 180 bash -c '
-            TARGET_HEIGHT=1001
-            SLEEP=10
-            echo "Waiting for the Agoric service to be fully ready..."
-            echo "Target block height: $TARGET_HEIGHT"
-            while true; do
-              response=$(curl --silent http://localhost:26657/abci_info);
-              height=$(echo $response | jq -r ".result.response.last_block_height | tonumber");
-              if [ "$height" -ge $TARGET_HEIGHT ]; then
-                echo "Service is ready! Last block height: $height";
-                break;
-              else
-                echo "Waiting for last block height to reach $TARGET_HEIGHT. Current height: $height";
-              fi;
-              sleep $SLEEP;
-            done
-          '
-
       - name: run agoric-cli integration-test
         run: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
 
