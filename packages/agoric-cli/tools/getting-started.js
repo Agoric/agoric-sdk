@@ -1,4 +1,4 @@
-/* global process setTimeout clearTimeout setInterval clearInterval */
+/* global process setTimeout setInterval clearInterval */
 
 import fs from 'fs';
 import path from 'path';
@@ -10,7 +10,7 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 
-const TIMEOUT_SECONDS = 20 * 60;
+const TIMEOUT_SECONDS = 3 * 60;
 
 const dirname = new URL('./', import.meta.url).pathname;
 
@@ -26,13 +26,7 @@ const dirname = new URL('./', import.meta.url).pathname;
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const {
     init: initOptions = [],
-    install: installOptions = [],
-    start: startOptions = [],
   } = options;
-  // FIXME: Do a search for an unused port or allow specification.
-  const PORT = '7999';
-  process.env.PORT = PORT;
-
   const pspawn = makePspawn({ spawn });
 
   // Kill an entire process group.
@@ -88,7 +82,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       try {
         f();
       } catch (e) {
-        // console.log(e);
+        console.log(e);
       }
     }
     if (sig) {
@@ -126,7 +120,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // TODO: use abci_info endpoint to get block height
     // sleep for 180 seconds for now
-    await new Promise(resolve => setTimeout(resolve, 180000));
+    await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
 
     // ==============
     // yarn start:contract
