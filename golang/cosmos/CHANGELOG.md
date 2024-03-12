@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u14.1](https://github.com/gibson042/agoric-sdk/compare/@agoric/cosmos@0.35.0-u14.0...@agoric/cosmos@0.35.0-u14.1) (2024-03-12)
+
+
+### Features
+
+* **cosmos:** add agorictest-upgrade-14-rc1 upgrade name ([f6e8731](https://github.com/gibson042/agoric-sdk/commit/f6e873145f0c064b7714db30765ad7ce3b755075))
+
+
+### Bug Fixes
+
+* eliminate fee double-charge by using configurable decorator ([65d5eef](https://github.com/gibson042/agoric-sdk/commit/65d5eeffe8fdb70fb939eb0c4cbcbb68abdc9326))
+
+
+
 ## [0.35.0-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u13.0...@agoric/cosmos@0.35.0-u14.0) (2024-02-27)
 
 

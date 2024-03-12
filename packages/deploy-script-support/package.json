@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deploy-script-support",
-  "version": "0.10.4-u14.0",
+  "version": "0.10.4-u14.1",
   "description": "Helpers and other support for writing deploy scripts",
   "type": "module",
   "main": "src/helpers.js",
@@ -50,7 +50,7 @@
     "@endo/zip": "0.2.31"
   },
   "devDependencies": {
-    "@agoric/vats": "^0.15.2-u14.0",
+    "@agoric/vats": "^0.15.2-u14.1",
     "@endo/init": "0.5.56",
     "ava": "^5.2.0",
     "import-meta-resolve": "^2.2.1"
