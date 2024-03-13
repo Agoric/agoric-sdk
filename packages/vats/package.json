@@ -62,7 +62,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
