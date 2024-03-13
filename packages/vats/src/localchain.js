@@ -89,6 +89,11 @@ const prepareLocalChainAccount = zone =>
       },
     },
   );
+/**
+ * @typedef {Awaited<
+ *   ReturnType<Awaited<ReturnType<typeof prepareLocalChainAccount>>>
+ * >} LocalChainAccount
+ */
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
