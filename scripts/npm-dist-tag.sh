@@ -1,14 +1,16 @@
 #! /bin/bash
 usage() { cat <<END_USAGE
 Usage:
-$0 [lerna] add <tag> [-<pre-release>]
+$0 [--dry-run] [lerna] add <tag> [-<pre-release>]
   Add <tag> to package dist-tags for current version or specified <pre-release>.
-$0 [lerna] <remove|rm> <tag>
+$0 [--dry-run] [lerna] <remove|rm> <tag>
   Remove <tag> from package dist-tags.
-$0 [lerna] <list|ls> [<tag>]
+$0 [--dry-run] [lerna] <list|ls> [<tag>]
   List package dist-tags, or just the one named <tag>.
 
-If the first argument is "lerna", the operation is extended to all packages.
+With "--dry-run", npm commands are printed to standard error rather than executed.
+
+If the first operand is "lerna", the operation is extended to all packages.
 END_USAGE
   exit 1
 }
@@ -21,6 +23,18 @@ fail () {
 
 # Exit on any errors.
 set -ueo pipefail
+
+# Check for `--dry-run`.
+npm=npm
+dryrun=
+if test "${1:-}" = "--dry-run"; then
+  dryrun=$1
+  npm="tostderr npm"
+  shift
+fi
+tostderr () {
+  echo 1>&2 "$@"
+}
 
 # Check the first argument.
 OP=${1-}
@@ -35,7 +49,7 @@ lerna)
 
   # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
   shift
-  exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- ${1+"$@"}
+  exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
   ;;
 esac
 
@@ -73,20 +87,25 @@ case $OP in
 add)
   # Add $TAG to the current-directory package's dist-tags.
   test "$#" -le 3 || fail "Too many arguments!"
-  npm dist-tag add "$pkg@$version" "$TAG"
+  $npm dist-tag add "$pkg@$version" "$TAG"
   ;;
 remove | rm)
   # Remove $TAG from the current-directory package's dist-tags.
   test "$#" -le 2 || fail "Too many arguments!"
-  npm dist-tag rm "$pkg" "$TAG"
+  $npm dist-tag rm "$pkg" "$TAG"
   ;;
 list | ls)
   # List the current-directory package's dist-tags, or just the specific $TAG.
   test "$#" -le 2 || fail "Too many arguments!"
   if test -n "$TAG"; then
-    npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+    if test -n "$dryrun"; then
+      # Print the entire pipeline.
+      $npm dist-tag ls "$pkg" \| sed -ne "s/^$TAG: //p"
+    else
+      $npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+    fi
   else
-    npm dist-tag ls "$pkg"
+    $npm dist-tag ls "$pkg"
   fi
   ;;
 *)

@@ -188,6 +188,10 @@ to pass.
   `agoric install agoric-upgrade-42` to use the version for that dist-tag),
   choose a \<TAG> and run:
   ```sh
+  ./scripts/npm-dist-tag.sh --dry-run lerna add <TAG>
+  ```
+  If you're happy with the corresponding commands, execute them:
+  ```sh
   ./scripts/npm-dist-tag.sh lerna add <TAG>
   ```
 
