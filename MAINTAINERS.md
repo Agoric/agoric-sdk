@@ -184,10 +184,10 @@ to pass.
 
   If you want to update an
   [NPM dist-tag](https://docs.npmjs.com/cli/v6/commands/npm-dist-tag) for the
-  current checked-out Agoric SDK's packages (to enable `agoric install <TAG>`),
-  use:
+  current checked-out Agoric SDK's packages (enabling e.g.
+  `agoric install agoric-upgrade-42` to use the version for that dist-tag),
+  choose a \<TAG> and run:
   ```sh
-  # Use "beta" for <TAG> for example.
   ./scripts/npm-dist-tag.sh lerna add <TAG>
   ```
 
@@ -200,10 +200,11 @@ to pass.
 
 - [ ] Push release labels as tags
 
-  Perform the following for each `tag` that we will use to label this release.
+  Perform the following for each \<TAG> that we will use to label this release.
+
   ```sh
-  git tag $tag
-  git push origin $tag
+  git tag <TAG>
+  git push origin <TAG>
   ```
 
 - [ ] Confirm that a Docker image for SDK version $SDKVER has been published to the
