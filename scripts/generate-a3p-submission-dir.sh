@@ -1,12 +1,15 @@
 #!/bin/bash
 set -ueo pipefail
 
-SCRIPT_DIR=$( cd "${0%/*}" && pwd -P )
+SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
 
-for proposal in ./proposals/?:*
-do
-  cd "$proposal"
-  args=$(jq -r < package.json '.agoricProposal["sdk-generate"][0]')
-  "$SCRIPT_DIR/generate-a3p-submission.sh" "$proposal" $args
+IFS=$'\n'
+
+for proposal in ./proposals/?:*; do
+  cd $proposal
+  while read -r line; do
+    IFS=' ' parts=( $line )
+    $SCRIPT_DIR/generate-a3p-submission.sh $proposal ${parts[@]}
+  done < <(jq -r < package.json '.agoricProposal["sdk-generate"][]')
   cd -
 done
