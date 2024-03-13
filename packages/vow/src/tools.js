@@ -15,7 +15,11 @@ export const prepareVowTools = (zone, powers = {}) => {
   const makeVowKit = prepareVowKit(zone, watchPromise);
   const when = makeWhen(isRetryableReason);
   const watch = prepareWatch(zone, makeVowKit, watchPromise, isRetryableReason);
-  const watchUtils = prepareWatchUtils(zone, watch, makeVowKit);
-  return harden({ when, watch, makeVowKit, watchUtils });
+  const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
+  const watchUtils = makeWatchUtils();
+
+  const allVows = vows => watchUtils.all(vows);
+
+  return harden({ when, watch, makeVowKit, allVows });
 };
 harden(prepareVowTools);

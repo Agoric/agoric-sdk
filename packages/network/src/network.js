@@ -571,8 +571,7 @@ const RevokeState = /** @type {const} */ ({
 const preparePort = (zone, powers) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
-  const { watch, watchUtils } = powers;
-  const utils = watchUtils();
+  const { watch, allVows } = powers;
 
   const makePortKit = zone.exoClassKit(
     'Port',
@@ -757,7 +756,7 @@ const preparePort = (zone, powers) => {
             ps.push(port.removeListener(listener));
           }
 
-          return watch(utils.all(ps), this.facets.rethrowUnlessMissingWatcher);
+          return watch(allVows(ps), this.facets.rethrowUnlessMissingWatcher);
         },
       },
       sinkWatcher: {
