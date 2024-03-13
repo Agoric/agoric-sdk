@@ -127,8 +127,11 @@ test.serial('upgrade at many points in network API flow', async t => {
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
       return [label, { server: started.creatorFacet }];
     },
-    startListening: async ([label, opts]) => {
+    requestListening: async ([label, opts]) => {
       await EV.sendOnly(opts.server).listen();
+      return [label, opts];
+    },
+    startListening: async ([label, opts]) => {
       await EV.sendOnly(opts.server).dequeue('onListen');
       return [label, opts];
     },
@@ -148,9 +151,15 @@ test.serial('upgrade at many points in network API flow', async t => {
       t.log(`${label} server ${serverAddress} client ${clientAddress}`);
       return [label, { ...opts, serverAddress }];
     },
-    startConnecting: async ([label, opts]) => {
+    requestConnection: async ([label, opts]) => {
       await EV.sendOnly(opts.client).connect(opts.serverAddress);
+      return [label, opts];
+    },
+    acceptConnection: async ([label, opts]) => {
       await EV.sendOnly(opts.server).dequeue('onAccept');
+      return [label, opts];
+    },
+    openConnection: async ([label, opts]) => {
       await EV.sendOnly(opts.server).dequeue('onOpen');
       return [label, opts];
     },
