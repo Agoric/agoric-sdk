@@ -72,14 +72,17 @@ esac
 case $OP in
 add)
   # Add $TAG to the current-directory package's dist-tags.
+  test "$#" -le 3 || fail "Too many arguments!"
   npm dist-tag add "$pkg@$version" "$TAG"
   ;;
 remove | rm)
   # Remove $TAG from the current-directory package's dist-tags.
+  test "$#" -le 2 || fail "Too many arguments!"
   npm dist-tag rm "$pkg" "$TAG"
   ;;
 list | ls)
   # List the current-directory package's dist-tags, or just the specific $TAG.
+  test "$#" -le 2 || fail "Too many arguments!"
   if test -n "$TAG"; then
     npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
   else
