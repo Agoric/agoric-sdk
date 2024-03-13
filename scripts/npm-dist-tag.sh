@@ -35,11 +35,12 @@ esac
 # Get the second argument, if any.
 TAG=${2-}
 
-# Find the package name and version from the package.json.
+# Read package.json for the package name and current version.
 pkg=$(jq -r .name package.json)
 case ${3-} in
 -*)
-  # If the tag starts with a dash, it's a suffix.
+  # Instead of current package version, reference an already-published version
+  # with the specified pre-release suffix.
   version=$(npm view "$pkg" versions --json | jq -r '.[]' | sed -ne "/[0-9]$3$/{ p; q; }" || true)
   ;;
 *)
@@ -50,18 +51,15 @@ esac
 
 case $OP in
 add)
-  # Add <tag> to the current-directory package's dist-tags.
+  # Add $TAG to the current-directory package's dist-tags.
   npm dist-tag add "$pkg@$version" "$TAG"
   ;;
 remove | rm)
-  # npm-dist-tag.sh remove <tag>
-  # Remove <tag> from the current-directory package's dist-tags.
+  # Remove $TAG from the current-directory package's dist-tags.
   npm dist-tag rm "$pkg" "$TAG"
   ;;
 list | ls)
-  # npm-dist-tag.sh list [<tag>]
-  # List the current-directory package's dist-tags.
-  # If <tag> is given, list only that tag.
+  # List the current-directory package's dist-tags, or just the specific $TAG.
   if test -n "$TAG"; then
     npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
   else

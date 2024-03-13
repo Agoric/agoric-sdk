@@ -191,8 +191,9 @@ to pass.
   ./scripts/npm-dist-tag.sh lerna add <TAG>
   ```
 
-  As a special case, by supplying a version suffix argument, you can do something
-  like publish a `community-dev` dist-tag for an existing dev-only Git revision:
+  As a special case, by supplying a pre-release suffix argument, you can do
+  something like publish a `community-dev` dist-tag for an existing version:
+
   ```sh
   rev=$(git rev-parse --short=7 community-dev)
   ./scripts/npm-dist-tag.sh lerna add community-dev -dev-${rev}.0
