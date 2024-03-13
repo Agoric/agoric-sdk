@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ueo pipefail
 
-sdkroot=$(cd -- "$(dirname "$0")/.." >/dev/null && pwd)
+sdkroot=$(git rev-parse --show-toplevel)
 
 cd "$sdkroot"
 
@@ -14,8 +14,7 @@ yarn agoric run "packages/builders/scripts/vats/$proposalName.js"
 mkdir -p "$submissionDir"
 
 plans=*-plan.json
-for plan in $plans
-do
+for plan in $plans; do
   base=${plan%-plan.json}
   cp $(grep -oh '/.*b1-.*.json' "$base"-plan.json) "$submissionDir"
   mv "$base"* "$submissionDir"

@@ -99,7 +99,7 @@ make -C ../packages/deployment docker-build-sdk
 
 Some core-eval proposals `submission` content are generated from the `agoric-sdk`
 code, and must be rebuilt every time there is a change. The
-`/scripts/generate-a3p-submission.sh` script contains commands to generate the
+`scripts/generate-a3p-submission.sh` script contains commands to generate the
 core-eval content and move it to the expected proposal package's submission
 directory. It is executed as part of `a3p-integration`'s `build:submissions` step.
 Each proposal that requires such a build step should add an `sdk-generate` property
