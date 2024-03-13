@@ -16,7 +16,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
         awaitAll: M.call(M.any()).returns(M.any()),
       }),
       helpers: M.interface('Helpers', {
-        check: M.call(M.any()).returns(),
+        check: M.call(M.any(), M.any()).returns(),
       }),
       watcher: M.interface('Watcher', {
         onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),

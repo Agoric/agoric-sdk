@@ -7,7 +7,6 @@ import { dataToBase64, base64ToBytes } from '@agoric/network';
 
 import '@agoric/store/exported.js';
 import '@agoric/network/exported.js';
-import { M } from '@endo/patterns';
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
