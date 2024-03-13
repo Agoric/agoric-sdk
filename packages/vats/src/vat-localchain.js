@@ -13,10 +13,10 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
      * Create a local chain that allows permissionlessly making fresh local
      * chain accounts, then using them to send chain queries and transactions.
      *
-     * @param {import('./types').ScopedBridgeManager} system
+     * @param {Partial<import('./localchain.js').LocalChainPowers>} [initialPowers]
      */
-    makeLocalChain(system) {
-      return makeLocalChain(system);
+    makeLocalChain(initialPowers = {}) {
+      return makeLocalChain(initialPowers);
     },
   });
 };

@@ -787,6 +787,7 @@ const prepareBankManager = (
   );
   return makeBankManager;
 };
+/** @typedef {ReturnType<ReturnType<typeof prepareBankManager>>} BankManager */
 
 /** @param {MapStore<string, any>} baggage */
 const prepareFromBaggage = baggage => {

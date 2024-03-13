@@ -56,7 +56,7 @@ export const testLocalChain = async (
         },
       );
 
-    const emptyQuery = await E(localchain).query([]);
+    const emptyQuery = await E(localchain).queryMany([]);
     console.info('emptyQuery', emptyQuery);
 
     result = { success: true };
