@@ -180,10 +180,12 @@ to pass.
   This will push all the tags created in the "Generate new SDK version" step
   above.
 
-- [ ] (Optional) Publish an NPM dist-tag
+- [ ] (Optional) Publish an NPM distribution tag
 
-  If you want to update an NPM dist-tag for the current checked-out Agoric SDK's
-  packages (to enable `agoric install <TAG>`), use:
+  If you want to update an
+  [NPM dist-tag](https://docs.npmjs.com/cli/v6/commands/npm-dist-tag) for the
+  current checked-out Agoric SDK's packages (to enable `agoric install <TAG>`),
+  use:
   ```sh
   # Use "beta" for <TAG> for example.
   ./scripts/npm-dist-tag.sh lerna add <TAG>
