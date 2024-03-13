@@ -2,6 +2,13 @@
 
 import { M } from '@endo/patterns';
 
+const VowShape = M.tagged(
+  'Vow',
+  harden({
+    vowV0: M.remotable('VowV0'),
+  }),
+);
+
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('./watch.js').Watch} watch
@@ -13,7 +20,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
     'WatchUtils',
     {
       utils: M.interface('Utils', {
-        awaitAll: M.call(M.any()).returns(M.any()),
+        all: M.call(M.arrayOf(VowShape)).returns(M.any()),
       }),
       helpers: M.interface('Helpers', {
         check: M.call(M.any(), M.any()).returns(),
@@ -41,7 +48,11 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
     },
     {
       utils: {
-        awaitAll(vows) {
+        /**
+         * @template [T=any]
+         * @param {import('./types.js').Specimen<T>[]} vows
+         */
+        all(vows) {
           const { id } = this.state;
           const kit = makeVowKit();
 

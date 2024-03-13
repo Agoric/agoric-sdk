@@ -22,14 +22,12 @@ const Shape1 = /** @type {const} */ ({
   Data: M.string(),
   Bytes: M.string(),
   Endpoint: M.string(),
-  // TODO: match on "Vow" tag
-  // @endo/patterns supports it as of
-  // https://github.com/endojs/endo/pull/2091
-  // but that's not in agoric-sdk yet.
-  // For now, use M.any() to avoid:
-  // cannot check unrecognized tag "Vow": "[Vow]"
-  Vow: M.any(),
-
+  Vow: M.tagged(
+    'Vow',
+    harden({
+      vowV0: M.remotable('VowV0'),
+    }),
+  ),
   ConnectionHandler: M.remotable('ConnectionHandler'),
   Connection: M.remotable('Connection'),
   InboundAttempt: M.remotable('InboundAttempt'),
@@ -744,6 +742,8 @@ const preparePort = (zone, powers) => {
 
           // Clean up everything we did.
           const values = [...currentConnections.get(port).values()];
+
+          /** @type {import('@agoric/vow').Specimen[]} */
           const ps = [];
 
           ps.push(
@@ -757,10 +757,7 @@ const preparePort = (zone, powers) => {
             ps.push(port.removeListener(listener));
           }
 
-          return watch(
-            utils.awaitAll(ps),
-            this.facets.rethrowUnlessMissingWatcher,
-          );
+          return watch(utils.all(ps), this.facets.rethrowUnlessMissingWatcher);
         },
       },
       sinkWatcher: {
