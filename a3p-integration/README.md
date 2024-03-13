@@ -102,9 +102,8 @@ code, and must be rebuilt every time there is a change. The
 `/scripts/generate-a3p-submission.sh` script contains commands to generate the
 core-eval content and move it to the expected proposal package's submission
 directory. It is executed as part of `a3p-integration`'s `build:submission` step.
-Each proposal that requires such a build step should add a `build:submission`
-rule in its  package.json to specify the details of proposals that require a
-build step.
+Each proposal that requires such a build step should add an `sdk-generate` property
+in its `agoricProposal` config.
 
 ## Building synthetic-chain images
 

@@ -2,7 +2,9 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "source": "subdir",
-    "sdk-generate": [ "test-localchain" ]
+    "sdk-generate": [
+      "test-localchain"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",
@@ -16,9 +18,6 @@
     "files": [
       "!submission"
     ]
-  },
-  "scripts": {
-    "build:submission": "../../../scripts/generate-a3p-submission.sh test-localchain b:localchain"
   },
   "packageManager": "yarn@4.1.0"
 }
