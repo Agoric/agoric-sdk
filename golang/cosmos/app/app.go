@@ -905,6 +905,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
                 // Add new vats for price feeds. The existing ones will be retired shortly.
                 vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/updatePriceFeeds.js"),
 			}
+		}
 
 		app.upgradeDetails = &upgradeDetails{
 			// Record the plan to send to SwingSet

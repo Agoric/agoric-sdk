@@ -4,16 +4,12 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
 const ORACLE_ADDRESSES = [
-  'agoric1cn8dwvv3ac329sujgpqmccv6xd9d3sagd2t5l9',
-  'agoric1dxe9dqu4ejpctnp2un7s4l7l8hny6dzr8juur3',
-  'agoric1y750klm8sh8yh4h4mcssx5m7rmvuu8mhk89t0c',
-
-  // TODO(CTH)  discard
-
-  // // XXX These are the GOV1ADDR, etc addresses.
-  // 'agoric1mefw5jhvqh60la7mltgny2pnn2dpgrs5yjlcqt',
-  // 'agoric1l4u888p0wtgh2m8q0uzgxry06lm6ct4nyaz3py',
-  // 'agoric1k8y8l8996p9ldzt9kng8uwz6ttjhhl49uzjdt8',
+  // XXX These are the oracle addresses. They must be provided before the chain
+  // is running, which means they must be known ahead of time.
+  // see https://github.com/Agoric/agoric-3-proposals/issues/5
+  'agoric1lu9hh5vgx05hmlpfu47hukershgdxctk6l5s05',
+  'agoric15lpnq2mjsdhtztf6khp7mrsq66hyrssspy92pd',
+  'agoric1mwm224epc4l3pjcz7qsxnudcuktpynwkmnfqfp',
 ];
 
 /**
