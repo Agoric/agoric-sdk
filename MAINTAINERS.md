@@ -200,7 +200,13 @@ to pass.
   git push origin $tag
   ```
 
-- [ ] Confirm that a Docker image for SDKVER has been published.
+- [ ] Confirm that a Docker image for SDK version $SDKVER has been published to the
+  [agoric-sdk Container registry](https://github.com/Agoric/agoric-sdk/pkgs/container/agoric-sdk).
+
+  Note that this is triggered by pushing the `@agoric/sdk@$n` tag in the
+  "Publish the released package tags" step and may take a while.
+  You can observe workflow initiation and progress at
+  [Build release Docker Images](https://github.com/Agoric/agoric-sdk/actions/workflows/docker.yml).
 
 - [ ] Create a GitHub release
 
