@@ -1,6 +1,23 @@
 #! /bin/bash
-# npm-dist-tag.sh - add/remove/list dist-tags for NPM registry packages 
-# Try: `npm-dist-tag.sh` for usage.
+usage() { cat <<END_USAGE
+Usage:
+$0 [lerna] add <tag> [-<pre-release>]
+  Add <tag> to package dist-tags for current version or specified <pre-release>.
+$0 [lerna] <remove|rm> <tag>
+  Remove <tag> from package dist-tags.
+$0 [lerna] <list|ls> [<tag>]
+  List package dist-tags, or just the one named <tag>.
+
+If the first argument is "lerna", the operation is extended to all packages.
+END_USAGE
+  exit 1
+}
+
+# fail <error message>
+fail () {
+	printf 1>&2 '%s\n\n' "$1"
+	usage 1>&2
+}
 
 # Exit on any errors.
 set -ueo pipefail
@@ -46,10 +63,7 @@ case ${3-} in
     jq --arg s "$3" -r '.[] | select(sub("^((^|[.])(0|[1-9][0-9]*)){3}"; "") == $s)' || true)
   ;;
 *)
-  if test "$#" -gt 2; then
-    echo 1>&2 "Invalid pre-release suffix!"
-    OP='' # force usage
-  fi
+  test "$#" -le 2 || fail "Invalid pre-release suffix!"
   version=$(jq -r .version package.json)
   ;;
 esac
@@ -73,17 +87,5 @@ list | ls)
   fi
   ;;
 *)
-  # Usage instructions.
-  echo 1>&2 "Usage:
-$0 [lerna] add <tag> [-<pre-release>]
-  Add <tag> to package dist-tags for current version or specified <pre-release>.
-$0 [lerna] <remove|rm> <tag>
-  Remove <tag> from package dist-tags.
-$0 [lerna] <list|ls> [<tag>]
-  List package dist-tags, or just the one named <tag>.
-
-If the first argument is \"lerna\", the operation is extended to all packages.
-"
-  exit 1
-  ;;
+  usage
 esac
