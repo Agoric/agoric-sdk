@@ -121,7 +121,7 @@ in this branch. The release tags will be human-meaningful, the release branch ne
   goTag="v$(git tag -l --contains HEAD | sed -n 's!^@agoric/cosmos@!!p' | head -1)"
   git tag -f "$goTag"
   # Push the branch.
-  git push -u origin prepare-release-$now
+  git push -u origin HEAD
   # Tell which packages have actual news.
   scripts/have-news HEAD^ > have-news.md
   ```
