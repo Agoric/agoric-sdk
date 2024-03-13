@@ -141,9 +141,11 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   function getHostKV(key) {
     typeof key === 'string' || Fail`key must be a string`;
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
+    // @ts-expect-error unknown
     return sqlKVGet.get(key);
   }
 
+  /** @type {any} */
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
     FROM kvStore
