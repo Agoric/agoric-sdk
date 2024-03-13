@@ -60,7 +60,7 @@ For an example, see `a:upgrade-next` in master.
 
 The `type` of a core-eval proposal is `"/agoric.swingset.CoreEvalProposal"`, and content is submitted from a `submission` subfolder.
 
-If the proposal is planned to be executed after the chain software upgrade, and the source of the proposal is in `agoric-sdk`, it's recommended to not check-in the `submission` content in source control and instead generate it automatically when testing. Since proposals cannot access SDK code, a script can be used to generate the `submission` content. Until there is [native support for build scripts in the `synthetic-chain` tool](https://github.com/Agoric/agoric-3-proposals/issues/87), `a3p-integration`'s `build:submission` step invokes `/script/generate-a3p-submission.sh` in `agoric-sdk` before starting the upgrade test.
+If the proposal is planned to be executed after the chain software upgrade, and the source of the proposal is in `agoric-sdk`, it's recommended to not check-in the `submission` content in source control and instead generate it automatically when testing. Since proposals cannot access SDK code, a script can be used to generate the `submission` content. Until there is [native support for build scripts in the `synthetic-chain` tool](https://github.com/Agoric/agoric-3-proposals/issues/87), `a3p-integration`'s `build:submissions` step invokes `/script/generate-a3p-submission.sh` in `agoric-sdk` before starting the upgrade test.
 
 For core eval proposals executing before the chain software upgrade, the `submission` should be checked in, since bundles built from newer software may not be compatible with older chains.
 
@@ -99,12 +99,11 @@ make -C ../packages/deployment docker-build-sdk
 
 Some core-eval proposals `submission` content are generated from the `agoric-sdk`
 code, and must be rebuilt every time there is a change. The
-`/scripts/generate-a3p-submission.sh` script contains commands to generate the
+`scripts/generate-a3p-submission.sh` script contains commands to generate the
 core-eval content and move it to the expected proposal package's submission
-directory. It is executed as part of `a3p-integration`'s `build:submission` step.
-Each proposal that requires such a build step should add a `build:submission`
-rule in its  package.json to specify the details of proposals that require a
-build step.
+directory. It is executed as part of `a3p-integration`'s `build:submissions` step.
+Each proposal that requires such a build step should add an `sdk-generate` property
+in its `agoricProposal` config.
 
 ## Building synthetic-chain images
 
