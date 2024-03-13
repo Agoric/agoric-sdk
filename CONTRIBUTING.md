@@ -8,7 +8,7 @@ We support MacOS, Linux, and Windows Subsystem for Linux (WSL).
 
 For many of the packages here, JavaScript development tools suffice:
 
- - [node](https://nodejs.org/) 14.15.0 or higher
+ - [node](https://nodejs.org/) LTS
  - [yarn](https://classic.yarnpkg.com/en/docs/install) (`npm install -g yarn`)
 
 But to ensure contributions are compatible with all packages, you will
