@@ -103,8 +103,14 @@ in this branch. The release tags will be human-meaningful, the release branch ne
   - update all dependencies in the monorepo to match the bumped versions;
   - create `CHANGELOG.md` files for each package with a summary of
     the git commit history;
-  - make a Git commit with those changes;
-  - create a `$package@$version` git tag for every package that changed.
+  - make a Git commit with those changes and push its branch;
+  - create a `$package@$version` git tag for every package that changed,
+    including a special `@agoric/sdk@$n` "SDK version" tag that (among other
+    things) CI will use for tagging a Docker image;
+  - create a special `v$version` tag derived from the `@agoric/cosmos@$version`
+    tag for
+    [Go's opinionated reference scheme](https://go.dev/ref/mod#version-queries)
+    as used in e.g. `go get github.com/Agoric/agoric-sdk@$version`.
 
   ```sh
   # Create the final release CHANGELOGs.
@@ -112,6 +118,8 @@ in this branch. The release tags will be human-meaningful, the release branch ne
   prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
   SDKVER=$(( prior + 1 ))
   git tag @agoric/sdk@$SDKVER
+  goTag="v$(git tag -l --contains HEAD | sed -n 's!^@agoric/cosmos@!!p' | head -1)"
+  git tag -f "$goTag"
   # Push the branch.
   git push -u origin prepare-release-$now
   # Tell which packages have actual news.
@@ -169,12 +177,8 @@ to pass.
   ./scripts/get-released-tags git push origin
   ```
 
-  This will push a `${package}@${version}` tag, one per package, plus
-  the repo-wide `agoric-sdk@${version}` tag, plus the golang-specific
-  `v${version}` tag (whose version matches the one used for
-  `@agoric/cosmic-swingset`).  (In fact, it will push all tags that
-  match these patterns, but all the old version's tags will already
-  be present on GitHub.)
+  This will push all the tags created in the "Generate new SDK version" step
+  above.
 
 - [ ] (Optional) Publish an NPM dist-tag
 
