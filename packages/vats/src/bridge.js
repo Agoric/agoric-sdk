@@ -107,12 +107,7 @@ export const prepareBridgeManager = (zone, D) => {
     BridgeManagerIKit,
     /** @param {BridgeDevice} bridgeDevice */
     bridgeDevice => ({
-      /**
-       * @type {MapStore<
-       *   string,
-       *   ReturnType<ReturnType<typeof prepareScopedManager>>
-       * >}
-       */
+      /** @type {MapStore<string, ExoObj<typeof prepareScopedManager>>} */
       scopedManagers: zone.detached().mapStore('scopedManagers'),
       bridgeDevice,
     }),

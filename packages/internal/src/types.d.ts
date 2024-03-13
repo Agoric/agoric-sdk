@@ -18,3 +18,10 @@ export declare class SyncCallback<
 
   public isSync: true;
 }
+
+declare global {
+  /**
+   * Utility for the type of an Exo object once prepared and instantiated.
+   */
+  type ExoObj<T> = Awaited<ReturnType<Awaited<ReturnType<T>>>>;
+}

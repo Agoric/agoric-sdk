@@ -273,4 +273,4 @@ export const prepareContractGovernorKit = (baggage, powers) => {
   return makeContractGovernorKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareContractGovernorKit>>} ContractGovernorKit */
+/** @typedef {ExoObj<typeof prepareContractGovernorKit>} ContractGovernorKit */

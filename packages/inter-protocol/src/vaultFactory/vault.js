@@ -866,4 +866,4 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
   return maker;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVault>>['self']} Vault */
+/** @typedef {ExoObj<typeof prepareVault>['self']} Vault */

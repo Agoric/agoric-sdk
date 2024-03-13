@@ -17,3 +17,4 @@ export const prepareVowTools = (zone, powers = {}) => {
   return harden({ when, watch, makeVowKit });
 };
 harden(prepareVowTools);
+/** @type {ExoObj<typeof prepareVowTools>} VowTools */

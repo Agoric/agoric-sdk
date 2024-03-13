@@ -789,4 +789,4 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 };
 harden(prepareAuctionBook);
 
-/** @typedef {ReturnType<ReturnType<typeof prepareAuctionBook>>} AuctionBook */
+/** @typedef {ExoObj<typeof prepareAuctionBook>} AuctionBook */

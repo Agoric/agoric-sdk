@@ -510,13 +510,14 @@ const prepareVaultDirector = (
   return makeVaultDirector;
 };
 harden(prepareVaultDirector);
+/** @typedef {ExoObj<typeof prepareVaultDirector>} VaultDirector */
 
 /**
  * Prepare the VaultDirector kind, get or make the singleton
  *
  * @type {(
  *   ...pvdArgs: Parameters<typeof prepareVaultDirector>
- * ) => ReturnType<ReturnType<typeof prepareVaultDirector>>}
+ * ) => VaultDirector}
  */
 export const provideDirector = (...args) => {
   const makeVaultDirector = prepareVaultDirector(...args);
