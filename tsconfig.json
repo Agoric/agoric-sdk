@@ -6,6 +6,7 @@
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
+    "allowSyntheticDefaultImports": true,
     "strict": false,
     "downlevelIteration": true,
     "strictNullChecks": true,
