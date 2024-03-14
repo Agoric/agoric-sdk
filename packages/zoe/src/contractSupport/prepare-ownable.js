@@ -18,7 +18,6 @@ const TransferProposalShape = M.splitRecord({
  */
 
 /**
- * @template {any} [U=any]
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {MakeInvitation} makeInvitation
  *   A function with the same behavior as `zcf.makeInvitation`.
@@ -34,7 +33,7 @@ const TransferProposalShape = M.splitRecord({
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the wrapping ownable object.
  * @param {OwnableOptions} [options]
- * @returns {(underlying: U) => U}
+ * @returns {<U>(underlying: U) => U}
  */
 export const prepareOwnable = (
   zone,

@@ -20,13 +20,13 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   const kit = await E(zoe).startInstance(scaledPriceInstallation);
   // @ts-expect-error
   kit.notInKit;
-  E(kit.publicFacet).getPriceAuthority();
+  void E(kit.publicFacet).getPriceAuthority();
 
   expectType<{}>(kit.creatorFacet);
 
   const validIssuers = {};
 
-  E(zoe).startInstance(
+  void E(zoe).startInstance(
     scaledPriceInstallation,
     validIssuers,
     // @ts-expect-error missing terms
@@ -37,15 +37,15 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
     scaleIn: mock,
     scaleOut: mock,
   };
-  E(zoe).startInstance(scaledPriceInstallation, validIssuers, validTerms);
+  void E(zoe).startInstance(scaledPriceInstallation, validIssuers, validTerms);
   const validPrivates = {};
-  E(zoe).startInstance(
+  void E(zoe).startInstance(
     scaledPriceInstallation,
     validIssuers,
     validTerms,
     validPrivates,
   );
-  E(zoe).startInstance(
+  void E(zoe).startInstance(
     scaledPriceInstallation,
     validIssuers,
     {
