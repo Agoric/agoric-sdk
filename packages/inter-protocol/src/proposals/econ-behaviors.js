@@ -69,6 +69,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *     import('../vaultFactory/vaultFactory.js')['start']
  *   >;
  *   auctioneerKit: AuctioneerKit;
+ *   newAuctioneerKit: AuctioneerKit;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
