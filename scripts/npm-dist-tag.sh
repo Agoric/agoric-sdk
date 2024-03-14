@@ -17,9 +17,9 @@ END_USAGE
 
 # fail <error message>
 fail () {
-	printf 1>&2 '%s\n\n' "$1"
-	usage 1>&2
-}
+  printf '%s\n\n' "$1"
+  usage
+} 1>&2
 
 # Exit on any errors.
 set -ueo pipefail
@@ -29,16 +29,13 @@ npm=npm
 dryrun=
 if test "${1:-}" = "--dry-run"; then
   dryrun=$1
-  npm="tostderr npm"
+  npm="echo-to-stderr npm"
   shift
 fi
-tostderr () {
-  echo 1>&2 "$@"
-}
+echo-to-stderr () { echo "$@"; } 1>&2
 
 # Check the first argument.
-OP=${1-}
-case $OP in
+case "${1-}" in
 lerna)
   # npm-dist-tag.sh lerna [args]...
   # Run `npm-dist-tag.sh [args]...` in every package directory.
@@ -81,16 +78,17 @@ case ${3-} in
   version=$(jq -r .version package.json)
   ;;
 esac
-# echo "$OP $pkg@$version"
 
-case $OP in
+case "${1-}" in
 add)
   # Add $TAG to the current-directory package's dist-tags.
+  test -n "$TAG" || fail "Missing tag!"
   test "$#" -le 3 || fail "Too many arguments!"
   $npm dist-tag add "$pkg@$version" "$TAG"
   ;;
 remove | rm)
   # Remove $TAG from the current-directory package's dist-tags.
+  test -n "$TAG" || fail "Missing tag!"
   test "$#" -le 2 || fail "Too many arguments!"
   $npm dist-tag rm "$pkg" "$TAG"
   ;;
@@ -109,5 +107,6 @@ list | ls)
   fi
   ;;
 *)
+  test "${1-"--help"}" = "--help" || fail "Bad command!"
   usage
 esac
