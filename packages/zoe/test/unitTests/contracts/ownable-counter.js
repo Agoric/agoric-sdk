@@ -23,6 +23,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             count: M.bigint(),
           }),
         ),
+        toBeAttenuated: M.call().returns(),
       }),
       viewer: M.interface('ViewCounter', {
         view: M.call().returns(M.bigint()),
@@ -47,6 +48,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             count,
           });
         },
+        toBeAttenuated() {},
       },
       viewer: {
         view() {
