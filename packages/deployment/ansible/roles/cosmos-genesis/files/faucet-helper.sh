@@ -78,14 +78,14 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
         msg1='[]'
       fi
       txfile="/tmp/faucet.$$.json"
-      trap 'rm -f "$txfile"' EXIT
+      signedtxfile="/tmp/faucet.$$.signed.json"
+      trap 'rm -f "$txfile" "$signedtxfile"' EXIT
       echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
-      if $TX sign "$txfile" | $TX broadcast --broadcast-mode=block - | tee /dev/stderr | grep -q '^code: 0'; then
+      if $TX sign "$txfile" | tee "$signedtxfile" | $TX broadcast --broadcast-mode=block - | tee /dev/stderr | grep -q '^code: 0'; then
         status=0
       else
         status=$?
-        echo "Failed to append $msg1" 1>&2
-        echo "to $body0" 1>&2
+        printf 'tx broadcast failure!\n''unsigned payload: %s\n''signed payload: %s\n' "$(cat "$txfile")" "$(cat "$signedtxfile")" 1>&2
       fi
       exit $status
       ;;
