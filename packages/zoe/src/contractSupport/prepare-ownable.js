@@ -20,7 +20,7 @@ const TransferProposalShape = M.splitRecord({
 /**
  * @template {(string | symbol)[]} MN Method names
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {MakeInvitation} makeInvitation
+ * @param {ZCF['makeInvitation']} makeInvitation
  *   A function with the same behavior as `zcf.makeInvitation`.
  *   A contract will normally just extract it from its own zcf using the
  *   argument expression

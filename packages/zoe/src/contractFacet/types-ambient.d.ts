@@ -6,13 +6,6 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
-type MakeInvitation = <Result>(
-  offerHandler: OfferHandler<Result>,
-  description: string,
-  customDetails?: object,
-  proposalShape?: Pattern,
-) => Promise<Invitation<R, A>>;
-
 /**
  * Zoe Contract Facet
  *
@@ -60,7 +53,12 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * getting in the `customDetails`. `customDetails` will be
    * placed in the details of the invitation.
    */
-  makeInvitation: MakeInvitation;
+  makeInvitation: <R>(
+    offerHandler: OfferHandler<R>,
+    description: string,
+    customDetails?: object,
+    proposalShape?: Pattern,
+  ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
@@ -164,21 +162,20 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * normally an instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
-/**
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
- */
-type ZCFGetAmountAllocated = (
-  keyword: Keyword,
-  brand?: Brand<AssetKind> | undefined,
-) => Amount<any>;
 type ZCFSeat = {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
   hasExited: () => boolean;
   getProposal: () => ProposalRecord;
-  getAmountAllocated: ZCFGetAmountAllocated;
+  /**
+   * @param brand used for filling in an empty amount if the `keyword`
+   * is not present in the allocation
+   */
+  getAmountAllocated: (
+    keyword: Keyword,
+    brand?: Brand<AssetKind> | undefined,
+  ) => Amount;
   getCurrentAllocation: () => Allocation;
   /**
    * @deprecated Use atomicRearrange instead
