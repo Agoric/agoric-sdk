@@ -79,7 +79,7 @@ while [[ ${#rpcAddrs[@]} -gt 0 ]]; do
       fi
       txfile="/tmp/faucet.$$.json"
       signedtxfile="/tmp/faucet.$$.signed.json"
-      trap 'rm -f "$txfile"' EXIT
+      trap 'rm -f "$txfile" "$signedtxfile"' EXIT
       echo "$body0" | jq ".body.messages += $msg1" > "$txfile"
       if $TX sign "$txfile" | tee "$signedtxfile" | $TX broadcast --broadcast-mode=block - | tee /dev/stderr | grep -q '^code: 0'; then
         status=0
