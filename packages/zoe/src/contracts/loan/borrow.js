@@ -37,7 +37,10 @@ export const makeBorrowInvitation = (zcf, config) => {
       want: { Loan: null },
     });
 
-    const collateralGiven = borrowerSeat.getAmountAllocated('Collateral');
+    const collateralGiven = borrowerSeat.getAmountAllocated(
+      'Collateral',
+      borrowerSeat.getProposal().give.Collateral.brand,
+    );
     const loanWanted = borrowerSeat.getProposal().want.Loan;
     const loanBrand = zcf.getTerms().brands.Loan;
 

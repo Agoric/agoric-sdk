@@ -172,10 +172,10 @@ type ZCFSeat = {
    * @param brand used for filling in an empty amount if the `keyword`
    * is not present in the allocation
    */
-  getAmountAllocated: (
+  getAmountAllocated: <B extends Brand>(
     keyword: Keyword,
-    brand?: Brand<AssetKind> | undefined,
-  ) => Amount;
+    brand?: B,
+  ) => B extends Brand<infer K> ? Amount<K> : Amount;
   getCurrentAllocation: () => Allocation;
   /**
    * @deprecated Use atomicRearrange instead

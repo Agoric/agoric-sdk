@@ -143,8 +143,10 @@ export const prepareAssetReserveKit = async (
           trace('burnFeesToReduceShortfall', reduction);
           reduction = AmountMath.coerce(feeKit.brand, reduction);
           const feeKeyword = state.keywordForBrand.get(feeKit.brand);
-          const feeBalance =
-            state.collateralSeat.getAmountAllocated(feeKeyword);
+          const feeBalance = state.collateralSeat.getAmountAllocated(
+            feeKeyword,
+            feeKit.brand,
+          );
           const amountToBurn = AmountMath.min(reduction, feeBalance);
           if (AmountMath.isEmpty(amountToBurn)) {
             return;
