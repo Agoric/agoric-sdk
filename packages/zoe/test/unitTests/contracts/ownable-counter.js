@@ -28,6 +28,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         view: M.call().returns(M.bigint()),
       }),
     },
+    /**
+     * @param {bigint} count
+     */
     count => ({
       count,
     }),
@@ -58,7 +61,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     (...args) => zcf.makeInvitation(...args),
     'OwnableCounter',
-    ['incr', 'getInvitationCustomDetails'],
+    /** @type {const} */ (['incr', 'getInvitationCustomDetails']),
   );
 
   const { counter: underlyingCounter, viewer } =
