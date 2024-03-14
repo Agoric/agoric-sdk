@@ -81,6 +81,7 @@ test('compress to cache file; closes snapshot stream', async t => {
   sqlGetSnapshot.pluck(true);
   const snapshotGZ = sqlGetSnapshot.get(hash);
   t.truthy(snapshotGZ);
+  // @ts-expect-error unknown
   const contents = zlib.gunzipSync(snapshotGZ);
   t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
   const logInfo = { vatID: 'fakeVatID', ...exportInfo };

@@ -169,6 +169,7 @@ const traceSyscalls = (getSyscallsForKref, kref) => {
   nextKref: while (pendingKref) {
     const currentKref = pendingKref;
     pendingKref = undefined;
+    /** @type {any[]} */
     const moreSyscalls = getSyscallsForKref.all(currentKref);
     for (let i = 0; i < moreSyscalls.length; i += 1) {
       const syscall = moreSyscalls[i];
@@ -337,6 +338,7 @@ const main = rawArgv => {
 
   const [dbPath] = args;
   const db = sqlite3(/** @type {string} */ (dbPath));
+  /** @type {any} */
   const getUnsettledPromises = db.prepare(`
       SELECT d.kpid, d.decider, s.subscriber
         FROM promise_decider AS d

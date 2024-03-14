@@ -156,6 +156,7 @@ const importTest = test.macro(async (t, mode) => {
     ...db.prepare('SELECT * FROM transcriptSpans ORDER BY startPos').iterate(),
   ];
   t.deepEqual(
+    // @ts-expect-error unknown
     spanRows.map(sr => sr.startPos),
     [0, 2, 5, 8],
   );

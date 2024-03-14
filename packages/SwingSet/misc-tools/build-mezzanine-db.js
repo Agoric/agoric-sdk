@@ -246,6 +246,7 @@ function copySwingStore(sql, swingstoreDbPath) {
   const swingstoreDb = sqlite3(swingstoreDbPath);
   sql.clearPromiseDeciders.run();
   sql.clearPromiseSubscribers.run();
+  /** @type {any} */
   const deciders = swingstoreDb.prepare(
     "SELECT * FROM kvStore WHERE key LIKE 'kp%.decider'",
   );
@@ -254,6 +255,7 @@ function copySwingStore(sql, swingstoreDbPath) {
     const decider = row.value;
     sql.addPromiseDecider.run({ kpid, decider });
   }
+  /** @type {any} */
   const subscribers = swingstoreDb.prepare(
     "SELECT * FROM kvStore WHERE key LIKE 'kp%.subscribers'",
   );
