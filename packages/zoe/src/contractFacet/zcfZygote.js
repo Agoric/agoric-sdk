@@ -321,7 +321,8 @@ export const makeZCFZygote = async (
         customDetails,
         proposalShape,
       );
-      return invitationP;
+      // rely on the ZCF type signature
+      return /** @type {any} */ (invitationP);
     },
     // Shutdown the entire vat and give payouts
     shutdown: completion => {

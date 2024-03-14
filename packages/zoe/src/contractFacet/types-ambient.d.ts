@@ -53,8 +53,8 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * getting in the `customDetails`. `customDetails` will be
    * placed in the details of the invitation.
    */
-  makeInvitation: <R>(
-    offerHandler: OfferHandler<R>,
+  makeInvitation: <R, A = undefined>(
+    offerHandler: OfferHandler<ERef<R>, A>,
     description: string,
     customDetails?: object,
     proposalShape?: Pattern,
@@ -207,14 +207,14 @@ type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
   userSeat: ERef<UserSeat>;
 };
-type HandleOffer<OR extends unknown> = (
+type HandleOffer<OR extends unknown, OA> = (
   seat: ZCFSeat,
-  offerArgs?: object,
+  offerArgs?: OA,
 ) => OR;
-type OfferHandler<OR extends unknown = unknown> =
-  | HandleOffer<OR>
+type OfferHandler<OR extends unknown = unknown, OA = never> =
+  | HandleOffer<OR, OA>
   | {
-      handle: HandleOffer<OR>;
+      handle: HandleOffer<OR, OA>;
     };
 type ContractMeta = {
   customTermsShape?: CopyRecord<any> | undefined;
@@ -243,3 +243,11 @@ type ContractStartFnResult<PF, CF> = {
 };
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
 type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
+
+declare const OfferReturn: unique symbol;
+declare const OfferArgs: unique symbol;
+type Invitation<R = unknown, A = undefined> = Payment<'set'> & {
+  // because TS is structural, without this the generic is ignored
+  [OfferReturn]?: R;
+  [OfferArgs]?: A;
+};

@@ -23,7 +23,6 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   bidSeats.forEach(bidSeat => {
     if (!bidSeat.hasExited()) {
       activeBidsCount += 1n;
-      /** @type {Amount<'nat'>} */
       const bid = bidSeat.getAmountAllocated('Bid', bidBrand);
       // If the bid is greater than the highestBid, it's the new highestBid
       if (AmountMath.isGTE(bid, highestBid, bidBrand)) {

@@ -776,7 +776,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /** @returns {Promise<Invitation>} */
+        /** @returns {Promise<Invitation<VaultKit>>} */
         makeTransferInvitation() {
           const { state, facets } = this;
           const { outerUpdater } = state;

@@ -34,7 +34,7 @@ const TransferProposalShape = M.splitRecord({
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the wrapping ownable object.
  * @param {OwnableOptions} [options]
- * @returns {<U>(underlying: U) => Pick<U, MN[number]> & {makeTransferInvitation: () => Invitation}}
+ * @returns {<U>(underlying: U) => Pick<U, MN[number]> & {makeTransferInvitation: () => Invitation<U>}}
  */
 export const prepareOwnable = (
   zone,
