@@ -5,27 +5,54 @@ import test from 'ava';
 import {
   agd,
   agops,
-  evalBundles,
   executeOffer,
   getVatDetails,
   GOV1ADDR,
   GOV2ADDR,
   GOV3ADDR,
   newOfferId,
-  waitForBlock,
 } from '@agoric/synthetic-chain';
-
-const SUBMISSION_DIR = 'priceFeed-submission';
 
 const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
-test('update all priceFeed vats', async t => {
+const getOracleInstance = async price => {
+  const instanceRec = await agd.query(
+    'vstorage',
+    'data',
+    '--output',
+    'json',
+    `published.agoricNames.instance`,
+  );
+
+  // agd query -o json  vstorage data published.agoricNames.instance
+  //    |& jq '.value | fromjson | .values[1] | fromjson | .body[1:]
+  //    | fromjson | .[-2] '
+
+  const value = JSON.parse(instanceRec.value);
+  // XXX I don't know why value.values[-1] doesn't work.
+  const body = JSON.parse(value.values[value.values.length - 1]);
+
+  const bodyTruncated = JSON.parse(body.body.substring(1));
+  const slots = body.slots;
+
+  for (const [k, v] of bodyTruncated.entries()) {
+    if (v[0] === `${price}-USD price feed`) {
+      // console.log(`PFt `, price, slots[k]);
+      return slots[k];
+    }
+  }
+
+  return null;
+};
+
+const checkForOracle = async (t, name) => {
+  const instance = await getOracleInstance(name);
+  t.truthy(instance);
+};
+
+test.serial('check all priceFeed vats updated', async t => {
   await null;
   process.env.ORACLE_ADDRESSES = JSON.stringify(ORACLE_ADDRESSES);
-
-  await evalBundles(SUBMISSION_DIR);
-
-  await waitForBlock(2); // enough time for 4 vats to start
 
   const atomDetails = await getVatDetails('ATOM-USD_price_feed');
   // both the original and the new ATOM vault are incarnation 0
@@ -36,6 +63,10 @@ test('update all priceFeed vats', async t => {
   t.is(stOsmoDetails.incarnation, 0);
   const stTiaDetails = await getVatDetails('stTIA');
   t.is(stTiaDetails.incarnation, 0);
+  await checkForOracle(t, 'ATOM');
+  await checkForOracle(t, 'stATOM');
+  await checkForOracle(t, 'stTIA');
+  await checkForOracle(t, 'stOSMO');
 });
 
 const oraclesByBrand = new Map();
@@ -62,7 +93,6 @@ const addOraclesForBrand = async brandIn => {
 };
 
 const pushPrices = (price = 10.0, brandIn) => {
-  console.log(`ACTIONS pushPrice ${price} for ${brandIn}`);
   const promiseArray = [];
 
   for (const oracle of oraclesByBrand.get(brandIn)) {
@@ -83,7 +113,7 @@ const pushPrices = (price = 10.0, brandIn) => {
   return Promise.all(promiseArray);
 };
 
-async function getPriceQuote(price) {
+const getPriceQuote = async price => {
   const priceQuote = await agd.query(
     'vstorage',
     'data',
@@ -95,9 +125,9 @@ async function getPriceQuote(price) {
   const body = JSON.parse(JSON.parse(priceQuote.value).values[0]);
   const bodyTruncated = JSON.parse(body.body.substring(1));
   return bodyTruncated.amountOut.value;
-}
+};
 
-test('push prices', async t => {
+test.serial('push prices', async t => {
   // There are no old prices for the other currencies.
   const atomOutPre = await getPriceQuote('ATOM');
   t.is(atomOutPre, '+12010000');
