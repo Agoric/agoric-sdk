@@ -64,6 +64,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *   >;
  *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
  *   auctioneerKit: AuctioneerKit;
+ *   newAuctioneerKit: AuctioneerKit;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
