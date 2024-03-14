@@ -180,7 +180,7 @@ func TestQuery(t *testing.T) {
 		tc := tc
 		ctx := sdk.UnwrapSDKContext(cctx)
 		t.Run(tc.name, func(t *testing.T) {
-			msgGetBalances := `{"type":"VLOCALCHAIN_QUERY","messages":[{"@type":"/cosmos.bank.v1beta1.QueryAllBalancesRequest","address":"` + tc.addr + `"}]}`
+			msgGetBalances := `{"type":"VLOCALCHAIN_QUERY_MANY","messages":[{"@type":"/cosmos.bank.v1beta1.QueryAllBalancesRequest","address":"` + tc.addr + `"}]}`
 			t.Logf("query request: %v", msgGetBalances)
 			ret, err := handler.Receive(cctx, msgGetBalances)
 			t.Logf("query response: %v", ret)

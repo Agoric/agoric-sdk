@@ -8,9 +8,11 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
  *     loadCriticalVat: VatLoader<any>;
  *     bridgeManager: import('../types').BridgeManager;
  *     localchainBridgeManager: import('../types').ScopedBridgeManager;
+ *     bankManager: Promise<import('../vat-bank.js').BankManager>;
  *   };
  *   produce: {
  *     localchain: Producer<any>;
+ *     localchainAdmin: Producer<any>;
  *     localchainVat: Producer<any>;
  *     localchainBridgeManager: Producer<any>;
  *   };
@@ -28,8 +30,14 @@ export const setupLocalChainVat = async (
       loadCriticalVat,
       bridgeManager: bridgeManagerP,
       localchainBridgeManager: localchainBridgeManagerP,
+      bankManager,
     },
-    produce: { localchainVat, localchain, localchainBridgeManager },
+    produce: {
+      localchainVat,
+      localchain,
+      localchainAdmin: localchainAdminP,
+      localchainBridgeManager,
+    },
   },
   options,
 ) => {
@@ -66,9 +74,34 @@ export const setupLocalChainVat = async (
     );
   }
 
-  const newLocalChain = await E(vats.localchain).makeLocalChain(scopedManager);
+  const { admin: localChainAdmin, public: newLocalChain } = await E(
+    vats.localchain,
+  ).makeLocalChain({
+    system: scopedManager,
+  });
+
   localchain.reset();
   localchain.resolve(newLocalChain);
+  localchainAdminP.reset();
+  localchainAdminP.resolve(localChainAdmin);
+
+  /** @type {Record<string, Promise<void>>} */
+  const descToPromise = {
+    'bank manager power': bankManager.then(bm =>
+      E(localChainAdmin).setPower('bankManager', bm),
+    ),
+  };
+  void Promise.all(
+    Object.entries(descToPromise).map(([desc, p]) =>
+      p
+        .then(() =>
+          console.info(`Completed configuration of localchain with ${desc}`),
+        )
+        .catch(e =>
+          console.error(`Failed to configure localchain with ${desc}:`, e),
+        ),
+    ),
+  );
 };
 
 /**
@@ -93,9 +126,12 @@ export const getManifestForLocalChain = (_powers, { localchainRef }) => ({
         loadCriticalVat: true,
         bridgeManager: 'bridge',
         localchainBridgeManager: 'localchain',
+        bankManager: 'bank',
+        transferMiddleware: 'transfer',
       },
       produce: {
         localchain: 'localchain',
+        localchainAdmin: 'localchain',
         localchainVat: 'localchain',
         localchainBridgeManager: 'localchain',
       },
