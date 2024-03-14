@@ -1,13 +1,41 @@
 #! /bin/bash
-# npm-dist-tag.sh - add/remove/list dist-tags for NPM registry packages 
-# Try: `npm-dist-tag.sh` for usage.
+usage() { cat <<END_USAGE
+Usage:
+$0 [--dry-run] [lerna] add <tag> [-<pre-release>]
+  Add <tag> to package dist-tags for current version or specified <pre-release>.
+$0 [--dry-run] [lerna] <remove|rm> <tag>
+  Remove <tag> from package dist-tags.
+$0 [--dry-run] [lerna] <list|ls> [<tag>]
+  List package dist-tags, or just the one named <tag>.
+
+With "--dry-run", npm commands are printed to standard error rather than executed.
+
+If the first operand is "lerna", the operation is extended to all packages.
+END_USAGE
+  exit 1
+}
+
+# fail <error message>
+fail () {
+  printf '%s\n\n' "$1"
+  usage
+} 1>&2
 
 # Exit on any errors.
 set -ueo pipefail
 
+# Check for `--dry-run`.
+npm=npm
+dryrun=
+if test "${1:-}" = "--dry-run"; then
+  dryrun=$1
+  npm="echo-to-stderr npm"
+  shift
+fi
+echo-to-stderr () { echo "$@"; } 1>&2
+
 # Check the first argument.
-OP=$1
-case $OP in
+case "${1-}" in
 lerna)
   # npm-dist-tag.sh lerna [args]...
   # Run `npm-dist-tag.sh [args]...` in every package directory.
@@ -18,7 +46,7 @@ lerna)
 
   # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
   shift
-  exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- ${1+"$@"}
+  exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
   ;;
 esac
 
@@ -27,7 +55,7 @@ esac
 priv=$(jq -r .private package.json)
 case "$priv" in
 true)
-  echo 1>&2 "Private package, skipping npm-dist-tag.sh"
+  echo 1>&2 "Skipping $(basename "$0") for private package $(jq .name package.json)"
   exit 0
   ;;
 esac
@@ -35,42 +63,50 @@ esac
 # Get the second argument, if any.
 TAG=${2-}
 
-# Find the package name and version from the package.json.
+# Read package.json for the package name and current version.
 pkg=$(jq -r .name package.json)
 case ${3-} in
 -*)
-  # If the tag starts with a dash, it's a suffix.
-  version=$(npm view "$pkg" versions --json | jq -r '.[]' | sed -ne "/[0-9]$3$/{ p; q; }" || true)
+  # Instead of current package version, reference an already-published version
+  # with the specified pre-release suffix.
+  version=$(npm view "$pkg" versions --json | \
+    # cf. https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+    jq --arg s "$3" -r '.[] | select(sub("^((^|[.])(0|[1-9][0-9]*)){3}"; "") == $s)' || true)
   ;;
 *)
+  test "$#" -le 2 || fail "Invalid pre-release suffix!"
   version=$(jq -r .version package.json)
   ;;
 esac
-# echo "$OP $pkg@$version"
 
-case $OP in
+case "${1-}" in
 add)
-  # Add <tag> to the current-directory package's dist-tags.
-  npm dist-tag add "$pkg@$version" "$TAG"
+  # Add $TAG to the current-directory package's dist-tags.
+  test -n "$TAG" || fail "Missing tag!"
+  test "$#" -le 3 || fail "Too many arguments!"
+  $npm dist-tag add "$pkg@$version" "$TAG"
   ;;
 remove | rm)
-  # npm-dist-tag.sh remove <tag>
-  # Remove <tag> from the current-directory package's dist-tags.
-  npm dist-tag rm "$pkg" "$TAG"
+  # Remove $TAG from the current-directory package's dist-tags.
+  test -n "$TAG" || fail "Missing tag!"
+  test "$#" -le 2 || fail "Too many arguments!"
+  $npm dist-tag rm "$pkg" "$TAG"
   ;;
 list | ls)
-  # npm-dist-tag.sh list [<tag>]
-  # List the current-directory package's dist-tags.
-  # If <tag> is given, list only that tag.
+  # List the current-directory package's dist-tags, or just the specific $TAG.
+  test "$#" -le 2 || fail "Too many arguments!"
   if test -n "$TAG"; then
-    npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+    if test -n "$dryrun"; then
+      # Print the entire pipeline.
+      $npm dist-tag ls "$pkg" \| sed -ne "s/^$TAG: //p"
+    else
+      $npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+    fi
   else
-    npm dist-tag ls "$pkg"
+    $npm dist-tag ls "$pkg"
   fi
   ;;
 *)
-  # Usage instructions.
-  echo 1>&2 "Usage: $0 [lerna] <add|remove|list> [<tag>]"
-  exit 1
-  ;;
+  test "${1-"--help"}" = "--help" || fail "Bad command!"
+  usage
 esac

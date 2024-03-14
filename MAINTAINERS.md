@@ -78,73 +78,76 @@ cd agoric-sdk
 
 - [ ] Create a release branch tagged with a timestamp. The specific commit tagged as the release will live
 in this branch. The release tags will be human-meaningful, the release branch need not be.
-
-```sh
-# Create a release branch.
-now=`date -u +%Y%m%dT%H%M%S`
-git checkout -b prepare-release-$now
-```
+  ```sh
+  # Create a release branch.
+  now=`date -u +%Y%m%dT%H%M%S`
+  git checkout -b prepare-release-$now
+  ```
 
 - [ ] Do a `yarn install` to generate tooling needed for the release.
-
-```sh
-# yarn install to build release tools
-yarn install --force
-```
+  ```sh
+  # yarn install to build release tools
+  yarn install --force
+  ```
 
 - [ ] Generate new SDK version and per-package CHANGELOG.md files
 
-Use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release.
+  Use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release.
 
-These instructions will:
+  These instructions will:
 
-- modify the `package.json` (to bump the version) of every package
-which saw changes since the previous release, or whose dependencies
-change because of other packages being bumped (in practice this
-means pretty much every package in the monorepo);
-- update all dependencies in the monorepo to match the bumped
-versions;
-- create `CHANGELOG.md` files for each package with a summary of
-the git commit history;
-- make a Git commit with those changes;
-- create a `$package@$version` git tag for every package that
-changed.
+  - modify the `package.json` (to bump the version) of every package
+    which saw changes since the previous release, or whose dependencies
+    change because of other packages being bumped (in practice this
+    means pretty much every package in the monorepo);
+  - update all dependencies in the monorepo to match the bumped versions;
+  - create `CHANGELOG.md` files for each package with a summary of
+    the git commit history;
+  - make a Git commit with those changes and push its branch;
+  - create a `$package@$version` git tag for every package that changed,
+    including a special `@agoric/sdk@$n` "SDK version" tag that (among other
+    things) CI will use for tagging a Docker image;
+  - create a special `v$version` tag derived from the `@agoric/cosmos@$version`
+    tag for
+    [Go's opinionated reference scheme](https://go.dev/ref/mod#version-queries)
+    as used in e.g. `go get github.com/Agoric/agoric-sdk@$version`.
 
-```sh
-# Create the final release CHANGELOGs.
-yarn lerna version --no-push --conventional-graduate
-prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
-SDKVER=$(( prior + 1 ))
-git tag @agoric/sdk@$SDKVER
-# Push the branch.
-git push -u origin prepare-release-$now
-# Tell which packages have actual news.
-scripts/have-news HEAD^ > have-news.md
-```
+  ```sh
+  # Create the final release CHANGELOGs.
+  yarn lerna version --no-push --conventional-graduate
+  prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
+  SDKVER=$(( prior + 1 ))
+  git tag @agoric/sdk@$SDKVER
+  goTag="v$(git tag -l --contains HEAD | sed -n 's!^@agoric/cosmos@!!p' | head -1)"
+  git tag -f "$goTag"
+  # Push the branch.
+  git push -u origin HEAD
+  # Tell which packages have actual news.
+  scripts/have-news HEAD^ > have-news.md
+  ```
 
 - [ ] Create the release PR.
 
-The above should have pushed state to GitHub to let you create a
-new PR to merge the release branch back to the main branch. The PR
-name should follow the convention of previous releases, which is
-currently `chore(release): publish _release_label_`.  Paste
-`have-news.md` as the description of the PR.  Follow the example
-of previous releases for any other details of the PR.
+  The above should have pushed state to GitHub to let you create a
+  new PR to merge the release branch back to the main branch. The PR
+  name should follow the convention of previous releases, which is
+  currently `chore(release): publish _release_label_`.  Paste
+  `have-news.md` as the description of the PR.  Follow the example
+  of previous releases for any other details of the PR.
 
-(Note that the `have-news.md` file might be too large for a Git commit
-message if you've gone too long without making a release.)
+  (Note that the `have-news.md` file might be too large for a Git commit
+  message if you've gone too long without making a release.)
 
-Creating this PR will also kick off the CI tests.
+  Creating this PR will also kick off the CI tests.
 
 - [ ] Build the NPM-installed SDK packages.
 
-While the above CI tests run, build the SDK:
-
-```sh
-# Build all package generated files.
-yarn install --force
-yarn build
-```
+  While the above CI tests run, build the SDK:
+  ```sh
+  # Build all package generated files.
+  yarn install --force
+  yarn build
+  ```
 
 - [ ] Wait for the release PR's CI tests to pass.
 
@@ -155,77 +158,83 @@ In particular, be sure that you have waited for the release PR's CI tests
 to pass.
 
 - [ ] Publish to NPM
+  ```sh
+  # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
+  # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
+  yarn lerna publish --concurrency 1 from-package
+  ```
 
-```sh
-# Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-# without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-yarn lerna publish --concurrency 1 from-package
-```
-
-- [ ] Merge the release PR into the base branch.  DO NOT REBASE OR SQUASH OR YOU WILL LOSE
-REFERENCES TO YOUR TAGS. You may use the "Merge" button directly instead of automerge.
+- [ ] Merge the release PR into the base branch.
+  **DO NOT REBASE OR SQUASH OR YOU WILL LOSE REFERENCES TO YOUR TAGS.**
+  You may use the "Merge" button directly instead of automerge.
 
 - [ ] DO NOT change your local git environment to the base branch - keep
-it on the release branch for the following steps.
+  it on the release branch for the following steps.
 
 - [ ] Publish the released package tags
+  ```sh
+  # Publish the released package tags.
+  ./scripts/get-released-tags git push origin
+  ```
 
-```sh
-# Publish the released package tags.
-./scripts/get-released-tags git push origin
-```
+  This will push all the tags created in the "Generate new SDK version" step
+  above.
 
-This will push a `${package}@${version}` tag, one per package, plus
-the repo-wide `agoric-sdk@${version}` tag, plus the golang-specific
-`v${version}` tag (whose version matches the one used for
-`@agoric/cosmic-swingset`).  (In fact, it will push all tags that
-match these patterns, but all the old version's tags will already
-be present on GitHub.)
+- [ ] (Optional) Publish an NPM distribution tag
 
-- [ ] (Optional) Publish an NPM dist-tag
+  If you want to update an
+  [NPM dist-tag](https://docs.npmjs.com/cli/v6/commands/npm-dist-tag) for the
+  current checked-out Agoric SDK's packages (enabling e.g.
+  `agoric install agoric-upgrade-42` to use the version for that dist-tag),
+  choose a \<TAG> and run:
+  ```sh
+  ./scripts/npm-dist-tag.sh --dry-run lerna add <TAG>
+  ```
+  If you're happy with the corresponding commands, execute them:
+  ```sh
+  ./scripts/npm-dist-tag.sh lerna add <TAG>
+  ```
 
-If you want to update an NPM dist-tag for the current checked-out Agoric SDK's
-packages (to enable `agoric install <TAG>`), use:
+  As a special case, by supplying a pre-release suffix argument, you can do
+  something like publish a `community-dev` dist-tag for an existing version:
 
-```sh
-# Use "beta" for <TAG> for example.
-./scripts/npm-dist-tag.sh lerna add <TAG>
-```
-
-As a special case, by supplying a version suffix argument, you can do something
-like publish a `community-dev` dist-tag for an existing dev-only Git revision:
-
-```sh
-rev=$(git rev-parse --short=7 community-dev)
-./scripts/npm-dist-tag.sh lerna add community-dev -dev-${rev}.0
-```
+  ```sh
+  rev=$(git rev-parse --short=7 community-dev)
+  ./scripts/npm-dist-tag.sh lerna add community-dev -dev-${rev}.0
+  ```
 
 - [ ] Push release labels as tags
 
-Perform the following for each `tag` that we will use to label this release.
+  Perform the following for each \<TAG> that we will use to label this release.
 
-```sh
-git tag $tag
-git push origin $tag
-```
+  ```sh
+  git tag <TAG>
+  git push origin <TAG>
+  ```
 
-- [ ] Confirm that a Docker image for SDKVER has been published.
+- [ ] Confirm that a Docker image for SDK version $SDKVER has been published to the
+  [agoric-sdk Container registry](https://github.com/Agoric/agoric-sdk/pkgs/container/agoric-sdk).
+
+  Note that this is triggered by pushing the `@agoric/sdk@$n` tag in the
+  "Publish the released package tags" step and may take a while.
+  You can observe workflow initiation and progress at
+  [Build release Docker Images](https://github.com/Agoric/agoric-sdk/actions/workflows/docker.yml).
 
 - [ ] Create a GitHub release
 
-Follow the [GitHub
-instructions](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
-) and use previous releases as a template. This uses the
-validator-oriented release description.
+  Follow the [GitHub
+  instructions](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
+  ) and use previous releases as a template. This uses the
+  validator-oriented release description.
 
 ### Cleanup
 
 - [ ] Review recent changes in the base branch for anything that
-should be merged into its ancestors, all the way up to master. This
-should include the changes to CHANGELOG.md.
+  should be merged into its ancestors, all the way up to master. This
+  should include the changes to CHANGELOG.md.
 
 - [ ] Remove the repository clone you created for this release,
-so you don't accidentally reuse it.
+  so you don't accidentally reuse it.
 
 ## More subtlety
 
