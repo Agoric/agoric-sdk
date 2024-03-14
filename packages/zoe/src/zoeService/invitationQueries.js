@@ -17,7 +17,7 @@ export const makeInvitationQueryFns = invitationIssuer => {
       .getAmountOf(invitationP)
       .catch(onRejected);
     (Array.isArray(invAmount.value) && invAmount.value.length === 1) ||
-      Fail`Expected exactly one invitation, not ${q(invAmount.value.length)}`;
+      Fail`Expected exactly 1 invitation, not ${q(invAmount.value.length)}`;
     return invAmount.value[0];
   };
 
