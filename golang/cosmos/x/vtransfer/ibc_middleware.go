@@ -132,15 +132,8 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
-	var ack exported.Acknowledgement = im.app.OnRecvPacket(ctx, packet, relayer)
-	if ack != nil {
-		// Synchronous acknowledgement.
-		err := im.vtransferKeeper.ReceiveWriteAcknowledgement(ctx, packet, ack)
-		if err != nil {
-			return channeltypes.NewErrorAcknowledgement(err)
-		}
-	}
-	return nil
+	ack := im.app.OnRecvPacket(ctx, packet, relayer)
+	return im.vtransferKeeper.InterceptOnSendAck(ctx, packet, ack)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
