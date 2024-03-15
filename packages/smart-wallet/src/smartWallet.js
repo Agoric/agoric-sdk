@@ -946,6 +946,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           await null;
 
+          /** @type {UserSeat} */
           let seatRef;
           let watcher;
           try {
@@ -976,7 +977,6 @@ export const prepareSmartWallet = (baggage, shared) => {
             // No explicit signal to user that we reached here but if anything above
             // failed they'd get an 'error' status update.
 
-            /** @type {UserSeat} */
             seatRef = await E(zoe).offer(
               invitation,
               proposal,
