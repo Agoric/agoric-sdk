@@ -74,6 +74,10 @@ const prepareLocalChainAccount = zone =>
         const allegedPurse = E(bankAcct).getPurse(allegedBrand);
         return E(allegedPurse).deposit(payment);
       },
+      /**
+       * @param {Proto3Jsonable[]} messages
+       * @returns {Promise<unknown[]>}
+       */
       async executeTx(messages) {
         const { address, powers } = this.state;
         const obj = {
