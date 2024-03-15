@@ -8,9 +8,8 @@ import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import { prepareAccountHolder } from './localchainAccountHolder.js';
+import { prepareOwnableAccountKit } from '../ownableAccount.js';
 
 const trace = makeTracer('StakeBld');
 
@@ -31,11 +30,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const zone = makeDurableZone(baggage);
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    baggage,
-    privateArgs.marshaller,
-  );
-  const makeAccountHolderKit = prepareAccountHolder(baggage, makeRecorderKit);
+  const makeOwnableAccountKit = prepareOwnableAccountKit(zone, zcf);
 
   const publicFacet = zone.exo('StakeBld', undefined, {
     makeStakeBldInvitation() {
@@ -52,17 +47,12 @@ export const start = async (zcf, privateArgs, baggage) => {
           await E(lcaSeatKit.userSeat).tryExit();
           trace('awaiting payouts');
           const payouts = await E(lcaSeatKit.userSeat).getPayouts();
-          const { holder, invitationMakers } = makeAccountHolderKit(
-            account,
-            privateArgs.storageNode,
-          );
+          const { invitationMakers } = makeOwnableAccountKit(account);
           trace('awaiting deposit');
           await E(account).deposit(await payouts.In);
 
           return {
-            publicSubscribers: holder.getPublicTopics(),
             invitationMakers,
-            account: holder,
           };
         },
         'wantStake',

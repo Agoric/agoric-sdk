@@ -1,8 +1,10 @@
 // @ts-check
 /** @file Use-object for the owner of a localchain account */
+import { AmountShape } from '@agoric/ertp';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/far';
 
 const { Fail } = assert;
 /**
@@ -19,7 +21,7 @@ const { Fail } = assert;
 
 const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  makeDelegateInvitation: M.call().returns(M.promise()),
+  makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
 });
@@ -41,9 +43,9 @@ export const prepareAccountHolder = (baggage, makeRecorderKit) => {
       helper: UnguardedHelperI,
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call().returns(M.promise()),
-        CloseAccount: M.call().returns(M.promise()),
-        TransferAccount: M.call().returns(M.promise()),
+        Delegate: HolderI.payload.methodGuards.makeDelegateInvitation,
+        CloseAccount: HolderI.payload.methodGuards.makeCloseInvitation,
+        TransferAccount: HolderI.payload.methodGuards.makeTransferInvitation,
       }),
     },
     /**
@@ -52,6 +54,7 @@ export const prepareAccountHolder = (baggage, makeRecorderKit) => {
      * @returns {State}
      */
     (account, storageNode) => {
+      account || Fail`missing account param`;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
@@ -71,9 +74,14 @@ export const prepareAccountHolder = (baggage, makeRecorderKit) => {
           return this.state.topicKit.recorder;
         },
       },
+      // Proxy to holder's makers for the Smart Wallet
+      // TODO normalize this pattern with a utility
       invitationMakers: {
-        Delegate() {
-          return this.facets.holder.makeDelegateInvitation();
+        Delegate(validatorAddress, amount) {
+          return this.facets.holder.makeDelegateInvitation(
+            validatorAddress,
+            amount,
+          );
         },
         CloseAccount() {
           return this.facets.holder.makeCloseInvitation();
@@ -93,8 +101,30 @@ export const prepareAccountHolder = (baggage, makeRecorderKit) => {
             },
           });
         },
-        makeDelegateInvitation() {
-          throw Error('not yet implemented');
+        /**
+         * @param {string} validatorAddress
+         * @param {Amount} amount
+         */
+        async makeDelegateInvitation(validatorAddress, amount) {
+          console.log(
+            'localchainAccountHolder makeDelegateInvitation',
+            validatorAddress,
+            amount,
+          );
+
+          const lca = this.facets.helper.owned();
+          console.log('DEBUG lca', lca);
+          const delegatorAddress = await E(lca).getAddress();
+          const result = E(lca).executeTx([
+            {
+              '@type': '/cosmos.staking.v1beta1.MsgDelegate',
+              obj: {
+                amount: 'FIXME',
+                validatorAddress,
+                delegatorAddress,
+              },
+            },
+          ]);
         },
         makeCloseInvitation() {
           throw Error('not yet implemented');
