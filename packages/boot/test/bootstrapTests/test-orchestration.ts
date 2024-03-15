@@ -69,4 +69,20 @@ test('stakeBld', async t => {
   t.like(latest, {
     status: { id: 'request-stake', numWantsSatisfied: 1 },
   });
+
+  await wd.executeOffer({
+    id: 'request-delegate',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'Delegate',
+      invitationArgs: ['agoric1validator1', { brand: BLD, value: 10n }],
+    },
+    proposal: {
+      give: {
+        // @ts-expect-error XXX BoardRemote
+        In: { brand: BLD, value: 10n },
+      },
+    },
+  });
 });

@@ -363,6 +363,8 @@ export const makeSwingsetTestKit = async (
         switch (obj.type) {
           case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
             return 'agoric1mockVlocalchainAddress';
+          case 'VLOCALCHAIN_EXECUTE_TX':
+            return 'FIXME with what VLOCALCHAIN_EXECUTE_TX returns';
           default:
             throw Error(`VLOCALCHAIN message of unknown type ${obj.type}`);
         }
