@@ -1,11 +1,27 @@
 // @ts-check
 /* global process */
 import { agoric } from '@agoric/cosmic-proto';
-import { normalizeBech32 } from '@cosmjs/encoding';
+import { normalizeBech32 as encodeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
 const agdBinary = 'agd';
 
+/** @typedef {import('type-fest').Opaque<string>} Bech32 */
+
+/**
+ *
+ * @param {string} str
+ * @returns {Bech32}
+ */
+const normalizeBech32 = str => /** @type {Bech32} */ (encodeBech32(str));
+
+/** @type {Bech32} */
+const b1 = normalizeBech32('b1');
+/** @type {Bech32} */
+// @ts-expect-error
+const b2 = 'b2';
+
+console.log(b1, b2);
 /**
  * @param {string} literalOrName
  * @param {{ keyringBackend?: string }} opts
