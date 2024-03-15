@@ -6,11 +6,11 @@ sdkroot=$(git rev-parse --show-toplevel)
 cd "$sdkroot"
 
 a3pProposalDir=$1
-proposalName=$2
+builderScript=$2
 submissionDirName=${3:-submission}
 submissionDir="./a3p-integration/$a3pProposalDir/$submissionDirName"
 
-yarn agoric run "packages/builders/scripts/vats/$proposalName.js"
+yarn agoric run "packages/builders/scripts/$builderScript"
 mkdir -p "$submissionDir"
 
 plans=*-plan.json

@@ -3,7 +3,7 @@
     "type": "/agoric.swingset.CoreEvalProposal",
     "source": "subdir",
     "sdk-generate": [
-      "test-localchain"
+      "vats/test-localchain.js"
     ]
   },
   "type": "module",
