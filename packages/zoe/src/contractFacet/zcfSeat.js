@@ -189,15 +189,22 @@ export const createSeatManager = (
         return hasExited(self);
       },
 
+      /**
+       * @type {ZCFSeat['getAmountAllocated']}
+       */
       getAmountAllocated(keyword, brand) {
         const { self } = this;
         assertActive(self);
         const currentAllocation = getCurrentAllocation(self);
         if (currentAllocation[keyword] !== undefined) {
+          // @ts-expect-error cast
           return currentAllocation[keyword];
         }
-        brand || Fail`A brand must be supplied when the keyword is not defined`;
+        if (!brand) {
+          throw Fail`A brand must be supplied when the keyword is not defined`;
+        }
         const assetKind = getAssetKindByBrand(brand);
+        // @ts-expect-error cast
         return AmountMath.makeEmpty(brand, assetKind);
       },
       getCurrentAllocation() {

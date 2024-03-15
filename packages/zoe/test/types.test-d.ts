@@ -5,7 +5,7 @@
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 import { E } from '@endo/eventual-send';
-import { expectType } from 'tsd';
+import { expectNotType, expectType } from 'tsd';
 
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
@@ -66,4 +66,16 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   //   // @ts-expect-error
   //   'invalid privateArgs',
   // );
+}
+
+{
+  const zcf = {} as ZCF;
+  const zoe = {} as ZoeService;
+  const invitation = await zcf.makeInvitation(() => 1n, 'invitation');
+  expectType<Invitation<bigint>>(invitation);
+  const userSeat = E(zoe).offer(invitation);
+  const result = await E(userSeat).getOfferResult();
+  // @ts-expect-error
+  result.notInResult;
+  expectType<bigint>(result);
 }

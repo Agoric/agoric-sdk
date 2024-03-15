@@ -176,12 +176,11 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * The `amounts` and `payments` records must have corresponding
  * keywords.
  *
- * @template {object} [OR=unknown]
  * @param {ZCF} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
  * @param {PaymentPKeywordRecord} payments
- * @returns {Promise<OR>} `Deposit and reallocation successful.`
+ * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
 export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
   !recipientSeat.hasExited() || Fail`The recipientSeat cannot have exited.`;
