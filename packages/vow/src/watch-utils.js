@@ -20,7 +20,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
     'WatchUtils',
     {
       utils: M.interface('Utils', {
-        all: M.call(M.arrayOf(M.any())).returns(M.arrayOf(M.any())),
+        all: M.call(M.arrayOf(M.any())).returns(VowShape),
       }),
       watcher: M.interface('Watcher', {
         onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
@@ -28,20 +28,19 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
       }),
     },
     () => {
-    () => {
       /**
-        * @typedef {object} VowState
-        * @property {number} remaining
-        * @property {MapStore<number, any>} resultMap
-        * @property {import('./types.js').VowKit['resolver']} resolver
-        */
-        /** @type {MapStore<bigint, VowState>} */
-        const idToVowState = detached.mapStore('idToVowState');
-        return {
-          nextId: 0n,
-          idToVowState,
-        };
-      }  
+       * @typedef {object} VowState
+       * @property {number} remaining
+       * @property {MapStore<number, any>} resultsMap
+       * @property {import('./types.js').VowKit['resolver']} resolver
+       */
+      /** @type {MapStore<bigint, VowState>} */
+      const idToVowState = detached.mapStore('idToVowState');
+
+      return {
+        nextId: 0n,
+        idToVowState,
+      };
     },
     {
       utils: {
@@ -59,20 +58,23 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
             watch(vow, this.facets.watcher, { id, index });
             index += 1;
           }
-          
+
           if (index > 0) {
             // Save the state until rejection or all fulfilled.
             this.state.nextId += 1n;
-            idToVowState.init(id, harden({
-              resolver: kit.resolver,
-              remaining: index,
-              resultsMap: detached.mapStore('resultsMap');
-            });
-         } else {
+            idToVowState.init(
+              id,
+              harden({
+                resolver: kit.resolver,
+                remaining: index,
+                resultsMap: detached.mapStore('resultsMap'),
+              }),
+            );
+          } else {
             // Base case: nothing to wait for.
             kit.resolver.resolve(harden([]));
-         }
-         return kit.vow;
+          }
+          return kit.vow;
         },
       },
       watcher: {
@@ -82,12 +84,12 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
             // Resolution of the returned vow happened already.
             return;
           }
-          const { remaining, resultMap, resolver } = idToState.get(id);
+          const { remaining, resultsMap, resolver } = idToVowState.get(id);
           // Capture the fulfilled value.
-          resultMap.init(index, value);
+          resultsMap.init(index, value);
           const vowState = harden({
             remaining: remaining - 1,
-            resultMap,
+            resultsMap,
             resolver,
           });
           if (vowState.remaining > 0) {
@@ -96,8 +98,8 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
           }
           // We're done!  Extract the array.
           idToVowState.delete(id);
-          const results = new Array(resultMap.getSize());
-          for (const [i, val] of resultMap.entries()) {
+          const results = new Array(resultsMap.getSize());
+          for (const [i, val] of resultsMap.entries()) {
             results[i] = val;
           }
           resolver.resolve(harden(results));
