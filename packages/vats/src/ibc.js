@@ -699,10 +699,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             hops,
             version,
           } = watcherContext;
-          const {
-            channelKeyToAttempt,
-            channelKeyToInfo,
-          } = this.state;
+          const { channelKeyToAttempt, channelKeyToInfo } = this.state;
 
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
