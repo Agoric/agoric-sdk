@@ -20,10 +20,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
     'WatchUtils',
     {
       utils: M.interface('Utils', {
-        all: M.call(M.arrayOf(VowShape)).returns(M.any()),
-      }),
-      helpers: M.interface('Helpers', {
-        check: M.call(M.any(), M.any()).returns(),
+        all: M.call(M.arrayOf(M.any())).returns(M.arrayOf(M.any())),
       }),
       watcher: M.interface('Watcher', {
         onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
@@ -31,20 +28,20 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
       }),
     },
     () => {
-      return {
-        id: 0n,
-        /** @type {MapStore<bigint, number>} */
-        count: detached.mapStore('count'),
-
-        /** @type {MapStore<bigint, number>} */
-        length: detached.mapStore('length'),
-
-        /** @type {MapStore<bigint, any[]>} */
-        results: detached.mapStore('results'),
-
-        /** @type {MapStore<bigint, import('./types.js').VowKit>} */
-        kits: detached.mapStore('kits'),
-      };
+    () => {
+      /**
+        * @typedef {object} VowState
+        * @property {number} remaining
+        * @property {MapStore<number, any>} resultMap
+        * @property {import('./types.js').VowKit['resolver']} resolver
+        */
+        /** @type {MapStore<bigint, VowState>} */
+        const idToVowState = detached.mapStore('idToVowState');
+        return {
+          nextId: 0n,
+          idToVowState,
+        };
+      }  
     },
     {
       utils: {
@@ -53,43 +50,67 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
          * @param {import('./types.js').Specimen<T>[]} vows
          */
         all(vows) {
-          const { id } = this.state;
+          const { nextId: id, idToVowState } = this.state;
           const kit = makeVowKit();
 
-          this.state.kits.init(id, kit);
-          this.state.count.init(id, 0);
-          this.state.length.init(id, vows.length);
-          this.state.results.init(id, harden([]));
-
+          // Preserve the order of the vow results.
+          let index = 0;
           for (const vow of vows) {
-            watch(vow, this.facets.watcher, { id });
+            watch(vow, this.facets.watcher, { id, index });
+            index += 1;
           }
-
-          this.state.id += 1n;
-          return kit.vow;
-        },
-      },
-      helpers: {
-        check(value, id) {
-          const kit = this.state.kits.get(id);
-          const count = this.state.count.get(id) + 1;
-          const length = this.state.length.get(id);
-          const results = this.state.results;
-
-          this.state.count.set(id, count);
-          results.set(id, [...results.get(id), value]);
-
-          if (count === length) {
-            kit.resolver.resolve([...results.get(id).values()]);
-          }
+          
+          if (index > 0) {
+            // Save the state until rejection or all fulfilled.
+            this.state.nextId += 1n;
+            idToVowState.init(id, harden({
+              resolver: kit.resolver,
+              remaining: index,
+              resultsMap: detached.mapStore('resultsMap');
+            });
+         } else {
+            // Base case: nothing to wait for.
+            kit.resolver.resolve(harden([]));
+         }
+         return kit.vow;
         },
       },
       watcher: {
-        onFulfilled(value, { id }) {
-          this.facets.helpers.check(value, id);
+        onFulfilled(value, { id, index }) {
+          const { idToVowState } = this.state;
+          if (!idToVowState.has(id)) {
+            // Resolution of the returned vow happened already.
+            return;
+          }
+          const { remaining, resultMap, resolver } = idToState.get(id);
+          // Capture the fulfilled value.
+          resultMap.init(index, value);
+          const vowState = harden({
+            remaining: remaining - 1,
+            resultMap,
+            resolver,
+          });
+          if (vowState.remaining > 0) {
+            idToVowState.set(id, vowState);
+            return;
+          }
+          // We're done!  Extract the array.
+          idToVowState.delete(id);
+          const results = new Array(resultMap.getSize());
+          for (const [i, val] of resultMap.entries()) {
+            results[i] = val;
+          }
+          resolver.resolve(harden(results));
         },
         onRejected(value, { id }) {
-          this.facets.helpers.check(value, id);
+          const { idToVowState } = this.state;
+          if (!idToVowState.has(id)) {
+            // First rejection wins.
+            return;
+          }
+          const { resolver } = idToVowState.get(id);
+          idToVowState.delete(id);
+          resolver.reject(value);
         },
       },
     },

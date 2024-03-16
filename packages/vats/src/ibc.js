@@ -433,10 +433,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                 ),
                 this.facets.protocolImplInboundWatcher,
                 {
-                  channelKeyToAttempt,
-                  channelKeyToInfo,
                   obj,
-                  util,
                   rPortID,
                   rChannelID,
                   hops,
@@ -560,7 +557,6 @@ export const prepareIBCProtocol = (zone, powers) => {
               const data = base64ToBytes(data64);
 
               return watch(conn.send(data), this.facets.ackWatcher, {
-                protocolUtils: util,
                 packet,
               });
             }
@@ -674,11 +670,11 @@ export const prepareIBCProtocol = (zone, powers) => {
       },
       ackWatcher: {
         onFulfilled(ack, watcherContext) {
-          const { protocolUtils, packet } = watcherContext;
+          const { packet } = watcherContext;
 
           const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
           const ack64 = dataToBase64(realAck);
-          protocolUtils
+          this.facets.util
             .downcall('receiveExecuted', {
               packet,
               ack: ack64,
@@ -694,11 +690,8 @@ export const prepareIBCProtocol = (zone, powers) => {
           const {
             channelID,
             portID,
-            channelKeyToAttempt,
-            channelKeyToInfo,
             attempt,
             obj,
-            util,
             asyncVersions,
             rPortID,
             rChannelID,
@@ -706,6 +699,10 @@ export const prepareIBCProtocol = (zone, powers) => {
             hops,
             version,
           } = watcherContext;
+          const {
+            channelKeyToAttempt,
+            channelKeyToInfo,
+          } = this.state;
 
           const match = attemptedLocal.match(
             // Match:  ... /ORDER/VERSION ...
@@ -727,7 +724,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           try {
             if (asyncVersions) {
               // We have async version negotiation, so we must call back now.
-              return util.downcall('tryOpenExecuted', {
+              return this.facets.util.downcall('tryOpenExecuted', {
                 packet: {
                   source_port: rPortID,
                   source_channel: rChannelID,
