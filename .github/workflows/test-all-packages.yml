@@ -228,6 +228,9 @@ jobs:
       - name: yarn test (agoric-cli)
         if: (success() || failure())
         run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (async-flow)
+        if: (success() || failure())
+        run: cd packages/async-flow && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (base-zone)
         if: (success() || failure())
         run: cd packages/base-zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
