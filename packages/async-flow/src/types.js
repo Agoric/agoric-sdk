@@ -4,6 +4,7 @@
  * @import {Vow, VowTools} from '@agoric/vow'
  * @import {LogStore} from './log-store.js'
  * @import {WeakBijection} from './weak-bijection.js'
+ * @import {ReplayMembrane} from './replay-membrane.js'
  */
 
 /**
@@ -22,6 +23,31 @@
  *
  * @template {Passable} [T=Passable]
  * @typedef {Host<Promise<T> | Vow<T> | Promise<Vow<T>>>} HostVow
+ */
+
+/**
+ * @typedef {(...activationArgs: Guest[]) => Guest<Promise>} GuestAsyncFunc
+ */
+
+/**
+ * @typedef {(...activationArgs: Host[]) => HostVow} HostAsyncFuncWrapper
+ */
+
+/**
+ * @typedef {object} PreparationOptions
+ * @property {VowTools} [vowTools]
+ * @property {() => LogStore} [makeLogStore]
+ * @property {() => WeakBijection} [makeWeakBijection]
+ */
+
+/**
+ * @typedef {'return'|'throw'} OutcomeKind
+ */
+
+/**
+ * @typedef {{kind: 'return', result: any}
+ *         | {kind: 'throw',  problem: any}
+ * } Outcome
  */
 
 /**
