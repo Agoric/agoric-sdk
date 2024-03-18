@@ -733,6 +733,13 @@ export const prepareSmartWallet = (baggage, shared) => {
             }
           }
         },
+
+        /**
+         * @param {string} offerId
+         * @param {Amount<"set">} invitationAmount
+         * @param {import("./types.js").InvitationMakers} invitationMakers
+         * @param {import("./types.js").PublicSubscribers} publicSubscribers
+         */
         async addContinuingOffer(
           offerId,
           invitationAmount,

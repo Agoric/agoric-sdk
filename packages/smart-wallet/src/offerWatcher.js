@@ -141,6 +141,12 @@ export const prepareOfferWatcher = baggage => {
 
           state.walletHelper.updateStatus(state.status);
         },
+        /**
+         * @param {string} offerId
+         * @param {Amount<"set">} invitationAmount
+         * @param {import('./types.js').InvitationMakers} invitationMakers
+         * @param {import("./types.js").PublicSubscribers} publicSubscribers
+         */
         onNewContinuingOffer(
           offerId,
           invitationAmount,
@@ -181,6 +187,7 @@ export const prepareOfferWatcher = baggage => {
                 void facets.helper.onNewContinuingOffer(
                   String(state.status.id),
                   state.invitationAmount,
+                  // @ts-expect-error narrowed by passStyle
                   result.invitationMakers,
                   // @ts-expect-error narrowed by passStyle
                   result.publicSubscribers,
@@ -292,3 +299,4 @@ export const prepareOfferWatcher = baggage => {
 harden(prepareOfferWatcher);
 
 /** @typedef {ReturnType<typeof prepareOfferWatcher>} MakeOfferWatcher */
+/** @typedef {ReturnType<MakeOfferWatcher>} OfferWatcher */
