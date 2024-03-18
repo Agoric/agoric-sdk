@@ -576,7 +576,7 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
-		app.IBCKeeper.ChannelKeeper,
+		app.VtransferKeeper.GetICS4Wrapper(),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -596,7 +596,6 @@ func NewAgoricApp(
 	transferApp := transfer.NewAppModule(app.TransferKeeper)
 	var transferStack ibcporttypes.IBCModule
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
@@ -604,6 +603,7 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
