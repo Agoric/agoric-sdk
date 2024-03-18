@@ -10,7 +10,7 @@ test('allVows waits for a single vow to complete', async t => {
   const { watch, when, allVows } = prepareVowTools(zone);
 
   const testPromiseP = Promise.resolve('promise');
-  const vowA = when(watch(testPromiseP));
+  const vowA = watch(testPromiseP);
 
   const result = await when(allVows([vowA]));
   t.is(result.length, 1);
@@ -24,9 +24,9 @@ test('allVows waits for an array of vows to complete', async t => {
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
   const testPromiseCP = Promise.resolve('promiseC');
-  const vowA = when(watch(testPromiseAP));
-  const vowB = when(watch(testPromiseBP));
-  const vowC = when(watch(testPromiseCP));
+  const vowA = watch(testPromiseAP);
+  const vowB = watch(testPromiseBP);
+  const vowC = watch(testPromiseCP);
 
   const result = await when(allVows([vowA, vowB, vowC]));
   t.is(result.length, 3);
@@ -40,11 +40,11 @@ test('allVows returns vows in order', async t => {
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
-  const vowA = when(watch(testPromiseAP));
-  const vowB = when(watch(testPromiseBP));
-  const vowC = when(watch(kit.vow));
+  const vowA = watch(testPromiseAP);
+  const vowB = watch(testPromiseBP);
+  const vowC = watch(kit.vow);
 
-  // test promise A and B should already be resolved.
+  // test promie A and B should already be resolved.
   kit.resolver.resolve('promiseC');
 
   const result = await when(allVows([vowA, vowC, vowB]));
@@ -59,9 +59,9 @@ test('allVows rejects upon first rejection', async t => {
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.reject(Error('rejectedA'));
   const testPromiseCP = Promise.reject(Error('rejectedB'));
-  const vowA = when(watch(testPromiseAP));
-  const vowB = when(watch(testPromiseBP));
-  const vowC = when(watch(testPromiseCP));
+  const vowA = watch(testPromiseAP);
+  const vowB = watch(testPromiseBP);
+  const vowC = watch(testPromiseCP);
 
   const watcher = zone.exo('RejectionWatcher', undefined, {
     onRejected(e) {
@@ -78,8 +78,8 @@ test('allVows can accept vows awaiting other vows', async t => {
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
-  const vowA = when(watch(testPromiseAP));
-  const vowB = when(watch(testPromiseBP));
+  const vowA = watch(testPromiseAP);
+  const vowB = watch(testPromiseBP);
   const resultA = allVows([vowA, vowB]);
 
   const testPromiseCP = Promise.resolve('promiseC');
@@ -88,4 +88,27 @@ test('allVows can accept vows awaiting other vows', async t => {
 
   t.is(resultB.length, 2);
   t.like(resultB, [['promiseA', 'promiseB'], 'promiseC']);
+});
+
+test('allVows - works with just promises', async t => {
+  const zone = makeHeapZone();
+  const { when, allVows } = prepareVowTools(zone);
+
+  const result = await when(
+    allVows([Promise.resolve('promiseA'), Promise.resolve('promiseB')]),
+  );
+  t.is(result.length, 2);
+  t.like(result, ['promiseA', 'promiseB']);
+});
+
+test('allVows - watch promises mixed with vows', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.resolve('vow');
+  const vowA = watch(testPromiseP);
+
+  const result = await when(allVows([vowA, Promise.resolve('promise')]));
+  t.is(result.length, 2);
+  t.like(result, ['vow', 'promise']);
 });
