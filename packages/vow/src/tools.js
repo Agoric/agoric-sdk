@@ -2,6 +2,7 @@
 import { makeWhen } from './when.js';
 import { prepareVowKit } from './vow.js';
 import { prepareWatch } from './watch.js';
+import { prepareWatchUtils } from './watch-utils.js';
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -14,6 +15,11 @@ export const prepareVowTools = (zone, powers = {}) => {
   const makeVowKit = prepareVowKit(zone, watchPromise);
   const when = makeWhen(isRetryableReason);
   const watch = prepareWatch(zone, makeVowKit, watchPromise, isRetryableReason);
-  return harden({ when, watch, makeVowKit });
+  const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
+  const watchUtils = makeWatchUtils();
+
+  const allVows = vows => watchUtils.all(vows);
+
+  return harden({ when, watch, makeVowKit, allVows });
 };
 harden(prepareVowTools);

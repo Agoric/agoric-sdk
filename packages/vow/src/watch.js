@@ -77,7 +77,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
         vow: /** @type {unknown} */ (undefined),
         resolver,
         watcher,
-        watcherContext,
+        watcherContext: harden(watcherContext),
       };
       return /** @type {Partial<typeof state>} */ (state);
     },

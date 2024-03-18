@@ -253,6 +253,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
+ * @param [options.bridgeHandlers]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -265,6 +266,7 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
+    bridgeHandlers = {} as Record<string, (obj: any) => unknown>,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -298,6 +300,9 @@ export const makeSwingsetTestKit = async (
     }
     outboundMessages.get(bridgeId).push(obj);
 
+    if (bridgeId in bridgeHandlers) {
+      return bridgeHandlers[bridgeId](obj);
+    }
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(

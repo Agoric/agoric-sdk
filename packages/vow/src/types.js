@@ -76,3 +76,8 @@ export {};
  * @property {(value: T) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
+
+/**
+ * @template [T=any]
+ * @typedef {import('./types.js').ERef<T | import('./types.js').Vow<T>>} Specimen
+ */

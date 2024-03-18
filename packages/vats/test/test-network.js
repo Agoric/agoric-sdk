@@ -108,7 +108,7 @@ test('network - ibc', async t => {
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
-      await E(hndlr).fromBridge(obj);
+      await when(E(hndlr).fromBridge(obj));
     },
     initHandler: h => {
       if (hndlr) throw Error('already init');

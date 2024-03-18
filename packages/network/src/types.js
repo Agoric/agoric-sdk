@@ -40,7 +40,7 @@
  *   Make an outbound connection
  * @property {(acceptHandler: ListenHandler) => PromiseVow<void>} removeListener
  *   Remove the currently-bound listener
- * @property {() => void} revoke Deallocate the port entirely, removing all
+ * @property {() => PromiseVow<void>} revoke Deallocate the port entirely, removing all
  *   listeners and closing all active connections
  */
 
