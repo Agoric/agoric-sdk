@@ -29,13 +29,13 @@
   "devDependencies": {
     "@agoric/zoe": "^0.26.2",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^9.1.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
@@ -47,6 +47,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 86.81
+    "atLeast": 90.97
   }
 }

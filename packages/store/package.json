@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "build": "exit 0",
@@ -58,6 +58,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 85.75
+    "atLeast": 86.12
   }
 }

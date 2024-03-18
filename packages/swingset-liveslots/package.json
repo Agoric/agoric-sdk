@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "build": "exit 0",
@@ -67,6 +67,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 75.2
+    "atLeast": 75.22
   }
 }

@@ -42,7 +42,7 @@
     "@endo/ses-ava": "^1.1.2",
     "@types/node-fetch": "^2.6.2",
     "ava": "^5.3.0",
-    "c8": "^7.13.0",
+    "c8": "^9.1.0",
     "express": "^4.17.1",
     "ws": "^7.2.0"
   },
@@ -50,7 +50,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
@@ -60,6 +60,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 89.58
+    "atLeast": 89.6
   }
 }

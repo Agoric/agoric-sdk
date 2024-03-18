@@ -25,7 +25,6 @@
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
-    "@agoric/network": "^0.1.0",
     "@agoric/notifier": "^0.6.2",
     "@agoric/smart-wallet": "^0.5.3",
     "@agoric/vat-data": "^0.5.2",
@@ -51,7 +50,7 @@
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/time": "^0.3.2",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^9.1.0"
   },
   "files": [
     "CHANGELOG.md",
@@ -66,7 +65,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
@@ -79,6 +78,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 73.62
+    "atLeast": 73.8
   }
 }

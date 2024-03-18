@@ -59,13 +59,13 @@
     "@agoric/ertp": "^0.16.2",
     "@endo/bundle-source": "^3.1.0",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^9.1.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "ava": {
     "files": [
@@ -78,6 +78,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 68.76
+    "atLeast": 73.13
   }
 }

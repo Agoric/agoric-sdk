@@ -32,7 +32,7 @@
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/deploy-script-support": "^0.10.3",
     "ava": "^5.3.0",
-    "c8": "^7.13.0",
+    "c8": "^9.1.0",
     "dd-trace": "^4.11.1"
   },
   "dependencies": {
@@ -98,6 +98,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 76.93
+    "atLeast": 77.12
   }
 }

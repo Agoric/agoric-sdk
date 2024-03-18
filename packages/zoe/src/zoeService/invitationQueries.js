@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail, quote as q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
@@ -13,10 +13,12 @@ export const makeInvitationQueryFns = invitationIssuer => {
       assert.note(err, X`Due to ${reason}`);
       throw err;
     };
-    return E.get(
-      E.get(E(invitationIssuer).getAmountOf(invitationP).catch(onRejected))
-        .value,
-    )[0];
+    const invAmount = await E(invitationIssuer)
+      .getAmountOf(invitationP)
+      .catch(onRejected);
+    (Array.isArray(invAmount.value) && invAmount.value.length === 1) ||
+      Fail`Expected exactly 1 invitation, not ${q(invAmount.value.length)}`;
+    return invAmount.value[0];
   };
 
   /** @type {GetInstance} */

@@ -31,9 +31,9 @@
   },
   "devDependencies": {
     "@endo/init": "^1.0.4",
-    "@types/better-sqlite3": "^7.5.0",
+    "@types/better-sqlite3": "^7.6.9",
     "ava": "^5.3.0",
-    "c8": "^7.13.0",
+    "c8": "^9.1.0",
     "tmp": "^0.2.1"
   },
   "publishConfig": {
@@ -49,6 +49,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 76.27
+    "atLeast": 76.3
   }
 }

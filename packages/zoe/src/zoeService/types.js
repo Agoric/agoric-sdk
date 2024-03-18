@@ -108,7 +108,7 @@
 
 /**
  * @callback GetInvitationDetails
- * @param {ERef<Invitation>} invitation
+ * @param {ERef<Invitation<any, any>>} invitation
  * @returns {Promise<InvitationDetails>}
  */
 
@@ -148,7 +148,7 @@
  */
 
 /**
- * @typedef {<Args, Result>(
+ * @typedef {<Result, Args = undefined>(
  *   invitation: ERef<Invitation<Result, Args>>,
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,

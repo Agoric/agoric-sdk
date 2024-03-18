@@ -6,13 +6,6 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
-type MakeInvitation = <Result>(
-  offerHandler: OfferHandler<Result>,
-  description: string,
-  customDetails?: object,
-  proposalShape?: Pattern,
-) => Promise<Invitation<R, A>>;
-
 /**
  * Zoe Contract Facet
  *
@@ -60,7 +53,12 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * getting in the `customDetails`. `customDetails` will be
    * placed in the details of the invitation.
    */
-  makeInvitation: MakeInvitation;
+  makeInvitation: <R, A = undefined>(
+    offerHandler: OfferHandler<ERef<R>, A>,
+    description: string,
+    customDetails?: object,
+    proposalShape?: Pattern,
+  ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
@@ -164,21 +162,20 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * normally an instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
-/**
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
- */
-type ZCFGetAmountAllocated = (
-  keyword: Keyword,
-  brand?: Brand<AssetKind> | undefined,
-) => Amount<any>;
 type ZCFSeat = {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
   hasExited: () => boolean;
   getProposal: () => ProposalRecord;
-  getAmountAllocated: ZCFGetAmountAllocated;
+  /**
+   * @param brand used for filling in an empty amount if the `keyword`
+   * is not present in the allocation
+   */
+  getAmountAllocated: <B extends Brand>(
+    keyword: Keyword,
+    brand?: B,
+  ) => B extends Brand<infer K> ? Amount<K> : Amount;
   getCurrentAllocation: () => Allocation;
   /**
    * @deprecated Use atomicRearrange instead
@@ -210,14 +207,14 @@ type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
   userSeat: ERef<UserSeat>;
 };
-type HandleOffer<OR extends unknown> = (
+type HandleOffer<OR extends unknown, OA> = (
   seat: ZCFSeat,
-  offerArgs?: object,
+  offerArgs?: OA,
 ) => OR;
-type OfferHandler<OR extends unknown = unknown> =
-  | HandleOffer<OR>
+type OfferHandler<OR extends unknown = unknown, OA = never> =
+  | HandleOffer<OR, OA>
   | {
-      handle: HandleOffer<OR>;
+      handle: HandleOffer<OR, OA>;
     };
 type ContractMeta = {
   customTermsShape?: CopyRecord<any> | undefined;
@@ -246,3 +243,11 @@ type ContractStartFnResult<PF, CF> = {
 };
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
 type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
+
+declare const OfferReturn: unique symbol;
+declare const OfferArgs: unique symbol;
+type Invitation<R = unknown, A = undefined> = Payment<'set'> & {
+  // because TS is structural, without this the generic is ignored
+  [OfferReturn]?: R;
+  [OfferArgs]?: A;
+};

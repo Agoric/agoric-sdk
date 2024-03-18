@@ -1,14 +1,45 @@
+// @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { AmountShape } from '@agoric/ertp';
 
-const { Fail } = assert;
+const { Fail, bare } = assert;
+
+/**
+ * @typedef {{
+ *   '@type': string;
+ *   [x: string]: unknown;
+ * }} Proto3Jsonable
+ */
+
+/**
+ * @typedef {{
+ *   system: import('./types.js').ScopedBridgeManager;
+ *   bankManager: import('./vat-bank.js').BankManager;
+ * }} LocalChainPowers
+ *
+ * @typedef {MapStore<
+ *   keyof LocalChainPowers,
+ *   LocalChainPowers[keyof LocalChainPowers]
+ * >} PowerStore
+ */
+
+/**
+ * @template {keyof LocalChainPowers} K
+ * @param {PowerStore} powers
+ * @param {K} name
+ */
+const getPower = (powers, name) => {
+  powers.has(name) || Fail`need powers.${bare(name)} for this method`;
+  return /** @type {LocalChainPowers[K]} */ (powers.get(name));
+};
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
+  deposit: M.callWhen(M.remotable('Payment'))
+    .optional(M.pattern())
+    .returns(AmountShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
-  // An example of a high-level query.  TODO: Move this functionality to a higher
-  // layer that implements the Orchestration API.
-  allBalances: M.callWhen().returns(M.record()),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -17,32 +48,34 @@ const prepareLocalChainAccount = zone =>
     'LocalChainAccount',
     LocalChainAccountI,
     /**
-     * @param {import('./types.js').ScopedBridgeManager} system
      * @param {string} address
-     * @param {{ query: (messages: any[]) => Promise<any> }} chain
+     * @param {PowerStore} powers
      */
-    (system, address, chain) => ({ system, address, chain }),
+    (address, powers) => ({ address, powers }),
     {
       // Information that the account creator needs.
       async getAddress() {
         return this.state.address;
       },
-      async allBalances() {
-        // We make a balance request, scoped to our own address.
-        const { address, chain } = this.state;
-        const res = await chain.query([
-          {
-            '@type': '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-            address,
-          },
-        ]);
-        if (res[0].error) {
-          throw Fail`query failed: ${res[0].error}`;
-        }
-        return res[0].reply;
+      /**
+       * Deposit a payment into the bank purse that matches the alleged brand.
+       * This is safe, since even if the payment lies about its brand, ERTP will
+       * reject spoofed payment objects when depositing into a purse.
+       *
+       * @param {Payment} payment
+       */
+      async deposit(payment) {
+        const { address, powers } = this.state;
+
+        const bankManager = getPower(powers, 'bankManager');
+
+        const allegedBrand = await E(payment).getAllegedBrand();
+        const bankAcct = E(bankManager).getBankForAddress(address);
+        const allegedPurse = E(bankAcct).getPurse(allegedBrand);
+        return E(allegedPurse).deposit(payment);
       },
       async executeTx(messages) {
-        const { system, address } = this.state;
+        const { address, powers } = this.state;
         const obj = {
           type: 'VLOCALCHAIN_EXECUTE_TX',
           // This address is the only one that `VLOCALCHAIN_EXECUTE_TX` will
@@ -51,6 +84,7 @@ const prepareLocalChainAccount = zone =>
           address,
           messages,
         };
+        const system = getPower(powers, 'system');
         return E(system).toBridge(obj);
       },
     },
@@ -58,7 +92,12 @@ const prepareLocalChainAccount = zone =>
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
-  query: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  query: M.callWhen(M.record()).returns(M.record()),
+  queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+});
+
+export const LocalChainAdminI = M.interface('LocalChainAdmin', {
+  setPower: M.callWhen(M.string(), M.await(M.any())).returns(),
 });
 
 /**
@@ -66,29 +105,91 @@ export const LocalChainI = M.interface('LocalChain', {
  * @param {ReturnType<typeof prepareLocalChainAccount>} createAccount
  */
 const prepareLocalChain = (zone, createAccount) =>
-  zone.exoClass(
+  zone.exoClassKit(
     'LocalChain',
-    LocalChainI,
-    /** @param {import('./types.js').ScopedBridgeManager} system */
-    system => ({ system }),
+    { public: LocalChainI, admin: LocalChainAdminI },
+    /** @param {Partial<LocalChainPowers>} [initialPowers] */
+    initialPowers => {
+      /** @type {PowerStore} */
+      const powers = zone.detached().mapStore('PowerStore');
+      if (initialPowers) {
+        for (const [name, power] of Object.entries(initialPowers)) {
+          powers.init(/** @type {keyof LocalChainPowers} */ (name), power);
+        }
+      }
+      return { powers };
+    },
     {
-      async createAccount() {
-        const { system } = this.state;
-        // Allocate a fresh address that doesn't correspond with a public key,
-        // and follows the ICA guidelines to help reduce collisions.  See
-        // x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
-        // hash and block data hash.
-        const address = await E(system).toBridge({
-          type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
-        });
-        return createAccount(system, address, this.self);
+      admin: {
+        /**
+         * @template {keyof LocalChainPowers} K
+         * @param {K} name
+         * @param {LocalChainPowers[K]} [power]
+         */
+        setPower(name, power) {
+          const { powers } = this.state;
+          if (power === undefined) {
+            // Remove from powers.
+            powers.delete(name);
+          } else if (powers.has(name)) {
+            // Replace an existing power.
+            powers.set(name, power);
+          } else {
+            // Add a new power.
+            powers.init(name, power);
+          }
+        },
       },
-      async query(messages) {
-        const { system } = this.state;
-        return E(system).toBridge({
-          type: 'VLOCALCHAIN_QUERY',
-          messages,
-        });
+      public: {
+        /**
+         * Allocate a fresh address that doesn't correspond with a public key,
+         * and follows the ICA guidelines to help reduce collisions. See
+         * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
+         * hash and block data hash.
+         */
+        async createAccount() {
+          const { powers } = this.state;
+          const system = getPower(powers, 'system');
+          const address = await E(system).toBridge({
+            type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
+          });
+          return createAccount(address, powers);
+        },
+        /**
+         * Make a single query to the local chain. Will reject with an error if
+         * the query fails. Otherwise, return the response as a JSON-compatible
+         * object.
+         *
+         * @param {Proto3Jsonable} request
+         * @returns {Promise<Proto3Jsonable>}
+         */
+        async query(request) {
+          const requests = harden([request]);
+          const results = await E(this.facets.public).queryMany(requests);
+          results.length === 1 ||
+            Fail`expected exactly one result; got ${results}`;
+          const { error, reply } = results[0];
+          if (error) {
+            throw Fail`query failed: ${error}`;
+          }
+          return reply;
+        },
+        /**
+         * Send a batch of query requests to the local chain. Unless there is a
+         * system error, will return all results to indicate their success or
+         * failure.
+         *
+         * @param {Proto3Jsonable[]} requests
+         * @returns {Promise<{ error?: string; reply: Proto3Jsonable }[]>}
+         */
+        async queryMany(requests) {
+          const { powers } = this.state;
+          const system = getPower(powers, 'system');
+          return E(system).toBridge({
+            type: 'VLOCALCHAIN_QUERY_MANY',
+            messages: requests,
+          });
+        },
       },
     },
   );
@@ -103,4 +204,5 @@ export const prepareLocalChainTools = zone => {
 harden(prepareLocalChainTools);
 
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
-/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */
+/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChainKit */
+/** @typedef {LocalChainKit['public']} LocalChain */

@@ -18,9 +18,9 @@ const TransferProposalShape = M.splitRecord({
  */
 
 /**
- * @template {any} [U=any]
+ * @template {(string | symbol)[]} MN Method names
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {MakeInvitation} makeInvitation
+ * @param {ZCF['makeInvitation']} makeInvitation
  *   A function with the same behavior as `zcf.makeInvitation`.
  *   A contract will normally just extract it from its own zcf using the
  *   argument expression
@@ -30,11 +30,11 @@ const TransferProposalShape = M.splitRecord({
  *   See ownable-counter.js for the canonical example.
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
- * @param {(string|symbol)[]} uMethodNames
+ * @param {MN} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the wrapping ownable object.
  * @param {OwnableOptions} [options]
- * @returns {(underlying: U) => U}
+ * @returns {<U>(underlying: U) => Pick<U, MN[number]> & {makeTransferInvitation: () => Invitation<U>}}
  */
 export const prepareOwnable = (
   zone,

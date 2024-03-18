@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./src/contractHost.js",
   "engines": {
-    "node": ">=14.15.0"
+    "node": "^18.12 || ^20.9"
   },
   "scripts": {
     "build": "yarn build:bundles",
@@ -42,7 +42,7 @@
     "@endo/bundle-source": "^3.1.0",
     "@endo/init": "^1.0.4",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^9.1.0"
   },
   "files": [
     "src/",
@@ -62,6 +62,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 50
+    "atLeast": 55.05
   }
 }

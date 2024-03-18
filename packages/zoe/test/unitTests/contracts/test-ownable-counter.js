@@ -23,6 +23,7 @@ test('zoe - ownable-counter contract', async t => {
   // Pack the contract.
   const bundle = await bundleSource(root);
   vatAdminState.installBundle('b1-ownable-counter', bundle);
+  /** @type {Installation<import('./ownable-counter.js').start>} */
   const installation = await E(zoe).installBundleID('b1-ownable-counter');
 
   const { creatorFacet: firstCounter, publicFacet: viewCounter } = await E(
@@ -35,6 +36,15 @@ test('zoe - ownable-counter contract', async t => {
       count: 3n,
     }),
     'c1-ownable-counter',
+  );
+
+  await t.throwsAsync(
+    // @ts-expect-error method of underlying that ownable doesn't allow
+    E(firstCounter).toBeAttenuated(),
+    {
+      message:
+        'target has no method "toBeAttenuated", has ["__getInterfaceGuard__","__getMethodNames__","getInvitationCustomDetails","incr","makeTransferInvitation"]',
+    },
   );
 
   // the following tests could invoke `firstCounter` and `viewCounter`
