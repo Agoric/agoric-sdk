@@ -19,6 +19,10 @@
       "types": "./dist/codegen/index.d.ts",
       "default": "./dist/codegen/index.js"
     },
+    "./vatsafe": {
+      "types": "./dist/vatsafe.d.ts",
+      "default": "./dist/vatsafe.js"
+    },
     "./package.json": "./package.json",
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
