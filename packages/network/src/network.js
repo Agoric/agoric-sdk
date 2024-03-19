@@ -425,7 +425,7 @@ const preparePort = (zone, powers) => {
         // Works even after revoke().
         return this.state.localAddr;
       },
-      /** @param {import('@agoric/vow').Remote<Required<ListenHandler>>} listenHandler */
+      /** @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler */
       async addListener(listenHandler) {
         const { revoked, listening, localAddr, protocolHandler } = this.state;
 
@@ -438,10 +438,19 @@ const preparePort = (zone, powers) => {
           if (lhandler === listenHandler) {
             return;
           }
-          listening.set(localAddr, [this.facets.port, listenHandler]);
+          listening.set(localAddr, [
+            this.facets.port,
+            /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
+          ]);
           E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
-          listening.init(localAddr, harden([this.facets.port, listenHandler]));
+          listening.init(
+            localAddr,
+            harden([
+              this.facets.port,
+              /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
+            ]),
+          );
         }
 
         // ASSUME: that the listener defines onAccept.
@@ -458,7 +467,7 @@ const preparePort = (zone, powers) => {
         );
         return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
       },
-      /** @param {Remote<Required<ListenHandler>>} listenHandler */
+      /** @param {Remote<ListenHandler>} listenHandler */
       async removeListener(listenHandler) {
         const { listening, localAddr, protocolHandler } = this.state;
         listening.has(localAddr) || Fail`Port ${localAddr} is not listening`;
@@ -643,7 +652,7 @@ const prepareBinder = (zone, powers) => {
     {
       protocolImpl: Shape.ProtocolImplI,
       binder: M.interface('Binder', {
-        bind: M.callWhen(Shape.Endpoint).returns(Shape2.Vow$(Shape.Port)),
+        bind: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
       }),
       binderInboundInstantiateWatcher: M.interface(
         'BinderInboundInstantiateWatcher',
@@ -702,7 +711,7 @@ const prepareBinder = (zone, powers) => {
      * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {MapStore<string, Port>} opts.boundPorts
      * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
-     * @param {Remote<Required<ProtocolHandler>>} opts.protocolHandler
+     * @param {Remote<ProtocolHandler>} opts.protocolHandler
      */
     ({ currentConnections, boundPorts, listening, protocolHandler }) => {
       /** @type {SetStore<Connection>} */
@@ -747,7 +756,11 @@ const prepareBinder = (zone, powers) => {
           const [port] = listening.get(/** @type {string} **/ (listenPrefix));
 
           const innerVow = watch(
-            E(protocolHandler).onInstantiate(
+            E(
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
+                protocolHandler
+              ),
+            ).onInstantiate(
               /** @type {Port} **/ (port),
               prefixes[listenPrefixIndex],
               remoteAddr,
@@ -785,12 +798,11 @@ const prepareBinder = (zone, powers) => {
 
           // Allocate a local address.
           const instantiateInnerVow = watch(
-            E(protocolHandler).onInstantiate(
-              port,
-              localAddr,
-              remoteAddr,
-              protocolHandler,
-            ),
+            E(
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
+                protocolHandler
+              ),
+            ).onInstantiate(port, localAddr, remoteAddr, protocolHandler),
             this.facets.binderOutboundInstantiateWatcher,
             {
               port,
@@ -912,7 +924,11 @@ const prepareBinder = (zone, powers) => {
           const [port] = listening.get(/** @type {string} */ (listenPrefix));
 
           const innerVow = watch(
-            E(protocolHandler).onInstantiate(
+            E(
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
+                protocolHandler
+              ),
+            ).onInstantiate(
               port,
               prefixes[listenPrefixIndex],
               remoteAddr,
@@ -1246,7 +1262,7 @@ export const prepareEchoConnectionKit = zone => {
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export function prepareLoopbackProtocolHandler(zone, { watch }) {
+export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
   const detached = zone.detached();
 
   /** @param {string} [instancePrefix] */
@@ -1279,6 +1295,12 @@ export function prepareLoopbackProtocolHandler(zone, { watch }) {
         async onBind(_port, _localAddr, _protocolHandler) {
           // noop, for now; Maybe handle a bind?
         },
+        /**
+         * @param {*} _port
+         * @param {Endpoint} localAddr
+         * @param {Endpoint} remoteAddr
+         * @returns {PromiseVow<AttemptDescription>}}
+         */
         async onConnect(_port, localAddr, remoteAddr) {
           const { listeners } = this.state;
           const [lport, lhandler] = listeners.get(remoteAddr);
@@ -1303,7 +1325,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch }) {
             this.facets.rethrowUnlessMissingWatcher,
           );
           return watch(
-            Promise.all([acceptVow, instantiateVow]),
+            allVows([acceptVow, instantiateVow]),
             this.facets.protocolHandlerConnectWatcher,
           );
         },
@@ -1341,9 +1363,9 @@ export function prepareLoopbackProtocolHandler(zone, { watch }) {
           }
         },
         /**
-         * @param {Port} port
+         * @param {Remote<Port>} port
          * @param {Endpoint} localAddr
-         * @param {Remote<Required<ListenHandler>>} listenHandler
+         * @param {Remote<ListenHandler>} listenHandler
          * @param {*} _protocolHandler
          */
         async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {

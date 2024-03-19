@@ -42,14 +42,14 @@
  * @typedef {object} Port A port that has been bound to a protocol
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this
  *   port
- * @property {(acceptHandler: Remote<Required<ListenHandler>>) => PromiseVow<void>} addListener
+ * @property {(acceptHandler: Remote<ListenHandler>) => PromiseVow<void>} addListener
  *   Begin accepting incoming connections
  * @property {(
  *   remote: Endpoint,
  *   connectionHandler?: Remote<ConnectionHandler>,
  * ) => PromiseVow<Connection>} connect
  *   Make an outbound connection
- * @property {(acceptHandler: Remote<Required<ListenHandler>>) => PromiseVow<void>} removeListener
+ * @property {(acceptHandler: Remote<ListenHandler>) => PromiseVow<void>} removeListener
  *   Remove the currently-bound listener
  * @property {() => PromiseVow<void>} revoke Deallocate the port entirely, removing all
  *   listeners and closing all active connections
