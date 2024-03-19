@@ -56,6 +56,7 @@ export const agoricNamesReserved = harden({
     econCommitteeCharter: 'Charter for Econ Governance questions',
     priceAggregator: 'simple price aggregator',
     scaledPriceAuthority: 'scaled price authority',
+    stakeBld: 'example BLD staking contract',
   },
   instance: {
     economicCommittee: 'Economic Committee',
@@ -69,6 +70,7 @@ export const agoricNamesReserved = harden({
     econCommitteeCharter: 'Charter for Econ Governance questions',
     provisionPool: 'Account Provision Pool',
     walletFactory: 'Smart Wallet Factory',
+    stakeBld: 'example BLD staking contract',
   },
   oracleBrand: {
     USD: 'US Dollar',

@@ -74,6 +74,10 @@ const prepareLocalChainAccount = zone =>
         const allegedPurse = E(bankAcct).getPurse(allegedBrand);
         return E(allegedPurse).deposit(payment);
       },
+      /**
+       * @param {Proto3Jsonable[]} messages
+       * @returns {Promise<Proto3Jsonable[]>}
+       */
       async executeTx(messages) {
         const { address, powers } = this.state;
         const obj = {
@@ -89,6 +93,11 @@ const prepareLocalChainAccount = zone =>
       },
     },
   );
+/**
+ * @typedef {Awaited<
+ *   ReturnType<Awaited<ReturnType<typeof prepareLocalChainAccount>>>
+ * >} LocalChainAccount
+ */
 
 export const LocalChainI = M.interface('LocalChain', {
   createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),

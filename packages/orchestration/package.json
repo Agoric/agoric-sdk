@@ -1,0 +1,79 @@
+{
+  "name": "@agoric/orchestration",
+  "version": "0.1.0",
+  "description": "Chain abstraction for Agoric's orchestration clients",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint .",
+    "lint-fix": "yarn lint:eslint --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/ertp": "^0.16.2",
+    "@agoric/internal": "^0.3.2",
+    "@agoric/notifier": "^0.6.2",
+    "@agoric/vat-data": "^0.5.2",
+    "@agoric/vats": "^0.15.1",
+    "@agoric/zoe": "^0.26.2",
+    "@agoric/zone": "^0.2.2",
+    "@endo/far": "^1.0.4",
+    "@endo/marshal": "^1.3.0",
+    "@endo/patterns": "^1.1.0"
+  },
+  "devDependencies": {
+    "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
+    "ava": "^5.3.0",
+    "cosmjs-types": "^0.9.0"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.js",
+      "test/**/*.test.ts"
+    ],
+    "nodeArguments": [
+      "--loader=tsx",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  },
+  "files": [
+    "*.js",
+    "*.ts",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 100
+  }
+}

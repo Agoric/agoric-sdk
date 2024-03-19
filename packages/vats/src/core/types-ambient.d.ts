@@ -179,6 +179,7 @@ type WellKnownName = {
     | 'reserve'
     | 'psm'
     | 'scaledPriceAuthority'
+    | 'stakeBld' // test contract
     | 'econCommitteeCharter'
     | 'priceAggregator';
   instance:
@@ -192,6 +193,7 @@ type WellKnownName = {
     | 'provisionPool'
     | 'reserve'
     | 'reserveGovernor'
+    | 'stakeBld' // test contract
     | 'Pegasus';
   oracleBrand: 'USD';
   uiConfig: 'VaultFactory';

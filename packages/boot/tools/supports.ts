@@ -364,6 +364,16 @@ export const makeSwingsetTestKit = async (
         return undefined;
       case BridgeId.STORAGE:
         return storage.toStorage(obj);
+      case BridgeId.VLOCALCHAIN:
+        switch (obj.type) {
+          case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
+            return 'agoric1mockVlocalchainAddress';
+          case 'VLOCALCHAIN_EXECUTE_TX':
+            // returns one empty object per message
+            return obj.messages.map(() => ({}));
+          default:
+            throw Error(`VLOCALCHAIN message of unknown type ${obj.type}`);
+        }
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);
     }
