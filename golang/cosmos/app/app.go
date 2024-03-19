@@ -817,25 +817,18 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	const (
-		upgradeName     = "UNRELEASED_UPGRADE"
-		upgradeNameTest = "UNRELEASED_TEST_UPGRADE"
-	)
-
-	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeName,
-		unreleasedUpgradeHandler(app, upgradeName),
-	)
-	app.UpgradeKeeper.SetUpgradeHandler(
-		upgradeNameTest,
-		unreleasedUpgradeHandler(app, upgradeNameTest),
-	)
+	for name := range upgradeNamesOfThisVersion {
+		app.UpgradeKeeper.SetUpgradeHandler(
+			name,
+			unreleasedUpgradeHandler(app, name),
+		)
+	}
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(err)
 	}
-	if (upgradeInfo.Name == upgradeName || upgradeInfo.Name == upgradeNameTest) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
@@ -871,25 +864,45 @@ func NewAgoricApp(
 	return app
 }
 
+var upgradeNamesOfThisVersion = map[string]bool{
+	"UNRELEASED_UPGRADE":      true,
+	"UNRELEASED_TEST_UPGRADE": true,
+}
+
+func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
+	for name := range upgradeNamesOfThisVersion {
+		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
-		// Each CoreProposalStep runs sequentially, and can be constructed from
-		// one or more modules executing in parallel within the step.
-		CoreProposalSteps := []vm.CoreProposalStep{
-			// First, upgrade wallet factory
-			vm.CoreProposalStepForModules("@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js"),
-			// Then, upgrade Zoe and ZCF
-			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
-			// Then, upgrade the provisioning vat
-			vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
-			// Enable low-level Orchestration.
-			vm.CoreProposalStepForModules(
-				"@agoric/builders/scripts/vats/init-network.js",
-				"@agoric/builders/scripts/vats/init-localchain.js",
-			),
+		CoreProposalSteps := []vm.CoreProposalStep{}
+
+		// These CoreProposalSteps are not idempotent and should only be executed
+		// as part of the first upgrade using this handler on any given chain.
+		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
+			// Each CoreProposalStep runs sequentially, and can be constructed from
+			// one or more modules executing in parallel within the step.
+			CoreProposalSteps = []vm.CoreProposalStep{
+				// First, upgrade wallet factory
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js"),
+				// Then, upgrade Zoe and ZCF
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
+				// Then, upgrade the provisioning vat
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
+				// Enable low-level Orchestration.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/init-network.js",
+					"@agoric/builders/scripts/vats/init-localchain.js",
+				),
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
