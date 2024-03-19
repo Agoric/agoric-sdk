@@ -87,7 +87,7 @@ const prepareHalfConnection = (zone, { watch }) => {
           const { addrs, r } = this.state;
           return addrs[r];
         },
-        /** @param {Data} packetBytes */
+        /** @param {Bytes} packetBytes */
         async send(packetBytes) {
           const { closed, handlers, r, conns } = this.state;
           if (closed) {

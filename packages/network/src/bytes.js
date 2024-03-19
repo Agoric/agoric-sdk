@@ -3,10 +3,10 @@
 import { Fail } from '@agoric/assert';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
-/** @typedef {Data | Buffer | Uint8Array | Iterable<number>} SourceData */
+/** @typedef {Bytes | Buffer | Uint8Array | Iterable<number>} ByteSource */
 
 /**
- * @param {SourceData} contents
+ * @param {ByteSource} contents
  */
 const coerceToByteArray = contents => {
   if (typeof contents === 'string') {
@@ -30,13 +30,13 @@ const coerceToByteArray = contents => {
  * Convert a Uint8Array or other sequence of octets to a string representation
  * that `@endo/marshal` accepts as Passable.
  *
- * @param {SourceData} data
+ * @param {ByteSource} byteSource
  * @returns {Bytes}
  */
-export function toBytes(data) {
+export function toBytes(byteSource) {
   // We return the raw characters in the lower half of
   // the String's representation.
-  const buf = coerceToByteArray(data);
+  const buf = coerceToByteArray(byteSource);
   return String.fromCharCode(...buf);
 }
 
@@ -53,11 +53,11 @@ export function bytesToString(bytes) {
 /**
  * Base64, as specified in https://tools.ietf.org/html/rfc4648#section-4
  *
- * @param {SourceData} data
+ * @param {ByteSource} byteSource
  * @returns {string} base64 encoding
  */
-export function dataToBase64(data) {
-  const bytes = coerceToByteArray(data);
+export function dataToBase64(byteSource) {
+  const bytes = coerceToByteArray(byteSource);
   return encodeBase64(bytes);
 }
 

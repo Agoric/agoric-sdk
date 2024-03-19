@@ -18,7 +18,6 @@
  */
 
 /**
- * @typedef {string | number[]} Data Eventually should allow passable Uint8Array
  * @typedef {string} Bytes Each character code carries 8-bit octets.  Eventually we want to use passable Uint8Arrays.
  */
 
@@ -81,7 +80,7 @@
 /**
  * @typedef {object} Connection
  * @property {(
- *   packetBytes: Data,
+ *   packetBytes: Bytes,
  *   opts?: Record<string, any>,
  * ) => PromiseVow<Bytes>} send
  *   Send a packet on the connection
@@ -105,7 +104,7 @@
  *   ack: Bytes,
  *   c: Remote<ConnectionHandler>,
  *   opts?: Record<string, any>,
- * ) => PromiseVow<Data>} [onReceive]
+ * ) => PromiseVow<Bytes>} [onReceive]
  *   The connection received a packet
  * @property {(
  *   connection: Remote<Connection>,
