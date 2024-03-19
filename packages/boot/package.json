@@ -79,7 +79,7 @@
       "test/**/test-*.ts"
     ],
     "nodeArguments": [
-      "--loader=tsx",
+      "--import=tsx",
       "--no-warnings"
     ],
     "require": [
