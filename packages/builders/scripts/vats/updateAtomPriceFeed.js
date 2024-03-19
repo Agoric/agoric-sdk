@@ -1,5 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { priceFeedProposalBuilder } from './updatePriceFeeds.js';
+import { priceFeedProposalBuilder } from './priceFeedSupport.js';
 
 const OPTIONS = {
   AGORIC_INSTANCE_NAME: 'ATOM-USD price feed',

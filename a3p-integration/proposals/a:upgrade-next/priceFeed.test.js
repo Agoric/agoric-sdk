@@ -1,5 +1,3 @@
-/* global process */
-
 import test from 'ava';
 
 import {
@@ -25,23 +23,19 @@ const getOracleInstance = async price => {
   );
 
   // agd query -o json  vstorage data published.agoricNames.instance
-  //    |& jq '.value | fromjson | .values[1] | fromjson | .body[1:]
+  //    |& jq '.value | fromjson | .values[-1] | fromjson | .body[1:]
   //    | fromjson | .[-2] '
 
   const value = JSON.parse(instanceRec.value);
-  // XXX I don't know why value.values[-1] doesn't work.
-  const body = JSON.parse(value.values[value.values.length - 1]);
+  const body = JSON.parse(value.values.at(-1));
 
-  const bodyTruncated = JSON.parse(body.body.substring(1));
-  const slots = body.slots;
+  const feeds = JSON.parse(body.body.substring(1));
+  const feedName = `${price}-USD price feed`;
 
-  for (const [k, v] of bodyTruncated.entries()) {
-    if (v[0] === `${price}-USD price feed`) {
-      // console.log(`PFt `, price, slots[k]);
-      return slots[k];
-    }
+  const key = Object.keys(feeds).find(k => feeds[k][0] === feedName);
+  if (key) {
+    return body.slots[key];
   }
-
   return null;
 };
 
@@ -51,9 +45,6 @@ const checkForOracle = async (t, name) => {
 };
 
 test.serial('check all priceFeed vats updated', async t => {
-  await null;
-  process.env.ORACLE_ADDRESSES = JSON.stringify(ORACLE_ADDRESSES);
-
   const atomDetails = await getVatDetails('ATOM-USD_price_feed');
   // both the original and the new ATOM vault are incarnation 0
   t.is(atomDetails.incarnation, 0);

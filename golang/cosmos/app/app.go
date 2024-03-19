@@ -909,7 +909,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
 					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
 				),
-			),
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
