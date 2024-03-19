@@ -1,5 +1,6 @@
 // @ts-check
 /// <reference path="./types.js" />
+import { Fail } from '@agoric/assert';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
 /** @typedef {Data | Buffer | Uint8Array | Iterable<number>} SourceData */
@@ -9,9 +10,12 @@ import { encodeBase64, decodeBase64 } from '@endo/base64';
  */
 const coerceToByteArray = contents => {
   if (typeof contents === 'string') {
-    contents = contents.split('').map(c => c.charCodeAt(0));
-  }
-  if (contents instanceof Uint8Array) {
+    return Uint8Array.from(contents, c => {
+      const b = c.charCodeAt(0);
+      b <= 0xff || Fail`character cannot be coerced to an octet: ${c}`;
+      return b;
+    });
+  } else if (contents instanceof Uint8Array) {
     // Reconstruct to ensure we have a Uint8Array and not a Buffer.
     return new Uint8Array(
       contents.buffer,
@@ -23,11 +27,8 @@ const coerceToByteArray = contents => {
 };
 
 /**
- * Convert some data to bytes.  We can use a local Iterable as a source for data
- * bytes, but we need to call `toBytes(it)` to obtain a passable value.
- *
- * NOTE: Passing a Uint8Array without calling this function is not yet supported
- * by `@endo/marshal`.
+ * Convert a Uint8Array or other sequence of octets to a string representation
+ * that `@endo/marshal` accepts as Passable.
  *
  * @param {SourceData} data
  * @returns {Bytes}
@@ -36,7 +37,7 @@ export function toBytes(data) {
   // We return the raw characters in the lower half of
   // the String's representation.
   const buf = coerceToByteArray(data);
-  return String.fromCharCode.apply(null, buf);
+  return String.fromCharCode(...buf);
 }
 
 /**
