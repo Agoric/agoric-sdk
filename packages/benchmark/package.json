@@ -40,27 +40,5 @@
     "*.json",
     "globals.d.ts",
     "exported.js"
-  ],
-  "engines": {
-    "node": ">=14.15.0"
-  },
-  "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
-    "files": [
-      "test/**/test-*.js",
-      "test/**/test-*.ts"
-    ],
-    "nodeArguments": [
-      "--loader=tsx",
-      "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "timeout": "20m",
-    "workerThreads": false
-  }
+  ]
 }
