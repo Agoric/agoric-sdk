@@ -67,7 +67,7 @@
     "exported.js"
   ],
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.19 || ^20.9"
   },
   "ava": {
     "extensions": {
