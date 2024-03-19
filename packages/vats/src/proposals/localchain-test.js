@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
+import { MsgSend } from 'cosmjs-types/cosmos/bank/v1beta1/tx.js';
 
 /**
  * @param {BootstrapPowers & {
@@ -38,12 +39,11 @@ export const testLocalChain = async (
     console.info('balances', balances);
     await E(lca)
       .executeTx([
-        {
-          '@type': '/cosmos.bank.v1beta1.MsgSend',
-          from_address: address,
-          to_address: address,
+        MsgSend.fromPartial({
+          fromAddress: address,
+          toAddress: address,
           amount: [{ denom: 'ucosm', amount: '1' }],
-        },
+        }),
       ])
       .then(
         res => console.info('unexpected executeTx result', res),
