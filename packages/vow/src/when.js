@@ -8,18 +8,17 @@ export const makeWhen = (isRetryableReason = () => false) => {
   /**
    * Shorten `specimenP` until we achieve a final result.
    *
-   * @template [T=any]
-   * @template [TResult1=import('./E.js').Unwrap<T>]
+   * @template T
+   * @template [TResult1=import('./types.js').Unwrap<T>]
    * @template [TResult2=never]
    * @param {T} specimenP value to unwrap
-   * @param {(value: import('./E.js').Unwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
+   * @param {(value: import('./types.js').Unwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
    * @param {(reason: any) => TResult2 | PromiseLike<TResult2>} [onRejected]
    * @returns {Promise<TResult1 | TResult2>}
    */
   const when = async (specimenP, onFulfilled, onRejected) => {
     // Ensure we don't run until a subsequent turn.
     await null;
-    Promise.prototype.then;
 
     // Ensure we have a presence that won't be disconnected later.
     let result = await specimenP;
@@ -38,7 +37,7 @@ export const makeWhen = (isRetryableReason = () => false) => {
       payload = getVowPayload(result);
     }
 
-    const unwrapped = /** @type {import('./E.js').Unwrap<T>} */ (result);
+    const unwrapped = /** @type {import('./types.js').Unwrap<T>} */ (result);
 
     // We've extracted the final result.
     if (onFulfilled == null && onRejected == null) {
