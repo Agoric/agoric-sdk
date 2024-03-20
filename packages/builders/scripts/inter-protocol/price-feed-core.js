@@ -1,7 +1,7 @@
 /* global process */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-const DEFAULT_CONTRACT_TERMS = {
+export const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
   maxSubmissionCount: 1000,
   minSubmissionCount: 2,
