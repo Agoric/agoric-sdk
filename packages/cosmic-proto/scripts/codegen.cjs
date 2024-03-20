@@ -11,6 +11,8 @@ telescope({
   protoDirs,
   outPath,
   options: {
+    // for ESM compatibility
+    restoreImportExtension: '.js',
     tsDisable: {
       // FIXME types aren't resolving correctly
       disableAll: true,
