@@ -26,8 +26,11 @@ export const priceFeedProposalBuilder = async (
     IN_BRAND_NAME = IN_BRAND_LOOKUP[IN_BRAND_LOOKUP.length - 1],
   } = options;
 
-  const { ORACLE_ADDRESSES: ENV_ORACLE_ADDRESSES } = process.env;
-  const oracleAddresses = ENV_ORACLE_ADDRESSES || ORACLE_ADDRESSES;
+  const { GOV1ADDR, GOV2ADDR, GOV3ADDR } = process.env;
+  const oracleAddresses =
+    GOV1ADDR || GOV2ADDR || GOV3ADDR
+      ? [GOV1ADDR, GOV2ADDR, GOV3ADDR].filter(x => x)
+      : ORACLE_ADDRESSES;
   assert(Array.isArray(oracleAddresses), 'oracleAddresses array is required');
 
   assert(AGORIC_INSTANCE_NAME, 'AGORIC_INSTANCE_NAME is required');
