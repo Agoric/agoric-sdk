@@ -288,15 +288,16 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   // | EXISTS    | ABSENT        | NO           |
   // | EXISTS    | EXISTS        | YES          |
   //
-  // We short-circuit after a single stat if moddable/.git exists because that
-  // implies that moddable/ exists.
-  const isDocker = env.XSNAP_IS_IN_DOCKER;
-  const isWorkingCopy =
-    fs.existsSync('moddable/.git') || !fs.existsSync('moddable');
-  if (isWorkingCopy && !isDocker) {
-    await updateSubmodules(args, { env, stdout, spawn, fs });
+  if (!env.XSNAP_IN_DOCKER) {
+    // We short-circuit after a single stat if moddable/.git exists because that
+    // implies that moddable/ exists.
+    const isWorkingCopy =
+      fs.existsSync('moddable/.git') || !fs.existsSync('moddable');
+    if (isWorkingCopy) {
+      await updateSubmodules(args, { env, stdout, spawn, fs });
+    }
+    await makeXsnap({ spawn, fs, os });
   }
-  await makeXsnap({ spawn, fs, os });
 }
 
 const run = () =>
