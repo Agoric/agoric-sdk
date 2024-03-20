@@ -17,8 +17,8 @@ export interface MsgSendPacketProtoMsg {
 }
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
 export interface MsgSendPacketAmino {
-  packet?: PacketAmino;
-  sender?: string;
+  packet: PacketAmino;
+  sender: string;
 }
 export interface MsgSendPacketAminoMsg {
   type: '/agoric.vibc.MsgSendPacket';
@@ -123,8 +123,10 @@ export const MsgSendPacket = {
   },
   toAmino(message: MsgSendPacket): MsgSendPacketAmino {
     const obj: any = {};
-    obj.packet = message.packet ? Packet.toAmino(message.packet) : undefined;
-    obj.sender = message.sender ? base64FromBytes(message.sender) : undefined;
+    obj.packet = message.packet
+      ? Packet.toAmino(message.packet)
+      : Packet.toAmino(Packet.fromPartial({}));
+    obj.sender = message.sender ? base64FromBytes(message.sender) : '';
     return obj;
   },
   fromAminoMsg(object: MsgSendPacketAminoMsg): MsgSendPacket {

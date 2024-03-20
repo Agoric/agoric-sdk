@@ -250,8 +250,9 @@ export const InterfaceDescriptor = {
   },
   toAmino(message: InterfaceDescriptor): InterfaceDescriptorAmino {
     const obj: any = {};
-    obj.name = message.name;
-    obj.description = message.description;
+    obj.name = message.name === '' ? undefined : message.name;
+    obj.description =
+      message.description === '' ? undefined : message.description;
     return obj;
   },
   fromAminoMsg(object: InterfaceDescriptorAminoMsg): InterfaceDescriptor {
@@ -363,18 +364,18 @@ export const ScalarDescriptor = {
     if (object.description !== undefined && object.description !== null) {
       message.description = object.description;
     }
-    message.fieldType =
-      object.field_type?.map(e => scalarTypeFromJSON(e)) || [];
+    message.fieldType = object.field_type?.map(e => e) || [];
     return message;
   },
   toAmino(message: ScalarDescriptor): ScalarDescriptorAmino {
     const obj: any = {};
-    obj.name = message.name;
-    obj.description = message.description;
+    obj.name = message.name === '' ? undefined : message.name;
+    obj.description =
+      message.description === '' ? undefined : message.description;
     if (message.fieldType) {
       obj.field_type = message.fieldType.map(e => e);
     } else {
-      obj.field_type = [];
+      obj.field_type = message.fieldType;
     }
     return obj;
   },

@@ -11,7 +11,7 @@ export interface GenesisStateProtoMsg {
 }
 /** The initial or exported state. */
 export interface GenesisStateAmino {
-  data?: DataEntryAmino[];
+  data: DataEntryAmino[];
 }
 export interface GenesisStateAminoMsg {
   type: '/agoric.vstorage.GenesisState';
@@ -126,7 +126,7 @@ export const GenesisState = {
     if (message.data) {
       obj.data = message.data.map(e => (e ? DataEntry.toAmino(e) : undefined));
     } else {
-      obj.data = [];
+      obj.data = message.data;
     }
     return obj;
   },
@@ -217,8 +217,8 @@ export const DataEntry = {
   },
   toAmino(message: DataEntry): DataEntryAmino {
     const obj: any = {};
-    obj.path = message.path;
-    obj.value = message.value;
+    obj.path = message.path === '' ? undefined : message.path;
+    obj.value = message.value === '' ? undefined : message.value;
     return obj;
   },
   fromAminoMsg(object: DataEntryAminoMsg): DataEntry {
