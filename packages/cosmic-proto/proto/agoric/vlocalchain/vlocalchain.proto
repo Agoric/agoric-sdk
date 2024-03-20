@@ -1,0 +1,31 @@
+syntax = "proto3";
+package agoric.vlocalchain;
+
+import "google/protobuf/any.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types";
+
+// CosmosTx contains a list of sdk.Msg's. It should be used when sending
+// transactions to a local chain.
+message CosmosTx {
+    repeated google.protobuf.Any messages = 1;
+}
+
+// QueryRequest is used internally to describe a query for the local chain.
+message QueryRequest {
+    string              full_method = 1;
+    google.protobuf.Any request     = 2;
+    string              reply_type  = 3;
+}
+
+// QueryResponse is used internally to describe a response from the local chain.
+message QueryResponse {
+    int64               height = 1;
+    google.protobuf.Any reply  = 2;
+    string              error  = 3;
+}
+
+// QueryResponses is used to group multiple QueryResponse messages.
+message QueryResponses {
+    repeated QueryResponse responses = 1;
+}
