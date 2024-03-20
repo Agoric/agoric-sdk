@@ -149,9 +149,12 @@ const makeSubmodule = (path, repoUrl, { git }) => {
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
  *   },
+ *   os: {
+ *     type: typeof import('os').type,
+ *   }
  * }} io
  */
-const updateSubmodules = async (args, { env, stdout, spawn, fs }) => {
+async function main(args, { env, stdout, spawn, fs, os }) {
   const git = makeCLI('git', { spawn });
 
   // When changing/adding entries here, make sure to search the whole project
@@ -211,22 +214,7 @@ const updateSubmodules = async (args, { env, stdout, spawn, fs }) => {
       await submodule.init();
     }
   }
-};
 
-/**
- * @param {{
- *   spawn: typeof import('child_process').spawn,
- *   fs: {
- *     existsSync: typeof import('fs').existsSync,
- *     rmdirSync: typeof import('fs').rmdirSync,
- *     readFile: typeof import('fs').promises.readFile,
- *   },
- *   os: {
- *     type: typeof import('os').type,
- *   }
- * }} io
- */
-const makeXsnap = async ({ spawn, fs, os }) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
 
@@ -251,51 +239,6 @@ const makeXsnap = async ({ spawn, fs, os }) => {
       },
     );
   }
-};
-
-/**
- * @param {string[]} args
- * @param {{
- *   env: Record<string, string | undefined>,
- *   stdout: typeof process.stdout,
- *   spawn: typeof import('child_process').spawn,
- *   fs: {
- *     existsSync: typeof import('fs').existsSync,
- *     rmdirSync: typeof import('fs').rmdirSync,
- *     readFile: typeof import('fs').promises.readFile,
- *   },
- *   os: {
- *     type: typeof import('os').type,
- *   }
- * }} io
- */
-async function main(args, { env, stdout, spawn, fs, os }) {
-  // I solemnly swear I will do no synchronous work followed by a variable
-  // number turns of the event loop.
-  await null;
-
-  // If this is a working copy of xsnap in a checkout of agoric-sdk, we need to
-  // either clone or update submodules.
-  // Otherwise, we are running from an extracted npm tarball in a dependent
-  // package's node_modules, in which case we should just `make` with the
-  // `moddable` directory provided by npm.
-  // This will avoid rebuilding native xsnap in the common case for end users.
-  //
-  // | moddable/ | moddable/.git | working copy |
-  // | --------- | ------------- | ------------ |
-  // | ABSENT    | ABSENT        | YES          |
-  // | ABSENT    | EXISTS        | *            |
-  // | EXISTS    | ABSENT        | NO           |
-  // | EXISTS    | EXISTS        | YES          |
-  //
-  // We short-circuit after a single stat if moddable/.git exists because that
-  // implies that moddable/ exists.
-  const isWorkingCopy =
-    fs.existsSync('moddable/.git') || !fs.existsSync('moddable');
-  if (isWorkingCopy) {
-    await updateSubmodules(args, { env, stdout, spawn, fs });
-  }
-  await makeXsnap({ spawn, fs, os });
 }
 
 const run = () =>
