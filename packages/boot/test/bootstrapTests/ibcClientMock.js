@@ -7,7 +7,7 @@ import { V as E } from '@agoric/vat-data/vow.js';
  * @param {ZCF} zcf
  * @param {{
  *   address: string,
- *   networkVat: any
+ *   networkVat: ERef<ReturnType<typeof import('@agoric/vats/src/vat-network').buildRootObject>>;
  * }} privateArgs
  * @param {import("@agoric/vat-data").Baggage} _baggage
  */
