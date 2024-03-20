@@ -288,7 +288,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   // | EXISTS    | ABSENT        | NO           |
   // | EXISTS    | EXISTS        | YES          |
   //
-  if (!env.XSNAP_IN_DOCKER) {
+  if (!env.XSNAP_IS_IN_DOCKER) {
     // We short-circuit after a single stat if moddable/.git exists because that
     // implies that moddable/ exists.
     const isWorkingCopy =
