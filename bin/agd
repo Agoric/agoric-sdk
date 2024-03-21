@@ -26,21 +26,28 @@ for cmd in sha1sum shasum sha1sum; do
   command -v $DIGEST_CMD &>/dev/null && break
 done
 
+# diffsha1 stamp_name find_args...
+# executes find(1) with the given arguments and saves the resulting file list,
+# then runs $DIGEST_CMD on the file list, saves the digest to file stamp_name.new,
+# and compares to the saved digest in the file stamp_name.
+# Returns success (0) if it cannot write to the temporary files, if the find results are empty,
+# or if the computed digest is the same as the saved digest.
+# Returns failure (1) if the computed digest is different.
 function diffsha1() {
   stamp=$1
   shift
-  if ! (true > "$stamp.new") 2>/dev/null; then
-    # echo "Cannot write to $stamp.new" 1>&2
-    return 0
-  fi
-  find ${1+"$@"} > "$stamp.new.files"
-  if test ! -s "$stamp.new.files"; then
+  find ${1+"$@"} > "$stamp.new.$$"
+  if test ! -s "$stamp.new.$$"; then
     # echo "No new dependencies found for $stamp" 1>&2
-    rm -f "$stamp.new.files"
+    rm -f "$stamp.new.$$"
     return 0
   fi
-  xargs $DIGEST_CMD <"$stamp.new.files" | sort +1 > "$stamp.new" || true
-  rm -f "$stamp.new.files"
+  xargs $DIGEST_CMD <"$stamp.new.$$" | sort +1 > "$stamp.new" || true
+  rm -f "$stamp.new.$$"
+  if test ! -s "$stamp.new"; then
+    rm -f "$stamp.new"
+    return 0
+  fi
   diff -u "$stamp" "$stamp.new" || return 1
   return 0
 }
