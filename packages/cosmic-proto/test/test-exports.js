@@ -25,3 +25,11 @@ test('swingset/query', t => {
 test('vstorage/query', t => {
   t.snapshot(Object.keys(vstorageQuery).sort());
 });
+
+test('agoric', t => {
+  t.snapshot(Object.keys(index.agoric).sort());
+});
+
+test('cosmos', t => {
+  t.snapshot(Object.keys(index.cosmos).sort());
+});
