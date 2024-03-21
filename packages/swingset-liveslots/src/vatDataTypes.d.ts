@@ -194,6 +194,7 @@ export type VatData = {
     options?: StoreOptions,
   ) => WeakSetStore<K>;
   canBeDurable: (specimen: unknown) => boolean;
+  passStyleOf: (specimen: unknown) => string;
 };
 
 // The JSDoc is repeated here and at the function definition so it appears
