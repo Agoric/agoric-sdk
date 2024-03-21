@@ -118,7 +118,7 @@ export const GenesisState = {
         e ? AccountLien.toAmino(e) : undefined,
       );
     } else {
-      obj.liens = [];
+      obj.liens = message.liens;
     }
     return obj;
   },
@@ -213,7 +213,7 @@ export const AccountLien = {
   },
   toAmino(message: AccountLien): AccountLienAmino {
     const obj: any = {};
-    obj.address = message.address;
+    obj.address = message.address === '' ? undefined : message.address;
     obj.lien = message.lien ? Lien.toAmino(message.lien) : undefined;
     return obj;
   },

@@ -55,7 +55,7 @@ export interface QueryEgressRequestProtoMsg {
 }
 /** QueryEgressRequest is the request type for the Query/Egress RPC method */
 export interface QueryEgressRequestAmino {
-  peer?: string;
+  peer: string;
 }
 export interface QueryEgressRequestAminoMsg {
   type: '/agoric.swingset.QueryEgressRequest';
@@ -95,7 +95,7 @@ export interface QueryMailboxRequestProtoMsg {
 }
 /** QueryMailboxRequest is the mailbox query. */
 export interface QueryMailboxRequestAmino {
-  peer?: string;
+  peer: string;
 }
 export interface QueryMailboxRequestAminoMsg {
   type: '/agoric.swingset.QueryMailboxRequest';
@@ -115,7 +115,7 @@ export interface QueryMailboxResponseProtoMsg {
 }
 /** QueryMailboxResponse is the mailbox response. */
 export interface QueryMailboxResponseAmino {
-  value?: string;
+  value: string;
 }
 export interface QueryMailboxResponseAminoMsg {
   type: '/agoric.swingset.QueryMailboxResponse';
@@ -339,7 +339,7 @@ export const QueryEgressRequest = {
   },
   toAmino(message: QueryEgressRequest): QueryEgressRequestAmino {
     const obj: any = {};
-    obj.peer = message.peer ? base64FromBytes(message.peer) : undefined;
+    obj.peer = message.peer ? base64FromBytes(message.peer) : '';
     return obj;
   },
   fromAminoMsg(object: QueryEgressRequestAminoMsg): QueryEgressRequest {
@@ -508,7 +508,7 @@ export const QueryMailboxRequest = {
   },
   toAmino(message: QueryMailboxRequest): QueryMailboxRequestAmino {
     const obj: any = {};
-    obj.peer = message.peer ? base64FromBytes(message.peer) : undefined;
+    obj.peer = message.peer ? base64FromBytes(message.peer) : '';
     return obj;
   },
   fromAminoMsg(object: QueryMailboxRequestAminoMsg): QueryMailboxRequest {
@@ -588,7 +588,7 @@ export const QueryMailboxResponse = {
   },
   toAmino(message: QueryMailboxResponse): QueryMailboxResponseAmino {
     const obj: any = {};
-    obj.value = message.value;
+    obj.value = message.value ?? '';
     return obj;
   },
   fromAminoMsg(object: QueryMailboxResponseAminoMsg): QueryMailboxResponse {

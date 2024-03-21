@@ -235,13 +235,18 @@ export const Params = {
   },
   toAmino(message: Params): ParamsAmino {
     const obj: any = {};
-    obj.reward_epoch_duration_blocks = message.rewardEpochDurationBlocks
-      ? message.rewardEpochDurationBlocks.toString()
-      : undefined;
-    obj.per_epoch_reward_fraction = message.perEpochRewardFraction;
-    obj.reward_smoothing_blocks = message.rewardSmoothingBlocks
-      ? message.rewardSmoothingBlocks.toString()
-      : undefined;
+    obj.reward_epoch_duration_blocks =
+      message.rewardEpochDurationBlocks !== BigInt(0)
+        ? message.rewardEpochDurationBlocks.toString()
+        : undefined;
+    obj.per_epoch_reward_fraction =
+      message.perEpochRewardFraction === ''
+        ? undefined
+        : message.perEpochRewardFraction;
+    obj.reward_smoothing_blocks =
+      message.rewardSmoothingBlocks !== BigInt(0)
+        ? message.rewardSmoothingBlocks.toString()
+        : undefined;
     return obj;
   },
   fromAminoMsg(object: ParamsAminoMsg): Params {
@@ -396,21 +401,23 @@ export const State = {
         e ? Coin.toAmino(e) : undefined,
       );
     } else {
-      obj.reward_pool = [];
+      obj.reward_pool = message.rewardPool;
     }
     if (message.rewardBlockAmount) {
       obj.reward_block_amount = message.rewardBlockAmount.map(e =>
         e ? Coin.toAmino(e) : undefined,
       );
     } else {
-      obj.reward_block_amount = [];
+      obj.reward_block_amount = message.rewardBlockAmount;
     }
-    obj.last_sequence = message.lastSequence
-      ? message.lastSequence.toString()
-      : undefined;
-    obj.last_reward_distribution_block = message.lastRewardDistributionBlock
-      ? message.lastRewardDistributionBlock.toString()
-      : undefined;
+    obj.last_sequence =
+      message.lastSequence !== BigInt(0)
+        ? message.lastSequence.toString()
+        : undefined;
+    obj.last_reward_distribution_block =
+      message.lastRewardDistributionBlock !== BigInt(0)
+        ? message.lastRewardDistributionBlock.toString()
+        : undefined;
     return obj;
   },
   fromAminoMsg(object: StateAminoMsg): State {

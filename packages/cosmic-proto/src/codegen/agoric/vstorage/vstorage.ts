@@ -11,7 +11,7 @@ export interface DataProtoMsg {
 }
 /** Data is the vstorage node data. */
 export interface DataAmino {
-  value?: string;
+  value: string;
 }
 export interface DataAminoMsg {
   type: '/agoric.vstorage.Data';
@@ -37,7 +37,7 @@ export interface ChildrenProtoMsg {
  * more data from a given vstorage node.
  */
 export interface ChildrenAmino {
-  children?: string[];
+  children: string[];
 }
 export interface ChildrenAminoMsg {
   type: '/agoric.vstorage.Children';
@@ -108,7 +108,7 @@ export const Data = {
   },
   toAmino(message: Data): DataAmino {
     const obj: any = {};
-    obj.value = message.value;
+    obj.value = message.value ?? '';
     return obj;
   },
   fromAminoMsg(object: DataAminoMsg): Data {
@@ -192,7 +192,7 @@ export const Children = {
     if (message.children) {
       obj.children = message.children.map(e => e);
     } else {
-      obj.children = [];
+      obj.children = message.children;
     }
     return obj;
   },

@@ -124,14 +124,14 @@ export const Lien = {
     if (message.coins) {
       obj.coins = message.coins.map(e => (e ? Coin.toAmino(e) : undefined));
     } else {
-      obj.coins = [];
+      obj.coins = message.coins;
     }
     if (message.delegated) {
       obj.delegated = message.delegated.map(e =>
         e ? Coin.toAmino(e) : undefined,
       );
     } else {
-      obj.delegated = [];
+      obj.delegated = message.delegated;
     }
     return obj;
   },

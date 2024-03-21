@@ -300,10 +300,13 @@ export const PageRequest = {
   toAmino(message: PageRequest): PageRequestAmino {
     const obj: any = {};
     obj.key = message.key ? base64FromBytes(message.key) : undefined;
-    obj.offset = message.offset ? message.offset.toString() : undefined;
-    obj.limit = message.limit ? message.limit.toString() : undefined;
-    obj.count_total = message.countTotal;
-    obj.reverse = message.reverse;
+    obj.offset =
+      message.offset !== BigInt(0) ? message.offset.toString() : undefined;
+    obj.limit =
+      message.limit !== BigInt(0) ? message.limit.toString() : undefined;
+    obj.count_total =
+      message.countTotal === false ? undefined : message.countTotal;
+    obj.reverse = message.reverse === false ? undefined : message.reverse;
     return obj;
   },
   fromAminoMsg(object: PageRequestAminoMsg): PageRequest {
@@ -411,7 +414,8 @@ export const PageResponse = {
     obj.next_key = message.nextKey
       ? base64FromBytes(message.nextKey)
       : undefined;
-    obj.total = message.total ? message.total.toString() : undefined;
+    obj.total =
+      message.total !== BigInt(0) ? message.total.toString() : undefined;
     return obj;
   },
   fromAminoMsg(object: PageResponseAminoMsg): PageResponse {

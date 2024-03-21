@@ -14,10 +14,10 @@ export interface MsgDeliverInboundProtoMsg {
 }
 /** MsgDeliverInbound defines an SDK message for delivering an eventual send */
 export interface MsgDeliverInboundAmino {
-  messages?: string[];
-  nums?: string[];
-  ack?: string;
-  submitter?: string;
+  messages: string[];
+  nums: string[];
+  ack: string;
+  submitter: string;
 }
 export interface MsgDeliverInboundAminoMsg {
   type: '/agoric.swingset.MsgDeliverInbound';
@@ -64,7 +64,7 @@ export interface MsgWalletActionProtoMsg {
  * message type is typically protected by feegrant budgets.
  */
 export interface MsgWalletActionAmino {
-  owner?: string;
+  owner: string;
   /** The action to perform, as JSON-stringified marshalled data. */
   action?: string;
 }
@@ -115,7 +115,7 @@ export interface MsgWalletSpendActionProtoMsg {
  * typically protected by explicit confirmation by the user.
  */
 export interface MsgWalletSpendActionAmino {
-  owner?: string;
+  owner: string;
   /** The action to perform, as JSON-stringified marshalled data. */
   spend_action?: string;
 }
@@ -159,10 +159,10 @@ export interface MsgProvisionProtoMsg {
 }
 /** MsgProvision defines an SDK message for provisioning a client to the chain */
 export interface MsgProvisionAmino {
-  nickname?: string;
-  address?: string;
-  power_flags?: string[];
-  submitter?: string;
+  nickname: string;
+  address: string;
+  power_flags: string[];
+  submitter: string;
 }
 export interface MsgProvisionAminoMsg {
   type: '/agoric.swingset.MsgProvision';
@@ -207,15 +207,15 @@ export interface MsgInstallBundleProtoMsg {
 }
 /** MsgInstallBundle carries a signed bundle to SwingSet. */
 export interface MsgInstallBundleAmino {
-  bundle?: string;
-  submitter?: string;
+  bundle: string;
+  submitter: string;
   /**
    * Either bundle or compressed_bundle will be set.
    * Default compression algorithm is gzip.
    */
-  compressed_bundle?: string;
+  compressed_bundle: string;
   /** Size in bytes of uncompression of compressed_bundle. */
-  uncompressed_size?: string;
+  uncompressed_size: string;
 }
 export interface MsgInstallBundleAminoMsg {
   type: '/agoric.swingset.MsgInstallBundle';
@@ -377,17 +377,15 @@ export const MsgDeliverInbound = {
     if (message.messages) {
       obj.messages = message.messages.map(e => e);
     } else {
-      obj.messages = [];
+      obj.messages = message.messages;
     }
     if (message.nums) {
       obj.nums = message.nums.map(e => e.toString());
     } else {
-      obj.nums = [];
+      obj.nums = message.nums;
     }
-    obj.ack = message.ack ? message.ack.toString() : undefined;
-    obj.submitter = message.submitter
-      ? base64FromBytes(message.submitter)
-      : undefined;
+    obj.ack = message.ack ? message.ack.toString() : '0';
+    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
     return obj;
   },
   fromAminoMsg(object: MsgDeliverInboundAminoMsg): MsgDeliverInbound {
@@ -554,8 +552,8 @@ export const MsgWalletAction = {
   },
   toAmino(message: MsgWalletAction): MsgWalletActionAmino {
     const obj: any = {};
-    obj.owner = message.owner ? base64FromBytes(message.owner) : undefined;
-    obj.action = message.action;
+    obj.owner = message.owner ? base64FromBytes(message.owner) : '';
+    obj.action = message.action === '' ? undefined : message.action;
     return obj;
   },
   fromAminoMsg(object: MsgWalletActionAminoMsg): MsgWalletAction {
@@ -724,8 +722,9 @@ export const MsgWalletSpendAction = {
   },
   toAmino(message: MsgWalletSpendAction): MsgWalletSpendActionAmino {
     const obj: any = {};
-    obj.owner = message.owner ? base64FromBytes(message.owner) : undefined;
-    obj.spend_action = message.spendAction;
+    obj.owner = message.owner ? base64FromBytes(message.owner) : '';
+    obj.spend_action =
+      message.spendAction === '' ? undefined : message.spendAction;
     return obj;
   },
   fromAminoMsg(object: MsgWalletSpendActionAminoMsg): MsgWalletSpendAction {
@@ -929,18 +928,14 @@ export const MsgProvision = {
   },
   toAmino(message: MsgProvision): MsgProvisionAmino {
     const obj: any = {};
-    obj.nickname = message.nickname;
-    obj.address = message.address
-      ? base64FromBytes(message.address)
-      : undefined;
+    obj.nickname = message.nickname ?? '';
+    obj.address = message.address ? base64FromBytes(message.address) : '';
     if (message.powerFlags) {
       obj.power_flags = message.powerFlags.map(e => e);
     } else {
-      obj.power_flags = [];
+      obj.power_flags = message.powerFlags;
     }
-    obj.submitter = message.submitter
-      ? base64FromBytes(message.submitter)
-      : undefined;
+    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
     return obj;
   },
   fromAminoMsg(object: MsgProvisionAminoMsg): MsgProvision {
@@ -1146,16 +1141,14 @@ export const MsgInstallBundle = {
   },
   toAmino(message: MsgInstallBundle): MsgInstallBundleAmino {
     const obj: any = {};
-    obj.bundle = message.bundle;
-    obj.submitter = message.submitter
-      ? base64FromBytes(message.submitter)
-      : undefined;
+    obj.bundle = message.bundle ?? '';
+    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
     obj.compressed_bundle = message.compressedBundle
       ? base64FromBytes(message.compressedBundle)
-      : undefined;
+      : '';
     obj.uncompressed_size = message.uncompressedSize
       ? message.uncompressedSize.toString()
-      : undefined;
+      : '0';
     return obj;
   },
   fromAminoMsg(object: MsgInstallBundleAminoMsg): MsgInstallBundle {
