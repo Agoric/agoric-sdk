@@ -27,4 +27,5 @@ export const copyBagMathHelpers = harden({
   doIsEqual: keyEQ,
   doAdd: bagUnion,
   doSubtract: bagDisjointSubtract,
+  doFrugalSplit: (_totalValue, _valuePattern) => undefined,
 });
