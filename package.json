@@ -38,7 +38,7 @@
     "typescript-eslint": "^7.3.1"
   },
   "resolutions": {
-    "**/protobufjs": "^7.2.4",
+    "**/protobufjs": "^7.2.6",
     "**/@typescript-eslint/typescript-estree": "^7.2.0"
   },
   "engines": {
