@@ -220,39 +220,49 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			`"This is a JSON memo"`,
 		)
 
+		tokenAmt, ok := sdk.NewIntFromString(transfer.Amount)
+		s.Require().True(ok)
+		token := sdk.NewCoin(transfer.Denom, tokenAmt)
+
+		// Whale up.
+		coins := sdk.NewCoins(sdk.NewCoin(transfer.Denom, tokenAmt.Mul(sdk.NewInt(100))))
+		err := s.GetApp(s.chainA).BankKeeper.MintCoins(s.chainA.GetContext(), ibctransfertypes.ModuleName, coins)
+		s.Require().NoError(err)
+		err = s.GetApp(s.chainA).BankKeeper.SendCoinsFromModuleToAccount(s.chainA.GetContext(), ibctransfertypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
+		s.Require().NoError(err)
+
 		timeoutHeight := s.chainA.GetTimeoutHeight()
-		transferPacket := channeltypes.NewPacket(transfer.GetBytes(), 0, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
+		packet := channeltypes.NewPacket(transfer.GetBytes(), 0, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
 
 		// send a transfer packet from the VM
-		sequence, err := s.GetApp(s.chainA).VtransferKeeper.ReceiveSendPacket(s.chainA.GetContext(), transferPacket)
+		imt := ibctransfertypes.MsgTransfer{
+			SourcePort:       packet.SourcePort,
+			SourceChannel:    packet.SourceChannel,
+			Memo:             transfer.Memo,
+			Token:            token,
+			Sender:           s.chainA.SenderAccount.GetAddress().String(),
+			Receiver:         s.chainB.SenderAccount.GetAddress().String(),
+			TimeoutHeight:    packet.TimeoutHeight,
+			TimeoutTimestamp: packet.TimeoutTimestamp,
+		}
+		imr, err := s.GetApp(s.chainA).TransferKeeper.Transfer(s.chainA.GetContext(), &imt)
 		s.Require().NoError(err)
 
 		// Save the allocated sequence number.
-		transferPacket.Sequence = sequence
+		packet.Sequence = imr.Sequence
 
 		// commit the send on chainA
 		s.coordinator.CommitBlock(s.chainA)
 
-		// Update Clients
-		err = path.EndpointA.UpdateClient()
-		s.Require().NoError(err)
+		// Update receiving client
 		err = path.EndpointB.UpdateClient()
 		s.Require().NoError(err)
 
 		// receive the transfer packet
-		packet := channeltypes.NewPacket(transfer.GetBytes(), sequence, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
 		err = path.EndpointB.RecvPacket(packet)
 		s.Require().NoError(err)
-		// commit the receive on chainB
-		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
-		// Update Clients
-		err = path.EndpointA.UpdateClient()
-		s.Require().NoError(err)
-		err = path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
-
 		{
 			qvalues, err := s.PeekQueue(s.chainA, "actionQueue")
 			s.Require().NoError(err)
@@ -271,16 +281,16 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 					Action: &vibckeeper.WriteAcknowledgementEvent{
 						ActionHeader: &vm.ActionHeader{
 							Type:        "VTRANSFER_IBC_EVENT",
-							BlockHeight: 20,
-							BlockTime:   1577923380,
+							BlockHeight: 19,
+							BlockTime:   1577923370,
 						},
 						Event:           "writeAcknowledgement",
 						Target:          s.chainB.SenderAccount.GetAddress().String(),
-						Packet:          transferPacket,
+						Packet:          packet,
 						Acknowledgement: ack.GetResult(),
 					},
 					Context: swingsettypes.ActionContext{
-						BlockHeight: 20,
+						BlockHeight: 19,
 						// TxHash is filled in below
 						MsgIdx: 0,
 					},
@@ -289,8 +299,8 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 					Action: &vbank.VbankBalanceUpdate{
 						ActionHeader: &vm.ActionHeader{
 							Type:        "VBANK_BALANCE_UPDATE",
-							BlockHeight: 20,
-							BlockTime:   1577923380,
+							BlockHeight: 19,
+							BlockTime:   1577923370,
 						},
 						Nonce: 1,
 						Updated: []vbank.VbankSingleBalanceUpdate{
@@ -302,7 +312,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 						},
 					},
 					Context: swingsettypes.ActionContext{
-						BlockHeight: 20,
+						BlockHeight: 19,
 						TxHash:      "x/vbank",
 						MsgIdx:      0,
 					},
@@ -311,26 +321,35 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 
 			s.checkQueue(qvalues, expected)
 
+			s.coordinator.CommitBlock(s.chainB)
+
 			// write out the acknowledgement verbatim from the transfer app,
 			// one block later.
-			s.coordinator.CommitBlock(s.chainA, s.chainB)
 			err = s.GetApp(s.chainB).VtransferKeeper.ReceiveWriteAcknowledgement(s.chainB.GetContext(), packet, ack)
 			s.Require().NoError(err)
+
+			s.coordinator.CommitBlock(s.chainB)
 		}
 
 		// acknowledge the transfer packet
 		ack := s.chainB.GetAcknowledgement(packet)
 		s.Require().NotNil(ack)
-		err = path.EndpointB.AcknowledgePacket(packet, ack)
-		s.Require().NoError(err)
 
-		s.coordinator.CommitBlock(s.chainA, s.chainB)
-
-		// Update Clients
+		// Update Client
 		err = path.EndpointA.UpdateClient()
 		s.Require().NoError(err)
-		err = path.EndpointB.UpdateClient()
+
+		// FIXME: Should this be the way to propagate the acknowledgement?
+		// failed to execute message; message index: 0: acknowledge packet verification
+		// failed: failed packet acknowledgement verification for client (07-tendermint-0):
+		// chained membership proof failed to verify membership of value:
+		// 63AEBE4D744BA3766038D6F222B20F7F67ED498CB5AB4C5AF95E7EEF96A62B61 in subroot
+		// 4C4CADA3C15E8E4DCFBCE33E49E6F779ACC612543F77C0A6671C3640DC946BE5 at index 0.
+		// Please ensure the path and value are both correct.: invalid proof
+		err = path.EndpointA.AcknowledgePacket(packet, ack)
+		// err = path.EndpointB.AcknowledgePacket(packet, ack)
 		s.Require().NoError(err)
+
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 		{
