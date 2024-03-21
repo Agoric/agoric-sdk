@@ -1000,7 +1000,7 @@
   resolved "https://registry.yarnpkg.com/@babel/regjsgen/-/regjsgen-0.8.0.tgz#f0ba69b075e1f05fb2825b7fad991e7adbb18310"
   integrity sha512-x/rqGMdzj+fWZvCOYForTghzbtqPDZ5gPwaoNGHdgDfF2QA/XZbCBp4Moo5scrkAMPhB7z26XM/AaHuIJdgauA==
 
-"@babel/runtime@^7.11.2", "@babel/runtime@^7.18.9", "@babel/runtime@^7.19.0", "@babel/runtime@^7.20.7", "@babel/runtime@^7.8.4":
+"@babel/runtime@^7.11.2", "@babel/runtime@^7.18.9", "@babel/runtime@^7.20.7", "@babel/runtime@^7.8.4":
   version "7.23.9"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.23.9.tgz#47791a15e4603bb5f905bc0753801cf21d6345f7"
   integrity sha512-0CX6F+BI2s9dkUqr08KFrAIZgNFj75rdBU/DjCyYLIaV/quFjkk6T+EJ2LkZHyZTbEV4L5p97mNkUsHl2wLFAw==
@@ -6606,7 +6606,7 @@ functions-have-names@^1.2.3:
   resolved "https://registry.yarnpkg.com/functions-have-names/-/functions-have-names-1.2.3.tgz#0404fe4ee2ba2f607f0e0ec3c80bae994133b834"
   integrity sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==
 
-fuzzy@0.1.3, fuzzy@^0.1.3:
+fuzzy@0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/fuzzy/-/fuzzy-0.1.3.tgz#4c76ec2ff0ac1a36a9dccf9a00df8623078d4ed8"
   integrity sha512-/gZffu4ykarLrCiP3Ygsa86UAo1E5vEVlvTrpkKywXSbP9Xhln3oSp9QSV57gEq3JFFpGJ4GZ+5zdEp3FcUh4w==
@@ -6790,7 +6790,7 @@ glob@8.0.3:
     minimatch "^5.0.1"
     once "^1.3.0"
 
-glob@^10.0.0, glob@^10.2.2, glob@^10.3.3, glob@^10.3.7:
+glob@^10.0.0, glob@^10.2.2, glob@^10.3.7:
   version "10.3.10"
   resolved "https://registry.yarnpkg.com/glob/-/glob-10.3.10.tgz#0351ebb809fd187fe421ab96af83d3a70715df4b"
   integrity sha512-fa46+tv1Ak0UPK1TOy/pZrIybNNt4HCv7SDzwyfiOZkvZLEbjsZkJBPtDHVshZjbecAoAGSC20MjLDG/qr679g==
@@ -7284,7 +7284,7 @@ inquirer@^8.2.2, inquirer@^8.2.4:
     through "^2.3.6"
     wrap-ansi "^7.0.0"
 
-inquirerer@0.1.3, inquirerer@^0.1.3:
+inquirerer@0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/inquirerer/-/inquirerer-0.1.3.tgz#ecf91dc672b3bf45211d7f64bf5e8d5e171fd2ad"
   integrity sha512-yGgLUOqPxTsINBjZNZeLi3cv2zgxXtw9feaAOSJf2j6AqIT5Uxs5ZOqOrfAf+xP65Sicla1FD3iDxa3D6TsCAQ==
@@ -8757,7 +8757,7 @@ minimist-options@4.1.0:
     is-plain-obj "^1.1.0"
     kind-of "^6.0.3"
 
-minimist@1, minimist@1.2.8, minimist@^1.2.0, minimist@^1.2.3, minimist@^1.2.5, minimist@^1.2.6, minimist@^1.2.8:
+minimist@1, minimist@1.2.8, minimist@^1.2.0, minimist@^1.2.3, minimist@^1.2.5, minimist@^1.2.6:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
@@ -10049,19 +10049,6 @@ proxy-from-env@^1.1.0:
   resolved "https://registry.yarnpkg.com/proxy-from-env/-/proxy-from-env-1.1.0.tgz#e102f16ca355424865755d2c9e8ea4f24d58c3e2"
   integrity sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==
 
-publish-scripts@0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/publish-scripts/-/publish-scripts-0.1.0.tgz#544af8dfb8ebafbd0e9541d5200e8618d85584dd"
-  integrity sha512-cF4AYXPUKbU6Cw1PWY4b1CCl0+tsM13WdppqoBbD37lNvXf8vX6jgie/JDLH3jlSHDNCYuOolqLVMmdNlWWRjQ==
-  dependencies:
-    "@babel/runtime" "^7.19.0"
-    fuzzy "^0.1.3"
-    glob "^10.3.3"
-    inquirerer "^0.1.3"
-    minimist "^1.2.8"
-    mkdirp "^3.0.1"
-    rimraf "^5.0.1"
-
 pump@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/pump/-/pump-3.0.0.tgz#b4a2116815bde2f4e1ea602354e8c75565107a64"
@@ -10418,7 +10405,7 @@ rimraf@^2.6.3, rimraf@~2.6.2:
   dependencies:
     glob "^7.1.3"
 
-rimraf@^5.0.0, rimraf@^5.0.1, rimraf@^5.0.5:
+rimraf@^5.0.0, rimraf@^5.0.5:
   version "5.0.5"
   resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-5.0.5.tgz#9be65d2d6e683447d2e9013da2bf451139a61ccf"
   integrity sha512-CqDakW+hMe/Bz202FPEymy68P+G50RfMQK+Qo5YUqc9SPipvbGjCGKd0RSKEelbsfQuw3g5NZDSrlZZAJurH1A==
