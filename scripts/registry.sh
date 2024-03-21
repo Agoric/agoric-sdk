@@ -100,12 +100,14 @@ integrationTest() {
     persistVar AGORIC_CMD "[\"$HOME/bin/agoric\"]"
     ;;
   */npm)
-    npm install -g "agoric@$DISTTAG"
+    # legacy-peer-deps to make npm 7+ work like <7:
+    # and yarn: https://github.com/yarnpkg/yarn/issues/1503#issuecomment-950095392
+    npm install --legacy-peer-deps -g "agoric@$DISTTAG"
     persistVar AGORIC_CMD '["agoric"]'
     ;;
   */npx)
-    # Install on demand.
-    persistVar AGORIC_CMD "[\"npx\",\"agoric@$DISTTAG\"]"
+    # Install on demand. "legacy-peer-deps" like above.
+    persistVar AGORIC_CMD "[\"npx\",\"--legacy-peer-deps\",\"agoric@$DISTTAG\"]"
     ;;
   *)
     yarn global add "agoric@$DISTTAG"
