@@ -71,14 +71,16 @@ telescope({
         keepCase: false,
       },
       typingsFormat: {
-        duration: 'duration',
-        timestamp: 'date',
-        useExact: false,
         useDeepPartial: false,
-        num64: 'bigint',
-        customTypes: {
-          useCosmosSDKDec: true,
-        },
+
+        // [Defaults]
+        // timestamp: 'date',
+        // duration: 'duration',
+        // num64: 'bigint',
+        // useExact: false,
+        // customTypes: {
+        //   useCosmosSDKDec: true,
+        // },
       },
     },
     aminoEncoding: {
