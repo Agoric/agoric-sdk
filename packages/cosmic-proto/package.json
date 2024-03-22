@@ -50,7 +50,7 @@
   "scripts": {
     "build": "yarn tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
-    "codegen": "yarn protos-update && node scripts/codegen.cjs && yarn prettier --write src",
+    "codegen": "yarn protos-update && node scripts/codegen.cjs",
     "prepare": "npm run build",
     "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
