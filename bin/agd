@@ -28,7 +28,7 @@ done
 
 # diffsha1 stamp_name find_args...
 # executes find(1) with the given arguments and saves the resulting file list,
-# then runs $DIGEST_CMD on the file list, saves the digest to file stamp_name.new,
+# then runs $DIGEST_CMD on the file list, saves the digest to file stamp_name.files,
 # and compares to the saved digest in the file stamp_name.
 # Returns success (0) if it cannot write to the temporary files, if the find results are empty,
 # or if the computed digest is the same as the saved digest.
@@ -36,19 +36,19 @@ done
 function diffsha1() {
   stamp=$1
   shift
-  find ${1+"$@"} > "$stamp.new.$$"
-  if test ! -s "$stamp.new.$$"; then
+  find ${1+"$@"} > "$stamp.files.$$"
+  if test ! -s "$stamp.files.$$"; then
     # echo "No new dependencies found for $stamp" 1>&2
-    rm -f "$stamp.new.$$"
+    rm -f "$stamp.files.$$"
     return 0
   fi
-  xargs $DIGEST_CMD <"$stamp.new.$$" | sort +1 > "$stamp.new" || true
-  rm -f "$stamp.new.$$"
-  if test ! -s "$stamp.new"; then
-    rm -f "$stamp.new"
+  xargs $DIGEST_CMD <"$stamp.files.$$" | sort +1 > "$stamp.files" || true
+  rm -f "$stamp.files.$$"
+  if test ! -s "$stamp.files"; then
+    rm -f "$stamp.files"
     return 0
   fi
-  diff -u "$stamp" "$stamp.new" || return 1
+  diff -u "$stamp" "$stamp.files" || return 1
   return 0
 }
 
@@ -177,8 +177,8 @@ ${NO_BUILD:-false} || (
       fi
     )
   }
-  test -f "$sum" || mv -f "$sum.new" "$sum"
-  rm -f "$sum.new"
+  test -f "$sum" || mv -f "$sum.files" "$sum"
+  rm -f "$sum.files"
 
   if $need_nodejs; then
     lazy_yarn() {
@@ -204,9 +204,9 @@ ${NO_BUILD:-false} || (
     diffsha1 "$sum" "${files[@]}" || { echo "$sum has changed"; $do_not_build; } || {
       rm -f "$sum" "$STAMPS/yarn-built"
       lazy_yarn install
-      mv "$sum.new" "$sum"
+      mv "$sum.files" "$sum"
     }
-    rm -f "$sum.new"
+    rm -f "$sum.files"
 
     stamp=$STAMPS/yarn-built
     test -e "$stamp" || {
