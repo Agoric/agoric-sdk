@@ -4,7 +4,6 @@ import {
   getBaggage,
   annihilate,
   nextLife,
-  asyncFlowVerbose,
 } from '../prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
@@ -58,12 +57,9 @@ const firstLogLen = 7;
  * @param {any} t
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@agoric/vow').VowTools} vowTools
- * @param {boolean} [showOnConsole]
  */
-const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
-  if (showOnConsole) {
-    console.log('firstPlay started');
-  }
+const testFirstPlay = async (t, zone, vowTools) => {
+  t.log('firstPlay started');
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
@@ -75,14 +71,12 @@ const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
   const hOrch7 = zone.makeOnce('hOrch7', () => makeOrchestra(7, v2, r2));
 
   // purposely violate rule that guestMethod is closed.
-  const { promise: promiseTestDone, resolve: endTest } = makePromiseKit();
+  const { promise: promiseStep, resolve: resolveStep } = makePromiseKit();
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
       t.is(this, 'context');
-      if (showOnConsole) {
-        console.log('  firstPlay about to await gP');
-      }
+      t.log('  firstPlay about to await gP');
       await gP;
       const g2 = gOrch7.vow();
       const prod = gOrch7.scale(3);
@@ -96,11 +90,10 @@ const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
       }
       t.is(gErr.name, 'TypeError');
 
-      endTest(true);
-      if (showOnConsole) {
-        console.log('  firstPlay to hang awaiting g2');
-      }
-      await g2; // awaiting a promise that won't be resolved until next turn
+      resolveStep(true);
+      t.log('  firstPlay to hang awaiting g2');
+      // awaiting a promise that won't be resolved until next incarnation
+      await g2;
       t.fail('must not reach here in first incarnation');
     },
   };
@@ -117,7 +110,7 @@ const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
   const flow = adminAsyncFlow.getFlowForOutcomeVow(outcomeV);
   t.is(passStyleOf(flow), 'remotable');
 
-  await promiseTestDone;
+  await promiseStep;
 
   const logDump = flow.dump();
   t.is(logDump.length, firstLogLen);
@@ -134,22 +127,17 @@ const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
       TypeError('Cannot mix BigInt and other types, use explicit conversions'),
     ],
   ]);
-  if (showOnConsole) {
-    console.log('firstPlay done');
-  }
-  return promiseTestDone;
+  t.log('firstPlay done');
+  return promiseStep;
 };
 
 /**
  * @param {any} t
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@agoric/vow').VowTools} vowTools
- * @param {boolean} [showOnConsole]
  */
-const testBadReplay = async (t, zone, vowTools, showOnConsole = false) => {
-  if (showOnConsole) {
-    console.log('badReplay started');
-  }
+const testBadReplay = async (t, zone, vowTools) => {
+  t.log('badReplay started');
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
@@ -159,15 +147,13 @@ const testBadReplay = async (t, zone, vowTools, showOnConsole = false) => {
     zone.makeOnce('hOrch7', () => Fail`hOrch7 expected`)
   );
   // purposely violate rule that guestMethod is closed.
-  const { promise: promiseTestDone, resolve: endTest } = makePromiseKit();
+  const { promise: promiseStep, resolve: resolveStep } = makePromiseKit();
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
       t.is(this, 'context');
-      if (showOnConsole) {
-        console.log('  badReplay about to await gP');
-      }
-      endTest(true);
+      t.log('  badReplay about to await gP');
+      resolveStep(true);
       await gP;
       const g2 = gOrch7.vow();
       // This is a replay error
@@ -176,10 +162,9 @@ const testBadReplay = async (t, zone, vowTools, showOnConsole = false) => {
       t.is(prod, undefined);
       t.is(gOrch7.scale(9n), undefined);
 
-      if (showOnConsole) {
-        console.log('  badReplay about to await g2');
-      }
-      await g2; // because of the replay failure, g2 should not settle
+      t.log('  badReplay about to await g2');
+      // because of the replay failure, g2 should not settle in this incarnatuon
+      await g2;
       t.fail('badReplay must not reach here');
     },
   };
@@ -194,6 +179,8 @@ const testBadReplay = async (t, zone, vowTools, showOnConsole = false) => {
     zone.makeOnce('outcomeV', () => Fail`outcomeV expected`)
   );
 
+  // This unblocks `await g2;` but only after the replay failure is fixed in
+  // the next incarnation.
   hOrch7.resolve('y');
   // TODO I shouldn't need to do this.
   await adminAsyncFlow.wakeAll();
@@ -213,40 +200,33 @@ const testBadReplay = async (t, zone, vowTools, showOnConsole = false) => {
     makeCopyMap([[flow, replayProblem]]),
   );
 
-  if (showOnConsole) {
-    console.log('  badReplay failure', flow.getOptFatalProblem().message);
-    console.log('badReplay done', await promiseTestDone);
-  }
-  return promiseTestDone;
+  t.log('  badReplay failures', flow.getOptFatalProblem());
+  t.log('badReplay done', await promiseStep);
+  return promiseStep;
 };
 
 /**
  * @param {any} t
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@agoric/vow').VowTools} vowTools
- * @param {boolean} [showOnConsole]
  */
-const testGoodReplay = async (t, zone, vowTools, showOnConsole = false) => {
-  if (showOnConsole) {
-    console.log('goodReplay started');
-  }
+const testGoodReplay = async (t, zone, vowTools) => {
+  t.log('goodReplay started');
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
-  prepareOrchestra(zone);
+  prepareOrchestra(zone, 2); // Note change in new behavior
   const { when } = vowTools;
   const hOrch7 = /** @type {Orchestra} */ (
     zone.makeOnce('hOrch7', () => Fail`hOrch7 expected`)
   );
   // purposely violate rule that guestMethod is closed.
-  const { promise: promiseTestDone, resolve: endTest } = makePromiseKit();
+  const { promise: promiseStep, resolve: resolveStep } = makePromiseKit();
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
       t.is(this, 'context');
-      if (showOnConsole) {
-        console.log('  goodReplay about to await gP');
-      }
+      t.log('  goodReplay about to await gP');
       await gP;
       const g2 = gOrch7.vow();
       const prod = gOrch7.scale(3);
@@ -260,15 +240,14 @@ const testGoodReplay = async (t, zone, vowTools, showOnConsole = false) => {
       }
       t.is(gErr.name, 'TypeError');
 
-      endTest(true);
-      if (showOnConsole) {
-        console.log('  goodReplay about to await g2');
-      }
-      await g2; // awaiting a promise that won't be resolved until this turn
-      if (showOnConsole) {
-        console.log('  goodReplay woke up!');
-      }
-      endTest('done');
+      resolveStep(true);
+      t.log('  goodReplay about to await g2');
+      // awaiting a promise that won't be resolved until this incarnation
+      await g2;
+      t.log('  goodReplay woke up!');
+      const prod2 = gOrch7.scale(3);
+      // same question. different answer
+      t.is(prod2, 42);
     },
   };
 
@@ -282,7 +261,6 @@ const testGoodReplay = async (t, zone, vowTools, showOnConsole = false) => {
     zone.makeOnce('outcomeV', () => Fail`outcomeV expected`)
   );
 
-  hOrch7.resolve('y');
   // TODO I shouldn't need to do this.
   await adminAsyncFlow.wakeAll();
   const v2 = hOrch7.vow();
@@ -291,41 +269,48 @@ const testGoodReplay = async (t, zone, vowTools, showOnConsole = false) => {
   const flow = adminAsyncFlow.getFlowForOutcomeVow(outcomeV);
   t.is(passStyleOf(flow), 'remotable');
 
-  await promiseTestDone;
+  await promiseStep;
+
+  const { vow: v1 } = zone.makeOnce('v1', () => Fail`v1 expected`);
 
   const logDump = flow.dump();
-  t.is(logDump.length, firstLogLen + 1);
-  t.deepEqual(logDump.slice(firstLogLen), [
-    // comment to keep on a separate line
+  t.is(logDump.length, firstLogLen + 3);
+  t.deepEqual(logDump, [
+    ['doFulfill', v1, 'x'],
+    ['checkCall', hOrch7, 'vow', [], 1],
+    ['doReturn', 1, v2],
+    ['checkCall', hOrch7, 'scale', [3], 3],
+    ['doReturn', 3, 21],
+    ['checkCall', hOrch7, 'scale', [9n], 5],
+    [
+      'doThrow',
+      5,
+      TypeError('Cannot mix BigInt and other types, use explicit conversions'),
+    ],
+    // new stuff
     ['doFulfill', v2, 'y'],
+    ['checkCall', hOrch7, 'scale', [3], firstLogLen + 1],
+    // same question. different answer
+    ['doReturn', firstLogLen + 1, 42],
   ]);
 
   t.is(await when(outcomeV), undefined);
   t.deepEqual(flow.dump(), []);
 
-  if (showOnConsole) {
-    console.log('goodReplay done', await promiseTestDone);
-  }
+  t.log('goodReplay done', await promiseStep);
 };
 
 /**
  * @param {any} t
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@agoric/vow').VowTools} vowTools
- * @param {boolean} [showOnConsole]
  */
-const testAfterPlay = async (t, zone, vowTools, showOnConsole = false) => {
-  if (showOnConsole) {
-    console.log('testAfterPlay started');
-  }
+const testAfterPlay = async (t, zone, vowTools) => {
+  t.log('testAfterPlay started');
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
   prepareOrchestra(zone);
-  const { when } = vowTools;
-  const hOrch7 = /** @type {Orchestra} */ (
-    zone.makeOnce('hOrch7', () => Fail`hOrch7 expected`)
-  );
 
   const { guestMethod } = {
     async guestMethod(_gOrch7, _gP) {
@@ -343,23 +328,18 @@ const testAfterPlay = async (t, zone, vowTools, showOnConsole = false) => {
     zone.makeOnce('outcomeV', () => Fail`outcomeV expected`)
   );
 
-  hOrch7.resolve('y');
-  t.is(await when(hOrch7.vow()), 'y');
-
   const flow = adminAsyncFlow.getFlowForOutcomeVow(outcomeV);
   t.is(passStyleOf(flow), 'remotable');
 
   t.deepEqual(flow.dump(), []);
 
-  if (showOnConsole) {
-    console.log('testAfterDoneReplay done');
-  }
+  t.log('testAfterDoneReplay done');
 };
 
 await test.serial('test heap async-flow', async t => {
   const zone = makeHeapZone('heapRoot');
   const vowTools = prepareVowTools(zone);
-  return testFirstPlay(t, zone, vowTools, asyncFlowVerbose());
+  return testFirstPlay(t, zone, vowTools);
 });
 
 await test.serial('test virtual async-flow', async t => {
@@ -396,7 +376,7 @@ await test.serial('test durable async-flow', async t => {
   nextLife();
   const zone4 = makeDurableZone(getBaggage(), 'durableRoot');
   const vowTools4 = prepareWatchableVowTools(zone4);
-  await testAfterPlay(t, zone4, vowTools4, asyncFlowVerbose());
+  await testAfterPlay(t, zone4, vowTools4);
 
   await eventLoopIteration();
 });

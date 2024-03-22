@@ -83,9 +83,7 @@ const testConvert = (t, zone, { makeVowKit }, showOnConsole = false) => {
   t.is(gErr2.name, 'URIError');
 
   if (showOnConsole) {
-    // To see the annotation chain. Once we're synced with the next ses-ava,
-    // change this to a t.log, so we will see the annotation chain in context.
-    console.log('gErr2', gErr2);
+    t.log('gErr2', gErr2);
   }
 };
 

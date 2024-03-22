@@ -86,7 +86,7 @@ const testEquate = (t, zone, { makeVowKit }, showOnConsole = false) => {
   if (showOnConsole) {
     // To see the annotation chain. Once we're synced with the next ses-ava,
     // change this to a t.log, so we will see the annotation chain in context.
-    console.log('hErr1', hErr1);
+    t.log('hErr1', hErr1);
   }
 };
 
