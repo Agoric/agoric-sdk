@@ -46,19 +46,58 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
 }
 
-func SetupAgoricTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	db := dbm.NewMemDB()
-	encCdc := app.MakeEncodingConfig()
-	controller := func(ctx context.Context, needReply bool, str string) (string, error) {
-		// fmt.Printf("controller got: %s\n", str)
-		// fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		// FIXME: Unmarshal JSON and reply to the upcall.
-		jsonReply := `true`
-		return jsonReply, nil
+type TestingAppMaker func() (ibctesting.TestingApp, map[string]json.RawMessage)
+
+func SetupAgoricTestingApp(instance int) TestingAppMaker {
+	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
+		db := dbm.NewMemDB()
+		encCdc := app.MakeEncodingConfig()
+		controller := func(ctx context.Context, needReply bool, str string) (string, error) {
+			// fmt.Printf("controller got: %s\n", str)
+			// fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
+			// FIXME: Unmarshal JSON and reply to the upcall.
+			jsonReply := `true`
+			return jsonReply, nil
+		}
+		appd := app.NewAgoricApp(controller, log.TestingLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+		genesisState := app.NewDefaultGenesisState()
+		baseSequence := 1000 * (instance + 1)
+		genesisState["ibc"] = json.RawMessage(fmt.Sprintf(`
+  {
+		"channel_genesis": {
+			"ack_sequences": [],
+			"acknowledgements": [],
+			"channels": [],
+			"commitments": [],
+			"next_channel_sequence": "%d",
+			"receipts": [],
+			"recv_sequences": [],
+			"send_sequences": []
+		},
+		"client_genesis": {
+			"clients": [],
+			"clients_consensus": [],
+			"clients_metadata": [],
+			"create_localhost": false,
+			"next_client_sequence": "%d",
+			"params": {
+				"allowed_clients": [
+					"06-solomachine",
+					"07-tendermint"
+				]
+			}
+		},
+		"connection_genesis": {
+			"client_connection_paths": [],
+			"connections": [],
+			"next_connection_sequence": "%d",
+			"params": {
+				"max_expected_time_per_block": "30000000000"
+			}
+		}
+	}`, baseSequence+50, baseSequence, baseSequence+10))
+		return appd, genesisState
 	}
-	appd := app.NewAgoricApp(controller, log.TestingLogger(), db, nil, true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
-	gensisState := app.NewDefaultGenesisState()
-	return appd, gensisState
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -70,7 +109,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 	chains := make(map[string]*ibctesting.TestChain)
 	for i := 0; i < 2; i++ {
-		ibctesting.DefaultTestingAppInit = SetupAgoricTestingApp
+		ibctesting.DefaultTestingAppInit = SetupAgoricTestingApp(i)
 
 		// create a chain with the temporary coordinator that we'll later override
 		chainID := ibctesting.GetChainID(i)
@@ -155,8 +194,8 @@ func (s *IntegrationTestSuite) PeekQueue(chain *ibctesting.TestChain, queuePath 
 
 func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
 	path := ibctesting.NewPath(s.chainA, s.chainB)
-	path.EndpointA.ChannelID = "channel-0"
-	path.EndpointB.ChannelID = "channel-0"
+	path.EndpointA.ChannelID = "channel-1050"
+	path.EndpointB.ChannelID = "channel-2050"
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
@@ -171,8 +210,8 @@ func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
 
 func (s *IntegrationTestSuite) SetupContract() *ibctesting.Path {
 	path := ibctesting.NewPath(s.chainA, s.chainB)
-	path.EndpointA.ChannelID = "channel-0"
-	path.EndpointB.ChannelID = "channel-0"
+	path.EndpointA.ChannelID = "channel-1050"
+	path.EndpointB.ChannelID = "channel-2050"
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
@@ -207,7 +246,7 @@ func (s *IntegrationTestSuite) checkQueue(qvalues []string, expected []swingsett
 
 func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 	path := s.NewTransferPath()
-	s.Require().Equal(path.EndpointA.ChannelID, "channel-0")
+	s.Require().Equal(path.EndpointA.ChannelID, "channel-1050")
 
 	ibctransferAddress := authtypes.NewModuleAddress(ibctransfertypes.ModuleName).String()
 	s.Run("OnReceiveTransferToReceiverTarget", func() {
@@ -306,7 +345,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 						Updated: []vbank.VbankSingleBalanceUpdate{
 							{
 								Address: ibctransferAddress,
-								Denom:   "ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518",
+								Denom:   "ibc/606B0C64906F01DE868378A127EAC5C5D243EB4CDA2DE26230B4E42DB4CEC56B",
 								Amount:  "0",
 							},
 						},
@@ -347,6 +386,10 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		// 4C4CADA3C15E8E4DCFBCE33E49E6F779ACC612543F77C0A6671C3640DC946BE5 at index 0.
 		// Please ensure the path and value are both correct.: invalid proof
 		err = path.EndpointA.AcknowledgePacket(packet, ack)
+
+		// This one fails in the way I would expect:
+		// failed to execute message; message index: 0: could not retrieve module from port-id:
+		// capabilities/ports/transfer/channels/channel-1050: capability not found
 		// err = path.EndpointB.AcknowledgePacket(packet, ack)
 		s.Require().NoError(err)
 
