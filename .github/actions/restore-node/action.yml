@@ -150,12 +150,12 @@ runs:
         function diffsha1() {
           stamp=$1
           shift
-          find ${1+"$@"} -exec sha1sum {} \; | sort +1 > "$stamp.files" || true
-          if test ! -s "$stamp.files"; then
+          find ${1+"$@"} -exec sha1sum {} \; | sort +1 > "$stamp.new" || true
+          if test ! -s "$stamp.new"; then
             echo "No new dependencies found for $stamp" 1>&2
             return 0
           fi
-          diff -u "$stamp" "$stamp.files" || return 1
+          diff -u "$stamp" "$stamp.new" || return 1
           return 0
         }
 
@@ -171,9 +171,9 @@ runs:
         mkdir -p "$STAMPS"
         sum="$STAMPS/yarn-installed.sum"
         diffsha1 "$sum" "${files[@]}" || {
-          mv "$sum.files" "$sum"
+          mv "$sum.new" "$sum"
         }
-        rm -f "$sum.files"
+        rm -f "$sum.new"
 
         if test -e ~/endo; then
           # Stage the redirected `yarn install` consequences.
