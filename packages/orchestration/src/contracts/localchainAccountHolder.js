@@ -1,5 +1,7 @@
 // @ts-check
 /** @file Use-object for the owner of a localchain account */
+import { typedJson } from '@agoric/cosmic-proto/dist/helpers.js';
+import { Coin } from '@agoric/cosmic-proto/dist/codegen/cosmos/base/v1beta1/coin.js';
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -113,10 +115,10 @@ export const prepareAccountHolder = (baggage, makeRecorderKit, zcf) => {
 
           // FIXME get values from proposal or args
           // FIXME brand handling and amount scaling
-          const amount = {
+          const amount = Coin.fromJSON({
             amount: ertpAmount.value,
             denom: 'ubld',
-          };
+          });
 
           return zcf.makeInvitation(async seat => {
             // TODO should it allow delegating more BLD?
@@ -126,12 +128,11 @@ export const prepareAccountHolder = (baggage, makeRecorderKit, zcf) => {
             const delegatorAddress = await E(lca).getAddress();
             trace('delegatorAddress', delegatorAddress);
             const result = await E(lca).executeTx([
-              {
-                '@type': '/cosmos.staking.v1beta1.MsgDelegate',
+              typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
                 amount,
                 validatorAddress,
                 delegatorAddress,
-              },
+              }),
             ]);
             trace('got result', result);
             return result;
