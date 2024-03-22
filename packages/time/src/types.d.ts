@@ -236,9 +236,9 @@ export interface TimerRepeater {
  * or 5 minutes to a half hour, but it makes no sense to add 3pm and 5pm.
  * Subtracting two Timestamps does produce a useful difference.
  *
- * The types also prevent you from accidentally combining time values from
- * different TimerServices. If some chains track time in blocks, while others
- * follow wall clock time, using the correct types means you don't have to worry
+ * The brands prevent you from accidentally combining time values from different
+ * TimerServices. If some chains track time in blocks, while others
+ * follow wall clock time, using the correct brands means you don't have to worry
  * about timezones or how time is represented on a particular chain. This also
  * makes it possible to schedule events according to the time honored by
  * different chains.
