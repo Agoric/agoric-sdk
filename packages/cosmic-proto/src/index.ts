@@ -17,7 +17,7 @@ export const makeAgoricRegistry = () => {
 };
 
 /**
- * @see {link https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/any.proto}
+ * @see {@link https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/any.proto}
  * @param [registry]
  */
 export const makeProtoConverter = (
