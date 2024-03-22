@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
@@ -261,45 +262,31 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 
 		tokenAmt, ok := sdk.NewIntFromString(transfer.Amount)
 		s.Require().True(ok)
-		token := sdk.NewCoin(transfer.Denom, tokenAmt)
 
 		// Whale up.
-		coins := sdk.NewCoins(sdk.NewCoin(transfer.Denom, tokenAmt.Mul(sdk.NewInt(100))))
-		err := s.GetApp(s.chainA).BankKeeper.MintCoins(s.chainA.GetContext(), ibctransfertypes.ModuleName, coins)
+		amount, err := strconv.ParseInt(transfer.Amount, 10, 64)
+		s.Require().NoError(err)
+		coins := sdk.NewCoins(sdk.NewCoin(transfer.Denom, tokenAmt.Mul(sdk.NewInt(amount))))
+		err = s.GetApp(s.chainA).BankKeeper.MintCoins(s.chainA.GetContext(), ibctransfertypes.ModuleName, coins)
 		s.Require().NoError(err)
 		err = s.GetApp(s.chainA).BankKeeper.SendCoinsFromModuleToAccount(s.chainA.GetContext(), ibctransfertypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
 		s.Require().NoError(err)
 
+		// Ensure we have the coins we need
+		balances := s.GetApp(s.chainA).BankKeeper.GetAllBalances(s.chainA.GetContext(), s.chainA.SenderAccount.GetAddress())
+		s.Require().Equal(coins[0], balances[1])
+
 		timeoutHeight := s.chainA.GetTimeoutHeight()
-		packet := channeltypes.NewPacket(transfer.GetBytes(), 0, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
+		packet := channeltypes.NewPacket(transfer.GetBytes(), 1, path.EndpointA.ChannelConfig.PortID, path.EndpointA.ChannelID, path.EndpointB.ChannelConfig.PortID, path.EndpointB.ChannelID, timeoutHeight, 0)
 
-		// send a transfer packet from the VM
-		imt := ibctransfertypes.MsgTransfer{
-			SourcePort:       packet.SourcePort,
-			SourceChannel:    packet.SourceChannel,
-			Memo:             transfer.Memo,
-			Token:            token,
-			Sender:           s.chainA.SenderAccount.GetAddress().String(),
-			Receiver:         s.chainB.SenderAccount.GetAddress().String(),
-			TimeoutHeight:    packet.TimeoutHeight,
-			TimeoutTimestamp: packet.TimeoutTimestamp,
-		}
-		imr, err := s.GetApp(s.chainA).TransferKeeper.Transfer(s.chainA.GetContext(), &imt)
-		s.Require().NoError(err)
+		module, _, err := s.GetApp(s.chainA).GetIBCKeeper().PortKeeper.LookupModuleByPort(s.chainA.GetContext(), "transfer")
+		s.Assert().NoError(err)
+		ibcModuleA, ok := s.GetApp(s.chainB).GetIBCKeeper().Router.GetRoute(module)
+		s.Assert().True(ok)
+		ibcModuleB, ok := s.GetApp(s.chainB).GetIBCKeeper().Router.GetRoute(module)
+		s.Assert().True(ok)
 
-		// Save the allocated sequence number.
-		packet.Sequence = imr.Sequence
-
-		// commit the send on chainA
-		s.coordinator.CommitBlock(s.chainA)
-
-		// Update receiving client
-		err = path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
-
-		// receive the transfer packet
-		err = path.EndpointB.RecvPacket(packet)
-		s.Require().NoError(err)
+		ack := ibcModuleB.OnRecvPacket(s.chainA.GetContext(), packet, s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 		{
@@ -370,10 +357,6 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			s.coordinator.CommitBlock(s.chainB)
 		}
 
-		// acknowledge the transfer packet
-		ack := s.chainB.GetAcknowledgement(packet)
-		s.Require().NotNil(ack)
-
 		// Update Client
 		err = path.EndpointA.UpdateClient()
 		s.Require().NoError(err)
@@ -385,7 +368,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		// 63AEBE4D744BA3766038D6F222B20F7F67ED498CB5AB4C5AF95E7EEF96A62B61 in subroot
 		// 4C4CADA3C15E8E4DCFBCE33E49E6F779ACC612543F77C0A6671C3640DC946BE5 at index 0.
 		// Please ensure the path and value are both correct.: invalid proof
-		err = path.EndpointA.AcknowledgePacket(packet, ack)
+		err = ibcModuleA.OnAcknowledgementPacket(s.chainA.GetContext(), packet, ack.Acknowledgement(), s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
 
 		// This one fails in the way I would expect:
 		// failed to execute message; message index: 0: could not retrieve module from port-id:
