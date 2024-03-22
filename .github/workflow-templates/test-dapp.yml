@@ -31,7 +31,7 @@ jobs:
       # The default is 'main'
       - name: Get the appropriate dapp branch
         id: get-branch
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |

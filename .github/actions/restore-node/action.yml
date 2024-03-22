@@ -45,7 +45,7 @@ runs:
     # the published NPM packages.
     - name: Get the appropriate Endo branch
       id: endo-branch
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         result-encoding: string
         script: |-
