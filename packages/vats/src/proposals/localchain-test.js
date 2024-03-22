@@ -1,6 +1,12 @@
 // @ts-check
 import { E } from '@endo/far';
-import { typedJson } from '@agoric/cosmic-proto';
+import {
+  makeProtoConverter,
+  typedJson,
+  getSigningAgoricClientOptions,
+} from '@agoric/cosmic-proto';
+
+const { registry } = getSigningAgoricClientOptions();
 
 /**
  * @param {BootstrapPowers & {
@@ -26,17 +32,25 @@ export const testLocalChain = async (
     node = E(node).makeChildNode(nodeName);
   }
 
+  const convertProto = makeProtoConverter(registry);
+
   let result;
   try {
     const lca = await E(localchain).createAccount();
     console.info('created account', lca);
     const address = await E(lca).getAddress();
     console.info('address', address);
-    const balances = await E(localchain).query(
-      typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+
+    // test protobuf encoding
+    const proto = registry.encodeAsAny({
+      typeUrl: '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+      value: {
         address,
-      }),
-    );
+        denom: 'ucosm',
+      },
+    });
+    const queryMsg = convertProto(proto);
+    const balances = await E(localchain).query(queryMsg);
     console.info('balances', balances);
 
     await E(lca)
