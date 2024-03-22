@@ -33,7 +33,7 @@ runs:
     - name: set default environment variables
       run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         clean: false
         submodules: 'true'
@@ -78,7 +78,7 @@ runs:
       if: steps.endo-branch.outputs.result != 'NOPE'
     - name: check out Endo if necessary
       id: endo-checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: agoric/endo
         path: ./replacement-endo

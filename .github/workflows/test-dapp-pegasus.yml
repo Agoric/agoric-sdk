@@ -17,7 +17,7 @@ jobs:
         node-version: ['18.x']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
           path: ./agoric-sdk
@@ -54,7 +54,7 @@ jobs:
             return branch;
 
       - name: Check out dapp
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Agoric/dapp-pegasus
           path: dapp

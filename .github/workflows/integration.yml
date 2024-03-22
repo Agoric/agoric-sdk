@@ -47,7 +47,7 @@ jobs:
         cli: [link-cli/yarn, registry/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Reconfigure git to use HTTP authentication
@@ -109,7 +109,7 @@ jobs:
 
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
           path: ./agoric-sdk
@@ -150,7 +150,7 @@ jobs:
             return branch;
 
       - name: Check out loadgen
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Agoric/testnet-load-generator
           path: ./testnet-load-generator
@@ -227,7 +227,7 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           echo "=== After cleanup:"
           df -h
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
@@ -299,7 +299,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Final integration-test-result
         if: always()
         uses: actions/github-script@v6
