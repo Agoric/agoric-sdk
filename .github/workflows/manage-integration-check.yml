@@ -11,7 +11,7 @@ jobs:
       check_id: ${{ steps.create-check.outputs.result }}
     steps:
       - name: Create check
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         id: create-check
         if: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
         with:
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Update check result
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         if: ${{ github.event.action == 'completed' }}
         with:
           result-encoding: string

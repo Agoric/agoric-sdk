@@ -33,7 +33,7 @@ runs:
     - name: set default environment variables
       run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         clean: false
         submodules: 'true'
@@ -45,7 +45,7 @@ runs:
     # the published NPM packages.
     - name: Get the appropriate Endo branch
       id: endo-branch
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         result-encoding: string
         script: |-
@@ -78,7 +78,7 @@ runs:
       if: steps.endo-branch.outputs.result != 'NOPE'
     - name: check out Endo if necessary
       id: endo-checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: agoric/endo
         path: ./replacement-endo
@@ -105,7 +105,7 @@ runs:
     - name: Reconfigure git to use HTTP authentication
       run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
       shell: bash
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
         cache: yarn
@@ -116,7 +116,7 @@ runs:
       id: system-info
     - name: restore built files
       id: built
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ inputs.path }}
         key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
