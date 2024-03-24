@@ -593,18 +593,6 @@ func NewAgoricApp(
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
-	transferApp := transfer.NewAppModule(app.TransferKeeper)
-	var transferStack ibcporttypes.IBCModule
-	transferStack = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = packetforward.NewIBCMiddleware(
-		transferStack,
-		app.PacketForwardKeeper,
-		0, // retries on timeout
-		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
-		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
-	)
-	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
-
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
@@ -622,6 +610,17 @@ func NewAgoricApp(
 	// Don't be confused by the name!  The port router maps *module names* (not
 	// PortIDs) to modules.
 	ibcRouter := ibcporttypes.NewRouter()
+
+	transferApp := transfer.NewAppModule(app.TransferKeeper)
+	var transferStack ibcporttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
+	transferStack = packetforward.NewIBCMiddleware(
+		transferStack,
+		app.PacketForwardKeeper,
+		0, // retries on timeout
+		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	)
 
 	// IBC routes contain (from top to bottom):
 	// - ICA Host
@@ -701,6 +700,7 @@ func NewAgoricApp(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -716,7 +716,6 @@ func NewAgoricApp(
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
 		// This will cause the swingset controller to init if it hadn't yet, passing
@@ -728,6 +727,7 @@ func NewAgoricApp(
 	app.mm.SetOrderEndBlockers(
 		vibc.ModuleName,
 		vbank.ModuleName,
+		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -744,7 +744,6 @@ func NewAgoricApp(
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		// SwingSet needs to be last, for it to capture all the pushed actions.
@@ -764,6 +763,7 @@ func NewAgoricApp(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		paramstypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
@@ -776,7 +776,6 @@ func NewAgoricApp(
 		feegrant.ModuleName,
 		authz.ModuleName,
 		genutiltypes.ModuleName,
-		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
