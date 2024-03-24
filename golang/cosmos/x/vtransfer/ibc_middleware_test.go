@@ -15,7 +15,6 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -143,8 +142,6 @@ func (s *IntegrationTestSuite) SetupTest() {
 			Time:    s.coordinator.CurrentTime.UTC(),
 		}
 
-		s.GetApp(chain).TransferKeeper.SetParams(chain.GetContext(), ibctransfertypes.DefaultParams())
-
 		chain.Coordinator = s.coordinator
 		s.coordinator.CommitBlock(chain)
 
@@ -249,7 +246,6 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 	path := s.NewTransferPath()
 	s.Require().Equal(path.EndpointA.ChannelID, "channel-1050")
 
-	ibctransferAddress := authtypes.NewModuleAddress(ibctransfertypes.ModuleName).String()
 	s.Run("OnReceiveTransferToReceiverTarget", func() {
 		// create a transfer packet
 		transfer := ibctransfertypes.NewFungibleTokenPacketData(
@@ -281,12 +277,17 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 
 		module, _, err := s.GetApp(s.chainA).GetIBCKeeper().PortKeeper.LookupModuleByPort(s.chainA.GetContext(), "transfer")
 		s.Assert().NoError(err)
-		ibcModuleA, ok := s.GetApp(s.chainB).GetIBCKeeper().Router.GetRoute(module)
+		ibcModuleA, ok := s.GetApp(s.chainA).GetIBCKeeper().Router.GetRoute(module)
 		s.Assert().True(ok)
 		ibcModuleB, ok := s.GetApp(s.chainB).GetIBCKeeper().Router.GetRoute(module)
 		s.Assert().True(ok)
 
-		ack := ibcModuleB.OnRecvPacket(s.chainB.GetContext(), packet, s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
+		retAck := ibcModuleB.OnRecvPacket(s.chainB.GetContext(), packet, s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
+		// Should be nil for async processing.
+		s.Require().Nil(retAck)
+
+		// Create success ack
+		ack := channeltypes.NewResultAcknowledgement([]byte(`{"result":"AQ=="}`))
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 		{
@@ -301,14 +302,13 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			qvalues, err := s.PeekQueue(s.chainB, "actionQueue")
 			s.Require().NoError(err)
 
-			ack := channeltypes.NewResultAcknowledgement([]byte(`{"result":"AQ=="}`))
 			expected := []swingsettypes.InboundQueueRecord{
 				{
 					Action: &vibckeeper.WriteAcknowledgementEvent{
 						ActionHeader: &vm.ActionHeader{
 							Type:        "VTRANSFER_IBC_EVENT",
-							BlockHeight: 19,
-							BlockTime:   1577923370,
+							BlockHeight: 18,
+							BlockTime:   1577923355,
 						},
 						Event:           "writeAcknowledgement",
 						Target:          s.chainB.SenderAccount.GetAddress().String(),
@@ -316,31 +316,9 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 						Acknowledgement: ack.GetResult(),
 					},
 					Context: swingsettypes.ActionContext{
-						BlockHeight: 19,
+						BlockHeight: 18,
 						// TxHash is filled in below
 						MsgIdx: 0,
-					},
-				},
-				{
-					Action: &vbank.VbankBalanceUpdate{
-						ActionHeader: &vm.ActionHeader{
-							Type:        "VBANK_BALANCE_UPDATE",
-							BlockHeight: 19,
-							BlockTime:   1577923370,
-						},
-						Nonce: 1,
-						Updated: []vbank.VbankSingleBalanceUpdate{
-							{
-								Address: ibctransferAddress,
-								Denom:   "ibc/606B0C64906F01DE868378A127EAC5C5D243EB4CDA2DE26230B4E42DB4CEC56B",
-								Amount:  "0",
-							},
-						},
-					},
-					Context: swingsettypes.ActionContext{
-						BlockHeight: 19,
-						TxHash:      "x/vbank",
-						MsgIdx:      0,
 					},
 				},
 			}
@@ -361,19 +339,9 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		err = path.EndpointA.UpdateClient()
 		s.Require().NoError(err)
 
-		// FIXME: Should this be the way to propagate the acknowledgement?
-		// failed to execute message; message index: 0: acknowledge packet verification
-		// failed: failed packet acknowledgement verification for client (07-tendermint-0):
-		// chained membership proof failed to verify membership of value:
-		// 63AEBE4D744BA3766038D6F222B20F7F67ED498CB5AB4C5AF95E7EEF96A62B61 in subroot
-		// 4C4CADA3C15E8E4DCFBCE33E49E6F779ACC612543F77C0A6671C3640DC946BE5 at index 0.
-		// Please ensure the path and value are both correct.: invalid proof
-		err = ibcModuleA.OnAcknowledgementPacket(s.chainA.GetContext(), packet, ack.Acknowledgement(), s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
-
-		// This one fails in the way I would expect:
-		// failed to execute message; message index: 0: could not retrieve module from port-id:
-		// capabilities/ports/transfer/channels/channel-1050: capability not found
-		// err = path.EndpointB.AcknowledgePacket(packet, ack)
+		// Assume code ran and we return success ack
+		// NOTE: Do we want this to be the return from the run of the contract?
+		err = ibcModuleA.OnAcknowledgementPacket(s.chainA.GetContext(), packet, []byte(`{"result":"AQ=="}`), s.chainA.SenderAccounts[1].SenderAccount.GetAddress())
 		s.Require().NoError(err)
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
@@ -382,7 +350,27 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			qvalues, err := s.PeekQueue(s.chainA, "actionQueue")
 			s.Require().NoError(err)
 			// FIXME: This should have a queue record for the acknowledgement.
-			expected := []swingsettypes.InboundQueueRecord{}
+			expected := []swingsettypes.InboundQueueRecord{
+				{
+					Action: &vibckeeper.WriteAcknowledgementEvent{
+						ActionHeader: &vm.ActionHeader{
+							Type:        "VTRANSFER_IBC_EVENT",
+							BlockHeight: 20,
+							BlockTime:   1577923380,
+						},
+						Event:           "acknowledgementPacket",
+						Target:          s.chainA.SenderAccount.GetAddress().String(),
+						Packet:          packet,
+						Acknowledgement: ack.GetResult(),
+						Relayer:         s.chainA.SenderAccounts[1].SenderAccount.GetAddress(),
+					},
+					Context: swingsettypes.ActionContext{
+						BlockHeight: 20,
+						// TxHash is filled in below
+						MsgIdx: 0,
+					},
+				},
+			}
 
 			s.checkQueue(qvalues, expected)
 		}
