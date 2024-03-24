@@ -87,7 +87,7 @@ export type NamesByAddressAdmin = NameAdmin & {
 /** An object that can receive messages from the bridge device */
 export type BridgeHandler = {
   /** Handle an inbound message */
-  fromBridge: (obj: any) => PromiseVow<void>;
+  fromBridge: (obj: any) => Promise<unknown>;
 };
 
 /** An object which handles messages for a specific bridge */
@@ -95,7 +95,7 @@ export type ScopedBridgeManager = {
   /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
   /** Upcall from Golang into the VM */
-  fromBridge: (obj: any) => Promise<void>;
+  fromBridge: (obj: any) => Promise<unknown>;
   initHandler: (handler: ERef<BridgeHandler>) => void;
   setHandler: (handler: ERef<BridgeHandler>) => void;
 };
