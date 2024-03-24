@@ -1605,7 +1605,7 @@
     "@endo/where" "^1.0.3"
     ses "^1.4.0"
 
-"@endo/init@^1.1.0":
+"@endo/init@^1.0.4", "@endo/init@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@endo/init/-/init-1.1.0.tgz#1d31b372f648db4fde39b3f46e79fb56584db359"
   integrity sha512-tv/HFIwzP/ZrEdcbCS01nlF5yhxv9DeRW66PZs08R5rhfaYqh8cTpSo7o473jtVzlq4Nl57a5cAPYgSy+TOogQ==
@@ -1693,7 +1693,7 @@
   dependencies:
     ses "^1.4.0"
 
-"@endo/ses-ava@^1.2.0":
+"@endo/ses-ava@^1.1.2", "@endo/ses-ava@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@endo/ses-ava/-/ses-ava-1.2.0.tgz#f890be674a52c8285d74d197746dabe20d5ff91e"
   integrity sha512-F60pBexzd+SKl9PbNWoCcIlxj4xnk3xfI/PpjDAbqEPTyR5K0w6fTDFEAAjuUGfS3wGt/wloxKLzLegyr/bq1w==
