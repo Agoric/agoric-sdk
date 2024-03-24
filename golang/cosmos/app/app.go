@@ -566,6 +566,18 @@ func NewAgoricApp(
 		govConfig,
 	)
 
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec,
+		keys[ibctransfertypes.StoreKey],
+		app.GetSubspace(ibctransfertypes.ModuleName),
+		app.PacketForwardKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		scopedTransferKeeper,
+	)
+
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
@@ -577,18 +589,6 @@ func NewAgoricApp(
 		app.DistrKeeper,
 		app.BankKeeper,
 		app.VtransferKeeper.GetICS4Wrapper(),
-	)
-
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec,
-		keys[ibctransfertypes.StoreKey],
-		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.PacketForwardKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-		scopedTransferKeeper,
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
@@ -613,7 +613,6 @@ func NewAgoricApp(
 
 	transferApp := transfer.NewAppModule(app.TransferKeeper)
 	var transferStack ibcporttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 	transferStack = packetforward.NewIBCMiddleware(
 		transferStack,
 		app.PacketForwardKeeper,
@@ -621,6 +620,7 @@ func NewAgoricApp(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
 
 	// IBC routes contain (from top to bottom):
 	// - ICA Host
@@ -770,6 +770,7 @@ func NewAgoricApp(
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -782,7 +783,6 @@ func NewAgoricApp(
 		vbank.ModuleName,
 		vibc.ModuleName,
 		swingset.ModuleName,
-		packetforwardtypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
@@ -1310,9 +1310,9 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypesv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
 
