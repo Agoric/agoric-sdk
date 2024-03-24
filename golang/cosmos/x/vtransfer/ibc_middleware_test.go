@@ -286,7 +286,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		ibcModuleB, ok := s.GetApp(s.chainB).GetIBCKeeper().Router.GetRoute(module)
 		s.Assert().True(ok)
 
-		ack := ibcModuleB.OnRecvPacket(s.chainA.GetContext(), packet, s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
+		ack := ibcModuleB.OnRecvPacket(s.chainB.GetContext(), packet, s.chainB.SenderAccounts[1].SenderAccount.GetAddress())
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 		{
