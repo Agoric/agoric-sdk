@@ -213,7 +213,9 @@ export interface TimerWaker {
 
 /**
  * Provides the ability to schedule wake() calls repeatedly at a regular
- * interval, or to disable all future use of this TimerRepeater.
+ * interval, or to disable all future use of this TimerRepeater. Created by the
+ * deprecated makeRepeater(), new code should use repeatAfter(), which doesn't
+ * have a control object and doesn't require a second schedule step
  */
 export interface TimerRepeater {
   /**
@@ -237,11 +239,13 @@ export interface TimerRepeater {
  * Subtracting two Timestamps does produce a useful difference.
  *
  * The brands prevent you from accidentally combining time values from different
- * TimerServices. If some chains track time in blocks, while others
- * follow wall clock time, using the correct brands means you don't have to worry
- * about timezones or how time is represented on a particular chain. This also
- * makes it possible to schedule events according to the time honored by
- * different chains.
+ * TimerServices. Some chains track time in blocks, others follow wall clock
+ * time, some do both. Every local computer has its own unique notion of wall
+ * clock time. Even when these clocks are talking about the same thing (UTC),
+ * they can all drift in different ways. Using the correct brands lets you be
+ * precise about which particular source of time you mean, preventing confusion
+ * or attacks when the clocks diverge. Thus it is an error to e.g. use a time
+ * you got from chain A to schedule an event on chain B.
  *
  * The basic types are `RelativeTimeRecord` (durations) and `TimestampRecord`. The numeric
  * values can be extracted from the typed values, but it's usually better to
