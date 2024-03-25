@@ -31,8 +31,8 @@ const TRANSFER_PROPOSAL_SHAPE = {
  *
  * @param {object} powers
  * @param {ZCF} powers.zcf the Zoe Contract Facet
- * @param {ERef<BoardDepositFacet>} powers.board where to find depositFacets by boardID
- * @param {ERef<NameHub>} powers.namesByAddress where to find depositFacets by bech32
+ * @param {Remote<BoardDepositFacet>} powers.board where to find depositFacets by boardID
+ * @param {Remote<NameHub>} powers.namesByAddress where to find depositFacets by bech32
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>['when']} powers.when
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
@@ -62,7 +62,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
   };
 
   /**
-   * @type {LegacyWeakMap<Peg, LocalDenomState>}
+   * @type {LegacyWeakMap<Remote<Peg>, LocalDenomState>}
    */
   // Legacy because Mappings mix functions and data
   const pegToDenomState = makeLegacyWeakMap('Peg');
@@ -105,8 +105,8 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
    * @param {object} param0
    * @param {ReturnType<typeof makeCourierMaker>} param0.makeCourier
    * @param {LocalDenomState} param0.localDenomState
-   * @param {ERef<TransferProtocol>} param0.transferProtocol
-   * @param {ERef<DenomTransformer>} param0.denomTransformer
+   * @param {Remote<TransferProtocol>} param0.transferProtocol
+   * @param {Remote<DenomTransformer>} param0.denomTransformer
    * @returns {PegasusConnectionActions}
    */
   const makePegasusConnectionActions = ({
@@ -319,8 +319,8 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
     /**
      * Return a handler that can be used with the Network API.
      *
-     * @param {ERef<TransferProtocol>} [transferProtocol]
-     * @param {ERef<DenomTransformer>} [denomTransformer]
+     * @param {Remote<TransferProtocol>} [transferProtocol]
+     * @param {Remote<DenomTransformer>} [denomTransformer]
      * @returns {PegasusConnectionKit}
      */
     makePegasusConnectionKit(
@@ -328,7 +328,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
       denomTransformer = DEFAULT_DENOM_TRANSFORMER,
     ) {
       /**
-       * @type {LegacyWeakMap<Connection, LocalDenomState>}
+       * @type {LegacyWeakMap<Remote<Connection>, LocalDenomState>}
        */
       // Legacy because the value contains a JS Set
       const connectionToLocalDenomState = makeLegacyWeakMap('Connection');
@@ -458,7 +458,7 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
     /**
      * Create a Zoe invitation to transfer assets over network to a deposit address.
      *
-     * @param {ERef<Peg>} pegP the peg over which to transfer
+     * @param {Remote<Peg>} pegP the peg over which to transfer
      * @param {DepositAddress} depositAddress the remote receiver's address
      * @param {string} [memo] the memo to attach to ics transfer packet
      * @param {SenderOptions} [opts] additional sender options

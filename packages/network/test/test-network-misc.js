@@ -348,9 +348,6 @@ test('loopback protocol', async t => {
         async onAccept(_p, _localAddr, _remoteAddr, _listenHandler) {
           return makeConnectionHandler();
         },
-        async onRemove(p, _listenHandler) {
-          console.log('onRemove', p);
-        },
       },
     );
 

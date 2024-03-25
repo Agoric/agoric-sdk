@@ -324,10 +324,10 @@ export interface EgressProtoMsg {
 }
 /** Egress is the format for a swingset egress. */
 export interface EgressAmino {
-  nickname?: string;
-  peer?: string;
+  nickname: string;
+  peer: string;
   /** TODO: Remove these power flags as they are deprecated and have no effect. */
-  power_flags?: string[];
+  power_flags: string[];
 }
 export interface EgressAminoMsg {
   type: '/agoric.swingset.Egress';
@@ -360,8 +360,8 @@ export interface SwingStoreArtifactProtoMsg {
  * they handle the artifacts.
  */
 export interface SwingStoreArtifactAmino {
-  name?: string;
-  data?: string;
+  name: string;
+  data: string;
 }
 export interface SwingStoreArtifactAminoMsg {
   type: '/agoric.swingset.SwingStoreArtifact';
@@ -466,12 +466,13 @@ export const CoreEvalProposal = {
   },
   toAmino(message: CoreEvalProposal): CoreEvalProposalAmino {
     const obj: any = {};
-    obj.title = message.title;
-    obj.description = message.description;
+    obj.title = message.title === '' ? undefined : message.title;
+    obj.description =
+      message.description === '' ? undefined : message.description;
     if (message.evals) {
       obj.evals = message.evals.map(e => (e ? CoreEval.toAmino(e) : undefined));
     } else {
-      obj.evals = [];
+      obj.evals = message.evals;
     }
     return obj;
   },
@@ -563,8 +564,9 @@ export const CoreEval = {
   },
   toAmino(message: CoreEval): CoreEvalAmino {
     const obj: any = {};
-    obj.json_permits = message.jsonPermits;
-    obj.js_code = message.jsCode;
+    obj.json_permits =
+      message.jsonPermits === '' ? undefined : message.jsonPermits;
+    obj.js_code = message.jsCode === '' ? undefined : message.jsCode;
     return obj;
   },
   fromAminoMsg(object: CoreEvalAminoMsg): CoreEval {
@@ -739,29 +741,32 @@ export const Params = {
         e ? StringBeans.toAmino(e) : undefined,
       );
     } else {
-      obj.beans_per_unit = [];
+      obj.beans_per_unit = message.beansPerUnit;
     }
     if (message.feeUnitPrice) {
       obj.fee_unit_price = message.feeUnitPrice.map(e =>
         e ? Coin.toAmino(e) : undefined,
       );
     } else {
-      obj.fee_unit_price = [];
+      obj.fee_unit_price = message.feeUnitPrice;
     }
-    obj.bootstrap_vat_config = message.bootstrapVatConfig;
+    obj.bootstrap_vat_config =
+      message.bootstrapVatConfig === ''
+        ? undefined
+        : message.bootstrapVatConfig;
     if (message.powerFlagFees) {
       obj.power_flag_fees = message.powerFlagFees.map(e =>
         e ? PowerFlagFee.toAmino(e) : undefined,
       );
     } else {
-      obj.power_flag_fees = [];
+      obj.power_flag_fees = message.powerFlagFees;
     }
     if (message.queueMax) {
       obj.queue_max = message.queueMax.map(e =>
         e ? QueueSize.toAmino(e) : undefined,
       );
     } else {
-      obj.queue_max = [];
+      obj.queue_max = message.queueMax;
     }
     return obj;
   },
@@ -852,7 +857,7 @@ export const State = {
         e ? QueueSize.toAmino(e) : undefined,
       );
     } else {
-      obj.queue_allowed = [];
+      obj.queue_allowed = message.queueAllowed;
     }
     return obj;
   },
@@ -943,8 +948,8 @@ export const StringBeans = {
   },
   toAmino(message: StringBeans): StringBeansAmino {
     const obj: any = {};
-    obj.key = message.key;
-    obj.beans = message.beans;
+    obj.key = message.key === '' ? undefined : message.key;
+    obj.beans = message.beans === '' ? undefined : message.beans;
     return obj;
   },
   fromAminoMsg(object: StringBeansAminoMsg): StringBeans {
@@ -1038,11 +1043,11 @@ export const PowerFlagFee = {
   },
   toAmino(message: PowerFlagFee): PowerFlagFeeAmino {
     const obj: any = {};
-    obj.power_flag = message.powerFlag;
+    obj.power_flag = message.powerFlag === '' ? undefined : message.powerFlag;
     if (message.fee) {
       obj.fee = message.fee.map(e => (e ? Coin.toAmino(e) : undefined));
     } else {
-      obj.fee = [];
+      obj.fee = message.fee;
     }
     return obj;
   },
@@ -1133,8 +1138,8 @@ export const QueueSize = {
   },
   toAmino(message: QueueSize): QueueSizeAmino {
     const obj: any = {};
-    obj.key = message.key;
-    obj.size = message.size;
+    obj.key = message.key === '' ? undefined : message.key;
+    obj.size = message.size === 0 ? undefined : message.size;
     return obj;
   },
   fromAminoMsg(object: QueueSizeAminoMsg): QueueSize {
@@ -1246,12 +1251,12 @@ export const Egress = {
   },
   toAmino(message: Egress): EgressAmino {
     const obj: any = {};
-    obj.nickname = message.nickname;
-    obj.peer = message.peer ? base64FromBytes(message.peer) : undefined;
+    obj.nickname = message.nickname ?? '';
+    obj.peer = message.peer ? base64FromBytes(message.peer) : '';
     if (message.powerFlags) {
       obj.power_flags = message.powerFlags.map(e => e);
     } else {
-      obj.power_flags = [];
+      obj.power_flags = message.powerFlags;
     }
     return obj;
   },
@@ -1350,8 +1355,8 @@ export const SwingStoreArtifact = {
   },
   toAmino(message: SwingStoreArtifact): SwingStoreArtifactAmino {
     const obj: any = {};
-    obj.name = message.name;
-    obj.data = message.data ? base64FromBytes(message.data) : undefined;
+    obj.name = message.name ?? '';
+    obj.data = message.data ? base64FromBytes(message.data) : '';
     return obj;
   },
   fromAminoMsg(object: SwingStoreArtifactAminoMsg): SwingStoreArtifact {

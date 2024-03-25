@@ -23,7 +23,7 @@ export interface GenesisStateProtoMsg {
 export interface GenesisStateAmino {
   params?: ParamsAmino;
   state?: StateAmino;
-  swing_store_export_data?: SwingStoreExportDataEntryAmino[];
+  swing_store_export_data: SwingStoreExportDataEntryAmino[];
 }
 export interface GenesisStateAminoMsg {
   type: '/agoric.swingset.GenesisState';
@@ -173,7 +173,7 @@ export const GenesisState = {
         e ? SwingStoreExportDataEntry.toAmino(e) : undefined,
       );
     } else {
-      obj.swing_store_export_data = [];
+      obj.swing_store_export_data = message.swingStoreExportData;
     }
     return obj;
   },
@@ -269,8 +269,8 @@ export const SwingStoreExportDataEntry = {
   },
   toAmino(message: SwingStoreExportDataEntry): SwingStoreExportDataEntryAmino {
     const obj: any = {};
-    obj.key = message.key;
-    obj.value = message.value;
+    obj.key = message.key === '' ? undefined : message.key;
+    obj.value = message.value === '' ? undefined : message.value;
     return obj;
   },
   fromAminoMsg(

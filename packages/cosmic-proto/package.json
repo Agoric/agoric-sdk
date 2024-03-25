@@ -65,19 +65,19 @@
   "devDependencies": {
     "@agoric/cosmos": "^0.34.1",
     "@ava/typescript": "^4.1.0",
-    "@cosmology/telescope": "^1.0.1",
+    "@cosmology/telescope": "^1.5.1",
     "ava": "^5.3.1",
     "publish-scripts": "0.1.0",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.3"
   },
   "dependencies": {
     "@cosmjs/amino": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/init": "^1.0.3",
+    "@endo/init": "^1.1.0",
     "axios": "^1.6.7"
   },
   "resolutions": {

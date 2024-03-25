@@ -395,7 +395,7 @@ export const IdentifiedClientState = {
   },
   toAmino(message: IdentifiedClientState): IdentifiedClientStateAmino {
     const obj: any = {};
-    obj.client_id = message.clientId;
+    obj.client_id = message.clientId === '' ? undefined : message.clientId;
     obj.client_state = message.clientState
       ? Any.toAmino(message.clientState)
       : undefined;
@@ -640,13 +640,13 @@ export const ClientConsensusStates = {
   },
   toAmino(message: ClientConsensusStates): ClientConsensusStatesAmino {
     const obj: any = {};
-    obj.client_id = message.clientId;
+    obj.client_id = message.clientId === '' ? undefined : message.clientId;
     if (message.consensusStates) {
       obj.consensus_states = message.consensusStates.map(e =>
         e ? ConsensusStateWithHeight.toAmino(e) : undefined,
       );
     } else {
-      obj.consensus_states = [];
+      obj.consensus_states = message.consensusStates;
     }
     return obj;
   },
@@ -786,10 +786,15 @@ export const ClientUpdateProposal = {
   },
   toAmino(message: ClientUpdateProposal): ClientUpdateProposalAmino {
     const obj: any = {};
-    obj.title = message.title;
-    obj.description = message.description;
-    obj.subject_client_id = message.subjectClientId;
-    obj.substitute_client_id = message.substituteClientId;
+    obj.title = message.title === '' ? undefined : message.title;
+    obj.description =
+      message.description === '' ? undefined : message.description;
+    obj.subject_client_id =
+      message.subjectClientId === '' ? undefined : message.subjectClientId;
+    obj.substitute_client_id =
+      message.substituteClientId === ''
+        ? undefined
+        : message.substituteClientId;
     return obj;
   },
   fromAminoMsg(object: ClientUpdateProposalAminoMsg): ClientUpdateProposal {
@@ -932,8 +937,9 @@ export const UpgradeProposal = {
   },
   toAmino(message: UpgradeProposal): UpgradeProposalAmino {
     const obj: any = {};
-    obj.title = message.title;
-    obj.description = message.description;
+    obj.title = message.title === '' ? undefined : message.title;
+    obj.description =
+      message.description === '' ? undefined : message.description;
     obj.plan = message.plan ? Plan.toAmino(message.plan) : undefined;
     obj.upgraded_client_state = message.upgradedClientState
       ? Any.toAmino(message.upgradedClientState)
@@ -1041,12 +1047,14 @@ export const Height = {
   },
   toAmino(message: Height): HeightAmino {
     const obj: any = {};
-    obj.revision_number = message.revisionNumber
-      ? message.revisionNumber.toString()
-      : undefined;
-    obj.revision_height = message.revisionHeight
-      ? message.revisionHeight.toString()
-      : undefined;
+    obj.revision_number =
+      message.revisionNumber !== BigInt(0)
+        ? message.revisionNumber.toString()
+        : undefined;
+    obj.revision_height =
+      message.revisionHeight !== BigInt(0)
+        ? message.revisionHeight.toString()
+        : undefined;
     return obj;
   },
   fromAminoMsg(object: HeightAminoMsg): Height {
@@ -1136,7 +1144,7 @@ export const Params = {
     if (message.allowedClients) {
       obj.allowed_clients = message.allowedClients.map(e => e);
     } else {
-      obj.allowed_clients = [];
+      obj.allowed_clients = message.allowedClients;
     }
     return obj;
   },

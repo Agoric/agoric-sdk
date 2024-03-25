@@ -170,7 +170,7 @@ export const CosmosTx = {
         e ? Any.toAmino(e) : undefined,
       );
     } else {
-      obj.messages = [];
+      obj.messages = message.messages;
     }
     return obj;
   },
@@ -278,9 +278,10 @@ export const QueryRequest = {
   },
   toAmino(message: QueryRequest): QueryRequestAmino {
     const obj: any = {};
-    obj.full_method = message.fullMethod;
+    obj.full_method =
+      message.fullMethod === '' ? undefined : message.fullMethod;
     obj.request = message.request ? Any.toAmino(message.request) : undefined;
-    obj.reply_type = message.replyType;
+    obj.reply_type = message.replyType === '' ? undefined : message.replyType;
     return obj;
   },
   fromAminoMsg(object: QueryRequestAminoMsg): QueryRequest {
@@ -393,9 +394,10 @@ export const QueryResponse = {
   },
   toAmino(message: QueryResponse): QueryResponseAmino {
     const obj: any = {};
-    obj.height = message.height ? message.height.toString() : undefined;
+    obj.height =
+      message.height !== BigInt(0) ? message.height.toString() : undefined;
     obj.reply = message.reply ? Any.toAmino(message.reply) : undefined;
-    obj.error = message.error;
+    obj.error = message.error === '' ? undefined : message.error;
     return obj;
   },
   fromAminoMsg(object: QueryResponseAminoMsg): QueryResponse {
@@ -485,7 +487,7 @@ export const QueryResponses = {
         e ? QueryResponse.toAmino(e) : undefined,
       );
     } else {
-      obj.responses = [];
+      obj.responses = message.responses;
     }
     return obj;
   },

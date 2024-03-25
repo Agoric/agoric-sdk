@@ -2,11 +2,8 @@
 import { E as defaultE } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
-import {
-  ENDPOINT_SEPARATOR,
-  Shape,
-  prepareNetworkProtocol,
-} from './network.js';
+import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
+import { Shape } from './shapes.js';
 
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
@@ -59,7 +56,7 @@ export const prepareRouter = zone => {
             ret.push([prefix, this.state.prefixToRoute.get(prefix)]);
           }
           // Trim off the last value (after the slash).
-          const defaultPrefix = prefix.substr(
+          const defaultPrefix = prefix.slice(
             0,
             prefix.lastIndexOf(ENDPOINT_SEPARATOR) + 1,
           );
@@ -131,7 +128,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
       /** @type {MapStore<string, Protocol>} */
       const protocols = detached.mapStore('prefix');
 
-      /** @type {MapStore<string, ProtocolHandler>} */
+      /** @type {MapStore<string, Remote<ProtocolHandler>>} */
       const protocolHandlers = detached.mapStore('prefix');
 
       return {
@@ -143,7 +140,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
     {
       /**
        * @param {string[]} paths
-       * @param {ProtocolHandler} protocolHandler
+       * @param {Remote<ProtocolHandler>} protocolHandler
        */
       registerProtocolHandler(paths, protocolHandler) {
         const protocol = makeNetworkProtocol(protocolHandler);
@@ -157,13 +154,13 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
       // Needs to account for multiple paths.
       /**
        * @param {string} prefix
-       * @param {ProtocolHandler} protocolHandler
+       * @param {Remote<ProtocolHandler>} protocolHandler
        */
       unregisterProtocolHandler(prefix, protocolHandler) {
         const ph = this.state.protocolHandlers.get(prefix);
         ph === protocolHandler ||
           Fail`Protocol handler is not registered at prefix ${prefix}`;
-        // TODO: unmap protocol hanlders to their corresponding protocol
+        // TODO: unmap protocol handlers to their corresponding protocol
         // e.g. using a map
         // before unregistering
         // @ts-expect-error note FIXME above

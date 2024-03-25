@@ -17,7 +17,7 @@ jobs:
         node-version: ['18.x']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
           path: ./agoric-sdk
@@ -37,7 +37,7 @@ jobs:
       # The default is 'main'
       - name: Get the appropriate dapp branch
         id: get-branch
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           result-encoding: string
           script: |
@@ -54,7 +54,7 @@ jobs:
             return branch;
 
       - name: Check out dapp
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Agoric/documentation
           path: dapp

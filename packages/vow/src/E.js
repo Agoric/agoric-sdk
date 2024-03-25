@@ -263,10 +263,10 @@ const makeE = (
          * unwrapped(x).then(onfulfilled, onrejected)
          *
          * @template T
-         * @template [TResult1=Unwrap<T>]
+         * @template [TResult1=import('./types.js').Unwrap<T>]
          * @template [TResult2=never]
          * @param {ERef<T>} x value to convert to a handled promise
-         * @param {(value: Unwrap<T>) => ERef<TResult1>} [onfulfilled]
+         * @param {(value: import('./types.js').Unwrap<T>) => ERef<TResult1>} [onfulfilled]
          * @param {(reason: any) => ERef<TResult2>} [onrejected]
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
@@ -307,9 +307,7 @@ export default makeE;
 /**
  * @template {Callable} T
  * @typedef {(
- *   ReturnType<T> extends PromiseLike<infer U>                       // if function returns a promise
- *     ? T                                                            // return the function
- *     : (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>  // make it return a promise
+ *   (...args: Parameters<T>) => Promise<import('./types.js').Unwrap<ReturnType<T>>>
  * )} ECallable
  */
 
@@ -399,7 +397,7 @@ export default makeE;
  *     ? PickCallable<R>                                              // then return the callable properties of R
  *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('./types').Vow<infer U>
+ *     : Awaited<T> extends import('./types.js').Vow<infer U>
  *     ? RemoteFunctions<U>                                           // then extract the remotable functions of U
  *     : T extends PromiseLike<infer U>                               // otherwise, if T is a promise
  *     ? Awaited<T>                                                   // then return resolved value T
@@ -409,19 +407,12 @@ export default makeE;
 
 /**
  * @template T
- * @typedef {T extends PromiseLike<infer U> ? Unwrap<U> :
- *   T extends import('./types').Vow<infer U> ? Unwrap<U> :
- *   T} Unwrap
- */
-
-/**
- * @template T
  * @typedef {(
  *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
  *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
  *     ? L
- *     : Awaited<T> extends import('./types').Vow<infer U>
+ *     : Awaited<T> extends import('./types.js').Vow<infer U>
  *     ? LocalRecord<U>
  *     : T extends PromiseLike<infer U>
  *     ? Awaited<T>

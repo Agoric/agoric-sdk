@@ -123,9 +123,9 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 
 	// Import the packet forward middleware
-	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router"
-	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router/keeper"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/router/types"
+	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -901,6 +901,13 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/init-network.js",
 					"@agoric/builders/scripts/vats/init-localchain.js",
+				),
+				// Add new vats for price feeds. The existing ones will be retired shortly.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/updateAtomPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStAtomPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
 				),
 			}
 		}
