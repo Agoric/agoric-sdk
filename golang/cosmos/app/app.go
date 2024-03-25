@@ -533,7 +533,7 @@ func NewAgoricApp(
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, keys[vtransfer.StoreKey], vibcForVtransferKeeper)
 
 	vtransferReceiver := vibc.NewReceiver(app.VtransferKeeper)
-	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferReceiver)
+	app.vtransferPort = app.AgdServer.RegisterPortHandler("vtransfer", vtransferReceiver)
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -566,18 +566,6 @@ func NewAgoricApp(
 		govConfig,
 	)
 
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec,
-		keys[ibctransfertypes.StoreKey],
-		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.PacketForwardKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-		scopedTransferKeeper,
-	)
-
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
@@ -589,6 +577,18 @@ func NewAgoricApp(
 		app.DistrKeeper,
 		app.BankKeeper,
 		app.VtransferKeeper.GetICS4Wrapper(),
+	)
+
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec,
+		keys[ibctransfertypes.StoreKey],
+		app.GetSubspace(ibctransfertypes.ModuleName),
+		app.PacketForwardKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		scopedTransferKeeper,
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
