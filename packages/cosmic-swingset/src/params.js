@@ -12,7 +12,10 @@ export const stringToNat = s => {
   return nat;
 };
 
-/** @param {{key: string, size: number}[]} queueSizeEntries */
+/**
+ * @param {{key: string, size: number}[]} queueSizeEntries
+ * @returns {Record<string, number>}
+ */
 export const parseQueueSizes = queueSizeEntries =>
   Object.fromEntries(
     queueSizeEntries.map(({ key, size }) => {
@@ -22,7 +25,10 @@ export const parseQueueSizes = queueSizeEntries =>
     }),
   );
 
-/** @param {Record<string, number>} queueSizes */
+/**
+ * @param {Record<string, number>} queueSizes
+ * @returns {{key: string, size: number}[]}
+ */
 export const encodeQueueSizes = queueSizes =>
   Object.entries(queueSizes).map(([key, size]) => {
     isNat(size) || Fail`Size ${size} is not a positive integer`;
@@ -32,6 +38,9 @@ export const encodeQueueSizes = queueSizes =>
 /**
  * Map the SwingSet parameters to a deterministic data structure.
  * @param {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').ParamsSDKType} params
+ * @returns {{
+ *   beansPerUnit: Record<string, bigint>, feeUnitPrice: {denom: string, amount: bigint}[], queueMax: Record<string, number>
+ * }}
  */
 export const parseParams = params => {
   const {

@@ -60,7 +60,10 @@ module.exports = {
     'jsdoc/require-jsdoc': 'off',
     'jsdoc/require-property-description': 'off',
     'jsdoc/require-param-description': 'off',
-    'jsdoc/require-returns': 'off',
+    'jsdoc/require-returns': [
+      'error',
+      { exemptedBy: ['type'], publicOnly: true },
+    ],
     'jsdoc/require-returns-check': 'off', // TS checks
     'jsdoc/require-returns-description': 'off',
     'jsdoc/require-yields': 'off',
@@ -89,6 +92,8 @@ module.exports = {
     {
       files: ['**/*.ts'],
       rules: {
+        // .ts can specify return type in syntax
+        'jsdoc/require-returns': 'off',
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',
