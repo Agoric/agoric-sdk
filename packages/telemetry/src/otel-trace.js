@@ -18,6 +18,7 @@ export const SPAN_EXPORT_DELAY_MS = 1_000;
 /**
  * @param {object} opts
  * @param {Record<string, string>} opts.env
+ * @returns {BasicTracerProvider | undefined}
  */
 export const makeOtelTracingProvider = opts => {
   const { env = process.env } = opts || {};
