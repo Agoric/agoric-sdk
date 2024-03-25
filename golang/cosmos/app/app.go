@@ -87,7 +87,7 @@ import (
 	icahostkeeper "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/keeper"
 	icahosttypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/host/types"
 	icatypes "github.com/cosmos/ibc-go/v6/modules/apps/27-interchain-accounts/types"
-	"github.com/cosmos/ibc-go/v6/modules/apps/transfer"
+	ibctransfer "github.com/cosmos/ibc-go/v6/modules/apps/transfer"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v6/modules/apps/transfer/keeper"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	ibc "github.com/cosmos/ibc-go/v6/modules/core"
@@ -175,7 +175,7 @@ var (
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		transfer.AppModuleBasic{},
+		ibctransfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		packetforward.AppModuleBasic{},
@@ -520,20 +520,17 @@ func NewAgoricApp(
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
 	app.vibcPort = app.AgdServer.MustRegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
-	vibcForVtransferKeeper := app.VibcKeeper.WithScope(nil, scopedTransferKeeper, func(ctx sdk.Context, action vm.Action) error {
-		action = vm.PopulateAction(ctx, action)
+	app.VtransferKeeper = vtransferkeeper.NewKeeper(
+		appCodec,
+		keys[vtransfer.StoreKey],
+		app.VibcKeeper,
+		scopedTransferKeeper,
+		app.SwingSetKeeper.PushAction,
+	)
 
-		// Prefix the action type.
-		ah := action.GetActionHeader()
-		ah.Type = "VTRANSFER_" + ah.Type
-
-		// fmt.Println("@@@ vtransfer action", action)
-		return app.SwingSetKeeper.PushAction(ctx, action)
-	})
-	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, keys[vtransfer.StoreKey], vibcForVtransferKeeper)
-
-	vtransferReceiver := vibc.NewReceiver(app.VtransferKeeper)
-	app.vtransferPort = vm.RegisterPortHandler("vtransfer", vtransferReceiver)
+	app.vtransferPort = app.AgdServer.MustRegisterPortHandler("vtransfer",
+		vibc.NewReceiver(app.VtransferKeeper),
+	)
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -566,18 +563,6 @@ func NewAgoricApp(
 		govConfig,
 	)
 
-	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec,
-		keys[ibctransfertypes.StoreKey],
-		app.GetSubspace(ibctransfertypes.ModuleName),
-		app.PacketForwardKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		&app.IBCKeeper.PortKeeper,
-		app.AccountKeeper,
-		app.BankKeeper,
-		scopedTransferKeeper,
-	)
-
 	// Initialize the packet forward middleware Keeper
 	// It's important to note that the PFM Keeper must be initialized before the Transfer Keeper
 	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
@@ -588,16 +573,32 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
+		// Make vtransfer the middleware wrapper for the IBCKeeper.
 		app.VtransferKeeper.GetICS4Wrapper(),
+	)
+
+	app.TransferKeeper = ibctransferkeeper.NewKeeper(
+		appCodec,
+		keys[ibctransfertypes.StoreKey],
+		app.GetSubspace(ibctransfertypes.ModuleName),
+		app.PacketForwardKeeper, // Wire in the middleware ICS4Wrapper.
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		scopedTransferKeeper,
 	)
 
 	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
+	// NewAppModule uses a pointer to the host keeper in case there's a need to
+	// tie a circular knot with IBC middleware before icahostkeeper.NewKeeper
+	// can be called.
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
-		app.IBCKeeper.ChannelKeeper,
+		app.IBCKeeper.ChannelKeeper, // This is where middleware binding would happen.
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
@@ -606,29 +607,30 @@ func NewAgoricApp(
 	)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
-	// create static IBC router, add transfer route, then set and seal it
-	// Don't be confused by the name!  The port router maps *module names* (not
-	// PortIDs) to modules.
+	ics20TransferModule := ibctransfer.NewAppModule(app.TransferKeeper)
+
+	// Create the IBC router, which maps *module names* (not PortIDs) to modules.
 	ibcRouter := ibcporttypes.NewRouter()
 
-	transferApp := transfer.NewAppModule(app.TransferKeeper)
-	var transferStack ibcporttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
-	transferStack = packetforward.NewIBCMiddleware(
-		transferStack,
+	// Add an IBC route for the ICA Host.
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
+
+	// Add an IBC route for vIBC.
+	ibcRouter.AddRoute(vibc.ModuleName, vibcIBCModule)
+
+	// Add an IBC route for ICS-20 fungible token transfers, wrapping base
+	// Cosmos functionality with middleware (from the inside out, Cosmos
+	// packet-forwarding and then our own "vtransfer").
+	var ics20TransferIBCModule ibcporttypes.IBCModule = ibctransfer.NewIBCModule(app.TransferKeeper)
+	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
+		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
 		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
-	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
-
-	// IBC routes contain (from top to bottom):
-	// - ICA Host
-	// - ibc-hooks wrapping Packet Forward Middleware, then IBC transfer
-	// - vIBC
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferStack).
-		AddRoute(vibc.ModuleName, vibcIBCModule)
+	ics20TransferIBCModule = vtransfer.NewIBCMiddleware(ics20TransferIBCModule, app.VtransferKeeper)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ics20TransferIBCModule)
 
 	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
@@ -682,7 +684,7 @@ func NewAgoricApp(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		transferApp,
+		ics20TransferModule,
 		icaModule,
 		packetforward.NewAppModule(app.PacketForwardKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
@@ -726,7 +728,6 @@ func NewAgoricApp(
 	)
 	app.mm.SetOrderEndBlockers(
 		vibc.ModuleName,
-		vbank.ModuleName,
 		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
@@ -746,6 +747,7 @@ func NewAgoricApp(
 		evidencetypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		vbank.ModuleName,
 		// SwingSet needs to be last, for it to capture all the pushed actions.
 		swingset.ModuleName,
 		// And then vstorage, to produce SwingSet-induced events.
@@ -811,7 +813,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferApp,
+		ics20TransferModule,
 	)
 
 	app.sm.RegisterStoreDecoders()
