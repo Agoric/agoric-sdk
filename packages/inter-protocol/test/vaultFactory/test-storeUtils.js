@@ -1,4 +1,4 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';

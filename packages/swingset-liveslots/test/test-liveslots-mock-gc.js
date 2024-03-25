@@ -1,5 +1,6 @@
 // @ts-nocheck
-import test from 'ava';
+// eslint-disable-next-line import/order
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { Far } from '@endo/marshal';
 import { kslot, kser } from '@agoric/kmarshal';

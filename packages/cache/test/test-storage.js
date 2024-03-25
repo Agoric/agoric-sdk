@@ -1,7 +1,6 @@
 // Must be first to set up globals
-import '@agoric/zoe/tools/prepare-test-env.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
-import test from 'ava';
 import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 
 import { Far, makeMarshal } from '@endo/marshal';

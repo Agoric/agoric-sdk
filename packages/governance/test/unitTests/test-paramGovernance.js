@@ -1,5 +1,5 @@
 import '@agoric/zoe/exported.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';

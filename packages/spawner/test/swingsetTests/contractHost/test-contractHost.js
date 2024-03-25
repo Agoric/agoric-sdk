@@ -1,5 +1,6 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-
+// eslint-disable-next-line import/order
+import test from '@endo/ses-ava/prepare-endo.js';
+// eslint-disable-next-line import/order
 import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import {

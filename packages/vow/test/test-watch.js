@@ -1,6 +1,7 @@
 // @ts-check
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
+// eslint-disable-next-line import/order
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 
 import { prepareVowTools } from '../src/tools.js';

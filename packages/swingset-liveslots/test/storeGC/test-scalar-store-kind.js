@@ -1,5 +1,6 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
+// eslint-disable-next-line import/order
 import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { buildRootObject, mapRef } from '../gc-helpers.js';
 

@@ -1,5 +1,7 @@
 // @ts-check
-import test from 'ava';
+// eslint-disable-next-line import/order
+import test from '@endo/ses-ava/prepare-endo.js';
+
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 

@@ -23,6 +23,8 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@endo/init": "^1.0.4",
+    "@endo/ses-ava": "^1.1.2",
     "@types/n-readlines": "^1.0.3",
     "@types/proper-lockfile": "^4.1.2",
     "ava": "^5.3.0",

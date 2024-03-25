@@ -1,5 +1,6 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
+// eslint-disable-next-line import/order
 import { kslot } from '@agoric/kmarshal';
 import {
   findSyscallsByType,

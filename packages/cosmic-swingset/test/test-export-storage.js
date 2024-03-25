@@ -1,5 +1,5 @@
 // @ts-check
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 import { exportStorage } from '../src/export-storage.js';
 
 const makeBatchChainStorage = published => {

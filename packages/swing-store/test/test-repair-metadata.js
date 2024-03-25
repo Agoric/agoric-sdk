@@ -1,7 +1,8 @@
 // @ts-check
-
 import path from 'path';
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
+
+// eslint-disable-next-line import/order
 import sqlite3 from 'better-sqlite3';
 
 import { importSwingStore, openSwingStore } from '../src/index.js';

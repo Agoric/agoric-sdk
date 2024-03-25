@@ -1,5 +1,7 @@
 // @ts-check
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
+
+// eslint-disable-next-line import/order
 import { Buffer } from 'node:buffer';
 import { initSwingStore } from '../src/swingStore.js';
 

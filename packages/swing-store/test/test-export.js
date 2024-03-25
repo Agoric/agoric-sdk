@@ -1,4 +1,4 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';

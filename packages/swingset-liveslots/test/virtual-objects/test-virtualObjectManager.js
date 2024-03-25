@@ -1,6 +1,7 @@
 // @ts-nocheck
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
 
+// eslint-disable-next-line import/order
 import { kser, kslot } from '@agoric/kmarshal';
 import {
   makeFakeVirtualObjectManager,

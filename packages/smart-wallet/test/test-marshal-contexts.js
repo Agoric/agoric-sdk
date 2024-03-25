@@ -1,5 +1,5 @@
 // @ts-check
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 import { Far } from '@endo/far';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';

@@ -1,6 +1,6 @@
 // @ts-nocheck
 /* eslint-disable import/order */
-import { test } from '../tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';

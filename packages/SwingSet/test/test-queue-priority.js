@@ -1,5 +1,5 @@
 /* global setImmediate setTimeout */
-import { test } from '../tools/prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 
 test('Promise queue should be higher priority than IO/timer queue', async t => {
   const log = [];

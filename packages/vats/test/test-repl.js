@@ -1,4 +1,5 @@
-import test from 'ava';
+import test from '@endo/ses-ava/prepare-endo.js';
+
 import { getReplHandler } from '../src/repl.js';
 
 function make() {

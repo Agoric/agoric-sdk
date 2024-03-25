@@ -1,4 +1,4 @@
-import { test } from './prepare-test-env-ava.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 import { assertNetworkConfig } from '../src/netconfig.js';
 
 test('https://main.agoric.net/network-config 2022-10-27', t => {
