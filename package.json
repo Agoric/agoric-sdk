@@ -70,6 +70,7 @@
     "clean": "yarn lerna run --no-bail clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "docs": "typedoc --tsconfig tsconfig.build.json",
+    "typedoc-markdown": "typedoc --plugin typedoc-plugin-markdown",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
