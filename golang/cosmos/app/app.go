@@ -230,6 +230,9 @@ type GaiaApp struct { // nolint: golint
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
 
+	// manage communication from the VM to the ABCI app
+	AgdServer *vm.AgdServer
+
 	// keepers
 	AccountKeeper    authkeeper.AccountKeeper
 	BankKeeper       bankkeeper.Keeper
@@ -298,14 +301,14 @@ func NewGaiaApp(
 		return "", nil
 	}
 	return NewAgoricApp(
-		defaultController,
+		defaultController, vm.NewAgdServer(),
 		logger, db, traceStore, loadLatest, skipUpgradeHeights,
 		homePath, invCheckPeriod, encodingConfig, appOpts, baseAppOptions...,
 	)
 }
 
 func NewAgoricApp(
-	sendToController func(context.Context, bool, string) (string, error),
+	sendToController func(context.Context, bool, string) (string, error), agdServer *vm.AgdServer,
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
@@ -331,6 +334,7 @@ func NewAgoricApp(
 
 	app := &GaiaApp{
 		BaseApp:           bApp,
+		AgdServer:         agdServer,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
@@ -449,7 +453,7 @@ func NewAgoricApp(
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
-		defer vm.SetControllerContext(ctx)()
+		defer app.AgdServer.SetControllerContext(ctx)()
 		return sendToController(sdk.WrapSDKContext(ctx), true, str)
 	}
 
@@ -460,7 +464,7 @@ func NewAgoricApp(
 	app.VstorageKeeper = vstorage.NewKeeper(
 		keys[vstorage.StoreKey],
 	)
-	app.vstoragePort = vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
+	app.vstoragePort = app.AgdServer.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
@@ -469,7 +473,7 @@ func NewAgoricApp(
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
 	)
-	app.swingsetPort = vm.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
+	app.swingsetPort = app.AgdServer.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
 
 	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
 		app.Logger(),
@@ -508,7 +512,7 @@ func NewAgoricApp(
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper, app.BankKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
-	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
+	app.vibcPort = app.AgdServer.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -516,7 +520,7 @@ func NewAgoricApp(
 		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
-	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
+	app.vbankPort = app.AgdServer.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
@@ -613,7 +617,7 @@ func NewAgoricApp(
 		app.BaseApp.MsgServiceRouter(),
 		app.BaseApp.GRPCQueryRouter(),
 	)
-	app.vlocalchainPort = vm.RegisterPortHandler(
+	app.vlocalchainPort = app.AgdServer.RegisterPortHandler(
 		"vlocalchain",
 		vlocalchain.NewReceiver(app.VlocalchainKeeper),
 	)

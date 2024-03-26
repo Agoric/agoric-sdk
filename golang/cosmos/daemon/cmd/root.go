@@ -39,14 +39,15 @@ import (
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
 // Sender is a function that sends a request to the controller.
 type Sender func(ctx context.Context, needReply bool, str string) (string, error)
 
 var AppName = "agd"
-var OnStartHook func(log.Logger, servertypes.AppOptions) error
-var OnExportHook func(log.Logger, servertypes.AppOptions) error
+var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
+var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -129,8 +130,9 @@ func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.En
 	cfg.Seal()
 
 	ac := appCreator{
-		encCfg: encodingConfig,
-		sender: sender,
+		encCfg:    encodingConfig,
+		sender:    sender,
+		agdServer: vm.NewAgdServer(),
 	}
 
 	rootCmd.AddCommand(
@@ -249,8 +251,9 @@ func txCommand() *cobra.Command {
 }
 
 type appCreator struct {
-	encCfg params.EncodingConfig
-	sender Sender
+	encCfg    params.EncodingConfig
+	sender    Sender
+	agdServer *vm.AgdServer
 }
 
 func (ac appCreator) newApp(
@@ -260,7 +263,7 @@ func (ac appCreator) newApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	if OnStartHook != nil {
-		if err := OnStartHook(logger, appOpts); err != nil {
+		if err := OnStartHook(ac.agdServer, logger, appOpts); err != nil {
 			panic(err)
 		}
 	}
@@ -305,7 +308,7 @@ func (ac appCreator) newApp(
 	)
 
 	return gaia.NewAgoricApp(
-		ac.sender,
+		ac.sender, ac.agdServer,
 		logger, db, traceStore, true, skipUpgradeHeights,
 		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
@@ -405,7 +408,7 @@ func (ac appCreator) appExport(
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
 	if OnExportHook != nil {
-		if err := OnExportHook(logger, appOpts); err != nil {
+		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	}
@@ -421,7 +424,7 @@ func (ac appCreator) appExport(
 	}
 
 	gaiaApp := gaia.NewAgoricApp(
-		ac.sender,
+		ac.sender, ac.agdServer,
 		logger,
 		db,
 		traceStore,
