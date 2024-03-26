@@ -1,6 +1,7 @@
 // @ts-check
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
+import { gzipSync, gunzipSync } from 'zlib';
 import { Fail, q } from '@agoric/assert';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { createSHA256 } from './hasher.js';
@@ -31,7 +32,9 @@ import { createSHA256 } from './hasher.js';
  *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairTranscriptSpanRecord: (key: string, value: string) => void,
- *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
+ *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>,
+ *   setUseTranscriptCompression: (mode: boolean) => void,
+ *   compressSpan: (vatID: string, startPos: number, endPos: number, incarnation: number) => void,
  * }} TranscriptStoreInternal
  *
  * @typedef {{
@@ -69,6 +72,8 @@ export function makeTranscriptStore(
   noteExport = () => {},
   { keepTranscripts = true } = {},
 ) {
+  let useTranscriptCompression = true;
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptItems (
       vatID TEXT,
@@ -76,6 +81,35 @@ export function makeTranscriptStore(
       item TEXT,
       incarnation INTEGER,
       PRIMARY KEY (vatID, position)
+    )
+  `);
+
+  // The `transcriptCompressedSpans` table holds transcript items for historical
+  // spans in a compressed format.  The shape of this table is a partial
+  // amalgamation of the `transcriptItems` table and the `transcriptSpans`
+  // table.  Whereas the `transcriptItems` table stores one item per row, this
+  // table stores all the items for an entire span in a single compressed blob,
+  // resulting in one row per span just as the `transcriptSpans` table has one
+  // row per span.  The `startPos` and `endPos` fields have the same meanings as
+  // the identically named fields of the `transcriptSpans` table.  However,
+  // these two fields are used slightly differently: since each row captures an
+  // entire completed span, here the `endPos` field will not change over time.
+  // Strictly speaking, the `endPos` field is not actually needed, but we
+  // include it anyway as a redundant sanity check on the state of the record.
+  // Similar reasoning applies to the `incarnation` value, which, while
+  // technically redundant, may prove useful when deleting all the spans in an
+  // incarnation without having to resort to looking at the items table to learn
+  // which spans those are.  This table also lacks the `isCurrent` field on the
+  // grounds that it would be completely useless since in this table it would
+  // always have the value `false`.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS transcriptCompressedSpans (
+      vatID TEXT,
+      startPos INTEGER, -- inclusive
+      endPos INTEGER, -- exclusive
+      incarnation INTEGER,
+      itemsBlob BLOB,
+      PRIMARY KEY (vatID, startPos)
     )
   `);
 
@@ -89,9 +123,9 @@ export function makeTranscriptStore(
   // vatID, there will be exactly one isCurrent=1 span, and zero or more
   // non-current (historical) spans.
   //
-  // The transcriptItems associated with historical spans may or may not exist,
-  // depending on pruning.  However, the items associated with the current span
-  // must always be present.
+  // The transcriptItems or transcriptCompressedSpans associated with historical
+  // spans may or may not exist, depending on pruning.  However, the items
+  // associated with the current span must always be present.
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptSpans (
@@ -109,6 +143,31 @@ export function makeTranscriptStore(
     CREATE INDEX IF NOT EXISTS currentTranscriptIndex
     ON transcriptSpans (vatID, isCurrent)
   `);
+
+  const sqlReadCompressedSpanItems = db.prepare(`
+    SELECT itemsBlob
+    FROM transcriptCompressedSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlReadCompressedSpanItems.pluck();
+
+  function readCompressedSpan(vatID, startPos) {
+    const blob = sqlReadCompressedSpanItems.get(vatID, startPos);
+    if (!blob) {
+      return undefined;
+    }
+    const items = gunzipSync(blob).toString().split('\n');
+
+    function* reader() {
+      for (const item of items) {
+        if (item !== '') {
+          yield item;
+        }
+      }
+    }
+
+    return reader;
+  }
 
   const sqlDumpItemsQuery = db.prepare(`
     SELECT vatID, position, item
@@ -130,13 +189,26 @@ export function makeTranscriptStore(
     ORDER BY startPos
   `);
 
+  function* dumpOneTranscriptSpan(vatID, startPos, endPos) {
+    const compressedSpanReader = readCompressedSpan(vatID, startPos);
+    if (compressedSpanReader) {
+      let position = startPos;
+      for (const item of compressedSpanReader()) {
+        yield { vatID, position, item };
+        position += 1;
+      }
+    } else {
+      yield* sqlDumpItemsQuery.iterate(vatID, startPos, endPos);
+    }
+  }
+
   function dumpTranscripts(includeHistorical = true) {
     // debug function to return: dump[vatID][position] = item
     /** @type {Record<string, Record<number, string>>} */
     const transcripts = {};
     for (const spanRow of sqlDumpSpansQuery.iterate()) {
       if (includeHistorical || spanRow.isCurrent) {
-        for (const row of sqlDumpItemsQuery.iterate(
+        for (const row of dumpOneTranscriptSpan(
           spanRow.vatID,
           spanRow.startPos,
           spanRow.endPos,
@@ -154,7 +226,7 @@ export function makeTranscriptStore(
 
   function* readFullVatTranscript(vatID) {
     for (const { startPos, endPos } of sqlDumpVatSpansQuery.iterate(vatID)) {
-      for (const row of sqlDumpItemsQuery.iterate(vatID, startPos, endPos)) {
+      for (const row of dumpOneTranscriptSpan(vatID, startPos, endPos)) {
         yield row;
       }
     }
@@ -237,6 +309,104 @@ export function makeTranscriptStore(
     return bounds;
   }
 
+  const sqlGetSpanEndPos = db.prepare(`
+    SELECT endPos
+    FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlGetSpanEndPos.pluck(true);
+
+  const sqlReadSpanItems = db.prepare(`
+    SELECT item
+    FROM transcriptItems
+    WHERE vatID = ? AND ? <= position AND position < ?
+    ORDER BY position
+  `);
+
+  /**
+   * Read the items in a transcript span
+   *
+   * @param {string} vatID  The vat whose transcript is being read
+   * @param {number} [startPos] A start position identifying the span to be
+   *    read; defaults to the current span, whatever it is
+   *
+   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
+   */
+  function readSpan(vatID, startPos) {
+    /** @type {number | undefined} */
+    let endPos;
+    if (startPos === undefined) {
+      ({ startPos, endPos } = getCurrentSpanBounds(vatID));
+    } else {
+      insistTranscriptPosition(startPos);
+      endPos = sqlGetSpanEndPos.get(vatID, startPos);
+      if (typeof endPos !== 'number') {
+        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      }
+    }
+    startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
+    const expectedCount = endPos - startPos;
+
+    function* reader() {
+      let count = 0;
+      const compressedSpanReader = readCompressedSpan(vatID, startPos);
+      if (compressedSpanReader) {
+        for (const item of compressedSpanReader()) {
+          yield item;
+          count += 1;
+        }
+      } else {
+        for (const { item } of sqlReadSpanItems.iterate(
+          vatID,
+          startPos,
+          endPos,
+        )) {
+          yield item;
+          count += 1;
+        }
+      }
+      count === expectedCount ||
+        Fail`read ${q(count)} transcript entries (expected ${q(
+          expectedCount,
+        )})`;
+    }
+
+    if (startPos === endPos) {
+      return empty();
+    }
+
+    return reader();
+  }
+
+  const sqlAddCompressedSpan = db.prepare(`
+    INSERT INTO transcriptCompressedSpans (vatID, startPos, endPos, itemsBlob, incarnation)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  const sqlDeleteSpanItems = db.prepare(`
+    DELETE FROM transcriptItems
+    WHERE vatID = ? AND position >= ? AND position < ?
+  `);
+
+  function compressSpan(vatID, startPos, endPos, incarnation) {
+    // XXX It's not clear to me what the most efficient way to produce the
+    // compressed item blob is, but the following at least works. It should
+    // suffice unless and until we decide we need something faster or with
+    // a lower memory footprint, but since individual spans are modestly sized, I
+    // don't immediately see that as a pressing issue.  Note that the obvious move
+    // of switching to an implementation based on Streams would cause this
+    // function to become async, which would in turn bubble up into public APIs
+    // that are already in use which expect synchronous behavior, and hence such
+    // a change would be quite invasive.
+
+    // note extra empty string in items array to get the trailing newline when joined
+    const spanItems = [...readSpan(vatID, startPos), ''];
+    const blob = gzipSync(spanItems.join('\n'));
+
+    sqlAddCompressedSpan.run(vatID, startPos, endPos, blob, incarnation);
+    sqlDeleteSpanItems.run(vatID, startPos, endPos);
+  }
+
   const sqlEndCurrentSpan = db.prepare(`
     UPDATE transcriptSpans
     SET isCurrent = null
@@ -265,7 +435,11 @@ export function makeTranscriptStore(
       incarnationToUse,
     );
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
-    if (!keepTranscripts) {
+    if (keepTranscripts) {
+      if (useTranscriptCompression) {
+        compressSpan(vatID, startPos, endPos, incarnation);
+      }
+    } else {
       sqlDeleteOldItems.run(vatID, endPos);
     }
     return incarnationToUse;
@@ -307,6 +481,11 @@ export function makeTranscriptStore(
     WHERE vatID = ?
   `);
 
+  const sqlDeleteVatCompressedSpans = db.prepare(`
+    DELETE FROM transcriptCompressedSpans
+    WHERE vatID = ?
+  `);
+
   const sqlGetVatSpans = db.prepare(`
     SELECT vatID, startPos, isCurrent
     FROM transcriptSpans
@@ -326,6 +505,7 @@ export function makeTranscriptStore(
       noteExport(spanMetadataKey(rec), undefined);
     }
     sqlDeleteVatItems.run(vatID);
+    sqlDeleteVatCompressedSpans.run(vatID);
     sqlDeleteVatSpans.run(vatID);
   }
 
@@ -403,6 +583,41 @@ export function makeTranscriptStore(
   `);
   sqlCountSpanItems.pluck();
 
+  const sqlGetSpansInRange = db.prepare(`
+    SELECT startPos, endPos
+    FROM transcriptSpans
+    WHERE vatID = ? AND startPos >= ? AND endPos <= ?
+    ORDER BY startPos
+  `);
+
+  const sqlGetCompressedSpanEndPos = db.prepare(`
+    SELECT endPos
+    FROM transcriptCompressedSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlGetCompressedSpanEndPos.pluck();
+
+  function countSpanItems(vatID, rangeStartPos, rangeEndPos) {
+    // This is an expensive operation that should only be used for sanity checks
+    // during state sync import & export
+    let count = 0;
+    for (const { startPos, endPos } of sqlGetSpansInRange.iterate(
+      vatID,
+      rangeStartPos,
+      rangeEndPos,
+    )) {
+      const testEndPos = sqlGetCompressedSpanEndPos.get(vatID, startPos);
+      if (testEndPos !== undefined) {
+        testEndPos === endPos ||
+          Fail`invalid compressedSpan endPos for vatID=${vatID} startPos=${startPos}`;
+        count += endPos - startPos;
+      } else {
+        count += sqlCountSpanItems.get(vatID, startPos, endPos);
+      }
+    }
+    return count;
+  }
+
   /**
    * Obtain artifact names for spans contained in this store.
    *
@@ -440,7 +655,7 @@ export function makeTranscriptStore(
       // everything that is a complete span
       for (const rec of sqlGetAllSpanMetadata.iterate()) {
         const { vatID, startPos, endPos } = rec;
-        const count = sqlCountSpanItems.get(vatID, startPos, endPos);
+        const count = countSpanItems(vatID, startPos, endPos);
         if (count !== endPos - startPos) {
           // skip incomplete spans, because the exporter did not
           // already do a completeness check in 'debug' mode
@@ -451,68 +666,6 @@ export function makeTranscriptStore(
     }
   }
   harden(getArtifactNames);
-
-  const sqlGetSpanEndPos = db.prepare(`
-    SELECT endPos
-    FROM transcriptSpans
-    WHERE vatID = ? AND startPos = ?
-  `);
-  sqlGetSpanEndPos.pluck(true);
-
-  const sqlReadSpanItems = db.prepare(`
-    SELECT item
-    FROM transcriptItems
-    WHERE vatID = ? AND ? <= position AND position < ?
-    ORDER BY position
-  `);
-
-  /**
-   * Read the items in a transcript span
-   *
-   * @param {string} vatID  The vat whose transcript is being read
-   * @param {number} [startPos] A start position identifying the span to be
-   *    read; defaults to the current span, whatever it is
-   *
-   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
-   */
-  function readSpan(vatID, startPos) {
-    /** @type {number | undefined} */
-    let endPos;
-    if (startPos === undefined) {
-      ({ startPos, endPos } = getCurrentSpanBounds(vatID));
-    } else {
-      insistTranscriptPosition(startPos);
-      endPos = sqlGetSpanEndPos.get(vatID, startPos);
-      if (typeof endPos !== 'number') {
-        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
-      }
-    }
-    startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
-    const expectedCount = endPos - startPos;
-
-    function* reader() {
-      let count = 0;
-      for (const { item } of sqlReadSpanItems.iterate(
-        vatID,
-        startPos,
-        endPos,
-      )) {
-        yield item;
-        count += 1;
-      }
-      count === expectedCount ||
-        Fail`read ${q(count)} transcript entries (expected ${q(
-          expectedCount,
-        )})`;
-    }
-    harden(reader);
-
-    if (startPos === endPos) {
-      return empty();
-    }
-
-    return reader();
-  }
 
   const sqlGetSpanIsCurrent = db.prepare(`
     SELECT isCurrent
@@ -673,19 +826,35 @@ export function makeTranscriptStore(
     }
     // 'archival' and 'debug' modes accept all spans
 
+    const doCompression = useTranscriptCompression && !metadata.isCurrent;
     const artifactChunks = await makeChunkIterator();
     const inStream = Readable.from(artifactChunks);
     const lineTransform = new BufferLineTransform();
     const lineStream = inStream.pipe(lineTransform).setEncoding('utf8');
+    const spanItems = [];
     let hash = initialHash;
     let pos = startPos;
     for await (const line of lineStream) {
       const item = line.trimEnd();
-      sqlAddItem.run(vatID, item, pos, metadata.incarnation);
+      if (doCompression) {
+        spanItems.push(line);
+      } else {
+        sqlAddItem.run(vatID, item, pos, metadata.incarnation);
+      }
       hash = updateSpanHash(hash, item);
       pos += 1;
     }
     pos === endPos || Fail`artifact ${name} is not complete`;
+    if (doCompression) {
+      const blob = gzipSync(spanItems.join(''));
+      sqlAddCompressedSpan.run(
+        vatID,
+        startPos,
+        endPos,
+        blob,
+        metadata.incarnation,
+      );
+    }
 
     // validate against the previously-established metadata
 
@@ -741,7 +910,7 @@ export function makeTranscriptStore(
       if (checkMode === 'operational') {
         // at 'operational', every 'isCurrent' transcript span must
         // have all items
-        const count = sqlCountSpanItems.get(vatID, startPos, endPos);
+        const count = countSpanItems(vatID, startPos, endPos);
         if (count !== endPos - startPos) {
           throw Fail`incomplete current transcript span: ${count} items, ${rec}`;
         }
@@ -749,7 +918,7 @@ export function makeTranscriptStore(
         // at 'replay', every vat's current incarnation must be fully
         // populated (which implies 'operational')
         const incStart = sqlGetStartOfIncarnation.get(vatID, incarnation);
-        const incCount = sqlCountSpanItems.get(vatID, incStart, endPos);
+        const incCount = countSpanItems(vatID, incStart, endPos);
         if (incCount !== endPos - incStart) {
           throw Fail`incomplete current incarnation transcript: ${incCount} items`;
         }
@@ -757,7 +926,7 @@ export function makeTranscriptStore(
         // at 'archival', every incarnation must be fully populated,
         // which means position=0 up through endPos-1 (which implies
         // 'replay')
-        const arcCount = sqlCountSpanItems.get(vatID, 0, endPos);
+        const arcCount = countSpanItems(vatID, 0, endPos);
         if (arcCount !== endPos) {
           throw Fail`incomplete archival transcript: ${arcCount} vs ${endPos}`;
         }
@@ -765,6 +934,28 @@ export function makeTranscriptStore(
         throw Fail`unknown checkMode ${checkMode}`;
       }
     }
+  }
+
+  /**
+   * Fiddle with the flag controlling whether span compression happens.
+   *
+   * Normally compression is turned on, but some tests need to turn it off (at
+   * least temporarily).
+   *
+   * XXX While it's conceivable that in the future some backwards compatibility
+   * issue might demand we retain the capacity to modulate the
+   * `useTranscriptCompression` flag, our current intention is to eliminate this
+   * flag and the function that mutates it, once the chain has fully
+   * transitioned to using compressed transcript spans.  This would be in the
+   * interest of reducing affordances for misbehaving code to mess things up.
+   * Note that, even now, this function is only exposed on the debug/test
+   * interface, rather than being made available as a normal part of the
+   * transcript store API.
+   *
+   * @param {boolean} mode
+   */
+  function setUseTranscriptCompression(mode) {
+    useTranscriptCompression = mode;
   }
 
   return harden({
@@ -787,5 +978,7 @@ export function makeTranscriptStore(
 
     dumpTranscripts,
     readFullVatTranscript,
+    setUseTranscriptCompression,
+    compressSpan,
   });
 }
