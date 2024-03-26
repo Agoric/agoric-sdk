@@ -1,6 +1,7 @@
 /* global globalThis WeakRef FinalizationRegistry */
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import {
   makeLiveSlots,
   insistVatDeliveryObject,
@@ -271,6 +272,7 @@ function makeWorker(port) {
       const vatNS = await importBundle(bundle, {
         endowments: { ...workerEndowments, ...lsEndowments },
         inescapableGlobalProperties,
+        computeSourceMapLocation,
       });
       bundle = undefined; // overwrite to allow GC to discard big string
       workerLog(`got vatNS:`, Object.keys(vatNS).join(','));
