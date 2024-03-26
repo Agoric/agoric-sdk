@@ -14,7 +14,6 @@
     "@jessie.js/eslint-plugin": "^0.4.0",
     "@types/express": "^4.17.17",
     "@types/node": "^18.19.24",
-    "typescript-eslint": "^7.3.1",
     "ava": "^5.3.0",
     "c8": "^9.1.0",
     "conventional-changelog-conventionalcommits": "^4.6.0",
@@ -33,7 +32,9 @@
     "prettier-plugin-jsdoc": "^1.0.0",
     "type-coverage": "^2.27.1",
     "typedoc": "^0.25.12",
-    "typescript": "^5.4.3"
+    "typedoc-plugin-markdown": "^3.17.1",
+    "typescript": "^5.4.3",
+    "typescript-eslint": "^7.3.1"
   },
   "resolutions": {
     "**/protobufjs": "^7.2.4",
