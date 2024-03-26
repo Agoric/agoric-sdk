@@ -80,6 +80,31 @@ export const KERNEL_STATS_SUM_METRICS = /** @type {const} */ ([
     name: 'swingset_dispatch_notify_total',
     description: 'Total number of SwingSet vat promise notifications',
   },
+  {
+    key: 'dispatchGCMessage',
+    name: 'swingset_dispatch_gc_total',
+    description: 'Total number of SwingSet vat GC message deliveries',
+  },
+  {
+    key: 'dispatchBOYD',
+    name: 'swingset_dispatch_boyd_total',
+    description: 'Total number of SwingSet vat BOYD deliveries',
+  },
+  {
+    key: 'dispatchStartVat',
+    name: 'swingset_dispatch_startvat_total',
+    description: 'Total number of SwingSet vat startVat deliveries',
+  },
+  {
+    key: 'dispatchChangeVatOptions',
+    name: 'swingset_dispatch_changevatoptions_total',
+    description: 'Total number of SwingSet vat changeVatOptions deliveries',
+  },
+  {
+    key: 'dispatchUpgradeVat',
+    name: 'swingset_dispatch_upgradevat_total',
+    description: 'Total number of SwingSet vat upgradeVat deliveries',
+  },
 ]);
 
 export const KERNEL_STATS_UPDOWN_METRICS = /** @type {const} */ ([
