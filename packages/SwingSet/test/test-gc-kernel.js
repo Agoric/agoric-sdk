@@ -1165,9 +1165,7 @@ test('terminated vat', async t => {
   // t.is(refcounts[doomedExport1Kref], undefined);
   t.falsy(owners[doomedExport1Kref]);
 
-  // TODO: we still fail to clean up the [0,0] kref: #3378 is about finding
-  // somewhere to delete the .refcount key
-  // t.is(refcounts[doomedExport2Kref], undefined);
+  t.is(refcounts[doomedExport2Kref], undefined);
   t.falsy(owners[doomedExport2Kref]);
 });
 
