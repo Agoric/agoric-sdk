@@ -296,6 +296,7 @@
  * @typedef {object} InvitationDetails
  * @property {Installation} installation
  * @property {import('./utils.js').Instance<any>} instance
+ * @property {AnyTerms} terms
  * @property {InvitationHandle} handle
  * @property {string} description
  * @property {Record<string, any>} [customDetails]

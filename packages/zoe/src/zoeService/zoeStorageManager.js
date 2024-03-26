@@ -275,6 +275,7 @@ export const makeZoeStorageManager = (
             ownKeys(customDetails).length >= 1
               ? harden({ customDetails })
               : harden({});
+          const instanceRecord = state.instanceState.getInstanceRecord();
           const invitationAmount = AmountMath.make(
             invitationKit.brand,
             harden([
@@ -282,9 +283,9 @@ export const makeZoeStorageManager = (
                 ...extraProperties,
                 description: desc,
                 handle,
-                instance: state.instanceState.getInstanceRecord().instance,
-                installation:
-                  state.instanceState.getInstanceRecord().installation,
+                instance: instanceRecord.instance,
+                installation: instanceRecord.installation,
+                terms: instanceRecord.terms,
               },
             ]),
           );
