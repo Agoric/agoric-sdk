@@ -39,7 +39,7 @@ export const ChainAccountI = M.interface('ChainAccount', {
   getAddress: M.call().returns(M.string()),
   getLocalAddress: M.callWhen().returns(M.string()),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.promise()),
-  executeEncodedTx: M.callWhen(M.arrayOf(M.record())).returns(M.promise()),
+  executeEncodedTx: M.callWhen(M.string()).returns(M.promise()),
   deposit: M.callWhen(M.remotable('Payment'))
     .optional(M.pattern())
     .returns(AmountShape),
@@ -69,9 +69,9 @@ const prepareChainAccount = zone =>
       getLocalAddress() {
         return E(this.state.connection).getLocalAddress();
       },
-      /** @param {Bytes} msg */
-      async executeEncodedTx(msg) {
-        return E(this.state.connection).send(msg);
+      /** @param {Bytes} packetBytes */
+      async executeEncodedTx(packetBytes) {
+        return E(this.state.connection).send(packetBytes);
       },
       /** @param {import('@agoric/vats/src/localchain').Proto3Jsonable[]} _msgs */
       async executeTx(_msgs) {
@@ -140,7 +140,11 @@ const prepareConnectionHandler = zone =>
   );
 
 export const OrchestrationI = M.interface('Orchestration', {
-  provideAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+  provideAccount: M.callWhen(
+    M.string(),
+    M.string(),
+    M.or(M.remotable('Port'), M.undefined()),
+  ).returns(M.remotable('ChainAccount')),
   getChain: M.callWhen(M.string()).returns(M.remotable('Chain')),
 });
 

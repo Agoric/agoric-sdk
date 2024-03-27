@@ -179,6 +179,7 @@ type WellKnownName = {
     | 'reserve'
     | 'psm'
     | 'scaledPriceAuthority'
+    | 'stakeAtom' // test contract
     | 'stakeBld' // test contract
     | 'econCommitteeCharter'
     | 'priceAggregator';
@@ -193,6 +194,7 @@ type WellKnownName = {
     | 'provisionPool'
     | 'reserve'
     | 'reserveGovernor'
+    | 'stakeAtom' // test contract
     | 'stakeBld' // test contract
     | 'Pegasus';
   oracleBrand: 'USD';
