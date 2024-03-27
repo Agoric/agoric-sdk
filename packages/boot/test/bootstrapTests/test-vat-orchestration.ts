@@ -90,17 +90,13 @@ test('provideAccount returns an ICA connection', async t => {
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
   // XXX this should not throw
   await t.notThrowsAsync(async () => {
-    EV(orchestration).provideAccount(
-      serverLocalAddr,
-      clientLocalAddr,
-      undefined,
-    );
+    EV(orchestration).provideAccount(serverLocalAddr, clientLocalAddr);
   });
 
-  // await t.notThrowsAsync(async () => {
-  //   await EV.sendOnly(ibcServerMock.creatorFacet).dequeue('onAccept');
-  // });
-  // await t.notThrowsAsync(async () => {
-  //   await EV.sendOnly(ibcServerMock.creatorFacet).dequeue('onOpen');
-  // });
+  await t.notThrowsAsync(async () => {
+    await EV.sendOnly(ibcServerMock.creatorFacet).dequeue('onAccept');
+  });
+  await t.notThrowsAsync(async () => {
+    await EV.sendOnly(ibcServerMock.creatorFacet).dequeue('onOpen');
+  });
 });
