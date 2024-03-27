@@ -1,4 +1,5 @@
 import test from 'ava';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { getReplHandler } from '../src/repl.js';
 
 function make() {
@@ -52,8 +53,7 @@ test('repl: basic eval, eventual promise resolution', async t => {
   t.is(m.histnum, 1);
   t.is(m.display, 'unresolved Promise');
   t.deepEqual(sentMessages, []);
-  await Promise.resolve();
-  await Promise.resolve(); // I don't know why two stalls are needed
+  await eventLoopIteration();
   m = sentMessages.shift();
   t.is(m.type, 'updateHistory');
   t.is(m.histnum, 1);
@@ -194,9 +194,7 @@ test('repl: eventual send', async t => {
   t.is(m.histnum, 1);
   t.is(m.display, 'unresolved Promise');
 
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve(); // I don't know why three stalls are needed
+  await eventLoopIteration();
 
   m = sentMessages.shift();
   t.is(m.type, 'updateHistory');
