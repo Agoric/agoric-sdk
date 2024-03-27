@@ -1,11 +1,20 @@
 // @ts-check
 import { E as basicE } from '@endo/eventual-send';
-import { getTag, passStyleOf } from '@endo/pass-style';
-
-// TODO: `isPassable` should come from @endo/pass-style
-import { isPassable } from '@agoric/base-zone';
+import { isPassable } from '@endo/pass-style';
+import { M, matches } from '@endo/patterns';
 
 export { basicE };
+
+export const VowShape = M.tagged(
+  'Vow',
+  M.splitRecord({
+    vowV0: M.remotable('VowV0'),
+  }),
+);
+
+export const isVow = specimen =>
+  isPassable(specimen) && matches(specimen, VowShape);
+harden(isVow);
 
 /**
  * A vow is a passable tagged as 'Vow'.  Its payload is a record with
@@ -19,11 +28,7 @@ export { basicE };
  * @returns {import('./types').VowPayload<T> | undefined} undefined if specimen is not a vow, otherwise the vow's payload.
  */
 export const getVowPayload = specimen => {
-  const isVow =
-    isPassable(specimen) &&
-    passStyleOf(specimen) === 'tagged' &&
-    getTag(specimen) === 'Vow';
-  if (!isVow) {
+  if (!isVow(specimen)) {
     return undefined;
   }
 
@@ -32,3 +37,4 @@ export const getVowPayload = specimen => {
   );
   return vow.payload;
 };
+harden(getVowPayload);

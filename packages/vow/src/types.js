@@ -122,3 +122,10 @@ export {};
  * @template [T=any]
  * @typedef {import('./types.js').ERef<T | import('./types.js').Vow<T>>} Specimen
  */
+
+/**
+ * @typedef {object} VowTools
+ * @property {import('./watch.js').Watch} watch
+ * @property {import('./when.js').When} when
+ * @property {<T = any>() => VowKit<T>} makeVowKit
+ */
