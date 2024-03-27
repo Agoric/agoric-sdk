@@ -78,7 +78,8 @@ RUN apt-get --allow-releaseinfo-change update && apt-get install -y vim jq less 
 WORKDIR /usr/src
 COPY --from=build-js /usr/src/agoric-sdk agoric-sdk
 COPY --from=otel /otelcol-contrib /usr/local/bin/
-RUN ln -s /usr/src/agoric-sdk/bin/agd /usr/local/bin/
+# use the naked binary of agd instead of the wrapper script that rebuilds sometimes
+RUN ln -s /usr/src/agoric-sdk/golang/cosmos/build/agd /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/solo/bin/ag-solo /usr/local/bin/
 RUN ln -s /usr/src/agoric-sdk/packages/agoric-cli/bin/agoric /usr/local/bin/
