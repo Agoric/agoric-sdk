@@ -3,22 +3,23 @@ import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeScalarMapStore } from '@agoric/store/src/index.js';
 
-// stand-in for Promise.any which isn't available to this version.
-const any = promises =>
-  new Promise((resolve, reject) => {
-    for (const promise of promises) {
-      promise.then(resolve);
-    }
-    Promise.allSettled(promises).then(results => {
-      const rejects = results.filter(({ status }) => status === 'rejected');
-      if (rejects.length === results.length) {
-        const messages = rejects.map(({ message }) => message);
-        const aggregate = new Error(messages.join(';'));
-        aggregate.errors = rejects.map(({ reason }) => reason);
-        reject(aggregate);
-      }
-    });
-  });
+// // stand-in for Promise.any which isn't available to this version.
+// // Not in use yet, because it seemed to cause a crash (?)
+// const any = promises =>
+//   new Promise((resolve, reject) => {
+//     for (const promise of promises) {
+//       promise.then(resolve);
+//     }
+//     Promise.allSettled(promises).then(results => {
+//       const rejects = results.filter(({ status }) => status === 'rejected');
+//       if (rejects.length === results.length) {
+//         const messages = rejects.map(({ message }) => message);
+//         const aggregate = new Error(messages.join(';'));
+//         aggregate.errors = rejects.map(({ reason }) => reason);
+//         reject(aggregate);
+//       }
+//     });
+//   });
 
 /**
  * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} powers
@@ -122,8 +123,11 @@ export const upgradeVaults = async (powers, { options }) => {
     console.log('upgraded vaultFactory.', upgradeResult);
   };
 
+  // Wait for at least one new price feed to be ready before upgrading Vaults
   void E.when(
-    // TODO(cth): try any() soon
+    // XXX  use any(). We're not expecting failures, but if they happened we'd
+    // prefer to ignore them. Promise.any() isn't available yet, so we use
+    // race(), which isn't quite right, but it isn't expected to matter.
     Promise.race(
       Object.values(vaultBrands).map(brand =>
         E(priceAuthority).quoteGiven(AmountMath.make(brand, 10n), istBrand),
