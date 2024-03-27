@@ -1,0 +1,13 @@
+diff --git a/node_modules/eslint-plugin-jsdoc/dist/tagNames.js b/node_modules/eslint-plugin-jsdoc/dist/tagNames.js
+index 4d27508..2d9aeb5 100644
+--- a/node_modules/eslint-plugin-jsdoc/dist/tagNames.js
++++ b/node_modules/eslint-plugin-jsdoc/dist/tagNames.js
+@@ -102,6 +102,8 @@ const jsdocTags = exports.jsdocTags = {
+  */
+ const typeScriptTags = exports.typeScriptTags = {
+   ...jsdocTags,
++  // https://github.com/microsoft/TypeScript/issues/22160
++  import: [],
+   // https://www.typescriptlang.org/tsconfig/#stripInternal
+   internal: [],
+   // https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#overload-support-in-jsdoc

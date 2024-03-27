@@ -1,7 +1,7 @@
 /* global process */
 // @ts-check
 
-/** @typedef {import('child_process').ChildProcess} ChildProcess */
+/** @import { ChildProcess } from 'child_process' */
 
 export const getSDKBinaries = ({
   jsPfx = '../..',

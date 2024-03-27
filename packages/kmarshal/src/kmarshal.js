@@ -2,6 +2,8 @@ import { Far, passStyleOf } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
 
+/** @import { ERef } from '@endo/far' */
+
 // Simple wrapper for serializing and unserializing marshalled values inside the
 // kernel, where we don't actually want to use clists nor actually allocate real
 // objects, but instead to stay entirely within the domain of krefs.  This is
@@ -98,7 +100,7 @@ harden(makeStandinPromise);
 /**
  * @param {string} kref
  * @param {string} [iface]
- * @returns {import('@endo/eventual-send').ERef<KCap>}
+ * @returns {ERef<KCap>}
  */
 export const kslot = (kref, iface = 'undefined') => {
   assert.typeof(kref, 'string');
