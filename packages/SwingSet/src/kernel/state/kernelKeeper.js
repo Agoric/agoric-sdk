@@ -1288,15 +1288,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     maybeFreeKrefs.clear();
   }
 
+  function createVatState(vatID, source, options) {
+    initializeVatState(kvStore, transcriptStore, vatID, source, options);
+  }
+
   function provideVatKeeper(vatID) {
     insistVatID(vatID);
     const found = ephemeral.vatKeepers.get(vatID);
     if (found !== undefined) {
       return found;
     }
-    if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, transcriptStore, vatID);
-    }
+    assert(kvStore.has(`${vatID}.o.nextID`), `${vatID} was not initialized`);
     const vk = makeVatKeeper(
       kvStore,
       transcriptStore,
@@ -1610,6 +1612,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
+    createVatState,
     provideVatKeeper,
     vatIsAlive,
     evictVatKeeper,

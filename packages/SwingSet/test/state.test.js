@@ -511,8 +511,11 @@ test('vatKeeper', async t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const source = { bundleID: 'foo' };
+  const options = { workerOptions: 'foo', reapInterval: 1 };
+  k.createVatState(v1, source, options);
+
   const vk = k.provideVatKeeper(v1);
   // TODO: confirm that this level of caching is part of the API
   t.is(vk, k.provideVatKeeper(v1));
@@ -547,18 +550,15 @@ test('vatKeeper.getOptions', async t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
-  const vk = k.provideVatKeeper(v1);
   const bundleID =
     'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  vk.setSourceAndOptions(
-    { bundleID },
-    {
-      workerOptions: { type: 'local' },
-      name: 'fred',
-    },
-  );
+  const source = { bundleID };
+  const workerOptions = { type: 'local' };
+  const options = { workerOptions, name: 'fred', reapInterval: 1 };
+  k.createVatState(v1, source, options);
+
+  const vk = k.provideVatKeeper(v1);
   const { name } = vk.getOptions();
   t.is(name, 'fred');
 });
