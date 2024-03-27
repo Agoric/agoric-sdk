@@ -26,7 +26,7 @@ export function makeVatLoader(stuff) {
     'enablePipelining',
     'useTranscript',
     'critical',
-    'reapInterval',
+    'reapDirtThreshold',
   ];
 
   /**

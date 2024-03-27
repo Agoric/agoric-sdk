@@ -9,7 +9,7 @@ export {
   loadBasedir,
   loadSwingsetConfigFile,
 } from './controller/initializeSwingset.js';
-
+export { upgradeSwingset } from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,
   buildMailbox,

@@ -364,6 +364,7 @@ export default function buildKernel(
    *
    * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
+   * @typedef { import('../types-internal.js').Dirt } Dirt
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
    *  to make vat delivery) emits one of these status events if a delivery
@@ -382,7 +383,7 @@ export default function buildKernel(
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
-   *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
+   *    measureDirt?: { vatID: VatID, dirt: Dirt }, // the dirt counter should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
    *    vatAdminMethargs?: RawMethargs, // methargs to notify vat-admin about create/upgrade results
    * } } CrankResults
@@ -449,16 +450,17 @@ export default function buildKernel(
    * event handler.
    *
    * Two flags influence this:
-   *  `decrementReapCount` is used for deliveries that run userspace code
+   *  `measureDirt` is used for non-BOYD deliveries
    *  `meterID` means we should check a meter
    *
    * @param {VatID} vatID
    * @param {DeliveryStatus} status
-   * @param {boolean} decrementReapCount
+   * @param {boolean} measureDirt
    * @param {MeterID} [meterID]
+   * @param {number} [gcKrefs]
    * @returns {CrankResults}
    */
-  function deliveryCrankResults(vatID, status, decrementReapCount, meterID) {
+  function deliveryCrankResults(vatID, status, measureDirt, meterID, gcKrefs) {
     let meterUnderrun = false;
     let computrons;
     if (status.metering?.compute) {
@@ -502,8 +504,16 @@ export default function buildKernel(
       results.terminate = { vatID, ...status.vatRequestedTermination };
     }
 
-    if (decrementReapCount && !(results.abort || results.terminate)) {
-      results.decrementReapCount = { vatID };
+    if (measureDirt && !(results.abort || results.terminate)) {
+      const dirt = { deliveries: 1 };
+      if (computrons) {
+        // this is BigInt, but we use plain Number in Dirt records
+        dirt.computrons = Number(computrons);
+      }
+      if (gcKrefs) {
+        dirt.gcKrefs = gcKrefs;
+      }
+      results.measureDirt = { vatID, dirt };
     }
 
     // We leave results.consumeMessage up to the caller.  Send failures
@@ -542,7 +552,8 @@ export default function buildKernel(
     }
 
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, true, meterID);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -588,7 +599,8 @@ export default function buildKernel(
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     vatKeeper.deleteCListEntriesForKernelSlots(targets);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, true, meterID);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -616,7 +628,9 @@ export default function buildKernel(
     }
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, false); // no meterID
+    const meterID = undefined; // no meterID
+    const gcKrefs = krefs.length;
+    return deliveryCrankResults(vatID, status, true, meterID, gcKrefs);
   }
 
   /**
@@ -631,11 +645,14 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // can't collect from the dead
     }
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     /** @type { KernelDeliveryBringOutYourDead } */
     const kd = harden([type]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    return deliveryCrankResults(vatID, status, false); // no meter
+    vatKeeper.clearReapDirt(); // BOYD zeros out the when-to-BOYD counters
+    // no gcKrefs, BOYD clears them anyways
+    return deliveryCrankResults(vatID, status, false); // no meter, BOYD clears dirt
   }
 
   /**
@@ -676,8 +693,9 @@ export default function buildKernel(
     const status = await deliverAndLogToVat(vatID, kd, vd);
     // note: if deliveryCrankResults() learns to suspend vats,
     // startVat errors should still terminate them
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
     const results = harden({
-      ...deliveryCrankResults(vatID, status, true, meterID),
+      ...deliveryCrankResults(vatID, status, true, meterID, gcKrefs),
       consumeMessage: true,
     });
     return results;
@@ -742,9 +760,17 @@ export default function buildKernel(
   function setKernelVatOption(vatID, option, value) {
     switch (option) {
       case 'reapInterval': {
+        // This still controls reapDirtThreshold.deliveries, and we do not
+        // yet offer controls for the other limits (gcKrefs or computrons).
         if (value === 'never' || isNat(value)) {
           const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-          vatKeeper.updateReapInterval(value);
+          const threshold = { ...vatKeeper.getReapDirtThreshold() };
+          if (value === 'never') {
+            threshold.deliveries = value;
+          } else {
+            threshold.deliveries = Number(value);
+          }
+          vatKeeper.setReapDirtThreshold(threshold);
         } else {
           console.log(`WARNING: invalid reapInterval value`, value);
         }
@@ -884,6 +910,7 @@ export default function buildKernel(
     const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
     const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
     const boydResults = deliveryCrankResults(vatID, boydStatus, false);
+    vatKeeper.clearReapDirt();
 
     // we don't meter bringOutYourDead since no user code is running, but we
     // still report computrons to the runPolicy
@@ -958,7 +985,14 @@ export default function buildKernel(
       startVatKD,
       startVatVD,
     );
-    const startVatResults = deliveryCrankResults(vatID, startVatStatus, false);
+    const gcKrefs = undefined; // TODO maybe increase by number of vrefs in args?
+    const startVatResults = deliveryCrankResults(
+      vatID,
+      startVatStatus,
+      true,
+      meterID,
+      gcKrefs,
+    );
     computrons = addComputrons(computrons, startVatResults.computrons);
 
     if (startVatResults.terminate) {
@@ -1299,13 +1333,11 @@ export default function buildKernel(
         }
       }
     }
-    if (crankResults.decrementReapCount) {
+    if (crankResults.measureDirt) {
       // deliveries cause garbage, garbage needs collection
-      const { vatID } = crankResults.decrementReapCount;
+      const { vatID, dirt } = crankResults.measureDirt;
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      if (vatKeeper.countdownToReap()) {
-        kernelKeeper.scheduleReap(vatID);
-      }
+      vatKeeper.addDirt(dirt); // might schedule a reap for that vat
     }
 
     // Vat termination (during delivery) is triggered by an illegal
@@ -1579,10 +1611,14 @@ export default function buildKernel(
       'bundleID',
       'enablePipelining',
       'reapInterval',
+      'reapGCKrefs',
+      'neverReap',
     ]);
     const {
       bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
       reapInterval = 'never',
+      reapGCKrefs = 'never',
+      neverReap = false,
       enablePipelining,
     } = creationOptions;
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
@@ -1594,6 +1630,8 @@ export default function buildKernel(
     const options = {
       name,
       reapInterval,
+      reapGCKrefs,
+      neverReap,
       enablePipelining,
       managerType,
     };
@@ -1740,14 +1778,38 @@ export default function buildKernel(
   }
 
   function changeKernelOptions(options) {
-    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
+    assertKnownOptions(options, [
+      'defaultReapInterval',
+      'defaultReapGCKrefs',
+      'snapshotInterval',
+    ]);
     kernelKeeper.startCrank();
     try {
       for (const option of Object.getOwnPropertyNames(options)) {
         const value = options[option];
         switch (option) {
           case 'defaultReapInterval': {
-            kernelKeeper.setDefaultReapInterval(value);
+            if (typeof value === 'number') {
+              assert(value > 0, `defaultReapInterval = ${value}`);
+            } else {
+              assert.equal(value, 'never', `defaultReapInterval = ${value}`);
+            }
+            kernelKeeper.setDefaultReapDirtThreshold({
+              ...kernelKeeper.getDefaultReapDirtThreshold(),
+              deliveries: value,
+            });
+            break;
+          }
+          case 'defaultReapGCKrefs': {
+            if (typeof value === 'number') {
+              assert(value > 0, `defaultReapGCKrefs = ${value}`);
+            } else {
+              assert.equal(value, 'never', `defaultReapGCKrefs = ${value}`);
+            }
+            kernelKeeper.setDefaultReapDirtThreshold({
+              ...kernelKeeper.getDefaultReapDirtThreshold(),
+              gcKrefs: value,
+            });
             break;
           }
           case 'snapshotInterval': {
