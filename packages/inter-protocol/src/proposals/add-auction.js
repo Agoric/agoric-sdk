@@ -125,7 +125,6 @@ export const addAuction = async ({
     ),
   );
 
-  // don't overwrite auctioneerKit yet
   newAuctioneerKit.resolve(
     harden({
       label: 'auctioneer',
@@ -139,7 +138,8 @@ export const addAuction = async ({
       governorAdminFacet: governorStartResult.adminFacet,
     }),
   );
-  // don't replace auction instance yet.
+  // don't overwrite auctioneerKit or auction instance yet. Wait until
+  // upgrade-vault.js
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
