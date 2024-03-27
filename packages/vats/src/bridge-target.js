@@ -34,11 +34,13 @@ const TargetUnregisterI = M.interface('TargetUnregister', {
 /**
  * @typedef {object} TargetRegistry
  * @property {(target: string, app: ERef<App>) => Promise<TargetUnregister>} register
+ * @property {(target: string) => Promise<void>} unregister
  */
 const TargetRegistryI = M.interface('TargetRegistry', {
   register: M.callWhen(M.string(), M.await(M.remotable('AppI'))).returns(
     M.remotable('TargetUnregister'),
   ),
+  unregister: M.callWhen(M.string()).returns(),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -47,18 +49,25 @@ export const prepareTargetUnregister = zone =>
     'TargetUnregister',
     TargetUnregisterI,
     /**
+     * @param {System} system
      * @param {string} target
      * @param {MapStore<string, ERef<App>>} targetToApp
      */
-    (target, targetToApp) => ({ target, targetToApp, registered: true }),
+    (system, target, targetToApp) => ({
+      system,
+      target,
+      targetToApp,
+      registered: true,
+    }),
     {
       async unregister() {
-        const { target, targetToApp, registered } = this.state;
+        const { system, target, targetToApp, registered } = this.state;
         if (!registered) {
           throw Error(`This target is already unregistered`);
         }
         this.state.registered = false;
         targetToApp.delete(target);
+        await E(system).downcall({ type: 'BRIDGE_TARGET_UNREGISTER', target });
       },
     },
   );
@@ -106,10 +115,25 @@ export const prepareBridgeTargetKit = (zone, makeTargetUnregister) =>
         },
       },
       targetRegistry: {
-        async register(target, app) {
+        async unregister(target) {
+          const { system } = this.facets;
           const { targetToApp } = this.state;
+          const unregistrar = makeTargetUnregister(system, target, targetToApp);
+          return unregistrar.unregister();
+        },
+        async register(target, app) {
+          const { system } = this.facets;
+          const { targetToApp } = this.state;
+
+          const unregistrar = makeTargetUnregister(system, target, targetToApp);
+          if (targetToApp.has(target)) {
+            targetToApp.set(target, app);
+            return unregistrar;
+          }
+
           targetToApp.init(target, app);
-          return makeTargetUnregister(target, targetToApp);
+          await E(system).downcall({ type: 'BRIDGE_TARGET_REGISTER', target });
+          return unregistrar;
         },
       },
     },

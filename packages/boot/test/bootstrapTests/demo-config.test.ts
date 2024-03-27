@@ -186,13 +186,17 @@ test('vtransfer', async t => {
   const messages = getOutboundMessages(BridgeId.VTRANSFER);
   t.deepEqual(messages, [
     {
+      target: 'agoric1vtransfertest',
+      type: 'BRIDGE_TARGET_REGISTER',
+    },
+    {
       ack: 'eyJldmVudCI6IndyaXRlQWNrbm93bGVkZ2VtZW50IiwicGFja2V0IjoidGhpc0lzUGFja2V0IiwidGFyZ2V0IjoiYWdvcmljMXZ0cmFuc2ZlcnRlc3QiLCJ0eXBlIjoiVlRSQU5TRkVSX0lCQ19FVkVOVCJ9',
       method: 'receiveExecuted',
       packet: 'thisIsPacket',
       type: 'IBC_METHOD',
     },
   ]);
-  t.deepEqual(JSON.parse(atob(messages[0].ack)), {
+  t.deepEqual(JSON.parse(atob(messages[1].ack)), {
     event: 'writeAcknowledgement',
     packet: 'thisIsPacket',
     target: 'agoric1vtransfertest',

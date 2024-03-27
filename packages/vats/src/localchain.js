@@ -33,9 +33,9 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   deposit: M.callWhen(PaymentShape).optional(M.pattern()).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
-  interceptTransfers: M.callWhen(M.remotable('TransferTap')).returns(
-    M.remotable('Unregistrar'),
-  ),
+  interceptTransfers: M.callWhen()
+    .optional(M.remotable('TransferTap'))
+    .returns(M.opt(M.remotable('Unregistrar'))),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -112,7 +112,10 @@ const prepareLocalChainAccount = zone =>
       },
       async interceptTransfers(tap) {
         const { address, transfer } = this.state;
-        return E(transfer).intercept(address, tap);
+        if (tap) {
+          return E(transfer).registerTap(address, tap);
+        }
+        await E(transfer).unregisterTap(address);
       },
     },
   );
