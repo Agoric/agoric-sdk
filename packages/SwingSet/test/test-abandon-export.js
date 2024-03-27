@@ -93,6 +93,7 @@ async function doAbandon(t, reachable) {
     kref: bobKref,
     log: logB,
     syscall: syscallB,
+    flushDeliveries: flushDeliveriesB,
   } = await makeTestVat(t, kernel, 'vatB');
   await kernel.run();
 
@@ -142,16 +143,24 @@ async function doAbandon(t, reachable) {
 
   // now have vatB abandon the export
   syscallB.abandonExports([targetForBob]);
-  await flushDeliveriesA();
-
-  // no GC messages for either vat
-  t.deepEqual(logA, []);
-  t.deepEqual(logB, []);
-
+  await flushDeliveriesB();
   targetOwner = kvStore.get(`${targetKref}.owner`);
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
-  t.is(targetOwner, undefined);
-  t.is(targetRefCount, expectedRefCount); // unchanged
+
+  if (reachable) {
+    // no GC messages for either vat
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+    t.is(targetOwner, undefined);
+    t.is(targetRefCount, expectedRefCount); // unchanged
+  } else {
+    // 'target' was orphaned and unreachable, kernel will delete it,
+    // so A will get a retireImports now
+    assertSingleEntryLog(t, logA, 'retireImports', { vrefs: [targetForAlice] });
+    t.deepEqual(logB, []);
+    t.is(targetOwner, undefined);
+    t.is(targetRefCount, undefined);
+  }
 
   if (reachable) {
     // vatA can send a message, but it will reject
@@ -184,13 +193,12 @@ async function doAbandon(t, reachable) {
     targetRefCount = kvStore.get(`${targetKref}.refCount`);
     expectedRefCount = '0,1';
     t.is(targetRefCount, expectedRefCount); // merely recognizable
+    // vatA also retires the object
+    syscallA.retireImports([targetForAlice]);
+    await flushDeliveriesA();
+    // vatB should not get a dispatch.retireImports either
+    t.deepEqual(logB, []);
   }
-
-  // now vatA retires the object too
-  syscallA.retireImports([targetForAlice]);
-  await flushDeliveriesA();
-  // vatB should not get a dispatch.retireImports
-  t.deepEqual(logB, []);
   // the object no longer exists
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
   expectedRefCount = undefined;

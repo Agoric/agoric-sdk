@@ -4,6 +4,7 @@ export function buildRootObject(vatPowers) {
   const pin = [];
   const doomedExport1 = Far('doomedExport1', {});
   const doomedExport2 = Far('doomedExport2', {});
+  const doomedExport3 = Far('doomedExport3', {});
   return Far('root', {
     accept(exportToDoomedPresence) {
       pin.push(exportToDoomedPresence);
@@ -13,6 +14,9 @@ export function buildRootObject(vatPowers) {
     },
     stashDoomedExport2(target) {
       E(E(target).one()).neverCalled(doomedExport2);
+    },
+    getDoomedExport3() {
+      return doomedExport3;
     },
     terminate() {
       vatPowers.exitVat('completion');

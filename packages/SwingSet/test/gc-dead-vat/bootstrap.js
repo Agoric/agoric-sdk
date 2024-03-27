@@ -1,5 +1,6 @@
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeScalarBigWeakSetStore } from '@agoric/vat-data';
 
 async function sendExport(doomedRoot) {
   const exportToDoomed = Far('exportToDoomed', {});
@@ -11,6 +12,7 @@ export function buildRootObject() {
   let doomedRoot;
   const pin = [];
   const pk1 = makePromiseKit();
+  const wh = makeScalarBigWeakSetStore('weak-holder');
   return Far('root', {
     async bootstrap(vats, devices) {
       const vatMaker = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
@@ -19,6 +21,8 @@ export function buildRootObject() {
       await sendExport(doomedRoot);
       const doomedExport1Presence = await E(doomedRoot).getDoomedExport1();
       pin.push(doomedExport1Presence);
+      const doomedExport3Presence = await E(doomedRoot).getDoomedExport3();
+      wh.add(doomedExport3Presence);
     },
     async stash() {
       // Give vat-doomed a target that doesn't resolve one() right away.

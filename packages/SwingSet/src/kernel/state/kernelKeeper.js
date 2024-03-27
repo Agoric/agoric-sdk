@@ -585,13 +585,38 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return owner;
   }
 
-  function orphanKernelObject(kref, oldVat) {
-    const ownerKey = `${kref}.owner`;
-    const ownerVat = kvStore.get(ownerKey);
-    ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
-    kvStore.delete(ownerKey);
-    // note that we do not delete the object here: it will be
-    // collected if/when all other references are dropped
+  function retireKernelObjects(koids) {
+    Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
+    const newActions = [];
+    for (const koid of koids) {
+      const importers = getImporters(koid);
+      for (const vatID of importers) {
+        newActions.push(`${vatID} retireImport ${koid}`);
+      }
+      // TODO: decref and delete any #2069 auxdata
+      deleteKernelObject(koid);
+    }
+    addGCActions(newActions);
+  }
+
+  function orphanKernelObjects(krefs, oldVat) {
+    const retiredKrefs = [];
+    for (const kref of krefs) {
+      const ownerKey = `${kref}.owner`;
+      const ownerVat = kvStore.get(ownerKey);
+      ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
+      kvStore.delete(ownerKey);
+      if (getObjectRefCount(kref).reachable === 0) {
+        // unreachable orphans are retired: the original exporting vat
+        // won't be around to retire it
+        retiredKrefs.push(kref);
+      }
+      // else, note that we do not delete the object here: it will be
+      // collected if/when all other references are dropped
+    }
+    if (retiredKrefs.length) {
+      retireKernelObjects(retiredKrefs);
+    }
   }
 
   function deleteKernelObject(koid) {
@@ -809,6 +834,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     // used.
 
     // first, scan for exported objects, which must be orphaned
+    const orphanedKrefs = [];
     for (const k of enumeratePrefixedKeys(kvStore, exportPrefix)) {
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
@@ -818,8 +844,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       // must also delete the corresponding kernel owner entry for the object,
       // since the object will no longer be accessible.
       const kref = kvStore.get(k);
-      orphanKernelObject(kref, vatID);
+      orphanedKrefs.push(kref);
     }
+    orphanKernelObjects(orphanedKrefs, vatID);
 
     // then scan for imported objects, which must be decrefed
     for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
@@ -1570,7 +1597,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     ownerOfKernelDevice,
     kernelObjectExists,
     getImporters,
-    orphanKernelObject,
+    retireKernelObjects,
+    orphanKernelObjects,
     deleteKernelObject,
     pinObject,
 

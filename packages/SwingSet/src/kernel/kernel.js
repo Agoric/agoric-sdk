@@ -904,12 +904,14 @@ export default function buildKernel(
     const abandonedObjects = [
       ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
     ];
+    const orphanedKrefs = [];
     for (const { kref, vref } of abandonedObjects) {
       /** @see translateAbandonExports in {@link ./vatTranslator.js} */
       vatKeeper.deleteCListEntry(kref, vref);
-      /** @see abandonExports in {@link ./kernelSyscall.js} */
-      kernelKeeper.orphanKernelObject(kref, vatID);
+      orphanedKrefs.push(kref);
     }
+    /** @see abandonExports in {@link ./kernelSyscall.js} */
+    kernelKeeper.orphanKernelObjects(orphanedKrefs, vatID);
 
     // cleanup done, now we reset the worker to a clean state with no
     // transcript or snapshot and prime everything for the next incarnation.
