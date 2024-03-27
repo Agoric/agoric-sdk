@@ -61,9 +61,11 @@ export const prepareTransferInterceptor = zone =>
 harden(prepareTransferInterceptor);
 
 const TransferMiddlewareI = M.interface('TransferMiddleware', {
-  intercept: M.callWhen(M.string(), M.remotable('TransferInterceptor')).returns(
-    M.remotable('TargetUnregister'),
-  ),
+  registerTap: M.callWhen(
+    M.string(),
+    M.remotable('TransferInterceptor'),
+  ).returns(M.remotable('TargetUnregister')),
+  unregisterTap: M.callWhen(M.string()).returns(),
 });
 
 /**
@@ -81,15 +83,27 @@ const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
     (system, targetRegistry) => ({ system, targetRegistry }),
     {
       /**
-       * @param {string} target
-       * @param {ERef<import('./bridge-target.js').App>} tap
+       * @param {string} target String identifying the bridge target.
+       * @param {ERef<import('./bridge-target.js').App>} tap The "application
+       *   tap" to register for the target.
        */
-      async intercept(target, tap) {
+      async registerTap(target, tap) {
         const { system, targetRegistry } = this.state;
+
         // Wrap the tap so that its upcall results determine how to contact the
         // system.  Never allow the tap to send to the system directly.
         const interceptor = makeTransferInterceptor(system, tap);
         return E(targetRegistry).register(target, interceptor);
+      },
+      /**
+       * Unregister the target.
+       *
+       * @param {string} target String identifying the bridge target to stop
+       *   tapping.
+       */
+      async unregisterTap(target) {
+        const { targetRegistry } = this.state;
+        await E(targetRegistry).unregister(target);
       },
     },
   );
