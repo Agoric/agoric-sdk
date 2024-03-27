@@ -3,23 +3,24 @@ import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeScalarMapStore } from '@agoric/store/src/index.js';
 
-// // stand-in for Promise.any which isn't available to this version.
-// // Not in use yet, because it seemed to cause a crash (?)
-// const any = promises =>
-//   new Promise((resolve, reject) => {
-//     for (const promise of promises) {
-//       promise.then(resolve);
-//     }
-//     Promise.allSettled(promises).then(results => {
-//       const rejects = results.filter(({ status }) => status === 'rejected');
-//       if (rejects.length === results.length) {
-//         const messages = rejects.map(({ message }) => message);
-//         const aggregate = new Error(messages.join(';'));
-//         aggregate.errors = rejects.map(({ reason }) => reason);
-//         reject(aggregate);
-//       }
-//     });
-//   });
+// stand-in for Promise.any() which isn't available at this point.
+const any = promises =>
+  new Promise((resolve, reject) => {
+    for (const promise of promises) {
+      promise.then(resolve);
+    }
+    void Promise.allSettled(promises).then(results => {
+      const rejects = results.filter(({ status }) => status === 'rejected');
+      if (rejects.length === results.length) {
+        // @ts-expect-error TypeScript doesn't know enough
+        const messages = rejects.map(({ message }) => message);
+        const aggregate = new Error(messages.join(';'));
+        // @ts-expect-error TypeScript doesn't know enough
+        aggregate.errors = rejects.map(({ reason }) => reason);
+        reject(aggregate);
+      }
+    });
+  });
 
 /**
  * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} powers
@@ -59,8 +60,7 @@ export const upgradeVaults = async (powers, { options }) => {
         installationP,
         installation =>
           E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-            // TODO(cth)  fix!
-            'aultFact',
+            'vaultFactory',
             installation,
           ),
         err =>
@@ -74,7 +74,7 @@ export const upgradeVaults = async (powers, { options }) => {
 
     await null;
 
-    const params = makeScalarMapStore('brand');
+    const params = {};
     for (const kwd of Object.keys(vaultBrands)) {
       const b = vaultBrands[kwd];
       const subscription = E(directorPF).getSubscription({
@@ -82,17 +82,15 @@ export const upgradeVaults = async (powers, { options }) => {
       });
       const notifier = makeNotifierFromAsyncIterable(subscription);
       const { value } = await notifier.getUpdateSince();
-      params.init(
-        b,
-        harden({
-          debtLimit: value.current.DebtLimit.value,
-          interestRate: value.current.InterestRate.value,
-          liquidationMargin: value.current.LiquidationMargin.value,
-          liquidationPadding: value.current.LiquidationPadding.value,
-          liquidationPenalty: value.current.LiquidationPenalty.value,
-          mintFee: value.current.MintFee.value,
-        }),
-      );
+      params[kwd] = harden({
+        brand: b,
+        debtLimit: value.current.DebtLimit.value,
+        interestRate: value.current.InterestRate.value,
+        liquidationMargin: value.current.LiquidationMargin.value,
+        liquidationPadding: value.current.LiquidationPadding.value,
+        liquidationPenalty: value.current.LiquidationPenalty.value,
+        mintFee: value.current.MintFee.value,
+      });
     }
     return params;
   };
@@ -129,10 +127,7 @@ export const upgradeVaults = async (powers, { options }) => {
 
   // Wait for at least one new price feed to be ready before upgrading Vaults
   void E.when(
-    // XXX  use any(). We're not expecting failures, but if they happened we'd
-    // prefer to ignore them. Promise.any() isn't available yet, so we use
-    // race(), which isn't quite right, but it isn't expected to matter.
-    Promise.race(
+    any(
       Object.values(vaultBrands).map(brand =>
         E(priceAuthority).quoteGiven(AmountMath.make(brand, 10n), istBrand),
       ),

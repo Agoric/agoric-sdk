@@ -164,6 +164,18 @@ export const makeGovernedTerms = ({
 };
 harden(makeGovernedTerms);
 
+// XXX Better to declare this as VaultManagerParamValues + brand. How?
+/**
+ * @typedef {object} VaultManagerParams
+ * @property {Brand} brand
+ * @property {Ratio} liquidationMargin
+ * @property {Ratio} liquidationPenalty
+ * @property {Ratio} interestRate
+ * @property {Ratio} mintFee
+ * @property {Amount<'nat'>} debtLimit
+ * @property {Ratio} [liquidationPadding]
+ */
+
 /**
  * Stop-gap which restores initial param values UNTIL
  * https://github.com/Agoric/agoric-sdk/issues/5200
@@ -172,8 +184,8 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
- * @param {MapStore<Brand, VaultManagerParamValues>} managerParamValues - sets
- *   of parameters keyed by Brand. override stored initial values
+ * @param {Record<string, VaultManagerParams>} managerParamValues - sets of
+ *   parameters (plus brand:) keyed by Keyword. override stored initial values
  */
 export const provideVaultParamManagers = (
   baggage,
@@ -206,8 +218,15 @@ export const provideVaultParamManagers = (
 
   // restore from baggage, unless `managerParamValues` overrides.
   for (const [brand, args] of managerArgs.entries()) {
-    if (managerParamValues.has(brand)) {
-      const values = managerParamValues.get(brand);
+    let values;
+    for (const key of Object.keys(managerParamValues)) {
+      if (managerParamValues[+key].brand === brand) {
+        values = managerParamValues[+key];
+        break;
+      }
+    }
+
+    if (values) {
       makeManager(brand, { ...args, initialParamValues: values });
     } else {
       makeManager(brand, args);

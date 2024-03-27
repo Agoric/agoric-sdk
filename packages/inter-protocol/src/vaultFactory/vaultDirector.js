@@ -151,12 +151,10 @@ const prepareVaultDirector = (
     const oldInvitation = baggage.has(shortfallInvitationKey)
       ? baggage.get(shortfallInvitationKey)
       : undefined;
-    console.log('@@@@@ Old Invitation', oldInvitation);
 
     const newInvitation = await directorParamManager.getInternalParamValue(
       SHORTFALL_INVITATION_KEY,
     );
-    console.log('@@@@@ New Invitation', newInvitation);
 
     if (newInvitation === oldInvitation) {
       shortfallReporter ||

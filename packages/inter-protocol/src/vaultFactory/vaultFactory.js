@@ -70,6 +70,7 @@ harden(meta);
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
  *   auctioneerInstance: Instance;
+ *   managerParams: Record<string, import('./params.js').VaultManagerParams>;
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
