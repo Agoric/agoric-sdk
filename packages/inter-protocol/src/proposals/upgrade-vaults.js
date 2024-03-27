@@ -1,7 +1,9 @@
-import { E } from '@endo/far';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
-import { makeScalarMapStore } from '@agoric/store/src/index.js';
+import { makeTracer } from '@agoric/internal';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
+import { E } from '@endo/far';
+
+const trace = makeTracer('UpgradeVaults');
 
 // stand-in for Promise.any() which isn't available at this point.
 const any = promises =>
@@ -82,6 +84,7 @@ export const upgradeVaults = async (powers, { options }) => {
       });
       const notifier = makeNotifierFromAsyncIterable(subscription);
       const { value } = await notifier.getUpdateSince();
+      trace('readManagerParams', kwd, value.current);
       params[kwd] = harden({
         brand: b,
         debtLimit: value.current.DebtLimit.value,
