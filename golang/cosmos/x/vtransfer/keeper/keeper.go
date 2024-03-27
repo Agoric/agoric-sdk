@@ -1,7 +1,11 @@
 package keeper
 
 import (
+	"context"
+	"encoding/json"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -18,6 +22,11 @@ import (
 
 var (
 	_ porttypes.ICS4Wrapper = (*Keeper)(nil)
+)
+
+const (
+	targetedStoreKeyPrefix = "tgt/"
+	targetedSentinel       = "\x01"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
@@ -141,13 +150,48 @@ func (k Keeper) InterceptOnTimeoutPacket(
 	return firstErr
 }
 
+func targetedAccount(store storetypes.KVStore, addr string) string {
+	if store.Has([]byte(addr)) {
+		return addr
+	}
+	return ""
+}
+
 // Check the packet to see if this is a contract invocation.
-func (k Keeper) parseTransfer(_ sdk.Context, packet ibcexported.PacketI) (string, string, error) {
+func (k Keeper) parseTransfer(ctx sdk.Context, packet ibcexported.PacketI) (string, string, error) {
 	var transferData transfertypes.FungibleTokenPacketData
 	err := k.cdc.UnmarshalJSON(packet.GetData(), &transferData)
 	if err != nil {
 		return "", "", err
 	}
 
-	return transferData.Sender, transferData.Receiver, nil
+	store := prefix.NewStore(ctx.KVStore(k.key), []byte(targetedStoreKeyPrefix))
+
+	sender := targetedAccount(store, transferData.Sender)
+	receiver := targetedAccount(store, transferData.Receiver)
+	return sender, receiver, nil
+}
+
+type registrationAction struct {
+	Type   string `json:"type"` // BRIDGE_TARGET_REGISTER or BRIDGE_TARGET_UNREGISTER
+	Target string `json:"target"`
+}
+
+func (k Keeper) Receive(cctx context.Context, str string) (ret string, err error) {
+	ctx := sdk.UnwrapSDKContext(cctx)
+	var msg registrationAction
+	if err := json.Unmarshal([]byte(str), &msg); err != nil {
+		return "", err
+	}
+
+	store := prefix.NewStore(ctx.KVStore(k.key), []byte(targetedStoreKeyPrefix))
+	switch msg.Type {
+	case "BRIDGE_TARGET_REGISTER":
+		store.Set([]byte(msg.Target), []byte(targetedSentinel))
+	case "BRIDGE_TARGET_UNREGISTER":
+		store.Delete([]byte(msg.Target))
+	default:
+		return "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
+	}
+	return "true", nil
 }

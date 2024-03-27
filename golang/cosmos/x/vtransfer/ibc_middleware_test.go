@@ -253,6 +253,21 @@ func (s *IntegrationTestSuite) checkQueue(qvalues []string, expected []swingsett
 	}
 }
 
+func (s *IntegrationTestSuite) RegisterTarget(chain *ibctesting.TestChain, target string) {
+	agdServer := s.GetApp(chain).AgdServer
+	defer agdServer.SetControllerContext(chain.GetContext())()
+	var reply string
+	err := agdServer.ReceiveMessage(
+		&vm.Message{
+			Port: agdServer.GetPort("vtransfer"),
+			Data: `{"type":"BRIDGE_TARGET_REGISTER","target":"` + target + `"}`,
+		},
+		&reply,
+	)
+	s.Require().NoError(err)
+	s.Require().Equal(reply, "true")
+}
+
 func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 	path := s.NewTransferPath()
 	s.Require().Equal(path.EndpointA.ChannelID, "channel-1050")
@@ -266,6 +281,10 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 			s.chainB.SenderAccounts[1].SenderAccount.GetAddress().String(),
 			`"This is a JSON memo"`,
 		)
+
+		// Register the sender and receiver as targets.
+		s.RegisterTarget(s.chainA, transfer.Sender)
+		s.RegisterTarget(s.chainB, transfer.Receiver)
 
 		tokenAmt, ok := sdk.NewIntFromString(transfer.Amount)
 		s.Require().True(ok)
