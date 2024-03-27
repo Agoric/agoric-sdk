@@ -11,6 +11,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
+import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import { checkKT } from './util.js';
 
 const emptyVP = kser({});
@@ -486,4 +487,17 @@ test.serial('bootstrap export', async t => {
   removeTriple(kt, timer0, timerVatID, 'o+0');
   removeTriple(kt, vattp0, vatTPVatID, 'o+0');
   checkKT(t, c, kt);
+});
+
+test('comms vat does not BOYD', async t => {
+  const config = {};
+  const kernelStorage = initSwingStore().kernelStorage;
+  const controller = await buildVatController(config, [], { kernelStorage });
+  t.teardown(controller.shutdown);
+  const k = makeKernelKeeper(kernelStorage, null);
+  const commsVatID = k.getVatIDForName('comms');
+  t.deepEqual(
+    JSON.parse(k.kvStore.get(`${commsVatID}.options`)).reapDirtThreshold,
+    { never: true },
+  );
 });

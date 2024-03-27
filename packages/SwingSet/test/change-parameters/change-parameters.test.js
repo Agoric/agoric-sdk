@@ -29,20 +29,36 @@ async function testChangeParameters(t) {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  t.is(kvStore.get('kernel.defaultReapInterval'), '1');
+  t.deepEqual(JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold')), {
+    deliveries: 1,
+    gcKrefs: 20,
+    computrons: 'never',
+  });
   c.changeKernelOptions({
     snapshotInterval: 1000,
     defaultReapInterval: 10,
   });
-  t.is(kvStore.get('kernel.defaultReapInterval'), '10');
+  t.deepEqual(JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold')), {
+    deliveries: 10,
+    gcKrefs: 20,
+    computrons: 'never',
+  });
   t.throws(() => c.changeKernelOptions({ defaultReapInterval: 'banana' }), {
-    message: 'invalid defaultReapInterval value',
+    message: 'defaultReapInterval = banana',
   });
   t.throws(() => c.changeKernelOptions({ snapshotInterval: 'elephant' }), {
     message: 'invalid heap snapshotInterval value',
   });
   t.throws(() => c.changeKernelOptions({ baz: 'howdy' }), {
     message: 'unknown option "baz"',
+  });
+  c.changeKernelOptions({
+    defaultReapGCKrefs: 77,
+  });
+  t.deepEqual(JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold')), {
+    deliveries: 10,
+    gcKrefs: 77,
+    computrons: 'never',
   });
 
   async function run(method, args = []) {
@@ -57,7 +73,10 @@ async function testChangeParameters(t) {
   // setup target vat
   const [prepStatus] = await run('prepare', []);
   t.is(prepStatus, 'fulfilled');
-  t.is(kvStore.get('v6.reapInterval'), '10');
+  // the vat was created without option overrides, so
+  // reapDirtThreshold will be empty (everything defaults to the
+  // kernel-wide values)
+  t.deepEqual(JSON.parse(kvStore.get('v6.options')).reapDirtThreshold, {});
 
   // now fiddle with stuff
   const [c1Status, c1Result] = await run('change', [{ foo: 47 }]);
@@ -71,7 +90,9 @@ async function testChangeParameters(t) {
   const [c4Status, c4Result] = await run('change', [{ reapInterval: 20 }]);
   t.is(c4Status, 'fulfilled');
   t.is(c4Result, 'ok');
-  t.is(kvStore.get('v6.reapInterval'), '20');
+  t.deepEqual(JSON.parse(kvStore.get('v6.options')).reapDirtThreshold, {
+    deliveries: 20,
+  });
 }
 
 test('change vat options', async t => {
