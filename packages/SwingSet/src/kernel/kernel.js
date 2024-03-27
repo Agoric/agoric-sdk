@@ -252,8 +252,7 @@ export default function buildKernel(
    */
   async function terminateVat(vatID, shouldReject, info) {
     console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const critical = vatKeeper.getOptions().critical;
+    let critical = false;
     insistCapData(info);
     // ISSUE: terminate stuff in its own crank like creation?
     // TODO: if a static vat terminates, panic the kernel?
@@ -264,6 +263,14 @@ export default function buildKernel(
     // check will report 'false'. That's fine, there's no state to
     // clean up.
     if (kernelKeeper.vatIsAlive(vatID)) {
+      // If there was no vat state, we can't make a vatKeeper to ask for
+      // options. For now, pretend the vat was non-critical. This will fail
+      // to panic the kernel for startVat failures in critical vats
+      // (#9157). The fix will add .critical to CrankResults, populated by a
+      // getOptions query in deliveryCrankResults() or copied from
+      // dynamicOptions in processCreateVat.
+      critical = kernelKeeper.provideVatKeeper(vatID).getOptions().critical;
+
       // Reject all promises decided by the vat, making sure to capture the list
       // of kpids before that data is deleted.
       const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];

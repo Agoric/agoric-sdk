@@ -39,11 +39,30 @@ const FIRST_DEVICE_ID = 70n;
  * @param {*} transcriptStore  Accompanying transcript store
  * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
+ * @param {SourceOfBundle} source
+ * @param {RecordedVatOptions} options
  */
-export function initializeVatState(kvStore, transcriptStore, vatID) {
+export function initializeVatState(
+  kvStore,
+  transcriptStore,
+  vatID,
+  source,
+  options,
+) {
+  assert(options.workerOptions, `vat ${vatID} options missing workerOptions`);
+  assert(source);
+  assert('bundle' in source || 'bundleName' in source || 'bundleID' in source);
+  assert.typeof(options, 'object');
+  const count = options.reapInterval;
+  assert(count === 'never' || isNat(count), `bad reapCountdown ${count}`);
+
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.source`, JSON.stringify(source));
+  kvStore.set(`${vatID}.options`, JSON.stringify(options));
+  kvStore.set(`${vatID}.reapInterval`, `${count}`);
+  kvStore.set(`${vatID}.reapCountdown`, `${count}`);
   transcriptStore.initTranscript(vatID);
 }
 
@@ -125,14 +144,8 @@ export function makeVatKeeper(
 
   function getOptions() {
     /** @type { RecordedVatOptions } */
-    const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
+    const options = JSON.parse(getRequired(`${vatID}.options`));
     return harden(options);
-  }
-
-  function initializeReapCountdown(count) {
-    count === 'never' || isNat(count) || Fail`bad reapCountdown ${count}`;
-    kvStore.set(`${vatID}.reapInterval`, `${count}`);
-    kvStore.set(`${vatID}.reapCountdown`, `${count}`);
   }
 
   function updateReapInterval(reapInterval) {
@@ -656,7 +669,6 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
-    initializeReapCountdown,
     countdownToReap,
     updateReapInterval,
     nextDeliveryNum,
