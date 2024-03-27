@@ -30,12 +30,16 @@ export const upgradeVaults = async (powers, { options }) => {
   const {
     consume: {
       agoricNamesAdmin,
-      auctioneerKit: auctioneerKitP,
+      newAuctioneerKit: auctioneerKitP,
       priceAuthority,
       vaultFactoryKit,
       zoe,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
+    },
+    produce: { auctioneerKit: auctioneerKitProducer },
+    instance: {
+      produce: { auctioneer: auctioneerProducer },
     },
   } = powers;
   const { vaultsRef } = options;
@@ -128,7 +132,13 @@ export const upgradeVaults = async (powers, { options }) => {
         E(priceAuthority).quoteGiven(AmountMath.make(brand, 10n), istBrand),
       ),
     ),
-    () => upgradeVaultFactory(),
+    async () => {
+      await upgradeVaultFactory();
+      auctioneerKitProducer.reset();
+      auctioneerKitProducer.resolve(auctioneerKit);
+      auctioneerProducer.reset();
+      auctioneerProducer.resolve(auctioneerKit.instance);
+    },
   );
 
   console.log(`upgradeVaults scheduled; waiting for priceFeeds`);
@@ -149,7 +159,7 @@ export const getManifestForUpgradeVaults = async (
     [upgradeVaults.name]: {
       consume: {
         agoricNamesAdmin: t,
-        auctioneerKit: t,
+        newAuctioneerKit: t,
         economicCommitteeCreatorFacet: t,
         priceAuthority: t,
         reserveKit: t,
@@ -157,6 +167,8 @@ export const getManifestForUpgradeVaults = async (
         board: t,
         zoe: t,
       },
+      produce: { auctioneerKit: t },
+      instance: { produce: { auctioneer: t } },
     },
   },
   options: { ...vaultUpgradeOptions },
