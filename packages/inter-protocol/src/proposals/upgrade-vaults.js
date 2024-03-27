@@ -59,7 +59,7 @@ export const upgradeVaults = async (powers, { options }) => {
       });
       const notifier = makeNotifierFromAsyncIterable(subscription);
       const { value } = await notifier.getUpdateSince();
-      const rec = {};
+      const rec = { brand: b };
       for (const k of Object.keys(value.current)) {
         rec[k] = value.current[k].value;
       }
@@ -68,6 +68,7 @@ export const upgradeVaults = async (powers, { options }) => {
     return params;
   };
   const managerParamValues = await readManagerParams();
+  console.log(`UVlt params`, managerParamValues);
 
   // upgrade the vaultFactory
   const upgradeVaultFactory = async () => {
@@ -98,9 +99,21 @@ export const upgradeVaults = async (powers, { options }) => {
     console.log('upgraded vaultFactory.', upgradeResult);
   };
 
-  await upgradeVaultFactory();
+  const brands = Object.values(vaultBrands);
+  console.log(`UVlt brands`, brands);
 
-  console.log(`upgradeVaults: done`);
+  const promises = brands.map(brand =>
+    E(priceAuthority).quoteGiven(AmountMath.make(brand, 10n), istBrand),
+  );
+  console.log(`UVlt pro`, promises);
+
+  void E.when(
+    Promise.race(promises),
+    () => upgradeVaultFactory(),
+    // TODO(CTH): shutdown/deschedule old auctioneer
+  );
+
+  console.log(`upgradeVaults scheduled; waiting for priceFeeds`);
 };
 
 const t = 'upgradeVaults';

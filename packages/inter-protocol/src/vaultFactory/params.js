@@ -205,9 +205,15 @@ export const provideVaultParamManagers = (
   // restore from baggage
   // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
   for (const [brand, args] of managerArgs.entries()) {
-    console.log(`VF Params: Restoring for ${brand}, with ${args}`);
-    if (managerParamValues[brand]) {
-      makeManager(brand, managerParamValues[brand]);
+    console.log(
+      `VF Params: Restoring for ${brand}, with ${Object.keys(
+        managerParamValues,
+      )}`,
+    );
+    const values = managerParamValues.find(r => r.brand === brand);
+    console.log(`VP Par `, values);
+    if (values) {
+      makeManager(brand, values);
     } else {
       makeManager(brand, args);
     }
