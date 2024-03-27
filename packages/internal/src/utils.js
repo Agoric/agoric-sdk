@@ -12,7 +12,7 @@ const { quote: q, Fail } = assert;
 
 export const BASIS_POINTS = 10_000n;
 
-/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
+/** @import { ERef } from '@endo/far' */
 
 /**
  * @template T

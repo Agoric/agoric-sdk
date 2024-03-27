@@ -2,6 +2,8 @@ import { Fail, q } from '@agoric/assert';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
+/** @import { ERef } from '@endo/far' */
+
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
  */
@@ -15,7 +17,7 @@ export const makeRunUtils = controller => {
    * Wait for exclusive access to the controller, then before relinquishing that access,
    * enqueue and process a delivery and return the result.
    *
-   * @param {() => import('@endo/far').ERef<void | ReturnType<controller['queueToVatObject']>>} deliveryThunk
+   * @param {() => ERef<void | ReturnType<controller['queueToVatObject']>>} deliveryThunk
    * function for enqueueing a delivery and returning the result kpid (if any)
    * @param {boolean} [voidResult] whether to ignore the result
    * @returns {Promise<any>}
