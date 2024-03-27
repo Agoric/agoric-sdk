@@ -125,7 +125,6 @@ export {};
 
 /**
  * @typedef {object} VowTools
- * // TODO type according to prepareWatch returns
  * @property {import('./watch.js').Watch} watch
  * @property {import('./when.js').When} when
  * @property {<T = any>() => VowKit<T>} makeVowKit
