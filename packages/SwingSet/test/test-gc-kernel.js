@@ -1172,14 +1172,14 @@ test('terminated vat', async t => {
 });
 
 // device receives object from vat a, returns to vat b
-
-test.serial('device transfer', async t => {
+test('device transfer', async t => {
   function vatpath(fn) {
     return {
       sourceSpec: new URL(`gc-device-transfer/${fn}`, import.meta.url).pathname,
     };
   }
   const config = {
+    defaultManagerType: 'xs-worker', // Avoid local vat nondeterminism
     vats: {
       bootstrap: vatpath('bootstrap-gc.js'),
       left: vatpath('vat-left-gc.js'),
