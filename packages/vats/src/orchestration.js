@@ -140,11 +140,9 @@ const prepareConnectionHandler = zone =>
   );
 
 export const OrchestrationI = M.interface('Orchestration', {
-  provideAccount: M.callWhen(
-    M.string(),
-    M.string(),
-    M.or(M.remotable('Port'), M.undefined()),
-  ).returns(M.remotable('ChainAccount')),
+  provideAccount: M.callWhen(M.string(), M.string())
+    .optional(M.remotable('Port'))
+    .returns(M.remotable('ChainAccount')),
   getChain: M.callWhen(M.string()).returns(M.remotable('Chain')),
 });
 
