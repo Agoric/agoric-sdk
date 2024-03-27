@@ -4,17 +4,17 @@ import {
   getBaggage,
   annihilate,
   nextLife,
-} from '../prepare-test-env-ava.js';
+} from './prepare-test-env-ava.js';
 
 import { Far } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { prepareWeakBijection } from '../../src/async-flow/weak-bijection.js';
+import { makeHeapZone } from '@agoric/zone/heap.js';
+import { makeVirtualZone } from '@agoric/zone/virtual.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { makeHeapZone } from '../../heap.js';
-import { makeVirtualZone } from '../../virtual.js';
-import { makeDurableZone } from '../../durable.js';
+import { prepareWeakBijection } from '../src/weak-bijection.js';
 
 /**
  * @param {any} t

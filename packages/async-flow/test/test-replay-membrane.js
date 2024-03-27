@@ -5,7 +5,7 @@ import {
   annihilate,
   nextLife,
   asyncFlowVerbose,
-} from '../prepare-test-env-ava.js';
+} from './prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
 // import { E } from '@endo/far';
@@ -13,13 +13,13 @@ import { Fail } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
-import { prepareLogStore } from '../../src/async-flow/log-store.js';
-import { prepareWeakBijection } from '../../src/async-flow/weak-bijection.js';
-import { makeReplayMembrane } from '../../src/async-flow/replay-membrane.js';
+import { makeHeapZone } from '@agoric/zone/heap.js';
+import { makeVirtualZone } from '@agoric/zone/virtual.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { makeHeapZone } from '../../heap.js';
-import { makeVirtualZone } from '../../virtual.js';
-import { makeDurableZone } from '../../durable.js';
+import { prepareLogStore } from '../src/log-store.js';
+import { prepareWeakBijection } from '../src/weak-bijection.js';
+import { makeReplayMembrane } from '../src/replay-membrane.js';
 
 const watchWake = _vowish => {};
 const panic = problem => Fail`panic over ${problem}`;
@@ -126,14 +126,12 @@ const testBadReplay = async (t, zone, vowTools) => {
   prepareWeakBijection(zone);
   prepareOrchestra(zone);
 
-  const log =
-    /** @type {import('../../src/async-flow/log-store.js').LogStore} */ (
-      zone.makeOnce('log', () => Fail`log expected`)
-    );
-  const bij =
-    /** @type {import('../../src/async-flow/weak-bijection.js').WeakBijection} */ (
-      zone.makeOnce('bij', () => Fail`bij expected`)
-    );
+  const log = /** @type {import('../src/log-store.js').LogStore} */ (
+    zone.makeOnce('log', () => Fail`log expected`)
+  );
+  const bij = /** @type {import('../src/weak-bijection.js').WeakBijection} */ (
+    zone.makeOnce('bij', () => Fail`bij expected`)
+  );
 
   const dump = log.dump();
   const v1 = dump[0][1];
@@ -174,14 +172,12 @@ const testGoodReplay = async (t, zone, vowTools) => {
   prepareWeakBijection(zone);
   prepareOrchestra(zone, 2); // 2 is new incarnation behavior change
 
-  const log =
-    /** @type {import('../../src/async-flow/log-store.js').LogStore} */ (
-      zone.makeOnce('log', () => Fail`log expected`)
-    );
-  const bij =
-    /** @type {import('../../src/async-flow/weak-bijection.js').WeakBijection} */ (
-      zone.makeOnce('bij', () => Fail`bij expected`)
-    );
+  const log = /** @type {import('../src/log-store.js').LogStore} */ (
+    zone.makeOnce('log', () => Fail`log expected`)
+  );
+  const bij = /** @type {import('../src/weak-bijection.js').WeakBijection} */ (
+    zone.makeOnce('bij', () => Fail`bij expected`)
+  );
 
   const dump = log.dump();
   const v1 = dump[0][1];

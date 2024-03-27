@@ -4,17 +4,17 @@ import {
   getBaggage,
   annihilate,
   nextLife,
-} from '../prepare-test-env-ava.js';
+} from './prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
-import { prepareLogStore } from '../../src/async-flow/log-store.js';
-import { vowishKey } from '../../src/async-flow/weak-bijection.js';
+import { makeHeapZone } from '@agoric/zone/heap.js';
+import { makeVirtualZone } from '@agoric/zone/virtual.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { makeHeapZone } from '../../heap.js';
-import { makeVirtualZone } from '../../virtual.js';
-import { makeDurableZone } from '../../durable.js';
+import { prepareLogStore } from '../src/log-store.js';
+import { vowishKey } from '../src/weak-bijection.js';
 
 /**
  * @param {any} t
@@ -60,10 +60,9 @@ const testLogStorePlay = async (t, zone, { makeVowKit }) => {
 const testLogStoreReplay = async (t, zone, _vowTools) => {
   prepareLogStore(zone);
 
-  const log =
-    /** @type {import('../../src/async-flow/log-store.js').LogStore} */ (
-      zone.makeOnce('log', () => Fail`log expected`)
-    );
+  const log = /** @type {import('../src/log-store.js').LogStore} */ (
+    zone.makeOnce('log', () => Fail`log expected`)
+  );
   const v1 = /** @type {Vow} */ (zone.makeOnce('v1', () => Fail`v1 expected`));
 
   t.is(log.getIndex(), 0);
