@@ -2,14 +2,20 @@ import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
+import type { ExecutionContext } from 'ava';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
 const { Fail } = assert;
 
-export const makeWalletFactoryContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
+export const makeWalletFactoryContext = async <C>(
+  t: ExecutionContext<C>,
+  bridgeHandlers?: Record<string, (obj: any) => unknown>,
+) => {
+  const bundleDir = 'bundles/vaults';
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+    ...(bridgeHandlers && { bridgeHandlers }),
   });
 
   const { runUtils, storage } = swingsetTestKit;
