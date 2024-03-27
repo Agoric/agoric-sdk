@@ -13,6 +13,9 @@ test(`clist reachability`, async t => {
   const s = kk.kvStore;
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
+  const source = { bundleID: 'foo' };
+  const options = { workerOptions: 'foo', reapInterval: 1 };
+  kk.createVatState(vatID, source, options);
   const vk = kk.provideVatKeeper(vatID);
 
   const ko1 = kk.addKernelObject('v1', 1);
@@ -98,12 +101,17 @@ test('getImporters', async t => {
 
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();
+  const source = { bundleID: 'foo' };
+  const options = { workerOptions: 'foo', reapInterval: 1 };
+  kk.createVatState(vatID1, source, options);
   kk.addDynamicVatID(vatID1);
   const vk1 = kk.provideVatKeeper(vatID1);
   const vatID2 = kk.allocateUnusedVatID();
+  kk.createVatState(vatID2, source, options);
   kk.addDynamicVatID(vatID2);
   const vk2 = kk.provideVatKeeper(vatID2);
   const vatID3 = kk.allocateUnusedVatID();
+  kk.createVatState(vatID3, source, options);
   kk.addDynamicVatID(vatID3);
   const vk3 = kk.provideVatKeeper(vatID3);
 
