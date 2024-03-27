@@ -9,13 +9,31 @@ import { insistVatID } from '../lib/id.js';
 import { makeVatSlot } from '../lib/parseVatSlots.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
-import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
+import makeKernelKeeper, {
+  DEFAULT_DELIVERIES_PER_BOYD,
+  DEFAULT_GC_KREFS_PER_BOYD,
+} from '../kernel/state/kernelKeeper.js';
 import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
+
+/**
+ * @typedef { import('../types-external.js').SwingSetKernelConfig } SwingSetKernelConfig
+ * @typedef { import('../types-external.js').SwingStoreKernelStorage } SwingStoreKernelStorage
+ * @typedef { import('../types-internal.js').InternalKernelOptions } InternalKernelOptions
+ * @typedef { import('../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ */
 
 function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
+
+/*
+ * @param {SwingSetKernelConfig} config
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {*} [options]
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message
+ *                                        result promise
+ */
 
 export async function initializeKernel(config, kernelStorage, options = {}) {
   const {
@@ -25,6 +43,9 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
 
+  const CURRENT_VERSION = 1;
+  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
+
   const kernelSlog = null;
   const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
   const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
@@ -33,14 +54,22 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   assert(!wasInitialized);
   const {
     defaultManagerType,
-    defaultReapInterval,
+    defaultReapInterval = DEFAULT_DELIVERIES_PER_BOYD,
+    defaultReapGCKrefs = DEFAULT_GC_KREFS_PER_BOYD,
     relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
   } = config;
+  /** @type { ReapDirtThreshold } */
+  const defaultReapDirtThreshold = {
+    deliveries: defaultReapInterval,
+    gcKrefs: defaultReapGCKrefs,
+    computrons: 'never', // TODO no knob?
+  };
+  /** @type { InternalKernelOptions } */
   const kernelOptions = {
     defaultManagerType,
-    defaultReapInterval,
+    defaultReapDirtThreshold,
     relaxDurabilityRules,
     snapshotInitial,
     snapshotInterval,
@@ -86,6 +115,8 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'useTranscript',
         'critical',
         'reapInterval',
+        'reapGCKrefs',
+        'neverReap',
         'nodeOptions',
       ]);
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);

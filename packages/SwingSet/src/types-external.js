@@ -28,14 +28,14 @@ export {};
  */
 
 /**
- * @typedef {{
- *   defaultManagerType?: ManagerType,
- *   defaultReapInterval?: number | 'never',
- *   relaxDurabilityRules?: boolean,
- *   snapshotInitial?: number,
- *   snapshotInterval?: number,
- *   pinBootstrapRoot?: boolean,
- * }} KernelOptions
+ * @typedef { object } KernelOptions
+ * @property { ManagerType } [defaultManagerType]
+ * @property { number | 'never' } [defaultReapGCKrefs]
+ * @property { number | 'never' } [defaultReapInterval]
+ * @property { boolean } [relaxDurabilityRules]
+ * @property { number } [snapshotInitial]
+ * @property { number } [snapshotInterval]
+ * @property { boolean } [pinBootstrapRoot]
  */
 
 /**
@@ -292,13 +292,15 @@ export {};
  *            reconstructed via replay.  If false, no such record is kept.
  *            Defaults to true.
  * @property { number | 'never' } [reapInterval]
- *            The interval (measured in number of deliveries to the vat)
- *            after which the kernel will deliver the 'bringOutYourDead'
- *            directive to the vat.  If the value is 'never',
- *            'bringOutYourDead' will never be delivered and the vat will
- *            be responsible for internally managing (in a deterministic
- *            manner) any visible effects of garbage collection.  Defaults
- *            to the kernel's configured 'defaultReapInterval' value.
+ *            Trigger a bringOutYourDead after the vat has received
+ *            this many deliveries. If the value is 'never',
+ *            'bringOutYourDead' will not be triggered by a delivery
+ *            count (but might be triggered for other reasons).
+ * @property { number | 'never' } [reapGCKrefs]
+ *            Trigger a bringOutYourDead when the vat has been given
+ *            this many krefs in GC deliveries (dropImports,
+ *            retireImports, retireExports). If the value is 'never',
+ *            GC deliveries and their krefs are not treated specially.
  * @property { boolean } [critical]
  */
 

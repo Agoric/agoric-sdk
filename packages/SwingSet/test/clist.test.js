@@ -6,15 +6,18 @@ import { initSwingStore } from '@agoric/swing-store';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 
+const CURRENT_VERSION = 1;
+
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
   const kernelStorage = initSwingStore(null).kernelStorage;
+  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
   const kk = makeKernelKeeper(kernelStorage, slog);
   const s = kk.kvStore;
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
   const source = { bundleID: 'foo' };
-  const options = { workerOptions: 'foo', reapInterval: 1 };
+  const options = { workerOptions: 'foo', reapDirtThreshold: {} };
   kk.createVatState(vatID, source, options);
   const vk = kk.provideVatKeeper(vatID);
 
@@ -97,12 +100,13 @@ test(`clist reachability`, async t => {
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
   const kernelStorage = initSwingStore(null).kernelStorage;
+  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
   const kk = makeKernelKeeper(kernelStorage, slog);
 
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();
   const source = { bundleID: 'foo' };
-  const options = { workerOptions: 'foo', reapInterval: 1 };
+  const options = { workerOptions: 'foo', reapDirtThreshold: {} };
   kk.createVatState(vatID1, source, options);
   kk.addDynamicVatID(vatID1);
   const vk1 = kk.provideVatKeeper(vatID1);
