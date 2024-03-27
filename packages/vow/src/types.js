@@ -122,3 +122,11 @@ export {};
  * @template [T=any]
  * @typedef {import('./types.js').ERef<T | import('./types.js').Vow<T>>} Specimen
  */
+
+/**
+ * @typedef {object} VowTools
+ * // TODO type according to prepareWatch returns
+ * @property {(specimenP:any, watcher?:any, watcherContext?:any) => Vow} watch
+ * @property {(specimenP:any, onFulfilled?:any, onRejected?:any) => Promise} when
+ * @property {() => VowKit} makeVowKit
+ */
