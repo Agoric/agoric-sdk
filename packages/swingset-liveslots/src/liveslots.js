@@ -564,7 +564,7 @@ function build(
     serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 70000,
+    errorIdNum: 70_000,
     marshalSaveError: err =>
       // By sending this to `console.warn`, under cosmic-swingset this is
       // controlled by the `console` option given to makeLiveSlots.

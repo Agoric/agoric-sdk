@@ -242,6 +242,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   const marshal = makeMarshal(convertValToSlot, convertSlotToVal, {
     serializeBodyFormat: 'smallcaps',
+    marshalName: 'fakeLiveSlots',
+    errorIdNum: 80_000,
+    marshalSaveError: _err => {},
   });
 
   function registerEntry(baseRef, val, valIsCohort) {
