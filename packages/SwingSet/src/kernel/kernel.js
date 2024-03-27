@@ -33,12 +33,7 @@ import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
-/**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- */
+/** @import * as liveslots from '@agoric/swingset-liveslots' */
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -390,7 +385,7 @@ export default function buildKernel(
    *
    * @param {VatID} vatID
    * @param {KernelDeliveryObject} kd
-   * @param {VatDeliveryObject} vd
+   * @param {liveslots.VatDeliveryObject} vd
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
     vatRequestedTermination = undefined;
@@ -400,7 +395,7 @@ export default function buildKernel(
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     await null;
     try {
-      /** @type { VatDeliveryResult } */
+      /** @type { liveslots.VatDeliveryResult } */
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
@@ -1447,8 +1442,8 @@ export default function buildKernel(
     // not
     /**
      *
-     * @param {VatSyscallObject} vatSyscallObject
-     * @returns {VatSyscallResult}
+     * @param {liveslots.VatSyscallObject} vatSyscallObject
+     * @returns {liveslots.VatSyscallResult}
      */
     function vatSyscallHandler(vatSyscallObject) {
       if (!vatWarehouse.lookup(vatID)) {
@@ -1463,7 +1458,7 @@ export default function buildKernel(
       let ksc;
       /** @type { KernelSyscallResult } */
       let kres = harden(['error', 'incomplete']);
-      /** @type { VatSyscallResult } */
+      /** @type { liveslots.VatSyscallResult } */
       let vres = harden(['error', 'incomplete']);
 
       try {

@@ -5,7 +5,7 @@ import '@agoric/notifier';
 
 export {};
 
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
+/** @import { ERef } from '@endo/far' */
 
 /**
  * @typedef {object} LeaderOptions
