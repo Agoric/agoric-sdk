@@ -126,7 +126,6 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
  *   electorateInvitationAmount: Amount<'set'>;
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
@@ -139,7 +138,6 @@ export const vaultParamPattern = M.splitRecord(
  * }} opts
  */
 export const makeGovernedTerms = ({
-  auctioneerPublicFacet,
   bootstrapPaymentValue,
   electorateInvitationAmount,
   interestTiming,
@@ -151,7 +149,6 @@ export const makeGovernedTerms = ({
   referencedUi = 'NO REFERENCE',
 }) => {
   return harden({
-    auctioneerPublicFacet,
     priceAuthority,
     reservePublicFacet,
     timerService: timer,
@@ -166,6 +163,19 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
+
+// XXX Better to declare this as VaultManagerParamValues + brand. How?
+/**
+ * @typedef {object} VaultManagerParams
+ * @property {Brand} brand
+ * @property {Ratio} liquidationMargin
+ * @property {Ratio} liquidationPenalty
+ * @property {Ratio} interestRate
+ * @property {Ratio} mintFee
+ * @property {Amount<'nat'>} debtLimit
+ * @property {Ratio} [liquidationPadding]
+ */
+
 /**
  * Stop-gap which restores initial param values UNTIL
  * https://github.com/Agoric/agoric-sdk/issues/5200
@@ -174,8 +184,14 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
+ * @param {Record<string, VaultManagerParams>} managerParamValues - sets of
+ *   parameters (plus brand:) keyed by Keyword. override stored initial values
  */
-export const provideVaultParamManagers = (baggage, marshaller) => {
+export const provideVaultParamManagers = (
+  baggage,
+  marshaller,
+  managerParamValues,
+) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
@@ -200,8 +216,25 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
     return manager;
   };
 
-  // restore from baggage
-  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // restore from baggage, unless `managerParamValues` overrides.
+  for (const [brand, args] of managerArgs.entries()) {
+    let values;
+    for (const key of Object.keys(managerParamValues)) {
+      // For a couple of runs, changing to managerParamValues[+key] worked,
+      // but then that stopped working.  Dunno why
+      // eslint-disable-next-line no-restricted-syntax
+      if (managerParamValues[key].brand === brand) {
+        values = managerParamValues[+key];
+        break;
+      }
+    }
+
+    if (values) {
+      makeManager(brand, { ...args, initialParamValues: values });
+    } else {
+      makeManager(brand, args);
+    }
+  }
 
   return {
     /**

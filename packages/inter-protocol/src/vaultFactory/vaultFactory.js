@@ -35,8 +35,7 @@ const trace = makeTracer('VF', true);
 
 /**
  * @typedef {ZCF<
- *   GovernanceTerms<import('./params.js').VaultDirectorParams> & {
- *     auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet;
+ *   GovernanceTerms<import('./params').VaultDirectorParams> & {
  *     priceAuthority: ERef<PriceAuthority>;
  *     reservePublicFacet: AssetReservePublicFacet;
  *     timerService: import('@agoric/time').TimerService;
@@ -70,6 +69,8 @@ harden(meta);
  *   initialShortfallInvitation: Invitation;
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
+ *   auctioneerInstance: Instance;
+ *   managerParams: Record<string, import('./params.js').VaultManagerParams>;
  * }} privateArgs
  * @param {import('@agoric/ertp').Baggage} baggage
  */
@@ -80,6 +81,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialShortfallInvitation,
     marshaller,
     storageNode,
+    auctioneerInstance,
+    managerParams,
   } = privateArgs;
 
   trace('awaiting debtMint');
@@ -91,7 +94,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
-  const { timerService, auctioneerPublicFacet } = zcf.getTerms();
+  const { timerService } = zcf.getTerms();
+
+  const zoe = zcf.getZoeService();
+  const auctioneerPublicFacet = E(zoe).getPublicFacet(auctioneerInstance);
 
   const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
     baggage,
@@ -134,6 +140,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     makeRecorderKit,
     makeERecorderKit,
+    managerParams,
   );
 
   // cannot await because it would make remote calls during vat restart
