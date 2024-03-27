@@ -98,38 +98,57 @@ printf '%s' "$unwrapped_value" | jq -c --arg responseHeightJson "$response_heigh
   # Capture `slots` values.
   .slots as $slotValues |
 
+  # Capture `body` encoding.
+  (if .body[0:1] == "#" then "smallcaps" else "original" end) as $bodyEncoding |
+
   # Decode `body` as JSON.
-  .body | fromjson |
+  (if $bodyEncoding == "smallcaps" then .body[1:] else .body end) | fromjson |
 
   # Capture slot names (which generally appear only at first reference).
   (
-    [ .. | select(type=="object" and .["@qclass"]=="slot" and (.iface | type=="string")) ] |
-    map({ key: .index | tostring, value: .iface }) |
+    if $bodyEncoding == "smallcaps" then
+      [ .. | select(type == "string" and test("^[$][0-9]+[.]")) ] |
+      map({ key: . | sub("[.].*"; ""), value: . | sub("[^.]*."; "") })
+    else
+      [ .. | select(type == "object" and .["@qclass"] == "slot" and (.iface | type == "string")) ] |
+      map({ key: .index | tostring, value: .iface })
+    end |
     unique_by(.key) |
     from_entries
   ) as $slotNames |
 
   # Replace select capdata.
+  # * bigint with the sequence of digits
+  # * slot references with { id: <value from `slots`>, allegedName: <extracted> }
   walk(
-    if type=="object" and .["@qclass"]=="bigint" then
-      # Replace bigint capdata with the sequence of digits.
-      .digits
-    elif type=="object" and .["@qclass"]=="slot" then
-      # Replace slot reference capdata with {
-      #   id: <value from global `slots`>,
-      #   allegedName: <extracted from local or previous `iface`>,
-      # }.
-      {
-        id: $slotValues[.index],
-        allegedName: (try ((.iface // $slotNames[.index | tostring]) | sub("^Alleged: (?<name>.*?)( brand)?$"; "\(.name)"; "m")) catch null)
-      }
+    if $bodyEncoding == "smallcaps" then
+      if type == "string" and .[0:1] == "+" then
+        .[1:]
+      elif type == "string" and .[0:1] == "$" then
+        sub("[.].*"; "") as $refPrefix |
+        {
+          id: $slotValues[$refPrefix | .[1:] | tonumber],
+          allegedName: (try (. | sub("[^.]*."; "") | if .!="" then . else $slotNames[$refPrefix] end | sub("^Alleged: (?<name>.*?)( brand)?$"; "\(.name)"; "m")) catch null)
+        }
+      else
+        .
+      end
     else
-      .
+      if type == "object" and .["@qclass"] == "bigint" then
+        .digits
+      elif type == "object" and .["@qclass"] == "slot" then
+        {
+          id: $slotValues[.index],
+          allegedName: (try ((.iface // $slotNames[.index | tostring]) | sub("^Alleged: (?<name>.*?)( brand)?$"; "\(.name)"; "m")) catch null)
+        }
+      else
+        .
+      end
     end
   ) |
 
   # Flatten the resulting structure, joining deep member names with "-".
-  [ paths(scalars==.) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries |
+  [ paths(scalars == .) as $path | { key: $path | join("-"), value: getpath($path) } ] | from_entries |
 
   # Add block height information.
   (.dataBlockHeight |= $dataHeight) |
