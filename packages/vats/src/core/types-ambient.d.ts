@@ -341,9 +341,12 @@ type ChainBootstrapSpaceT = {
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
   instancePrivateArgs: Map<Instance, unknown>;
+  localchain: import('@agoric/vats/src/localchain.js').LocalChain;
   mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
+  networkVat: NetworkVat;
+  orchestration: import('@agoric/vats/src/orchestration').Orchestration;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
