@@ -39,9 +39,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       critical,
       meterID,
     });
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.setSourceAndOptions(source, vatOptions);
-    vatKeeper.initializeReapCountdown(vatOptions.reapInterval);
+    kernelKeeper.createVatState(vatID, source, vatOptions);
   };
 
   /**
