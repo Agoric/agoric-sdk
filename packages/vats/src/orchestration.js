@@ -38,8 +38,8 @@ const getPower = (powers, name) => {
 export const ChainAccountI = M.interface('ChainAccount', {
   getAddress: M.call().returns(M.string()),
   getLocalAddress: M.callWhen().returns(M.string()),
-  executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.promise()),
-  executeEncodedTx: M.callWhen(M.string()).returns(M.promise()),
+  executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.any()),
+  executeEncodedTx: M.callWhen(M.string()).returns(M.any()),
   deposit: M.callWhen(M.remotable('Payment'))
     .optional(M.pattern())
     .returns(AmountShape),
