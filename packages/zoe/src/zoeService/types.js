@@ -267,7 +267,7 @@
  * The possible records are:
  * `{ waived: null }`
  * `{ onDemand: null }`
- * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }
+ * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }`
  */
 
 /**

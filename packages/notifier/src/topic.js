@@ -9,7 +9,7 @@ import './types-ambient.js';
  *
  * @template T
  * @param {EachTopic<T> & LatestTopic<T>} topic needs to be near in order to
- * preserve subscription timings.  TODO: drop LatestTopic<T> requirement
+ * preserve subscription timings.  TODO: drop `LatestTopic<T>` requirement
  * @returns {EachTopic<T> & LatestTopic<T>}
  */
 export const makePinnedHistoryTopic = topic => {
