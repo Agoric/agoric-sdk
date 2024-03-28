@@ -12,6 +12,9 @@
         "@agoric/builders/scripts/vats/init-localchain.js"
       ],
       [
+        "@agoric/builders/scripts/vats/init-orchestration.js"
+      ],
+      [
         {
           "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
           "entrypoint": "defaultProposalBuilder",
@@ -161,6 +164,9 @@
             }
           ]
         }
+      ],
+      [
+        "@agoric/builders/scripts/orchestration/init-stakeAtom.js"
       ]
     ]
   },

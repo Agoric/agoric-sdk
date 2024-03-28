@@ -2,15 +2,29 @@ import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
+import type { ExecutionContext } from 'ava';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
 const { Fail } = assert;
 
-export const makeWalletFactoryContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
+export const makeWalletFactoryContext = async <C>(
+  t: ExecutionContext<C>,
+  bridgeHandlers?: Record<string, (obj: any) => unknown>,
+) => {
+  const bundleDir = 'bundles/vaults';
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+    ...(bridgeHandlers && { bridgeHandlers }),
   });
+
+  const bundleCache = await makeNodeBundleCache(
+    bundleDir,
+    { cacheSourceMaps: false },
+    s => import(s),
+  );
+  const installations = {} as Record<string, Installation>;
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -43,6 +57,8 @@ export const makeWalletFactoryContext = async t => {
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
     walletFactoryDriver,
+    bundleCache,
+    installations,
   };
 };
 

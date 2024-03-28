@@ -40,6 +40,9 @@ export const start = async (zcf, privateArgs, _baggage) => {
     getLocalAddress: async () => {
       return E(myPort).getLocalAddress();
     },
+    getRemoteAddress: async () => {
+      return E(connP).getRemoteAddress();
+    },
   });
 
   return { creatorFacet };
