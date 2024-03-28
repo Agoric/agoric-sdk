@@ -23,7 +23,7 @@ const autoRefundBundleP = makeBundle(
  * @template {GovernableStartFn} T governed contract startfn
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
- * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer
+ * @param {import('@agoric/time').TimerService} timer
  * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
  * @param {{}} privateArgsOfGoverned
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]

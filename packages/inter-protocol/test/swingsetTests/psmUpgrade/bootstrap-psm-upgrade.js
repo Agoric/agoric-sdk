@@ -24,7 +24,7 @@ const anchor = withAmountUtils(makeIssuerKit('bucks'));
 const firstGive = anchor.units(21);
 const secondGive = anchor.units(3);
 
-/** @import {start} from '../../../src/psm/psm.js' */
+/** @import {start as PsmSF} from '../../../src/psm/psm.js' */
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');

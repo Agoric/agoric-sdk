@@ -36,7 +36,7 @@ harden(makeEphemeraProvider);
  * Provide an empty ZCF seat.
  *
  * @param {ZCF} zcf
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {string} name
  * @returns {ZCFSeat}
  */

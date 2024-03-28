@@ -34,7 +34,7 @@ const marshaller = makeFakeMarshaller();
 /**
  * @param {ZCF} zcf
  * @param {{ feeMintAccess: FeeMintAccess }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */
 export async function start(zcf, privateArgs, baggage) {
   console.log(`contract started`);

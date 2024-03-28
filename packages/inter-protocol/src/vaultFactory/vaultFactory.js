@@ -71,7 +71,7 @@ harden(meta);
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
  * }} privateArgs
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare start', privateArgs, [...baggage.keys()]);

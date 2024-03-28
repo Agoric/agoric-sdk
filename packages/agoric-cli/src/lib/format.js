@@ -117,7 +117,7 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
@@ -174,7 +174,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {

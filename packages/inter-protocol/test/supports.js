@@ -20,6 +20,8 @@ import {
 } from '@agoric/notifier';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 
+/** @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js' */
+
 export { makeMockChainStorageRoot };
 
 /** Common six-decimal places denom */
@@ -141,7 +143,6 @@ export const mintRunPayment = async (
  *   keyof Space['installation']['produce'],
  *   Promise<Installation>
  * >} installations
- * @import {EconomyBootstrapPowers} from '../src/proposals/econ-behaviors.js'
  */
 export const produceInstallations = (space, installations) => {
   for (const [key, installation] of Object.entries(installations)) {

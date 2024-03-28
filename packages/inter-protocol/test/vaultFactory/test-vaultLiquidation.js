@@ -40,6 +40,8 @@ import {
   setupElectorateReserveAndAuction,
 } from './vaultFactoryUtils.js';
 
+/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+
 /**
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & import('../supports.js').AmountUtils;

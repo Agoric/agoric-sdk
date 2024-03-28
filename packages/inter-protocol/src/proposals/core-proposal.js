@@ -5,8 +5,6 @@ import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
 export * from './econ-behaviors.js';
-// @ts-expect-error Module './econ-behaviors.js' has already exported a member
-// named 'EconomyBootstrapPowers'.
 export * from './startPSM.js';
 export * from './startEconCommittee.js';
 

@@ -208,7 +208,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;

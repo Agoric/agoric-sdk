@@ -344,7 +344,7 @@ export function makeVatWarehouse({
     // initialize-worker event, to represent the vatLoader.create()
     // we're about to do
     if (options.useTranscript && vatKeeper.transcriptSize() === 0) {
-      /** @type { TDInitializeWorkerOptions } */
+      /** @type { TranscriptDeliveryInitializeWorkerOptions } */
       const initOpts = { source: {}, workerOptions: options.workerOptions };
       // if the vat is somehow using a full bundle, we don't want that
       // in the transcript: we only record bundleIDs
