@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference path="./types.js" />
 
 import {
@@ -12,6 +10,7 @@ import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -34,6 +33,8 @@ export const vaultDirectorParamTypes = {
   [REFERENCED_UI_KEY]: ParamTypes.STRING,
 };
 harden(vaultDirectorParamTypes);
+
+const trace = makeTracer('Vault Params');
 
 /**
  * @param {Amount<'set'>} electorateInvitationAmount
@@ -220,18 +221,17 @@ export const provideVaultParamManagers = (
   for (const [brand, args] of managerArgs.entries()) {
     let values;
     for (const key of Object.keys(managerParamValues)) {
-      // For a couple of runs, changing to managerParamValues[+key] worked,
-      // but then that stopped working.  Dunno why
-      // eslint-disable-next-line no-restricted-syntax
-      if (managerParamValues[key].brand === brand) {
-        values = managerParamValues[+key];
+      if (managerParamValues[key]?.brand === brand) {
+        values = managerParamValues[key];
         break;
       }
     }
 
     if (values) {
+      trace(`reviving params, override`, brand, values);
       makeManager(brand, { ...args, initialParamValues: values });
     } else {
+      trace(`reviving params, keeping`, brand, args.initialParamValues);
       makeManager(brand, args);
     }
   }

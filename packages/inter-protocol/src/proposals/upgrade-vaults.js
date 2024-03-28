@@ -1,7 +1,9 @@
 import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
-import { makeScalarMapStore } from '@agoric/store/src/index.js';
+import { makeTracer } from '@agoric/internal/src/index.js';
+
+const trace = makeTracer('upgrade Vaults proposal');
 
 // stand-in for Promise.any() which isn't available at this point.
 const any = promises =>
@@ -76,14 +78,20 @@ export const upgradeVaults = async (powers, { options }) => {
 
     const params = {};
     for (const kwd of Object.keys(vaultBrands)) {
-      const b = vaultBrands[kwd];
+      const collateralBrand = vaultBrands[kwd];
       const subscription = E(directorPF).getSubscription({
-        collateralBrand: b,
+        collateralBrand,
       });
       const notifier = makeNotifierFromAsyncIterable(subscription);
-      const { value } = await notifier.getUpdateSince();
+      let { value, updateCount } = await notifier.getUpdateSince(0n);
+      // @ts-expect-error It's an amount.
+      while (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+        ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
+        trace(`debtLimit was empty, retried`, value.current.DebtLimit.value);
+      }
+      trace(kwd, 'params at', updateCount, 'are', value.current);
       params[kwd] = harden({
-        brand: b,
+        brand: collateralBrand,
         debtLimit: value.current.DebtLimit.value,
         interestRate: value.current.InterestRate.value,
         liquidationMargin: value.current.LiquidationMargin.value,
@@ -133,6 +141,7 @@ export const upgradeVaults = async (powers, { options }) => {
       ),
     ),
     async () => {
+      trace(`upgrading after delay`);
       await upgradeVaultFactory();
       auctioneerKitProducer.reset();
       auctioneerKitProducer.resolve(auctioneerKit);
