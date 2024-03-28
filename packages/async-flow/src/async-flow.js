@@ -298,13 +298,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             log.reset();
             bijection.reset();
 
-            // This is a non-sensical return value, so arbitrary chaos
-            // may ensue from returning it. But at this point
+            // This is not an expected throw, so in theory arbitrary chaos
+            // may ensue from throwing it. But at this point
             // we should have successfully isolated this activation from
             // having any observable effects on the host, aside from
             // console logging and
             // resource exhaustion, including infinite loops
-            return undefined;
+            throw Fail`In a replay failure: see getFailures() for more information`;
           },
         },
         wakeWatcher: {
