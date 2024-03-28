@@ -34,7 +34,6 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/base64": "^1.0.3",
     "@endo/far": "^1.1.0",
     "@endo/import-bundle": "^1.1.0",
     "@endo/marshal": "^1.4.0",
