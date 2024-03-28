@@ -15,7 +15,7 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 // Default timeout after 60 minutes.
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
-/** @typedef {import('./types.js').BridgeHandler} BridgeHandler */
+/** @import {BridgeHandler} from './types.js' */
 
 /**
  * @typedef {string} IBCPortID

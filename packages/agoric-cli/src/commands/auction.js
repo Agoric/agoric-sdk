@@ -6,7 +6,7 @@ import { outputActionAndHint } from '../lib/wallet.js';
 
 const { Fail } = assert;
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMap} ParamTypesMap */
+/** @import {ParamTypesMap} from '@agoric/governance/src/contractGovernance/typedParamManager.js' */
 
 /**
  * @template {ParamStateRecord} M

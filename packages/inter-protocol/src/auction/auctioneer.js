@@ -35,7 +35,7 @@ import { auctioneerParamTypes } from './params.js';
 import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;

@@ -71,7 +71,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
   return harden(upgradePlanInfo || {});
 };
 
-/** @typedef {import('@agoric/swingset-vat').SwingSetConfig} SwingSetConfig */
+/** @import {SwingSetConfig} from '@agoric/swingset-vat' */
 
 /**
  * @typedef {object} CosmicSwingsetConfig

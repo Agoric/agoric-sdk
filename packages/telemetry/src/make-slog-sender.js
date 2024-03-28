@@ -9,7 +9,7 @@ export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 
 export const DEFAULT_SLOGSENDER_AGENT = 'self';
 
-/** @typedef {import('./index.js').SlogSender} SlogSender */
+/** @import {SlogSender} from './index.js' */
 
 /**
  * @template T

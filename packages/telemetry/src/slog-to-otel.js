@@ -14,11 +14,11 @@ import {
 
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
-/** @typedef {import('@opentelemetry/api').Span} Span */
-/** @typedef {import('@opentelemetry/api').Link} SpanLink */
-/** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
-/** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
-/** @typedef {import('@opentelemetry/api').SpanAttributes} SpanAttributes */
+/** @import {Span} from '@opentelemetry/api' */
+/** @import {Link} from '@opentelemetry/api' */
+/** @import {SpanContext} from '@opentelemetry/api' */
+/** @import {SpanOptions} from '@opentelemetry/api' */
+/** @import {SpanAttributes} from '@opentelemetry/api' */
 
 const { assign } = Object;
 

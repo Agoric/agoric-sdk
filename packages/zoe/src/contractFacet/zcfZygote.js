@@ -30,7 +30,7 @@ import { prepareZcMint } from './zcfMint.js';
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
 
-/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
 
 const { Fail } = assert;
 

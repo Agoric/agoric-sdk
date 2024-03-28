@@ -14,7 +14,7 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
+/** @import {OracleStatus} from './priceOracleKit.js' */
 /**
  * @typedef {import('@agoric/time').Timestamp} Timestamp
  *

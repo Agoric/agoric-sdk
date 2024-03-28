@@ -5,9 +5,9 @@
  *
  * @typedef {import('@endo/pass-style').Passable} Passable
  */
-/** @typedef {import('@endo/pass-style').CopyTagged} CopyTagged */
-/** @typedef {import('@endo/patterns').Pattern} Pattern */
-/** @typedef {import('@endo/patterns').Key} Key */
+/** @import {CopyTagged} from '@endo/pass-style' */
+/** @import {Pattern} from '@endo/patterns' */
+/** @import {Key} from '@endo/patterns' */
 /**
  * @template {Key} [K=Key]
  * @typedef {import('@endo/patterns').CopySet<K>} CopySet

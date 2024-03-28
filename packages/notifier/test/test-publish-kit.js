@@ -21,7 +21,7 @@ import {
 import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
-/** @typedef {import('../src/index.js').makePublishKit} makePublishKit */
+/** @import {makePublishKit} from '../src/index.js' */
 
 const { ownKeys } = Reflect;
 const { quote: q } = assert;

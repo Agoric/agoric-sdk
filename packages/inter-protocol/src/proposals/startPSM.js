@@ -23,9 +23,9 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
-/** @typedef {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} BootstrapManifest */
-/** @typedef {import('../psm/psm.js').MetricsNotification} MetricsNotification */
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
+/** @import {MetricsNotification} from '../psm/psm.js' */
+/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
@@ -403,7 +403,7 @@ export const makeAnchorAsset = async (
 };
 harden(makeAnchorAsset);
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+/** @import {EconomyBootstrapSpace} from './econ-behaviors.js' */
 
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
   /** @type {BootstrapManifest} */ ({

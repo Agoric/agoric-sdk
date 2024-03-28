@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-/** @typedef {import('@endo/marshal').RankCompare} RankCompare */
+/** @import {RankCompare} from '@endo/marshal' */
 
 const { Fail, quote: q } = assert;
 

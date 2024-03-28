@@ -15,7 +15,7 @@ export function makeVatLoader(stuff) {
     kernelKeeper,
   } = stuff;
 
-  /** @typedef {import('../../types-internal.js').VatManager} VatManager */
+  /** @import {VatManager} from '../../types-internal.js' */
 
   const allowedOptions = [
     'name',

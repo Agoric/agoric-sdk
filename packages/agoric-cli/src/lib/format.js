@@ -2,7 +2,7 @@
 
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
+/** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
 
 /**
  * Like @endo/nat but coerces

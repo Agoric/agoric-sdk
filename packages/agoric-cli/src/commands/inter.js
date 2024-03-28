@@ -35,9 +35,9 @@ const bidInvitationShape = harden({
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').TryExitOfferAction } TryExitOfferAction */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
-/** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
+/** @import {OfferSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
+/** @import {ScheduleNotification} from '@agoric/inter-protocol/src/auction/scheduler.js' */
+/** @import {BookDataNotification} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo

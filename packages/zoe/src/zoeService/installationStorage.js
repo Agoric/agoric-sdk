@@ -16,7 +16,7 @@ const { Fail, quote: q } = assert;
 
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
