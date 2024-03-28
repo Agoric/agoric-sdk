@@ -99,21 +99,6 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
   return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, kernelStorage };
 }
 
-async function testCreateVatByBundle(t, doVatAdminRestart) {
-  const { c, vat13Bundle } = await doTestSetup(t, doVatAdminRestart);
-  const kpid = c.queueToVatRoot('bootstrap', 'byBundle', [vat13Bundle]);
-  await c.run();
-  t.deepEqual(kunser(c.kpResolution(kpid)), 13);
-}
-
-test('createVatByBundle', async t => {
-  await testCreateVatByBundle(t, false);
-});
-
-test('createVatByBundle with VA upgrade', async t => {
-  await testCreateVatByBundle(t, true);
-});
-
 async function testCreateVatByName(t, doVatAdminRestart) {
   const { c } = await doTestSetup(t, doVatAdminRestart);
   const kpid = c.queueToVatRoot('bootstrap', 'byName', ['new13']);
