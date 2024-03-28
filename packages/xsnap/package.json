@@ -50,7 +50,14 @@
     "LICENSE*",
     "api.js",
     "build.env",
-    "src"
+    "moddable/modules/data",
+    "moddable/xs/includes",
+    "moddable/xs/makefiles",
+    "moddable/xs/platforms/*.h",
+    "moddable/xs/sources",
+    "src",
+    "xsnap-native/xsnap/makefiles",
+    "xsnap-native/xsnap/sources"
   ],
   "publishConfig": {
     "access": "public"
