@@ -1,9 +1,7 @@
 import test from 'ava';
-import { getVatDetails } from '@agoric/synthetic-chain';
+import { executeCommand } from '@agoric/synthetic-chain';
 
 test('new auction vat', async t => {
-  const auctionDetails = await getVatDetails('auction');
-  console.log(`AUC `, auctionDetails);
-
-  t.true(Number(auctionDetails.vatID.substring(1)) > 50, 'auction is new');
+  const data = await executeCommand('pgrep', ['-cf', 'auctioneer']);
+  t.is(data, '2');
 });
