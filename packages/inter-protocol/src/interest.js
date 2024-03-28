@@ -11,9 +11,8 @@ import { Fail } from '@agoric/assert';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime
+ * @import {Timestamp} from '@agoric/time'
+ * @import {RelativeTime} from '@agoric/time'
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;

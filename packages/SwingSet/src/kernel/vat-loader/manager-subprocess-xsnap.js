@@ -11,12 +11,12 @@ import {
 /// <reference path="../../types-ambient.js" />
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
- * @typedef {import('../../types-internal.js').VatManagerFactory} VatManagerFactory
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
+ * @import {VatManagerFactory} from '../../types-internal.js'
  */
 
 // eslint-disable-next-line no-unused-vars

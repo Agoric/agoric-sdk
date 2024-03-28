@@ -35,7 +35,7 @@ const TRANSFER_PROPOSAL_SHAPE = {
  * @param {Remote<NameHub>} powers.namesByAddress where to find depositFacets by bech32
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>['when']} powers.when
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  */
 export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
   /**

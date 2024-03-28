@@ -18,13 +18,13 @@ import {
 } from './supervisor-helper.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
- * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
- * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
+ * @import {MeterControl} from '@agoric/swingset-liveslots'
  */
 
 const encoder = new TextEncoder();

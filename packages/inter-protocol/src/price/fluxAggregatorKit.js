@@ -23,16 +23,12 @@ const trace = makeTracer('FlxAgg', true);
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
- *
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime // TODO: use
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {Timestamp} from '@agoric/time'
+ * @import {RelativeTime} from '@agoric/time'
  *   RelativeTime, not RelativeTimeValue
- *
- * @typedef {import('@agoric/time').RelativeTimeValue} RelativeTimeValue
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {RelativeTimeValue} from '@agoric/time'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */

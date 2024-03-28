@@ -1,27 +1,17 @@
 // @jessie-check
 
 /**
- * @typedef {import('./vault.js').VaultNotification} VaultNotification
- *
- * @typedef {import('./vault.js').Vault} Vault
- *
- * @typedef {import('./vaultKit.js').VaultKit} VaultKit
- *
- * @typedef {import('./vaultManager.js').VaultManager} VaultManager
- *
- * @typedef {import('./vaultManager.js').CollateralManager} CollateralManager
- *
- * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
- *
- * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
- *
- * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
- *
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
- *
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').RelativeTime} RelativeTime
+ * @import {VaultNotification} from './vault.js'
+ * @import {Vault} from './vault.js'
+ * @import {VaultKit} from './vaultKit.js'
+ * @import {VaultManager} from './vaultManager.js'
+ * @import {CollateralManager} from './vaultManager.js'
+ * @import {AssetReserveLimitedCreatorFacet} from '../reserve/assetReserve.js'
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js'
+ * @import {AuctioneerPublicFacet} from '../auction/auctioneer.js'
+ * @import {Timestamp} from '@agoric/time'
+ * @import {RelativeTime} from '@agoric/time'
  */
 
 /**

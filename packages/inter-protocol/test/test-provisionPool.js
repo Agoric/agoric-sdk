@@ -26,11 +26,9 @@ import {
 } from './supports.js';
 
 /**
- * @typedef {import('@agoric/vats/src/vat-bank.js').Bank} Bank
- *
- * @typedef {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} SmartWallet
- *
- * @typedef {import('@agoric/smart-wallet/src/walletFactory.js').WalletReviver} WalletReviver
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js'
+ * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
+ * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
  */
 
 const pathname = new URL(import.meta.url).pathname;

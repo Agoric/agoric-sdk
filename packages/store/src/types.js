@@ -3,7 +3,7 @@
 /**
  * Note TODO https://github.com/endojs/endo/issues/1488
  *
- * @typedef {import('@endo/pass-style').Passable} Passable
+ * @import {Passable} from '@endo/pass-style'
  */
 /** @import {CopyTagged} from '@endo/pass-style' */
 /** @import {Pattern} from '@endo/patterns' */

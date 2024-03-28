@@ -4,7 +4,7 @@
 
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
- * @typedef {import('stream').Writable} Writable
+ * @import {Writable} from 'stream'
  */
 
 /**

@@ -42,7 +42,6 @@ export {
   prepareSingleton,
 } from './exo-utils.js';
 
-/** @import {DurableKindHandle} from '@agoric/swingset-liveslots' */
 /** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
 
 // Copy this type because aliasing it by `import('@agoric/swingset-liveslots').Baggage`

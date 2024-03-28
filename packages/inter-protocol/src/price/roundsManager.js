@@ -16,9 +16,8 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /** @import {OracleStatus} from './priceOracleKit.js' */
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {Timestamp} from '@agoric/time'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /** @type {string} */

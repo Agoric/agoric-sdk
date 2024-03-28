@@ -136,12 +136,12 @@ export const mintRunPayment = async (
 };
 
 /**
- * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
  * @param {Space} space
  * @param {Record<
  *   keyof Space['installation']['produce'],
  *   Promise<Installation>
  * >} installations
+ * @import {EconomyBootstrapPowers} from '../src/proposals/econ-behaviors.js'
  */
 export const produceInstallations = (space, installations) => {
   for (const [key, installation] of Object.entries(installations)) {
