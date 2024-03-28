@@ -4,17 +4,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/upgrade-vaults.js',
-    getManifestCall: [
-      'getManifestForUpgradeVaults',
-      {
-        vaultsRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
-            '../bundles/bundle-vaultFactory.js',
-          ),
-        ),
-      },
-    ],
+    getManifestCall: ['getManifestForUpgradeVaults'],
   });
 
 export default async (homeP, endowments) => {
