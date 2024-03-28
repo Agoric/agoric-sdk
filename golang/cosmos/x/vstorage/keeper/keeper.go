@@ -22,8 +22,8 @@ import (
 // StreamCell is an envelope representing a sequence of values written at a path in a single block.
 // It is persisted to storage as a { "blockHeight": "<digits>", "values": ["...", ...] } JSON text
 // that off-chain consumers rely upon.
-// Many of those consumers *also* rely upon the strings of "values" being valid JSON text
-// (cf. scripts/get-flattened-publication.sh), but we do not enforce that in this package.
+// Many of those consumers *also* rely upon the strings of "values" being valid JSON text,
+// but we do not enforce that in this package.
 type StreamCell struct {
 	BlockHeight string   `json:"blockHeight"`
 	Values      []string `json:"values"`
