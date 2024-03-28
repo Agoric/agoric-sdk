@@ -4,7 +4,7 @@ import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @template {any} [U=any]
+ * @template [U=any]
  * @typedef {object} RevocableMakerKit
  * @property {(revocable: U) => boolean} revoke
  * @property {(underlying: U) => U} makeRevocable
@@ -17,7 +17,7 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- * @template {any} [U=any]
+ * @template [U=any]
  * @typedef {object} RevocableKit
  * @property {RevokerFacet} revoker
  * @property {U} revocable
@@ -32,7 +32,7 @@ const { Fail, quote: q } = assert;
  */
 
 /**
- * @template {any} [U=any]
+ * @template [U=any]
  * @typedef {object} RevocableKitOptions
  * @property {string} [uInterfaceName]
  *   The `interfaceName` of the underlying interface guard.
@@ -57,7 +57,7 @@ const { Fail, quote: q } = assert;
  * where the wrapper is a revocable forwarder.
  *
  * @deprecated Change to `prepareRevocableMakerKit` once #8977 happens
- * @template {any} [U=any]
+ * @template [U=any]
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
