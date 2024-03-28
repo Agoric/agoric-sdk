@@ -1,5 +1,5 @@
 // @jessie-check
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- for casting from deprecated types that aren't worth fixing */
+
 import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
@@ -106,7 +106,7 @@ export const makeExoUtils = VatData => {
    * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKind(tag, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -137,7 +137,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKindMulti(tag, init, facets, {
       ...options,
       thisfulMethods: true,
@@ -168,7 +168,7 @@ export const makeExoUtils = VatData => {
     methods,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKind(kindHandle, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -199,7 +199,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKindMulti(kindHandle, init, facets, {
       ...options,
       thisfulMethods: true,

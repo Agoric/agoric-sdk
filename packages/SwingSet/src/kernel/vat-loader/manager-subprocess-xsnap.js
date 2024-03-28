@@ -214,8 +214,8 @@ export function makeXsSubprocessFactory({
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       // Attach the meterUsage to the deliver result.
       /** @type { VatDeliveryResult } */
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-      // @ts-ignore I don't know how to appease tsc
+
+      // @ts-expect-error I don't know how to appease tsc
       const deliverResult = harden([
         result.reply[0], // 'ok' or 'error'
         result.reply[1] || null, // results or problem or null

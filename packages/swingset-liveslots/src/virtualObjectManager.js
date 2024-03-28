@@ -739,10 +739,7 @@ export const makeVirtualObjectManager = (
           // actually carry the InterfaceGuardKit.
           //
           // Tolerating the old vat-data with the new types.
-          // at-expect-error here causes inconsistent reports, so
-          // doing the at-ts-ignore-error ritual instead.
-          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore
+          // @ts-expect-error
           interfaceGuardKit = interfaceGuard;
           interfaceGuard = undefined;
           // The rest of the code from here makes no further compromise
@@ -1254,8 +1251,8 @@ export const makeVirtualObjectManager = (
     saveDurableKindDescriptor(durableKindDescriptor);
     saveNextInstanceID(kindID);
     /** @type {DurableKindHandle} */
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
-    // @ts-ignore cast
+
+    // @ts-expect-error cast
     const kindHandle = Far('kind', {});
     kindHandleToID.set(kindHandle, kindID);
     const kindIDvref = makeBaseRef(kindIDID, kindID, true);

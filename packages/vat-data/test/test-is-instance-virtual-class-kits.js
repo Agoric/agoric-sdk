@@ -1,6 +1,5 @@
 // modeled on test-is-instance-heap-class-kits.js
 
-// eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -19,8 +18,6 @@ const DownCounterI = M.interface('DownCounter', {
 });
 
 test('test isInstance defineVirtualExoClass', t => {
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore IsInstance merged after last sync with endo
   /** @type {import('@endo/exo/src/exo-makers.js').IsInstance} */
   let isInstance;
   const makeUpCounter = defineVirtualExoClass(
@@ -62,8 +59,6 @@ test('test isInstance defineVirtualExoClass', t => {
 });
 
 test('test isInstance defineVirtualExoClassKit', t => {
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore IsInstance merged after last sync with endo
   /** @type {import('@endo/exo/src/exo-makers.js').IsInstance} */
   let isInstance;
   const makeCounterKit = defineVirtualExoClassKit(
