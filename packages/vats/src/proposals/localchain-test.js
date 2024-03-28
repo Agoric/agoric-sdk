@@ -18,15 +18,13 @@ export const testLocalChain = async (
   /** @type {null | ERef<StorageNode>} */
   let node = await chainStorage;
   if (!node) {
+    console.error('testLocalChain no chainStorage');
     throw new Error('no chainStorage');
-  }
-
-  for (const nodeName of testResultPath.split('.')) {
-    node = E(node).makeChildNode(nodeName);
   }
 
   let result;
   try {
+    console.info('awaiting createAccount');
     const lca = await E(localchain).createAccount();
     console.info('created account', lca);
     const address = await E(lca).getAddress();
@@ -58,6 +56,9 @@ export const testLocalChain = async (
 
     const emptyQuery = await E(localchain).queryMany([]);
     console.info('emptyQuery', emptyQuery);
+    if (emptyQuery.length !== 0) {
+      throw new Error('emptyQuery results should be empty');
+    }
 
     result = { success: true };
   } catch (e) {
@@ -66,6 +67,9 @@ export const testLocalChain = async (
   }
 
   console.warn('=== localchain test done, setting', { result });
+  for (const nodeName of testResultPath.split('.')) {
+    node = E(node).makeChildNode(nodeName);
+  }
   await E(node).setValue(JSON.stringify(result));
 };
 

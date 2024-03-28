@@ -16,6 +16,7 @@ const { Fail, bare } = assert;
  * @typedef {{
  *   system: import('./types.js').ScopedBridgeManager;
  *   bankManager: import('./vat-bank.js').BankManager;
+ *   transfer: import('./transfer.js').TransferMiddleware;
  * }} LocalChainPowers
  *
  * @typedef {MapStore<
@@ -40,6 +41,9 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
     .optional(M.pattern())
     .returns(AmountShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  interceptTransfers: M.callWhen()
+    .optional(M.remotable('TransferTap'))
+    .returns(M.opt(M.remotable('Unregistrar'))),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -90,6 +94,14 @@ const prepareLocalChainAccount = zone =>
         };
         const system = getPower(powers, 'system');
         return E(system).toBridge(obj);
+      },
+      async interceptTransfers(tap) {
+        const { address, powers } = this.state;
+        const transfer = getPower(powers, 'transfer');
+        if (tap) {
+          return E(transfer).registerTap(address, tap);
+        }
+        await E(transfer).unregisterTap(address);
       },
     },
   );

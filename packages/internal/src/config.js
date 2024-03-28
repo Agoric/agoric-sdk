@@ -14,7 +14,7 @@
 /**
  * Event source ids used by the bridge device.
  */
-export const BridgeId = {
+export const BridgeId = /** @type {const} */ ({
   BANK: 'bank',
   CORE: 'core',
   DIBC: 'dibc',
@@ -22,8 +22,9 @@ export const BridgeId = {
   PROVISION: 'provision',
   PROVISION_SMART_WALLET: 'provisionWallet',
   VLOCALCHAIN: 'vlocalchain',
+  VTRANSFER: 'vtransfer',
   WALLET: 'wallet',
-};
+});
 harden(BridgeId);
 
 export const CosmosInitKeyToBridgeId = {
@@ -31,13 +32,13 @@ export const CosmosInitKeyToBridgeId = {
   vibcPort: BridgeId.DIBC,
 };
 
-export const WalletName = {
+export const WalletName = /** @type {const} */ ({
   depositFacet: 'depositFacet',
-};
+});
 harden(WalletName);
 
 // defined in golang/cosmos/x/vbank
-export const VBankAccount = {
+export const VBankAccount = /** @type {const} */ ({
   reserve: {
     module: 'vbank/reserve',
     address: 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl',
@@ -46,5 +47,5 @@ export const VBankAccount = {
     module: 'vbank/provision',
     address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
   },
-};
+});
 harden(VBankAccount);

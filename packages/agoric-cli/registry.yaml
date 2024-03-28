@@ -2,11 +2,11 @@ version: 1
 
 chains:
   ollinet:
-    chain_id: agoricollinet-55
+    chain_id: agoric-mainfork-1
     # Bech32 prefix for addresses
     prefix: agoric
     # This determines the gas payments we make (and defines the fee token)
-    gas_price: 0.25ubld
+    gas_price: 0ubld
     # The path we use to derive the private key from the mnemonic
     # Note: The hd paths shown have no meaningful relationship to the existing chains.
     # It is recommended practice to use a different hd_path than those commonly used for user accounts.
@@ -24,7 +24,7 @@ chains:
   local:
     chain_id: agoriclocal
     prefix: agoric
-    gas_price: 0uist
+    gas_price: 0ubld
     hd_path: m/44'/1234'/0'/2'
     estimated_block_time: 400
     estimated_indexer_time: 60

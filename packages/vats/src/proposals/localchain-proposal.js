@@ -9,6 +9,7 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
  *     bridgeManager: import('../types').BridgeManager;
  *     localchainBridgeManager: import('../types').ScopedBridgeManager;
  *     bankManager: Promise<import('../vat-bank.js').BankManager>;
+ *     transferMiddleware: Promise<import('../transfer.js').TransferMiddleware>;
  *   };
  *   produce: {
  *     localchain: Producer<any>;
@@ -31,6 +32,7 @@ export const setupLocalChainVat = async (
       bridgeManager: bridgeManagerP,
       localchainBridgeManager: localchainBridgeManagerP,
       bankManager,
+      transferMiddleware,
     },
     produce: {
       localchainVat,
@@ -89,6 +91,9 @@ export const setupLocalChainVat = async (
   const descToPromise = {
     'bank manager power': bankManager.then(bm =>
       E(localChainAdmin).setPower('bankManager', bm),
+    ),
+    'tranfer middleware power': transferMiddleware.then(tm =>
+      E(localChainAdmin).setPower('transfer', tm),
     ),
   };
   void Promise.all(

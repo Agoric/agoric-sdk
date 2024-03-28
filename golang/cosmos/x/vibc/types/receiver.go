@@ -94,7 +94,10 @@ func (ir Receiver) Receive(cctx context.Context, str string) (ret string, err er
 	}
 
 	if msg.Type != "IBC_METHOD" {
-		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"`)
+		if receiver, ok := impl.(vm.PortHandler); ok {
+			return receiver.Receive(cctx, str)
+		}
+		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"; got %q`, msg.Type)
 	}
 
 	switch msg.Method {

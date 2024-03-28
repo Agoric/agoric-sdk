@@ -94,7 +94,7 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v6/modules/core/02-client"
 	ibcclientclient "github.com/cosmos/ibc-go/v6/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
-	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
+	ibcporttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v6/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 	"github.com/gorilla/mux"
@@ -121,6 +121,9 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer"
+	vtransferkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
+	testtypes "github.com/cosmos/ibc-go/v6/testing/types"
 
 	// Import the packet forward middleware
 	packetforward "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward"
@@ -220,6 +223,7 @@ type GaiaApp struct { // nolint: golint
 	vibcPort         int
 	vstoragePort     int
 	vlocalchainPort  int
+	vtransferPort    int
 
 	upgradeDetails *upgradeDetails
 
@@ -229,6 +233,9 @@ type GaiaApp struct { // nolint: golint
 	keys    map[string]*storetypes.KVStoreKey
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
+
+	// manage communication from the VM to the ABCI app
+	AgdServer *vm.AgdServer
 
 	// keepers
 	AccountKeeper    authkeeper.AccountKeeper
@@ -257,6 +264,7 @@ type GaiaApp struct { // nolint: golint
 	VibcKeeper               vibc.Keeper
 	VbankKeeper              vbank.Keeper
 	VlocalchainKeeper        vlocalchain.Keeper
+	VtransferKeeper          vtransferkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -295,17 +303,17 @@ func NewGaiaApp(
 ) *GaiaApp {
 	defaultController := func(ctx context.Context, needReply bool, str string) (string, error) {
 		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		return "", nil
+		return "null", nil
 	}
 	return NewAgoricApp(
-		defaultController,
+		defaultController, vm.NewAgdServer(),
 		logger, db, traceStore, loadLatest, skipUpgradeHeights,
 		homePath, invCheckPeriod, encodingConfig, appOpts, baseAppOptions...,
 	)
 }
 
 func NewAgoricApp(
-	sendToController func(context.Context, bool, string) (string, error),
+	sendToController func(context.Context, bool, string) (string, error), agdServer *vm.AgdServer,
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
@@ -324,13 +332,15 @@ func NewAgoricApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, packetforwardtypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, icahosttypes.StoreKey,
-		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey, vlocalchain.StoreKey, vbank.StoreKey,
+		swingset.StoreKey, vstorage.StoreKey, vibc.StoreKey,
+		vlocalchain.StoreKey, vtransfer.StoreKey, vbank.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &GaiaApp{
 		BaseApp:           bApp,
+		AgdServer:         agdServer,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
@@ -449,7 +459,7 @@ func NewAgoricApp(
 	callToController := func(ctx sdk.Context, str string) (string, error) {
 		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
-		defer vm.SetControllerContext(ctx)()
+		defer app.AgdServer.SetControllerContext(ctx)()
 		return sendToController(sdk.WrapSDKContext(ctx), true, str)
 	}
 
@@ -460,7 +470,7 @@ func NewAgoricApp(
 	app.VstorageKeeper = vstorage.NewKeeper(
 		keys[vstorage.StoreKey],
 	)
-	app.vstoragePort = vm.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
+	app.vstoragePort = app.AgdServer.RegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
@@ -469,7 +479,7 @@ func NewAgoricApp(
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
 	)
-	app.swingsetPort = vm.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
+	app.swingsetPort = app.AgdServer.RegisterPortHandler("swingset", swingset.NewPortHandler(app.SwingSetKeeper))
 
 	app.SwingStoreExportsHandler = *swingsetkeeper.NewSwingStoreExportsHandler(
 		app.Logger(),
@@ -508,7 +518,22 @@ func NewAgoricApp(
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper, app.BankKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
-	app.vibcPort = vm.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
+	app.vibcPort = app.AgdServer.RegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
+
+	vibcForVtransferKeeper := app.VibcKeeper.WithScope(nil, scopedTransferKeeper, func(ctx sdk.Context, action vm.Action) error {
+		action = vm.PopulateAction(ctx, action)
+
+		// Prefix the action type.
+		ah := action.GetActionHeader()
+		ah.Type = "VTRANSFER_" + ah.Type
+
+		// fmt.Println("@@@ vtransfer action", action)
+		return app.SwingSetKeeper.PushAction(ctx, action)
+	})
+	app.VtransferKeeper = vtransferkeeper.NewKeeper(appCodec, keys[vtransfer.StoreKey], vibcForVtransferKeeper)
+
+	vtransferReceiver := vibc.NewReceiver(app.VtransferKeeper)
+	app.vtransferPort = app.AgdServer.RegisterPortHandler("vtransfer", vtransferReceiver)
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec, keys[vbank.StoreKey], app.GetSubspace(vbank.ModuleName),
@@ -516,7 +541,7 @@ func NewAgoricApp(
 		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
-	app.vbankPort = vm.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
+	app.vbankPort = app.AgdServer.RegisterPortHandler("bank", vbank.NewPortHandler(vbankModule, app.VbankKeeper))
 
 	// register the proposal types
 	govRouter := govv1beta1.NewRouter()
@@ -551,7 +576,7 @@ func NewAgoricApp(
 		app.IBCKeeper.ChannelKeeper,
 		app.DistrKeeper,
 		app.BankKeeper,
-		app.IBCKeeper.ChannelKeeper,
+		app.VtransferKeeper.GetICS4Wrapper(),
 	)
 
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
@@ -565,41 +590,44 @@ func NewAgoricApp(
 		app.BankKeeper,
 		scopedTransferKeeper,
 	)
-	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
-	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
-	transferPFMModule := packetforward.NewIBCMiddleware(
-		transferIBCModule,
-		app.PacketForwardKeeper,
-		0, // retries on timeout
-		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
-		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
-	)
 
+	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
+
+	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
-		app.PacketForwardKeeper,
+		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ChannelKeeper,
 		&app.IBCKeeper.PortKeeper,
 		app.AccountKeeper,
 		scopedICAHostKeeper,
 		app.MsgServiceRouter(),
 	)
-	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// create static IBC router, add transfer route, then set and seal it
 	// Don't be confused by the name!  The port router maps *module names* (not
 	// PortIDs) to modules.
-	ibcRouter := porttypes.NewRouter()
+	ibcRouter := ibcporttypes.NewRouter()
 
-	// transfer stack contains (from top to bottom):
+	transferApp := transfer.NewAppModule(app.TransferKeeper)
+	var transferStack ibcporttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = packetforward.NewIBCMiddleware(
+		transferStack,
+		app.PacketForwardKeeper,
+		0, // retries on timeout
+		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	)
+	transferStack = vtransfer.NewIBCMiddleware(transferStack, app.VtransferKeeper)
+
+	// IBC routes contain (from top to bottom):
 	// - ICA Host
-	// - Packet Forward Middleware wrapping transfer IBC
+	// - ibc-hooks wrapping Packet Forward Middleware, then IBC transfer
 	// - vIBC
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferPFMModule).
+		AddRoute(ibctransfertypes.ModuleName, transferStack).
 		AddRoute(vibc.ModuleName, vibcIBCModule)
 
 	// Seal the router
@@ -613,7 +641,7 @@ func NewAgoricApp(
 		app.BaseApp.MsgServiceRouter(),
 		app.BaseApp.GRPCQueryRouter(),
 	)
-	app.vlocalchainPort = vm.RegisterPortHandler(
+	app.vlocalchainPort = app.AgdServer.RegisterPortHandler(
 		"vlocalchain",
 		vlocalchain.NewReceiver(app.VlocalchainKeeper),
 	)
@@ -654,7 +682,7 @@ func NewAgoricApp(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		transferModule,
+		transferApp,
 		icaModule,
 		packetforward.NewAppModule(app.PacketForwardKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
@@ -672,6 +700,7 @@ func NewAgoricApp(
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -687,7 +716,6 @@ func NewAgoricApp(
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
 		// This will cause the swingset controller to init if it hadn't yet, passing
@@ -699,6 +727,7 @@ func NewAgoricApp(
 	app.mm.SetOrderEndBlockers(
 		vibc.ModuleName,
 		vbank.ModuleName,
+		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibctransfertypes.ModuleName,
@@ -715,7 +744,6 @@ func NewAgoricApp(
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
-		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		// SwingSet needs to be last, for it to capture all the pushed actions.
@@ -735,26 +763,26 @@ func NewAgoricApp(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		paramstypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
 		ibctransfertypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
 		evidencetypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		genutiltypes.ModuleName,
-		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		vstorage.ModuleName,
 		vbank.ModuleName,
 		vibc.ModuleName,
 		swingset.ModuleName,
-		packetforwardtypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
@@ -783,7 +811,7 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
-		transferModule,
+		transferApp,
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -833,6 +861,7 @@ func NewAgoricApp(
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
 				vlocalchain.ModuleName,        // Agoric added vlocalchain
+				vtransfer.ModuleName,          // Agoric added vtransfer
 			},
 			Deleted: []string{
 				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
@@ -901,6 +930,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/init-network.js",
 					"@agoric/builders/scripts/vats/init-localchain.js",
+					"@agoric/builders/scripts/vats/init-transfer.js",
 				),
 				// Add new vats for price feeds. The existing ones will be retired shortly.
 				vm.CoreProposalStepForModules(
@@ -973,6 +1003,7 @@ type cosmosInitAction struct {
 	VbankPort       int `json:"vbankPort"`
 	VibcPort        int `json:"vibcPort"`
 	VlocalchainPort int `json:"vlocalchainPort"`
+	VtransferPort   int `json:"vtransferPort"`
 }
 
 // Name returns the name of the App
@@ -1008,6 +1039,7 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 		VbankPort:       app.vbankPort,
 		VibcPort:        app.vibcPort,
 		VlocalchainPort: app.vlocalchainPort,
+		VtransferPort:   app.vtransferPort,
 	}
 	// This uses `BlockingSend` as a friendly wrapper for `sendToController`
 	//
@@ -1272,11 +1304,44 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypesv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(swingset.ModuleName)
 	paramsKeeper.Subspace(vbank.ModuleName)
 
 	return paramsKeeper
+}
+
+// TestingApp functions
+
+// GetBaseApp implements the TestingApp interface.
+func (app *GaiaApp) GetBaseApp() *baseapp.BaseApp {
+	return app.BaseApp
+}
+
+// GetStakingKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetStakingKeeper() testtypes.StakingKeeper {
+	return app.StakingKeeper
+}
+
+// GetIBCKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetIBCKeeper() *ibckeeper.Keeper {
+	return app.IBCKeeper
+}
+
+// GetScopedIBCKeeper implements the TestingApp interface.
+func (app *GaiaApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper {
+	return app.ScopedIBCKeeper
+}
+
+// GetTxConfig implements the TestingApp interface.
+func (app *GaiaApp) GetTxConfig() client.TxConfig {
+	return MakeEncodingConfig().TxConfig
+}
+
+// For testing purposes
+func (app *GaiaApp) SetSwingStoreExportDir(dir string) {
+	module := app.mm.Modules[swingset.ModuleName].(swingset.AppModule)
+	module.SetSwingStoreExportDir(dir)
 }
