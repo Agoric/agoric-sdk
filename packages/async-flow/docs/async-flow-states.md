@@ -12,4 +12,4 @@
 
 - ***replay failure***. If during the ***active replaying*** state the guest activation fails to exactly reproduce its previously logged behavior, it becomes inactive as ***replay failure*** associated with a diagnostic explaining how the replay failed, so it can be repaired by another future upgrade. As of the next incarnation, the failure status is cleared and all these go into ***active replaying*** in order to retry replaying the from the log.
 
-- ***complete***. If the promise the guest activation returned settles, we assume that the job of the guest activation is done. It then goes into a durably done state, dropping all its bookkeeping beyond just remembering that it is done. The replay logs and membrane state are all dropped.
+- ***done***. If the promise the guest activation returned settles, we assume that the job of the guest activation is done. It then goes into a durably done state, dropping all its bookkeeping beyond just remembering that it is done. The replay logs and membrane state are all dropped.
