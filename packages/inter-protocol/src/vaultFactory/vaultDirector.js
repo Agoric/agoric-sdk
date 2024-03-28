@@ -14,7 +14,6 @@ import {
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
-  atomicRearrange,
   makeRecorderTopic,
   provideEmptySeat,
   SubscriberShape,
@@ -205,7 +204,7 @@ const prepareVaultDirector = (
         [mintSeat, mintReceiver, { Minted: kept }],
       ];
       try {
-        atomicRearrange(zcf, harden(transfers));
+        zcf.atomicRearrange(harden(transfers));
       } catch (e) {
         console.error('mintAndTransfer failed to rearrange', e);
         // If the rearrange fails, burn the newly minted tokens.
