@@ -316,9 +316,12 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       `xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker`,
     )
   ) {
-    (await import('child_process')).spawnSync('find', ['.']);
+    const { stdout, stderr } = (await import('child_process')).spawnSync(
+      'find',
+      ['.'],
+    );
     throw new Error(
-      'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
+      `XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?\n${stdout}\n${stderr}`,
     );
   }
 }
