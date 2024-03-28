@@ -36,7 +36,8 @@ test('test amplify defineVirtualExoClass fails', t => {
         },
       ),
     {
-      message: 'Only facets of an exo class kit can be amplified "UpCounter"',
+      message:
+        'Only facets of an exo class kit can be amplified, not "UpCounter"',
     },
   );
 });

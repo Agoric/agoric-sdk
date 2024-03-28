@@ -79,10 +79,10 @@ export type DefineKindOptions<C> = {
   stateShape?: StateShape;
 
   /**
-   * If a `receiveAmplifier` function is provided, it will be called during
-   * definition of the exo class kit with an `Amplify` function. If called
-   * during the definition of a normal exo or exo class, it will throw, since
-   * only exo kits can be amplified.
+   * If a `receiveAmplifier` function is provided to an exo class kit definition,
+   * it will be called with an `Amplify` function. If provided to the definition
+   * of a normal exo or exo class, the definition will throw, since only
+   * exo kits can be amplified.
    * An `Amplify` function is a function that takes a facet instance of
    * this class kit as an argument, in which case it will return the facets
    * record, giving access to all the facet instances of the same cohort.

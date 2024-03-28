@@ -780,7 +780,7 @@ export const makeVirtualObjectManager = (
 
     if (!multifaceted) {
       receiveAmplifier === undefined ||
-        Fail`Only facets of an exo class kit can be amplified ${q(tag)}`;
+        Fail`Only facets of an exo class kit can be amplified, not ${q(tag)}`;
     }
 
     let facetNames;
