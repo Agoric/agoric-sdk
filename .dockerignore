@@ -26,4 +26,4 @@ endo-sha.txt
 # `@@AGORIC_DOCKER_SUBMODULES@@`
 packages/xsnap/moddable
 packages/xsnap/xsnap-native
-!packages/xsnap/xsnap-native/build/bin
+!packages/xsnap/xsnap-native/xsnap/build/bin

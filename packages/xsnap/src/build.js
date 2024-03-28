@@ -310,10 +310,10 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     await makeXsnap({ spawn, fs, os });
   } else if (
     !fs.existsSync(
-      // This will need to account for the .exe extension if we recover support
-      // for Windows.
       // We build both release and debug, so checking for one should suffice.
-      `moddable/build/bin/${platform}/release/xsnap-worker`,
+      // XXX This will need to account for the .exe extension if we recover
+      // support for Windows.
+      `xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker`,
     )
   ) {
     throw new Error(
