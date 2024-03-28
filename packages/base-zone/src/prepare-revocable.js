@@ -13,7 +13,7 @@ const { Fail, quote: q } = assert;
 
 /**
  * @typedef {object} RevokerFacet
- * @property {() => boolean} revokeOne
+ * @property {() => boolean} revoke
  */
 
 /**
@@ -56,7 +56,6 @@ const { Fail, quote: q } = assert;
  * Make an exo class kit for wrapping an underlying exo class,
  * where the wrapper is a revocable forwarder.
  *
- * @deprecated Change to `prepareRevocableMakerKit` once #8977 happens
  * @template [U=any]
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {string} uKindName
@@ -80,7 +79,7 @@ export const prepareRevocableMakerKit = (
   } = options;
   const RevocableIKit = harden({
     revoker: M.interface(`${uInterfaceName}_revoker`, {
-      revokeOne: M.call().returns(M.boolean()),
+      revoke: M.call().returns(M.boolean()),
     }),
     revocable: M.interface(
       `${uInterfaceName}_revocable`,
@@ -105,7 +104,7 @@ export const prepareRevocableMakerKit = (
     }),
     {
       revoker: {
-        revokeOne() {
+        revoke() {
           const { state } = this;
           if (state.underlying === undefined) {
             return false;
@@ -162,7 +161,7 @@ export const prepareRevocableMakerKit = (
     if (facets === undefined) {
       return false;
     }
-    return facets.revoker.revokeOne();
+    return facets.revoker.revoke();
   };
 
   return harden({
