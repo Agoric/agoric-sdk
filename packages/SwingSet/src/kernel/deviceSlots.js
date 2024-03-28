@@ -107,7 +107,7 @@ export function makeDeviceSlots(
     serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 50000,
+    errorIdNum: 50_000,
   });
 
   function PresenceHandler(importSlot) {
