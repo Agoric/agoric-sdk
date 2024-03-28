@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
+import { typedJson } from '@agoric/cosmic-proto';
 
 /**
  * @param {BootstrapPowers & {
@@ -31,19 +32,20 @@ export const testLocalChain = async (
     console.info('created account', lca);
     const address = await E(lca).getAddress();
     console.info('address', address);
-    const balances = await E(localchain).query({
-      '@type': '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
-      address,
-    });
+    const balances = await E(localchain).query(
+      typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+        address,
+      }),
+    );
     console.info('balances', balances);
+
     await E(lca)
       .executeTx([
-        {
-          '@type': '/cosmos.bank.v1beta1.MsgSend',
-          from_address: address,
-          to_address: address,
+        typedJson('/cosmos.bank.v1beta1.MsgSend', {
+          fromAddress: address,
+          toAddress: address,
           amount: [{ denom: 'ucosm', amount: '1' }],
-        },
+        }),
       ])
       .then(
         res => console.info('unexpected executeTx result', res),

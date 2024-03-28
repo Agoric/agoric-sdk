@@ -30,6 +30,7 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
+    "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/vat-data": "^0.5.2",
