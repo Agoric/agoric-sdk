@@ -123,7 +123,6 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               outcomeKit,
             } = state;
             const { flow, admin, wakeWatcher } = facets;
-            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               failures.delete(flow);
@@ -156,6 +155,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               wakeWatch,
               panic,
             );
+            const eph = tmp.for(flow);
             eph.membrane = membrane;
             const guestThis = membrane.hostToGuest(activationThis);
             const guestArgs = membrane.hostToGuest(activationArgs);
