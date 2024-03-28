@@ -39,7 +39,8 @@ const { Fail } = assert;
  * string-valued data for each node, defaulting to the empty string.
  *
  * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data
+ * @property {(data: string) => Promise<void>} setValue publishes some data to chain storage
+ * @property {() => Promise<void>} delete removes the chain storage data
  * @property {() => string} getPath the chain storage path at which the node was constructed
  * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
@@ -47,6 +48,7 @@ const { Fail } = assert;
 
 const ChainStorageNodeI = M.interface('StorageNode', {
   setValue: M.callWhen(M.string()).returns(),
+  delete: M.callWhen().returns(),
   getPath: M.call().returns(M.string()),
   getStoreKey: M.callWhen().returns(M.record()),
   makeChildNode: M.call(M.string())
@@ -111,18 +113,17 @@ harden(assertPathSegment);
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
  * @typedef { 'get' | 'getStoreKey' | 'has' | 'children' | 'entries' | 'values' |'size' } StorageGetByPathMessageMethod
+ * @typedef { 'delete' } StorageMultiPathMessageMethod
  * @typedef { 'set' | 'setWithoutNotify' | 'append' } StorageUpdateEntriesMessageMethod
- * @typedef {StorageGetByPathMessageMethod | StorageUpdateEntriesMessageMethod } StorageMessageMethod
+ * @typedef { StorageGetByPathMessageMethod | StorageMultiPathMessageMethod | StorageUpdateEntriesMessageMethod } StorageMessageMethod
  * @typedef { [path: string] } StorageGetByPathMessageArgs
+ * @typedef { [...paths: string[]] } StorageMultiPathMessageArgs
  * @typedef { [path: string, value?: string | null] } StorageEntry
  * @typedef { StorageEntry[] } StorageUpdateEntriesMessageArgs
- * @typedef {{
- *   method: StorageGetByPathMessageMethod;
- *   args: StorageGetByPathMessageArgs;
- *  } | {
- *   method: StorageUpdateEntriesMessageMethod;
- *   args: StorageUpdateEntriesMessageArgs;
- * }} StorageMessage
+ * @typedef {{ method: StorageGetByPathMessageMethod, args: StorageGetByPathMessageArgs }} StorageGetByPathMessage
+ * @typedef {{ method: StorageMultiPathMessageMethod, args: StorageMultiPathMessageArgs }} StorageMultiPathMessage
+ * @typedef {{ method: StorageUpdateEntriesMessageMethod, args: StorageUpdateEntriesMessageArgs }} StorageUpdateEntriesMessage
+ * @typedef { StorageGetByPathMessage | StorageMultiPathMessage | StorageUpdateEntriesMessage } StorageMessage
  */
 
 /**
@@ -198,6 +199,11 @@ export const prepareChainStorageNode = zone => {
           method: sequence ? 'append' : 'set',
           args: [entry],
         });
+      },
+      /** @type {() => Promise<void>} */
+      async delete() {
+        const { path, messenger } = this.state;
+        await cb.callE(messenger, { method: 'delete', args: [path] });
       },
       // Possible extensions:
       // * getValue()

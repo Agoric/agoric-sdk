@@ -182,6 +182,15 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         }
         break;
       }
+      case 'delete': {
+        trace('toStorage delete', message);
+        /** @type {string[]} */
+        const keys = message.args;
+        for (const key of keys) {
+          data.delete(key);
+        }
+        break;
+      }
       case 'size':
         // Intentionally incorrect because it counts non-child descendants,
         // but nevertheless supports a "has children" test.

@@ -141,10 +141,11 @@ export const makeStoredSubscription = (
 
   /** @type {StoredSubscription<T>} */
   const storesub = Far('StoredSubscription', {
-    // @ts-expect-error getStoreKey type does not have `subscription`
     getStoreKey: async () => {
       if (!storageNode) {
-        return harden({ subscription });
+        return /** @type {Awaited<ReturnType<StoredSubscription<T>['getStoreKey']>>} */ (
+          harden({ subscription })
+        );
       }
       const storeKey = await E(storageNode).getStoreKey();
       return harden({ ...storeKey, subscription });

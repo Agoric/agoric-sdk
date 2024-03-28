@@ -27,6 +27,9 @@ export const makeFakeStorage = (path, publication) => {
         publication.updateState(value);
       }
     },
+    delete: async () => {
+      throw Error('not implemented');
+    },
     makeChildNode: () => storage,
     countSetValueCalls: () => setValueCalls,
   });

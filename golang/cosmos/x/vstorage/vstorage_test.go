@@ -88,7 +88,8 @@ func TestGetAndHas(t *testing.T) {
 		{label: "empty non-terminal", args: []interface{}{"top.empty-non-terminal"}, want: `null`},
 		{label: "no entry", args: []interface{}{"nosuchpath"}, want: `null`},
 		{label: "empty args", args: []interface{}{}, errContains: ptr(`missing`)},
-		{label: "non-string arg", args: []interface{}{42}, errContains: ptr(`json`)},
+		{label: "number arg", args: []interface{}{42}, errContains: ptr(`json`)},
+		{label: "null arg", args: []interface{}{nil}, errContains: ptr(`null`)},
 		{label: "extra args", args: []interface{}{"foo", "bar"}, errContains: ptr(`extra`)},
 	}
 	for _, desc := range cases {
@@ -123,12 +124,13 @@ func TestGetAndHas(t *testing.T) {
 	}
 }
 
-func doTestSet(t *testing.T, method string, expectNotify bool) {
+func doTestSetAndDelete(t *testing.T, setMethod string, expectNotify bool) {
 	kit := makeTestKit()
 	keeper, handler, ctx, cctx := kit.keeper, kit.handler, kit.ctx, kit.cctx
 
 	type testCase struct {
 		label        string
+		method       string
 		args         []interface{}
 		errContains  *string
 		skipReadBack map[int]bool
@@ -144,22 +146,41 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 			args: []interface{}{[]string{"baz.a", "qux"}, []string{"baz.b", "qux"}},
 		},
 		{label: "other multi-value",
-			args: []interface{}{[]string{"qux", "A"}, []string{"quux", "B"}},
+			args: []interface{}{[]string{"qux", "A"}, []string{"quux", "B"}, []string{"ephemeral", "C"}},
 		},
 		{label: "overwrites",
 			args: []interface{}{[]string{"bar"}, []string{"quux", "new"}},
 		},
-		{label: "non-string path",
+		{label: "deletes", method: "delete",
+			args: []interface{}{"final.final.corge", "baz.b", "baz.a"},
+		},
+		{label: "more deletes", method: "delete",
+			args: []interface{}{"ephemeral", "notfound", "alsonotfound"},
+		},
+		{label: "restorations",
+			args: []interface{}{[]string{"baz.b", "quux"}, []string{"baz.a", "quux"}},
+		},
+		{label: "number path",
 			// TODO: Fully validate input before making changes
 			// args:        []interface{}{[]string{"foo", "X"}, []interface{}{42, "new"}},
 			args:        []interface{}{[]interface{}{42, "new"}},
 			errContains: ptr("json"),
+		},
+		{label: "null path",
+			// TODO: Fully validate input before making changes
+			// args:        []interface{}{[]string{"foo", "Y"}, []interface{}{nil, "new"}},
+			args:        []interface{}{[]interface{}{nil, "new"}},
+			errContains: ptr("path"),
 		},
 		{label: "non-string value",
 			// TODO: Fully validate input before making changes
 			// args:        []interface{}{[]string{"foo", "X"}, []interface{}{"foo", true}},
 			args:        []interface{}{[]interface{}{"foo", true}},
 			errContains: ptr("value"),
+		},
+		{label: "null path", method: "delete",
+			args:        []interface{}{nil, "foo"},
+			errContains: ptr("null"),
 		},
 		{label: "self-overwrite",
 			args:         []interface{}{[]string{"final.final.corge", "grault"}, []string{"final.final.corge", "garply"}},
@@ -175,14 +196,31 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 	}
 	// Expect events to be alphabetized by key.
 	expectedFlushEvents := sdk.Events{
-		stateChangeEvent("baz.a", "qux"),
-		stateChangeEvent("baz.b", "qux"),
+		stateChangeEvent("baz.a", "quux"),
+		stateChangeEvent("baz.b", "quux"),
 		stateChangeEvent("final.final.corge", "garply"),
 		stateChangeEvent("foo", "bar"),
 		stateChangeEvent("quux", "new"),
 		stateChangeEvent("qux", "A"),
 	}
 	for _, desc := range cases {
+		method := desc.method
+		if method == "" {
+			method = setMethod
+		} else if method == "delete" && setMethod == "setWithoutNotify" {
+			// "delete" notifies, so replace it with set-empty when testing *without* notifies.
+			method = setMethod
+			for i, arg := range desc.args {
+				if str, ok := arg.(string); ok {
+					desc.args[i] = []string{str}
+				} else {
+					desc.args[i] = []interface{}{arg}
+					if desc.errContains != nil {
+						desc.errContains = ptr("path")
+					}
+				}
+			}
+		}
 		got, err := callReceive(handler, cctx, method, desc.args)
 
 		if desc.errContains == nil {
@@ -195,6 +233,10 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 			// Read the data back.
 			for i, arg := range desc.args {
 				entry, ok := arg.([]string)
+				if method == "delete" {
+					path, pathOk := arg.(string)
+					entry, ok = []string{path}, pathOk
+				}
 				if desc.skipReadBack[i] {
 					continue
 				} else if !ok {
@@ -224,12 +266,12 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 
 	// Verify corresponding events.
 	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, sdk.Events{}) {
-		t.Errorf("%s got unexpected events before flush %#v", method, got)
+		t.Errorf("%s got unexpected events before flush %#v", setMethod, got)
 	}
 	keeper.FlushChangeEvents(ctx)
 	if !expectNotify {
 		if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, sdk.Events{}) {
-			t.Errorf("%s got unexpected events after flush %#v", method, got)
+			t.Errorf("%s got unexpected events after flush %#v", setMethod, got)
 		}
 	} else if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedFlushEvents) {
 		for _, evt := range got {
@@ -237,18 +279,18 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 			for i, attr := range evt.Attributes {
 				attrs[i] = fmt.Sprintf("%s=%q", attr.Key, attr.Value)
 			}
-			t.Logf("%s got event %s<%s>", method, evt.Type, strings.Join(attrs, ", "))
+			t.Logf("%s got event %s<%s>", setMethod, evt.Type, strings.Join(attrs, ", "))
 		}
-		t.Errorf("%s got after flush events %#v; want %#v", method, got, expectedFlushEvents)
+		t.Errorf("%s got after flush events %#v; want %#v", setMethod, got, expectedFlushEvents)
 	}
 }
 
-func TestSet(t *testing.T) {
-	doTestSet(t, "set", true)
+func TestSetAndDelete(t *testing.T) {
+	doTestSetAndDelete(t, "set", true)
 }
 
-func TestSetWithoutNotify(t *testing.T) {
-	doTestSet(t, "setWithoutNotify", false)
+func TestSetWithoutNotifyAndDelete(t *testing.T) {
+	doTestSetAndDelete(t, "setWithoutNotify", false)
 }
 
 // TODO: TestAppend
