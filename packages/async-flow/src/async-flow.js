@@ -123,6 +123,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               outcomeKit,
             } = state;
             const { flow, admin, wakeWatcher } = facets;
+            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               failures.delete(flow);
@@ -155,7 +156,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               wakeWatch,
               panic,
             );
-            tmp.for(flow).membrane = membrane;
+            eph.membrane = membrane;
             const guestThis = membrane.hostToGuest(activationThis);
             const guestArgs = membrane.hostToGuest(activationArgs);
 
@@ -163,7 +164,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             // the first call to a host object.
             membrane.wake();
 
-            // We do *not* call the guesAsyncFunc by having the membrane make
+            // We do *not* call the guestAsyncFunc by having the membrane make
             // a host wrapper for the function. Rather, we special case this
             // host-to-guest call by "manually" sending the arguments through
             // and calling the guest function ourselves. Likewise, we
@@ -186,7 +187,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             // the guest presence of other host objects.
             //
             // `bijection.hasGuest(guestResultP)` can be false in a delayed
-            // guest - to - host setlling from a previous run.
+            // guest - to - host settling from a previous run.
             // In that case, the bijection was reset and all guest caps
             // created in the previous run were unregistered,
             // including `guestResultP`.
@@ -211,6 +212,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
           wake() {
             const { state, facets } = this;
             const { flow } = facets;
+            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               throw failures.get(flow);
@@ -218,8 +220,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             if (state.isDone) {
               return;
             }
-            if (tmp.for(flow).membrane) {
-              tmp.for(flow).membrane.wake();
+            if (eph.membrane) {
+              eph.membrane.wake();
             } else {
               flow.restart();
             }
@@ -250,6 +252,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const { state, facets } = this;
             const { bijection, log } = state;
             const { flow } = facets;
+            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               failures.delete(flow);
@@ -258,8 +261,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               // For now, once an eagerWaker, always an eagerWaker
               // eagerWakers.delete(flow);
             }
-            if (tmp.for(flow).membrane) {
-              tmp.for(flow).membrane.stop();
+            if (eph.membrane) {
+              eph.membrane.stop();
             }
             tmp.resetFor(flow);
             log.reset();
@@ -280,6 +283,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const { state, facets } = this;
             const { bijection, log } = state;
             const { flow } = facets;
+            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               failures.set(flow, fatalProblem);
@@ -287,8 +291,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               failures.init(flow, fatalProblem);
             }
 
-            if (tmp.for(flow).membrane) {
-              tmp.for(flow).membrane.stop();
+            if (eph.membrane) {
+              eph.membrane.stop();
             }
             tmp.resetFor(flow);
             log.reset();

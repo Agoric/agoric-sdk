@@ -72,52 +72,68 @@ export const prepareWeakBijection = zone => {
   return zone.exoClass('WeakBijection', WeakBijectionI, () => ({}), {
     reset() {
       const { self } = this;
+
       g2h.resetFor(self);
       h2g.resetFor(self);
     },
     init(g, h) {
       const { self } = this;
-      g2h.for(self).init(g, h);
-      h2g.for(self).init(h, g);
+      const guestToHost = g2h.for(self);
+      const hostToGuest = h2g.for(self);
+
+      guestToHost.init(g, h);
+      hostToGuest.init(h, g);
       self.has(g, h) ||
         // separate line so I can set a breakpoint
         Fail`internal: ${g} <-> ${h}`;
     },
     define(g, h) {
       const { self } = this;
+
       if (!self.has(g, h)) {
         self.init(g, h);
       }
     },
     hasGuest(g) {
       const { self } = this;
-      return g2h.for(self).has(g);
+      const guestToHost = g2h.for(self);
+
+      return guestToHost.has(g);
     },
     hasHost(h) {
       const { self } = this;
-      return h2g.for(self).has(h);
+      const hostToGuest = h2g.for(self);
+
+      return hostToGuest.has(h);
     },
     has(g, h) {
       const { self } = this;
-      if (g2h.for(self).has(g)) {
-        g2h.for(self).get(g) === h ||
-          Fail`internal: g->h ${g} -> ${h} vs ${g2h.for(self).get(g)}`;
-        h2g.for(self).get(h) === g ||
-          Fail`internal h->g: ${h} -> ${g} vs ${h2g.for(self).get(h)}`;
+      const guestToHost = g2h.for(self);
+      const hostToGuest = h2g.for(self);
+
+      if (guestToHost.has(g)) {
+        guestToHost.get(g) === h ||
+          Fail`internal: g->h ${g} -> ${h} vs ${guestToHost.get(g)}`;
+        hostToGuest.get(h) === g ||
+          Fail`internal h->g: ${h} -> ${g} vs ${hostToGuest.get(h)}`;
         return true;
       } else {
-        !h2g.for(self).has(h) ||
-          Fail`internal: unexpected h->g ${h} -> ${g2h.for(self).get(h)}`;
+        !hostToGuest.has(h) ||
+          Fail`internal: unexpected h->g ${h} -> ${guestToHost.get(h)}`;
         return false;
       }
     },
     guestToHost(g) {
       const { self } = this;
-      return g2h.for(self).get(g);
+      const guestToHost = g2h.for(self);
+
+      return guestToHost.get(g);
     },
     hostToGuest(h) {
       const { self } = this;
-      return h2g.for(self).get(h);
+      const hostToGuest = h2g.for(self);
+
+      return hostToGuest.get(h);
     },
   });
 };

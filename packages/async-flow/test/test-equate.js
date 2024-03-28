@@ -112,7 +112,7 @@ test.serial('test durable equate', t => {
   testEquate(t, zone1, vowTools1);
 
   // equate keeps its state only in the bijection,
-  // which looses all its memory between incarnations.
+  // which loses all its memory between incarnations.
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');

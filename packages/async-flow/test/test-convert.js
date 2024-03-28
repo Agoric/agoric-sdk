@@ -109,7 +109,7 @@ test.serial('test durable convert', t => {
   testConvert(t, zone1, vowTools1);
 
   // These converters keep their state only in the bijection,
-  // which looses all its memory between incarnations.
+  // which loses all its memory between incarnations.
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');

@@ -23,8 +23,6 @@ export const nextLife = () => {
 };
 
 export const asyncFlowVerbose = () => {
-  // TODO figure out how we really want to control this
-  // But keep in mind that all this async-flow stuff will migrate
-  // into its own package
+  // TODO figure out how we really want to control this.
   return environmentOptionsListHas('DEBUG', 'async-flow-verbose');
 };

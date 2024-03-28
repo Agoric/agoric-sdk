@@ -66,69 +66,87 @@ export const prepareLogStore = zone => {
       },
       dispose() {
         const { state, self } = this;
+        const { mapStore } = state;
+
         tmp.resetFor(self);
-        state.mapStore.clear();
+        mapStore.clear();
       },
       getIndex() {
         const { self } = this;
-        return tmp.for(self).index;
+        const eph = tmp.for(self);
+
+        return eph.index;
       },
       getLength() {
         const { state } = this;
-        return state.mapStore.getSize();
+        const { mapStore } = state;
+
+        return mapStore.getSize();
       },
       isReplaying() {
         const { state, self } = this;
-        return tmp.for(self).index < state.mapStore.getSize();
+        const { mapStore } = state;
+        const eph = tmp.for(self);
+
+        return eph.index < mapStore.getSize();
       },
       peekEntry() {
         const { state, self } = this;
+        const { mapStore } = state;
+        const eph = tmp.for(self);
+
         self.isReplaying() ||
-          Fail`No longer replaying: ${q(tmp.for(self).index)} vs ${q(
-            state.mapStore.getSize(),
+          Fail`No longer replaying: ${q(eph.index)} vs ${q(
+            mapStore.getSize(),
           )}`;
-        const result = state.mapStore.get(tmp.for(self).index);
+        const result = mapStore.get(eph.index);
         return result;
       },
       nextEntry() {
         const { self } = this;
+        const eph = tmp.for(self);
+
         const result = self.peekEntry();
-        tmp.for(self).index += 1;
+        eph.index += 1;
         if (!self.isReplaying()) {
-          tmp.for(self).replayDoneKit.resolve(undefined);
+          eph.replayDoneKit.resolve(undefined);
         }
         return result;
       },
       pushEntry(entry) {
         const { state, self } = this;
+        const { mapStore } = state;
+        const eph = tmp.for(self);
+
         !self.isReplaying() ||
-          Fail`still replaying: ${q(tmp.for(self).index)} vs ${q(
-            state.mapStore.getSize(),
+          Fail`still replaying: ${q(eph.index)} vs ${q(mapStore.getSize())}`;
+        eph.index === mapStore.getSize() ||
+          Fail`internal: index confusion ${q(eph.index)} vs ${q(
+            mapStore.getSize(),
           )}`;
-        tmp.for(self).index === state.mapStore.getSize() ||
-          Fail`internal: index confusion ${q(tmp.for(self).index)} vs ${q(
-            state.mapStore.getSize(),
+        mapStore.init(eph.index, entry);
+        eph.index += 1;
+        eph.index === mapStore.getSize() ||
+          Fail`internal: index confusion ${q(eph.index)} vs ${q(
+            mapStore.getSize(),
           )}`;
-        state.mapStore.init(tmp.for(self).index, entry);
-        tmp.for(self).index += 1;
-        tmp.for(self).index === state.mapStore.getSize() ||
-          Fail`internal: index confusion ${q(tmp.for(self).index)} vs ${q(
-            state.mapStore.getSize(),
-          )}`;
-        return tmp.for(self).index;
+        return eph.index;
       },
       dump() {
         const { state } = this;
-        const len = state.mapStore.getSize();
+        const { mapStore } = state;
+        const len = mapStore.getSize();
         const result = [];
         for (let i = 0; i < len; i += 1) {
-          result.push(state.mapStore.get(i));
+          result.push(mapStore.get(i));
         }
         return harden(result);
       },
       promiseReplayDone() {
         const { self } = this;
-        return tmp.for(self).replayDoneKit.promise;
+        const eph = tmp.for(self);
+
+        return eph.replayDoneKit.promise;
       },
     },
   );
