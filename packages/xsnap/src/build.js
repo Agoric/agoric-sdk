@@ -149,12 +149,9 @@ const makeSubmodule = (path, repoUrl, { git }) => {
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
  *   },
- *   os: {
- *     type: typeof import('os').type,
- *   }
  * }} io
  */
-async function main(args, { env, stdout, spawn, fs, os }) {
+const updateSubmodules = async (args, { env, stdout, spawn, fs }) => {
   const git = makeCLI('git', { spawn });
 
   // When changing/adding entries here, make sure to search the whole project
@@ -214,7 +211,22 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       await submodule.init();
     }
   }
+};
 
+/**
+ * @param {{
+ *   spawn: typeof import('child_process').spawn,
+ *   fs: {
+ *     existsSync: typeof import('fs').existsSync,
+ *     rmdirSync: typeof import('fs').rmdirSync,
+ *     readFile: typeof import('fs').promises.readFile,
+ *   },
+ *   os: {
+ *     type: typeof import('os').type,
+ *   }
+ * }} io
+ */
+const makeXsnap = async ({ spawn, fs, os }) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
 
@@ -237,6 +249,75 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       {
         cwd: `xsnap-native/xsnap/makefiles/${platform.path}`,
       },
+    );
+  }
+};
+
+/**
+ * @param {string[]} args
+ * @param {{
+ *   env: Record<string, string | undefined>,
+ *   stdout: typeof process.stdout,
+ *   spawn: typeof import('child_process').spawn,
+ *   fs: {
+ *     existsSync: typeof import('fs').existsSync,
+ *     rmdirSync: typeof import('fs').rmdirSync,
+ *     readFile: typeof import('fs').promises.readFile,
+ *   },
+ *   os: {
+ *     type: typeof import('os').type,
+ *   }
+ * }} io
+ */
+async function main(args, { env, stdout, spawn, fs, os }) {
+  // I solemnly swear I will do no synchronous work followed by a variable
+  // number turns of the event loop.
+  await null;
+
+  // If this is a working copy of xsnap in a checkout of agoric-sdk, we need to
+  // either clone or update submodules.
+  // Otherwise, we are running from an extracted npm tarball in a dependent
+  // package's node_modules, in which case we should just `make` with the
+  // `moddable` directory provided by npm.
+  // This will avoid rebuilding native xsnap in the common case for end users.
+  //
+  // | moddable/ | moddable/.git | working copy |
+  // | --------- | ------------- | ------------ |
+  // | ABSENT    | ABSENT        | YES          |
+  // | ABSENT    | EXISTS        | *            |
+  // | EXISTS    | ABSENT        | NO           |
+  // | EXISTS    | EXISTS        | YES          |
+  //
+  // We short-circuit after a single stat if moddable/.git exists because that
+  // implies that moddable/ exists.
+  const isWorkingCopy =
+    fs.existsSync('moddable/.git') || !fs.existsSync('moddable');
+  if (isWorkingCopy) {
+    await updateSubmodules(args, { env, stdout, spawn, fs });
+  }
+
+  const osType = os.type();
+  const platform = {
+    Linux: 'lin',
+    Darwin: 'mac',
+    // Windows_NT: 'win', // One can dream.
+  }[osType];
+  if (platform === undefined) {
+    throw Error(`xsnap does not support platform ${osType}`);
+  }
+
+  if (fs.existsSync('moddable/xs/includes/xs.h')) {
+    await makeXsnap({ spawn, fs, os });
+  } else if (
+    !fs.existsSync(
+      // This will need to account for the .exe extension if we recover support
+      // for Windows.
+      // We build both release and debug, so checking for one should suffice.
+      `moddable/build/bin/${platform}/release/xsnap-worker`,
+    )
+  ) {
+    throw new Error(
+      'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
     );
   }
 }
