@@ -9,6 +9,8 @@ import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { restartVatAdminVat } from '../util.js';
 import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 
+const LOTS = 100_000_000n; // 100Mc
+
 async function prepare() {
   const kernelBundles = await buildKernelBundles();
   // we'll give this bundle to the loader vat, which will use it to create a
@@ -79,6 +81,10 @@ async function meterObjectsTest(t, doVatAdminRestarts) {
   await doMeter('setMeterThreshold', 7n);
   await vaRestart();
   t.deepEqual(await getMeter(), { remaining: 18n, threshold: 7n });
+
+  // resetAllMeters() will update it
+  c.resetAllMeters(99n);
+  t.deepEqual(await getMeter(), { remaining: 99n, threshold: 7n });
 }
 
 test('meter objects', async t => {
@@ -292,12 +298,11 @@ test('meter decrements', async t => {
   // times, but this is sensitive to SES and other libraries, so we
   // try to be tolerant of variation over time.
 
-  const lots = 100_000_000n; // TODO 100m
-  const t0 = await createMeteredVat(c, t, dynamicVatBundle, lots, 0n);
+  const t0 = await createMeteredVat(c, t, dynamicVatBundle, LOTS, 0n);
   let remaining0 = await t0.getMeter();
-  const consumedByStartVat = lots - remaining0;
+  const consumedByStartVat = LOTS - remaining0;
   console.log(`-- consumedByStartVat`, consumedByStartVat);
-  t.not(remaining0, lots);
+  t.not(remaining0, LOTS);
   await t0.consume(true);
   const remaining1 = await t0.getMeter();
   const firstConsume = remaining0 - remaining1;
@@ -438,6 +443,11 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
   remaining = await getMeter();
   t.is(remaining, 'unlimited');
   await vaRestart();
+
+  // resetAllMeters() will not change an UnlimitedMeter
+  c.resetAllMeters(LOTS);
+  remaining = await getMeter();
+  t.is(remaining, 'unlimited');
 
   // but each crank is still limited, so an infinite loop will kill the vat
   const kp4 = c.queueToVatRoot('bootstrap', 'explode', ['compute']);
