@@ -98,7 +98,7 @@ export async function xsnap(options) {
   const platform = {
     Linux: 'lin',
     Darwin: 'mac',
-    Windows_NT: 'win',
+    // Windows_NT: 'win', // One can dream.
   }[os];
 
   if (platform === undefined) {
