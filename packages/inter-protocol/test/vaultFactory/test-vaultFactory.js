@@ -2015,15 +2015,22 @@ test('governance publisher', async t => {
   ({
     value: { current },
   } = await managerGovNotifier.getUpdateSince());
-  // can't deepEqual because of non-literal objects so check keys and then partial shapes
-  t.deepEqual(Object.keys(current), [
-    'DebtLimit',
-    'InterestRate',
-    'LiquidationMargin',
-    'LiquidationPadding',
-    'LiquidationPenalty',
-    'MintFee',
-  ]);
+  t.deepEqual(
+    current,
+    await E(vfPublic).getGovernedParams({ collateralBrand: aeth.brand }),
+  );
+  t.deepEqual(
+    Object.keys(current),
+    [
+      'DebtLimit',
+      'InterestRate',
+      'LiquidationMargin',
+      'LiquidationPadding',
+      'LiquidationPenalty',
+      'MintFee',
+    ],
+    'param keys differ',
+  );
   t.like(current, {
     DebtLimit: { type: 'amount' },
     InterestRate: { type: 'ratio' },
