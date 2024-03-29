@@ -19,7 +19,7 @@ const { quote: q, Fail } = assert;
 
 const trace = makeTracer('Vault', true);
 
-/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
+/** @import {NormalizedDebt} from './storeUtils.js' */
 
 /**
  * @file This has most of the logic for a Vault, to borrow Minted against
@@ -152,7 +152,7 @@ const VaultStateShape = harden({
 });
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */

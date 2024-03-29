@@ -13,9 +13,8 @@ import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
 const trace = makeTracer('FluxAgg', false);
 /**
- * @typedef {import('@agoric/vat-data').Baggage} Baggage
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {TimerService} from '@agoric/time'
  */
 
 /** @type {ContractMeta} */

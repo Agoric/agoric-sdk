@@ -215,8 +215,8 @@ export const prepareNameHubKit = zone => {
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
             /** @type {import('./types.js').NameHub} */
-            // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-            // @ts-ignore if an admin is present, it should be a namehub
+
+            // @ts-expect-error if an admin is present, it should be a namehub
             const childHub = keyToValue.get(key);
             return { nameHub: childHub, nameAdmin: childAdmin };
           }

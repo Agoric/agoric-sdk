@@ -305,8 +305,8 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const { data: bundleData } = t.context;
   if (suppressGC) {
     config.defaultReapInterval = 'never';
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-    // @ts-ignore reapInterval is valid
+
+    // @ts-expect-error reapInterval is valid
     config.vats.bootstrap.reapInterval = 1;
   }
   const {

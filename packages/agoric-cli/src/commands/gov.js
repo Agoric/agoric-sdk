@@ -13,7 +13,7 @@ import {
   sendAction,
 } from '../lib/wallet.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
+/** @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js' */
 
 const collectValues = (val, memo) => {
   memo.push(val);

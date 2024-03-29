@@ -13,10 +13,10 @@ import { makeCancelTokenMaker } from '../auction/util.js';
 
 const trace = makeTracer('LIQ');
 
-/** @typedef {import('@agoric/time').TimerService} TimerService */
-/** @typedef {import('@agoric/time').TimerWaker} TimerWaker */
-/** @typedef {import('@agoric/time').CancelToken} CancelToken */
-/** @typedef {import('@agoric/time').RelativeTimeRecord} RelativeTimeRecord */
+/** @import {TimerService} from '@agoric/time' */
+/** @import {TimerWaker} from '@agoric/time' */
+/** @import {CancelToken} from '@agoric/time' */
+/** @import {RelativeTimeRecord} from '@agoric/time' */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 

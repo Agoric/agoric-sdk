@@ -1,22 +1,22 @@
 // @jessie-check
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- for casting from deprecated types that aren't worth fixing */
+
 import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
-/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
+/** @import {MethodGuard} from '@endo/patterns' */
 /**
  * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
  * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
  */
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
-/** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/swingset-liveslots' */
 /** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
 /** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>} KindFacet */
 /** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>} KindFacets */
-/** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
-/** @typedef {import('@agoric/swingset-liveslots').InterfaceGuardKit} InterfaceGuardKit */
+/** @import {DurableKindHandle} from '@agoric/swingset-liveslots' */
+/** @import {InterfaceGuardKit} from '@agoric/swingset-liveslots' */
 
 /**
  * Make a version of the argument function that takes a kind context but
@@ -106,7 +106,7 @@ export const makeExoUtils = VatData => {
    * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKind(tag, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -137,7 +137,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKindMulti(tag, init, facets, {
       ...options,
       thisfulMethods: true,
@@ -168,7 +168,7 @@ export const makeExoUtils = VatData => {
     methods,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKind(kindHandle, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -199,7 +199,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKindMulti(kindHandle, init, facets, {
       ...options,
       thisfulMethods: true,

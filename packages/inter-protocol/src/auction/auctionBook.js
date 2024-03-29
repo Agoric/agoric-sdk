@@ -88,7 +88,7 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
   );
 };
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @typedef {object} BookDataNotification

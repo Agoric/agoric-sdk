@@ -125,7 +125,7 @@ const the = async xP => {
   return x;
 };
 
-/** @typedef {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} MockVStorageRoot */
+/** @import {MockChainStorageRoot as MockVStorageRoot} from '@agoric/internal/src/storage-test-utils.js' */
 
 const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;

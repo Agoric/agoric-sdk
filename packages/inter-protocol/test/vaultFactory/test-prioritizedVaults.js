@@ -17,7 +17,7 @@ import {
   makeFakeVault,
 } from './interestSupport.js';
 
-/** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
+/** @import {Vault} from '../../src/vaultFactory/vault.js' */
 
 const { brand: stableBrand } = makeIssuerKit('ducats');
 const make = value => AmountMath.make(stableBrand, value);

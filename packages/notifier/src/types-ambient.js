@@ -3,15 +3,7 @@
 /** @import { ERef } from '@endo/far' */
 
 /**
- * @template T
- * @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit
- */
-
-/**
- * Deprecated. Use PromiseKit instead.
- *
- * @template T
- * @typedef {import('@endo/promise-kit').PromiseRecord<T>} PromiseRecord
+ * @import {PromiseKit, PromiseRecord} from '@endo/promise-kit'
  */
 
 /**

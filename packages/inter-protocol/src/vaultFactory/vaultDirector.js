@@ -77,7 +77,7 @@ const trace = makeTracer('VD', true);
 const shortfallInvitationKey = 'shortfallInvitation';
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint

@@ -35,9 +35,9 @@ const bidInvitationShape = harden({
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').TryExitOfferAction } TryExitOfferAction */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
-/** @typedef {import('@agoric/inter-protocol/src/auction/scheduler.js').ScheduleNotification} ScheduleNotification */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BookDataNotification} BookDataNotification */
+/** @import {OfferSpec as BidSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
+/** @import {ScheduleNotification} from '@agoric/inter-protocol/src/auction/scheduler.js' */
+/** @import {BookDataNotification} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -102,7 +102,7 @@ const makeFormatters = assets => {
  * Dynamic check that an OfferStatus is also a BidSpec.
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
- * @param {import('../lib/wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  * @param {typeof console.warn} warn
  * returns null if offerStatus is not a BidSpec
  */

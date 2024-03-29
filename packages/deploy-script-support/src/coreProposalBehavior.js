@@ -9,7 +9,7 @@ const t = 'makeCoreProposalBehavior';
  */
 
 /**
- * @typedef {import('./externalTypes.js').ManifestBundleRef} ManifestBundleRef
+ * @import {ManifestBundleRef} from './externalTypes.js'
  * @typedef {[methodName: string, ...args: unknown[]]} FlatMethargs
  * @typedef {Record<string, Record<string, unknown>>} Manifest
  */

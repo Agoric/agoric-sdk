@@ -39,7 +39,7 @@ import { E } from '@endo/eventual-send';
 /**
  * Wrap a Publisher to record all the values to chain storage.
  *
- * @param {import('@agoric/zoe').Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
  */
 export const prepareRecorder = (baggage, marshaller) => {

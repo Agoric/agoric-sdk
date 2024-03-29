@@ -16,8 +16,8 @@ import {
 
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
-/** @typedef {import('@opentelemetry/api').MetricAttributes} Attributes */
-/** @typedef {import('@opentelemetry/api').Histogram} Histogram */
+/** @import {MetricAttributes as Attributes} from '@opentelemetry/api' */
+/** @import {Histogram} from '@opentelemetry/api' */
 
 import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 

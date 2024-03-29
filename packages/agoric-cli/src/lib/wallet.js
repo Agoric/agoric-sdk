@@ -6,8 +6,8 @@ import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
-/** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
+/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
+/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
 
 const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();

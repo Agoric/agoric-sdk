@@ -6,7 +6,7 @@ import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
 const { Fail, quote: q } = assert;
 
-/** @typedef {import('@agoric/vats/src/lib-board.js').BoardId} BoardId */
+/** @import {BoardId} from '@agoric/vats/src/lib-board.js' */
 
 /**
  * ID from a board made with { prefix: DEFAULT_PREFIX }

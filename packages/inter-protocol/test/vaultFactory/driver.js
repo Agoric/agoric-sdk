@@ -33,7 +33,7 @@ import {
   withAmountUtils,
 } from '../supports.js';
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
+/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
 
 const trace = makeTracer('VFDriver');
 
@@ -93,7 +93,7 @@ const defaultParamValues = debt =>
  *   installation: Record<string, any>;
  *   interestTiming: any;
  *   minInitialDebt: bigint;
- *   reserveCreatorFacet: ERef<AssetReserveCreatorFacet>;
+ *   reserveCreatorFacet: ERef<AssetReserveLimitedCreatorFacet>;
  *   rates: any;
  *   run: IssuerKit & import('../supports.js').AmountUtils;
  *   stableInitialLiquidity: Amount<'nat'>;

@@ -58,7 +58,7 @@ test('import empty', async t => {
 });
 
 const importTest = test.macro(async (t, mode) => {
-  /** @typedef {import('../src/internal.js').ArtifactMode} ArtifactMode */
+  /** @import {ArtifactMode} from '../src/internal.js' */
   const artifactMode = /** @type {ArtifactMode} */ (mode);
 
   const [dbDir, cleanup] = await tmpDir('testdb');

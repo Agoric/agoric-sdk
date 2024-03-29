@@ -35,6 +35,8 @@ import {
 import '../../src/vaultFactory/types.js';
 import { defaultParamValues } from './vaultFactoryUtils.js';
 
+/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+
 /**
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & import('../supports.js').AmountUtils;
@@ -57,7 +59,7 @@ const contractRoots = {
   auctioneer: './src/auction/auctioneer.js',
 };
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
+/** @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory' */
 
 const trace = makeTracer('Test replc PriceAuthority', false);
 
@@ -256,8 +258,8 @@ const setupServices = async (
     'AEth',
     rates,
   );
-  /** @typedef {import('../../src/proposals/econ-behaviors.js').AuctioneerKit} AuctioneerKit */
-  /** @typedef {import('@agoric/zoe/tools/manualPriceAuthority.js').ManualPriceAuthority} ManualPriceAuthority */
+  /** @import {AuctioneerKit} from '../../src/proposals/econ-behaviors.js' */
+  /** @import {ManualPriceAuthority} from '@agoric/zoe/tools/manualPriceAuthority.js' */
   /**
    * @type {[
    *   any,
