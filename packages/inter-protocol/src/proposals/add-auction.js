@@ -6,11 +6,7 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('NewAuction', true);
 
-/**
- * @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {any} [config.auctionParams]
- */
+/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
 export const addAuction = async ({
   consume: {
     zoe,
@@ -120,6 +116,14 @@ export const addAuction = async ({
       E(governorStartResult.creatorFacet).getCreatorFacet(),
       E(governorStartResult.creatorFacet).getPublicFacet(),
     ]);
+
+  const allIssuers = await E(zoe).getIssuers(legacyKit.instance);
+  const { Bid: _istIssuer, ...auctionIssuers } = allIssuers;
+  await Promise.all(
+    Object.keys(auctionIssuers).map(kwd =>
+      E(governedCreatorFacet).addBrand(auctionIssuers[kwd], kwd),
+    ),
+  );
 
   // don't overwrite auctioneerKit yet
   newAuctioneerKit.resolve(
