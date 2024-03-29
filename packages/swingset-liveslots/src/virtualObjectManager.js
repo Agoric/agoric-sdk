@@ -20,18 +20,11 @@ import {
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
 
-/** @import {DurableKindHandle} from '@agoric/swingset-liveslots' */
-
-/** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
-
 /**
- * @typedef {import('@endo/exo/src/exo-tools.js').ClassContextProvider } ClassContextProvider
- *
- * @typedef {import('@endo/exo/src/exo-tools.js').KitContextProvider } KitContextProvider
- */
-
-/**
- *
+ * @import {DurableKindHandle} from '@agoric/swingset-liveslots'
+ * @import {DefineKindOptions} from '@agoric/swingset-liveslots'
+ * @import {ClassContextProvider} from '@endo/exo/src/exo-tools.js'
+ * @import {KitContextProvider} from '@endo/exo/src/exo-tools.js'
  */
 
 const {
