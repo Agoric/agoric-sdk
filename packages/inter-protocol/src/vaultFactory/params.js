@@ -196,6 +196,8 @@ export const provideVaultParamManagers = (
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
+  console.log(`VF par start`, managerParamValues);
+
   // the managers aren't durable but their arguments are
   /**
    * @type {MapStore<

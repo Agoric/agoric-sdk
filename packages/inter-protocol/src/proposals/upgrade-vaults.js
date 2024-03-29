@@ -125,6 +125,7 @@ export const upgradeVaults = async (powers, { options }) => {
       managerParams: managerParamValues,
     });
 
+    console.log(`UVlt starting upgrade`, newPrivateArgs);
     const upgradeResult = await E(kit.adminFacet).upgradeContract(
       bundleID,
       newPrivateArgs,
