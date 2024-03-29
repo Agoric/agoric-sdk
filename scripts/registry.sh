@@ -79,10 +79,10 @@ publish() {
         yarn lerna run clean:types
 
         # Change any version prefices to an exact match, and merge our versions.
-        VERSIONSHASH=$(jq --argfile versions <(popd >/dev/null && git cat-file blob "$VERSIONSHASH") \
+        VERSIONSHASH=$(jq --slurpfile versions <(popd >/dev/null && git cat-file blob "$VERSIONSHASH") \
             '[to_entries[] | { key: .key, value: (.value | sub("^[~^]"; "")) }]
        | from_entries
-       | . + $versions' \
+       | . + $versions[0]' \
             <("$thisdir/get-versions.sh" .) |
             (popd >/dev/null && git hash-object -w --stdin))
 
