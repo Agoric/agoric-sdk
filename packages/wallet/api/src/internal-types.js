@@ -7,7 +7,7 @@
  * @property {PurseActions} actions
  */
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @typedef {PursesJSONState & PursesAddedState} PursesFullState

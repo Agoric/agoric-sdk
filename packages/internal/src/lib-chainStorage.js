@@ -5,6 +5,8 @@ import { M } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
+/** @import { ERef } from '@endo/far' */
+
 const { Fail } = assert;
 
 /** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
@@ -248,7 +250,7 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {import('@endo/far').ERef<StorageNode?>} storageNodeRef
+ * @param {ERef<StorageNode?>} storageNodeRef
  * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
@@ -261,8 +263,8 @@ harden(makeStorageNodeChild);
 
 // TODO find a better module for this
 /**
- * @param {import('@endo/far').ERef<StorageNode>} storageNode
- * @param {import('@endo/far').ERef<Marshaller>} marshaller
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  * @returns {(value: unknown) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {

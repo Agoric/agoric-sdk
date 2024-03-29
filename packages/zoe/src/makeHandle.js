@@ -8,7 +8,7 @@ import { HandleI } from './typeGuards.js';
 
 const { Fail } = assert;
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @template {string} H

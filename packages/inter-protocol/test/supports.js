@@ -20,6 +20,8 @@ import {
 } from '@agoric/notifier';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 
+/** @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js' */
+
 export { makeMockChainStorageRoot };
 
 /** Common six-decimal places denom */
@@ -136,7 +138,6 @@ export const mintRunPayment = async (
 };
 
 /**
- * @typedef {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} Space
  * @param {Space} space
  * @param {Record<
  *   keyof Space['installation']['produce'],

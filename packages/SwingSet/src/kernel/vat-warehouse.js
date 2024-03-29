@@ -5,19 +5,19 @@ import { insistVatDeliveryResult } from '../lib/message.js';
 import djson from '../lib/djson.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
- * @typedef {import('../types-external.js').KernelDeliveryObject} KernelDeliveryObject
- * @typedef {import('../types-internal.js').VatManager} VatManager
- * @typedef {import('../types-internal.js').VatID} VatID
- * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorkerOptions} TDInitializeWorkerOptions
- * @typedef {import('../types-internal.js').TranscriptDeliveryInitializeWorker} TDInitializeWorker
- * @typedef {import('../types-internal.js').TranscriptDeliveryShutdownWorker} TDShutdownWorker
- * @typedef {import('../types-internal.js').TranscriptDeliveryResults} TranscriptDeliveryResults
- * @typedef {import('../types-internal.js').TranscriptEntry} TranscriptEntry
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
+ * @import {KernelDeliveryObject} from '../types-external.js'
+ * @import {VatManager} from '../types-internal.js'
+ * @import {VatID} from '../types-internal.js'
+ * @import {TranscriptDeliveryInitializeWorkerOptions} from '../types-internal.js'
+ * @import {TranscriptDeliveryInitializeWorker} from '../types-internal.js'
+ * @import {TranscriptDeliveryShutdownWorker} from '../types-internal.js'
+ * @import {TranscriptDeliveryResults} from '../types-internal.js'
+ * @import {TranscriptEntry} from '../types-internal.js'
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -344,7 +344,7 @@ export function makeVatWarehouse({
     // initialize-worker event, to represent the vatLoader.create()
     // we're about to do
     if (options.useTranscript && vatKeeper.transcriptSize() === 0) {
-      /** @type { TDInitializeWorkerOptions } */
+      /** @type { TranscriptDeliveryInitializeWorkerOptions } */
       const initOpts = { source: {}, workerOptions: options.workerOptions };
       // if the vat is somehow using a full bundle, we don't want that
       // in the transcript: we only record bundleIDs

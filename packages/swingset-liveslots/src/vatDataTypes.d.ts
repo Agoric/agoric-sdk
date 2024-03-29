@@ -73,6 +73,41 @@ export type DefineKindOptions<C> = {
   finish?: (context: C) => void;
 
   /**
+   * If provided, it describes the shape of all state records of instances
+   * of this kind.
+   */
+  stateShape?: StateShape;
+
+  /**
+   * If a `receiveAmplifier` function is provided to an exo class kit definition,
+   * it will be called with an `Amplify` function. If provided to the definition
+   * of a normal exo or exo class, the definition will throw, since only
+   * exo kits can be amplified.
+   * An `Amplify` function is a function that takes a facet instance of
+   * this class kit as an argument, in which case it will return the facets
+   * record, giving access to all the facet instances of the same cohort.
+   */
+  receiveAmplifier?: ReceivePower<Amplify<F>>;
+
+  /**
+   * If a `receiveInstanceTester` function is provided, it will be called
+   * during the definition of the exo class or exo class kit with an
+   * `IsInstance` function. The first argument of `IsInstance`
+   * is the value to be tested. When it may be a facet instance of an
+   * exo class kit, the optional second argument, if provided, is
+   * a `facetName`. In that case, the function tests only if the first
+   * argument is an instance of that facet of the associated exo class kit.
+   */
+  receiveInstanceTester?: ReceivePower<IsInstance>;
+
+  // TODO properties above are identical to those in FarClassOptions.
+  // These are the only options that should be exposed by
+  // vat-data's public virtual/durable exo APIs. This DefineKindOptions
+  // should explicitly be a subtype, where the methods below are only for
+  // internal use, i.e., below the exo level.
+
+  /**
+   * As a kind option, intended for internal use only.
    * Meaningful to `makeScalarBigMapStore` and its siblings. These maker
    * fuctions will make either virtual or durable stores, depending on
    * this flag. Defaults to off, making virtual but not durable collections.
@@ -83,12 +118,6 @@ export type DefineKindOptions<C> = {
    * intended for internal use only.
    */
   durable?: boolean;
-
-  /**
-   * If provided, it describes the shape of all state records of instances
-   * of this kind.
-   */
-  stateShape?: StateShape;
 
   /**
    * Intended for internal use only.

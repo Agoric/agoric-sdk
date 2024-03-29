@@ -275,7 +275,7 @@
  */
 
 /**
- * @typedef {import('@agoric/swingset-vat').VatAdminSvc} VatAdminSvc
+ * @import {VatAdminSvc} from '@agoric/swingset-vat'
  */
 
 /**

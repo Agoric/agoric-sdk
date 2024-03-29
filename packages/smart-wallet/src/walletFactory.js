@@ -121,7 +121,7 @@ export const makeAssetRegistry = assetPublisher => {
  *   assetPublisher: AssetPublisher,
  * }} SmartWalletContractTerms
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  *
  * @typedef {{
  *   getAssetSubscription: () => ERef<

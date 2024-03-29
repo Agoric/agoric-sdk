@@ -206,7 +206,7 @@
  * @property {AssetKind} [assetKind]
  */
 
-/** @typedef {import('@agoric/swingset-vat').ShutdownWithFailure} ShutdownWithFailure */
+/** @import {ShutdownWithFailure} from '@agoric/swingset-vat') */
 
 /**
  * @template {AssetKind} [K=AssetKind]

@@ -19,7 +19,7 @@ const { multiply } = natSafeMath;
 
 const trace = makeTracer('Store', true);
 
-/** @typedef {import('@endo/marshal').PureData} PureData */
+/** @import {PureData} from '@endo/marshal' */
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 

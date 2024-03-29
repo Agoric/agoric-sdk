@@ -1,5 +1,7 @@
 import { isPromise } from '@endo/promise-kit';
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
+import { V as E } from '@agoric/vat-data/vow.js';
+import * as vowExports from '@agoric/vat-data/vow.js';
 import * as farExports from '@endo/far';
 
 import { Nat } from '@endo/nat';
@@ -190,6 +192,8 @@ export function getReplHandler(replObjects, send) {
 
   const endowments = {
     ...farExports,
+    ...vowExports,
+    E,
     assert,
     console: replConsole,
     commands,

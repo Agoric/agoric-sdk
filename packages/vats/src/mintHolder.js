@@ -2,7 +2,7 @@
 
 import { prepareIssuerKit } from '@agoric/ertp';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * NOTE: "keyword" connotes initial caps constraint, which doesn't apply here.

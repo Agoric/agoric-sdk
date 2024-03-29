@@ -1,3 +1,5 @@
+/** @import { ERef } from '@endo/far' */
+
 export {};
 
 /* This file defines types that part of the external API of swingset. That
@@ -353,10 +355,10 @@ export {};
  * @property {VatAdminFacet} adminNode
  *
  * @typedef {object} VatAdminSvc
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} waitForBundleCap
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} getBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleCap>} getNamedBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleID>} getBundleIDByName
- * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => import('@endo/far').ERef<CreateVatResults>} createVat
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
  *
  */

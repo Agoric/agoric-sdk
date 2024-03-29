@@ -21,8 +21,8 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-internal.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
- * @typedef {import('../../types-internal.js').TranscriptDeliverySaveSnapshot} TDSaveSnapshot
- * @typedef {import('../../types-internal.js').TranscriptDeliveryLoadSnapshot} TDLoadSnapshot
+ * @import {TranscriptDeliverySaveSnapshot} from '../../types-internal.js'
+ * @import {TranscriptDeliveryLoadSnapshot} from '../../types-internal.js'
  */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object

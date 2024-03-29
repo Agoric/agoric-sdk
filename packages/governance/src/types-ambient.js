@@ -18,7 +18,7 @@
  * issue, while the others have a issue presented as a string.
  */
 
-/** @typedef {import('./constants.js').ParamType} ParamType */
+/** @import {ParamType} from './constants.js' */
 
 /**
  * @typedef { 'majority' | 'all' | 'no_quorum' } QuorumRule

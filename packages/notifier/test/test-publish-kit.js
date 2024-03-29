@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 /* eslint-disable no-void */
 
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
@@ -21,7 +20,7 @@ import {
 import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
-/** @typedef {import('../src/index.js').makePublishKit} makePublishKit */
+/** @import {makePublishKit as MakePublishKit} from '../src/index.js' */
 
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
@@ -92,7 +91,7 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
 
 // eslint-disable-next-line no-shadow
 const verifyPublishKit = test.macro(async (t, makePublishKit) => {
-  const publishKit = /** @type {makePublishKit} */ (makePublishKit)();
+  const publishKit = /** @type {MakePublishKit} */ (makePublishKit)();
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
 
@@ -145,7 +144,7 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   cells.set(thirdPublishCount, thirdCells[0]);
 
   t.throws(
-    // @ts-ignore deliberate testing of invalid invocation
+    // @ts-expect-error deliberate testing of invalid invocation
     () => subscriber.subscribeAfter(Number(secondPublishCount)),
     { message: /bigint/ },
   );
@@ -185,12 +184,12 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeAfter = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+  const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
   )();
   for (const badCount of [1n, 0, '', false, Symbol('symbol'), {}]) {
     t.throws(
-      // @ts-ignore deliberate invalid arguments for testing
+      // @ts-expect-error deliberate invalid arguments for testing
       () => subscriber.subscribeAfter(badCount),
       undefined,
       `subscribeAfter must reject invalid publish count: ${typeof badCount} ${q(
@@ -466,7 +465,7 @@ test.failing('durable publish kit upgrade trauma', async t => {
 const verifyPublishKitTermination = test.macro(
   // eslint-disable-next-line no-shadow
   async (t, makePublishKit, config = {}) => {
-    const { publisher, subscriber } = /** @type {makePublishKit} */ (
+    const { publisher, subscriber } = /** @type {MakePublishKit} */ (
       makePublishKit
     )();
 
@@ -535,7 +534,7 @@ for (const [type, maker] of Object.entries(makers)) {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeLatest = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+  const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
   )();
   const latestIterator = subscribeLatest(subscriber);
@@ -569,7 +568,7 @@ for (const [type, maker] of Object.entries(makers)) {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeEach = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+  const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
   )();
   const latestIterator = subscribeEach(subscriber);
@@ -611,10 +610,10 @@ for (const [type, maker] of Object.entries(makers)) {
 // eslint-disable-next-line no-shadow
 const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   // Demonstrate sequencing by publishing to two destinations.
-  const { publisher: pub1, subscriber: sub1 } = /** @type {makePublishKit} */ (
+  const { publisher: pub1, subscriber: sub1 } = /** @type {MakePublishKit} */ (
     makePublishKit
   )();
-  const { publisher: pub2, subscriber: sub2 } = /** @type {makePublishKit} */ (
+  const { publisher: pub2, subscriber: sub2 } = /** @type {MakePublishKit} */ (
     makePublishKit
   )();
   const sub2LIFO = [];

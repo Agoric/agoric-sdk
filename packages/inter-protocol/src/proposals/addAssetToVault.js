@@ -35,7 +35,7 @@ const { quote: q } = assert;
  * @property {number} [initialPrice]
  */
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 /**
  * @param {BootstrapPowers} powers

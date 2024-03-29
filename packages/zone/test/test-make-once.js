@@ -9,7 +9,7 @@ import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';
 import { makeVirtualZone } from '../virtual.js';
 
-/** @typedef {import('../src/index.js').Zone} Zone */
+/** @import {Zone} from '../src/index.js' */
 
 /**
  * @param {import('ava').Assertions} t

@@ -49,8 +49,7 @@ const bootMsgEx = {
 
 /**
  * @param {BootstrapPowers & {}} powers
- *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
  *
  * @typedef {MapStore<string, CreateVatResults>} VatStore

@@ -20,7 +20,7 @@ const decoder = new TextDecoder();
  * @param {{ testNames: string[]} |
  *          { bundleSource: [string, ...unknown[]] } |
  *          TapMessage | Summary } item
- * @typedef {import('./avaXS').Summary} Summary
+ * @import {Summary} from './avaXS'
  */
 function send(item) {
   const msg = encoder.encode(JSON.stringify(item)).buffer;
@@ -79,7 +79,7 @@ function handler(rawMessage) {
       const { source } = msg;
       const virtualObjectGlobals =
         // @ts-expect-error
-        // eslint-disable-next-line no-undef
+
         typeof VatData !== 'undefined' ? { VatData } : {};
       const c = new Compartment({
         require: testRequire,

@@ -20,7 +20,7 @@
 // but we need to import it here as well.
 /// <reference path="./types.js" />
 
-/** @typedef {import('@endo/marshal').Checker} Checker */
+/** @import {Checker} from '@endo/marshal' */
 
 const { freeze } = Object;
 

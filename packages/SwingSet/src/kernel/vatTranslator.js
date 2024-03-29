@@ -14,18 +14,18 @@ export function assertValidVatstoreKey(key) {
 }
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryMessage} VatDeliveryMessage
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryNotify} VatDeliveryNotify
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryDropExports} VatDeliveryDropExports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireExports} VatDeliveryRetireExports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireImports} VatDeliveryRetireImports
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryChangeVatOptions} VatDeliveryChangeVatOptions
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStartVat} VatDeliveryStartVat
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStopVat} VatDeliveryStopVat
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryBringOutYourDead} VatDeliveryBringOutYourDead
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryMessage} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryNotify} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryDropExports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryRetireExports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryRetireImports} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryChangeVatOptions} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryStartVat} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryStopVat} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryBringOutYourDead} from '@agoric/swingset-liveslots'
  *
- * @typedef {import('@agoric/swingset-liveslots').VatOneResolution} VatOneResolution
+ * @import {VatOneResolution} from '@agoric/swingset-liveslots'
  *
  */
 
@@ -262,9 +262,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
   return kernelDeliveryToVatDelivery;
 }
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResultOk} VatSyscallResultOk
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResultOk} from '@agoric/swingset-liveslots'
  */
 
 /**

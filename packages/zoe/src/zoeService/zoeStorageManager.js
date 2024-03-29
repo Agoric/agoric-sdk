@@ -29,7 +29,7 @@ import {
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 const { ownKeys } = Reflect;
 
