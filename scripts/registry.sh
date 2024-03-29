@@ -50,6 +50,8 @@ publish() {
   git config --global user.email "noreply@agoric.com"
 
   VERSIONSHASH=$(echo '{}' | git hash-object -w --stdin)
+
+  # Usually endojs/endo and agoric/agoric-sdk
   for d in ${REGISTRY_PUBLISH_WORKSPACES-} "$thisdir/.."; do
     test -d "$d" || continue
 
@@ -64,6 +66,7 @@ publish() {
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
+    # Convention used in Endo
     yarn lerna run build:types
 
     # Publish the packages to our local service.
@@ -72,6 +75,7 @@ publish() {
       --dist-tag="$DISTTAG" --preid=dev \
       --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
 
+    # Convention used in Endo
     yarn lerna run clean:types
 
     # Change any version prefices to an exact match, and merge our versions.
