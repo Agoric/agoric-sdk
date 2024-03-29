@@ -1,5 +1,5 @@
 import test from 'ava';
-// import { agd } from '@agoric/synthetic-chain';
+import { agd } from '@agoric/synthetic-chain';
 
 import { GOV1ADDR } from '@agoric/synthetic-chain';
 
