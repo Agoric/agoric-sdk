@@ -12,7 +12,8 @@
         "doctor": "yarn synthetic-chain doctor"
     },
     "dependencies": {
-        "@agoric/synthetic-chain": "^0.0.7"
+        "@agoric/synthetic-chain": "^0.0.7",
+        "@types/better-sqlite3": "^7.6.9"
     },
     "packageManager": "yarn@4.1.0",
     "license": "Apache-2.0"

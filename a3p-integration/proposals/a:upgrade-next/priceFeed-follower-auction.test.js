@@ -1,7 +1,8 @@
 import test from 'ava';
-import { executeCommand } from '@agoric/synthetic-chain';
+import { getDetailsMatchingVats } from './vatDetails.js';
 
 test('new auction vat', async t => {
-  const data = await executeCommand('pgrep', ['-cf', 'auctioneer']);
-  t.is(data, '2');
+  const details = await getDetailsMatchingVats('auctioneer');
+  // This query matches both the auction and its governor
+  t.true(Object.keys(details).length > 2);
 });
