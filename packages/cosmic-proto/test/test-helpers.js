@@ -1,5 +1,5 @@
 import test from 'ava';
-
+import { toBase64, fromBase64 } from '@cosmjs/encoding';
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
 import {
   getSigningAgoricClientOptions,
@@ -79,4 +79,39 @@ test('typedJson', t => {
     amount: [{ denom: 'ucosm', amount: '1' }],
     other: 3, // retained because there's no runtime validation
   });
+});
+
+test('cosmos/MsgDelegate', t => {
+  const { MsgDelegate } = cosmos.staking.v1beta1;
+  const { TxBody } = cosmos.tx.v1beta1;
+
+  const msg = MsgDelegate.toProtoMsg({
+    delegatorAddress:
+      'osmo10kp2fq4nllqvk8gfs6rrl3xtcj7m5fqucemty0f968flm6h3n0hqws6j3q',
+    validatorAddress: 'osmovaloper1qjtcxl86z0zua2egcsz4ncff2gzlcndzs93m43',
+    amount: { denom: 'uosmo', amount: '10' },
+  });
+
+  const bytes = TxBody.encode(
+    TxBody.fromPartial({
+      messages: [msg],
+    }),
+  ).finish();
+
+  const packet = JSON.stringify({
+    type: 1,
+    data: toBase64(bytes),
+    memo: '',
+  });
+  t.log('packet', packet);
+  t.truthy(packet);
+});
+
+test('cosmos/MsgDelegateResponse', t => {
+  const { MsgDelegateResponse } = cosmos.staking.v1beta1;
+  const response =
+    '{"result":"Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U="}';
+  const { result } = JSON.parse(response);
+  const msg = MsgDelegateResponse.decode(fromBase64(result));
+  t.deepEqual(msg, {});
 });
