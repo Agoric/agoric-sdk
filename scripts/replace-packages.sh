@@ -15,22 +15,22 @@ pushd "$SRCDIR"
 yarn install
 yarn build
 yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
-  # Skip private packages.
-  test "$(jq .private < "$dir/package.json")" != true || continue
+    # Skip private packages.
+    test "$(jq .private <"$dir/package.json")" != true || continue
 
-  # Create the tarball.
-  pushd "$dir"
-  name=$(jq -r .name < package.json)
-  stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  rm -f "${stem}"-*.tgz
-  yarn pack
-  tar -xvf "${stem}"-*.tgz
+    # Create the tarball.
+    pushd "$dir"
+    name=$(jq -r .name <package.json)
+    stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
+    rm -f "${stem}"-*.tgz
+    yarn pack
+    tar -xvf "${stem}"-*.tgz
 
-  # Replace the destination package.
-  rm -rf "${DSTDIR:?}/$name"
-  mkdir -p "$(dirname "${DSTDIR:?}/$name")"
-  mv package "${DSTDIR:?}/$name"
-  popd
+    # Replace the destination package.
+    rm -rf "${DSTDIR:?}/$name"
+    mkdir -p "$(dirname "${DSTDIR:?}/$name")"
+    mv package "${DSTDIR:?}/$name"
+    popd
 done
 popd
 

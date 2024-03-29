@@ -9,7 +9,10 @@ set -xueo pipefail
 
 cache_bust=true
 case $1 in
---no-cache-bust) cache_bust=false; shift ;;
+--no-cache-bust)
+    cache_bust=false
+    shift
+    ;;
 esac
 
 WORKDIR=${1:-.}
@@ -22,38 +25,38 @@ yarn build 1>&2
 yarn lerna run build:types 1>&2
 
 yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
-  # Skip private packages.
-  echo "dir=$dir" 1>&2
-  test "$(jq .private < "$dir/package.json")" != true || continue
+    # Skip private packages.
+    echo "dir=$dir" 1>&2
+    test "$(jq .private <"$dir/package.json")" != true || continue
 
-  ##################
-  pushd "$dir" 1>&2
+    ##################
+    pushd "$dir" 1>&2
 
-  # Gather the metadata.
-  name=$(jq -r .name < package.json)
-  version=$(jq -r .version < package.json)
-  stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  file="$(pwd)/${stem}-v${version}.tgz"
+    # Gather the metadata.
+    name=$(jq -r .name <package.json)
+    version=$(jq -r .version <package.json)
+    stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
+    file="$(pwd)/${stem}-v${version}.tgz"
 
-  # Clean up.
-  rm -f "${stem}"-v*.tgz
+    # Clean up.
+    rm -f "${stem}"-v*.tgz
 
-  # Create the tarball.
-  yarn pack 1>&2
+    # Create the tarball.
+    yarn pack 1>&2
 
-  if $cache_bust; then
-    # Bust the cache!
-    sum=$(sha1sum "$file" | sed -e 's/ .*//')
-    dst="$(pwd)/${stem}-v${version}-${sum}.tgz"
-    mv "$file" "$dst"
-  else
-    dst=$file
-  fi
+    if $cache_bust; then
+        # Bust the cache!
+        sum=$(sha1sum "$file" | sed -e 's/ .*//')
+        dst="$(pwd)/${stem}-v${version}-${sum}.tgz"
+        mv "$file" "$dst"
+    else
+        dst=$file
+    fi
 
-  # Write out the version entry.
-  jq -n --arg name "$name" --arg file "$dst" \
-      '{ key: $name, value: ("file:" + $file) }'
+    # Write out the version entry.
+    jq -n --arg name "$name" --arg file "$dst" \
+        '{ key: $name, value: ("file:" + $file) }'
 
-  popd 1>&2
-  ##################
+    popd 1>&2
+    ##################
 done | jq -s from_entries

@@ -4,19 +4,10 @@ import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
-/** @import {MethodGuard} from '@endo/patterns' */
 /**
- * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
- * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
+ * @import {InterfaceGuard} from '@endo/patterns'
+ * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots'
  */
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
-/** @import {Baggage} from '@agoric/swingset-liveslots' */
-/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>} KindFacets */
-/** @import {DurableKindHandle} from '@agoric/swingset-liveslots' */
-/** @import {InterfaceGuardKit} from '@agoric/swingset-liveslots' */
 
 /**
  * Make a version of the argument function that takes a kind context but

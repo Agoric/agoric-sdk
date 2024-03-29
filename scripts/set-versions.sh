@@ -12,17 +12,17 @@ cd -- "${1-"$DIR/.."}"
 VERSIONSHASH=$(git hash-object -w --stdin)
 
 yarn workspaces --json info |
-jq -r '.data | fromjson | .[].location | "\(.)/package.json"' |
-while read PACKAGEJSON; do
-  PACKAGEJSONHASH=$(
-    jq --argfile versions <(git cat-file blob "$VERSIONSHASH") '
+  jq -r '.data | fromjson | .[].location | "\(.)/package.json"' |
+  while read PACKAGEJSON; do
+    PACKAGEJSONHASH=$(
+      jq --slurpfile versions <(git cat-file blob "$VERSIONSHASH") '
       def update(name): if .[name] then {
         (name): [
           .[name] |
           to_entries[] |
           {
             key: .key,
-            value: ($versions[.key] // .value)
+            value: ($versions[0][.key] // .value)
           }
         ] | from_entries
       } else {} end;
@@ -32,7 +32,7 @@ while read PACKAGEJSON; do
       update("devDependencies") +
       update("peerDependencies")
     ' "$PACKAGEJSON" |
-    git hash-object -w --stdin
-  )
-  git cat-file blob "$PACKAGEJSONHASH" > "$PACKAGEJSON"
-done
+        git hash-object -w --stdin
+    )
+    git cat-file blob "$PACKAGEJSONHASH" >"$PACKAGEJSON"
+  done

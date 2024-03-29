@@ -4,7 +4,7 @@ import { Fail, assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 
-/** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
+/** @import {EOnly} from '@endo/eventual-send' */
 
 /**
  * @param {Brand<'set'>} quoteBrand

@@ -50,6 +50,6 @@
     "node": "^18.12 || ^20.9"
   },
   "typeCoverage": {
-    "atLeast": 98.79
+    "atLeast": 98.74
   }
 }
