@@ -49,7 +49,6 @@ func makeShutdown(cmd *exec.Cmd, writer *os.File) func() error {
 	}
 }
 
-
 // main is the entry point of the agd daemon.  It determines whether to
 // initialize JSON-RPC communications with the separate `--split-vm` VM process,
 // or just to give up control entirely to another binary.
@@ -72,9 +71,9 @@ func main() {
 		}
 
 		msg := vm.Message{
-			Port: nodePort,
+			Port:       nodePort,
 			NeedsReply: needReply,
-			Data: str,
+			Data:       str,
 		}
 		var reply string
 		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
@@ -82,7 +81,7 @@ func main() {
 	}
 
 	exitCode := 0
-	launchVM := func(logger log.Logger, appOpts servertypes.AppOptions) error {
+	launchVM := func(agdServer *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
 		args := []string{"ag-chain-cosmos", "--home", gaia.DefaultNodeHome}
 		args = append(args, os.Args[1:]...)
 
@@ -129,7 +128,7 @@ func main() {
 
 		// Set up the VM server.
 		vmServer := rpc.NewServer()
-		if err := vmServer.RegisterName("agd", vm.NewAgdServer()); err != nil {
+		if err := vmServer.RegisterName("agd", agdServer); err != nil {
 			return err
 		}
 		go vmServer.ServeCodec(jsonrpc.NewServerCodec(serverConn))
@@ -147,11 +146,11 @@ func main() {
 	}
 
 	daemoncmd.OnExportHook = launchVM
-	daemoncmd.OnStartHook = func (logger log.Logger, appOpts servertypes.AppOptions) error {
+	daemoncmd.OnStartHook = func(agdServer *vm.AgdServer, logger log.Logger, appOpts servertypes.AppOptions) error {
 		// We tried running start, which should never exit, so exit with non-zero
 		// code if we do.
 		exitCode = 99
-		return launchVM(logger, appOpts)
+		return launchVM(agdServer, logger, appOpts)
 	}
 
 	daemon.RunWithController(sendToNode)
