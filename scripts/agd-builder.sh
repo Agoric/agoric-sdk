@@ -19,46 +19,21 @@ function fatal() {
   exit 1
 }
 
-# Use sha1sum where available or as an ultimate fallback for good error messages,
-# but otherwise use other available fallbacks.
-for cmd in sha1sum shasum sha1sum; do
-  DIGEST_CMD=$cmd
-  command -v $DIGEST_CMD &> /dev/null && break
-done
-
-# diffsha1 stamp_name find_args...
-# executes find(1) with the given arguments and saves the resulting file list,
-# then runs $DIGEST_CMD on the file list, saves the digest to file stamp_name.new,
-# and compares to the saved digest in the file stamp_name.
-# Returns success (0) if it cannot write to the temporary files, if the find results are empty,
-# or if the computed digest is the same as the saved digest.
-# Returns failure (1) if the computed digest is different.
-function diffsha1() {
-  stamp=$1
-  shift
-  find ${1+"$@"} > "$stamp.files.$$"
-  if test ! -s "$stamp.files.$$"; then
-    # echo "No new dependencies found for $stamp" 1>&2
-    rm -f "$stamp.files.$$"
-    return 0
-  fi
-  xargs $DIGEST_CMD < "$stamp.files.$$" | sort +1 > "$stamp.new" || true
-  rm -f "$stamp.files.$$"
-  if test ! -s "$stamp.new"; then
-    rm -f "$stamp.new"
-    return 0
-  fi
-  diff -u "$stamp" "$stamp.new" || return 1
-  return 0
-}
-
 GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}
 NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
 
-STAMPS=node_modules/.cache/agoric
+STAMPS=node_modules/.cache/agoric/stamps
 
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
+
+if test "${1-''}" = stamp; then
+  stamps=$thisdir/../$STAMPS
+  echo "Creating $stamps/$2" 1>&2
+  mkdir -p "$stamps"
+  date > "$stamps/$2"
+  exit 0
+fi
 
 # shellcheck disable=SC1091
 source "$thisdir/../repoconfig.sh"
@@ -133,7 +108,7 @@ if $need_nodejs; then
   esac
 fi
 
-${NO_BUILD:-false} || (
+$do_not_build || (
   # Send the build output to stderr unless we're only building.  This prevents
   # the daemon's stdout from being polluted with build output.
   $only_build || exec 1>&2
@@ -142,47 +117,49 @@ ${NO_BUILD:-false} || (
   test -d "$STAMPS" || echo "Creating $STAMPS" 1>&2
   mkdir -p "$STAMPS"
 
-  sum=$STAMPS/golang-built.sum
-  diffsha1 "$sum" "$GOLANG_DIR" \( \
-    ! -name '*_test.go' -name '*.go' \
-    -o -name '*.cc' \
-    -o -name 'go.*' \) || {
-    echo "$GOLANG_DIR $sum has changed"
+  stamp=$GOLANG_DAEMON
+  if test -e "$stamp"; then
+    print=(-newer "$stamp")
+  else
+    print=()
+  fi
+  print+=(-print)
+  src=$(
+    find "$GOLANG_DIR" \( ! -name '*_test.go' -name '*.go' -o -name '*.cc' -o -name 'go.*' \) \
+      "${print[@]}" | head -1 || true
+  )
+  test -z "$src" || {
+    echo "At least $src is newer than $stamp"
     $do_not_build
-  } || {
-    rm -f "$sum"
-    (
-      # Run this build in another subshell in case we had to modify the path.
-      case $(go version 2> /dev/null) in
-        "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
-        *)
-          # Auto-download the Golang version we need, if allowed.
-          $SKIP_DOWNLOAD || {
-            export HOME=${DAEMON_HOME-$HOME}
-            mkdir -p "$HOME/bin"
+  } || (
+    # Run this build in another subshell in case we had to modify the path.
+    case $(go version 2> /dev/null) in
+      "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
+      *)
+        # Auto-download the Golang version we need, if allowed.
+        $SKIP_DOWNLOAD || {
+          export HOME=${DAEMON_HOME-$HOME}
+          mkdir -p "$HOME/bin"
 
-            # shellcheck disable=SC2030
-            PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
-            test -x "$HOME/bin/gvm" || {
-              curl -L "$GVM_URL" > "$HOME/bin/gvm"
-              chmod +x "$HOME/bin/gvm"
-            }
-            gvm "$GOLANG_VERSION" -s
+          # shellcheck disable=SC2030
+          PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
+          test -x "$HOME/bin/gvm" || {
+            curl -L "$GVM_URL" > "$HOME/bin/gvm"
+            chmod +x "$HOME/bin/gvm"
           }
-          ;;
-      esac
-      # Ensure minimum patch versions of Go environment
-      cd "$GOLANG_DIR"
-      if goversion=$(go version 2> /dev/null); then
-        goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
-        [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
-        golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
-        make compile-go
-      fi
-    )
-  }
-  test -f "$sum" || mv -f "$sum.new" "$sum"
-  rm -f "$sum.new"
+          gvm "$GOLANG_VERSION" -s
+        }
+        ;;
+    esac
+    # Ensure minimum patch versions of Go environment
+    cd "$GOLANG_DIR"
+    if goversion=$(go version 2> /dev/null); then
+      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
+      [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
+      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
+      make compile-go
+    fi
+  )
 
   if $need_nodejs; then
     lazy_yarn() {
@@ -195,8 +172,16 @@ ${NO_BUILD:-false} || (
       yarn "$@"
     }
 
-    # Check if any package.json sums are different.
-    sum=$STAMPS/yarn-installed.sum
+    # Check if any package.json is newer than the installation stamp.
+    # If some package.json is newer than the last yarn install, run yarn install
+    # UNTIL https://github.com/Agoric/agoric-sdk/issues/9209
+    stamp=$STAMPS/yarn-installed
+    if test -e "$stamp"; then
+      print=(-newer "$stamp")
+    else
+      print=()
+    fi
+    print+=(-print)
 
     # Find the current list of package.jsons.
     files=(package.json)
@@ -205,24 +190,35 @@ ${NO_BUILD:-false} || (
     done < <(lazy_yarn -s workspaces info \
       | sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
 
-    diffsha1 "$sum" "${files[@]}" || {
-      echo "$sum has changed"
-      $do_not_build
-    } || {
-      rm -f "$sum" "$STAMPS/yarn-built"
+    src=$(find "${files[@]}" "${print[@]}" | head -1 || true)
+    test -z "$src" || {
+      echo "At least $src is newer than node_modules"
+      rm -f "$STAMPS/yarn-built"
       lazy_yarn install
-      mv "$sum.new" "$sum"
     }
-    rm -f "$sum.new"
 
     stamp=$STAMPS/yarn-built
-    test -e "$stamp" || {
+    if test ! -e "$stamp"; then
       echo "Yarn packages need to be built"
       lazy_yarn build
-      date > "$stamp"
-    }
+    fi
 
-    (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
+    # Simple test to see whether to build the GYP bindings.
+    # Check if any GYP source is newer than the destination.
+    stamp=$GOLANG_DIR/build/Release/agcosmosdaemon.node
+    if test -e "$stamp"; then
+      print=(-newer "$stamp")
+    else
+      print=()
+    fi
+    print+=(-print)
+
+    files=("$GOLANG_DIR/build/"*agcosmosdaemon.h)
+    src=$(find "${files[@]}" "${print[@]}" | head -1 || true)
+    test -z "$src" || {
+      echo "At least $src is newer than gyp bindings"
+      (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
+    }
   fi
 )
 
