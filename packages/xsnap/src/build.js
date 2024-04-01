@@ -326,12 +326,14 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     hasSource = true;
   }
 
-  if (hasSource && !showEnv) {
-    await makeXsnap({ spawn, fs, os });
-  } else if (!hasBin) {
-    throw new Error(
-      'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
-    );
+  if (!showEnv) {
+    if (hasSource) {
+      await makeXsnap({ spawn, fs, os });
+    } else if (!hasBin) {
+      throw new Error(
+        'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
+      );
+    }
   }
 }
 
