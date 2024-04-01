@@ -2,7 +2,6 @@
  * Any passable non-thenable. Often an explanatory string.
  */
 type Completion = any;
-type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
 /**
  * Zoe Contract Facet
@@ -12,17 +11,62 @@ type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
  * the Zoe state for that instance. The Zoe Contract Facet is accessed
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
+ *
+ * @template CT type of custom terms of the contract
  */
-type ZCF<CT extends unknown = Record<string, unknown>> = {
+interface ZCF<CT extends unknown = Record<string, unknown>> {
   /**
-   * - atomically reallocate amounts among seats.
+   * Rearrange the allocations according to the transfer descriptions.
+   * This is a set of changes to allocations that must satisfy several
+   * constraints. If these constraints are all met, then the reallocation
+   * happens atomically. Otherwise, it does not happen at all.
+   *
+   * The conditions
+   *    * All the mentioned seats are still live,
+   *    * No outstanding stagings for any of the mentioned seats. Stagings
+   *      have been deprecated in favor or atomicRearrange. To prevent
+   *      confusion, for each reallocation, it can only be expressed in
+   *      the old way or the new way, but not a mixture.
+   *    * Offer safety
+   *    * Overall conservation
+   *
+   * The overall transfer is expressed as an array of `TransferPart`. Each
+   * individual `TransferPart` is one of
+   * - A transfer from a `fromSeat` to a `toSeat`. Specify both toAmount
+   *     and fromAmount to change keywords, otherwise only fromAmount is required.
+   * - A taking from a `fromSeat`'s allocation. See the {@link fromOnly} helper.
+   * - A giving into a `toSeat`'s allocation. See the {@link toOnly} helper.
+   *
    */
   atomicRearrange: (transfers: TransferPart[]) => void;
   /**
-   * - reallocate amounts among seats.
    * @deprecated Use atomicRearrange instead.
+   *
+   * The contract can reallocate over seats, which commits the staged
+   * allocation for each seat. On commit, the staged allocation becomes
+   * the current allocation and the staged allocation is deleted.
+   *
+   * The reallocation will only succeed if the reallocation 1) conserves
+   * rights (the amounts specified have the same total value as the
+   * current total amount), and 2) is 'offer-safe' for all parties
+   * involved. All seats that have staged allocations must be included
+   * as arguments to `reallocate`, or an error is thrown. Additionally,
+   * an error is thrown if any seats included in `reallocate` do not
+   * have a staged allocation.
+   *
+   * The reallocation is partial, meaning that it applies only to the
+   * seats passed in as arguments. By induction, if rights conservation
+   * and offer safety hold before, they will hold after a safe
+   * reallocation, even though we only re-validate for the seats whose
+   * allocations will change. Since rights are conserved for the change,
+   * overall rights will be unchanged, and a reallocation can only
+   * effect offer safety for seats whose allocations change.
    */
-  reallocate: Reallocate;
+  reallocate: (
+    seat1: ZCFSeat,
+    seat2: ZCFSeat,
+    ...seatRest: Array<ZCFSeat>
+  ) => void;
   /**
    * - check
    * whether a keyword is valid and unique and could be added in
@@ -64,47 +108,65 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   getTerms: () => StandardTerms & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
   getIssuerForBrand: <K_1 extends AssetKind>(brand: Brand<K_1>) => Issuer<K_1>;
-  getAssetKind: GetAssetKindByBrand;
+  /**
+   * Get the assetKind for a brand known by Zoe
+   *
+   * To be deleted when brands have a property for assetKind
+   */
+  getAssetKind: (brand: Brand) => AssetKind;
+  /**
+   * Creates a {@link ZCFMint}, which provides synchronous methods to and reallocate assets.
+   *
+   * **Note**: The call to make the {@link ZCFMint} is asynchronous, but
+   * calls to the resulting {@link ZCFMint} are synchronous.
+   *
+   * @example
+   * const syncMint = await zcf.makeZCFMint('MyToken', AssetKind.COPY_SET);
+   * const { brand, issuer } = syncMint.getIssuerRecord();
+   * syncMint.mintGains({ myKeyword: amount }, seat);
+   *
+   * @param displayInfo see {@link DisplayInfo}
+   * @returns
+   */
   makeZCFMint: <K_2 extends AssetKind = 'nat'>(
     keyword: Keyword,
     assetKind?: K_2 | undefined,
     displayInfo?: AdditionalDisplayInfo,
     options?: import('@agoric/ertp').IssuerOptionsRecord,
   ) => Promise<ZCFMint<K_2>>;
-  registerFeeMint: ZCFRegisterFeeMint;
-  makeEmptySeatKit: ZCFMakeEmptySeatKit;
-  setTestJig: SetTestJig;
+  registerFeeMint: (
+    keyword: Keyword,
+    allegedFeeMintAccess: FeeMintAccess,
+  ) => Promise<ZCFMint<'nat'>>;
+  makeEmptySeatKit: (exit?: ExitRule | undefined) => ZcfSeatKit;
+  /**
+   * Provide a jig object for testing purposes only.
+   *
+   * The contract code provides a callback whose return result will
+   * be made available to the test that started this contract. The
+   * supplied callback will only be called in a testing context,
+   * never in production; i.e., it is only called if `testJigSetter`
+   * was supplied.
+   *
+   * If no, `testFn` is supplied, then an empty jig will be used.
+   * An additional `zcf` property set to the current ContractFacet
+   * will be appended to the returned jig object (overriding any
+   * provided by the `testFn`).
+   */
+  setTestJig: (testFn: () => Record<string, unknown>) => void;
   stopAcceptingOffers: () => Promise<void>;
   setOfferFilter: (strings: Array<string>) => Promise<void>;
   getOfferFilter: () => Promise<Array<string>>;
   getInstance: () => Instance;
-};
+}
+
 /**
- * The contract can reallocate over seats, which commits the staged
- * allocation for each seat. On commit, the staged allocation becomes
- * the current allocation and the staged allocation is deleted.
- *
- * The reallocation will only succeed if the reallocation 1) conserves
- * rights (the amounts specified have the same total value as the
- * current total amount), and 2) is 'offer-safe' for all parties
- * involved. All seats that have staged allocations must be included
- * as arguments to `reallocate`, or an error is thrown. Additionally,
- * an error is thrown if any seats included in `reallocate` do not
- * have a staged allocation.
- *
- * The reallocation is partial, meaning that it applies only to the
- * seats passed in as arguments. By induction, if rights conservation
- * and offer safety hold before, they will hold after a safe
- * reallocation, even though we only re-validate for the seats whose
- * allocations will change. Since rights are conserved for the change,
- * overall rights will be unchanged, and a reallocation can only
- * effect offer safety for seats whose allocations change.
+ * Each `TransferPart` is one of
+ * - A transfer from a `fromSeat` to a `toSeat`. Specify both toAmount
+ *     and fromAmount to change keywords, otherwise only fromAmount is required.
+ * - A taking from a `fromSeat`'s allocation. See the {@link fromOnly} helper.
+ * - A giving into a `toSeat`'s allocation. See the {@link toOnly} helper.
  */
-type Reallocate = (
-  seat1: ZCFSeat,
-  seat2: ZCFSeat,
-  ...seatRest: Array<ZCFSeat>
-) => void;
 type TransferPart = [
   fromSeat?: ZCFSeat,
   toSeat?: ZCFSeat,
@@ -112,26 +174,19 @@ type TransferPart = [
   toAmounts?: AmountKeywordRecord,
 ];
 
-type ZCFRegisterFeeMint = (
-  keyword: Keyword,
-  allegedFeeMintAccess: FeeMintAccess,
-) => Promise<ZCFMint<'nat'>>;
 /**
- * Provide a jig object for testing purposes only.
+ * Synchronous methods for minting assets.
  *
- * The contract code provides a callback whose return result will
- * be made available to the test that started this contract. The
- * supplied callback will only be called in a testing context,
- * never in production; i.e., it is only called if `testJigSetter`
- * was supplied.
+ * @see {ZCF['makeZCFMint']}
  *
- * If no, `testFn` is supplied, then an empty jig will be used.
- * An additional `zcf` property set to the current ContractFacet
- * will be appended to the returned jig object (overriding any
- * provided by the `testFn`).
  */
-type SetTestJig = (testFn: () => Record<string, unknown>) => void;
-type ZCFMint<K extends AssetKind = AssetKind> = {
+interface ZCFMint<K extends AssetKind = AssetKind> {
+  /**
+   * Get the issuer, brand, etc. associated with a {@link ZCFMint}
+   *
+   * While {@link ZCFMint} is a distinct interface from {@link Mint},
+   * the {@link Issuer} and {@link Brand} interfaces are un-changed from ERTP.
+   */
   getIssuerRecord: () => IssuerRecord<K>;
   /**
    * All the amounts in gains must be of this ZCFMint's brand.
@@ -154,7 +209,8 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
    * Burn that amount of assets from the pooled purse.
    */
   burnLosses: (losses: AmountKeywordRecord, zcfSeat: ZCFSeat) => void;
-};
+}
+
 /**
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
