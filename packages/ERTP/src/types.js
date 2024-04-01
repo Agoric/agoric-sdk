@@ -47,8 +47,8 @@ export {};
  */
 
 /**
- * @typedef {'nat' | 'set' | 'copySet' | 'copyBag'} AssetKind See doc-comment
- *   for `AmountValue`.
+ * @typedef {'nat' | 'set' | 'copySet' | 'copyBag'} AssetKind See
+ *   {@link AmountValue}.
  */
 
 /**
