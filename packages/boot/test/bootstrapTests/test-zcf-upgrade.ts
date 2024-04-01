@@ -42,7 +42,7 @@ export const makeZoeTestContext = async t => {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
 
-  const { controller, runUtils } = swingsetTestKit;
+  const { runUtils } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
@@ -66,7 +66,6 @@ export const makeZoeTestContext = async t => {
 
   return {
     ...swingsetTestKit,
-    controller,
     agoricNamesRemotes,
     zoeDriver,
   };
