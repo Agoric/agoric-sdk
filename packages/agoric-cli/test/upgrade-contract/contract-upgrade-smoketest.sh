@@ -1,18 +1,18 @@
 #!/bin/sh
 
 if [ -z "$AGORIC_NET" ]; then
-    echo "AGORIC_NET env not set"
-    echo
-    echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
-    echo
-    echo "To test locally, AGORIC_NET=local and have the following running:
+  echo "AGORIC_NET env not set"
+  echo
+  echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
+  echo
+  echo "To test locally, AGORIC_NET=local and have the following running:
 # freshen sdk
 yarn install && yarn build
 
 # local chain running with wallet provisioned
 packages/agoric-cli/test/start-local-chain.sh
 "
-    exit 1
+  exit 1
 fi
 
 set -ex
@@ -43,13 +43,16 @@ enactCoreEval() {
   while true; do
     status=$(agd query gov proposal "$propnum" --output=json | jq -r .status)
     case $status in
-    PROPOSAL_STATUS_PASSED)
-      break ;;
-    PROPOSAL_STATUS_REJECTED) ;;
-    PROPOSAL_STATUS_FAILED)
-      return 1 ;;
-    *)
-      echo "waiting for proposal $propnum to pass (current status=$status)" ;;
+      PROPOSAL_STATUS_PASSED)
+        break
+        ;;
+      PROPOSAL_STATUS_REJECTED) ;;
+      PROPOSAL_STATUS_FAILED)
+        return 1
+        ;;
+      *)
+        echo "waiting for proposal $propnum to pass (current status=$status)"
+        ;;
     esac
     sleep 5
   done

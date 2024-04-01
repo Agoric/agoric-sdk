@@ -12,7 +12,7 @@ CHAIN_ID="$2"
 WALLET="$3"
 CHAIN_RPC_NODE="$4"
 KEYRING_DIR="$5"
-SDKROOT="$(cd ../.. >/dev/null && pwd)"
+SDKROOT="$(cd ../.. > /dev/null && pwd)"
 COSMOSBUILD="${SDKROOT}/golang/cosmos/build/"
 
 SOURCE="$("${COSMOSBUILD}/agd" --keyring-dir ${KEYRING_DIR} keys show ${WALLET} -a --keyring-backend=test)"
@@ -39,4 +39,3 @@ rm "/tmp/UNSIGNED_${DESTINATION}.json"
 # Broadcast it
 "${COSMOSBUILD}/agd" --keyring-dir "${KEYRING_DIR}" tx broadcast "/tmp/SIGNED_${DESTINATION}.json" --from ${WALLET} --chain-id="${CHAIN_ID}" --node "${CHAIN_RPC_NODE}" --yes --keyring-backend=test
 rm "/tmp/SIGNED_${DESTINATION}.json"
-
