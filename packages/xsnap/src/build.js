@@ -313,8 +313,8 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   const hasBin = fs.existsSync(
     asset(`../xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker`),
   );
-  let hasSource = fs.existsSync(asset('moddable/xs/includes/xs.h'));
-  const hasGit = fs.existsSync(asset('moddable/.git'));
+  let hasSource = fs.existsSync(asset('../moddable/xs/includes/xs.h'));
+  const hasGit = fs.existsSync(asset('../moddable/.git'));
   const isWorkingCopy = hasGit || (!hasSource && !hasBin);
   const showEnv = args.includes('--show-env');
 
