@@ -1,6 +1,10 @@
 // @jessie-check
 
 /// <reference types="ses"/>
+/**
+ * @import { Installation } from './utils.js'
+ * @import { InstallationStart } from './utils.js'
+ */
 
 /**
  * @typedef {object} ZoeService
@@ -271,7 +275,7 @@
  */
 
 /**
- * @typedef {import('./utils.js').Instance<any>} Instance
+ * @import { Instance } from './utils.js'
  */
 
 /**
@@ -299,16 +303,6 @@
  * @property {InvitationHandle} handle
  * @property {string} description
  * @property {Record<string, any>} [customDetails]
- */
-
-/**
- * @template [SF=any] contract start function
- * @typedef {import('./utils.js').Installation<SF>} Installation
- */
-
-/**
- * @template {Installation} I
- * @typedef {import('./utils.js').InstallationStart<I>} InstallationStart
  */
 
 /**

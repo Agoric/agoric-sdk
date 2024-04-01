@@ -15,13 +15,13 @@ type ContractFacet<T extends {} = {}> = {
  * Installation of a contract, typed by its start function.
  */
 declare const StartFunction: unique symbol;
-export type Installation<SF> = {
+export type Installation<SF = any> = {
   getBundle: () => SourceBundle;
   getBundleLabel: () => string;
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
-export type Instance<SF> = Handle<'Instance'> & {
+export type Instance<SF = any> = Handle<'Instance'> & {
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
