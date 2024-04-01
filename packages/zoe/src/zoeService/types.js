@@ -2,9 +2,15 @@
 
 /// <reference types="ses"/>
 /**
- * @import { Installation } from './utils.js'
- * @import { InstallationStart } from './utils.js'
+ * @import { Installation, InstallationStart, Instance } from './utils.js'
+ * @import {VatAdminSvc} from '@agoric/swingset-vat'
  */
+
+// @@@
+// * TODO remove support for source bundles, leaving only support for hash bundles.
+// * {@link https://github.com/Agoric/agoric-sdk/issues/4565}
+// TODO consolidate installBundleID into install.
+// https://github.com/Agoric/agoric-sdk/issues/4974
 
 /**
  * @typedef {object} ZoeService
@@ -21,7 +27,7 @@
  * within its vat. The contract and ZCF never have direct access to
  * the users' payments or the Zoe purses.
  *
- * @property {GetInvitationIssuer} getInvitationIssuer
+ * @property {() => Promise<Issuer<'set'>>} getInvitationIssuer
  *
  * Zoe has a single `invitationIssuer` for the entirety of its
  * lifetime. By having a reference to Zoe, a user can get the
@@ -30,136 +36,22 @@
  * creates the ERTP payments that represent the right to interact with
  * a smart contract in particular ways.
  *
- * @property {InstallBundle} install
- * @property {InstallBundleID} installBundleID
- * @property {import('./utils.js').StartInstance} startInstance
- * @property {Offer} offer
- * @property {import('./utils.js').GetPublicFacet} getPublicFacet
- * @property {GetIssuers} getIssuers
- * @property {GetBrands} getBrands
- * @property {import('./utils.js').GetTerms} getTerms
- * @property {GetOfferFilter} getOfferFilter
- * @property {GetInstallationForInstance} getInstallationForInstance
- * @property {GetInstance} getInstance
- * @property {GetInstallation} getInstallation
- * @property {GetInvitationDetails} getInvitationDetails
- * Return an object with the instance, installation, description, invitation
- * handle, and any custom properties specific to the contract.
- * @property {GetFeeIssuer} getFeeIssuer
- * @property {GetConfiguration} getConfiguration
- * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
- */
-
-/**
- * @callback GetInvitationIssuer
- * @returns {Promise<Issuer<'set'>>}
- */
-
-/**
- * @callback GetFeeIssuer
- * @returns {Promise<Issuer<'nat'>>}
- */
-
-/**
- * @callback GetConfiguration
- * @returns {{
- *   feeIssuerConfig: FeeIssuerConfig,
- * }}
- */
-
-/**
- * @callback GetIssuers
- * @param {import('./utils.js').Instance<any>} instance
- * @returns {Promise<IssuerKeywordRecord>}
- */
-
-/**
- * @callback GetBrands
- * @param {import('./utils.js').Instance<any>} instance
- * @returns {Promise<BrandKeywordRecord>}
- */
-
-/**
- * @callback GetOfferFilter
- * @param {import('./utils.js').Instance<any>} instance
- * @returns {string[]}
- */
-
-/**
- * @callback SetOfferFilter
- * @param {Instance} instance
- * @param {string[]} strings
- */
-
-/**
- * @callback GetInstallationForInstance
- * @param {import('./utils.js').Instance<any>} instance
- * @returns {Promise<Installation>}
- */
-
-/**
- * @callback GetInstance
- * @param {ERef<Invitation>} invitation
- * @returns {Promise<import('./utils.js').Instance<any>>}
- */
-
-/**
- * @callback GetInstallation
- * @param {ERef<Invitation>} invitation
- * @returns {Promise<Installation>}
- */
-
-/**
- * @callback GetInvitationDetails
- * @param {ERef<Invitation<any, any>>} invitation
- * @returns {Promise<InvitationDetails>}
- */
-
-// TODO remove support for source bundles, leaving only support for hash bundles.
-// https://github.com/Agoric/agoric-sdk/issues/4565
-/**
- * @callback InstallBundle
- *
+ * @property {(bundle: Bundle | SourceBundle, bundleLabel?: string) => Promise<Installation>} install
  * Create an installation by safely evaluating the code and
  * registering it with Zoe. Returns an installation.
  *
- * @param {Bundle | SourceBundle} bundle
- * @param {string} [bundleLabel]
- * @returns {Promise<Installation>}
- */
-
-// TODO consolidate installBundleID into install.
-// https://github.com/Agoric/agoric-sdk/issues/4974
-/**
- * @callback InstallBundleID
- *
+ * @property {(bundleID: BundleID, bundleLabel?: string) => Promise<Installation>} installBundleID
  * Create an installation from a Bundle ID. Returns an installation.
  *
- * @param {BundleID} bundleID
- * @param {string} [bundleLabel]
- * @returns {Promise<Installation>}
- */
-
-/**
- * @callback GetBundleIDFromInstallation
+ * @property {import('./utils.js').StartInstance} startInstance
  *
- * Verify that an alleged Installation is real, and return the Bundle ID it
- * will use for contract code.
- *
- * @param {ERef<Installation>} allegedInstallation
- * @returns {Promise<BundleID>}
- */
-
-/**
- * @typedef {<Result, Args = undefined>(
+ * @property {<Result, Args = undefined>(
  *   invitation: ERef<Invitation<Result, Args>>,
  *   proposal?: Proposal,
  *   paymentKeywordRecord?: PaymentPKeywordRecord,
  *   offerArgs?: Args,
- *   ) => Promise<UserSeat<Result>>
- * } Offer
- *
+ *   ) => Promise<UserSeat<Result>>} offer
+ * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * To redeem an invitation, the user normally provides a proposal (their
  * rules for the offer) as well as payments to be escrowed by Zoe.  If
  * either the proposal or payments would be empty, indicate this by
@@ -173,6 +65,40 @@
  * `paymentKeywordRecord` is a record with keywords as keys, and the
  * values are the actual payments to be escrowed. A payment is
  * expected for every rule under `give`.
+ *
+ * @property {(instance: Instance<any>) => Promise<IssuerKeywordRecord>} getIssuers
+ *
+ * @property {(instance: Instance) => Promise<BrandKeywordRecord>} getBrands
+ * Get the current mapping of keywords to brands, as from {@link getTerms}
+ *
+ * @property {<SF>(instance: Instance<SF>) => Promise<StandardTerms & import('./utils').StartParams<SF>["terms"]>} getTerms
+ * Each Zoe contract instance has an customTerms, issuers,
+ * and brands. The customTerms are never changed, but new issuers (and their
+ * matching brands) may be added by the contract code.
+ *
+ * @property {(instance: Instance<any>) => string[]} getOfferFilter
+ *
+ * @property {(instance: Instance<any>) => Promise<Installation>} getInstallationForInstance
+ *
+ * @property {(invitation: ERef<Invitation>) => Promise<Instance<any>>} getInstance
+ *
+ * @property {(invitation: ERef<Invitation>) => Promise<Installation>} getInstallation
+ *
+ * @property {(invitation: ERef<Invitation<any, any>>) => Promise<InvitationDetails>} getInvitationDetails
+ *
+ * Return an object with the instance, installation, description, invitation
+ * handle, and any custom properties specific to the contract.
+ * @property {() => Promise<Issuer<'nat'>>} getFeeIssuer
+ *
+ * @property {() => {
+ *   feeIssuerConfig: FeeIssuerConfig,
+ * }} getConfiguration
+ *
+ * Verify that an alleged Installation is real, and return the Bundle ID it
+ * will use for contract code.
+ * @property {(allegedInstallation: ERef<Installation>) => Promise<BundleID>} getBundleIDFromInstallation
+ *
+ * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**
@@ -272,14 +198,6 @@
  * `{ waived: null }`
  * `{ onDemand: null }`
  * `{ afterDeadline: { timer :Timer<Deadline>, deadline :Deadline } }`
- */
-
-/**
- * @import { Instance } from './utils.js'
- */
-
-/**
- * @import {VatAdminSvc} from '@agoric/swingset-vat'
  */
 
 /**

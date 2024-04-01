@@ -15,7 +15,7 @@ import '../internal-types.js';
 const { quote: q, Fail } = assert;
 
 export const makeOfferMethod = offerDataAccess => {
-  /** @type {Offer} */
+  /** @type {ZoeService['offer']} */
   const offer = async (
     invitation,
     uncleanProposal = harden({}),
