@@ -16,6 +16,14 @@
         jsdocCapitalizeDescription: false,
         tsdoc: true,
       },
+    },
+    {
+      // shell formatting
+      files: ['*.sh'],
+      options: {
+        plugins: ['prettier-plugin-sh'],
+      },
+    },
   ],
   singleQuote: true,
 }
