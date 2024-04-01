@@ -13,7 +13,7 @@
   "scripts": {
     "repl": "node src/xsrepl.js",
     "build:bin": "if test -d ./test; then node src/build.js; else yarn build:from-env; fi",
-    "build:env": "test -d ./test && node src/build.js --show-env > build.env",
+    "build:env": "node src/build.js --show-env > build.env",
     "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
     "build": "yarn build:bin && yarn build:env",
     "postinstall": "yarn build:from-env",

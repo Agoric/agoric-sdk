@@ -139,7 +139,7 @@ const makeSubmodule = (path, repoUrl, { git }) => {
 };
 
 /**
- * @param {string[]} args
+ * @param {boolean} showEnv
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
@@ -151,7 +151,7 @@ const makeSubmodule = (path, repoUrl, { git }) => {
  *   },
  * }} io
  */
-const updateSubmodules = async (args, { env, stdout, spawn, fs }) => {
+const updateSubmodules = async (showEnv, { env, stdout, spawn, fs }) => {
   const git = makeCLI('git', { spawn });
 
   // When changing/adding entries here, make sure to search the whole project
@@ -173,7 +173,7 @@ const updateSubmodules = async (args, { env, stdout, spawn, fs }) => {
   ];
 
   await null;
-  if (args.includes('--show-env')) {
+  if (showEnv) {
     for (const submodule of submodules) {
       const { path, envPrefix, commitHash } = submodule;
       if (!commitHash) {
@@ -316,9 +316,13 @@ async function main(args, { env, stdout, spawn, fs, os }) {
   let hasSource = fs.existsSync(asset('moddable/xs/includes/xs.h'));
   const hasGit = fs.existsSync(asset('moddable/.git'));
   const isWorkingCopy = hasGit || (!hasSource && !hasBin);
+  const showEnv = args.includes('--show-env');
 
-  if (isWorkingCopy || args.includes('--show-env')) {
-    await updateSubmodules(args, { env, stdout, spawn, fs });
+  if (isWorkingCopy || showEnv) {
+    if (showEnv && !isWorkingCopy) {
+      throw new Error('XSnap requires a working copy and git to --show-env');
+    }
+    await updateSubmodules(showEnv, { env, stdout, spawn, fs });
     hasSource = true;
   }
 
