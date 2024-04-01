@@ -235,15 +235,15 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
     !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj
       ? $slice.call(toStr(obj), 8, -1)
       : protoTag
-      ? 'Object'
-      : '';
+        ? 'Object'
+        : '';
   const protoConstructor = objProto && objProto.constructor;
   const constructorTag =
     isPlainObject || typeof protoConstructor !== 'function'
       ? ''
       : protoConstructor.name
-      ? `${protoConstructor.name} `
-      : '';
+        ? `${protoConstructor.name} `
+        : '';
   const tag =
     constructorTag +
     (stringTag || protoTag

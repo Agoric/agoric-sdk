@@ -454,18 +454,18 @@ export function int64Length(lo: number, hi: number) {
           ? 1
           : 2
         : part0 < 2097152
-        ? 3
-        : 4
+          ? 3
+          : 4
       : part1 < 16384
-      ? part1 < 128
-        ? 5
-        : 6
-      : part1 < 2097152
-      ? 7
-      : 8
+        ? part1 < 128
+          ? 5
+          : 6
+        : part1 < 2097152
+          ? 7
+          : 8
     : part2 < 128
-    ? 9
-    : 10;
+      ? 9
+      : 10;
 }
 
 export function writeFixed32(

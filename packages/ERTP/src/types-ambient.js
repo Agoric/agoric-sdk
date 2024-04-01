@@ -53,12 +53,12 @@
  * @typedef {K extends 'nat'
  *   ? NatValue
  *   : K extends 'set'
- *   ? SetValue
- *   : K extends 'copySet'
- *   ? CopySet
- *   : K extends 'copyBag'
- *   ? import('@endo/patterns').CopyBag
- *   : never} AssetValueForKind
+ *     ? SetValue
+ *     : K extends 'copySet'
+ *       ? CopySet
+ *       : K extends 'copyBag'
+ *         ? import('@endo/patterns').CopyBag
+ *         : never} AssetValueForKind
  */
 
 /**
@@ -66,12 +66,12 @@
  * @typedef {V extends NatValue
  *   ? 'nat'
  *   : V extends SetValue
- *   ? 'set'
- *   : V extends CopySet
- *   ? 'copySet'
- *   : V extends import('@endo/patterns').CopyBag
- *   ? 'copyBag'
- *   : never} AssetKindForValue
+ *     ? 'set'
+ *     : V extends CopySet
+ *       ? 'copySet'
+ *       : V extends import('@endo/patterns').CopyBag
+ *         ? 'copyBag'
+ *         : never} AssetKindForValue
  */
 
 /**

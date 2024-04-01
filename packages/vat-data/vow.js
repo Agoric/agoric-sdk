@@ -36,9 +36,8 @@ export const defaultPowers = harden({
 export const prepareVowTools = (zone, powers = {}) =>
   rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
 
-export const { watch, when, makeVowKit, allVows } = prepareVowTools(
-  makeHeapZone(),
-);
+export const { watch, when, makeVowKit, allVows } =
+  prepareVowTools(makeHeapZone());
 
 /**
  * An vow-shortening E.  CAVEAT: This produces long-lived ephemeral

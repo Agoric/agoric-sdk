@@ -349,8 +349,8 @@ const AmountMath = {
     isGTE(x, y, brand)
       ? y
       : isGTE(y, x, brand)
-      ? x
-      : Fail`${x} and ${y} are incomparable`,
+        ? x
+        : Fail`${x} and ${y} are incomparable`,
   /**
    * Returns the max value between x and y using isGTE
    *
@@ -365,8 +365,8 @@ const AmountMath = {
     isGTE(x, y, brand)
       ? x
       : isGTE(y, x)
-      ? y
-      : Fail`${x} and ${y} are incomparable`,
+        ? y
+        : Fail`${x} and ${y} are incomparable`,
 };
 harden(AmountMath);
 
