@@ -14,8 +14,8 @@ yarn pack -f "$TEMP/package.tar"
   cd "$TEMP"
   tar xvf package.tar
   cd package
-  yarn
-  time yarn build
-  time yarn build
-  time yarn build
+  time yarn
+  time yarn
+  time yarn
+  time yarn
 )

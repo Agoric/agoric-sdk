@@ -326,7 +326,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     hasSource = true;
   }
 
-  if (hasSource) {
+  if (hasSource && !showEnv) {
     await makeXsnap({ spawn, fs, os });
   } else if (!hasBin) {
     throw new Error(
