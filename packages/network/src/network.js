@@ -1406,6 +1406,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
     },
   );
 
+  /** @param {string} [instancePrefix] */
   const makeLoopbackProtocolHandler = instancePrefix => {
     const { protocolHandler } = makeLoopbackProtocolHandlerKit(instancePrefix);
     return harden(protocolHandler);

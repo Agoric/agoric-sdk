@@ -1,4 +1,8 @@
 #! /bin/bash
+# When debugging this locally, you'll want to delete all the local tags it
+# generates, here and in your Endo checkout:
+#   git tag -d $(git tag -l)
+# That also deletes the remotes, but they will be restored on next fetch.
 
 thisdir=$(cd -- "$(dirname "$0")" >/dev/null && pwd)
 
