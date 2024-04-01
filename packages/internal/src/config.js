@@ -22,6 +22,7 @@ export const BridgeId = {
   PROVISION: 'provision',
   PROVISION_SMART_WALLET: 'provisionWallet',
   VLOCALCHAIN: 'vlocalchain',
+  VTRANSFER: 'vtransfer',
   WALLET: 'wallet',
 };
 harden(BridgeId);

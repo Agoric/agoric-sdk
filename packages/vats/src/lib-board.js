@@ -15,6 +15,8 @@ import { makeMarshal } from '@endo/marshal';
 
 import { crc6 } from './crc.js';
 
+/** @import {Key} from '@endo/patterns') */
+
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 

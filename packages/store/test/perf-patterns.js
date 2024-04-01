@@ -17,6 +17,7 @@ import {
   ProposalShape,
 } from './borrow-guards.js';
 import '../src/types.js';
+/** @import {Passable} from '@endo/pass-style' */
 
 const gcAndFinalize = makeGcAndFinalize(engineGC);
 

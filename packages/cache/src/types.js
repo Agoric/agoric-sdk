@@ -7,7 +7,10 @@ import '@agoric/store/exported.js';
 // Ensure this is a module.
 export {};
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import { ERef } from '@endo/far'
+ * @import {Passable} from '@endo/pass-style'
+ */
 
 /**
  * @typedef {object} Updater

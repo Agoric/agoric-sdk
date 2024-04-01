@@ -18,6 +18,11 @@ import { makeCurrentKeysKit } from './store-utils.js';
 const { quote: q } = assert;
 
 /**
+ * @import {Passable} from '@endo/pass-style')
+ * @import {Key} from '@endo/patterns')
+ */
+
+/**
  * @template {Key} K
  * @template {Passable} V
  * @param {Map<K, V>} jsmap
