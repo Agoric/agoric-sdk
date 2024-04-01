@@ -272,7 +272,7 @@ export function makeXsSubprocessFactory({
       ]);
       await closeP;
 
-      /** @type {Partial<import('@agoric/swing-store/src/snapStore.js').SnapshotInfo>} */
+      /** @type {Partial<import('@agoric/swing-store').SnapshotInfo>} */
       const reloadSnapshotInfo = {
         snapPos,
         hash: snapshotResults.hash,

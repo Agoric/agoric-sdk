@@ -4,6 +4,8 @@
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
+// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore FIXME Jessie.js exports
 import { asyncGenerate } from 'jessie.js';
 
 const { fromEntries, keys, values } = Object;

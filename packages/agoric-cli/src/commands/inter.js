@@ -138,7 +138,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: BidSpec}} bid
- * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
+ * @param {import('../lib/format.js').AssetDescriptor[]} assets
  */
 export const fmtBid = (bid, assets) => {
   const fmt = makeFormatters(assets);

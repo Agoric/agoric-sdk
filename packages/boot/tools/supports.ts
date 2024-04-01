@@ -26,7 +26,7 @@ import {
 import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { BridgeHandler } from '@agoric/vats';
 
 const trace = makeTracer('BSTSupport', false);

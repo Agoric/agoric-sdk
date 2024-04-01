@@ -7,6 +7,10 @@ import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
+ * @import {DepositFacet} from '@agoric/ertp/exported.js'
+ */
+
+/**
  * Create or return an existing courier promise kit.
  *
  * @template K
