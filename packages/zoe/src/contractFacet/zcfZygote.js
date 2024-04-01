@@ -152,7 +152,7 @@ export const makeZCFZygote = async (
     return makeZcMint(keyword, zoeMint);
   };
 
-  /** @type {ZCFRegisterFeeMint} */
+  /** @type {ZCF['registerFeeMint']} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
     getInstanceRecHolder().assertUniqueKeyword(keyword);
 
@@ -354,7 +354,7 @@ export const makeZCFZygote = async (
     getBrandForIssuer,
     getIssuerForBrand,
     getAssetKind: getAssetKindByBrand,
-    /** @type {SetTestJig} */
+    /** @type {ZCF['setTestJig']} */
     setTestJig: (testFn = () => ({})) => {
       if (testJigSetter) {
         testJigSetter({ ...testFn(), zcf });
