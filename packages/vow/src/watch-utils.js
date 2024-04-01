@@ -2,6 +2,8 @@
 
 import { M } from '@endo/patterns';
 
+/** @import {MapStore} from '@agoric/store/src/types.js' */
+
 const VowShape = M.tagged(
   'Vow',
   harden({

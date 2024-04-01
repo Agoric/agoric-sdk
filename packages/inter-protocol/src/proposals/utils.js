@@ -2,6 +2,8 @@ import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
 
+/** @import {CopyMap} from '@endo/patterns') */
+
 const { Fail } = assert;
 
 /**

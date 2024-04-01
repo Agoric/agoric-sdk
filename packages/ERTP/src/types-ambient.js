@@ -1,6 +1,10 @@
 // @jessie-check
 
 /// <reference types="ses"/>
+/**
+ * @import {Passable} from '@endo/pass-style')
+ * @import {CopySet, Key} from '@endo/patterns')
+ */
 
 /**
  * @template {AssetKind} [K=AssetKind]
