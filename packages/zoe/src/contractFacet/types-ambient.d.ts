@@ -1,5 +1,3 @@
-type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
-type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 /**
  * Any passable non-thenable. Often an explanatory string.
  */
@@ -134,7 +132,7 @@ interface ZCF<CT extends unknown = Record<string, unknown>> {
     keyword: Keyword,
     assetKind?: K_2 | undefined,
     displayInfo?: AdditionalDisplayInfo,
-    options?: IssuerOptionsRecord,
+    options?: import('@agoric/ertp').IssuerOptionsRecord,
   ) => Promise<ZCFMint<K_2>>;
   registerFeeMint: (
     keyword: Keyword,
@@ -273,8 +271,8 @@ type OfferHandler<OR extends unknown = unknown, OA = never> =
       handle: HandleOffer<OR, OA>;
     };
 type ContractMeta = {
-  customTermsShape?: CopyRecord<any> | undefined;
-  privateArgsShape?: CopyRecord<any> | undefined;
+  customTermsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
+  privateArgsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
   upgradability?: 'none' | 'canBeUpgraded' | 'canUpgrade' | undefined;
 };
 /**
