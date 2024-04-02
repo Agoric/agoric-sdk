@@ -77,7 +77,7 @@ type StartContractInstance<C> = (
 ) => Promise<{
   creatorFacet: C['creatorFacet'];
   publicFacet: C['publicFacet'];
-  instance: Instance;
+  instance: Instance<C>;
   creatorInvitation: C['creatorInvitation'];
   adminFacet: AdminFacet<any>;
 }>;
