@@ -185,11 +185,22 @@ test('network - ibc', async t => {
       portID: 'port-1',
       channelID: 'channel-1',
       counterparty: { port_id: 'port-98', channel_id: 'channel-22' },
-      counterpartyVersion: 'bar',
+      counterpartyVersion: 'bar-negotiated',
       connectionHops: ['connection-11'],
     });
 
     const c = await when(cP);
+    const remoteAddress = c.getRemoteAddress();
+    const localAddress = c.getLocalAddress();
+    t.is(
+      remoteAddress,
+      '/ibc-hop/connection-11/ibc-port/port-98/unordered/bar-negotiated/ibc-channel/channel-22',
+    );
+    t.is(
+      localAddress,
+      '/ibc-port/port-1/unordered/bar-negotiated/ibc-channel/channel-1',
+    );
+
     t.log('Sending Data - transfer');
     const ack = E(c).send('some-transfer-message');
 
