@@ -7,6 +7,10 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
+/**
+ * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
+ */
+
 const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);

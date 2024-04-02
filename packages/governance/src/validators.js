@@ -3,6 +3,10 @@ import { E } from '@endo/eventual-send';
 const { Fail, quote: q } = assert;
 
 /**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, AssertContractGovernance, AssertContractElectorate} from './types.js';
+ */
+
+/**
  * Assert that the governed contract was started by the governor. Throws if
  * either direction can't be established. If the call succeeds, then the
  * governor got exclusive access to the governed contract's creatorFacet, and

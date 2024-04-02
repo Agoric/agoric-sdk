@@ -18,6 +18,10 @@ import {
 import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
+/**
+ * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ */
+
 const { Fail } = assert;
 
 const validateQuestionSpec = questionSpec => {

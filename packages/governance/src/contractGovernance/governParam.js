@@ -9,6 +9,9 @@ import {
   QuorumRule,
 } from '../question.js';
 import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
+/**
+ * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
+ */
 
 const { Fail } = assert;
 

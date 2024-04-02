@@ -9,6 +9,10 @@ import {
   coerceQuestionSpec,
 } from '../question.js';
 
+/**
+ * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation} from '../types.js';
+ */
+
 const { Fail, quote: q } = assert;
 
 /**
