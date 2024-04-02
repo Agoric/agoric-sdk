@@ -16,8 +16,8 @@ const ownKeys =
   );
 
 /**
- * @template {import('@endo/exo/src/exo-makers.js').Methods} T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo/src/exo-makers.js').Farable<T>} MakeAttenuator
+ * @template {import('@endo/exo').Methods} T
+ * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo').Farable<T>} MakeAttenuator
  */
 
 /**

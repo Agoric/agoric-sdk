@@ -43,7 +43,7 @@ test('test amplify defineVirtualExoClass fails', t => {
 });
 
 test('test amplify defineVirtualExoClassKit', t => {
-  /** @type {import('@endo/exo/src/exo-makers.js').Amplify} */
+  /** @type {import('@endo/exo').Amplify} */
   let amp;
   const makeCounterKit = defineVirtualExoClassKit(
     'Counter',
