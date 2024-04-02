@@ -1,4 +1,3 @@
-// @ts-expect-error FIXME Jessie.js exports
 import { makeMap } from 'jessie.js';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';

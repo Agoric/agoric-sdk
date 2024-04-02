@@ -1,6 +1,5 @@
 // @jessie-check
 
-// @ts-expect-error FIXME Jessie.js exports
 import { makeMap } from 'jessie.js';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
