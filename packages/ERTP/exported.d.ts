@@ -8,7 +8,9 @@
 export * from './src/types.js';
 
 // XXX re-export types into global namespace, for consumers that expect these to
-//  be ambient
+//  be ambient. Why the _ prefix? Because without it TS gets confused between the
+//  import and export symbols. h/t https://stackoverflow.com/a/66588974
+//  Note one big downside vs ambients is that these types will appear to be on `globalThis`.
 import {
   Amount as _Amount,
   Brand as _Brand,
