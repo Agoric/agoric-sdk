@@ -410,12 +410,12 @@ export class BinaryWriter implements IBinaryWriter {
         (value = value >>> 0) < 128
           ? 1
           : value < 16384
-          ? 2
-          : value < 2097152
-          ? 3
-          : value < 268435456
-          ? 4
-          : 5,
+            ? 2
+            : value < 2097152
+              ? 3
+              : value < 268435456
+                ? 4
+                : 5,
         value,
       )).len;
     return this;

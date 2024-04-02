@@ -26,9 +26,8 @@ export type Instance<SF> = Handle<'Instance'> & {
   [StartFunction]: SF;
 };
 
-export type InstallationStart<I> = I extends Installation<infer SF>
-  ? SF
-  : never;
+export type InstallationStart<I> =
+  I extends Installation<infer SF> ? SF : never;
 
 type ContractStartFunction = (
   zcf?: ZCF,

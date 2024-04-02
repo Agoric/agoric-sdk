@@ -1,7 +1,7 @@
 #! /bin/bash
 set -ueo pipefail
 
-cat <<EOF 1>&2
+cat << EOF 1>&2
 ------------------------------------------------------------
 This script shows a command for a software upgrade proposal which is
 compatible with the Cosmovisor found at:
@@ -22,7 +22,7 @@ checksum=sha256:$(shasum -a 256 "$zipfile" | cut -d' ' -f1)
 
 info="{\"binaries\":{\"any\":\"$ZIPURL//agoric-sdk-$COMMIT_ID?checksum=$checksum\"},\"source\":\"$ZIPURL?checksum=$checksum\"}"
 
-cat <<EOF 1>&2
+cat << EOF 1>&2
 ------------------------------------------------------------
 Here is the skeleton of the recomended upgrade proposal command.
 You'll need to fill in the details.
@@ -34,7 +34,7 @@ examples.
 ------------------------------------------------------------
 EOF
 
-cat <<EOF
+cat << EOF
 agd tx submit-proposal software-upgrade <UPGRADE-NAME> \\
   --upgrade-info='$info' \\
   --upgrade-height <HEIGHT> \\

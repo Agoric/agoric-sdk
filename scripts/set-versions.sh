@@ -11,9 +11,9 @@ cd -- "${1-"$DIR/.."}"
 
 VERSIONSHASH=$(git hash-object -w --stdin)
 
-yarn workspaces --json info |
-  jq -r '.data | fromjson | .[].location | "\(.)/package.json"' |
-  while read PACKAGEJSON; do
+yarn workspaces --json info \
+  | jq -r '.data | fromjson | .[].location | "\(.)/package.json"' \
+  | while read PACKAGEJSON; do
     PACKAGEJSONHASH=$(
       jq --slurpfile versions <(git cat-file blob "$VERSIONSHASH") '
       def update(name): if .[name] then {
@@ -31,8 +31,8 @@ yarn workspaces --json info |
       update("dependencies") +
       update("devDependencies") +
       update("peerDependencies")
-    ' "$PACKAGEJSON" |
-        git hash-object -w --stdin
+    ' "$PACKAGEJSON" \
+        | git hash-object -w --stdin
     )
-    git cat-file blob "$PACKAGEJSONHASH" >"$PACKAGEJSON"
+    git cat-file blob "$PACKAGEJSONHASH" > "$PACKAGEJSON"
   done
