@@ -1,7 +1,3 @@
-/// <reference path="../../network/exported.js" />
-/// <reference path="../../ERTP/exported.js" />
-/// <reference path="../../zoe/exported.js" />
-
 /// <reference path="./types-ambient.js" />
 
 export {
