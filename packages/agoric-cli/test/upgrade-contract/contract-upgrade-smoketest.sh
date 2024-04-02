@@ -45,7 +45,7 @@ enactCoreEval() {
     case $status in
     PROPOSAL_STATUS_PASSED)
       break ;;
-    PROPOSAL_STATUS_REJECTED) 
+    PROPOSAL_STATUS_REJECTED) ;;
     PROPOSAL_STATUS_FAILED)
       return 1 ;;
     *)
