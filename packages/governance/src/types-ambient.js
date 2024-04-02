@@ -121,6 +121,7 @@
  * @property {ElectionType} electionType
  * @property {number} maxChoices
  * @property {number} maxWinners
+ * @property {bigint} [winningThreshold]
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
  * @property {Position} tieOutcome
@@ -175,6 +176,7 @@
  * @typedef {object} PositionCount
  * @property {Position} position
  * @property {bigint} total
+ * @property {any} [details]
  */
 
 /**
