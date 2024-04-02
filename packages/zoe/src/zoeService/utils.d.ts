@@ -35,7 +35,7 @@ type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = {
+export interface AdminFacet<SF extends ContractStartFunction> {
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined
@@ -47,7 +47,7 @@ export type AdminFacet<SF extends ContractStartFunction> = {
   restartContract: Parameters<SF>[1] extends undefined
     ? () => Promise<VatUpgradeResults>
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
-};
+}
 
 type StartParams<SF> = SF extends ContractStartFunction
   ? Parameters<SF>[1] extends undefined
