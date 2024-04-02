@@ -46,7 +46,7 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {ShutdownWithFailure} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,

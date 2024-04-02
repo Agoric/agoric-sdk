@@ -267,7 +267,11 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
       return periodicCollector;
     },
 
-    /** @param {import('@endo/far').EOnly<DepositFacet>} depositFacet */
+    /**
+     * @param {import('@endo/far').EOnly<
+     *   import('@agoric/ertp/exported.js').DepositFacet
+     * >} depositFacet
+     */
     makeDepositFacetDestination: depositFacet => {
       return Far(`DepositFacetDestination`, {
         pushPayment: async (payment, _issuer) => {
