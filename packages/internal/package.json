@@ -30,7 +30,7 @@
     "@endo/promise-kit": "^1.1.0",
     "@endo/stream": "^1.2.0",
     "anylogger": "^0.21.0",
-    "jessie.js": "^0.3.2"
+    "jessie.js": "^0.3.4"
   },
   "devDependencies": {
     "@endo/init": "^1.1.0",

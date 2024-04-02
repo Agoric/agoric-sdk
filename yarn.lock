@@ -1512,11 +1512,6 @@
     "@endo/zip" "^1.0.3"
     ses "^1.4.0"
 
-"@endo/env-options@^0.1.4":
-  version "0.1.4"
-  resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-0.1.4.tgz#e516bc3864f00b154944e444fb8996a9a0c23a45"
-  integrity sha512-Ol8ct0aW8VK1ZaqntnUJfrYT59P6Xn36XPbHzkqQhsYkpudKDn5ILYEwGmSO/Ff+XJjv/pReNI0lhOyyrDa9mg==
-
 "@endo/env-options@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-1.1.2.tgz#38cb86effbdcc2879bb5a4f50650b129000c37c2"
@@ -1550,13 +1545,6 @@
     "@babel/traverse" "^7.23.6"
     source-map "0.7.4"
 
-"@endo/eventual-send@^0.17.6":
-  version "0.17.6"
-  resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.17.6.tgz#86719e4e3ff76991c49f6680309dc77dff65fe55"
-  integrity sha512-73cKY2uiWdzMJn7i284NJyD3K0UKjpksBg/EA2GT8YJa0TgeBczFQIm81vC08itK5gHuDDH2vC5COSGR6hxKIg==
-  dependencies:
-    "@endo/env-options" "^0.1.4"
-
 "@endo/eventual-send@^1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.2.0.tgz#e882c0b9807da397100ce9aab6e18941559903e5"
@@ -1577,15 +1565,7 @@
     "@endo/pass-style" "^1.3.0"
     "@endo/patterns" "^1.3.0"
 
-"@endo/far@^0.2.3":
-  version "0.2.22"
-  resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.2.22.tgz#fda187289a903ee3f9d6dcc5664ee7fef1994b1f"
-  integrity sha512-LFOicqyHslKOSk/H5EfGOcw347ftDSwYHARPasnrG4UJOEkcU1ZG5bN/BmfONtcidB776gWZKrV/tNl4WLIlyw==
-  dependencies:
-    "@endo/eventual-send" "^0.17.6"
-    "@endo/pass-style" "^0.1.7"
-
-"@endo/far@^1.1.0":
+"@endo/far@^1.0.0", "@endo/far@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-1.1.0.tgz#aeb86dc43447d58fd3bc62249f9e7e776c9c93ea"
   integrity sha512-phpwBCkoFuzmjWUTXlf8ry7t4H7k/FTdXBTIWJjREmPEEdK+ZPxM3nTAmq3faf17/aSTAaKrdWDC6PNiMCxqNg==
@@ -1649,14 +1629,6 @@
     "@endo/stream" "^1.2.0"
     ses "^1.4.0"
 
-"@endo/pass-style@^0.1.7":
-  version "0.1.7"
-  resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-0.1.7.tgz#ea22568e8b86fb2d1a14a5fc042374cc0d8e310b"
-  integrity sha512-dlB62Ptjcy/+iachy7qzAdgIwaU60rE+XLummLRpE2tDSJF2jSFJlVwa/QuGw1KKO7Rt4vog/51sKev3EbJZQg==
-  dependencies:
-    "@endo/promise-kit" "^0.2.60"
-    "@fast-check/ava" "^1.1.5"
-
 "@endo/pass-style@^1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-1.3.0.tgz#9d119487df3a53ad7a1b04bd1634f12c25521acb"
@@ -1678,13 +1650,6 @@
     "@endo/eventual-send" "^1.2.0"
     "@endo/marshal" "^1.4.0"
     "@endo/promise-kit" "^1.1.0"
-
-"@endo/promise-kit@^0.2.60":
-  version "0.2.60"
-  resolved "https://registry.yarnpkg.com/@endo/promise-kit/-/promise-kit-0.2.60.tgz#8012ada06970c7eaf965cd856563b34a1790e163"
-  integrity sha512-6Zp9BqBbc3ywaG+iLRrQRmO/VLKrMnvsbgOKKPMpjEC3sUlksYA09uaH3GrKZgoGChF8m9bXK8eFW39z7wJNUw==
-  dependencies:
-    ses "^0.18.8"
 
 "@endo/promise-kit@^1.1.0":
   version "1.1.0"
@@ -7697,12 +7662,12 @@ jake@^10.8.5:
     filelist "^1.0.4"
     minimatch "^3.1.2"
 
-jessie.js@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/jessie.js/-/jessie.js-0.3.2.tgz#68159e1097f86fa56a3136668313ea38e96fc9f2"
-  integrity sha512-Gpa2iZhl/hPZGT3HWEURfYIV5kFjeHZmQLZuRF6A5czuezmEOlnDYH3w7rohaaEWwxJiXprUWj4r6lh1JIkXAA==
+jessie.js@^0.3.4:
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/jessie.js/-/jessie.js-0.3.4.tgz#7e35dadc91cf4740d2ddc8a58b6cd0a99eb64a08"
+  integrity sha512-JYJm6nXuFIO/X6OWLBatorgqmFVYbenqnFP0UDalO2OQ6sn58VeJ3cKtMQ0l0TM0JnCx4wKhyO4BQQ/ilxjd6g==
   dependencies:
-    "@endo/far" "^0.2.3"
+    "@endo/far" "^1.0.0"
 
 jest-diff@^29.0.3:
   version "29.5.0"
@@ -10607,13 +10572,6 @@ serve-static@1.15.0:
     escape-html "~1.0.3"
     parseurl "~1.3.3"
     send "0.18.0"
-
-ses@^0.18.8:
-  version "0.18.8"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.18.8.tgz#88036511ac3b3c07e4d82dd8cfc6e5f3788205b6"
-  integrity sha512-kOH1AhJc6gWDXKURKeU1w7iFUdImAegAljVvBg5EUBgNqjH4bxcEsGVUadVEPtA2PVRMyQp1fiSMDwEZkQNj1g==
-  dependencies:
-    "@endo/env-options" "^0.1.4"
 
 ses@^1.4.0:
   version "1.4.0"
