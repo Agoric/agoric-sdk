@@ -56,7 +56,7 @@
  * @typedef {object} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
- * @property {ShutdownWithFailure} fail called with the reason
+ * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
@@ -92,7 +92,7 @@
  * @property {() => string[]} getOfferFilter
  * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {ShutdownWithFailure} failAllSeats
+ * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
  * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
@@ -130,7 +130,7 @@
  * @property {MakeNoEscrowSeat} makeNoEscrowSeat
  * @property {ReplaceAllocations} replaceAllocations
  * @property {(completion: Completion) => void} exitAllSeats
- * @property {ShutdownWithFailure} failAllSeats
+ * @property {import('@agoric/swingset-vat').ShutdownWithFailure} failAllSeats
  * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {() => void} stopAcceptingOffers
@@ -289,7 +289,7 @@
  *
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {ShutdownWithFailure} shutdownWithFailure
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownWithFailure
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
  */

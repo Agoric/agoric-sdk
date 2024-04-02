@@ -31,7 +31,7 @@ export const makeLogHooks = log =>
  * Note: caller is responsible for synchronization in case of onResolve() called
  * with a promise.
  *
- * @param {MapStore<string, Passable>} store
+ * @param {MapStore<string, import('@endo/marshal').Passable>} store
  * @param {typeof console.log} [log]
  * @returns {PromiseSpaceHooks}
  */

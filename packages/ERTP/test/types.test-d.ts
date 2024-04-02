@@ -2,8 +2,12 @@ import { Far } from '@endo/marshal';
 import { expectType } from 'tsd';
 
 import { AmountMath, AssetKind } from '../src/index.js';
-
-import '../src/types-ambient.js';
+import type {
+  Amount,
+  AssetValueForKind,
+  Brand,
+  SetValue,
+} from '../src/types.js';
 
 {
   const brand: Brand<'nat'> = Far('natbrand');

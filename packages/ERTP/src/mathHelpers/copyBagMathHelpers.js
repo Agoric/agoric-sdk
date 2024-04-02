@@ -10,7 +10,8 @@ import {
   bagUnion,
   bagDisjointSubtract,
 } from '@agoric/store';
-import '../types-ambient.js';
+
+/** @import {MathHelpers} from '../types.js' */
 
 /** @type {import('@endo/patterns').CopyBag} */
 const empty = makeCopyBag([]);

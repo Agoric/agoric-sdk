@@ -76,7 +76,7 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {ShutdownWithFailure} */
+  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
     E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();

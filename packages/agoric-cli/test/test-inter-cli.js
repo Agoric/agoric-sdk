@@ -39,7 +39,7 @@ const agoricNames = harden({
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
   },
 
-  /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
+  /** @type {Record<string,import('../src/lib/format.js').AssetDescriptor>} */
   vbankAsset: {
     ubld: {
       denom: 'ubld',

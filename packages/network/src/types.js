@@ -11,9 +11,9 @@
  */
 
 /**
- * @template {import('@endo/exo/src/exo-makers').Methods} M
+ * @template {import('@endo/exo').Methods} M
  * @template {(...args: any[]) => any} I
- * @typedef {M & ThisType<{ self: import('@endo/exo/src/exo-makers').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
+ * @typedef {M & ThisType<{ self: import('@endo/exo').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
  * Rearrange the exo types to make a cast of the methods (M) and init function (I) to a specific type.
  */
 

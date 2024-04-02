@@ -6,6 +6,8 @@ import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
+/** @import {Amount, AssetKind, AmountValue, AssetKindForValue, AssetValueForKind, Brand, MathHelpers} from './types.js' */
+
 const { quote: q, Fail } = assert;
 
 /**

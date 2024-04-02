@@ -10,6 +10,11 @@ import { preparePurseKind } from './purse.js';
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
+/**
+ * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
+ */
+
 const { details: X, quote: q, Fail } = assert;
 
 /**

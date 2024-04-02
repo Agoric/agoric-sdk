@@ -24,6 +24,11 @@ import { Far, deeplyFulfilled } from '@endo/marshal';
 const { details: X, quote: q, Fail } = assert;
 
 /**
+ * @import {ERef} from '@endo/far'
+ * @import {Amount} from '@agoric/ertp/src/types.js'
+ */
+
+/**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
  *   import('@agoric/inter-protocol/src/psm/psm.js').start
  * >} PsmInstance
@@ -136,7 +141,7 @@ export const prepareProvisionPoolKit = (
     /**
      * @param {object} opts
      * @param {Purse<'nat'>} opts.fundPurse
-     * @param {Brand} opts.poolBrand
+     * @param {Brand<'nat'>} opts.poolBrand
      * @param {StorageNode} opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
@@ -440,7 +445,7 @@ export const prepareProvisionPoolKit = (
    * Prepare synchronous values before passing to real Exo maker
    *
    * @param {object} opts
-   * @param {Brand} opts.poolBrand
+   * @param {Brand<'nat'>} opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {

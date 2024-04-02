@@ -9,7 +9,8 @@ import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { preparePaymentLedger } from './paymentLedger.js';
 
-import './types-ambient.js';
+/** @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js' */
+/** @import {ShutdownWithFailure} from '@agoric/swingset-vat' */
 
 /**
  * @template {AssetKind} K
@@ -58,7 +59,7 @@ const setupIssuerKit = (
 
   // Attenuate the powerful authority to mint and change balances
   /** @type {PaymentLedger<K>} */
-  // @ts-expect-error could be instantiated with different subtype of AssetKind
+  // @ts-expect-error could be instantiated with a different subtype
   const { issuer, mint, brand, mintRecoveryPurse } = preparePaymentLedger(
     issuerZone,
     name,

@@ -9,7 +9,7 @@
 
 /**
  * @typedef {object} PacketParts
- * @property {AmountValue} value
+ * @property {import("@agoric/ertp/exported.js").AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo

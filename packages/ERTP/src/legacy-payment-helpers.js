@@ -4,6 +4,8 @@ import { mustMatch } from '@agoric/store';
 import { E } from '@endo/far';
 import { AmountMath } from './amountMath.js';
 
+/** @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js' */
+
 const { Fail } = assert;
 
 /**

@@ -96,7 +96,7 @@ harden(execSwingsetTransaction);
 /**
  *
  * @param {import('./rpc.js').MinimalNetworkConfig} net
- * @returns {Promise<import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset').Params>}
+ * @returns {Promise<import('@agoric/cosmic-proto/swingset/swingset.js').Params>}
  */
 export const fetchSwingsetParams = async net => {
   const { rpcAddrs } = net;

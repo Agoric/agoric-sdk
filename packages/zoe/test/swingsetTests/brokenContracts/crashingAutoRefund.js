@@ -58,7 +58,7 @@ const start = zcf => {
   };
 
   const zcfShutdown = completion => zcf.shutdown(completion);
-  /** @type {ShutdownWithFailure} */
+  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const zcfShutdownWithFailure = reason => zcf.shutdownWithFailure(reason);
 
   const makeSwapInvitation = () =>
