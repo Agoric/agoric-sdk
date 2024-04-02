@@ -1,5 +1,8 @@
 // @jessie-check
 
+// Ensure this is a module.
+export {};
+
 /// <reference types="ses"/>
 /**
  * @import {Passable} from '@endo/pass-style')
@@ -209,8 +212,6 @@
  *   anti-pattern.
  * @property {AssetKind} [assetKind]
  */
-
-/** @import {ShutdownWithFailure} from '@agoric/swingset-vat') */
 
 /**
  * @template {AssetKind} [K=AssetKind]

@@ -5,7 +5,8 @@
     "maxNodeModuleJsDepth": 1,
   },
   "include": [
-    "exported.js",
+    // omit exported.js because 1) it's empty and would overwrite exported.d.ts
+    // and 2) because it's only for consumption in other packages
     "src/**/*.js",
     "src/**/*.ts",
     "test"

@@ -5,6 +5,8 @@ import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
+/** @import {Amount, Issuer} from '../../src/types.js' */
+
 test('makeIssuerKit bad allegedName', async t => {
   // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit(harden({})), { message: `{} must be a string` });

@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build": "exit 0",
-    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build --clean tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' src/types.js",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava",
     "test:xs": "yarn test:xs-unit && yarn test:xs-worker",
@@ -61,7 +61,8 @@
   "files": [
     "src",
     "NEWS.md",
-    "exported.js"
+    "exported.js",
+    "exported.d.ts"
   ],
   "ava-xs": {
     "exclude": [
