@@ -6,6 +6,11 @@ import { makeParamManagerBuilder } from './paramManager.js';
 const { Fail, quote: q } = assert;
 
 /**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';
+ * @import {ParamType} from '../constants.js';
+ */
+
+/**
  * @typedef {Record<Keyword, ParamType>} ParamTypesMap
  */
 /**

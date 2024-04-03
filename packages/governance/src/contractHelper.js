@@ -10,6 +10,10 @@ import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
 
+/**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
+ */
+
 const { Fail, quote: q } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';

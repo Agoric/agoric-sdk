@@ -14,6 +14,10 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 
+/**
+ * @import {GovernedPublicFacet, SimpleIssue} from '../../src/types.js';
+ */
+
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
 const contractGovernorRoot = '../../src/contractGovernor.js';

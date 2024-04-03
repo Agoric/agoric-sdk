@@ -16,6 +16,10 @@ import {
 } from './contractGovernance/governParam.js';
 import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
+/**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ */
+
 const trace = makeTracer('CGK', false);
 
 const ContractGovernorKitI = {

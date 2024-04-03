@@ -18,6 +18,10 @@ import {
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
+/**
+ * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
+ */
+
 const { Fail, quote: q } = assert;
 
 /**
@@ -90,7 +94,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
    * @param {Keyword} name
    * @param {unknown} value
    * @param {(val) => void} assertion
-   * @param {ParamType} type
+   * @param {import('../constants.js').ParamType} type
    */
   const buildCopyParam = (name, value, assertion, type) => {
     let current;

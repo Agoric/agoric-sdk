@@ -11,8 +11,6 @@
  * validate that.
  */
 
-/// <reference path="../../../ERTP/exported.js" />
-/// <reference path="../../../store/exported.js" />
 /// <reference path="../internal-types.js" />
 
 import { E } from '@endo/eventual-send';

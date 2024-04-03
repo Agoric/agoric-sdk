@@ -3,6 +3,10 @@ import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../src/index.js';
 
+/**
+ * @import {GovernableStartFn} from '../src/types.js';
+ */
+
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
   const path = new URL(url).pathname;

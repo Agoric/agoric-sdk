@@ -10,7 +10,7 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
-    "prepack": "echo \"export {}; \" | cat - tools/types-ambient.js > tools/types.js && tsc --build --clean tsconfig.build.json",
+    "prepack": "echo \"export {}; \" | cat - tools/types-ambient.js > tools/types.js && tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' tools/types.js",
     "test": "ava --verbose",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",

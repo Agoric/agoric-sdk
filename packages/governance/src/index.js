@@ -1,6 +1,8 @@
-/// <reference path="../../network/exported.js" />
-/// <reference path="../../ERTP/exported.js" />
-/// <reference path="../../zoe/exported.js" />
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/ertp/exported.js';
+import '@agoric/zoe/src/contractFacet/types-ambient.js';
+import '@agoric/zoe/tools/types-ambient.js';
+import '@agoric/zoe/src/types.js';
 
 /// <reference path="./types-ambient.js" />
 

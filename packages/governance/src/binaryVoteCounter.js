@@ -17,6 +17,10 @@ import {
 } from './typeGuards.js';
 import { makeQuorumCounter } from './quorumCounter.js';
 
+/**
+ * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteStatistics} from './types.js';
+ */
+
 const { Fail } = assert;
 
 const validateBinaryQuestionSpec = questionSpec => {

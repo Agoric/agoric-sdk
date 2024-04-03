@@ -31,7 +31,6 @@ import {
   ratiosSame,
 } from '../contractSupport/ratio.js';
 
-/// <reference path="../../../ERTP/exported.js" />
 /**
  * @import {LegacyMap} from '@agoric/store/exported.js'
  */

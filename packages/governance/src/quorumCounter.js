@@ -2,6 +2,10 @@
 
 import { Far } from '@endo/marshal';
 
+/**
+ * @import {QuorumCounter} from './types.js';
+ */
+
 export const makeQuorumCounter = quorumThreshold => {
   const check = stats => {
     const votes = stats.results.reduce(

@@ -3,6 +3,10 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn} from './types.js';
+ */
+
+/**
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
