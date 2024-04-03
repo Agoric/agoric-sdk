@@ -24,14 +24,14 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /**
- * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncall, IBCDowncallPacket, IBCDowncallMethod} from './types.js';
+ * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncall} from './types.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
 
+/** @typedef {VowKit<AttemptDescription>} OnConnectP */
+
 /**
- * @typedef {VowKit<AttemptDescription>} OnConnectP
- *
  * @typedef {Omit<
  *   ConnectingInfo,
  *   'counterparty' | 'channelID' | 'counterpartyVersion'
@@ -55,6 +55,26 @@ export const prepareIBCConnectionHandler = zone => {
   const makeIBCConnectionHandler = zone.exoClass(
     'IBCConnectionHandler',
     undefined,
+    /**
+     * @param {{
+     *   protocolUtils: any;
+     *   channelKeyToConnP: MapStore<
+     *     string,
+     *     import('@agoric/vow').Remote<Connection>
+     *   >;
+     *   channelKeyToSeqAck: MapStore<
+     *     string,
+     *     MapStore<number, import('@agoric/vow').VowKit<Bytes>>
+     *   >;
+     * }} param0
+     * @param {{
+     *   channelID: IBCChannelID;
+     *   portID: string;
+     *   rChannelID: IBCChannelID;
+     *   rPortID: string;
+     *   order: 'ORDERED' | 'UNORDERED';
+     * }} param1
+     */
     (
       { protocolUtils, channelKeyToConnP, channelKeyToSeqAck },
       { channelID, portID, rChannelID, rPortID, order },
@@ -75,6 +95,7 @@ export const prepareIBCConnectionHandler = zone => {
       };
     },
     {
+      /** @type {Required<ConnectionHandler>['onOpen']} */
       async onOpen(conn, localAddr, remoteAddr, _handler) {
         const { channelID, portID, channelKeyToConnP } = this.state;
 
@@ -89,14 +110,7 @@ export const prepareIBCConnectionHandler = zone => {
 
         channelKeyToConnP.init(channelKey, conn);
       },
-      /**
-       * @param {Connection} _conn
-       * @param {Bytes} packetBytes
-       * @param {ConnectionHandler} _handler
-       * @param {object} root0
-       * @param {bigint} [root0.relativeTimeoutNs]
-       * @returns {PromiseVow<Bytes>} Acknowledgement data
-       */
+      /** @type {Required<ConnectionHandler>['onReceive']} */
       async onReceive(
         _conn,
         packetBytes,
@@ -116,6 +130,7 @@ export const prepareIBCConnectionHandler = zone => {
         };
         return protocolUtils.ibcSendPacket(packet, relativeTimeoutNs);
       },
+      /** @type {Required<ConnectionHandler>['onClose']} */
       async onClose() {
         const { portID, channelID } = this.state;
         const { protocolUtils, channelKeyToSeqAck } = this.state;
@@ -174,12 +189,11 @@ export const prepareIBCProtocol = (zone, powers) => {
   /**
    * Create a handler for the IBC protocol, both from the network and from the
    * bridge.
-   *
-   * @param {IBCDevice} ibcdev
    */
   const makeIBCProtocolKit = zone.exoClassKit(
     'IBCProtocolHandler',
     undefined,
+    /** @param {IBCDevice} ibcdev */
     ibcdev => {
       /** @type {MapStore<string, Remote<Connection>>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
@@ -214,22 +228,27 @@ export const prepareIBCProtocol = (zone, powers) => {
     },
     {
       protocolHandler: {
+        /** @type {Required<ProtocolHandler>['onCreate']} */
         async onCreate(impl) {
           console.debug('IBC onCreate');
           this.state.protocolImpl = impl;
         },
+        /** @type {Required<ProtocolHandler>['onInstantiate']} */
         async onInstantiate() {
           // The IBC channel is not known until after handshake.
           return '';
         },
+        /** @type {Required<ProtocolHandler>['generatePortID']} */
         async generatePortID() {
           this.state.lastPortID += 1n;
           return `port-${this.state.lastPortID}`;
         },
+        /** @type {Required<ProtocolHandler>['onBind']} */
         async onBind(_port, localAddr) {
           const { util } = this.facets;
           const { portToPendingConns } = this.state;
 
+          // @ts-expect-error may not be LocalIbcAddress
           const portID = localAddrToPortID(localAddr);
           portToPendingConns.init(portID, detached.setStore('pendingConns'));
           const packet = {
@@ -237,11 +256,13 @@ export const prepareIBCProtocol = (zone, powers) => {
           };
           return util.downcall('bindPort', { packet });
         },
+        /** @type {Required<ProtocolHandler>['onConnect']} */
         async onConnect(_port, localAddr, remoteAddr) {
           const { util } = this.facets;
           const { portToPendingConns, srcPortToOutbounds } = this.state;
 
           console.debug('IBC onConnect', localAddr, remoteAddr);
+          // @ts-expect-error may not be LocalIbcAddress
           const portID = localAddrToPortID(localAddr);
           const pendingConns = portToPendingConns.get(portID);
 
@@ -284,15 +305,19 @@ export const prepareIBCProtocol = (zone, powers) => {
 
           return kit.vow;
         },
+        /** @type {Required<ProtocolHandler>['onListen']} */
         async onListen(_port, localAddr) {
           console.debug('IBC onListen', localAddr);
         },
+        /** @type {Required<ProtocolHandler>['onListenRemove']} */
         async onListenRemove(_port, localAddr) {
           console.debug('IBC onListenRemove', localAddr);
         },
+        /** @type {Required<ProtocolHandler>['onRevoke']} */
         async onRevoke(_port, localAddr) {
           const { portToPendingConns } = this.state;
           console.debug('IBC onRevoke', localAddr);
+          // @ts-expect-error may not be LocalIbcAddress
           const portID = localAddrToPortID(localAddr);
 
           const pendingConns = portToPendingConns.get(portID);
@@ -304,6 +329,22 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       bridgeHandler: {
+        /**
+         * @param {{
+         *   event?: any;
+         *   channelID?: string;
+         *   portID?: string;
+         *   counterparty?: any;
+         *   connectionHops?: any;
+         *   order?: any;
+         *   version?: any;
+         *   asyncVersions?: any;
+         *   counterpartyVersion?: any;
+         *   packet?: any;
+         *   acknowledgement?: any;
+         *   relativeTimeoutNs?: any;
+         * }} obj
+         */
         async fromBridge(obj) {
           const {
             protocolImpl,
@@ -616,6 +657,11 @@ export const prepareIBCProtocol = (zone, powers) => {
           return vow;
         },
 
+        /**
+         * @param {IBCChannelID} channelID
+         * @param {IBCPortID} portID
+         * @param {number} sequence
+         */
         findAckKit(channelID, portID, sequence) {
           const { channelKeyToSeqAck } = this.state;
           const channelKey = `${channelID}:${portID}`;
@@ -629,6 +675,10 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       ackWatcher: {
+        /**
+         * @param {string} ack
+         * @param {{ packet: any }} watcherContext
+         */
         onFulfilled(ack, watcherContext) {
           const { packet } = watcherContext;
 
@@ -646,6 +696,21 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       protocolImplAttemptWatcher: {
+        /**
+         * @param {string} attemptedLocal
+         * @param {{
+         *   channelID: IBCChannelID;
+         *   portID: string;
+         *   attempt: any;
+         *   obj: any;
+         *   asyncVersions: any;
+         *   rPortID: string;
+         *   rChannelID: IBCChannelID;
+         *   order: IBCChannelOrdering;
+         *   hops: any;
+         *   version: string;
+         * }} watcherContext
+         */
         onFulfilled(attemptedLocal, watcherContext) {
           const {
             channelID,
@@ -708,6 +773,10 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       protocolImplInboundWatcher: {
+        /**
+         * @param {any} attempt
+         * @param {Record<string, any>} watchContext
+         */
         onFulfilled(attempt, watchContext) {
           const { obj } = watchContext;
 
@@ -726,11 +795,13 @@ export const prepareIBCProtocol = (zone, powers) => {
     },
   );
 
+  /** @param {IBCDevice} ibcdev */
   const makeIBCProtocolHandlerKit = ibcdev => {
     const { protocolHandler, bridgeHandler } = makeIBCProtocolKit(ibcdev);
     return harden({ protocolHandler, bridgeHandler });
   };
 
+  /** @param {IBCDevice} ibcdev */
   const provideIBCProtocolHandlerKit = ibcdev => {
     if (ibcdevToKit.has(ibcdev)) {
       return ibcdevToKit.get(ibcdev);
@@ -751,6 +822,10 @@ export const prepareCallbacks = zone => {
     /** @param {ScopedBridgeManager} dibcBridgeManager */
     dibcBridgeManager => ({ dibcBridgeManager }),
     {
+      /**
+       * @param {string} method
+       * @param {any} obj
+       */
       downcall(method, obj) {
         const { dibcBridgeManager } = this.state;
         return E(dibcBridgeManager).toBridge({
