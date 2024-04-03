@@ -7,6 +7,14 @@ import { dataToBase64, base64ToBytes } from '@agoric/network';
 
 import '@agoric/store/exported.js';
 import '@agoric/network/exported.js';
+import {
+  localAddrToPortID,
+  decodeRemoteIbcAddress,
+  encodeLocalIbcAddress,
+  encodeRemoteIbcAddress,
+} from '../tools/ibc-utils.js';
+
+/** @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js' */
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
@@ -222,7 +230,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { util } = this.facets;
           const { portToPendingConns } = this.state;
 
-          const portID = util.localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(localAddr);
           portToPendingConns.init(portID, detached.setStore('pendingConns'));
           const packet = {
             source_port: portID,
@@ -234,39 +242,11 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { portToPendingConns, srcPortToOutbounds } = this.state;
 
           console.debug('IBC onConnect', localAddr, remoteAddr);
-          const portID = util.localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(localAddr);
           const pendingConns = portToPendingConns.get(portID);
 
-          const match = remoteAddr.match(
-            /^(\/ibc-hop\/[^/]+)*\/ibc-port\/([^/]+)\/(ordered|unordered)\/([^/]+)$/s,
-          );
-          if (!match) {
-            throw TypeError(
-              `Remote address ${remoteAddr} must be '(/ibc-hop/CONNECTION)*/ibc-port/PORT/(ordered|unordered)/VERSION'`,
-            );
-          }
-
-          const hops = [];
-          let h = match[1];
-          while (h) {
-            const m = h.match(/^\/ibc-hop\/([^/]+)/);
-            if (!m) {
-              throw Error(
-                `internal: ${JSON.stringify(
-                  h,
-                )} did not begin with "/ibc-hop/XXX"`,
-              );
-            }
-            h = h.substr(m[0].length);
-            hops.push(m[1]);
-          }
-
-          // Generate a circuit.
-          /** @type {IBCPortID} */
-          const rPortID = match[2];
-          /** @type {IBCChannelOrdering} */
-          const order = match[3] === 'ordered' ? 'ORDERED' : 'UNORDERED';
-          const version = match[4];
+          const { rPortID, hops, order, version } =
+            decodeRemoteIbcAddress(remoteAddr);
 
           const kit = makeVowKit();
 
@@ -311,11 +291,9 @@ export const prepareIBCProtocol = (zone, powers) => {
           console.debug('IBC onListenRemove', localAddr);
         },
         async onRevoke(_port, localAddr) {
-          const { util } = this.facets;
           const { portToPendingConns } = this.state;
-
           console.debug('IBC onRevoke', localAddr);
-          const portID = util.localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(localAddr);
 
           const pendingConns = portToPendingConns.get(portID);
           portToPendingConns.delete(portID);
@@ -385,9 +363,14 @@ export const prepareIBCProtocol = (zone, powers) => {
                 counterpartyVersion: rVersion,
               } = obj;
 
-              const localAddr = `/ibc-port/${portID}/${order.toLowerCase()}/${version}`;
-              const ibcHops = hops.map(hop => `/ibc-hop/${hop}`).join('/');
-              const remoteAddr = `${ibcHops}/ibc-port/${rPortID}/${order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
+              const localAddr = encodeLocalIbcAddress(portID, order, version);
+              const remoteAddr = encodeRemoteIbcAddress(
+                hops,
+                rPortID,
+                order,
+                rVersion,
+                rChannelID,
+              );
 
               // See if we allow an inbound attempt for this address pair (without
               // rejecting).
@@ -454,8 +437,13 @@ export const prepareIBCProtocol = (zone, powers) => {
               }
 
               // Finish the outbound connection.
-              const ibcHops = rHops.map(hop => `/ibc-hop/${hop}`).join('/');
-              const remoteAddress = `${ibcHops}/ibc-port/${rPortID}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
+              const remoteAddress = encodeRemoteIbcAddress(
+                rHops,
+                rPortID,
+                chanInfo.order,
+                rVersion,
+                rChannelID,
+              );
               const localAddress = `${localAddr}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${channelID}`;
               const rchandler = makeIBCConnectionHandler(
                 {
@@ -626,16 +614,6 @@ export const prepareIBCProtocol = (zone, powers) => {
           /** @type {VowKit<Bytes>} */
           const { vow } = util.findAckKit(channelID, portID, sequence);
           return vow;
-        },
-        /** @param {string} localAddr */
-        localAddrToPortID(localAddr) {
-          const m = localAddr.match(/^\/ibc-port\/([-a-zA-Z0-9._+#[\]<>]+)$/);
-          if (!m) {
-            throw TypeError(
-              `Invalid port specification ${localAddr}; expected "/ibc-port/PORT"`,
-            );
-          }
-          return m[1];
         },
 
         findAckKit(channelID, portID, sequence) {
