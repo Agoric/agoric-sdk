@@ -108,7 +108,7 @@ export const prepareIBCConnectionHandler = zone => {
         };
         return protocolUtils.ibcSendPacket(packet, relativeTimeoutNs);
       },
-      async onClose(_conn, _reason, _handler) {
+      async onClose() {
         const { portID, channelID } = this.state;
         const { protocolUtils, channelKeyToSeqAck } = this.state;
 
@@ -206,7 +206,7 @@ export const prepareIBCProtocol = (zone, powers) => {
     },
     {
       protocolHandler: {
-        async onCreate(impl, _protocolHandler) {
+        async onCreate(impl) {
           console.debug('IBC onCreate');
           this.state.protocolImpl = impl;
         },
@@ -214,11 +214,11 @@ export const prepareIBCProtocol = (zone, powers) => {
           // The IBC channel is not known until after handshake.
           return '';
         },
-        async generatePortID(_localAddr, _protocolHandler) {
+        async generatePortID() {
           this.state.lastPortID += 1n;
           return `port-${this.state.lastPortID}`;
         },
-        async onBind(port, localAddr, _protocolHandler) {
+        async onBind(_port, localAddr) {
           const { util } = this.facets;
           const { portToPendingConns } = this.state;
 
@@ -229,13 +229,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           };
           return util.downcall('bindPort', { packet });
         },
-        async onConnect(
-          port,
-          localAddr,
-          remoteAddr,
-          _chandler,
-          _protocolHandler,
-        ) {
+        async onConnect(_port, localAddr, remoteAddr) {
           const { util } = this.facets;
           const { portToPendingConns, srcPortToOutbounds } = this.state;
 
@@ -310,13 +304,13 @@ export const prepareIBCProtocol = (zone, powers) => {
 
           return kit.vow;
         },
-        async onListen(_port, localAddr, _listenHandler) {
+        async onListen(_port, localAddr) {
           console.debug('IBC onListen', localAddr);
         },
-        async onListenRemove(_port, localAddr, _listenHandler) {
+        async onListenRemove(_port, localAddr) {
           console.debug('IBC onListenRemove', localAddr);
         },
-        async onRevoke(_port, localAddr, _protocolHandler) {
+        async onRevoke(_port, localAddr) {
           const { util } = this.facets;
           const { portToPendingConns } = this.state;
 
@@ -769,7 +763,6 @@ export const prepareIBCProtocol = (zone, powers) => {
   };
   return provideIBCProtocolHandlerKit;
 };
-
 harden(prepareIBCProtocol);
 
 /** @param {Zone} zone */
