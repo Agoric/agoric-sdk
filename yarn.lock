@@ -1447,7 +1447,7 @@
   resolved "https://registry.yarnpkg.com/@datadog/sketches-js/-/sketches-js-2.1.0.tgz#8c7e8028a5fc22ad102fa542b0a446c956830455"
   integrity sha512-smLocSfrt3s53H/XSVP3/1kP42oqvrkjUPtyaFd1F79ux24oE31BKt+q0c6lsa6hOYrFzsIwyc5GXAI5JmfOew==
 
-"@endo/base64@^1.0.4":
+"@endo/base64@^1.0.3", "@endo/base64@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-1.0.4.tgz#1f9ea22fed1c0f60e56334197413af1c4e4167b1"
   integrity sha512-J0anjfw6wijDrtT9SvqdxGAtoqPDm0wSRQQUfOp7N4COxQRxmX9uyVAQnLcjcHzbc2CaDtgLc5Y4Oew85qQO7g==
