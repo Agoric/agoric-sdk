@@ -492,7 +492,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               // Finish the outbound connection.
               const ibcHops = rHops.map(hop => `/ibc-hop/${hop}`).join('/');
               const remoteAddress = `${ibcHops}/ibc-port/${rPortID}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${rChannelID}`;
-              const localAddress = `${localAddr}/ibc-channel/${channelID}`;
+              const localAddress = `${localAddr}/${chanInfo.order.toLowerCase()}/${rVersion}/ibc-channel/${channelID}`;
               const rchandler = makeIBCConnectionHandler(
                 {
                   protocolUtils: util,

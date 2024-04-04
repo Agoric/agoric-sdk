@@ -962,9 +962,21 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundConnectWatcher: {
-        onFulfilled({ handler: rchandler }, watchContext) {
-          const { lastFailure, remoteAddr, localAddr, lchandler, port } =
-            watchContext;
+        onFulfilled(
+          {
+            handler: rchandler,
+            remoteAddress: negotiatedRemoteAddress,
+            localAddress: negotiatedLocalAddress,
+          },
+          watchContext,
+        ) {
+          const {
+            lastFailure,
+            lchandler,
+            localAddr: requestedLocalAddress,
+            remoteAddr: requestedRemoteAddress,
+            port,
+          } = watchContext;
 
           const { currentConnections } = this.state;
 
@@ -979,11 +991,11 @@ const prepareBinder = (zone, powers) => {
             /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
               lchandler
             ),
-            localAddr,
+            negotiatedLocalAddress || requestedLocalAddress,
             /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
               rchandler
             ),
-            remoteAddr,
+            negotiatedRemoteAddress || requestedRemoteAddress,
             makeConnection,
             current,
           )[0];
