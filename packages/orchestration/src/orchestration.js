@@ -7,6 +7,11 @@ import { M } from '@endo/patterns';
 import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import '@agoric/network/exported.js';
 
+/**
+ * @import { ConnectionId } from './types';
+ * @import { Zone } from '@agoric/base-zone';
+ */
+
 const { Fail, bare } = assert;
 const trace = makeTracer('Orchestration');
 
@@ -55,7 +60,7 @@ export const ConnectionHandlerI = M.interface('ConnectionHandler', {
   onReceive: M.callWhen(M.any(), M.string()).returns(M.any()),
 });
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareChainAccount = zone =>
   zone.exoClassKit(
     'ChainAccount',
@@ -127,9 +132,8 @@ const prepareChainAccount = zone =>
          * @param {Connection} connection
          * @param {string} localAddr
          * @param {string} remoteAddr
-         * @param {ConnectionHandler} _connectionHandler
          */
-        async onOpen(connection, localAddr, remoteAddr, _connectionHandler) {
+        async onOpen(connection, localAddr, remoteAddr) {
           trace(`ICA Channel Opened for ${localAddr} at ${remoteAddr}`);
           this.state.connection = connection;
           this.state.remoteAddress = remoteAddr;
@@ -137,7 +141,7 @@ const prepareChainAccount = zone =>
           // XXX parseAddress currently throws, should it return '' instead?
           this.state.accountAddress = parseAddress(remoteAddr);
         },
-        async onClose(_connection, reason, _connectionHandler) {
+        async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
           // XXX handle connection closing
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
@@ -157,7 +161,7 @@ export const OrchestrationI = M.interface('Orchestration', {
 });
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ReturnType<typeof prepareChainAccount>} createChainAccount
  */
 const prepareOrchestration = (zone, createChainAccount) =>
@@ -193,9 +197,9 @@ const prepareOrchestration = (zone, createChainAccount) =>
       },
       public: {
         /**
-         * @param {import('@agoric/orchestration').ConnectionId} hostConnectionId
+         * @param {ConnectionId} hostConnectionId
          *   the counterparty connection_id
-         * @param {import('@agoric/orchestration').ConnectionId} controllerConnectionId
+         * @param {ConnectionId} controllerConnectionId
          *   self connection_id
          * @returns {Promise<ChainAccount>}
          */
@@ -220,7 +224,7 @@ const prepareOrchestration = (zone, createChainAccount) =>
     },
   );
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareOrchestrationTools = zone => {
   const createChainAccount = prepareChainAccount(zone);
   const makeOrchestration = prepareOrchestration(zone, createChainAccount);
