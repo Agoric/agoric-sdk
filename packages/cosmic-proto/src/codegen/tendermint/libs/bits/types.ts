@@ -9,14 +9,6 @@ export interface BitArrayProtoMsg {
   typeUrl: '/tendermint.libs.bits.BitArray';
   value: Uint8Array;
 }
-export interface BitArrayAmino {
-  bits?: string;
-  elems?: string[];
-}
-export interface BitArrayAminoMsg {
-  type: '/tendermint.libs.bits.BitArray';
-  value: BitArrayAmino;
-}
 export interface BitArraySDKType {
   bits: bigint;
   elems: bigint[];
@@ -98,27 +90,6 @@ export const BitArray = {
         : BigInt(0);
     message.elems = object.elems?.map(e => BigInt(e.toString())) || [];
     return message;
-  },
-  fromAmino(object: BitArrayAmino): BitArray {
-    const message = createBaseBitArray();
-    if (object.bits !== undefined && object.bits !== null) {
-      message.bits = BigInt(object.bits);
-    }
-    message.elems = object.elems?.map(e => BigInt(e)) || [];
-    return message;
-  },
-  toAmino(message: BitArray): BitArrayAmino {
-    const obj: any = {};
-    obj.bits = message.bits !== BigInt(0) ? message.bits.toString() : undefined;
-    if (message.elems) {
-      obj.elems = message.elems.map(e => e.toString());
-    } else {
-      obj.elems = message.elems;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: BitArrayAminoMsg): BitArray {
-    return BitArray.fromAmino(object.value);
   },
   fromProtoMsg(message: BitArrayProtoMsg): BitArray {
     return BitArray.decode(message.value);

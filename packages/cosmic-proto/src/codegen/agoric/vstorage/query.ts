@@ -1,10 +1,8 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestAmino,
   PageRequestSDKType,
   PageResponse,
-  PageResponseAmino,
   PageResponseSDKType,
 } from '../../cosmos/base/query/v1beta1/pagination.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
@@ -18,14 +16,6 @@ export interface QueryDataRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryDataRequest is the vstorage path data query. */
-export interface QueryDataRequestAmino {
-  path: string;
-}
-export interface QueryDataRequestAminoMsg {
-  type: '/agoric.vstorage.QueryDataRequest';
-  value: QueryDataRequestAmino;
-}
-/** QueryDataRequest is the vstorage path data query. */
 export interface QueryDataRequestSDKType {
   path: string;
 }
@@ -36,14 +26,6 @@ export interface QueryDataResponse {
 export interface QueryDataResponseProtoMsg {
   typeUrl: '/agoric.vstorage.QueryDataResponse';
   value: Uint8Array;
-}
-/** QueryDataResponse is the vstorage path data response. */
-export interface QueryDataResponseAmino {
-  value: string;
-}
-export interface QueryDataResponseAminoMsg {
-  type: '/agoric.vstorage.QueryDataResponse';
-  value: QueryDataResponseAmino;
 }
 /** QueryDataResponse is the vstorage path data response. */
 export interface QueryDataResponseSDKType {
@@ -79,35 +61,6 @@ export interface QueryCapDataRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryCapDataRequest contains a path and formatting configuration. */
-export interface QueryCapDataRequestAmino {
-  path: string;
-  /**
-   * mediaType must be an actual media type in the registry at
-   * https://www.iana.org/assignments/media-types/media-types.xhtml
-   * or a special value that does not conflict with the media type syntax.
-   * The only valid value is "JSON Lines", which is also the default.
-   */
-  media_type: string;
-  /**
-   * itemFormat, if present, must be the special value "flat" to indicate that
-   * the deep structure of each item should be flattened into a single level
-   * with kebab-case keys (e.g., `{ "metrics": { "min": 0, "max": 88 } }` as
-   * `{ "metrics-min": 0, "metrics-max": 88 }`).
-   */
-  item_format: string;
-  /**
-   * remotableValueFormat indicates how to transform references to opaque but
-   * distinguishable Remotables into readable embedded representations.
-   * * "object" represents each Remotable as an `{ id, allegedName }` object, e.g. `{ "id": "board007", "allegedName": "IST brand" }`.
-   * * "string" represents each Remotable as a string with bracket-wrapped contents including its alleged name and id, e.g. "[Alleged: IST brand <board007>]".
-   */
-  remotable_value_format: string;
-}
-export interface QueryCapDataRequestAminoMsg {
-  type: '/agoric.vstorage.QueryCapDataRequest';
-  value: QueryCapDataRequestAmino;
-}
-/** QueryCapDataRequest contains a path and formatting configuration. */
 export interface QueryCapDataRequestSDKType {
   path: string;
   media_type: string;
@@ -130,18 +83,6 @@ export interface QueryCapDataResponseProtoMsg {
  * QueryCapDataResponse represents the result with the requested formatting,
  * reserving space for future metadata such as media type.
  */
-export interface QueryCapDataResponseAmino {
-  block_height: string;
-  value: string;
-}
-export interface QueryCapDataResponseAminoMsg {
-  type: '/agoric.vstorage.QueryCapDataResponse';
-  value: QueryCapDataResponseAmino;
-}
-/**
- * QueryCapDataResponse represents the result with the requested formatting,
- * reserving space for future metadata such as media type.
- */
 export interface QueryCapDataResponseSDKType {
   block_height: string;
   value: string;
@@ -156,15 +97,6 @@ export interface QueryChildrenRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryChildrenRequest is the vstorage path children query. */
-export interface QueryChildrenRequestAmino {
-  path: string;
-  pagination?: PageRequestAmino;
-}
-export interface QueryChildrenRequestAminoMsg {
-  type: '/agoric.vstorage.QueryChildrenRequest';
-  value: QueryChildrenRequestAmino;
-}
-/** QueryChildrenRequest is the vstorage path children query. */
 export interface QueryChildrenRequestSDKType {
   path: string;
   pagination?: PageRequestSDKType;
@@ -177,15 +109,6 @@ export interface QueryChildrenResponse {
 export interface QueryChildrenResponseProtoMsg {
   typeUrl: '/agoric.vstorage.QueryChildrenResponse';
   value: Uint8Array;
-}
-/** QueryChildrenResponse is the vstorage path children response. */
-export interface QueryChildrenResponseAmino {
-  children: string[];
-  pagination?: PageResponseAmino;
-}
-export interface QueryChildrenResponseAminoMsg {
-  type: '/agoric.vstorage.QueryChildrenResponse';
-  value: QueryChildrenResponseAmino;
 }
 /** QueryChildrenResponse is the vstorage path children response. */
 export interface QueryChildrenResponseSDKType {
@@ -240,21 +163,6 @@ export const QueryDataRequest = {
     const message = createBaseQueryDataRequest();
     message.path = object.path ?? '';
     return message;
-  },
-  fromAmino(object: QueryDataRequestAmino): QueryDataRequest {
-    const message = createBaseQueryDataRequest();
-    if (object.path !== undefined && object.path !== null) {
-      message.path = object.path;
-    }
-    return message;
-  },
-  toAmino(message: QueryDataRequest): QueryDataRequestAmino {
-    const obj: any = {};
-    obj.path = message.path ?? '';
-    return obj;
-  },
-  fromAminoMsg(object: QueryDataRequestAminoMsg): QueryDataRequest {
-    return QueryDataRequest.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryDataRequestProtoMsg): QueryDataRequest {
     return QueryDataRequest.decode(message.value);
@@ -317,21 +225,6 @@ export const QueryDataResponse = {
     const message = createBaseQueryDataResponse();
     message.value = object.value ?? '';
     return message;
-  },
-  fromAmino(object: QueryDataResponseAmino): QueryDataResponse {
-    const message = createBaseQueryDataResponse();
-    if (object.value !== undefined && object.value !== null) {
-      message.value = object.value;
-    }
-    return message;
-  },
-  toAmino(message: QueryDataResponse): QueryDataResponseAmino {
-    const obj: any = {};
-    obj.value = message.value ?? '';
-    return obj;
-  },
-  fromAminoMsg(object: QueryDataResponseAminoMsg): QueryDataResponse {
-    return QueryDataResponse.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryDataResponseProtoMsg): QueryDataResponse {
     return QueryDataResponse.decode(message.value);
@@ -431,36 +324,6 @@ export const QueryCapDataRequest = {
     message.remotableValueFormat = object.remotableValueFormat ?? '';
     return message;
   },
-  fromAmino(object: QueryCapDataRequestAmino): QueryCapDataRequest {
-    const message = createBaseQueryCapDataRequest();
-    if (object.path !== undefined && object.path !== null) {
-      message.path = object.path;
-    }
-    if (object.media_type !== undefined && object.media_type !== null) {
-      message.mediaType = object.media_type;
-    }
-    if (object.item_format !== undefined && object.item_format !== null) {
-      message.itemFormat = object.item_format;
-    }
-    if (
-      object.remotable_value_format !== undefined &&
-      object.remotable_value_format !== null
-    ) {
-      message.remotableValueFormat = object.remotable_value_format;
-    }
-    return message;
-  },
-  toAmino(message: QueryCapDataRequest): QueryCapDataRequestAmino {
-    const obj: any = {};
-    obj.path = message.path ?? '';
-    obj.media_type = message.mediaType ?? '';
-    obj.item_format = message.itemFormat ?? '';
-    obj.remotable_value_format = message.remotableValueFormat ?? '';
-    return obj;
-  },
-  fromAminoMsg(object: QueryCapDataRequestAminoMsg): QueryCapDataRequest {
-    return QueryCapDataRequest.fromAmino(object.value);
-  },
   fromProtoMsg(message: QueryCapDataRequestProtoMsg): QueryCapDataRequest {
     return QueryCapDataRequest.decode(message.value);
   },
@@ -536,25 +399,6 @@ export const QueryCapDataResponse = {
     message.blockHeight = object.blockHeight ?? '';
     message.value = object.value ?? '';
     return message;
-  },
-  fromAmino(object: QueryCapDataResponseAmino): QueryCapDataResponse {
-    const message = createBaseQueryCapDataResponse();
-    if (object.block_height !== undefined && object.block_height !== null) {
-      message.blockHeight = object.block_height;
-    }
-    if (object.value !== undefined && object.value !== null) {
-      message.value = object.value;
-    }
-    return message;
-  },
-  toAmino(message: QueryCapDataResponse): QueryCapDataResponseAmino {
-    const obj: any = {};
-    obj.block_height = message.blockHeight ?? '';
-    obj.value = message.value ?? '';
-    return obj;
-  },
-  fromAminoMsg(object: QueryCapDataResponseAminoMsg): QueryCapDataResponse {
-    return QueryCapDataResponse.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryCapDataResponseProtoMsg): QueryCapDataResponse {
     return QueryCapDataResponse.decode(message.value);
@@ -638,27 +482,6 @@ export const QueryChildrenRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryChildrenRequestAmino): QueryChildrenRequest {
-    const message = createBaseQueryChildrenRequest();
-    if (object.path !== undefined && object.path !== null) {
-      message.path = object.path;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryChildrenRequest): QueryChildrenRequestAmino {
-    const obj: any = {};
-    obj.path = message.path ?? '';
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryChildrenRequestAminoMsg): QueryChildrenRequest {
-    return QueryChildrenRequest.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryChildrenRequestProtoMsg): QueryChildrenRequest {
     return QueryChildrenRequest.decode(message.value);
@@ -751,29 +574,6 @@ export const QueryChildrenResponse = {
         ? PageResponse.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryChildrenResponseAmino): QueryChildrenResponse {
-    const message = createBaseQueryChildrenResponse();
-    message.children = object.children?.map(e => e) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryChildrenResponse): QueryChildrenResponseAmino {
-    const obj: any = {};
-    if (message.children) {
-      obj.children = message.children.map(e => e);
-    } else {
-      obj.children = message.children;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryChildrenResponseAminoMsg): QueryChildrenResponse {
-    return QueryChildrenResponse.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryChildrenResponseProtoMsg): QueryChildrenResponse {
     return QueryChildrenResponse.decode(message.value);

@@ -21,20 +21,6 @@ export interface CoinProtoMsg {
  * NOTE: The amount field is an Int which implements the custom method
  * signatures required by gogoproto.
  */
-export interface CoinAmino {
-  denom?: string;
-  amount?: string;
-}
-export interface CoinAminoMsg {
-  type: 'cosmos-sdk/Coin';
-  value: CoinAmino;
-}
-/**
- * Coin defines a token with a denomination and an amount.
- *
- * NOTE: The amount field is an Int which implements the custom method
- * signatures required by gogoproto.
- */
 export interface CoinSDKType {
   denom: string;
   amount: string;
@@ -59,20 +45,6 @@ export interface DecCoinProtoMsg {
  * NOTE: The amount field is an Dec which implements the custom method
  * signatures required by gogoproto.
  */
-export interface DecCoinAmino {
-  denom?: string;
-  amount?: string;
-}
-export interface DecCoinAminoMsg {
-  type: 'cosmos-sdk/DecCoin';
-  value: DecCoinAmino;
-}
-/**
- * DecCoin defines a token with a denomination and a decimal amount.
- *
- * NOTE: The amount field is an Dec which implements the custom method
- * signatures required by gogoproto.
- */
 export interface DecCoinSDKType {
   denom: string;
   amount: string;
@@ -86,14 +58,6 @@ export interface IntProtoProtoMsg {
   value: Uint8Array;
 }
 /** IntProto defines a Protobuf wrapper around an Int object. */
-export interface IntProtoAmino {
-  int?: string;
-}
-export interface IntProtoAminoMsg {
-  type: 'cosmos-sdk/IntProto';
-  value: IntProtoAmino;
-}
-/** IntProto defines a Protobuf wrapper around an Int object. */
 export interface IntProtoSDKType {
   int: string;
 }
@@ -104,14 +68,6 @@ export interface DecProto {
 export interface DecProtoProtoMsg {
   typeUrl: '/cosmos.base.v1beta1.DecProto';
   value: Uint8Array;
-}
-/** DecProto defines a Protobuf wrapper around a Dec object. */
-export interface DecProtoAmino {
-  dec?: string;
-}
-export interface DecProtoAminoMsg {
-  type: 'cosmos-sdk/DecProto';
-  value: DecProtoAmino;
 }
 /** DecProto defines a Protobuf wrapper around a Dec object. */
 export interface DecProtoSDKType {
@@ -175,31 +131,6 @@ export const Coin = {
     message.denom = object.denom ?? '';
     message.amount = object.amount ?? '';
     return message;
-  },
-  fromAmino(object: CoinAmino): Coin {
-    const message = createBaseCoin();
-    if (object.denom !== undefined && object.denom !== null) {
-      message.denom = object.denom;
-    }
-    if (object.amount !== undefined && object.amount !== null) {
-      message.amount = object.amount;
-    }
-    return message;
-  },
-  toAmino(message: Coin): CoinAmino {
-    const obj: any = {};
-    obj.denom = message.denom === '' ? undefined : message.denom;
-    obj.amount = message.amount === '' ? undefined : message.amount;
-    return obj;
-  },
-  fromAminoMsg(object: CoinAminoMsg): Coin {
-    return Coin.fromAmino(object.value);
-  },
-  toAminoMsg(message: Coin): CoinAminoMsg {
-    return {
-      type: 'cosmos-sdk/Coin',
-      value: Coin.toAmino(message),
-    };
   },
   fromProtoMsg(message: CoinProtoMsg): Coin {
     return Coin.decode(message.value);
@@ -273,31 +204,6 @@ export const DecCoin = {
     message.amount = object.amount ?? '';
     return message;
   },
-  fromAmino(object: DecCoinAmino): DecCoin {
-    const message = createBaseDecCoin();
-    if (object.denom !== undefined && object.denom !== null) {
-      message.denom = object.denom;
-    }
-    if (object.amount !== undefined && object.amount !== null) {
-      message.amount = object.amount;
-    }
-    return message;
-  },
-  toAmino(message: DecCoin): DecCoinAmino {
-    const obj: any = {};
-    obj.denom = message.denom === '' ? undefined : message.denom;
-    obj.amount = message.amount === '' ? undefined : message.amount;
-    return obj;
-  },
-  fromAminoMsg(object: DecCoinAminoMsg): DecCoin {
-    return DecCoin.fromAmino(object.value);
-  },
-  toAminoMsg(message: DecCoin): DecCoinAminoMsg {
-    return {
-      type: 'cosmos-sdk/DecCoin',
-      value: DecCoin.toAmino(message),
-    };
-  },
   fromProtoMsg(message: DecCoinProtoMsg): DecCoin {
     return DecCoin.decode(message.value);
   },
@@ -360,27 +266,6 @@ export const IntProto = {
     message.int = object.int ?? '';
     return message;
   },
-  fromAmino(object: IntProtoAmino): IntProto {
-    const message = createBaseIntProto();
-    if (object.int !== undefined && object.int !== null) {
-      message.int = object.int;
-    }
-    return message;
-  },
-  toAmino(message: IntProto): IntProtoAmino {
-    const obj: any = {};
-    obj.int = message.int === '' ? undefined : message.int;
-    return obj;
-  },
-  fromAminoMsg(object: IntProtoAminoMsg): IntProto {
-    return IntProto.fromAmino(object.value);
-  },
-  toAminoMsg(message: IntProto): IntProtoAminoMsg {
-    return {
-      type: 'cosmos-sdk/IntProto',
-      value: IntProto.toAmino(message),
-    };
-  },
   fromProtoMsg(message: IntProtoProtoMsg): IntProto {
     return IntProto.decode(message.value);
   },
@@ -442,27 +327,6 @@ export const DecProto = {
     const message = createBaseDecProto();
     message.dec = object.dec ?? '';
     return message;
-  },
-  fromAmino(object: DecProtoAmino): DecProto {
-    const message = createBaseDecProto();
-    if (object.dec !== undefined && object.dec !== null) {
-      message.dec = object.dec;
-    }
-    return message;
-  },
-  toAmino(message: DecProto): DecProtoAmino {
-    const obj: any = {};
-    obj.dec = message.dec === '' ? undefined : message.dec;
-    return obj;
-  },
-  fromAminoMsg(object: DecProtoAminoMsg): DecProto {
-    return DecProto.fromAmino(object.value);
-  },
-  toAminoMsg(message: DecProto): DecProtoAminoMsg {
-    return {
-      type: 'cosmos-sdk/DecProto',
-      value: DecProto.toAmino(message),
-    };
   },
   fromProtoMsg(message: DecProtoProtoMsg): DecProto {
     return DecProto.decode(message.value);

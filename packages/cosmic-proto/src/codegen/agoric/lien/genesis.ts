@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Lien, LienAmino, LienSDKType } from './lien.js';
+import { Lien, LienSDKType } from './lien.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 /** The initial or exported state. */
@@ -9,14 +9,6 @@ export interface GenesisState {
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.lien.GenesisState';
   value: Uint8Array;
-}
-/** The initial or exported state. */
-export interface GenesisStateAmino {
-  liens?: AccountLienAmino[];
-}
-export interface GenesisStateAminoMsg {
-  type: '/agoric.lien.GenesisState';
-  value: GenesisStateAmino;
 }
 /** The initial or exported state. */
 export interface GenesisStateSDKType {
@@ -32,17 +24,6 @@ export interface AccountLien {
 export interface AccountLienProtoMsg {
   typeUrl: '/agoric.lien.AccountLien';
   value: Uint8Array;
-}
-/** The lien on a particular account */
-export interface AccountLienAmino {
-  /** Account address, bech32-encoded. */
-  address?: string;
-  /** The liened amount. Should be nonzero. */
-  lien?: LienAmino;
-}
-export interface AccountLienAminoMsg {
-  type: '/agoric.lien.AccountLien';
-  value: AccountLienAmino;
 }
 /** The lien on a particular account */
 export interface AccountLienSDKType {
@@ -105,25 +86,6 @@ export const GenesisState = {
     const message = createBaseGenesisState();
     message.liens = object.liens?.map(e => AccountLien.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: GenesisStateAmino): GenesisState {
-    const message = createBaseGenesisState();
-    message.liens = object.liens?.map(e => AccountLien.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: GenesisState): GenesisStateAmino {
-    const obj: any = {};
-    if (message.liens) {
-      obj.liens = message.liens.map(e =>
-        e ? AccountLien.toAmino(e) : undefined,
-      );
-    } else {
-      obj.liens = message.liens;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: GenesisStateAminoMsg): GenesisState {
-    return GenesisState.fromAmino(object.value);
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
     return GenesisState.decode(message.value);
@@ -200,25 +162,6 @@ export const AccountLien = {
         ? Lien.fromPartial(object.lien)
         : undefined;
     return message;
-  },
-  fromAmino(object: AccountLienAmino): AccountLien {
-    const message = createBaseAccountLien();
-    if (object.address !== undefined && object.address !== null) {
-      message.address = object.address;
-    }
-    if (object.lien !== undefined && object.lien !== null) {
-      message.lien = Lien.fromAmino(object.lien);
-    }
-    return message;
-  },
-  toAmino(message: AccountLien): AccountLienAmino {
-    const obj: any = {};
-    obj.address = message.address === '' ? undefined : message.address;
-    obj.lien = message.lien ? Lien.toAmino(message.lien) : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: AccountLienAminoMsg): AccountLien {
-    return AccountLien.fromAmino(object.value);
   },
   fromProtoMsg(message: AccountLienProtoMsg): AccountLien {
     return AccountLien.decode(message.value);

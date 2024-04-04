@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Params, ParamsAmino, ParamsSDKType } from './mint.js';
+import { Params, ParamsSDKType } from './mint.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
@@ -7,12 +7,6 @@ export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.QueryParamsRequest';
   value: Uint8Array;
-}
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
-export interface QueryParamsRequestAmino {}
-export interface QueryParamsRequestAminoMsg {
-  type: 'cosmos-sdk/QueryParamsRequest';
-  value: QueryParamsRequestAmino;
 }
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequestSDKType {}
@@ -26,15 +20,6 @@ export interface QueryParamsResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryParamsResponse is the response type for the Query/Params RPC method. */
-export interface QueryParamsResponseAmino {
-  /** params defines the parameters of the module. */
-  params?: ParamsAmino;
-}
-export interface QueryParamsResponseAminoMsg {
-  type: 'cosmos-sdk/QueryParamsResponse';
-  value: QueryParamsResponseAmino;
-}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
@@ -43,12 +28,6 @@ export interface QueryInflationRequest {}
 export interface QueryInflationRequestProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.QueryInflationRequest';
   value: Uint8Array;
-}
-/** QueryInflationRequest is the request type for the Query/Inflation RPC method. */
-export interface QueryInflationRequestAmino {}
-export interface QueryInflationRequestAminoMsg {
-  type: 'cosmos-sdk/QueryInflationRequest';
-  value: QueryInflationRequestAmino;
 }
 /** QueryInflationRequest is the request type for the Query/Inflation RPC method. */
 export interface QueryInflationRequestSDKType {}
@@ -63,18 +42,6 @@ export interface QueryInflationResponse {
 export interface QueryInflationResponseProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.QueryInflationResponse';
   value: Uint8Array;
-}
-/**
- * QueryInflationResponse is the response type for the Query/Inflation RPC
- * method.
- */
-export interface QueryInflationResponseAmino {
-  /** inflation is the current minting inflation value. */
-  inflation?: string;
-}
-export interface QueryInflationResponseAminoMsg {
-  type: 'cosmos-sdk/QueryInflationResponse';
-  value: QueryInflationResponseAmino;
 }
 /**
  * QueryInflationResponse is the response type for the Query/Inflation RPC
@@ -96,15 +63,6 @@ export interface QueryAnnualProvisionsRequestProtoMsg {
  * QueryAnnualProvisionsRequest is the request type for the
  * Query/AnnualProvisions RPC method.
  */
-export interface QueryAnnualProvisionsRequestAmino {}
-export interface QueryAnnualProvisionsRequestAminoMsg {
-  type: 'cosmos-sdk/QueryAnnualProvisionsRequest';
-  value: QueryAnnualProvisionsRequestAmino;
-}
-/**
- * QueryAnnualProvisionsRequest is the request type for the
- * Query/AnnualProvisions RPC method.
- */
 export interface QueryAnnualProvisionsRequestSDKType {}
 /**
  * QueryAnnualProvisionsResponse is the response type for the
@@ -117,18 +75,6 @@ export interface QueryAnnualProvisionsResponse {
 export interface QueryAnnualProvisionsResponseProtoMsg {
   typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsResponse';
   value: Uint8Array;
-}
-/**
- * QueryAnnualProvisionsResponse is the response type for the
- * Query/AnnualProvisions RPC method.
- */
-export interface QueryAnnualProvisionsResponseAmino {
-  /** annual_provisions is the current minting annual provisions value. */
-  annual_provisions?: string;
-}
-export interface QueryAnnualProvisionsResponseAminoMsg {
-  type: 'cosmos-sdk/QueryAnnualProvisionsResponse';
-  value: QueryAnnualProvisionsResponseAmino;
 }
 /**
  * QueryAnnualProvisionsResponse is the response type for the
@@ -176,23 +122,6 @@ export const QueryParamsRequest = {
   fromPartial(_: Partial<QueryParamsRequest>): QueryParamsRequest {
     const message = createBaseQueryParamsRequest();
     return message;
-  },
-  fromAmino(_: QueryParamsRequestAmino): QueryParamsRequest {
-    const message = createBaseQueryParamsRequest();
-    return message;
-  },
-  toAmino(_: QueryParamsRequest): QueryParamsRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: QueryParamsRequestAminoMsg): QueryParamsRequest {
-    return QueryParamsRequest.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryParamsRequest): QueryParamsRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryParamsRequest',
-      value: QueryParamsRequest.toAmino(message),
-    };
   },
   fromProtoMsg(message: QueryParamsRequestProtoMsg): QueryParamsRequest {
     return QueryParamsRequest.decode(message.value);
@@ -263,27 +192,6 @@ export const QueryParamsResponse = {
         : undefined;
     return message;
   },
-  fromAmino(object: QueryParamsResponseAmino): QueryParamsResponse {
-    const message = createBaseQueryParamsResponse();
-    if (object.params !== undefined && object.params !== null) {
-      message.params = Params.fromAmino(object.params);
-    }
-    return message;
-  },
-  toAmino(message: QueryParamsResponse): QueryParamsResponseAmino {
-    const obj: any = {};
-    obj.params = message.params ? Params.toAmino(message.params) : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryParamsResponseAminoMsg): QueryParamsResponse {
-    return QueryParamsResponse.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryParamsResponse): QueryParamsResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryParamsResponse',
-      value: QueryParamsResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(message: QueryParamsResponseProtoMsg): QueryParamsResponse {
     return QueryParamsResponse.decode(message.value);
   },
@@ -336,23 +244,6 @@ export const QueryInflationRequest = {
   fromPartial(_: Partial<QueryInflationRequest>): QueryInflationRequest {
     const message = createBaseQueryInflationRequest();
     return message;
-  },
-  fromAmino(_: QueryInflationRequestAmino): QueryInflationRequest {
-    const message = createBaseQueryInflationRequest();
-    return message;
-  },
-  toAmino(_: QueryInflationRequest): QueryInflationRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: QueryInflationRequestAminoMsg): QueryInflationRequest {
-    return QueryInflationRequest.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryInflationRequest): QueryInflationRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryInflationRequest',
-      value: QueryInflationRequest.toAmino(message),
-    };
   },
   fromProtoMsg(message: QueryInflationRequestProtoMsg): QueryInflationRequest {
     return QueryInflationRequest.decode(message.value);
@@ -424,29 +315,6 @@ export const QueryInflationResponse = {
     message.inflation = object.inflation ?? new Uint8Array();
     return message;
   },
-  fromAmino(object: QueryInflationResponseAmino): QueryInflationResponse {
-    const message = createBaseQueryInflationResponse();
-    if (object.inflation !== undefined && object.inflation !== null) {
-      message.inflation = bytesFromBase64(object.inflation);
-    }
-    return message;
-  },
-  toAmino(message: QueryInflationResponse): QueryInflationResponseAmino {
-    const obj: any = {};
-    obj.inflation = message.inflation
-      ? base64FromBytes(message.inflation)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryInflationResponseAminoMsg): QueryInflationResponse {
-    return QueryInflationResponse.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryInflationResponse): QueryInflationResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryInflationResponse',
-      value: QueryInflationResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryInflationResponseProtoMsg,
   ): QueryInflationResponse {
@@ -503,29 +371,6 @@ export const QueryAnnualProvisionsRequest = {
   ): QueryAnnualProvisionsRequest {
     const message = createBaseQueryAnnualProvisionsRequest();
     return message;
-  },
-  fromAmino(
-    _: QueryAnnualProvisionsRequestAmino,
-  ): QueryAnnualProvisionsRequest {
-    const message = createBaseQueryAnnualProvisionsRequest();
-    return message;
-  },
-  toAmino(_: QueryAnnualProvisionsRequest): QueryAnnualProvisionsRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryAnnualProvisionsRequestAminoMsg,
-  ): QueryAnnualProvisionsRequest {
-    return QueryAnnualProvisionsRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryAnnualProvisionsRequest,
-  ): QueryAnnualProvisionsRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryAnnualProvisionsRequest',
-      value: QueryAnnualProvisionsRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryAnnualProvisionsRequestProtoMsg,
@@ -604,40 +449,6 @@ export const QueryAnnualProvisionsResponse = {
     const message = createBaseQueryAnnualProvisionsResponse();
     message.annualProvisions = object.annualProvisions ?? new Uint8Array();
     return message;
-  },
-  fromAmino(
-    object: QueryAnnualProvisionsResponseAmino,
-  ): QueryAnnualProvisionsResponse {
-    const message = createBaseQueryAnnualProvisionsResponse();
-    if (
-      object.annual_provisions !== undefined &&
-      object.annual_provisions !== null
-    ) {
-      message.annualProvisions = bytesFromBase64(object.annual_provisions);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryAnnualProvisionsResponse,
-  ): QueryAnnualProvisionsResponseAmino {
-    const obj: any = {};
-    obj.annual_provisions = message.annualProvisions
-      ? base64FromBytes(message.annualProvisions)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryAnnualProvisionsResponseAminoMsg,
-  ): QueryAnnualProvisionsResponse {
-    return QueryAnnualProvisionsResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryAnnualProvisionsResponse,
-  ): QueryAnnualProvisionsResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryAnnualProvisionsResponse',
-      value: QueryAnnualProvisionsResponse.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryAnnualProvisionsResponseProtoMsg,
