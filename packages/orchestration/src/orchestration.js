@@ -5,15 +5,19 @@ import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
+import { makeTxPacket } from './utils/tx.js';
 import '@agoric/network/exported.js';
 
 /**
  * @import { ConnectionId } from './types';
  * @import { Zone } from '@agoric/base-zone';
+ * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx';
  */
 
 const { Fail, bare } = assert;
 const trace = makeTracer('Orchestration');
+
+/** @import {Proto3Msg} from './utils/tx' */
 
 // TODO improve me
 /** @typedef {string} ChainAddress */
@@ -51,6 +55,14 @@ export const ChainAccountI = M.interface('ChainAccount', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
+  executeEncodedTx: M.callWhen(
+    M.arrayOf({
+      typeUrl: M.string(),
+      value: M.string(),
+    }),
+  )
+    .optional(M.record())
+    .returns(M.string()),
   close: M.callWhen().returns(M.string()),
 });
 
@@ -111,6 +123,15 @@ const prepareChainAccount = zone =>
         },
         getPort() {
           return this.state.port;
+        },
+        /**
+         * @param {Proto3Msg[]} msgs
+         * @param {Omit<TxBody, 'messages'>} [opts]
+         */
+        async executeEncodedTx(msgs, opts) {
+          const { connection } = this.state;
+          if (!connection) throw Fail`connection not available`;
+          return E(connection).send(makeTxPacket(msgs, opts));
         },
         async close() {
           /// XXX what should the behavior be here? and `onClose`?

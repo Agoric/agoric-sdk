@@ -367,6 +367,29 @@ export const makeSwingsetTestKit = async (
                   icaMocks.startChannelOpenInit.channelOpenAck(obj),
                 );
                 return undefined;
+              case 'sendPacket':
+                switch (obj.packet.data) {
+                  case 'eyJ0eXBlIjoxLCJkYXRhIjoiQ3FvQkNpTXZZMjl6Ylc5ekxuTjBZV3RwYm1jdWRqRmlaWFJoTVM1TmMyZEVaV3hsWjJGMFpSS0NBUUFBQUFBQUFBRUFBQUlBQUFBQUFnWUFBQUFBQUFVRUFBQUFCd0FBQUFBQUJ3QUFBQUFBQ0FBSUFBQUFBQUFHQUFZQUFBQUFBQUFBQUFBQUJnQUNCUUFIQUFJQUFBQUFBQUFBQUFBQUFBRUFBQUFBQUFBSUJnQUFBQUFBQWdBQUFBQUFCQUFBQUFBQ0FBQUFBQUFBQUFBSkF3QUVBd0FBQUFBQUFBQUFBQUFBQVFBPSIsIm1lbW8iOiIifQ==':
+                    inbound(
+                      BridgeId.DIBC,
+                      icaMocks.sendPacket.msgDelegateResponse(obj),
+                    );
+                    return icaMocks.sendPacket.msgDelegateResponse(obj).packet;
+                  case 'eyJ0eXBlIjoxLCJkYXRhIjoiQ3FvQkNpTXZZMjl6Ylc5ekxuTjBZV3RwYm1jdWRqRmlaWFJoTVM1TmMyZEVaV3hsWjJGMFpSS0NBUUFBQUFBQUFBRUFBQUlBQUFBQUFnWUFBQUFBQUFVRUFBQUFCd0FBQUFBQUJ3QUFBQUFBQ0FBSUFBQUFBQUFHQUFZQUFBQUFBQUFBQUFBQUJnQUNCUUFIQUFJQUFBQUFBQUFBQUFBQUFBRUFBQUFBQUFBSUJnQUFBQUFBQWdBQUFBQUFCQUFBQUFBQ0FBQUFBQUFBQUFBSkF3QUVBd0FBQUFBQUFBQUFBQUFBQVFBU0IxUkZVMVJKVGtjWWdKVHIzQU09IiwibWVtbyI6IiJ9':
+                    inbound(
+                      BridgeId.DIBC,
+                      icaMocks.sendPacket.msgDelegateResponse(obj),
+                    );
+                    return icaMocks.sendPacket.msgDelegateResponse(obj).packet;
+                  // {"error":"ABCI code: 5: error handling packet: see events for details"} (ErrPacketTimeout?)
+                  default:
+                    inbound(
+                      BridgeId.DIBC,
+                      icaMocks.sendPacket.acknowledgementPacketFailure(obj),
+                    );
+                    return icaMocks.sendPacket.acknowledgementPacketFailure(obj)
+                      .packet;
+                }
               default:
                 return undefined;
             }

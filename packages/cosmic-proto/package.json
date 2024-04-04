@@ -47,6 +47,14 @@
     "./vstorage/query.js": {
       "types": "./dist/codegen/agoric/vstorage/query.d.ts",
       "default": "./dist/codegen/agoric/vstorage/query.js"
+    },
+    "./cosmos/tx/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/tx/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/tx/v1beta1/tx.js"
+    },
+    "./cosmos/staking/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     }
   },
   "main": "dist/index.js",
@@ -76,8 +84,11 @@
   },
   "devDependencies": {
     "@agoric/cosmos": "^0.34.1",
+    "@agoric/network": "^0.1.0",
     "@ava/typescript": "^4.1.0",
     "@cosmology/telescope": "^1.5.3",
+    "@endo/base64": "^1.0.3",
+    "@endo/ses-ava": "^1.2.0",
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
