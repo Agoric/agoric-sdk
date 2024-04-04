@@ -1,3 +1,4 @@
+// @ts-check
 /** @file snippets from the README */
 /* eslint-disable import/no-extraneous-dependencies -- requiring the package itself to check exports map */
 import test from 'ava';
