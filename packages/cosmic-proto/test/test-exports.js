@@ -1,3 +1,4 @@
+// @ts-check
 /* eslint-disable import/no-extraneous-dependencies -- requiring the package itself to check exports map */
 import test from 'ava';
 
