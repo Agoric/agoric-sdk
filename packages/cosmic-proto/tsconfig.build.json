@@ -19,5 +19,8 @@
         "sourceMap": true,
         "isolatedModules": true,
         "downlevelIteration": true,
-    }
+    },
+    "exclude": [
+        "test",
+    ]
 }

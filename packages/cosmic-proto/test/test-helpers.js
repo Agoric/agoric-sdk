@@ -1,3 +1,4 @@
+// @ts-check
 import test from 'ava';
 
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
