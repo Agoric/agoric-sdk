@@ -2,20 +2,23 @@
 /**
  * @file Example contract that uses orchestration
  */
-
+import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
+import { prepareStakingAccountHolder } from './stakingAccountHolder.js';
 
+const trace = makeTracer('StakeAtom');
 /**
- * @import * as orchestration from '../types'
- * @import * as vatData from '@agoric/vat-data'
+ * @import { ConnectionId, Orchestration } from '../types';
+ * @import { Baggage } from '@agoric/vat-data';
  */
 
 /**
  * @typedef {{
- *  hostConnectionId: orchestration.ConnectionId;
- *  controllerConnectionId: orchestration.ConnectionId;
+ *  hostConnectionId: ConnectionId;
+ *  controllerConnectionId: ConnectionId;
  * }} StakeAtomTerms
  */
 
@@ -23,26 +26,66 @@ import { M } from '@endo/patterns';
  *
  * @param {ZCF<StakeAtomTerms>} zcf
  * @param {{
- *   orchestration: orchestration.Orchestration;
+ *  orchestration: Orchestration;
+ *  storageNode: StorageNode;
+ *  marshaller: Marshaller;
  * }} privateArgs
- * @param {vatData.Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { hostConnectionId, controllerConnectionId } = zcf.getTerms();
-  const { orchestration } = privateArgs;
+  const { orchestration, marshaller, storageNode } = privateArgs;
 
   const zone = makeDurableZone(baggage);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+
+  const makeStakingAccountHolder = prepareStakingAccountHolder(
+    baggage,
+    makeRecorderKit,
+    zcf,
+  );
+
+  async function createAccount() {
+    const account = await E(orchestration).createAccount(
+      hostConnectionId,
+      controllerConnectionId,
+    );
+    const accountAddress = await E(account).getAccountAddress();
+    trace('account address', accountAddress);
+    const { holder, invitationMakers } = makeStakingAccountHolder(
+      account,
+      storageNode,
+      accountAddress,
+    );
+    return {
+      publicSubscribers: holder.getPublicTopics(),
+      invitationMakers,
+      account: holder,
+    };
+  }
 
   const publicFacet = zone.exo(
     'StakeAtom',
     M.interface('StakeAtomI', {
       createAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+      makeCreateAccountInvitation: M.call().returns(M.promise()),
     }),
     {
       async createAccount() {
-        return E(orchestration).createAccount(
-          hostConnectionId,
-          controllerConnectionId,
+        trace('createAccount');
+        return createAccount();
+      },
+      makeCreateAccountInvitation() {
+        trace('makeCreateAccountInvitation');
+        return zcf.makeInvitation(
+          async seat => {
+            seat.exit();
+            return createAccount();
+          },
+          'wantStakingAccount',
+          undefined,
+          undefined,
         );
       },
     },
@@ -50,3 +93,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet };
 };
+
+/** @typedef {typeof start} StakeAtomSF */

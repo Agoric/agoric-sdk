@@ -120,4 +120,7 @@ test.serial('stakeAtom', async t => {
     matches(account, M.remotable('ChainAccount')),
     'account is a remotable',
   );
+
+  // XXX EV(account).delegate(...)
+  // XXX EV(account).makeDelegateInvitation(...) or wallet driver
 });

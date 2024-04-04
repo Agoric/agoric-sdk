@@ -1,16 +1,25 @@
 // @ts-check
 import { makeTracer } from '@agoric/internal';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+
+/** @import { StakeAtomSF,  StakeAtomTerms} from '../contracts/stakeAtom.contract' */
 
 const trace = makeTracer('StartStakeAtom', true);
 
 /**
  * @param {BootstrapPowers & { installation: {consume: {stakeAtom: Installation<import('../contracts/stakeAtom.contract.js').start>}}}} powers
- * @param {{options: import('../contracts/stakeAtom.contract.js').StakeAtomTerms}} options
+ * @param {{options: StakeAtomTerms }} options
  */
 export const startStakeAtom = async (
   {
-    consume: { orchestration, startUpgradable },
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      orchestration,
+      startUpgradable,
+    },
     installation: {
       consume: { stakeAtom },
     },
@@ -20,19 +29,30 @@ export const startStakeAtom = async (
   },
   { options: { hostConnectionId, controllerConnectionId } },
 ) => {
+  const VSTORAGE_PATH = 'stakeAtom';
   trace('startStakeAtom', { hostConnectionId, controllerConnectionId });
   await null;
 
-  /** @type {StartUpgradableOpts<import('../contracts/stakeAtom.contract.js').start>} */
+  const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
+  // NB: committee must only publish what it intended to be public
+  const marshaller = await E(board).getPublishingMarshaller();
+
+  const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
+  trace('ATOM Issuer', atomIssuer);
+
+  /** @type {StartUpgradableOpts<StakeAtomSF>} */
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeAtom,
+    issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       hostConnectionId,
       controllerConnectionId,
     },
     privateArgs: {
       orchestration: await orchestration,
+      storageNode,
+      marshaller,
     },
   };
 
@@ -49,6 +69,9 @@ export const getManifestForStakeAtom = (
     manifest: {
       [startStakeAtom.name]: {
         consume: {
+          agoricNames: true,
+          board: true,
+          chainStorage: true,
           orchestration: true,
           startUpgradable: true,
         },
