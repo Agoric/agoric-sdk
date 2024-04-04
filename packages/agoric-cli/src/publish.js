@@ -9,11 +9,13 @@ import {
   makeLeaderFromRpcAddresses,
   makeCastingSpec,
 } from '@agoric/casting';
-import { getSigningAgoricClientOptions } from '@agoric/cosmic-proto';
-import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
+import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
 import { fromBech32 } from '@cosmjs/encoding';
+
+import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
 const Agoric = {
@@ -35,6 +37,12 @@ const Agoric = {
 
 const hdPath = (coinType = 118, account = 0) =>
   stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
+
+// @ts-expect-error difference in private property _push
+const registry = new Registry([
+  ...defaultRegistryTypes,
+  [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
+]);
 
 /**
  * @typedef {object} JsonHttpRequest
@@ -281,8 +289,8 @@ export const makeCosmosBundlePublisher = ({
 
       // AWAIT
       const stargateClient = await connectWithSigner(endpoint, wallet, {
-        ...getSigningAgoricClientOptions(),
         gasPrice: Agoric.gasPrice,
+        registry,
       });
 
       // AWAIT
