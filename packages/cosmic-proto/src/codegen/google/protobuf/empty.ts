@@ -27,22 +27,6 @@ export interface EmptyProtoMsg {
  *
  * The JSON representation for `Empty` is empty JSON object `{}`.
  */
-export interface EmptyAmino {}
-export interface EmptyAminoMsg {
-  type: '/google.protobuf.Empty';
-  value: EmptyAmino;
-}
-/**
- * A generic empty message that you can re-use to avoid defining duplicated
- * empty messages in your APIs. A typical example is to use it as the request
- * or the response type of an API method. For instance:
- *
- *     service Foo {
- *       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
- *     }
- *
- * The JSON representation for `Empty` is empty JSON object `{}`.
- */
 export interface EmptySDKType {}
 function createBaseEmpty(): Empty {
   return {};
@@ -77,17 +61,6 @@ export const Empty = {
   fromPartial(_: Partial<Empty>): Empty {
     const message = createBaseEmpty();
     return message;
-  },
-  fromAmino(_: EmptyAmino): Empty {
-    const message = createBaseEmpty();
-    return message;
-  },
-  toAmino(_: Empty): EmptyAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: EmptyAminoMsg): Empty {
-    return Empty.fromAmino(object.value);
   },
   fromProtoMsg(message: EmptyProtoMsg): Empty {
     return Empty.decode(message.value);

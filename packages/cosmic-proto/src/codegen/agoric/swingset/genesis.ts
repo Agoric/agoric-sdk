@@ -1,12 +1,5 @@
 //@ts-nocheck
-import {
-  Params,
-  ParamsAmino,
-  ParamsSDKType,
-  State,
-  StateAmino,
-  StateSDKType,
-} from './swingset.js';
+import { Params, ParamsSDKType, State, StateSDKType } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 /** The initial or exported state. */
@@ -18,16 +11,6 @@ export interface GenesisState {
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.swingset.GenesisState';
   value: Uint8Array;
-}
-/** The initial or exported state. */
-export interface GenesisStateAmino {
-  params?: ParamsAmino;
-  state?: StateAmino;
-  swing_store_export_data: SwingStoreExportDataEntryAmino[];
-}
-export interface GenesisStateAminoMsg {
-  type: '/agoric.swingset.GenesisState';
-  value: GenesisStateAmino;
 }
 /** The initial or exported state. */
 export interface GenesisStateSDKType {
@@ -43,15 +26,6 @@ export interface SwingStoreExportDataEntry {
 export interface SwingStoreExportDataEntryProtoMsg {
   typeUrl: '/agoric.swingset.SwingStoreExportDataEntry';
   value: Uint8Array;
-}
-/** A SwingStore "export data" entry. */
-export interface SwingStoreExportDataEntryAmino {
-  key?: string;
-  value?: string;
-}
-export interface SwingStoreExportDataEntryAminoMsg {
-  type: '/agoric.swingset.SwingStoreExportDataEntry';
-  value: SwingStoreExportDataEntryAmino;
 }
 /** A SwingStore "export data" entry. */
 export interface SwingStoreExportDataEntrySDKType {
@@ -150,36 +124,6 @@ export const GenesisState = {
       ) || [];
     return message;
   },
-  fromAmino(object: GenesisStateAmino): GenesisState {
-    const message = createBaseGenesisState();
-    if (object.params !== undefined && object.params !== null) {
-      message.params = Params.fromAmino(object.params);
-    }
-    if (object.state !== undefined && object.state !== null) {
-      message.state = State.fromAmino(object.state);
-    }
-    message.swingStoreExportData =
-      object.swing_store_export_data?.map(e =>
-        SwingStoreExportDataEntry.fromAmino(e),
-      ) || [];
-    return message;
-  },
-  toAmino(message: GenesisState): GenesisStateAmino {
-    const obj: any = {};
-    obj.params = message.params ? Params.toAmino(message.params) : undefined;
-    obj.state = message.state ? State.toAmino(message.state) : undefined;
-    if (message.swingStoreExportData) {
-      obj.swing_store_export_data = message.swingStoreExportData.map(e =>
-        e ? SwingStoreExportDataEntry.toAmino(e) : undefined,
-      );
-    } else {
-      obj.swing_store_export_data = message.swingStoreExportData;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: GenesisStateAminoMsg): GenesisState {
-    return GenesisState.fromAmino(object.value);
-  },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
     return GenesisState.decode(message.value);
   },
@@ -256,27 +200,6 @@ export const SwingStoreExportDataEntry = {
     message.key = object.key ?? '';
     message.value = object.value ?? '';
     return message;
-  },
-  fromAmino(object: SwingStoreExportDataEntryAmino): SwingStoreExportDataEntry {
-    const message = createBaseSwingStoreExportDataEntry();
-    if (object.key !== undefined && object.key !== null) {
-      message.key = object.key;
-    }
-    if (object.value !== undefined && object.value !== null) {
-      message.value = object.value;
-    }
-    return message;
-  },
-  toAmino(message: SwingStoreExportDataEntry): SwingStoreExportDataEntryAmino {
-    const obj: any = {};
-    obj.key = message.key === '' ? undefined : message.key;
-    obj.value = message.value === '' ? undefined : message.value;
-    return obj;
-  },
-  fromAminoMsg(
-    object: SwingStoreExportDataEntryAminoMsg,
-  ): SwingStoreExportDataEntry {
-    return SwingStoreExportDataEntry.fromAmino(object.value);
   },
   fromProtoMsg(
     message: SwingStoreExportDataEntryProtoMsg,

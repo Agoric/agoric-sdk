@@ -13,17 +13,6 @@ export interface MsgDeliverInboundProtoMsg {
   value: Uint8Array;
 }
 /** MsgDeliverInbound defines an SDK message for delivering an eventual send */
-export interface MsgDeliverInboundAmino {
-  messages: string[];
-  nums: string[];
-  ack: string;
-  submitter: string;
-}
-export interface MsgDeliverInboundAminoMsg {
-  type: '/agoric.swingset.MsgDeliverInbound';
-  value: MsgDeliverInboundAmino;
-}
-/** MsgDeliverInbound defines an SDK message for delivering an eventual send */
 export interface MsgDeliverInboundSDKType {
   messages: string[];
   nums: bigint[];
@@ -35,12 +24,6 @@ export interface MsgDeliverInboundResponse {}
 export interface MsgDeliverInboundResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgDeliverInboundResponse';
   value: Uint8Array;
-}
-/** MsgDeliverInboundResponse is an empty reply. */
-export interface MsgDeliverInboundResponseAmino {}
-export interface MsgDeliverInboundResponseAminoMsg {
-  type: '/agoric.swingset.MsgDeliverInboundResponse';
-  value: MsgDeliverInboundResponseAmino;
 }
 /** MsgDeliverInboundResponse is an empty reply. */
 export interface MsgDeliverInboundResponseSDKType {}
@@ -63,20 +46,6 @@ export interface MsgWalletActionProtoMsg {
  * action that *does not* spend any assets (other than gas fees/stamps).  This
  * message type is typically protected by feegrant budgets.
  */
-export interface MsgWalletActionAmino {
-  owner: string;
-  /** The action to perform, as JSON-stringified marshalled data. */
-  action?: string;
-}
-export interface MsgWalletActionAminoMsg {
-  type: '/agoric.swingset.MsgWalletAction';
-  value: MsgWalletActionAmino;
-}
-/**
- * MsgWalletAction defines an SDK message for the on-chain wallet to perform an
- * action that *does not* spend any assets (other than gas fees/stamps).  This
- * message type is typically protected by feegrant budgets.
- */
 export interface MsgWalletActionSDKType {
   owner: Uint8Array;
   action: string;
@@ -86,12 +55,6 @@ export interface MsgWalletActionResponse {}
 export interface MsgWalletActionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgWalletActionResponse';
   value: Uint8Array;
-}
-/** MsgWalletActionResponse is an empty reply. */
-export interface MsgWalletActionResponseAmino {}
-export interface MsgWalletActionResponseAminoMsg {
-  type: '/agoric.swingset.MsgWalletActionResponse';
-  value: MsgWalletActionResponseAmino;
 }
 /** MsgWalletActionResponse is an empty reply. */
 export interface MsgWalletActionResponseSDKType {}
@@ -114,20 +77,6 @@ export interface MsgWalletSpendActionProtoMsg {
  * perform an action that *does spend the owner's assets.*  This message type is
  * typically protected by explicit confirmation by the user.
  */
-export interface MsgWalletSpendActionAmino {
-  owner: string;
-  /** The action to perform, as JSON-stringified marshalled data. */
-  spend_action?: string;
-}
-export interface MsgWalletSpendActionAminoMsg {
-  type: '/agoric.swingset.MsgWalletSpendAction';
-  value: MsgWalletSpendActionAmino;
-}
-/**
- * MsgWalletSpendAction defines an SDK message for the on-chain wallet to
- * perform an action that *does spend the owner's assets.*  This message type is
- * typically protected by explicit confirmation by the user.
- */
 export interface MsgWalletSpendActionSDKType {
   owner: Uint8Array;
   spend_action: string;
@@ -137,12 +86,6 @@ export interface MsgWalletSpendActionResponse {}
 export interface MsgWalletSpendActionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgWalletSpendActionResponse';
   value: Uint8Array;
-}
-/** MsgWalletSpendActionResponse is an empty reply. */
-export interface MsgWalletSpendActionResponseAmino {}
-export interface MsgWalletSpendActionResponseAminoMsg {
-  type: '/agoric.swingset.MsgWalletSpendActionResponse';
-  value: MsgWalletSpendActionResponseAmino;
 }
 /** MsgWalletSpendActionResponse is an empty reply. */
 export interface MsgWalletSpendActionResponseSDKType {}
@@ -158,17 +101,6 @@ export interface MsgProvisionProtoMsg {
   value: Uint8Array;
 }
 /** MsgProvision defines an SDK message for provisioning a client to the chain */
-export interface MsgProvisionAmino {
-  nickname: string;
-  address: string;
-  power_flags: string[];
-  submitter: string;
-}
-export interface MsgProvisionAminoMsg {
-  type: '/agoric.swingset.MsgProvision';
-  value: MsgProvisionAmino;
-}
-/** MsgProvision defines an SDK message for provisioning a client to the chain */
 export interface MsgProvisionSDKType {
   nickname: string;
   address: Uint8Array;
@@ -180,12 +112,6 @@ export interface MsgProvisionResponse {}
 export interface MsgProvisionResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgProvisionResponse';
   value: Uint8Array;
-}
-/** MsgProvisionResponse is an empty reply. */
-export interface MsgProvisionResponseAmino {}
-export interface MsgProvisionResponseAminoMsg {
-  type: '/agoric.swingset.MsgProvisionResponse';
-  value: MsgProvisionResponseAmino;
 }
 /** MsgProvisionResponse is an empty reply. */
 export interface MsgProvisionResponseSDKType {}
@@ -206,22 +132,6 @@ export interface MsgInstallBundleProtoMsg {
   value: Uint8Array;
 }
 /** MsgInstallBundle carries a signed bundle to SwingSet. */
-export interface MsgInstallBundleAmino {
-  bundle: string;
-  submitter: string;
-  /**
-   * Either bundle or compressed_bundle will be set.
-   * Default compression algorithm is gzip.
-   */
-  compressed_bundle: string;
-  /** Size in bytes of uncompression of compressed_bundle. */
-  uncompressed_size: string;
-}
-export interface MsgInstallBundleAminoMsg {
-  type: '/agoric.swingset.MsgInstallBundle';
-  value: MsgInstallBundleAmino;
-}
-/** MsgInstallBundle carries a signed bundle to SwingSet. */
 export interface MsgInstallBundleSDKType {
   bundle: string;
   submitter: Uint8Array;
@@ -236,15 +146,6 @@ export interface MsgInstallBundleResponse {}
 export interface MsgInstallBundleResponseProtoMsg {
   typeUrl: '/agoric.swingset.MsgInstallBundleResponse';
   value: Uint8Array;
-}
-/**
- * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
- * message has been queued for the SwingSet kernel's consideration.
- */
-export interface MsgInstallBundleResponseAmino {}
-export interface MsgInstallBundleResponseAminoMsg {
-  type: '/agoric.swingset.MsgInstallBundleResponse';
-  value: MsgInstallBundleResponseAmino;
 }
 /**
  * MsgInstallBundleResponse is an empty acknowledgement that an install bundle
@@ -360,37 +261,6 @@ export const MsgDeliverInbound = {
     message.submitter = object.submitter ?? new Uint8Array();
     return message;
   },
-  fromAmino(object: MsgDeliverInboundAmino): MsgDeliverInbound {
-    const message = createBaseMsgDeliverInbound();
-    message.messages = object.messages?.map(e => e) || [];
-    message.nums = object.nums?.map(e => BigInt(e)) || [];
-    if (object.ack !== undefined && object.ack !== null) {
-      message.ack = BigInt(object.ack);
-    }
-    if (object.submitter !== undefined && object.submitter !== null) {
-      message.submitter = bytesFromBase64(object.submitter);
-    }
-    return message;
-  },
-  toAmino(message: MsgDeliverInbound): MsgDeliverInboundAmino {
-    const obj: any = {};
-    if (message.messages) {
-      obj.messages = message.messages.map(e => e);
-    } else {
-      obj.messages = message.messages;
-    }
-    if (message.nums) {
-      obj.nums = message.nums.map(e => e.toString());
-    } else {
-      obj.nums = message.nums;
-    }
-    obj.ack = message.ack ? message.ack.toString() : '0';
-    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
-    return obj;
-  },
-  fromAminoMsg(object: MsgDeliverInboundAminoMsg): MsgDeliverInbound {
-    return MsgDeliverInbound.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgDeliverInboundProtoMsg): MsgDeliverInbound {
     return MsgDeliverInbound.decode(message.value);
   },
@@ -445,19 +315,6 @@ export const MsgDeliverInboundResponse = {
   ): MsgDeliverInboundResponse {
     const message = createBaseMsgDeliverInboundResponse();
     return message;
-  },
-  fromAmino(_: MsgDeliverInboundResponseAmino): MsgDeliverInboundResponse {
-    const message = createBaseMsgDeliverInboundResponse();
-    return message;
-  },
-  toAmino(_: MsgDeliverInboundResponse): MsgDeliverInboundResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: MsgDeliverInboundResponseAminoMsg,
-  ): MsgDeliverInboundResponse {
-    return MsgDeliverInboundResponse.fromAmino(object.value);
   },
   fromProtoMsg(
     message: MsgDeliverInboundResponseProtoMsg,
@@ -540,25 +397,6 @@ export const MsgWalletAction = {
     message.action = object.action ?? '';
     return message;
   },
-  fromAmino(object: MsgWalletActionAmino): MsgWalletAction {
-    const message = createBaseMsgWalletAction();
-    if (object.owner !== undefined && object.owner !== null) {
-      message.owner = bytesFromBase64(object.owner);
-    }
-    if (object.action !== undefined && object.action !== null) {
-      message.action = object.action;
-    }
-    return message;
-  },
-  toAmino(message: MsgWalletAction): MsgWalletActionAmino {
-    const obj: any = {};
-    obj.owner = message.owner ? base64FromBytes(message.owner) : '';
-    obj.action = message.action === '' ? undefined : message.action;
-    return obj;
-  },
-  fromAminoMsg(object: MsgWalletActionAminoMsg): MsgWalletAction {
-    return MsgWalletAction.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgWalletActionProtoMsg): MsgWalletAction {
     return MsgWalletAction.decode(message.value);
   },
@@ -611,19 +449,6 @@ export const MsgWalletActionResponse = {
   fromPartial(_: Partial<MsgWalletActionResponse>): MsgWalletActionResponse {
     const message = createBaseMsgWalletActionResponse();
     return message;
-  },
-  fromAmino(_: MsgWalletActionResponseAmino): MsgWalletActionResponse {
-    const message = createBaseMsgWalletActionResponse();
-    return message;
-  },
-  toAmino(_: MsgWalletActionResponse): MsgWalletActionResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: MsgWalletActionResponseAminoMsg,
-  ): MsgWalletActionResponse {
-    return MsgWalletActionResponse.fromAmino(object.value);
   },
   fromProtoMsg(
     message: MsgWalletActionResponseProtoMsg,
@@ -710,26 +535,6 @@ export const MsgWalletSpendAction = {
     message.spendAction = object.spendAction ?? '';
     return message;
   },
-  fromAmino(object: MsgWalletSpendActionAmino): MsgWalletSpendAction {
-    const message = createBaseMsgWalletSpendAction();
-    if (object.owner !== undefined && object.owner !== null) {
-      message.owner = bytesFromBase64(object.owner);
-    }
-    if (object.spend_action !== undefined && object.spend_action !== null) {
-      message.spendAction = object.spend_action;
-    }
-    return message;
-  },
-  toAmino(message: MsgWalletSpendAction): MsgWalletSpendActionAmino {
-    const obj: any = {};
-    obj.owner = message.owner ? base64FromBytes(message.owner) : '';
-    obj.spend_action =
-      message.spendAction === '' ? undefined : message.spendAction;
-    return obj;
-  },
-  fromAminoMsg(object: MsgWalletSpendActionAminoMsg): MsgWalletSpendAction {
-    return MsgWalletSpendAction.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgWalletSpendActionProtoMsg): MsgWalletSpendAction {
     return MsgWalletSpendAction.decode(message.value);
   },
@@ -784,21 +589,6 @@ export const MsgWalletSpendActionResponse = {
   ): MsgWalletSpendActionResponse {
     const message = createBaseMsgWalletSpendActionResponse();
     return message;
-  },
-  fromAmino(
-    _: MsgWalletSpendActionResponseAmino,
-  ): MsgWalletSpendActionResponse {
-    const message = createBaseMsgWalletSpendActionResponse();
-    return message;
-  },
-  toAmino(_: MsgWalletSpendActionResponse): MsgWalletSpendActionResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: MsgWalletSpendActionResponseAminoMsg,
-  ): MsgWalletSpendActionResponse {
-    return MsgWalletSpendActionResponse.fromAmino(object.value);
   },
   fromProtoMsg(
     message: MsgWalletSpendActionResponseProtoMsg,
@@ -912,35 +702,6 @@ export const MsgProvision = {
     message.submitter = object.submitter ?? new Uint8Array();
     return message;
   },
-  fromAmino(object: MsgProvisionAmino): MsgProvision {
-    const message = createBaseMsgProvision();
-    if (object.nickname !== undefined && object.nickname !== null) {
-      message.nickname = object.nickname;
-    }
-    if (object.address !== undefined && object.address !== null) {
-      message.address = bytesFromBase64(object.address);
-    }
-    message.powerFlags = object.power_flags?.map(e => e) || [];
-    if (object.submitter !== undefined && object.submitter !== null) {
-      message.submitter = bytesFromBase64(object.submitter);
-    }
-    return message;
-  },
-  toAmino(message: MsgProvision): MsgProvisionAmino {
-    const obj: any = {};
-    obj.nickname = message.nickname ?? '';
-    obj.address = message.address ? base64FromBytes(message.address) : '';
-    if (message.powerFlags) {
-      obj.power_flags = message.powerFlags.map(e => e);
-    } else {
-      obj.power_flags = message.powerFlags;
-    }
-    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
-    return obj;
-  },
-  fromAminoMsg(object: MsgProvisionAminoMsg): MsgProvision {
-    return MsgProvision.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgProvisionProtoMsg): MsgProvision {
     return MsgProvision.decode(message.value);
   },
@@ -993,17 +754,6 @@ export const MsgProvisionResponse = {
   fromPartial(_: Partial<MsgProvisionResponse>): MsgProvisionResponse {
     const message = createBaseMsgProvisionResponse();
     return message;
-  },
-  fromAmino(_: MsgProvisionResponseAmino): MsgProvisionResponse {
-    const message = createBaseMsgProvisionResponse();
-    return message;
-  },
-  toAmino(_: MsgProvisionResponse): MsgProvisionResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: MsgProvisionResponseAminoMsg): MsgProvisionResponse {
-    return MsgProvisionResponse.fromAmino(object.value);
   },
   fromProtoMsg(message: MsgProvisionResponseProtoMsg): MsgProvisionResponse {
     return MsgProvisionResponse.decode(message.value);
@@ -1117,43 +867,6 @@ export const MsgInstallBundle = {
         : BigInt(0);
     return message;
   },
-  fromAmino(object: MsgInstallBundleAmino): MsgInstallBundle {
-    const message = createBaseMsgInstallBundle();
-    if (object.bundle !== undefined && object.bundle !== null) {
-      message.bundle = object.bundle;
-    }
-    if (object.submitter !== undefined && object.submitter !== null) {
-      message.submitter = bytesFromBase64(object.submitter);
-    }
-    if (
-      object.compressed_bundle !== undefined &&
-      object.compressed_bundle !== null
-    ) {
-      message.compressedBundle = bytesFromBase64(object.compressed_bundle);
-    }
-    if (
-      object.uncompressed_size !== undefined &&
-      object.uncompressed_size !== null
-    ) {
-      message.uncompressedSize = BigInt(object.uncompressed_size);
-    }
-    return message;
-  },
-  toAmino(message: MsgInstallBundle): MsgInstallBundleAmino {
-    const obj: any = {};
-    obj.bundle = message.bundle ?? '';
-    obj.submitter = message.submitter ? base64FromBytes(message.submitter) : '';
-    obj.compressed_bundle = message.compressedBundle
-      ? base64FromBytes(message.compressedBundle)
-      : '';
-    obj.uncompressed_size = message.uncompressedSize
-      ? message.uncompressedSize.toString()
-      : '0';
-    return obj;
-  },
-  fromAminoMsg(object: MsgInstallBundleAminoMsg): MsgInstallBundle {
-    return MsgInstallBundle.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgInstallBundleProtoMsg): MsgInstallBundle {
     return MsgInstallBundle.decode(message.value);
   },
@@ -1206,19 +919,6 @@ export const MsgInstallBundleResponse = {
   fromPartial(_: Partial<MsgInstallBundleResponse>): MsgInstallBundleResponse {
     const message = createBaseMsgInstallBundleResponse();
     return message;
-  },
-  fromAmino(_: MsgInstallBundleResponseAmino): MsgInstallBundleResponse {
-    const message = createBaseMsgInstallBundleResponse();
-    return message;
-  },
-  toAmino(_: MsgInstallBundleResponse): MsgInstallBundleResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: MsgInstallBundleResponseAminoMsg,
-  ): MsgInstallBundleResponse {
-    return MsgInstallBundleResponse.fromAmino(object.value);
   },
   fromProtoMsg(
     message: MsgInstallBundleResponseProtoMsg,

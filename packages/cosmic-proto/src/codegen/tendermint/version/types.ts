@@ -19,19 +19,6 @@ export interface AppProtoMsg {
  * This information is included in ResponseInfo. The App.Protocol can be
  * updated in ResponseEndBlock.
  */
-export interface AppAmino {
-  protocol?: string;
-  software?: string;
-}
-export interface AppAminoMsg {
-  type: '/tendermint.version.App';
-  value: AppAmino;
-}
-/**
- * App includes the protocol and software version for the application.
- * This information is included in ResponseInfo. The App.Protocol can be
- * updated in ResponseEndBlock.
- */
 export interface AppSDKType {
   protocol: bigint;
   software: string;
@@ -48,19 +35,6 @@ export interface Consensus {
 export interface ConsensusProtoMsg {
   typeUrl: '/tendermint.version.Consensus';
   value: Uint8Array;
-}
-/**
- * Consensus captures the consensus rules for processing a block in the blockchain,
- * including all blockchain data structures and the rules of the application's
- * state transition machine.
- */
-export interface ConsensusAmino {
-  block?: string;
-  app?: string;
-}
-export interface ConsensusAminoMsg {
-  type: '/tendermint.version.Consensus';
-  value: ConsensusAmino;
 }
 /**
  * Consensus captures the consensus rules for processing a block in the blockchain,
@@ -135,26 +109,6 @@ export const App = {
         : BigInt(0);
     message.software = object.software ?? '';
     return message;
-  },
-  fromAmino(object: AppAmino): App {
-    const message = createBaseApp();
-    if (object.protocol !== undefined && object.protocol !== null) {
-      message.protocol = BigInt(object.protocol);
-    }
-    if (object.software !== undefined && object.software !== null) {
-      message.software = object.software;
-    }
-    return message;
-  },
-  toAmino(message: App): AppAmino {
-    const obj: any = {};
-    obj.protocol =
-      message.protocol !== BigInt(0) ? message.protocol.toString() : undefined;
-    obj.software = message.software === '' ? undefined : message.software;
-    return obj;
-  },
-  fromAminoMsg(object: AppAminoMsg): App {
-    return App.fromAmino(object.value);
   },
   fromProtoMsg(message: AppProtoMsg): App {
     return App.decode(message.value);
@@ -235,26 +189,6 @@ export const Consensus = {
         ? BigInt(object.app.toString())
         : BigInt(0);
     return message;
-  },
-  fromAmino(object: ConsensusAmino): Consensus {
-    const message = createBaseConsensus();
-    if (object.block !== undefined && object.block !== null) {
-      message.block = BigInt(object.block);
-    }
-    if (object.app !== undefined && object.app !== null) {
-      message.app = BigInt(object.app);
-    }
-    return message;
-  },
-  toAmino(message: Consensus): ConsensusAmino {
-    const obj: any = {};
-    obj.block =
-      message.block !== BigInt(0) ? message.block.toString() : undefined;
-    obj.app = message.app !== BigInt(0) ? message.app.toString() : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: ConsensusAminoMsg): Consensus {
-    return Consensus.fromAmino(object.value);
   },
   fromProtoMsg(message: ConsensusProtoMsg): Consensus {
     return Consensus.decode(message.value);

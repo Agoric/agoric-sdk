@@ -1,12 +1,5 @@
 //@ts-nocheck
-import {
-  Params,
-  ParamsAmino,
-  ParamsSDKType,
-  State,
-  StateAmino,
-  StateSDKType,
-} from './vbank.js';
+import { Params, ParamsSDKType, State, StateSDKType } from './vbank.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 /** The initial and exported module state. */
@@ -19,17 +12,6 @@ export interface GenesisState {
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.vbank.GenesisState';
   value: Uint8Array;
-}
-/** The initial and exported module state. */
-export interface GenesisStateAmino {
-  /** parms defines all the parameters of the module. */
-  params?: ParamsAmino;
-  /** state is the current operation state. */
-  state?: StateAmino;
-}
-export interface GenesisStateAminoMsg {
-  type: '/agoric.vbank.GenesisState';
-  value: GenesisStateAmino;
 }
 /** The initial and exported module state. */
 export interface GenesisStateSDKType {
@@ -102,25 +84,6 @@ export const GenesisState = {
         ? State.fromPartial(object.state)
         : undefined;
     return message;
-  },
-  fromAmino(object: GenesisStateAmino): GenesisState {
-    const message = createBaseGenesisState();
-    if (object.params !== undefined && object.params !== null) {
-      message.params = Params.fromAmino(object.params);
-    }
-    if (object.state !== undefined && object.state !== null) {
-      message.state = State.fromAmino(object.state);
-    }
-    return message;
-  },
-  toAmino(message: GenesisState): GenesisStateAmino {
-    const obj: any = {};
-    obj.params = message.params ? Params.toAmino(message.params) : undefined;
-    obj.state = message.state ? State.toAmino(message.state) : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: GenesisStateAminoMsg): GenesisState {
-    return GenesisState.fromAmino(object.value);
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
     return GenesisState.decode(message.value);
