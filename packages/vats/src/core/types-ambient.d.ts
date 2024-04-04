@@ -179,6 +179,7 @@ type WellKnownName = {
     | 'reserve'
     | 'psm'
     | 'scaledPriceAuthority'
+    | 'stakeAtom' // test contract
     | 'stakeBld' // test contract
     | 'econCommitteeCharter'
     | 'priceAggregator';
@@ -193,6 +194,7 @@ type WellKnownName = {
     | 'provisionPool'
     | 'reserve'
     | 'reserveGovernor'
+    | 'stakeAtom' // test contract
     | 'stakeBld' // test contract
     | 'Pegasus';
   oracleBrand: 'USD';
@@ -341,9 +343,12 @@ type ChainBootstrapSpaceT = {
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
   instancePrivateArgs: Map<Instance, unknown>;
+  localchain: import('@agoric/vats/src/localchain.js').LocalChain;
   mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
+  networkVat: NetworkVat;
+  orchestration: import('@agoric/orchestration/src/orchestration.js').Orchestration;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;

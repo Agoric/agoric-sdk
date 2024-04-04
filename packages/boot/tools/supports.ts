@@ -28,6 +28,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { BridgeHandler } from '@agoric/vats';
+import { icaMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -289,6 +290,7 @@ export const makeSwingsetTestKit = async (
 
   const outboundMessages = new Map();
 
+  let inbound;
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
@@ -356,6 +358,21 @@ export const makeSwingsetTestKit = async (
       }
       case BridgeId.CORE:
       case BridgeId.DIBC:
+        switch (obj.type) {
+          case 'IBC_METHOD':
+            switch (obj.method) {
+              case 'startChannelOpenInit':
+                inbound(
+                  BridgeId.DIBC,
+                  icaMocks.startChannelOpenInit.channelOpenAck(obj),
+                );
+                return undefined;
+              default:
+                return undefined;
+            }
+          default:
+            return undefined;
+        }
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
       case BridgeId.VTRANSFER:
@@ -390,7 +407,7 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
-  const { controller, timer } = await buildSwingset(
+  const { controller, timer, bridgeInbound } = await buildSwingset(
     new Map(),
     bridgeOutbound,
     kernelStorage,
@@ -406,6 +423,8 @@ export const makeSwingsetTestKit = async (
       debugVats,
     },
   );
+  inbound = bridgeInbound;
+
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
   const runUtils = makeRunUtils(controller);
@@ -491,6 +510,7 @@ export const makeSwingsetTestKit = async (
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
+    bridgeInbound,
     controller,
     evalProposal,
     getCrankNumber,
