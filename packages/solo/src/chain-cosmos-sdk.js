@@ -161,7 +161,7 @@ export async function connectToChain(
   );
 
   // The helper address may not have a token balance, and instead uses a
-  // separate fee account, set up with something like:
+  // separate fee granter account, set up with something like:
   //
   // agd tx feegrant grant --period=5 --period-limit=200000uist \
   // $(cat cosmos-fee-account) $(cat ag-cosmos-helper-address)
@@ -653,7 +653,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // Use the feeAccount for any fees.
       if (feeAccountAddr) {
-        txArgs.push(`--fee-account=${feeAccountAddr}`);
+        txArgs.push(`--fee-granter=${feeAccountAddr}`);
       }
 
       // We just try a single delivery per block.
