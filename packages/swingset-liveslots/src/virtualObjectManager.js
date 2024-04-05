@@ -23,7 +23,7 @@ import {
 /**
  * @import {DurableKindHandle} from '@agoric/swingset-liveslots'
  * @import {DefineKindOptions} from '@agoric/swingset-liveslots'
- * @import {ClassContextProvider, KitContextProvider} from '@endo/exo/tools.js'
+ * @import {ClassContextProvider, KitContextProvider} from '@endo/exo'
  */
 
 const {
