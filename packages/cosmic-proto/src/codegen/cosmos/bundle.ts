@@ -62,12 +62,39 @@ import * as _92 from './upgrade/v1beta1/tx.js';
 import * as _93 from './upgrade/v1beta1/upgrade.js';
 import * as _94 from './vesting/v1beta1/tx.js';
 import * as _95 from './vesting/v1beta1/vesting.js';
+import * as _186 from './auth/v1beta1/query.rpc.Query.js';
+import * as _187 from './authz/v1beta1/query.rpc.Query.js';
+import * as _188 from './bank/v1beta1/query.rpc.Query.js';
+import * as _189 from './base/node/v1beta1/query.rpc.Service.js';
+import * as _190 from './distribution/v1beta1/query.rpc.Query.js';
+import * as _191 from './feegrant/v1beta1/query.rpc.Query.js';
+import * as _192 from './gov/v1/query.rpc.Query.js';
+import * as _193 from './gov/v1beta1/query.rpc.Query.js';
+import * as _194 from './group/v1/query.rpc.Query.js';
+import * as _195 from './mint/v1beta1/query.rpc.Query.js';
+import * as _196 from './params/v1beta1/query.rpc.Query.js';
+import * as _197 from './staking/v1beta1/query.rpc.Query.js';
+import * as _198 from './tx/v1beta1/service.rpc.Service.js';
+import * as _199 from './upgrade/v1beta1/query.rpc.Query.js';
+import * as _200 from './authz/v1beta1/tx.rpc.msg.js';
+import * as _201 from './bank/v1beta1/tx.rpc.msg.js';
+import * as _202 from './distribution/v1beta1/tx.rpc.msg.js';
+import * as _203 from './feegrant/v1beta1/tx.rpc.msg.js';
+import * as _204 from './gov/v1/tx.rpc.msg.js';
+import * as _205 from './gov/v1beta1/tx.rpc.msg.js';
+import * as _206 from './group/v1/tx.rpc.msg.js';
+import * as _207 from './staking/v1beta1/tx.rpc.msg.js';
+import * as _208 from './upgrade/v1beta1/tx.rpc.msg.js';
+import * as _209 from './vesting/v1beta1/tx.rpc.msg.js';
+import * as _235 from './rpc.query.js';
+import * as _236 from './rpc.tx.js';
 export namespace cosmos {
   export namespace auth {
     export const v1beta1 = {
       ..._33,
       ..._34,
       ..._35,
+      ..._186,
     };
   }
   export namespace authz {
@@ -77,6 +104,8 @@ export namespace cosmos {
       ..._38,
       ..._39,
       ..._40,
+      ..._187,
+      ..._200,
     };
   }
   export namespace bank {
@@ -86,6 +115,8 @@ export namespace cosmos {
       ..._43,
       ..._44,
       ..._45,
+      ..._188,
+      ..._201,
     };
   }
   export namespace base {
@@ -97,6 +128,7 @@ export namespace cosmos {
     export namespace node {
       export const v1beta1 = {
         ..._47,
+        ..._189,
       };
     }
     export namespace query {
@@ -143,6 +175,8 @@ export namespace cosmos {
       ..._58,
       ..._59,
       ..._60,
+      ..._190,
+      ..._202,
     };
   }
   export namespace feegrant {
@@ -151,6 +185,8 @@ export namespace cosmos {
       ..._62,
       ..._63,
       ..._64,
+      ..._191,
+      ..._203,
     };
   }
   export namespace gov {
@@ -159,12 +195,16 @@ export namespace cosmos {
       ..._66,
       ..._67,
       ..._68,
+      ..._192,
+      ..._204,
     };
     export const v1beta1 = {
       ..._69,
       ..._70,
       ..._71,
       ..._72,
+      ..._193,
+      ..._205,
     };
   }
   export namespace group {
@@ -174,6 +214,8 @@ export namespace cosmos {
       ..._75,
       ..._76,
       ..._77,
+      ..._194,
+      ..._206,
     };
   }
   export namespace mint {
@@ -181,12 +223,14 @@ export namespace cosmos {
       ..._78,
       ..._79,
       ..._80,
+      ..._195,
     };
   }
   export namespace params {
     export const v1beta1 = {
       ..._81,
       ..._82,
+      ..._196,
     };
   }
   export namespace staking {
@@ -196,6 +240,8 @@ export namespace cosmos {
       ..._85,
       ..._86,
       ..._87,
+      ..._197,
+      ..._207,
     };
   }
   export namespace tx {
@@ -207,6 +253,7 @@ export namespace cosmos {
     export const v1beta1 = {
       ..._89,
       ..._90,
+      ..._198,
     };
   }
   export namespace upgrade {
@@ -214,12 +261,19 @@ export namespace cosmos {
       ..._91,
       ..._92,
       ..._93,
+      ..._199,
+      ..._208,
     };
   }
   export namespace vesting {
     export const v1beta1 = {
       ..._94,
       ..._95,
+      ..._209,
     };
   }
+  export const ClientFactory = {
+    ..._235,
+    ..._236,
+  };
 }

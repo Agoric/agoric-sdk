@@ -152,7 +152,9 @@ export const joinHookedAddress = (
   const maxBaseAddressLength = 2 ** (BASE_ADDRESS_LENGTH_BYTES * 8);
   if (b >= maxBaseAddressLength) {
     throw RangeError(
-      `Base address length 0x${b.toString(16)} exceeds maximum 0x${maxBaseAddressLength.toString(16)}`,
+      `Base address length 0x${b.toString(
+        16,
+      )} exceeds maximum 0x${maxBaseAddressLength.toString(16)}`,
     );
   }
 
@@ -266,7 +268,9 @@ export const splitHookedAddress = (
   const b = len;
   if (b > bytes.length - BASE_ADDRESS_LENGTH_BYTES - prefixLength) {
     throw TypeError(
-      `Base address length 0x${b.toString(16)} is longer than specimen length ${bytes.length - BASE_ADDRESS_LENGTH_BYTES - prefixLength}`,
+      `Base address length 0x${b.toString(16)} is longer than specimen length ${
+        bytes.length - BASE_ADDRESS_LENGTH_BYTES - prefixLength
+      }`,
     );
   }
 

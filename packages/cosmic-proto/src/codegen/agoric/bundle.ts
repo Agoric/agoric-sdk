@@ -15,6 +15,13 @@ import * as _12 from './vstorage/genesis.js';
 import * as _13 from './vstorage/query.js';
 import * as _14 from './vstorage/vstorage.js';
 import * as _15 from './vtransfer/genesis.js';
+import * as _179 from './swingset/query.rpc.Query.js';
+import * as _180 from './vbank/query.rpc.Query.js';
+import * as _181 from './vstorage/query.rpc.Query.js';
+import * as _182 from './swingset/msgs.rpc.msg.js';
+import * as _183 from './vibc/msgs.rpc.msg.js';
+import * as _231 from './rpc.query.js';
+import * as _232 from './rpc.tx.js';
 export namespace agoric {
   export const lien = {
     ..._0,
@@ -25,15 +32,19 @@ export namespace agoric {
     ..._3,
     ..._4,
     ..._5,
+    ..._179,
+    ..._182,
   };
   export const vbank = {
     ..._6,
     ..._7,
     ..._8,
     ..._9,
+    ..._180,
   };
   export const vibc = {
     ..._10,
+    ..._183,
   };
   export const vlocalchain = {
     ..._11,
@@ -42,8 +53,13 @@ export namespace agoric {
     ..._12,
     ..._13,
     ..._14,
+    ..._181,
   };
   export const vtransfer = {
     ..._15,
+  };
+  export const ClientFactory = {
+    ..._231,
+    ..._232,
   };
 }
