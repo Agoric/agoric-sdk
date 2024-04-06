@@ -16,8 +16,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/codegen/index.d.ts",
+      "default": "./dist/codegen/index.js"
     },
     "./vatsafe": {
       "types": "./dist/vatsafe.d.ts",
@@ -85,7 +85,6 @@
   },
   "dependencies": {
     "@cosmjs/amino": "^0.32.3",
-    "@cosmjs/math": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
