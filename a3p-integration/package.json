@@ -14,6 +14,6 @@
     "dependencies": {
         "@agoric/synthetic-chain": "^0.0.7"
     },
-    "packageManager": "yarn@4.1.0",
+    "packageManager": "yarn@4.1.1",
     "license": "Apache-2.0"
 }
