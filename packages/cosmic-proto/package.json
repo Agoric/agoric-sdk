@@ -24,14 +24,6 @@
       "default": "./dist/vatsafe.js"
     },
     "./package.json": "./package.json",
-    "./cosmos": {
-      "types": "./dist/codegen/cosmos/bundle.d.ts",
-      "default": "./dist/codegen/cosmos/bundle.js"
-    },
-    "./cosmos/staking/v1beta1/tx": {
-      "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
-      "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
-    },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
       "default": "./dist/codegen/agoric/swingset/msgs.js"
