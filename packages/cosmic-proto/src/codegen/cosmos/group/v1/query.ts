@@ -1,30 +1,22 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestAmino,
   PageRequestSDKType,
   PageResponse,
-  PageResponseAmino,
   PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   GroupInfo,
-  GroupInfoAmino,
   GroupInfoSDKType,
   GroupPolicyInfo,
-  GroupPolicyInfoAmino,
   GroupPolicyInfoSDKType,
   GroupMember,
-  GroupMemberAmino,
   GroupMemberSDKType,
   Proposal,
-  ProposalAmino,
   ProposalSDKType,
   Vote,
-  VoteAmino,
   VoteSDKType,
   TallyResult,
-  TallyResultAmino,
   TallyResultSDKType,
 } from './types.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
@@ -37,15 +29,6 @@ export interface QueryGroupInfoRequest {
 export interface QueryGroupInfoRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupInfoRequest';
   value: Uint8Array;
-}
-/** QueryGroupInfoRequest is the Query/GroupInfo request type. */
-export interface QueryGroupInfoRequestAmino {
-  /** group_id is the unique ID of the group. */
-  group_id?: string;
-}
-export interface QueryGroupInfoRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupInfoRequest';
-  value: QueryGroupInfoRequestAmino;
 }
 /** QueryGroupInfoRequest is the Query/GroupInfo request type. */
 export interface QueryGroupInfoRequestSDKType {
@@ -61,15 +44,6 @@ export interface QueryGroupInfoResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupInfoResponse is the Query/GroupInfo response type. */
-export interface QueryGroupInfoResponseAmino {
-  /** info is the GroupInfo for the group. */
-  info?: GroupInfoAmino;
-}
-export interface QueryGroupInfoResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupInfoResponse';
-  value: QueryGroupInfoResponseAmino;
-}
-/** QueryGroupInfoResponse is the Query/GroupInfo response type. */
 export interface QueryGroupInfoResponseSDKType {
   info?: GroupInfoSDKType;
 }
@@ -81,15 +55,6 @@ export interface QueryGroupPolicyInfoRequest {
 export interface QueryGroupPolicyInfoRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupPolicyInfoRequest';
   value: Uint8Array;
-}
-/** QueryGroupPolicyInfoRequest is the Query/GroupPolicyInfo request type. */
-export interface QueryGroupPolicyInfoRequestAmino {
-  /** address is the account address of the group policy. */
-  address?: string;
-}
-export interface QueryGroupPolicyInfoRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPolicyInfoRequest';
-  value: QueryGroupPolicyInfoRequestAmino;
 }
 /** QueryGroupPolicyInfoRequest is the Query/GroupPolicyInfo request type. */
 export interface QueryGroupPolicyInfoRequestSDKType {
@@ -105,15 +70,6 @@ export interface QueryGroupPolicyInfoResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type. */
-export interface QueryGroupPolicyInfoResponseAmino {
-  /** info is the GroupPolicyInfo for the group policy. */
-  info?: GroupPolicyInfoAmino;
-}
-export interface QueryGroupPolicyInfoResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPolicyInfoResponse';
-  value: QueryGroupPolicyInfoResponseAmino;
-}
-/** QueryGroupPolicyInfoResponse is the Query/GroupPolicyInfo response type. */
 export interface QueryGroupPolicyInfoResponseSDKType {
   info?: GroupPolicyInfoSDKType;
 }
@@ -127,17 +83,6 @@ export interface QueryGroupMembersRequest {
 export interface QueryGroupMembersRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupMembersRequest';
   value: Uint8Array;
-}
-/** QueryGroupMembersRequest is the Query/GroupMembers request type. */
-export interface QueryGroupMembersRequestAmino {
-  /** group_id is the unique ID of the group. */
-  group_id?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryGroupMembersRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupMembersRequest';
-  value: QueryGroupMembersRequestAmino;
 }
 /** QueryGroupMembersRequest is the Query/GroupMembers request type. */
 export interface QueryGroupMembersRequestSDKType {
@@ -156,17 +101,6 @@ export interface QueryGroupMembersResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupMembersResponse is the Query/GroupMembersResponse response type. */
-export interface QueryGroupMembersResponseAmino {
-  /** members are the members of the group with given group_id. */
-  members?: GroupMemberAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryGroupMembersResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupMembersResponse';
-  value: QueryGroupMembersResponseAmino;
-}
-/** QueryGroupMembersResponse is the Query/GroupMembersResponse response type. */
 export interface QueryGroupMembersResponseSDKType {
   members: GroupMemberSDKType[];
   pagination?: PageResponseSDKType;
@@ -181,17 +115,6 @@ export interface QueryGroupsByAdminRequest {
 export interface QueryGroupsByAdminRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupsByAdminRequest';
   value: Uint8Array;
-}
-/** QueryGroupsByAdminRequest is the Query/GroupsByAdmin request type. */
-export interface QueryGroupsByAdminRequestAmino {
-  /** admin is the account address of a group's admin. */
-  admin?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryGroupsByAdminRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupsByAdminRequest';
-  value: QueryGroupsByAdminRequestAmino;
 }
 /** QueryGroupsByAdminRequest is the Query/GroupsByAdmin request type. */
 export interface QueryGroupsByAdminRequestSDKType {
@@ -210,17 +133,6 @@ export interface QueryGroupsByAdminResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupsByAdminResponse is the Query/GroupsByAdminResponse response type. */
-export interface QueryGroupsByAdminResponseAmino {
-  /** groups are the groups info with the provided admin. */
-  groups?: GroupInfoAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryGroupsByAdminResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupsByAdminResponse';
-  value: QueryGroupsByAdminResponseAmino;
-}
-/** QueryGroupsByAdminResponse is the Query/GroupsByAdminResponse response type. */
 export interface QueryGroupsByAdminResponseSDKType {
   groups: GroupInfoSDKType[];
   pagination?: PageResponseSDKType;
@@ -235,17 +147,6 @@ export interface QueryGroupPoliciesByGroupRequest {
 export interface QueryGroupPoliciesByGroupRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupPoliciesByGroupRequest';
   value: Uint8Array;
-}
-/** QueryGroupPoliciesByGroupRequest is the Query/GroupPoliciesByGroup request type. */
-export interface QueryGroupPoliciesByGroupRequestAmino {
-  /** group_id is the unique ID of the group policy's group. */
-  group_id?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryGroupPoliciesByGroupRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPoliciesByGroupRequest';
-  value: QueryGroupPoliciesByGroupRequestAmino;
 }
 /** QueryGroupPoliciesByGroupRequest is the Query/GroupPoliciesByGroup request type. */
 export interface QueryGroupPoliciesByGroupRequestSDKType {
@@ -264,17 +165,6 @@ export interface QueryGroupPoliciesByGroupResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupPoliciesByGroupResponse is the Query/GroupPoliciesByGroup response type. */
-export interface QueryGroupPoliciesByGroupResponseAmino {
-  /** group_policies are the group policies info associated with the provided group. */
-  group_policies?: GroupPolicyInfoAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryGroupPoliciesByGroupResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPoliciesByGroupResponse';
-  value: QueryGroupPoliciesByGroupResponseAmino;
-}
-/** QueryGroupPoliciesByGroupResponse is the Query/GroupPoliciesByGroup response type. */
 export interface QueryGroupPoliciesByGroupResponseSDKType {
   group_policies: GroupPolicyInfoSDKType[];
   pagination?: PageResponseSDKType;
@@ -289,17 +179,6 @@ export interface QueryGroupPoliciesByAdminRequest {
 export interface QueryGroupPoliciesByAdminRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupPoliciesByAdminRequest';
   value: Uint8Array;
-}
-/** QueryGroupPoliciesByAdminRequest is the Query/GroupPoliciesByAdmin request type. */
-export interface QueryGroupPoliciesByAdminRequestAmino {
-  /** admin is the admin address of the group policy. */
-  admin?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryGroupPoliciesByAdminRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPoliciesByAdminRequest';
-  value: QueryGroupPoliciesByAdminRequestAmino;
 }
 /** QueryGroupPoliciesByAdminRequest is the Query/GroupPoliciesByAdmin request type. */
 export interface QueryGroupPoliciesByAdminRequestSDKType {
@@ -318,17 +197,6 @@ export interface QueryGroupPoliciesByAdminResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupPoliciesByAdminResponse is the Query/GroupPoliciesByAdmin response type. */
-export interface QueryGroupPoliciesByAdminResponseAmino {
-  /** group_policies are the group policies info with provided admin. */
-  group_policies?: GroupPolicyInfoAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryGroupPoliciesByAdminResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupPoliciesByAdminResponse';
-  value: QueryGroupPoliciesByAdminResponseAmino;
-}
-/** QueryGroupPoliciesByAdminResponse is the Query/GroupPoliciesByAdmin response type. */
 export interface QueryGroupPoliciesByAdminResponseSDKType {
   group_policies: GroupPolicyInfoSDKType[];
   pagination?: PageResponseSDKType;
@@ -341,15 +209,6 @@ export interface QueryProposalRequest {
 export interface QueryProposalRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryProposalRequest';
   value: Uint8Array;
-}
-/** QueryProposalRequest is the Query/Proposal request type. */
-export interface QueryProposalRequestAmino {
-  /** proposal_id is the unique ID of a proposal. */
-  proposal_id?: string;
-}
-export interface QueryProposalRequestAminoMsg {
-  type: 'cosmos-sdk/QueryProposalRequest';
-  value: QueryProposalRequestAmino;
 }
 /** QueryProposalRequest is the Query/Proposal request type. */
 export interface QueryProposalRequestSDKType {
@@ -365,15 +224,6 @@ export interface QueryProposalResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryProposalResponse is the Query/Proposal response type. */
-export interface QueryProposalResponseAmino {
-  /** proposal is the proposal info. */
-  proposal?: ProposalAmino;
-}
-export interface QueryProposalResponseAminoMsg {
-  type: 'cosmos-sdk/QueryProposalResponse';
-  value: QueryProposalResponseAmino;
-}
-/** QueryProposalResponse is the Query/Proposal response type. */
 export interface QueryProposalResponseSDKType {
   proposal?: ProposalSDKType;
 }
@@ -387,17 +237,6 @@ export interface QueryProposalsByGroupPolicyRequest {
 export interface QueryProposalsByGroupPolicyRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryProposalsByGroupPolicyRequest';
   value: Uint8Array;
-}
-/** QueryProposalsByGroupPolicyRequest is the Query/ProposalByGroupPolicy request type. */
-export interface QueryProposalsByGroupPolicyRequestAmino {
-  /** address is the account address of the group policy related to proposals. */
-  address?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryProposalsByGroupPolicyRequestAminoMsg {
-  type: 'cosmos-sdk/QueryProposalsByGroupPolicyRequest';
-  value: QueryProposalsByGroupPolicyRequestAmino;
 }
 /** QueryProposalsByGroupPolicyRequest is the Query/ProposalByGroupPolicy request type. */
 export interface QueryProposalsByGroupPolicyRequestSDKType {
@@ -416,17 +255,6 @@ export interface QueryProposalsByGroupPolicyResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryProposalsByGroupPolicyResponse is the Query/ProposalByGroupPolicy response type. */
-export interface QueryProposalsByGroupPolicyResponseAmino {
-  /** proposals are the proposals with given group policy. */
-  proposals?: ProposalAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryProposalsByGroupPolicyResponseAminoMsg {
-  type: 'cosmos-sdk/QueryProposalsByGroupPolicyResponse';
-  value: QueryProposalsByGroupPolicyResponseAmino;
-}
-/** QueryProposalsByGroupPolicyResponse is the Query/ProposalByGroupPolicy response type. */
 export interface QueryProposalsByGroupPolicyResponseSDKType {
   proposals: ProposalSDKType[];
   pagination?: PageResponseSDKType;
@@ -443,17 +271,6 @@ export interface QueryVoteByProposalVoterRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryVoteByProposalVoterRequest is the Query/VoteByProposalVoter request type. */
-export interface QueryVoteByProposalVoterRequestAmino {
-  /** proposal_id is the unique ID of a proposal. */
-  proposal_id?: string;
-  /** voter is a proposal voter account address. */
-  voter?: string;
-}
-export interface QueryVoteByProposalVoterRequestAminoMsg {
-  type: 'cosmos-sdk/QueryVoteByProposalVoterRequest';
-  value: QueryVoteByProposalVoterRequestAmino;
-}
-/** QueryVoteByProposalVoterRequest is the Query/VoteByProposalVoter request type. */
 export interface QueryVoteByProposalVoterRequestSDKType {
   proposal_id: bigint;
   voter: string;
@@ -466,15 +283,6 @@ export interface QueryVoteByProposalVoterResponse {
 export interface QueryVoteByProposalVoterResponseProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryVoteByProposalVoterResponse';
   value: Uint8Array;
-}
-/** QueryVoteByProposalVoterResponse is the Query/VoteByProposalVoter response type. */
-export interface QueryVoteByProposalVoterResponseAmino {
-  /** vote is the vote with given proposal_id and voter. */
-  vote?: VoteAmino;
-}
-export interface QueryVoteByProposalVoterResponseAminoMsg {
-  type: 'cosmos-sdk/QueryVoteByProposalVoterResponse';
-  value: QueryVoteByProposalVoterResponseAmino;
 }
 /** QueryVoteByProposalVoterResponse is the Query/VoteByProposalVoter response type. */
 export interface QueryVoteByProposalVoterResponseSDKType {
@@ -490,17 +298,6 @@ export interface QueryVotesByProposalRequest {
 export interface QueryVotesByProposalRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryVotesByProposalRequest';
   value: Uint8Array;
-}
-/** QueryVotesByProposalRequest is the Query/VotesByProposal request type. */
-export interface QueryVotesByProposalRequestAmino {
-  /** proposal_id is the unique ID of a proposal. */
-  proposal_id?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryVotesByProposalRequestAminoMsg {
-  type: 'cosmos-sdk/QueryVotesByProposalRequest';
-  value: QueryVotesByProposalRequestAmino;
 }
 /** QueryVotesByProposalRequest is the Query/VotesByProposal request type. */
 export interface QueryVotesByProposalRequestSDKType {
@@ -519,17 +316,6 @@ export interface QueryVotesByProposalResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryVotesByProposalResponse is the Query/VotesByProposal response type. */
-export interface QueryVotesByProposalResponseAmino {
-  /** votes are the list of votes for given proposal_id. */
-  votes?: VoteAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryVotesByProposalResponseAminoMsg {
-  type: 'cosmos-sdk/QueryVotesByProposalResponse';
-  value: QueryVotesByProposalResponseAmino;
-}
-/** QueryVotesByProposalResponse is the Query/VotesByProposal response type. */
 export interface QueryVotesByProposalResponseSDKType {
   votes: VoteSDKType[];
   pagination?: PageResponseSDKType;
@@ -544,17 +330,6 @@ export interface QueryVotesByVoterRequest {
 export interface QueryVotesByVoterRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryVotesByVoterRequest';
   value: Uint8Array;
-}
-/** QueryVotesByVoterRequest is the Query/VotesByVoter request type. */
-export interface QueryVotesByVoterRequestAmino {
-  /** voter is a proposal voter account address. */
-  voter?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryVotesByVoterRequestAminoMsg {
-  type: 'cosmos-sdk/QueryVotesByVoterRequest';
-  value: QueryVotesByVoterRequestAmino;
 }
 /** QueryVotesByVoterRequest is the Query/VotesByVoter request type. */
 export interface QueryVotesByVoterRequestSDKType {
@@ -573,17 +348,6 @@ export interface QueryVotesByVoterResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryVotesByVoterResponse is the Query/VotesByVoter response type. */
-export interface QueryVotesByVoterResponseAmino {
-  /** votes are the list of votes by given voter. */
-  votes?: VoteAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryVotesByVoterResponseAminoMsg {
-  type: 'cosmos-sdk/QueryVotesByVoterResponse';
-  value: QueryVotesByVoterResponseAmino;
-}
-/** QueryVotesByVoterResponse is the Query/VotesByVoter response type. */
 export interface QueryVotesByVoterResponseSDKType {
   votes: VoteSDKType[];
   pagination?: PageResponseSDKType;
@@ -598,17 +362,6 @@ export interface QueryGroupsByMemberRequest {
 export interface QueryGroupsByMemberRequestProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryGroupsByMemberRequest';
   value: Uint8Array;
-}
-/** QueryGroupsByMemberRequest is the Query/GroupsByMember request type. */
-export interface QueryGroupsByMemberRequestAmino {
-  /** address is the group member address. */
-  address?: string;
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequestAmino;
-}
-export interface QueryGroupsByMemberRequestAminoMsg {
-  type: 'cosmos-sdk/QueryGroupsByMemberRequest';
-  value: QueryGroupsByMemberRequestAmino;
 }
 /** QueryGroupsByMemberRequest is the Query/GroupsByMember request type. */
 export interface QueryGroupsByMemberRequestSDKType {
@@ -627,17 +380,6 @@ export interface QueryGroupsByMemberResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryGroupsByMemberResponse is the Query/GroupsByMember response type. */
-export interface QueryGroupsByMemberResponseAmino {
-  /** groups are the groups info with the provided group member. */
-  groups?: GroupInfoAmino[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponseAmino;
-}
-export interface QueryGroupsByMemberResponseAminoMsg {
-  type: 'cosmos-sdk/QueryGroupsByMemberResponse';
-  value: QueryGroupsByMemberResponseAmino;
-}
-/** QueryGroupsByMemberResponse is the Query/GroupsByMember response type. */
 export interface QueryGroupsByMemberResponseSDKType {
   groups: GroupInfoSDKType[];
   pagination?: PageResponseSDKType;
@@ -652,15 +394,6 @@ export interface QueryTallyResultRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryTallyResultRequest is the Query/TallyResult request type. */
-export interface QueryTallyResultRequestAmino {
-  /** proposal_id is the unique id of a proposal. */
-  proposal_id?: string;
-}
-export interface QueryTallyResultRequestAminoMsg {
-  type: 'cosmos-sdk/QueryTallyResultRequest';
-  value: QueryTallyResultRequestAmino;
-}
-/** QueryTallyResultRequest is the Query/TallyResult request type. */
 export interface QueryTallyResultRequestSDKType {
   proposal_id: bigint;
 }
@@ -672,15 +405,6 @@ export interface QueryTallyResultResponse {
 export interface QueryTallyResultResponseProtoMsg {
   typeUrl: '/cosmos.group.v1.QueryTallyResultResponse';
   value: Uint8Array;
-}
-/** QueryTallyResultResponse is the Query/TallyResult response type. */
-export interface QueryTallyResultResponseAmino {
-  /** tally defines the requested tally. */
-  tally?: TallyResultAmino;
-}
-export interface QueryTallyResultResponseAminoMsg {
-  type: 'cosmos-sdk/QueryTallyResultResponse';
-  value: QueryTallyResultResponseAmino;
 }
 /** QueryTallyResultResponse is the Query/TallyResult response type. */
 export interface QueryTallyResultResponseSDKType {
@@ -743,28 +467,6 @@ export const QueryGroupInfoRequest = {
         ? BigInt(object.groupId.toString())
         : BigInt(0);
     return message;
-  },
-  fromAmino(object: QueryGroupInfoRequestAmino): QueryGroupInfoRequest {
-    const message = createBaseQueryGroupInfoRequest();
-    if (object.group_id !== undefined && object.group_id !== null) {
-      message.groupId = BigInt(object.group_id);
-    }
-    return message;
-  },
-  toAmino(message: QueryGroupInfoRequest): QueryGroupInfoRequestAmino {
-    const obj: any = {};
-    obj.group_id =
-      message.groupId !== BigInt(0) ? message.groupId.toString() : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryGroupInfoRequestAminoMsg): QueryGroupInfoRequest {
-    return QueryGroupInfoRequest.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryGroupInfoRequest): QueryGroupInfoRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupInfoRequest',
-      value: QueryGroupInfoRequest.toAmino(message),
-    };
   },
   fromProtoMsg(message: QueryGroupInfoRequestProtoMsg): QueryGroupInfoRequest {
     return QueryGroupInfoRequest.decode(message.value);
@@ -835,27 +537,6 @@ export const QueryGroupInfoResponse = {
         : undefined;
     return message;
   },
-  fromAmino(object: QueryGroupInfoResponseAmino): QueryGroupInfoResponse {
-    const message = createBaseQueryGroupInfoResponse();
-    if (object.info !== undefined && object.info !== null) {
-      message.info = GroupInfo.fromAmino(object.info);
-    }
-    return message;
-  },
-  toAmino(message: QueryGroupInfoResponse): QueryGroupInfoResponseAmino {
-    const obj: any = {};
-    obj.info = message.info ? GroupInfo.toAmino(message.info) : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryGroupInfoResponseAminoMsg): QueryGroupInfoResponse {
-    return QueryGroupInfoResponse.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryGroupInfoResponse): QueryGroupInfoResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupInfoResponse',
-      value: QueryGroupInfoResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupInfoResponseProtoMsg,
   ): QueryGroupInfoResponse {
@@ -924,35 +605,6 @@ export const QueryGroupPolicyInfoRequest = {
     const message = createBaseQueryGroupPolicyInfoRequest();
     message.address = object.address ?? '';
     return message;
-  },
-  fromAmino(
-    object: QueryGroupPolicyInfoRequestAmino,
-  ): QueryGroupPolicyInfoRequest {
-    const message = createBaseQueryGroupPolicyInfoRequest();
-    if (object.address !== undefined && object.address !== null) {
-      message.address = object.address;
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPolicyInfoRequest,
-  ): QueryGroupPolicyInfoRequestAmino {
-    const obj: any = {};
-    obj.address = message.address === '' ? undefined : message.address;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPolicyInfoRequestAminoMsg,
-  ): QueryGroupPolicyInfoRequest {
-    return QueryGroupPolicyInfoRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPolicyInfoRequest,
-  ): QueryGroupPolicyInfoRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPolicyInfoRequest',
-      value: QueryGroupPolicyInfoRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupPolicyInfoRequestProtoMsg,
@@ -1032,35 +684,6 @@ export const QueryGroupPolicyInfoResponse = {
         ? GroupPolicyInfo.fromPartial(object.info)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryGroupPolicyInfoResponseAmino,
-  ): QueryGroupPolicyInfoResponse {
-    const message = createBaseQueryGroupPolicyInfoResponse();
-    if (object.info !== undefined && object.info !== null) {
-      message.info = GroupPolicyInfo.fromAmino(object.info);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPolicyInfoResponse,
-  ): QueryGroupPolicyInfoResponseAmino {
-    const obj: any = {};
-    obj.info = message.info ? GroupPolicyInfo.toAmino(message.info) : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPolicyInfoResponseAminoMsg,
-  ): QueryGroupPolicyInfoResponse {
-    return QueryGroupPolicyInfoResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPolicyInfoResponse,
-  ): QueryGroupPolicyInfoResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPolicyInfoResponse',
-      value: QueryGroupPolicyInfoResponse.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupPolicyInfoResponseProtoMsg,
@@ -1156,38 +779,6 @@ export const QueryGroupMembersRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryGroupMembersRequestAmino): QueryGroupMembersRequest {
-    const message = createBaseQueryGroupMembersRequest();
-    if (object.group_id !== undefined && object.group_id !== null) {
-      message.groupId = BigInt(object.group_id);
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryGroupMembersRequest): QueryGroupMembersRequestAmino {
-    const obj: any = {};
-    obj.group_id =
-      message.groupId !== BigInt(0) ? message.groupId.toString() : undefined;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupMembersRequestAminoMsg,
-  ): QueryGroupMembersRequest {
-    return QueryGroupMembersRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupMembersRequest,
-  ): QueryGroupMembersRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupMembersRequest',
-      value: QueryGroupMembersRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupMembersRequestProtoMsg,
@@ -1290,41 +881,6 @@ export const QueryGroupMembersResponse = {
         : undefined;
     return message;
   },
-  fromAmino(object: QueryGroupMembersResponseAmino): QueryGroupMembersResponse {
-    const message = createBaseQueryGroupMembersResponse();
-    message.members = object.members?.map(e => GroupMember.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryGroupMembersResponse): QueryGroupMembersResponseAmino {
-    const obj: any = {};
-    if (message.members) {
-      obj.members = message.members.map(e =>
-        e ? GroupMember.toAmino(e) : undefined,
-      );
-    } else {
-      obj.members = message.members;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupMembersResponseAminoMsg,
-  ): QueryGroupMembersResponse {
-    return QueryGroupMembersResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupMembersResponse,
-  ): QueryGroupMembersResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupMembersResponse',
-      value: QueryGroupMembersResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupMembersResponseProtoMsg,
   ): QueryGroupMembersResponse {
@@ -1413,37 +969,6 @@ export const QueryGroupsByAdminRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryGroupsByAdminRequestAmino): QueryGroupsByAdminRequest {
-    const message = createBaseQueryGroupsByAdminRequest();
-    if (object.admin !== undefined && object.admin !== null) {
-      message.admin = object.admin;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryGroupsByAdminRequest): QueryGroupsByAdminRequestAmino {
-    const obj: any = {};
-    obj.admin = message.admin === '' ? undefined : message.admin;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupsByAdminRequestAminoMsg,
-  ): QueryGroupsByAdminRequest {
-    return QueryGroupsByAdminRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupsByAdminRequest,
-  ): QueryGroupsByAdminRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupsByAdminRequest',
-      value: QueryGroupsByAdminRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupsByAdminRequestProtoMsg,
@@ -1545,45 +1070,6 @@ export const QueryGroupsByAdminResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryGroupsByAdminResponseAmino,
-  ): QueryGroupsByAdminResponse {
-    const message = createBaseQueryGroupsByAdminResponse();
-    message.groups = object.groups?.map(e => GroupInfo.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupsByAdminResponse,
-  ): QueryGroupsByAdminResponseAmino {
-    const obj: any = {};
-    if (message.groups) {
-      obj.groups = message.groups.map(e =>
-        e ? GroupInfo.toAmino(e) : undefined,
-      );
-    } else {
-      obj.groups = message.groups;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupsByAdminResponseAminoMsg,
-  ): QueryGroupsByAdminResponse {
-    return QueryGroupsByAdminResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupsByAdminResponse,
-  ): QueryGroupsByAdminResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupsByAdminResponse',
-      value: QueryGroupsByAdminResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupsByAdminResponseProtoMsg,
   ): QueryGroupsByAdminResponse {
@@ -1678,42 +1164,6 @@ export const QueryGroupPoliciesByGroupRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryGroupPoliciesByGroupRequestAmino,
-  ): QueryGroupPoliciesByGroupRequest {
-    const message = createBaseQueryGroupPoliciesByGroupRequest();
-    if (object.group_id !== undefined && object.group_id !== null) {
-      message.groupId = BigInt(object.group_id);
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPoliciesByGroupRequest,
-  ): QueryGroupPoliciesByGroupRequestAmino {
-    const obj: any = {};
-    obj.group_id =
-      message.groupId !== BigInt(0) ? message.groupId.toString() : undefined;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPoliciesByGroupRequestAminoMsg,
-  ): QueryGroupPoliciesByGroupRequest {
-    return QueryGroupPoliciesByGroupRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPoliciesByGroupRequest,
-  ): QueryGroupPoliciesByGroupRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPoliciesByGroupRequest',
-      value: QueryGroupPoliciesByGroupRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupPoliciesByGroupRequestProtoMsg,
@@ -1818,46 +1268,6 @@ export const QueryGroupPoliciesByGroupResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryGroupPoliciesByGroupResponseAmino,
-  ): QueryGroupPoliciesByGroupResponse {
-    const message = createBaseQueryGroupPoliciesByGroupResponse();
-    message.groupPolicies =
-      object.group_policies?.map(e => GroupPolicyInfo.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPoliciesByGroupResponse,
-  ): QueryGroupPoliciesByGroupResponseAmino {
-    const obj: any = {};
-    if (message.groupPolicies) {
-      obj.group_policies = message.groupPolicies.map(e =>
-        e ? GroupPolicyInfo.toAmino(e) : undefined,
-      );
-    } else {
-      obj.group_policies = message.groupPolicies;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPoliciesByGroupResponseAminoMsg,
-  ): QueryGroupPoliciesByGroupResponse {
-    return QueryGroupPoliciesByGroupResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPoliciesByGroupResponse,
-  ): QueryGroupPoliciesByGroupResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPoliciesByGroupResponse',
-      value: QueryGroupPoliciesByGroupResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupPoliciesByGroupResponseProtoMsg,
   ): QueryGroupPoliciesByGroupResponse {
@@ -1946,41 +1356,6 @@ export const QueryGroupPoliciesByAdminRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryGroupPoliciesByAdminRequestAmino,
-  ): QueryGroupPoliciesByAdminRequest {
-    const message = createBaseQueryGroupPoliciesByAdminRequest();
-    if (object.admin !== undefined && object.admin !== null) {
-      message.admin = object.admin;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPoliciesByAdminRequest,
-  ): QueryGroupPoliciesByAdminRequestAmino {
-    const obj: any = {};
-    obj.admin = message.admin === '' ? undefined : message.admin;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPoliciesByAdminRequestAminoMsg,
-  ): QueryGroupPoliciesByAdminRequest {
-    return QueryGroupPoliciesByAdminRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPoliciesByAdminRequest,
-  ): QueryGroupPoliciesByAdminRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPoliciesByAdminRequest',
-      value: QueryGroupPoliciesByAdminRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupPoliciesByAdminRequestProtoMsg,
@@ -2085,46 +1460,6 @@ export const QueryGroupPoliciesByAdminResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryGroupPoliciesByAdminResponseAmino,
-  ): QueryGroupPoliciesByAdminResponse {
-    const message = createBaseQueryGroupPoliciesByAdminResponse();
-    message.groupPolicies =
-      object.group_policies?.map(e => GroupPolicyInfo.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupPoliciesByAdminResponse,
-  ): QueryGroupPoliciesByAdminResponseAmino {
-    const obj: any = {};
-    if (message.groupPolicies) {
-      obj.group_policies = message.groupPolicies.map(e =>
-        e ? GroupPolicyInfo.toAmino(e) : undefined,
-      );
-    } else {
-      obj.group_policies = message.groupPolicies;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupPoliciesByAdminResponseAminoMsg,
-  ): QueryGroupPoliciesByAdminResponse {
-    return QueryGroupPoliciesByAdminResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupPoliciesByAdminResponse,
-  ): QueryGroupPoliciesByAdminResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupPoliciesByAdminResponse',
-      value: QueryGroupPoliciesByAdminResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupPoliciesByAdminResponseProtoMsg,
   ): QueryGroupPoliciesByAdminResponse {
@@ -2200,30 +1535,6 @@ export const QueryProposalRequest = {
         : BigInt(0);
     return message;
   },
-  fromAmino(object: QueryProposalRequestAmino): QueryProposalRequest {
-    const message = createBaseQueryProposalRequest();
-    if (object.proposal_id !== undefined && object.proposal_id !== null) {
-      message.proposalId = BigInt(object.proposal_id);
-    }
-    return message;
-  },
-  toAmino(message: QueryProposalRequest): QueryProposalRequestAmino {
-    const obj: any = {};
-    obj.proposal_id =
-      message.proposalId !== BigInt(0)
-        ? message.proposalId.toString()
-        : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryProposalRequestAminoMsg): QueryProposalRequest {
-    return QueryProposalRequest.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryProposalRequest): QueryProposalRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryProposalRequest',
-      value: QueryProposalRequest.toAmino(message),
-    };
-  },
   fromProtoMsg(message: QueryProposalRequestProtoMsg): QueryProposalRequest {
     return QueryProposalRequest.decode(message.value);
   },
@@ -2296,29 +1607,6 @@ export const QueryProposalResponse = {
         ? Proposal.fromPartial(object.proposal)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryProposalResponseAmino): QueryProposalResponse {
-    const message = createBaseQueryProposalResponse();
-    if (object.proposal !== undefined && object.proposal !== null) {
-      message.proposal = Proposal.fromAmino(object.proposal);
-    }
-    return message;
-  },
-  toAmino(message: QueryProposalResponse): QueryProposalResponseAmino {
-    const obj: any = {};
-    obj.proposal = message.proposal
-      ? Proposal.toAmino(message.proposal)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: QueryProposalResponseAminoMsg): QueryProposalResponse {
-    return QueryProposalResponse.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryProposalResponse): QueryProposalResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryProposalResponse',
-      value: QueryProposalResponse.toAmino(message),
-    };
   },
   fromProtoMsg(message: QueryProposalResponseProtoMsg): QueryProposalResponse {
     return QueryProposalResponse.decode(message.value);
@@ -2404,41 +1692,6 @@ export const QueryProposalsByGroupPolicyRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryProposalsByGroupPolicyRequestAmino,
-  ): QueryProposalsByGroupPolicyRequest {
-    const message = createBaseQueryProposalsByGroupPolicyRequest();
-    if (object.address !== undefined && object.address !== null) {
-      message.address = object.address;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryProposalsByGroupPolicyRequest,
-  ): QueryProposalsByGroupPolicyRequestAmino {
-    const obj: any = {};
-    obj.address = message.address === '' ? undefined : message.address;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryProposalsByGroupPolicyRequestAminoMsg,
-  ): QueryProposalsByGroupPolicyRequest {
-    return QueryProposalsByGroupPolicyRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryProposalsByGroupPolicyRequest,
-  ): QueryProposalsByGroupPolicyRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryProposalsByGroupPolicyRequest',
-      value: QueryProposalsByGroupPolicyRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryProposalsByGroupPolicyRequestProtoMsg,
@@ -2541,45 +1794,6 @@ export const QueryProposalsByGroupPolicyResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryProposalsByGroupPolicyResponseAmino,
-  ): QueryProposalsByGroupPolicyResponse {
-    const message = createBaseQueryProposalsByGroupPolicyResponse();
-    message.proposals = object.proposals?.map(e => Proposal.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryProposalsByGroupPolicyResponse,
-  ): QueryProposalsByGroupPolicyResponseAmino {
-    const obj: any = {};
-    if (message.proposals) {
-      obj.proposals = message.proposals.map(e =>
-        e ? Proposal.toAmino(e) : undefined,
-      );
-    } else {
-      obj.proposals = message.proposals;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryProposalsByGroupPolicyResponseAminoMsg,
-  ): QueryProposalsByGroupPolicyResponse {
-    return QueryProposalsByGroupPolicyResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryProposalsByGroupPolicyResponse,
-  ): QueryProposalsByGroupPolicyResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryProposalsByGroupPolicyResponse',
-      value: QueryProposalsByGroupPolicyResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryProposalsByGroupPolicyResponseProtoMsg,
   ): QueryProposalsByGroupPolicyResponse {
@@ -2667,42 +1881,6 @@ export const QueryVoteByProposalVoterRequest = {
     message.voter = object.voter ?? '';
     return message;
   },
-  fromAmino(
-    object: QueryVoteByProposalVoterRequestAmino,
-  ): QueryVoteByProposalVoterRequest {
-    const message = createBaseQueryVoteByProposalVoterRequest();
-    if (object.proposal_id !== undefined && object.proposal_id !== null) {
-      message.proposalId = BigInt(object.proposal_id);
-    }
-    if (object.voter !== undefined && object.voter !== null) {
-      message.voter = object.voter;
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryVoteByProposalVoterRequest,
-  ): QueryVoteByProposalVoterRequestAmino {
-    const obj: any = {};
-    obj.proposal_id =
-      message.proposalId !== BigInt(0)
-        ? message.proposalId.toString()
-        : undefined;
-    obj.voter = message.voter === '' ? undefined : message.voter;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVoteByProposalVoterRequestAminoMsg,
-  ): QueryVoteByProposalVoterRequest {
-    return QueryVoteByProposalVoterRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVoteByProposalVoterRequest,
-  ): QueryVoteByProposalVoterRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVoteByProposalVoterRequest',
-      value: QueryVoteByProposalVoterRequest.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryVoteByProposalVoterRequestProtoMsg,
   ): QueryVoteByProposalVoterRequest {
@@ -2777,35 +1955,6 @@ export const QueryVoteByProposalVoterResponse = {
         ? Vote.fromPartial(object.vote)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryVoteByProposalVoterResponseAmino,
-  ): QueryVoteByProposalVoterResponse {
-    const message = createBaseQueryVoteByProposalVoterResponse();
-    if (object.vote !== undefined && object.vote !== null) {
-      message.vote = Vote.fromAmino(object.vote);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryVoteByProposalVoterResponse,
-  ): QueryVoteByProposalVoterResponseAmino {
-    const obj: any = {};
-    obj.vote = message.vote ? Vote.toAmino(message.vote) : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVoteByProposalVoterResponseAminoMsg,
-  ): QueryVoteByProposalVoterResponse {
-    return QueryVoteByProposalVoterResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVoteByProposalVoterResponse,
-  ): QueryVoteByProposalVoterResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVoteByProposalVoterResponse',
-      value: QueryVoteByProposalVoterResponse.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryVoteByProposalVoterResponseProtoMsg,
@@ -2901,44 +2050,6 @@ export const QueryVotesByProposalRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryVotesByProposalRequestAmino,
-  ): QueryVotesByProposalRequest {
-    const message = createBaseQueryVotesByProposalRequest();
-    if (object.proposal_id !== undefined && object.proposal_id !== null) {
-      message.proposalId = BigInt(object.proposal_id);
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryVotesByProposalRequest,
-  ): QueryVotesByProposalRequestAmino {
-    const obj: any = {};
-    obj.proposal_id =
-      message.proposalId !== BigInt(0)
-        ? message.proposalId.toString()
-        : undefined;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVotesByProposalRequestAminoMsg,
-  ): QueryVotesByProposalRequest {
-    return QueryVotesByProposalRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVotesByProposalRequest,
-  ): QueryVotesByProposalRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVotesByProposalRequest',
-      value: QueryVotesByProposalRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryVotesByProposalRequestProtoMsg,
@@ -3038,43 +2149,6 @@ export const QueryVotesByProposalResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryVotesByProposalResponseAmino,
-  ): QueryVotesByProposalResponse {
-    const message = createBaseQueryVotesByProposalResponse();
-    message.votes = object.votes?.map(e => Vote.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryVotesByProposalResponse,
-  ): QueryVotesByProposalResponseAmino {
-    const obj: any = {};
-    if (message.votes) {
-      obj.votes = message.votes.map(e => (e ? Vote.toAmino(e) : undefined));
-    } else {
-      obj.votes = message.votes;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVotesByProposalResponseAminoMsg,
-  ): QueryVotesByProposalResponse {
-    return QueryVotesByProposalResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVotesByProposalResponse,
-  ): QueryVotesByProposalResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVotesByProposalResponse',
-      value: QueryVotesByProposalResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryVotesByProposalResponseProtoMsg,
   ): QueryVotesByProposalResponse {
@@ -3163,37 +2237,6 @@ export const QueryVotesByVoterRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryVotesByVoterRequestAmino): QueryVotesByVoterRequest {
-    const message = createBaseQueryVotesByVoterRequest();
-    if (object.voter !== undefined && object.voter !== null) {
-      message.voter = object.voter;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryVotesByVoterRequest): QueryVotesByVoterRequestAmino {
-    const obj: any = {};
-    obj.voter = message.voter === '' ? undefined : message.voter;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVotesByVoterRequestAminoMsg,
-  ): QueryVotesByVoterRequest {
-    return QueryVotesByVoterRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVotesByVoterRequest,
-  ): QueryVotesByVoterRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVotesByVoterRequest',
-      value: QueryVotesByVoterRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryVotesByVoterRequestProtoMsg,
@@ -3293,39 +2336,6 @@ export const QueryVotesByVoterResponse = {
         : undefined;
     return message;
   },
-  fromAmino(object: QueryVotesByVoterResponseAmino): QueryVotesByVoterResponse {
-    const message = createBaseQueryVotesByVoterResponse();
-    message.votes = object.votes?.map(e => Vote.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(message: QueryVotesByVoterResponse): QueryVotesByVoterResponseAmino {
-    const obj: any = {};
-    if (message.votes) {
-      obj.votes = message.votes.map(e => (e ? Vote.toAmino(e) : undefined));
-    } else {
-      obj.votes = message.votes;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryVotesByVoterResponseAminoMsg,
-  ): QueryVotesByVoterResponse {
-    return QueryVotesByVoterResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryVotesByVoterResponse,
-  ): QueryVotesByVoterResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryVotesByVoterResponse',
-      value: QueryVotesByVoterResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryVotesByVoterResponseProtoMsg,
   ): QueryVotesByVoterResponse {
@@ -3414,41 +2424,6 @@ export const QueryGroupsByMemberRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     return message;
-  },
-  fromAmino(
-    object: QueryGroupsByMemberRequestAmino,
-  ): QueryGroupsByMemberRequest {
-    const message = createBaseQueryGroupsByMemberRequest();
-    if (object.address !== undefined && object.address !== null) {
-      message.address = object.address;
-    }
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageRequest.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupsByMemberRequest,
-  ): QueryGroupsByMemberRequestAmino {
-    const obj: any = {};
-    obj.address = message.address === '' ? undefined : message.address;
-    obj.pagination = message.pagination
-      ? PageRequest.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupsByMemberRequestAminoMsg,
-  ): QueryGroupsByMemberRequest {
-    return QueryGroupsByMemberRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupsByMemberRequest,
-  ): QueryGroupsByMemberRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupsByMemberRequest',
-      value: QueryGroupsByMemberRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryGroupsByMemberRequestProtoMsg,
@@ -3550,45 +2525,6 @@ export const QueryGroupsByMemberResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: QueryGroupsByMemberResponseAmino,
-  ): QueryGroupsByMemberResponse {
-    const message = createBaseQueryGroupsByMemberResponse();
-    message.groups = object.groups?.map(e => GroupInfo.fromAmino(e)) || [];
-    if (object.pagination !== undefined && object.pagination !== null) {
-      message.pagination = PageResponse.fromAmino(object.pagination);
-    }
-    return message;
-  },
-  toAmino(
-    message: QueryGroupsByMemberResponse,
-  ): QueryGroupsByMemberResponseAmino {
-    const obj: any = {};
-    if (message.groups) {
-      obj.groups = message.groups.map(e =>
-        e ? GroupInfo.toAmino(e) : undefined,
-      );
-    } else {
-      obj.groups = message.groups;
-    }
-    obj.pagination = message.pagination
-      ? PageResponse.toAmino(message.pagination)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryGroupsByMemberResponseAminoMsg,
-  ): QueryGroupsByMemberResponse {
-    return QueryGroupsByMemberResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryGroupsByMemberResponse,
-  ): QueryGroupsByMemberResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryGroupsByMemberResponse',
-      value: QueryGroupsByMemberResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryGroupsByMemberResponseProtoMsg,
   ): QueryGroupsByMemberResponse {
@@ -3665,34 +2601,6 @@ export const QueryTallyResultRequest = {
         ? BigInt(object.proposalId.toString())
         : BigInt(0);
     return message;
-  },
-  fromAmino(object: QueryTallyResultRequestAmino): QueryTallyResultRequest {
-    const message = createBaseQueryTallyResultRequest();
-    if (object.proposal_id !== undefined && object.proposal_id !== null) {
-      message.proposalId = BigInt(object.proposal_id);
-    }
-    return message;
-  },
-  toAmino(message: QueryTallyResultRequest): QueryTallyResultRequestAmino {
-    const obj: any = {};
-    obj.proposal_id =
-      message.proposalId !== BigInt(0)
-        ? message.proposalId.toString()
-        : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryTallyResultRequestAminoMsg,
-  ): QueryTallyResultRequest {
-    return QueryTallyResultRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryTallyResultRequest,
-  ): QueryTallyResultRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryTallyResultRequest',
-      value: QueryTallyResultRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryTallyResultRequestProtoMsg,
@@ -3772,31 +2680,6 @@ export const QueryTallyResultResponse = {
         ? TallyResult.fromPartial(object.tally)
         : undefined;
     return message;
-  },
-  fromAmino(object: QueryTallyResultResponseAmino): QueryTallyResultResponse {
-    const message = createBaseQueryTallyResultResponse();
-    if (object.tally !== undefined && object.tally !== null) {
-      message.tally = TallyResult.fromAmino(object.tally);
-    }
-    return message;
-  },
-  toAmino(message: QueryTallyResultResponse): QueryTallyResultResponseAmino {
-    const obj: any = {};
-    obj.tally = message.tally ? TallyResult.toAmino(message.tally) : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryTallyResultResponseAminoMsg,
-  ): QueryTallyResultResponse {
-    return QueryTallyResultResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryTallyResultResponse,
-  ): QueryTallyResultResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryTallyResultResponse',
-      value: QueryTallyResultResponse.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryTallyResultResponseProtoMsg,

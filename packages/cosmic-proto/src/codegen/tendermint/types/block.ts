@@ -1,20 +1,13 @@
 //@ts-nocheck
 import {
   Header,
-  HeaderAmino,
   HeaderSDKType,
   Data,
-  DataAmino,
   DataSDKType,
   Commit,
-  CommitAmino,
   CommitSDKType,
 } from './types.js';
-import {
-  EvidenceList,
-  EvidenceListAmino,
-  EvidenceListSDKType,
-} from './evidence.js';
+import { EvidenceList, EvidenceListSDKType } from './evidence.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 export interface Block {
@@ -26,16 +19,6 @@ export interface Block {
 export interface BlockProtoMsg {
   typeUrl: '/tendermint.types.Block';
   value: Uint8Array;
-}
-export interface BlockAmino {
-  header?: HeaderAmino;
-  data?: DataAmino;
-  evidence?: EvidenceListAmino;
-  last_commit?: CommitAmino;
-}
-export interface BlockAminoMsg {
-  type: '/tendermint.types.Block';
-  value: BlockAmino;
 }
 export interface BlockSDKType {
   header: HeaderSDKType;
@@ -145,37 +128,6 @@ export const Block = {
         ? Commit.fromPartial(object.lastCommit)
         : undefined;
     return message;
-  },
-  fromAmino(object: BlockAmino): Block {
-    const message = createBaseBlock();
-    if (object.header !== undefined && object.header !== null) {
-      message.header = Header.fromAmino(object.header);
-    }
-    if (object.data !== undefined && object.data !== null) {
-      message.data = Data.fromAmino(object.data);
-    }
-    if (object.evidence !== undefined && object.evidence !== null) {
-      message.evidence = EvidenceList.fromAmino(object.evidence);
-    }
-    if (object.last_commit !== undefined && object.last_commit !== null) {
-      message.lastCommit = Commit.fromAmino(object.last_commit);
-    }
-    return message;
-  },
-  toAmino(message: Block): BlockAmino {
-    const obj: any = {};
-    obj.header = message.header ? Header.toAmino(message.header) : undefined;
-    obj.data = message.data ? Data.toAmino(message.data) : undefined;
-    obj.evidence = message.evidence
-      ? EvidenceList.toAmino(message.evidence)
-      : undefined;
-    obj.last_commit = message.lastCommit
-      ? Commit.toAmino(message.lastCommit)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: BlockAminoMsg): Block {
-    return Block.fromAmino(object.value);
   },
   fromProtoMsg(message: BlockProtoMsg): Block {
     return Block.decode(message.value);

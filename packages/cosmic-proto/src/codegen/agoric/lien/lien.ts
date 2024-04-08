@@ -1,9 +1,5 @@
 //@ts-nocheck
-import {
-  Coin,
-  CoinAmino,
-  CoinSDKType,
-} from '../../cosmos/base/v1beta1/coin.js';
+import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 /** Lien contains the lien state of a particular account. */
 export interface Lien {
@@ -19,21 +15,6 @@ export interface Lien {
 export interface LienProtoMsg {
   typeUrl: '/agoric.lien.Lien';
   value: Uint8Array;
-}
-/** Lien contains the lien state of a particular account. */
-export interface LienAmino {
-  /** coins holds the amount liened */
-  coins?: CoinAmino[];
-  /**
-   * delegated tracks the net amount delegated for non-vesting accounts,
-   * or zero coins for vesting accounts.
-   * (Vesting accounts have their own fields to track delegation.)
-   */
-  delegated?: CoinAmino[];
-}
-export interface LienAminoMsg {
-  type: '/agoric.lien.Lien';
-  value: LienAmino;
 }
 /** Lien contains the lien state of a particular account. */
 export interface LienSDKType {
@@ -112,31 +93,6 @@ export const Lien = {
     message.coins = object.coins?.map(e => Coin.fromPartial(e)) || [];
     message.delegated = object.delegated?.map(e => Coin.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: LienAmino): Lien {
-    const message = createBaseLien();
-    message.coins = object.coins?.map(e => Coin.fromAmino(e)) || [];
-    message.delegated = object.delegated?.map(e => Coin.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: Lien): LienAmino {
-    const obj: any = {};
-    if (message.coins) {
-      obj.coins = message.coins.map(e => (e ? Coin.toAmino(e) : undefined));
-    } else {
-      obj.coins = message.coins;
-    }
-    if (message.delegated) {
-      obj.delegated = message.delegated.map(e =>
-        e ? Coin.toAmino(e) : undefined,
-      );
-    } else {
-      obj.delegated = message.delegated;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: LienAminoMsg): Lien {
-    return Lien.fromAmino(object.value);
   },
   fromProtoMsg(message: LienProtoMsg): Lien {
     return Lien.decode(message.value);

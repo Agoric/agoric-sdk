@@ -10,14 +10,6 @@ export interface DataProtoMsg {
   value: Uint8Array;
 }
 /** Data is the vstorage node data. */
-export interface DataAmino {
-  value: string;
-}
-export interface DataAminoMsg {
-  type: '/agoric.vstorage.Data';
-  value: DataAmino;
-}
-/** Data is the vstorage node data. */
 export interface DataSDKType {
   value: string;
 }
@@ -31,17 +23,6 @@ export interface Children {
 export interface ChildrenProtoMsg {
   typeUrl: '/agoric.vstorage.Children';
   value: Uint8Array;
-}
-/**
- * Children are the immediate names (just one level deep) of subnodes leading to
- * more data from a given vstorage node.
- */
-export interface ChildrenAmino {
-  children: string[];
-}
-export interface ChildrenAminoMsg {
-  type: '/agoric.vstorage.Children';
-  value: ChildrenAmino;
 }
 /**
  * Children are the immediate names (just one level deep) of subnodes leading to
@@ -98,21 +79,6 @@ export const Data = {
     const message = createBaseData();
     message.value = object.value ?? '';
     return message;
-  },
-  fromAmino(object: DataAmino): Data {
-    const message = createBaseData();
-    if (object.value !== undefined && object.value !== null) {
-      message.value = object.value;
-    }
-    return message;
-  },
-  toAmino(message: Data): DataAmino {
-    const obj: any = {};
-    obj.value = message.value ?? '';
-    return obj;
-  },
-  fromAminoMsg(object: DataAminoMsg): Data {
-    return Data.fromAmino(object.value);
   },
   fromProtoMsg(message: DataProtoMsg): Data {
     return Data.decode(message.value);
@@ -181,23 +147,6 @@ export const Children = {
     const message = createBaseChildren();
     message.children = object.children?.map(e => e) || [];
     return message;
-  },
-  fromAmino(object: ChildrenAmino): Children {
-    const message = createBaseChildren();
-    message.children = object.children?.map(e => e) || [];
-    return message;
-  },
-  toAmino(message: Children): ChildrenAmino {
-    const obj: any = {};
-    if (message.children) {
-      obj.children = message.children.map(e => e);
-    } else {
-      obj.children = message.children;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: ChildrenAminoMsg): Children {
-    return Children.fromAmino(object.value);
   },
   fromProtoMsg(message: ChildrenProtoMsg): Children {
     return Children.decode(message.value);

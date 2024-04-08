@@ -24,28 +24,6 @@ export interface AppDescriptorProtoMsg {
   value: Uint8Array;
 }
 /** AppDescriptor describes a cosmos-sdk based application */
-export interface AppDescriptorAmino {
-  /**
-   * AuthnDescriptor provides information on how to authenticate transactions on the application
-   * NOTE: experimental and subject to change in future releases.
-   */
-  authn?: AuthnDescriptorAmino;
-  /** chain provides the chain descriptor */
-  chain?: ChainDescriptorAmino;
-  /** codec provides metadata information regarding codec related types */
-  codec?: CodecDescriptorAmino;
-  /** configuration provides metadata information regarding the sdk.Config type */
-  configuration?: ConfigurationDescriptorAmino;
-  /** query_services provides metadata information regarding the available queriable endpoints */
-  query_services?: QueryServicesDescriptorAmino;
-  /** tx provides metadata information regarding how to send transactions to the given application */
-  tx?: TxDescriptorAmino;
-}
-export interface AppDescriptorAminoMsg {
-  type: 'cosmos-sdk/AppDescriptor';
-  value: AppDescriptorAmino;
-}
-/** AppDescriptor describes a cosmos-sdk based application */
 export interface AppDescriptorSDKType {
   authn?: AuthnDescriptorSDKType;
   chain?: ChainDescriptorSDKType;
@@ -70,21 +48,6 @@ export interface TxDescriptorProtoMsg {
   value: Uint8Array;
 }
 /** TxDescriptor describes the accepted transaction type */
-export interface TxDescriptorAmino {
-  /**
-   * fullname is the protobuf fullname of the raw transaction type (for instance the tx.Tx type)
-   * it is not meant to support polymorphism of transaction types, it is supposed to be used by
-   * reflection clients to understand if they can handle a specific transaction type in an application.
-   */
-  fullname?: string;
-  /** msgs lists the accepted application messages (sdk.Msg) */
-  msgs?: MsgDescriptorAmino[];
-}
-export interface TxDescriptorAminoMsg {
-  type: 'cosmos-sdk/TxDescriptor';
-  value: TxDescriptorAmino;
-}
-/** TxDescriptor describes the accepted transaction type */
 export interface TxDescriptorSDKType {
   fullname: string;
   msgs: MsgDescriptorSDKType[];
@@ -100,18 +63,6 @@ export interface AuthnDescriptor {
 export interface AuthnDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.AuthnDescriptor';
   value: Uint8Array;
-}
-/**
- * AuthnDescriptor provides information on how to sign transactions without relying
- * on the online RPCs GetTxMetadata and CombineUnsignedTxAndSignatures
- */
-export interface AuthnDescriptorAmino {
-  /** sign_modes defines the supported signature algorithm */
-  sign_modes?: SigningModeDescriptorAmino[];
-}
-export interface AuthnDescriptorAminoMsg {
-  type: 'cosmos-sdk/AuthnDescriptor';
-  value: AuthnDescriptorAmino;
 }
 /**
  * AuthnDescriptor provides information on how to sign transactions without relying
@@ -147,27 +98,6 @@ export interface SigningModeDescriptorProtoMsg {
  * to sign a message given a SigningModeDescriptor, but it's better to think about
  * this another time
  */
-export interface SigningModeDescriptorAmino {
-  /** name defines the unique name of the signing mode */
-  name?: string;
-  /** number is the unique int32 identifier for the sign_mode enum */
-  number?: number;
-  /**
-   * authn_info_provider_method_fullname defines the fullname of the method to call to get
-   * the metadata required to authenticate using the provided sign_modes
-   */
-  authn_info_provider_method_fullname?: string;
-}
-export interface SigningModeDescriptorAminoMsg {
-  type: 'cosmos-sdk/SigningModeDescriptor';
-  value: SigningModeDescriptorAmino;
-}
-/**
- * SigningModeDescriptor provides information on a signing flow of the application
- * NOTE(fdymylja): here we could go as far as providing an entire flow on how
- * to sign a message given a SigningModeDescriptor, but it's better to think about
- * this another time
- */
 export interface SigningModeDescriptorSDKType {
   name: string;
   number: number;
@@ -183,15 +113,6 @@ export interface ChainDescriptorProtoMsg {
   value: Uint8Array;
 }
 /** ChainDescriptor describes chain information of the application */
-export interface ChainDescriptorAmino {
-  /** id is the chain id */
-  id?: string;
-}
-export interface ChainDescriptorAminoMsg {
-  type: 'cosmos-sdk/ChainDescriptor';
-  value: ChainDescriptorAmino;
-}
-/** ChainDescriptor describes chain information of the application */
 export interface ChainDescriptorSDKType {
   id: string;
 }
@@ -203,15 +124,6 @@ export interface CodecDescriptor {
 export interface CodecDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.CodecDescriptor';
   value: Uint8Array;
-}
-/** CodecDescriptor describes the registered interfaces and provides metadata information on the types */
-export interface CodecDescriptorAmino {
-  /** interfaces is a list of the registerted interfaces descriptors */
-  interfaces?: InterfaceDescriptorAmino[];
-}
-export interface CodecDescriptorAminoMsg {
-  type: 'cosmos-sdk/CodecDescriptor';
-  value: CodecDescriptorAmino;
 }
 /** CodecDescriptor describes the registered interfaces and provides metadata information on the types */
 export interface CodecDescriptorSDKType {
@@ -234,22 +146,6 @@ export interface InterfaceDescriptorProtoMsg {
   value: Uint8Array;
 }
 /** InterfaceDescriptor describes the implementation of an interface */
-export interface InterfaceDescriptorAmino {
-  /** fullname is the name of the interface */
-  fullname?: string;
-  /**
-   * interface_accepting_messages contains information regarding the proto messages which contain the interface as
-   * google.protobuf.Any field
-   */
-  interface_accepting_messages?: InterfaceAcceptingMessageDescriptorAmino[];
-  /** interface_implementers is a list of the descriptors of the interface implementers */
-  interface_implementers?: InterfaceImplementerDescriptorAmino[];
-}
-export interface InterfaceDescriptorAminoMsg {
-  type: 'cosmos-sdk/InterfaceDescriptor';
-  value: InterfaceDescriptorAmino;
-}
-/** InterfaceDescriptor describes the implementation of an interface */
 export interface InterfaceDescriptorSDKType {
   fullname: string;
   interface_accepting_messages: InterfaceAcceptingMessageDescriptorSDKType[];
@@ -270,22 +166,6 @@ export interface InterfaceImplementerDescriptor {
 export interface InterfaceImplementerDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.InterfaceImplementerDescriptor';
   value: Uint8Array;
-}
-/** InterfaceImplementerDescriptor describes an interface implementer */
-export interface InterfaceImplementerDescriptorAmino {
-  /** fullname is the protobuf queryable name of the interface implementer */
-  fullname?: string;
-  /**
-   * type_url defines the type URL used when marshalling the type as any
-   * this is required so we can provide type safe google.protobuf.Any marshalling and
-   * unmarshalling, making sure that we don't accept just 'any' type
-   * in our interface fields
-   */
-  type_url?: string;
-}
-export interface InterfaceImplementerDescriptorAminoMsg {
-  type: 'cosmos-sdk/InterfaceImplementerDescriptor';
-  value: InterfaceImplementerDescriptorAmino;
 }
 /** InterfaceImplementerDescriptor describes an interface implementer */
 export interface InterfaceImplementerDescriptorSDKType {
@@ -314,24 +194,6 @@ export interface InterfaceAcceptingMessageDescriptorProtoMsg {
  * InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
  * an interface represented as a google.protobuf.Any
  */
-export interface InterfaceAcceptingMessageDescriptorAmino {
-  /** fullname is the protobuf fullname of the type containing the interface */
-  fullname?: string;
-  /**
-   * field_descriptor_names is a list of the protobuf name (not fullname) of the field
-   * which contains the interface as google.protobuf.Any (the interface is the same, but
-   * it can be in multiple fields of the same proto message)
-   */
-  field_descriptor_names?: string[];
-}
-export interface InterfaceAcceptingMessageDescriptorAminoMsg {
-  type: 'cosmos-sdk/InterfaceAcceptingMessageDescriptor';
-  value: InterfaceAcceptingMessageDescriptorAmino;
-}
-/**
- * InterfaceAcceptingMessageDescriptor describes a protobuf message which contains
- * an interface represented as a google.protobuf.Any
- */
 export interface InterfaceAcceptingMessageDescriptorSDKType {
   fullname: string;
   field_descriptor_names: string[];
@@ -344,15 +206,6 @@ export interface ConfigurationDescriptor {
 export interface ConfigurationDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.ConfigurationDescriptor';
   value: Uint8Array;
-}
-/** ConfigurationDescriptor contains metadata information on the sdk.Config */
-export interface ConfigurationDescriptorAmino {
-  /** bech32_account_address_prefix is the account address prefix */
-  bech32_account_address_prefix?: string;
-}
-export interface ConfigurationDescriptorAminoMsg {
-  type: 'cosmos-sdk/ConfigurationDescriptor';
-  value: ConfigurationDescriptorAmino;
 }
 /** ConfigurationDescriptor contains metadata information on the sdk.Config */
 export interface ConfigurationDescriptorSDKType {
@@ -368,15 +221,6 @@ export interface MsgDescriptorProtoMsg {
   value: Uint8Array;
 }
 /** MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction */
-export interface MsgDescriptorAmino {
-  /** msg_type_url contains the TypeURL of a sdk.Msg. */
-  msg_type_url?: string;
-}
-export interface MsgDescriptorAminoMsg {
-  type: 'cosmos-sdk/MsgDescriptor';
-  value: MsgDescriptorAmino;
-}
-/** MsgDescriptor describes a cosmos-sdk message that can be delivered with a transaction */
 export interface MsgDescriptorSDKType {
   msg_type_url: string;
 }
@@ -385,12 +229,6 @@ export interface GetAuthnDescriptorRequest {}
 export interface GetAuthnDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetAuthnDescriptorRequest';
   value: Uint8Array;
-}
-/** GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC */
-export interface GetAuthnDescriptorRequestAmino {}
-export interface GetAuthnDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetAuthnDescriptorRequest';
-  value: GetAuthnDescriptorRequestAmino;
 }
 /** GetAuthnDescriptorRequest is the request used for the GetAuthnDescriptor RPC */
 export interface GetAuthnDescriptorRequestSDKType {}
@@ -404,15 +242,6 @@ export interface GetAuthnDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC */
-export interface GetAuthnDescriptorResponseAmino {
-  /** authn describes how to authenticate to the application when sending transactions */
-  authn?: AuthnDescriptorAmino;
-}
-export interface GetAuthnDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetAuthnDescriptorResponse';
-  value: GetAuthnDescriptorResponseAmino;
-}
-/** GetAuthnDescriptorResponse is the response returned by the GetAuthnDescriptor RPC */
 export interface GetAuthnDescriptorResponseSDKType {
   authn?: AuthnDescriptorSDKType;
 }
@@ -421,12 +250,6 @@ export interface GetChainDescriptorRequest {}
 export interface GetChainDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetChainDescriptorRequest';
   value: Uint8Array;
-}
-/** GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC */
-export interface GetChainDescriptorRequestAmino {}
-export interface GetChainDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetChainDescriptorRequest';
-  value: GetChainDescriptorRequestAmino;
 }
 /** GetChainDescriptorRequest is the request used for the GetChainDescriptor RPC */
 export interface GetChainDescriptorRequestSDKType {}
@@ -440,15 +263,6 @@ export interface GetChainDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC */
-export interface GetChainDescriptorResponseAmino {
-  /** chain describes application chain information */
-  chain?: ChainDescriptorAmino;
-}
-export interface GetChainDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetChainDescriptorResponse';
-  value: GetChainDescriptorResponseAmino;
-}
-/** GetChainDescriptorResponse is the response returned by the GetChainDescriptor RPC */
 export interface GetChainDescriptorResponseSDKType {
   chain?: ChainDescriptorSDKType;
 }
@@ -457,12 +271,6 @@ export interface GetCodecDescriptorRequest {}
 export interface GetCodecDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetCodecDescriptorRequest';
   value: Uint8Array;
-}
-/** GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC */
-export interface GetCodecDescriptorRequestAmino {}
-export interface GetCodecDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetCodecDescriptorRequest';
-  value: GetCodecDescriptorRequestAmino;
 }
 /** GetCodecDescriptorRequest is the request used for the GetCodecDescriptor RPC */
 export interface GetCodecDescriptorRequestSDKType {}
@@ -476,15 +284,6 @@ export interface GetCodecDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC */
-export interface GetCodecDescriptorResponseAmino {
-  /** codec describes the application codec such as registered interfaces and implementations */
-  codec?: CodecDescriptorAmino;
-}
-export interface GetCodecDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetCodecDescriptorResponse';
-  value: GetCodecDescriptorResponseAmino;
-}
-/** GetCodecDescriptorResponse is the response returned by the GetCodecDescriptor RPC */
 export interface GetCodecDescriptorResponseSDKType {
   codec?: CodecDescriptorSDKType;
 }
@@ -493,12 +292,6 @@ export interface GetConfigurationDescriptorRequest {}
 export interface GetConfigurationDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetConfigurationDescriptorRequest';
   value: Uint8Array;
-}
-/** GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC */
-export interface GetConfigurationDescriptorRequestAmino {}
-export interface GetConfigurationDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetConfigurationDescriptorRequest';
-  value: GetConfigurationDescriptorRequestAmino;
 }
 /** GetConfigurationDescriptorRequest is the request used for the GetConfigurationDescriptor RPC */
 export interface GetConfigurationDescriptorRequestSDKType {}
@@ -512,15 +305,6 @@ export interface GetConfigurationDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC */
-export interface GetConfigurationDescriptorResponseAmino {
-  /** config describes the application's sdk.Config */
-  config?: ConfigurationDescriptorAmino;
-}
-export interface GetConfigurationDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetConfigurationDescriptorResponse';
-  value: GetConfigurationDescriptorResponseAmino;
-}
-/** GetConfigurationDescriptorResponse is the response returned by the GetConfigurationDescriptor RPC */
 export interface GetConfigurationDescriptorResponseSDKType {
   config?: ConfigurationDescriptorSDKType;
 }
@@ -529,12 +313,6 @@ export interface GetQueryServicesDescriptorRequest {}
 export interface GetQueryServicesDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetQueryServicesDescriptorRequest';
   value: Uint8Array;
-}
-/** GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC */
-export interface GetQueryServicesDescriptorRequestAmino {}
-export interface GetQueryServicesDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetQueryServicesDescriptorRequest';
-  value: GetQueryServicesDescriptorRequestAmino;
 }
 /** GetQueryServicesDescriptorRequest is the request used for the GetQueryServicesDescriptor RPC */
 export interface GetQueryServicesDescriptorRequestSDKType {}
@@ -548,15 +326,6 @@ export interface GetQueryServicesDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC */
-export interface GetQueryServicesDescriptorResponseAmino {
-  /** queries provides information on the available queryable services */
-  queries?: QueryServicesDescriptorAmino;
-}
-export interface GetQueryServicesDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetQueryServicesDescriptorResponse';
-  value: GetQueryServicesDescriptorResponseAmino;
-}
-/** GetQueryServicesDescriptorResponse is the response returned by the GetQueryServicesDescriptor RPC */
 export interface GetQueryServicesDescriptorResponseSDKType {
   queries?: QueryServicesDescriptorSDKType;
 }
@@ -565,12 +334,6 @@ export interface GetTxDescriptorRequest {}
 export interface GetTxDescriptorRequestProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.GetTxDescriptorRequest';
   value: Uint8Array;
-}
-/** GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC */
-export interface GetTxDescriptorRequestAmino {}
-export interface GetTxDescriptorRequestAminoMsg {
-  type: 'cosmos-sdk/GetTxDescriptorRequest';
-  value: GetTxDescriptorRequestAmino;
 }
 /** GetTxDescriptorRequest is the request used for the GetTxDescriptor RPC */
 export interface GetTxDescriptorRequestSDKType {}
@@ -587,18 +350,6 @@ export interface GetTxDescriptorResponseProtoMsg {
   value: Uint8Array;
 }
 /** GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC */
-export interface GetTxDescriptorResponseAmino {
-  /**
-   * tx provides information on msgs that can be forwarded to the application
-   * alongside the accepted transaction protobuf type
-   */
-  tx?: TxDescriptorAmino;
-}
-export interface GetTxDescriptorResponseAminoMsg {
-  type: 'cosmos-sdk/GetTxDescriptorResponse';
-  value: GetTxDescriptorResponseAmino;
-}
-/** GetTxDescriptorResponse is the response returned by the GetTxDescriptor RPC */
 export interface GetTxDescriptorResponseSDKType {
   tx?: TxDescriptorSDKType;
 }
@@ -610,15 +361,6 @@ export interface QueryServicesDescriptor {
 export interface QueryServicesDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServicesDescriptor';
   value: Uint8Array;
-}
-/** QueryServicesDescriptor contains the list of cosmos-sdk queriable services */
-export interface QueryServicesDescriptorAmino {
-  /** query_services is a list of cosmos-sdk QueryServiceDescriptor */
-  query_services?: QueryServiceDescriptorAmino[];
-}
-export interface QueryServicesDescriptorAminoMsg {
-  type: 'cosmos-sdk/QueryServicesDescriptor';
-  value: QueryServicesDescriptorAmino;
 }
 /** QueryServicesDescriptor contains the list of cosmos-sdk queriable services */
 export interface QueryServicesDescriptorSDKType {
@@ -636,19 +378,6 @@ export interface QueryServiceDescriptor {
 export interface QueryServiceDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryServiceDescriptor';
   value: Uint8Array;
-}
-/** QueryServiceDescriptor describes a cosmos-sdk queryable service */
-export interface QueryServiceDescriptorAmino {
-  /** fullname is the protobuf fullname of the service descriptor */
-  fullname?: string;
-  /** is_module describes if this service is actually exposed by an application's module */
-  is_module?: boolean;
-  /** methods provides a list of query service methods */
-  methods?: QueryMethodDescriptorAmino[];
-}
-export interface QueryServiceDescriptorAminoMsg {
-  type: 'cosmos-sdk/QueryServiceDescriptor';
-  value: QueryServiceDescriptorAmino;
 }
 /** QueryServiceDescriptor describes a cosmos-sdk queryable service */
 export interface QueryServiceDescriptorSDKType {
@@ -673,24 +402,6 @@ export interface QueryMethodDescriptor {
 export interface QueryMethodDescriptorProtoMsg {
   typeUrl: '/cosmos.base.reflection.v2alpha1.QueryMethodDescriptor';
   value: Uint8Array;
-}
-/**
- * QueryMethodDescriptor describes a queryable method of a query service
- * no other info is provided beside method name and tendermint queryable path
- * because it would be redundant with the grpc reflection service
- */
-export interface QueryMethodDescriptorAmino {
-  /** name is the protobuf name (not fullname) of the method */
-  name?: string;
-  /**
-   * full_query_path is the path that can be used to query
-   * this method via tendermint abci.Query
-   */
-  full_query_path?: string;
-}
-export interface QueryMethodDescriptorAminoMsg {
-  type: 'cosmos-sdk/QueryMethodDescriptor';
-  value: QueryMethodDescriptorAmino;
 }
 /**
  * QueryMethodDescriptor describes a queryable method of a query service
@@ -856,61 +567,6 @@ export const AppDescriptor = {
         : undefined;
     return message;
   },
-  fromAmino(object: AppDescriptorAmino): AppDescriptor {
-    const message = createBaseAppDescriptor();
-    if (object.authn !== undefined && object.authn !== null) {
-      message.authn = AuthnDescriptor.fromAmino(object.authn);
-    }
-    if (object.chain !== undefined && object.chain !== null) {
-      message.chain = ChainDescriptor.fromAmino(object.chain);
-    }
-    if (object.codec !== undefined && object.codec !== null) {
-      message.codec = CodecDescriptor.fromAmino(object.codec);
-    }
-    if (object.configuration !== undefined && object.configuration !== null) {
-      message.configuration = ConfigurationDescriptor.fromAmino(
-        object.configuration,
-      );
-    }
-    if (object.query_services !== undefined && object.query_services !== null) {
-      message.queryServices = QueryServicesDescriptor.fromAmino(
-        object.query_services,
-      );
-    }
-    if (object.tx !== undefined && object.tx !== null) {
-      message.tx = TxDescriptor.fromAmino(object.tx);
-    }
-    return message;
-  },
-  toAmino(message: AppDescriptor): AppDescriptorAmino {
-    const obj: any = {};
-    obj.authn = message.authn
-      ? AuthnDescriptor.toAmino(message.authn)
-      : undefined;
-    obj.chain = message.chain
-      ? ChainDescriptor.toAmino(message.chain)
-      : undefined;
-    obj.codec = message.codec
-      ? CodecDescriptor.toAmino(message.codec)
-      : undefined;
-    obj.configuration = message.configuration
-      ? ConfigurationDescriptor.toAmino(message.configuration)
-      : undefined;
-    obj.query_services = message.queryServices
-      ? QueryServicesDescriptor.toAmino(message.queryServices)
-      : undefined;
-    obj.tx = message.tx ? TxDescriptor.toAmino(message.tx) : undefined;
-    return obj;
-  },
-  fromAminoMsg(object: AppDescriptorAminoMsg): AppDescriptor {
-    return AppDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: AppDescriptor): AppDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/AppDescriptor',
-      value: AppDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(message: AppDescriptorProtoMsg): AppDescriptor {
     return AppDescriptor.decode(message.value);
   },
@@ -991,35 +647,6 @@ export const TxDescriptor = {
     message.msgs = object.msgs?.map(e => MsgDescriptor.fromPartial(e)) || [];
     return message;
   },
-  fromAmino(object: TxDescriptorAmino): TxDescriptor {
-    const message = createBaseTxDescriptor();
-    if (object.fullname !== undefined && object.fullname !== null) {
-      message.fullname = object.fullname;
-    }
-    message.msgs = object.msgs?.map(e => MsgDescriptor.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: TxDescriptor): TxDescriptorAmino {
-    const obj: any = {};
-    obj.fullname = message.fullname === '' ? undefined : message.fullname;
-    if (message.msgs) {
-      obj.msgs = message.msgs.map(e =>
-        e ? MsgDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.msgs = message.msgs;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: TxDescriptorAminoMsg): TxDescriptor {
-    return TxDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: TxDescriptor): TxDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/TxDescriptor',
-      value: TxDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(message: TxDescriptorProtoMsg): TxDescriptor {
     return TxDescriptor.decode(message.value);
   },
@@ -1092,32 +719,6 @@ export const AuthnDescriptor = {
     message.signModes =
       object.signModes?.map(e => SigningModeDescriptor.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: AuthnDescriptorAmino): AuthnDescriptor {
-    const message = createBaseAuthnDescriptor();
-    message.signModes =
-      object.sign_modes?.map(e => SigningModeDescriptor.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: AuthnDescriptor): AuthnDescriptorAmino {
-    const obj: any = {};
-    if (message.signModes) {
-      obj.sign_modes = message.signModes.map(e =>
-        e ? SigningModeDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.sign_modes = message.signModes;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: AuthnDescriptorAminoMsg): AuthnDescriptor {
-    return AuthnDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: AuthnDescriptor): AuthnDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/AuthnDescriptor',
-      value: AuthnDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(message: AuthnDescriptorProtoMsg): AuthnDescriptor {
     return AuthnDescriptor.decode(message.value);
@@ -1211,42 +812,6 @@ export const SigningModeDescriptor = {
       object.authnInfoProviderMethodFullname ?? '';
     return message;
   },
-  fromAmino(object: SigningModeDescriptorAmino): SigningModeDescriptor {
-    const message = createBaseSigningModeDescriptor();
-    if (object.name !== undefined && object.name !== null) {
-      message.name = object.name;
-    }
-    if (object.number !== undefined && object.number !== null) {
-      message.number = object.number;
-    }
-    if (
-      object.authn_info_provider_method_fullname !== undefined &&
-      object.authn_info_provider_method_fullname !== null
-    ) {
-      message.authnInfoProviderMethodFullname =
-        object.authn_info_provider_method_fullname;
-    }
-    return message;
-  },
-  toAmino(message: SigningModeDescriptor): SigningModeDescriptorAmino {
-    const obj: any = {};
-    obj.name = message.name === '' ? undefined : message.name;
-    obj.number = message.number === 0 ? undefined : message.number;
-    obj.authn_info_provider_method_fullname =
-      message.authnInfoProviderMethodFullname === ''
-        ? undefined
-        : message.authnInfoProviderMethodFullname;
-    return obj;
-  },
-  fromAminoMsg(object: SigningModeDescriptorAminoMsg): SigningModeDescriptor {
-    return SigningModeDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: SigningModeDescriptor): SigningModeDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/SigningModeDescriptor',
-      value: SigningModeDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(message: SigningModeDescriptorProtoMsg): SigningModeDescriptor {
     return SigningModeDescriptor.decode(message.value);
   },
@@ -1308,27 +873,6 @@ export const ChainDescriptor = {
     const message = createBaseChainDescriptor();
     message.id = object.id ?? '';
     return message;
-  },
-  fromAmino(object: ChainDescriptorAmino): ChainDescriptor {
-    const message = createBaseChainDescriptor();
-    if (object.id !== undefined && object.id !== null) {
-      message.id = object.id;
-    }
-    return message;
-  },
-  toAmino(message: ChainDescriptor): ChainDescriptorAmino {
-    const obj: any = {};
-    obj.id = message.id === '' ? undefined : message.id;
-    return obj;
-  },
-  fromAminoMsg(object: ChainDescriptorAminoMsg): ChainDescriptor {
-    return ChainDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: ChainDescriptor): ChainDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/ChainDescriptor',
-      value: ChainDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(message: ChainDescriptorProtoMsg): ChainDescriptor {
     return ChainDescriptor.decode(message.value);
@@ -1402,32 +946,6 @@ export const CodecDescriptor = {
     message.interfaces =
       object.interfaces?.map(e => InterfaceDescriptor.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: CodecDescriptorAmino): CodecDescriptor {
-    const message = createBaseCodecDescriptor();
-    message.interfaces =
-      object.interfaces?.map(e => InterfaceDescriptor.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: CodecDescriptor): CodecDescriptorAmino {
-    const obj: any = {};
-    if (message.interfaces) {
-      obj.interfaces = message.interfaces.map(e =>
-        e ? InterfaceDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.interfaces = message.interfaces;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: CodecDescriptorAminoMsg): CodecDescriptor {
-    return CodecDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: CodecDescriptor): CodecDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/CodecDescriptor',
-      value: CodecDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(message: CodecDescriptorProtoMsg): CodecDescriptor {
     return CodecDescriptor.decode(message.value);
@@ -1552,49 +1070,6 @@ export const InterfaceDescriptor = {
       ) || [];
     return message;
   },
-  fromAmino(object: InterfaceDescriptorAmino): InterfaceDescriptor {
-    const message = createBaseInterfaceDescriptor();
-    if (object.fullname !== undefined && object.fullname !== null) {
-      message.fullname = object.fullname;
-    }
-    message.interfaceAcceptingMessages =
-      object.interface_accepting_messages?.map(e =>
-        InterfaceAcceptingMessageDescriptor.fromAmino(e),
-      ) || [];
-    message.interfaceImplementers =
-      object.interface_implementers?.map(e =>
-        InterfaceImplementerDescriptor.fromAmino(e),
-      ) || [];
-    return message;
-  },
-  toAmino(message: InterfaceDescriptor): InterfaceDescriptorAmino {
-    const obj: any = {};
-    obj.fullname = message.fullname === '' ? undefined : message.fullname;
-    if (message.interfaceAcceptingMessages) {
-      obj.interface_accepting_messages = message.interfaceAcceptingMessages.map(
-        e => (e ? InterfaceAcceptingMessageDescriptor.toAmino(e) : undefined),
-      );
-    } else {
-      obj.interface_accepting_messages = message.interfaceAcceptingMessages;
-    }
-    if (message.interfaceImplementers) {
-      obj.interface_implementers = message.interfaceImplementers.map(e =>
-        e ? InterfaceImplementerDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.interface_implementers = message.interfaceImplementers;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: InterfaceDescriptorAminoMsg): InterfaceDescriptor {
-    return InterfaceDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: InterfaceDescriptor): InterfaceDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/InterfaceDescriptor',
-      value: InterfaceDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(message: InterfaceDescriptorProtoMsg): InterfaceDescriptor {
     return InterfaceDescriptor.decode(message.value);
   },
@@ -1671,39 +1146,6 @@ export const InterfaceImplementerDescriptor = {
     message.fullname = object.fullname ?? '';
     message.typeUrl = object.typeUrl ?? '';
     return message;
-  },
-  fromAmino(
-    object: InterfaceImplementerDescriptorAmino,
-  ): InterfaceImplementerDescriptor {
-    const message = createBaseInterfaceImplementerDescriptor();
-    if (object.fullname !== undefined && object.fullname !== null) {
-      message.fullname = object.fullname;
-    }
-    if (object.type_url !== undefined && object.type_url !== null) {
-      message.typeUrl = object.type_url;
-    }
-    return message;
-  },
-  toAmino(
-    message: InterfaceImplementerDescriptor,
-  ): InterfaceImplementerDescriptorAmino {
-    const obj: any = {};
-    obj.fullname = message.fullname === '' ? undefined : message.fullname;
-    obj.type_url = message.typeUrl === '' ? undefined : message.typeUrl;
-    return obj;
-  },
-  fromAminoMsg(
-    object: InterfaceImplementerDescriptorAminoMsg,
-  ): InterfaceImplementerDescriptor {
-    return InterfaceImplementerDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: InterfaceImplementerDescriptor,
-  ): InterfaceImplementerDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/InterfaceImplementerDescriptor',
-      value: InterfaceImplementerDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: InterfaceImplementerDescriptorProtoMsg,
@@ -1795,42 +1237,6 @@ export const InterfaceAcceptingMessageDescriptor = {
       object.fieldDescriptorNames?.map(e => e) || [];
     return message;
   },
-  fromAmino(
-    object: InterfaceAcceptingMessageDescriptorAmino,
-  ): InterfaceAcceptingMessageDescriptor {
-    const message = createBaseInterfaceAcceptingMessageDescriptor();
-    if (object.fullname !== undefined && object.fullname !== null) {
-      message.fullname = object.fullname;
-    }
-    message.fieldDescriptorNames =
-      object.field_descriptor_names?.map(e => e) || [];
-    return message;
-  },
-  toAmino(
-    message: InterfaceAcceptingMessageDescriptor,
-  ): InterfaceAcceptingMessageDescriptorAmino {
-    const obj: any = {};
-    obj.fullname = message.fullname === '' ? undefined : message.fullname;
-    if (message.fieldDescriptorNames) {
-      obj.field_descriptor_names = message.fieldDescriptorNames.map(e => e);
-    } else {
-      obj.field_descriptor_names = message.fieldDescriptorNames;
-    }
-    return obj;
-  },
-  fromAminoMsg(
-    object: InterfaceAcceptingMessageDescriptorAminoMsg,
-  ): InterfaceAcceptingMessageDescriptor {
-    return InterfaceAcceptingMessageDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: InterfaceAcceptingMessageDescriptor,
-  ): InterfaceAcceptingMessageDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/InterfaceAcceptingMessageDescriptor',
-      value: InterfaceAcceptingMessageDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: InterfaceAcceptingMessageDescriptorProtoMsg,
   ): InterfaceAcceptingMessageDescriptor {
@@ -1907,37 +1313,6 @@ export const ConfigurationDescriptor = {
       object.bech32AccountAddressPrefix ?? '';
     return message;
   },
-  fromAmino(object: ConfigurationDescriptorAmino): ConfigurationDescriptor {
-    const message = createBaseConfigurationDescriptor();
-    if (
-      object.bech32_account_address_prefix !== undefined &&
-      object.bech32_account_address_prefix !== null
-    ) {
-      message.bech32AccountAddressPrefix = object.bech32_account_address_prefix;
-    }
-    return message;
-  },
-  toAmino(message: ConfigurationDescriptor): ConfigurationDescriptorAmino {
-    const obj: any = {};
-    obj.bech32_account_address_prefix =
-      message.bech32AccountAddressPrefix === ''
-        ? undefined
-        : message.bech32AccountAddressPrefix;
-    return obj;
-  },
-  fromAminoMsg(
-    object: ConfigurationDescriptorAminoMsg,
-  ): ConfigurationDescriptor {
-    return ConfigurationDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: ConfigurationDescriptor,
-  ): ConfigurationDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/ConfigurationDescriptor',
-      value: ConfigurationDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: ConfigurationDescriptorProtoMsg,
   ): ConfigurationDescriptor {
@@ -2004,28 +1379,6 @@ export const MsgDescriptor = {
     message.msgTypeUrl = object.msgTypeUrl ?? '';
     return message;
   },
-  fromAmino(object: MsgDescriptorAmino): MsgDescriptor {
-    const message = createBaseMsgDescriptor();
-    if (object.msg_type_url !== undefined && object.msg_type_url !== null) {
-      message.msgTypeUrl = object.msg_type_url;
-    }
-    return message;
-  },
-  toAmino(message: MsgDescriptor): MsgDescriptorAmino {
-    const obj: any = {};
-    obj.msg_type_url =
-      message.msgTypeUrl === '' ? undefined : message.msgTypeUrl;
-    return obj;
-  },
-  fromAminoMsg(object: MsgDescriptorAminoMsg): MsgDescriptor {
-    return MsgDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: MsgDescriptor): MsgDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/MsgDescriptor',
-      value: MsgDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(message: MsgDescriptorProtoMsg): MsgDescriptor {
     return MsgDescriptor.decode(message.value);
   },
@@ -2080,27 +1433,6 @@ export const GetAuthnDescriptorRequest = {
   ): GetAuthnDescriptorRequest {
     const message = createBaseGetAuthnDescriptorRequest();
     return message;
-  },
-  fromAmino(_: GetAuthnDescriptorRequestAmino): GetAuthnDescriptorRequest {
-    const message = createBaseGetAuthnDescriptorRequest();
-    return message;
-  },
-  toAmino(_: GetAuthnDescriptorRequest): GetAuthnDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetAuthnDescriptorRequestAminoMsg,
-  ): GetAuthnDescriptorRequest {
-    return GetAuthnDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetAuthnDescriptorRequest,
-  ): GetAuthnDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetAuthnDescriptorRequest',
-      value: GetAuthnDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetAuthnDescriptorRequestProtoMsg,
@@ -2181,37 +1513,6 @@ export const GetAuthnDescriptorResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: GetAuthnDescriptorResponseAmino,
-  ): GetAuthnDescriptorResponse {
-    const message = createBaseGetAuthnDescriptorResponse();
-    if (object.authn !== undefined && object.authn !== null) {
-      message.authn = AuthnDescriptor.fromAmino(object.authn);
-    }
-    return message;
-  },
-  toAmino(
-    message: GetAuthnDescriptorResponse,
-  ): GetAuthnDescriptorResponseAmino {
-    const obj: any = {};
-    obj.authn = message.authn
-      ? AuthnDescriptor.toAmino(message.authn)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetAuthnDescriptorResponseAminoMsg,
-  ): GetAuthnDescriptorResponse {
-    return GetAuthnDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetAuthnDescriptorResponse,
-  ): GetAuthnDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetAuthnDescriptorResponse',
-      value: GetAuthnDescriptorResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: GetAuthnDescriptorResponseProtoMsg,
   ): GetAuthnDescriptorResponse {
@@ -2270,27 +1571,6 @@ export const GetChainDescriptorRequest = {
   ): GetChainDescriptorRequest {
     const message = createBaseGetChainDescriptorRequest();
     return message;
-  },
-  fromAmino(_: GetChainDescriptorRequestAmino): GetChainDescriptorRequest {
-    const message = createBaseGetChainDescriptorRequest();
-    return message;
-  },
-  toAmino(_: GetChainDescriptorRequest): GetChainDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetChainDescriptorRequestAminoMsg,
-  ): GetChainDescriptorRequest {
-    return GetChainDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetChainDescriptorRequest,
-  ): GetChainDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetChainDescriptorRequest',
-      value: GetChainDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetChainDescriptorRequestProtoMsg,
@@ -2371,37 +1651,6 @@ export const GetChainDescriptorResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: GetChainDescriptorResponseAmino,
-  ): GetChainDescriptorResponse {
-    const message = createBaseGetChainDescriptorResponse();
-    if (object.chain !== undefined && object.chain !== null) {
-      message.chain = ChainDescriptor.fromAmino(object.chain);
-    }
-    return message;
-  },
-  toAmino(
-    message: GetChainDescriptorResponse,
-  ): GetChainDescriptorResponseAmino {
-    const obj: any = {};
-    obj.chain = message.chain
-      ? ChainDescriptor.toAmino(message.chain)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetChainDescriptorResponseAminoMsg,
-  ): GetChainDescriptorResponse {
-    return GetChainDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetChainDescriptorResponse,
-  ): GetChainDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetChainDescriptorResponse',
-      value: GetChainDescriptorResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: GetChainDescriptorResponseProtoMsg,
   ): GetChainDescriptorResponse {
@@ -2460,27 +1709,6 @@ export const GetCodecDescriptorRequest = {
   ): GetCodecDescriptorRequest {
     const message = createBaseGetCodecDescriptorRequest();
     return message;
-  },
-  fromAmino(_: GetCodecDescriptorRequestAmino): GetCodecDescriptorRequest {
-    const message = createBaseGetCodecDescriptorRequest();
-    return message;
-  },
-  toAmino(_: GetCodecDescriptorRequest): GetCodecDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetCodecDescriptorRequestAminoMsg,
-  ): GetCodecDescriptorRequest {
-    return GetCodecDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetCodecDescriptorRequest,
-  ): GetCodecDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetCodecDescriptorRequest',
-      value: GetCodecDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetCodecDescriptorRequestProtoMsg,
@@ -2561,37 +1789,6 @@ export const GetCodecDescriptorResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: GetCodecDescriptorResponseAmino,
-  ): GetCodecDescriptorResponse {
-    const message = createBaseGetCodecDescriptorResponse();
-    if (object.codec !== undefined && object.codec !== null) {
-      message.codec = CodecDescriptor.fromAmino(object.codec);
-    }
-    return message;
-  },
-  toAmino(
-    message: GetCodecDescriptorResponse,
-  ): GetCodecDescriptorResponseAmino {
-    const obj: any = {};
-    obj.codec = message.codec
-      ? CodecDescriptor.toAmino(message.codec)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetCodecDescriptorResponseAminoMsg,
-  ): GetCodecDescriptorResponse {
-    return GetCodecDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetCodecDescriptorResponse,
-  ): GetCodecDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetCodecDescriptorResponse',
-      value: GetCodecDescriptorResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: GetCodecDescriptorResponseProtoMsg,
   ): GetCodecDescriptorResponse {
@@ -2650,31 +1847,6 @@ export const GetConfigurationDescriptorRequest = {
   ): GetConfigurationDescriptorRequest {
     const message = createBaseGetConfigurationDescriptorRequest();
     return message;
-  },
-  fromAmino(
-    _: GetConfigurationDescriptorRequestAmino,
-  ): GetConfigurationDescriptorRequest {
-    const message = createBaseGetConfigurationDescriptorRequest();
-    return message;
-  },
-  toAmino(
-    _: GetConfigurationDescriptorRequest,
-  ): GetConfigurationDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetConfigurationDescriptorRequestAminoMsg,
-  ): GetConfigurationDescriptorRequest {
-    return GetConfigurationDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetConfigurationDescriptorRequest,
-  ): GetConfigurationDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetConfigurationDescriptorRequest',
-      value: GetConfigurationDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetConfigurationDescriptorRequestProtoMsg,
@@ -2763,37 +1935,6 @@ export const GetConfigurationDescriptorResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: GetConfigurationDescriptorResponseAmino,
-  ): GetConfigurationDescriptorResponse {
-    const message = createBaseGetConfigurationDescriptorResponse();
-    if (object.config !== undefined && object.config !== null) {
-      message.config = ConfigurationDescriptor.fromAmino(object.config);
-    }
-    return message;
-  },
-  toAmino(
-    message: GetConfigurationDescriptorResponse,
-  ): GetConfigurationDescriptorResponseAmino {
-    const obj: any = {};
-    obj.config = message.config
-      ? ConfigurationDescriptor.toAmino(message.config)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetConfigurationDescriptorResponseAminoMsg,
-  ): GetConfigurationDescriptorResponse {
-    return GetConfigurationDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetConfigurationDescriptorResponse,
-  ): GetConfigurationDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetConfigurationDescriptorResponse',
-      value: GetConfigurationDescriptorResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: GetConfigurationDescriptorResponseProtoMsg,
   ): GetConfigurationDescriptorResponse {
@@ -2853,31 +1994,6 @@ export const GetQueryServicesDescriptorRequest = {
   ): GetQueryServicesDescriptorRequest {
     const message = createBaseGetQueryServicesDescriptorRequest();
     return message;
-  },
-  fromAmino(
-    _: GetQueryServicesDescriptorRequestAmino,
-  ): GetQueryServicesDescriptorRequest {
-    const message = createBaseGetQueryServicesDescriptorRequest();
-    return message;
-  },
-  toAmino(
-    _: GetQueryServicesDescriptorRequest,
-  ): GetQueryServicesDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetQueryServicesDescriptorRequestAminoMsg,
-  ): GetQueryServicesDescriptorRequest {
-    return GetQueryServicesDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetQueryServicesDescriptorRequest,
-  ): GetQueryServicesDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetQueryServicesDescriptorRequest',
-      value: GetQueryServicesDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetQueryServicesDescriptorRequestProtoMsg,
@@ -2966,37 +2082,6 @@ export const GetQueryServicesDescriptorResponse = {
         : undefined;
     return message;
   },
-  fromAmino(
-    object: GetQueryServicesDescriptorResponseAmino,
-  ): GetQueryServicesDescriptorResponse {
-    const message = createBaseGetQueryServicesDescriptorResponse();
-    if (object.queries !== undefined && object.queries !== null) {
-      message.queries = QueryServicesDescriptor.fromAmino(object.queries);
-    }
-    return message;
-  },
-  toAmino(
-    message: GetQueryServicesDescriptorResponse,
-  ): GetQueryServicesDescriptorResponseAmino {
-    const obj: any = {};
-    obj.queries = message.queries
-      ? QueryServicesDescriptor.toAmino(message.queries)
-      : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetQueryServicesDescriptorResponseAminoMsg,
-  ): GetQueryServicesDescriptorResponse {
-    return GetQueryServicesDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetQueryServicesDescriptorResponse,
-  ): GetQueryServicesDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetQueryServicesDescriptorResponse',
-      value: GetQueryServicesDescriptorResponse.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: GetQueryServicesDescriptorResponseProtoMsg,
   ): GetQueryServicesDescriptorResponse {
@@ -3054,23 +2139,6 @@ export const GetTxDescriptorRequest = {
   fromPartial(_: Partial<GetTxDescriptorRequest>): GetTxDescriptorRequest {
     const message = createBaseGetTxDescriptorRequest();
     return message;
-  },
-  fromAmino(_: GetTxDescriptorRequestAmino): GetTxDescriptorRequest {
-    const message = createBaseGetTxDescriptorRequest();
-    return message;
-  },
-  toAmino(_: GetTxDescriptorRequest): GetTxDescriptorRequestAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: GetTxDescriptorRequestAminoMsg): GetTxDescriptorRequest {
-    return GetTxDescriptorRequest.fromAmino(object.value);
-  },
-  toAminoMsg(message: GetTxDescriptorRequest): GetTxDescriptorRequestAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetTxDescriptorRequest',
-      value: GetTxDescriptorRequest.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetTxDescriptorRequestProtoMsg,
@@ -3144,31 +2212,6 @@ export const GetTxDescriptorResponse = {
         ? TxDescriptor.fromPartial(object.tx)
         : undefined;
     return message;
-  },
-  fromAmino(object: GetTxDescriptorResponseAmino): GetTxDescriptorResponse {
-    const message = createBaseGetTxDescriptorResponse();
-    if (object.tx !== undefined && object.tx !== null) {
-      message.tx = TxDescriptor.fromAmino(object.tx);
-    }
-    return message;
-  },
-  toAmino(message: GetTxDescriptorResponse): GetTxDescriptorResponseAmino {
-    const obj: any = {};
-    obj.tx = message.tx ? TxDescriptor.toAmino(message.tx) : undefined;
-    return obj;
-  },
-  fromAminoMsg(
-    object: GetTxDescriptorResponseAminoMsg,
-  ): GetTxDescriptorResponse {
-    return GetTxDescriptorResponse.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: GetTxDescriptorResponse,
-  ): GetTxDescriptorResponseAminoMsg {
-    return {
-      type: 'cosmos-sdk/GetTxDescriptorResponse',
-      value: GetTxDescriptorResponse.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: GetTxDescriptorResponseProtoMsg,
@@ -3254,37 +2297,6 @@ export const QueryServicesDescriptor = {
       object.queryServices?.map(e => QueryServiceDescriptor.fromPartial(e)) ||
       [];
     return message;
-  },
-  fromAmino(object: QueryServicesDescriptorAmino): QueryServicesDescriptor {
-    const message = createBaseQueryServicesDescriptor();
-    message.queryServices =
-      object.query_services?.map(e => QueryServiceDescriptor.fromAmino(e)) ||
-      [];
-    return message;
-  },
-  toAmino(message: QueryServicesDescriptor): QueryServicesDescriptorAmino {
-    const obj: any = {};
-    if (message.queryServices) {
-      obj.query_services = message.queryServices.map(e =>
-        e ? QueryServiceDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.query_services = message.queryServices;
-    }
-    return obj;
-  },
-  fromAminoMsg(
-    object: QueryServicesDescriptorAminoMsg,
-  ): QueryServicesDescriptor {
-    return QueryServicesDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(
-    message: QueryServicesDescriptor,
-  ): QueryServicesDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryServicesDescriptor',
-      value: QueryServicesDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(
     message: QueryServicesDescriptorProtoMsg,
@@ -3386,40 +2398,6 @@ export const QueryServiceDescriptor = {
       object.methods?.map(e => QueryMethodDescriptor.fromPartial(e)) || [];
     return message;
   },
-  fromAmino(object: QueryServiceDescriptorAmino): QueryServiceDescriptor {
-    const message = createBaseQueryServiceDescriptor();
-    if (object.fullname !== undefined && object.fullname !== null) {
-      message.fullname = object.fullname;
-    }
-    if (object.is_module !== undefined && object.is_module !== null) {
-      message.isModule = object.is_module;
-    }
-    message.methods =
-      object.methods?.map(e => QueryMethodDescriptor.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: QueryServiceDescriptor): QueryServiceDescriptorAmino {
-    const obj: any = {};
-    obj.fullname = message.fullname === '' ? undefined : message.fullname;
-    obj.is_module = message.isModule === false ? undefined : message.isModule;
-    if (message.methods) {
-      obj.methods = message.methods.map(e =>
-        e ? QueryMethodDescriptor.toAmino(e) : undefined,
-      );
-    } else {
-      obj.methods = message.methods;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: QueryServiceDescriptorAminoMsg): QueryServiceDescriptor {
-    return QueryServiceDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryServiceDescriptor): QueryServiceDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryServiceDescriptor',
-      value: QueryServiceDescriptor.toAmino(message),
-    };
-  },
   fromProtoMsg(
     message: QueryServiceDescriptorProtoMsg,
   ): QueryServiceDescriptor {
@@ -3499,35 +2477,6 @@ export const QueryMethodDescriptor = {
     message.name = object.name ?? '';
     message.fullQueryPath = object.fullQueryPath ?? '';
     return message;
-  },
-  fromAmino(object: QueryMethodDescriptorAmino): QueryMethodDescriptor {
-    const message = createBaseQueryMethodDescriptor();
-    if (object.name !== undefined && object.name !== null) {
-      message.name = object.name;
-    }
-    if (
-      object.full_query_path !== undefined &&
-      object.full_query_path !== null
-    ) {
-      message.fullQueryPath = object.full_query_path;
-    }
-    return message;
-  },
-  toAmino(message: QueryMethodDescriptor): QueryMethodDescriptorAmino {
-    const obj: any = {};
-    obj.name = message.name === '' ? undefined : message.name;
-    obj.full_query_path =
-      message.fullQueryPath === '' ? undefined : message.fullQueryPath;
-    return obj;
-  },
-  fromAminoMsg(object: QueryMethodDescriptorAminoMsg): QueryMethodDescriptor {
-    return QueryMethodDescriptor.fromAmino(object.value);
-  },
-  toAminoMsg(message: QueryMethodDescriptor): QueryMethodDescriptorAminoMsg {
-    return {
-      type: 'cosmos-sdk/QueryMethodDescriptor',
-      value: QueryMethodDescriptor.toAmino(message),
-    };
   },
   fromProtoMsg(message: QueryMethodDescriptorProtoMsg): QueryMethodDescriptor {
     return QueryMethodDescriptor.decode(message.value);
