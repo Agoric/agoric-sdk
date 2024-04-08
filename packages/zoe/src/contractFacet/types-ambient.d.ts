@@ -207,10 +207,7 @@ type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
   userSeat: ERef<UserSeat>;
 };
-type HandleOffer<OR extends unknown, OA> = (
-  seat: ZCFSeat,
-  offerArgs?: OA,
-) => OR;
+type HandleOffer<OR extends unknown, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
 type OfferHandler<OR extends unknown = unknown, OA = never> =
   | HandleOffer<OR, OA>
   | {
