@@ -109,8 +109,7 @@ test('ICA connection can be closed', async t => {
   );
   t.truthy(account, 'createAccount returns an account');
 
-  const res = await EV(account).close();
-  t.is(res, 'Connection closed');
+  await EV(account).close();
 
   await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgSuccess]), {
     message: 'Connection closed',

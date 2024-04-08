@@ -32,7 +32,7 @@ const { Fail } = assert;
  * @typedef {{
  *  topicKit: RecorderKit<StakingAccountNotification>;
  *  account: ChainAccount;
- *  chainAddress: ChainAddress;
+ *  chainAddress: string;
  * }} State
  */
 
@@ -71,7 +71,7 @@ export const prepareStakingAccountHolder = (baggage, makeRecorderKit, zcf) => {
     /**
      * @param {ChainAccount} account
      * @param {StorageNode} storageNode
-     * @param {ChainAddress} chainAddress
+     * @param {string} chainAddress
      * @returns {State}
      */
     (account, storageNode, chainAddress) => {
@@ -93,6 +93,8 @@ export const prepareStakingAccountHolder = (baggage, makeRecorderKit, zcf) => {
         getUpdater() {
           return this.state.topicKit.recorder;
         },
+        // TODO move this beneath the Orchestration abstraction,
+        // to the OrchestrationAccount provided by createAccount()
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
          * @param {string} validatorAddress
