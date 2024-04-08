@@ -365,9 +365,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.0.7":
-  version: 0.0.7
-  resolution: "@agoric/synthetic-chain@npm:0.0.7"
+"@agoric/synthetic-chain@npm:^0.0.10":
+  version: 0.0.10
+  resolution: "@agoric/synthetic-chain@npm:0.0.10"
   dependencies:
     "@endo/zip": "npm:^1.0.1"
     better-sqlite3: "npm:^9.4.0"
@@ -375,7 +375,7 @@ __metadata:
     execa: "npm:^8.0.1"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/ae53a9c4837eecc7db5020c8e0ac46f02a5a8ae6679adfe5e32365d6895f8ca8eb1da2dad3b3dc7a545ec801275b1a53d68bb0737db462ec9ea82bbcffe37374
+  checksum: 10c0/c75308830cbe879ba865e285a20529ac82da1434c778046b27c790e426a8139369c3ef904939905ad73109202a336925733448109a85bc19aa2d350ebdb2a520
   languageName: node
   linkType: hard
 
@@ -4567,7 +4567,7 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@agoric/internal": "npm:0.3.3-dev-5676146.0"
-    "@agoric/synthetic-chain": "npm:^0.0.7"
+    "@agoric/synthetic-chain": "npm:^0.0.10"
     "@cosmjs/stargate": "npm:^0.32.3"
     "@cosmjs/tendermint-rpc": "npm:^0.32.3"
     "@endo/errors": "npm:^1.1.0"
