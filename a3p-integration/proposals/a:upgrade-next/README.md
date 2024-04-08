@@ -7,3 +7,6 @@ in `agoric-sdk/golang/cosmos/app/app.go`.
 This test also includes a core proposal in its `upgradeInfo`. This is executed
 after the core proposals defined in the software's upgrade handler. See `agoricProposal`
 in `package.json`.
+
+The "binaries" and "source" properties are required since Cosmos SDK 0.46. To generate them,
+use `scripts/gen-upgrade-proposal.sh`.

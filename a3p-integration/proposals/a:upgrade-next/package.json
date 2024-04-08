@@ -4,6 +4,10 @@
     "sdkImageTag": "unreleased",
     "planName": "UNRELEASED_UPGRADE",
     "upgradeInfo": {
+      "binaries": {
+        "any": "https://github.com/Agoric/agoric-sdk/archive/6982dbb493e87f782ad67fdbd98ab93386d56fc0.zip//agoric-sdk-6982dbb493e87f782ad67fdbd98ab93386d56fc0?checksum=sha256:767f6444d92cec394eb7cb675af56eddd95fc1886e7a7c7775dec6141c55738d"
+      },
+      "source": "https://github.com/Agoric/agoric-sdk/archive/6982dbb493e87f782ad67fdbd98ab93386d56fc0.zip?checksum=sha256:767f6444d92cec394eb7cb675af56eddd95fc1886e7a7c7775dec6141c55738d",
       "coreProposals": []
     },
     "sdk-generate": [
