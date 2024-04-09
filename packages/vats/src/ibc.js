@@ -24,7 +24,7 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /**
- * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncall} from './types.js';
+ * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncall, IBCBridgeEvent} from './types.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
@@ -329,22 +329,7 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       bridgeHandler: {
-        /**
-         * @param {{
-         *   event?: any;
-         *   channelID?: string;
-         *   portID?: string;
-         *   counterparty?: any;
-         *   connectionHops?: any;
-         *   order?: any;
-         *   version?: any;
-         *   asyncVersions?: any;
-         *   counterpartyVersion?: any;
-         *   packet?: any;
-         *   acknowledgement?: any;
-         *   relativeTimeoutNs?: any;
-         * }} obj
-         */
+        /** @param {IBCEvent<IBCBridgeEvent>} obj */
         async fromBridge(obj) {
           const {
             protocolImpl,
@@ -361,7 +346,6 @@ export const prepareIBCProtocol = (zone, powers) => {
           await null;
           switch (obj.event) {
             case 'channelOpenInit': {
-              /** @type {IBCEvent<'channelOpenInit'>} */
               const {
                 channelID,
                 portID,
@@ -370,7 +354,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                 order,
                 version,
                 asyncVersions,
-              } = obj;
+              } = /** @type {IBCEvent<'channelOpenInit'>} */ (obj);
               if (!asyncVersions) {
                 // Synchronous versions have already been negotiated.
                 break;
@@ -394,7 +378,6 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
             case 'channelOpenTry': {
               // They're (more or less politely) asking if we are listening, so make an attempt.
-              /** @type {IBCEvent<'channelOpenTry'>} */
               const {
                 portID,
                 counterparty: { port_id: rPortID, channel_id: rChannelID },
@@ -402,7 +385,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                 order,
                 version,
                 counterpartyVersion: rVersion,
-              } = obj;
+              } = /** @type {IBCEvent<'channelOpenTry'>} */ (obj);
 
               const localAddr = encodeLocalIbcAddress(portID, order, version);
               const remoteAddr = encodeRemoteIbcAddress(
@@ -438,14 +421,14 @@ export const prepareIBCProtocol = (zone, powers) => {
 
             case 'channelOpenAck': {
               // Complete the pending outbound connection.
-              /** @type {IBCEvent<'channelOpenAck'>} */
               const {
                 portID,
                 channelID,
                 counterparty: { port_id: rPortID, channel_id: rChannelID },
                 counterpartyVersion: rVersion,
                 connectionHops: rHops,
-              } = obj;
+              } = /** @type {IBCEvent<'channelOpenAck'>} */ (obj);
+
               const outbounds = this.state.srcPortToOutbounds.has(portID)
                 ? [...this.state.srcPortToOutbounds.get(portID)]
                 : [];
@@ -509,8 +492,9 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'channelOpenConfirm': {
-              /** @type {IBCEvent<'channelOpenConfirm'>} */
-              const { portID, channelID } = obj;
+              const { portID, channelID } =
+                /** @type {IBCEvent<'channelOpenConfirm'>} */ (obj);
+
               const channelKey = `${channelID}:${portID}`;
               channelKeyToAttempt.has(channelKey) ||
                 Fail`${channelKey}: did not expect channelOpenConfirm`;
@@ -548,8 +532,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'receivePacket': {
-              /** @type {IBCEvent<'receivePacket'>} */
-              const { packet } = obj;
+              const { packet } = /** @type {IBCEvent<'receivePacket'>} */ (obj);
               const {
                 data: data64,
                 destination_port: portID,
@@ -565,26 +548,30 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'acknowledgementPacket': {
-              /** @type {IBCEvent<'acknowledgementPacket'>} */
-              const { packet, acknowledgement } = obj;
+              const { packet, acknowledgement } =
+                /** @type {IBCEvent<'acknowledgementPacket'>} */ (obj);
               const {
                 sequence,
                 source_channel: channelID,
                 source_port: portID,
               } = packet;
+              if (sequence === undefined)
+                throw TypeError('acknowledgementPacket without sequence');
               const ackKit = util.findAckKit(channelID, portID, sequence);
               ackKit.resolver.resolve(base64ToBytes(acknowledgement));
               break;
             }
 
             case 'timeoutPacket': {
-              /** @type {IBCEvent<'timeoutPacket'>} */
-              const { packet } = obj;
+              const { packet } = /** @type {IBCEvent<'timeoutPacket'>} */ (obj);
               const {
                 sequence,
                 source_channel: channelID,
                 source_port: portID,
               } = packet;
+              if (sequence === undefined)
+                throw TypeError('timeoutPacket without sequence');
+
               const ackKit = util.findAckKit(channelID, portID, sequence);
               ackKit.resolver.reject(Error(`Packet timed out`));
               break;
@@ -592,7 +579,9 @@ export const prepareIBCProtocol = (zone, powers) => {
 
             case 'channelCloseInit':
             case 'channelCloseConfirm': {
-              const { portID, channelID } = obj;
+              const { portID, channelID } =
+                // could be either but that complicates line wrapping
+                /** @type {IBCEvent<'channelCloseInit'>} */ (obj);
               const channelKey = `${channelID}:${portID}`;
               if (channelKeyToConnP.has(channelKey)) {
                 const conn = channelKeyToConnP.get(channelKey);
@@ -603,8 +592,8 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'sendPacket': {
-              /** @type {IBCEvent<'sendPacket'>} */
-              const { packet, relativeTimeoutNs } = obj;
+              const { packet, relativeTimeoutNs } =
+                /** @type {IBCEvent<'sendPacket'>} */ (obj);
               util.ibcSendPacket(packet, relativeTimeoutNs).then(
                 ack => console.info('Manual packet', packet, 'acked:', ack),
                 e => console.warn('Manual packet', packet, 'failed:', e),
