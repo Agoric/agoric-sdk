@@ -1,11 +1,11 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
 
-/** @import { ConnectionId } from '../types'; */
+/** @import { IBCConnectionID } from '@agoric/vats'; */
 
 /**
- * @param {ConnectionId} hostConnectionId Counterpart Connection ID
- * @param {ConnectionId} controllerConnectionId Self Connection ID
+ * @param {IBCConnectionID} hostConnectionId Counterpart Connection ID
+ * @param {IBCConnectionID} controllerConnectionId Self Connection ID
  * @param {object} [opts]
  * @param {string} [opts.encoding] - message encoding format for the channel. default is `proto3`
  * @param {'ordered' | 'unordered'} [opts.ordering] - channel ordering. currently only `ordered` is supported for ics27-1
