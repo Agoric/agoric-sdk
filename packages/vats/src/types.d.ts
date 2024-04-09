@@ -105,3 +105,140 @@ export type BridgeManager = {
     handler?: ERef<BridgeHandler | undefined>,
   ) => ScopedBridgeManager;
 };
+
+export type IBCPortID = string;
+export type IBCChannelID = `channel-${number}`;
+export type IBCConnectionID = `connection-${number}`;
+export type IBCChannelOrdering = 'ORDERED' | 'UNORDERED';
+
+export type IBCPacket = {
+  data: Bytes;
+  source_channel: IBCChannelID;
+  source_port: IBCPortID;
+  destination_channel: IBCChannelID;
+  destination_port: IBCPortID;
+  sequence?: number;
+  timeout_height?: number;
+  timeout_timestamp?: number;
+};
+
+export type IBCCounterParty = {
+  port_id: IBCPortID;
+  channel_id: IBCChannelID;
+};
+
+export type ConnectingInfo = {
+  order: IBCChannelOrdering;
+  connectionHops: IBCConnectionID[];
+  portID: IBCPortID;
+  channelID: IBCChannelID;
+  counterparty: IBCCounterParty;
+  counterpartyVersion: string;
+  version: string;
+  asyncVersions?: boolean;
+};
+
+/** see [ibc_module.go](../../../golang/cosmos/x/vibc/types/ibc_module.go) */
+type IBCBridgeEvent =
+  | 'channelOpenInit'
+  | 'channelOpenTry'
+  | 'channelOpenAck'
+  | 'channelOpenConfirm'
+  | 'receivePacket'
+  | 'acknowledgementPacket'
+  | 'timeoutPacket'
+  | 'channelCloseInit'
+  | 'channelCloseConfirm'
+  | 'sendPacket';
+
+type IBCPacketEvents = {
+  channelOpenInit: ConnectingInfo;
+  channelOpenTry: ConnectingInfo;
+  channelOpenAck: ConnectingInfo;
+  channelOpenConfirm: ConnectingInfo;
+  receivePacket: {
+    packet: IBCPacket;
+  };
+  acknowledgementPacket: {
+    acknowledgement: Bytes;
+    packet: IBCPacket;
+    relayer: string; // chain address
+  };
+  timeoutPacket: {
+    packet: IBCPacket;
+  };
+  channelCloseInit: {}; // TODO update
+  channelCloseConfirm: {}; // TODO update
+  sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
+};
+
+export type IBCEvent<E extends IBCBridgeEvent> = {
+  type: 'IBC_EVENT';
+  blockHeight: number;
+  blockTime: number;
+  event: E;
+} & {
+  [K in keyof IBCPacketEvents[E]]: IBCPacketEvents[E][K];
+};
+
+/** see [receiver.go](../../../golang/cosmos/x/vibc/types/receiver.go) */
+type IBCDowncallMethod =
+  | 'sendPacket'
+  | 'tryOpenExecuted'
+  | 'receiveExecuted'
+  | 'startChannelOpenInit'
+  | 'startChannelCloseInit'
+  | 'bindPort'
+  | 'timeoutExecuted'
+  | 'initOpenExecuted';
+
+type IBCMethodEvents = {
+  sendPacket: SendPacketDownCall;
+  tryOpenExecuted: ChannelOpenAckDowncall;
+  receiveExecuted: {}; // TODO update
+  startChannelOpenInit: ChannelOpenInitDowncall;
+  startChannelCloseInit: {}; // TODO update
+  bindPort: {}; // TODO update
+  timeoutExecuted: {}; // TODO update
+  // XXX why isn't this in receiver.go?
+  initOpenExecuted: ChannelOpenAckDowncall;
+};
+
+export type IBCMethod<M extends IBCDowncallMethod> = {
+  type: 'IBC_METHOD';
+  method: M;
+} & {
+  [K in keyof IBCMethodEvents[M]]: IBCMethodEvents[M][K];
+};
+
+export type IBCDowncall<M extends IBCDowncallMethod> = {
+  [K in keyof IBCMethodEvents[M]]: IBCMethodEvents[M][K];
+};
+
+export type IBCDowncallPacket<M extends IBCDowncallMethod> =
+  IBCMethodEvents[M] extends { packet: infer P } ? P : never;
+
+type ChannelOpenDowncallBase = {
+  hops: IBCConnectionID[];
+  order: IBCChannelOrdering;
+  version: string;
+};
+
+type ChannelOpenInitDowncall = ChannelOpenDowncallBase & {
+  packet: Pick<IBCPacket, 'destination_port' | 'source_port'>;
+};
+
+type ChannelOpenAckDowncall = ChannelOpenDowncallBase & {
+  packet: Pick<
+    IBCPacket,
+    | 'destination_port'
+    | 'source_port'
+    | 'destination_channel'
+    | 'source_channel'
+  >;
+};
+
+type SendPacketDownCall = {
+  packet: IBCPacket;
+  relativeTimeoutNs: bigint;
+};
