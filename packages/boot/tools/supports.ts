@@ -27,8 +27,8 @@ import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-import type { BridgeHandler } from '@agoric/vats';
-import { icaMocks } from './ibc/mocks.js';
+import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -291,6 +291,12 @@ export const makeSwingsetTestKit = async (
   const outboundMessages = new Map();
 
   let inbound;
+  let ibcSequenceNonce = 0;
+
+  const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    return icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
+  };
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
@@ -362,11 +368,29 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inbound(
-                  BridgeId.DIBC,
-                  icaMocks.startChannelOpenInit.channelOpenAck(obj),
-                );
+                inbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
                 return undefined;
+              case 'sendPacket':
+                switch (obj.packet.data) {
+                  case protoMsgMocks.delegate.msg: {
+                    const msg = makeAckEvent(obj, protoMsgMocks.delegate.ack);
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                  case protoMsgMocks.delegateWithOpts.msg: {
+                    const msg = makeAckEvent(
+                      obj,
+                      protoMsgMocks.delegateWithOpts.ack,
+                    );
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                  default: {
+                    const msg = makeAckEvent(obj, protoMsgMocks.error.ack);
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                }
               default:
                 return undefined;
             }

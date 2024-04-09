@@ -15,55 +15,33 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 // Default timeout after 60 minutes.
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
-/** @import {BridgeHandler} from './types.js' */
-
 /**
- * @typedef {string} IBCPortID
- *
- * @typedef {string} IBCChannelID
- *
- * @typedef {string} IBCConnectionID
+ * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncall, IBCDowncallPacket, IBCDowncallMethod} from './types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
 
 /**
- * @typedef {object} IBCPacket
- * @property {Bytes} [data]
- * @property {IBCChannelID} source_channel
- * @property {IBCPortID} source_port
- * @property {IBCChannelID} destination_channel
- * @property {IBCPortID} destination_port
- */
-
-/**
- * @typedef {object} Counterparty
- * @property {string} port_id
- * @property {string} channel_id
+ * @typedef {VowKit<AttemptDescription>} OnConnectP
  *
- * @typedef {object} ConnectingInfo
- * @property {'ORDERED' | 'UNORDERED'} order
- * @property {string[]} connectionHops
- * @property {string} portID
- * @property {string} channelID
- * @property {Counterparty} counterparty
- * @property {string} version
- *
- * @typedef {import('@agoric/vow').VowKit<AttemptDescription>} OnConnectP
- *
- * @typedef {Omit<ConnectingInfo, 'counterparty' | 'channelID'> & {
+ * @typedef {Omit<
+ *   ConnectingInfo,
+ *   'counterparty' | 'channelID' | 'counterpartyVersion'
+ * > & {
  *   localAddr: Endpoint;
  *   onConnectP: OnConnectP;
  *   counterparty: { port_id: string };
  * }} Outbound
  */
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareIBCConnectionHandler = zone => {
   /**
-   * @param {string} channelID
-   * @param {string} portID
-   * @param {string} rChannelID
-   * @param {string} rPortID
-   * @param {'ORDERED' | 'UNORDERED'} order
+   * @param {IBCChannelID} channelID
+   * @param {IBCPortID} portID
+   * @param {IBCChannelID} rChannelID
+   * @param {IBCPortID} rPortID
+   * @param {IBCChannelOrdering} order
    * @returns {ConnectionHandler}
    */
   const makeIBCConnectionHandler = zone.exoClass(
@@ -120,6 +98,7 @@ export const prepareIBCConnectionHandler = zone => {
         const { portID, channelID, rPortID, rChannelID } = this.state;
         const { protocolUtils } = this.state;
         // console.error(`Remote IBC Handler ${portID} ${channelID}`);
+        /** @type {IBCPacket} */
         const packet = {
           source_port: portID,
           source_channel: channelID,
@@ -157,8 +136,8 @@ export const prepareIBCConnectionHandler = zone => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Zone} zone
+ * @param {VowTools} powers
  */
 export const prepareIBCProtocol = (zone, powers) => {
   const { makeVowKit, watch } = powers;
@@ -194,37 +173,22 @@ export const prepareIBCProtocol = (zone, powers) => {
     'IBCProtocolHandler',
     undefined,
     ibcdev => {
-      /** @type {MapStore<string, import('@agoric/vow').Remote<Connection>>} */
+      /** @type {MapStore<string, Remote<Connection>>} */
       const channelKeyToConnP = detached.mapStore('channelKeyToConnP');
 
       /** @type {MapStore<string, ConnectingInfo>} */
       const channelKeyToInfo = detached.mapStore('channelKeyToInfo');
 
-      /**
-       * @type {MapStore<
-       *   string,
-       *   import('@agoric/vow').Remote<InboundAttempt>
-       * >}
-       */
+      /** @type {MapStore<string, Remote<InboundAttempt>>} */
       const channelKeyToAttempt = detached.mapStore('channelKeyToAttempt');
 
       /** @type {MapStore<string, Outbound[]>} */
       const srcPortToOutbounds = detached.mapStore('srcPortToOutbounds');
 
-      /**
-       * @type {MapStore<
-       *   string,
-       *   MapStore<number, import('@agoric/vow').VowKit<Bytes>>
-       * >}
-       */
+      /** @type {MapStore<string, MapStore<number, VowKit<Bytes>>>} */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
-      /**
-       * @type {MapStore<
-       *   string,
-       *   SetStore<import('@agoric/vow').VowResolver>
-       * >}
-       */
+      /** @type {MapStore<string, SetStore<VowResolver>>} */
       const portToPendingConns = detached.mapStore('portToPendingConns');
 
       return {
@@ -236,7 +200,7 @@ export const prepareIBCProtocol = (zone, powers) => {
         channelKeyToSeqAck,
         portToPendingConns,
         lastPortID: 0n, // Nonce for creating port identifiers.
-        /** @type {import('@agoric/vow').Remote<ProtocolImpl> | null} */
+        /** @type {Remote<ProtocolImpl> | null} */
         protocolImpl: null,
       };
     },
@@ -304,7 +268,9 @@ export const prepareIBCProtocol = (zone, powers) => {
           }
 
           // Generate a circuit.
+          /** @type {IBCPortID} */
           const rPortID = match[2];
+          /** @type {IBCChannelOrdering} */
           const order = match[3] === 'ordered' ? 'ORDERED' : 'UNORDERED';
           const version = match[4];
 
@@ -329,6 +295,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           }
 
           // Initialise the channel, which a listening relayer should pick up.
+          /** @type {IBCDowncallPacket<'startChannelOpenInit'>} */
           const packet = {
             source_port: portID,
             destination_port: rPortID,
@@ -381,6 +348,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           await null;
           switch (obj.event) {
             case 'channelOpenInit': {
+              /** @type {IBCEvent<'channelOpenInit'>} */
               const {
                 channelID,
                 portID,
@@ -413,6 +381,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
             case 'channelOpenTry': {
               // They're (more or less politely) asking if we are listening, so make an attempt.
+              /** @type {IBCEvent<'channelOpenTry'>} */
               const {
                 portID,
                 counterparty: { port_id: rPortID, channel_id: rChannelID },
@@ -451,6 +420,7 @@ export const prepareIBCProtocol = (zone, powers) => {
 
             case 'channelOpenAck': {
               // Complete the pending outbound connection.
+              /** @type {IBCEvent<'channelOpenAck'>} */
               const {
                 portID,
                 channelID,
@@ -516,6 +486,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'channelOpenConfirm': {
+              /** @type {IBCEvent<'channelOpenConfirm'>} */
               const { portID, channelID } = obj;
               const channelKey = `${channelID}:${portID}`;
               channelKeyToAttempt.has(channelKey) ||
@@ -554,6 +525,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'receivePacket': {
+              /** @type {IBCEvent<'receivePacket'>} */
               const { packet } = obj;
               const {
                 data: data64,
@@ -570,6 +542,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'acknowledgementPacket': {
+              /** @type {IBCEvent<'acknowledgementPacket'>} */
               const { packet, acknowledgement } = obj;
               const {
                 sequence,
@@ -582,6 +555,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'timeoutPacket': {
+              /** @type {IBCEvent<'timeoutPacket'>} */
               const { packet } = obj;
               const {
                 sequence,
@@ -606,6 +580,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             }
 
             case 'sendPacket': {
+              /** @type {IBCEvent<'sendPacket'>} */
               const { packet, relativeTimeoutNs } = obj;
               util.ibcSendPacket(packet, relativeTimeoutNs).then(
                 ack => console.info('Manual packet', packet, 'acked:', ack),
@@ -621,6 +596,11 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
       },
       util: {
+        /**
+         * @template {IBCDowncallMethod} M
+         * @param {M} method
+         * @param {IBCDowncall<M>} args
+         */
         downcall(method, args) {
           return E(this.state.ibcdev).downcall(method, args);
         },
@@ -649,7 +629,7 @@ export const prepareIBCProtocol = (zone, powers) => {
             source_port: portID,
           } = fullPacket;
 
-          /** @type {import('@agoric/vow').VowKit<Bytes>} */
+          /** @type {VowKit<Bytes>} */
           const { vow } = util.findAckKit(channelID, portID, sequence);
           return vow;
         },
@@ -792,12 +772,12 @@ export const prepareIBCProtocol = (zone, powers) => {
 
 harden(prepareIBCProtocol);
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareCallbacks = zone => {
   return zone.exoClass(
     'callbacks',
     undefined,
-    /** @param {import('@agoric/vats').ScopedBridgeManager} dibcBridgeManager */
+    /** @param {ScopedBridgeManager} dibcBridgeManager */
     dibcBridgeManager => ({ dibcBridgeManager }),
     {
       downcall(method, obj) {

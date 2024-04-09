@@ -1,6 +1,12 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
+import {
+  MsgDelegate,
+  MsgDelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
+import { txToBase64 } from '@agoric/orchestration';
 import { makeWalletFactoryContext } from './walletFactory.ts';
 
 const makeTestContext = async (t: ExecutionContext) =>
@@ -8,6 +14,21 @@ const makeTestContext = async (t: ExecutionContext) =>
 
 type DefaultTestContext = Awaited<ReturnType<typeof makeTestContext>>;
 const test: TestFn<DefaultTestContext> = anyTest;
+
+/**
+ * To update, pass the message into `makeTxPacket` from `@agoric/orchestration`,
+ *  and paste the resulting `data` key into `protoMsgMocks` in
+ * [mocks.js](../../tools/ibc/mocks.js).
+ * If adding a new msg, reference the mock in the `sendPacket` switch statement
+ * in [supports.ts](../../tools/supports.ts).
+ */
+const delegateMsgSuccess = txToBase64(
+  MsgDelegate.toProtoMsg({
+    delegatorAddress: 'cosmos1test',
+    validatorAddress: 'cosmosvaloper1test',
+    amount: { denom: 'uatom', amount: '10' },
+  }),
+);
 
 test.before(async t => {
   t.context = await makeTestContext(t);
@@ -62,7 +83,7 @@ test('createAccount returns an ICA connection', async t => {
   );
   t.regex(remoteAddress, /icahost/);
   t.regex(localAddress, /icacontroller/);
-  t.regex(accountAddress, /osmo1/);
+  t.regex(accountAddress, /cosmos1/);
   t.truthy(matches(port, M.remotable('Port')));
   t.log('ICA Account Addresses', {
     remoteAddress,
@@ -86,4 +107,64 @@ test('ICA connection can be closed', async t => {
 
   const res = await EV(account).close();
   t.is(res, 'Connection closed');
+
+  await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgSuccess]), {
+    message: 'Connection closed',
+  });
+});
+
+test('ICA connection can send msg with proto3', async t => {
+  const {
+    runUtils: { EV },
+  } = t.context;
+
+  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
+
+  /** @type {ChainAccount} */
+  const account = await EV(orchestration).createAccount(
+    'connection-0',
+    'connection-0',
+  );
+  t.truthy(account, 'createAccount returns an account');
+
+  await t.throwsAsync(EV(account).executeEncodedTx('malformed'), {
+    message:
+      'In "executeEncodedTx" method of (ChainAccount account): arg 0: string "malformed" - Must be a copyArray',
+  });
+
+  const txSuccess = await EV(account).executeEncodedTx([delegateMsgSuccess]);
+  t.is(
+    txSuccess,
+    'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
+    'delegateMsgSuccess',
+  );
+  t.deepEqual(
+    MsgDelegateResponse.decode(decodeBase64(txSuccess)),
+    {},
+    'success tx',
+  );
+
+  const txWithOptions = await EV(account).executeEncodedTx(
+    [delegateMsgSuccess],
+    {
+      memo: 'TESTING',
+      timeoutHeight: 1_000_000_000n,
+    },
+  );
+  t.deepEqual(
+    MsgDelegateResponse.decode(decodeBase64(txWithOptions)),
+    {},
+    'txWithOptions',
+  );
+
+  const delegateMsgFailure = txToBase64(
+    MsgDelegate.toProtoMsg({
+      delegatorAddress: 'cosmos1fail',
+      validatorAddress: 'cosmosvaloper1fail',
+      amount: { denom: 'uatom', amount: '10' },
+    }),
+  );
+  await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgFailure]), {
+    message: 'ABCI code: 5: error handling packet: see events for details',
+  });
 });

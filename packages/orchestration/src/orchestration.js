@@ -5,24 +5,27 @@ import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
+import { makeTxPacket, parsePacketAck } from './utils/tx.js';
 import '@agoric/network/exported.js';
 
 /**
- * @import { ConnectionId } from './types';
+ * @import { AttenuatedNetwork } from './types.js';
+ * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
+ * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  */
 
 const { Fail, bare } = assert;
 const trace = makeTracer('Orchestration');
+
+/** @import {Proto3Msg} from './utils/tx.js'; */
 
 // TODO improve me
 /** @typedef {string} ChainAddress */
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {ERef<
- *   import('@agoric/orchestration/src/types').AttenuatedNetwork
- * >} network
+ * @property {ERef<AttenuatedNetwork>} network
  */
 
 /**
@@ -46,11 +49,19 @@ const getPower = (powers, name) => {
   return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
 };
 
+export const Proto3Shape = {
+  typeUrl: M.string(),
+  value: M.string(),
+};
+
 export const ChainAccountI = M.interface('ChainAccount', {
   getAccountAddress: M.call().returns(M.string()),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
+  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(M.record())
+    .returns(M.promise()),
   close: M.callWhen().returns(M.string()),
 });
 
@@ -73,7 +84,7 @@ const prepareChainAccount = zone =>
       /**
        * @type {{
        *   port: Port;
-       *   connection: Connection | undefined;
+       *   connection: Remote<Connection> | undefined;
        *   localAddress: string | undefined;
        *   requestedRemoteAddress: string;
        *   remoteAddress: string | undefined;
@@ -112,24 +123,34 @@ const prepareChainAccount = zone =>
         getPort() {
           return this.state.port;
         },
+        /**
+         * @param {Proto3Msg[]} msgs
+         * @param {Omit<TxBody, 'messages'>} [opts]
+         * @returns {Promise<string>} - base64 encoded bytes string. Can be decoded using the corresponding `Msg*Response` object.
+         * @throws {Error} if packet fails to send or an error is returned
+         */
+        executeEncodedTx(msgs, opts) {
+          const { connection } = this.state;
+          if (!connection) throw Fail`connection not available`;
+          return E.when(
+            E(connection).send(makeTxPacket(msgs, opts)),
+            // if parsePacketAck cannot find a `result` key, it throws
+            ack => parsePacketAck(ack),
+          );
+        },
         async close() {
           /// XXX what should the behavior be here? and `onClose`?
           // - retrieve assets?
           // - revoke the port?
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
-          await null;
-          try {
-            await E(connection).close();
-          } catch (e) {
-            throw Fail`Failed to close connection: ${e}`;
-          }
+          await E(connection).close();
           return 'Connection closed';
         },
       },
       connectionHandler: {
         /**
-         * @param {Connection} connection
+         * @param {Remote<Connection>} connection
          * @param {string} localAddr
          * @param {string} remoteAddr
          */
@@ -188,18 +209,18 @@ const prepareOrchestration = (zone, createChainAccount) =>
       self: {
         async bindPort() {
           const network = getPower(this.state.powers, 'network');
-          const port = await E(network)
-            .bind(`/ibc-port/icacontroller-${this.state.icaControllerNonce}`)
-            .catch(e => Fail`Failed to bind port: ${e}`);
+          const port = await E(network).bind(
+            `/ibc-port/icacontroller-${this.state.icaControllerNonce}`,
+          );
           this.state.icaControllerNonce += 1;
           return port;
         },
       },
       public: {
         /**
-         * @param {ConnectionId} hostConnectionId
+         * @param {IBCConnectionID} hostConnectionId
          *   the counterparty connection_id
-         * @param {ConnectionId} controllerConnectionId
+         * @param {IBCConnectionID} controllerConnectionId
          *   self connection_id
          * @returns {Promise<ChainAccount>}
          */
@@ -213,10 +234,8 @@ const prepareOrchestration = (zone, createChainAccount) =>
           const chainAccount = createChainAccount(port, remoteConnAddr);
 
           // await so we do not return a ChainAccount before it successfully instantiates
-          await E(port)
-            .connect(remoteConnAddr, chainAccount.connectionHandler)
-            // XXX if we fail, should we close the port (if it was created in this flow)?
-            .catch(e => Fail`Failed to create ICA connection: ${bare(e)}`);
+          await E(port).connect(remoteConnAddr, chainAccount.connectionHandler);
+          // XXX if we fail, should we close the port (if it was created in this flow)?
 
           return chainAccount.account;
         },
