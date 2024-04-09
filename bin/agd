@@ -23,7 +23,7 @@ function fatal() {
 # but otherwise use other available fallbacks.
 for cmd in sha1sum shasum sha1sum; do
   DIGEST_CMD=$cmd
-  command -v $DIGEST_CMD &>/dev/null && break
+  command -v $DIGEST_CMD &> /dev/null && break
 done
 
 # diffsha1 stamp_name find_args...
@@ -42,7 +42,7 @@ function diffsha1() {
     rm -f "$stamp.files.$$"
     return 0
   fi
-  xargs $DIGEST_CMD <"$stamp.files.$$" | sort +1 > "$stamp.new" || true
+  xargs $DIGEST_CMD < "$stamp.files.$$" | sort +1 > "$stamp.new" || true
   rm -f "$stamp.files.$$"
   if test ! -s "$stamp.new"; then
     rm -f "$stamp.new"
@@ -58,7 +58,7 @@ NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
 STAMPS=node_modules/.cache/agoric
 
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
-thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
 # shellcheck disable=SC1091
 source "$thisdir/../repoconfig.sh"
@@ -69,32 +69,33 @@ if test "${1-''}" = build; then
   # Enable shell debugging.
   set -x
   case "${2-''}" in
-  --force | -f)
-    rm -rf "$thisdir/../$STAMPS"
-    ;;
+    --force | -f)
+      rm -rf "$thisdir/../$STAMPS"
+      ;;
   esac
 else
   case ${NO_BUILD-false} in
-  true | yes | y | 1)
-    do_not_build=true
-    ;;
-  *)
-    do_not_build=false
-    ;;
+    true | yes | y | 1)
+      do_not_build=true
+      ;;
+    *)
+      do_not_build=false
+      ;;
   esac
   only_build=false
 fi
 
 need_nodejs=$only_build
 case $@ in
-start | *" start" | *" start "*)
-  # We're starting the daemon, so we need Node.js.
-  need_nodejs=true
-  ;;
+  start | *" start" | *" start "*)
+    # We're starting the daemon, so we need Node.js.
+    need_nodejs=true
+    ;;
 esac
 
 # Only allow auto-downloading if explicitly set.
-if test "${SKIP_DOWNLOAD-}" = false; then :
+if test "${SKIP_DOWNLOAD-}" = false; then
+  :
 elif test -n "${DAEMON_HOME-}" && test "${DAEMON_ALLOW_DOWNLOAD_BINARIES-}" = true; then
   # Cosmovisor download mode detected.
   SKIP_DOWNLOAD=false
@@ -106,29 +107,29 @@ fi
 if $need_nodejs; then
   # We need to get node at the script top level because it's used by the daemon
   # as well.
-  case $(node --version 2>/dev/null) in
-  "$NODEJS_VERSION" | "$NODEJS_VERSION".*) ;;
-  *)
-    # Auto-download the NodeJS version we need, if allowed.
-    $SKIP_DOWNLOAD || {
-      if test -z "${NVM_DIR-}"; then
-        export "NVM_DIR=${DAEMON_HOME-$HOME}/.nvm"
-      fi
-      if test ! -s "$NVM_DIR/nvm.sh"; then
-        git clone "$NVM_GIT_REPO" "$NVM_DIR"
-        (
-          cd "$NVM_DIR"
-          git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")"
-        )
-      fi
-      # shellcheck disable=SC1091
-      source "$NVM_DIR/nvm.sh" --no-use
-      nvm ls "$NODEJS_VERSION" >/dev/null 2>&1 || {
-        nvm install "$NODEJS_VERSION"
-      }
-      nvm use "$NODEJS_VERSION"
-    } 1>&2
-    ;;
+  case $(node --version 2> /dev/null) in
+    "$NODEJS_VERSION" | "$NODEJS_VERSION".*) ;;
+    *)
+      # Auto-download the NodeJS version we need, if allowed.
+      $SKIP_DOWNLOAD || {
+        if test -z "${NVM_DIR-}"; then
+          export "NVM_DIR=${DAEMON_HOME-$HOME}/.nvm"
+        fi
+        if test ! -s "$NVM_DIR/nvm.sh"; then
+          git clone "$NVM_GIT_REPO" "$NVM_DIR"
+          (
+            cd "$NVM_DIR"
+            git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")"
+          )
+        fi
+        # shellcheck disable=SC1091
+        source "$NVM_DIR/nvm.sh" --no-use
+        nvm ls "$NODEJS_VERSION" > /dev/null 2>&1 || {
+          nvm install "$NODEJS_VERSION"
+        }
+        nvm use "$NODEJS_VERSION"
+      } 1>&2
+      ;;
   esac
 fi
 
@@ -145,31 +146,34 @@ ${NO_BUILD:-false} || (
   diffsha1 "$sum" "$GOLANG_DIR" \( \
     ! -name '*_test.go' -name '*.go' \
     -o -name '*.cc' \
-    -o -name 'go.*' \) || { echo "$GOLANG_DIR $sum has changed"; $do_not_build; } || {
+    -o -name 'go.*' \) || {
+    echo "$GOLANG_DIR $sum has changed"
+    $do_not_build
+  } || {
     rm -f "$sum"
     (
       # Run this build in another subshell in case we had to modify the path.
-      case $(go version 2>/dev/null) in
-      "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
-      *)
-        # Auto-download the Golang version we need, if allowed.
-        $SKIP_DOWNLOAD || {
-          export HOME=${DAEMON_HOME-$HOME}
-          mkdir -p "$HOME/bin"
+      case $(go version 2> /dev/null) in
+        "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
+        *)
+          # Auto-download the Golang version we need, if allowed.
+          $SKIP_DOWNLOAD || {
+            export HOME=${DAEMON_HOME-$HOME}
+            mkdir -p "$HOME/bin"
 
-          # shellcheck disable=SC2030
-          PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
-          test -x "$HOME/bin/gvm" || {
-            curl -L "$GVM_URL" > "$HOME/bin/gvm"
-            chmod +x "$HOME/bin/gvm"
+            # shellcheck disable=SC2030
+            PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
+            test -x "$HOME/bin/gvm" || {
+              curl -L "$GVM_URL" > "$HOME/bin/gvm"
+              chmod +x "$HOME/bin/gvm"
+            }
+            gvm "$GOLANG_VERSION" -s
           }
-          gvm "$GOLANG_VERSION" -s
-        }
-        ;;
+          ;;
       esac
       # Ensure minimum patch versions of Go environment
       cd "$GOLANG_DIR"
-      if goversion=$(go version 2>/dev/null); then
+      if goversion=$(go version 2> /dev/null); then
         goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
         [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
         golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
@@ -182,7 +186,7 @@ ${NO_BUILD:-false} || (
 
   if $need_nodejs; then
     lazy_yarn() {
-      yarn --version 2>/dev/null 1>&2 || {
+      yarn --version 2> /dev/null 1>&2 || {
         # Auto-download the Yarn version we need, if allowed.
         $SKIP_DOWNLOAD || {
           npm install -g yarn
@@ -195,13 +199,16 @@ ${NO_BUILD:-false} || (
     sum=$STAMPS/yarn-installed.sum
 
     # Find the current list of package.jsons.
-    files=( package.json )
+    files=(package.json)
     while IFS= read -r line; do
-      files+=( "$line" )
-    done < <(lazy_yarn -s workspaces info |
-      sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
+      files+=("$line")
+    done < <(lazy_yarn -s workspaces info \
+      | sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
 
-    diffsha1 "$sum" "${files[@]}" || { echo "$sum has changed"; $do_not_build; } || {
+    diffsha1 "$sum" "${files[@]}" || {
+      echo "$sum has changed"
+      $do_not_build
+    } || {
       rm -f "$sum" "$STAMPS/yarn-built"
       lazy_yarn install
       mv "$sum.new" "$sum"
@@ -222,9 +229,9 @@ ${NO_BUILD:-false} || (
 # the xsnap binary lives in a platform-specific directory
 unameOut="$(uname -s)"
 case "${unameOut}" in
-    Linux*)     platform=lin;;
-    Darwin*)    platform=mac;;
-    *)          platform=win;;
+  Linux*) platform=lin ;;
+  Darwin*) platform=mac ;;
+  *) platform=win ;;
 esac
 
 # check the xsnap version against our baked-in notion of what version we should be using
