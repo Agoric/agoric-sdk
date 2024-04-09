@@ -1,7 +1,7 @@
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { addParamsToVersion } from '../../../tools/ibc/mocks.js';
+import { addParamsIfJsonVersion } from '../../../tools/ibc/mocks.js';
 
 test('addParamsToVersion', t => {
   const params = { address: 'cosmos1234' };
@@ -26,6 +26,6 @@ test('addParamsToVersion', t => {
   ];
 
   for (const { version, expected, message } of scenarios) {
-    t.is(addParamsToVersion(version, params), expected, message);
+    t.is(addParamsIfJsonVersion(version, params), expected, message);
   }
 });
