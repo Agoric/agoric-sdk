@@ -209,7 +209,7 @@ const prepareOrchestration = (zone, createChainAccount) =>
       self: {
         async bindPort() {
           const network = getPower(this.state.powers, 'network');
-          const port = await E(network).bind(
+          const port = await E(network).bindPort(
             `/ibc-port/icacontroller-${this.state.icaControllerNonce}`,
           );
           this.state.icaControllerNonce += 1;

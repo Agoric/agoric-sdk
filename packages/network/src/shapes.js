@@ -178,7 +178,7 @@ export const Shape = /** @type {const} */ harden({
   },
 
   ProtocolImplI: M.interface('ProtocolImpl', {
-    bind: M.callWhen(Shape2.Endpoint).returns(Shape2.Vow$(Shape2.Port)),
+    bindPort: M.callWhen(Shape2.Endpoint).returns(Shape2.Vow$(Shape2.Port)),
     inbound: M.callWhen(Shape2.Endpoint, Shape2.Endpoint).returns(
       Shape2.Vow$(Shape2.InboundAttempt),
     ),
