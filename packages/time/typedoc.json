@@ -4,6 +4,6 @@
     ],
     "entryPoints": [
         "src/timeMath.js",
-        "src/types.js"
+        "src/types.d.ts"
     ]
 }
