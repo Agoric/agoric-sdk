@@ -171,6 +171,9 @@ replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.1
 
+	// replace broken iavl
+	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
+
 	// https://pkg.go.dev/vuln/GO-2023-2409
 	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
 
