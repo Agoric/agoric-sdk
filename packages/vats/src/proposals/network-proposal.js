@@ -61,8 +61,8 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * space.
  *
  * The `networkVat` is CLOSELY HELD in the core space, where later, we claim
- * ports using `E(networkVat).bind(_path_)`. As discussed in `ProtocolHandler`
- * docs, _path_ is:
+ * ports using `E(networkVat).bindPort(_path_)`. As discussed in
+ * `ProtocolHandler` docs, _path_ is:
  *
  * - /ibc-port/NAME for an IBC port with a known name or,
  * - /ibc-port/ for an IBC port with a fresh name.
@@ -72,8 +72,8 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  *
  * Testing facilities include:
  *
- * - loopback ports: `E(networkVat).bind('/local/')`
- * - an echo port: `E(vats.network).bind('/ibc-port/echo')`
+ * - loopback ports: `E(networkVat).bindPort('/local/')`
+ * - an echo port: `E(vats.network).bindPort('/ibc-port/echo')`
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
@@ -140,7 +140,7 @@ export const setupNetworkProtocols = async (
         lastICAPort += 1;
         bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
       }
-      const port = when(E(vats.network).bind(bindAddr));
+      const port = when(E(vats.network).bindPort(bindAddr));
       ibcportP.push(port);
     }
     return Promise.all(ibcportP);
@@ -152,7 +152,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(vats.network).bind('/ibc-port/echo'));
+  const echoPort = await when(E(vats.network).bindPort('/ibc-port/echo'));
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);

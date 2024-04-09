@@ -128,7 +128,7 @@ test('handled protocol', async t => {
   );
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
-  const port = await when(protocol.bind('/ibc/*/ordered'));
+  const port = await when(protocol.bindPort('/ibc/*/ordered'));
 
   const { vow, resolver } = makeVowKit();
 
@@ -181,7 +181,9 @@ test('protocol connection listen', async t => {
   );
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
-  const port = await when(protocol.bind('/net/ordered/ordered/some-portname'));
+  const port = await when(
+    protocol.bindPort('/net/ordered/ordered/some-portname'),
+  );
   const { vow, resolver } = makeVowKit();
 
   const prepareConnectionHandler = () => {
@@ -272,7 +274,7 @@ test('protocol connection listen', async t => {
 
   await port.addListener(listener);
 
-  const port2 = await when(protocol.bind('/net/ordered'));
+  const port2 = await when(protocol.bindPort('/net/ordered'));
   const { handler } = makeEchoConnectionHandler();
 
   const prepareHandlerWithOpen = () => {
@@ -320,7 +322,7 @@ test('loopback protocol', async t => {
   const protocol = makeNetworkProtocol(makeLoopbackProtocolHandler());
   const { vow, resolver } = makeVowKit();
 
-  const port = await when(protocol.bind('/loopback/foo'));
+  const port = await when(protocol.bindPort('/loopback/foo'));
 
   const prepareConnectionHandler = () => {
     const makeConnectionHandler = zone.exoClass(
@@ -358,7 +360,7 @@ test('loopback protocol', async t => {
   const listener = makeListenHandler();
   await when(port.addListener(listener));
 
-  const port2 = await when(protocol.bind('/loopback/bar'));
+  const port2 = await when(protocol.bindPort('/loopback/bar'));
   const prepareOpener = () => {
     const openerHandler = zone.exoClass(
       'opener',

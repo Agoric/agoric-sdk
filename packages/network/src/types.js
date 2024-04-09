@@ -33,7 +33,7 @@
 
 /**
  * @typedef {object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => PromiseVow<Port>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Port>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
@@ -182,7 +182,7 @@
  * @property {() => PromiseVow<void>} close Abort the attempt
  *
  * @typedef {object} ProtocolImpl Things the protocol can do for us
- * @property {(prefix: Endpoint) => PromiseVow<Remote<Port>>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Remote<Port>>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  * @property {(
  *   listenAddr: Endpoint,

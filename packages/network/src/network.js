@@ -652,7 +652,7 @@ const prepareBinder = (zone, powers) => {
     {
       protocolImpl: Shape.ProtocolImplI,
       binder: M.interface('Binder', {
-        bind: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
+        bindPort: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
       }),
       binderInboundInstantiateWatcher: M.interface(
         'BinderInboundInstantiateWatcher',
@@ -840,13 +840,13 @@ const prepareBinder = (zone, powers) => {
             localAddr,
           });
         },
-        async bind(localAddr) {
-          return this.facets.binder.bind(localAddr);
+        async bindPort(localAddr) {
+          return this.facets.binder.bindPort(localAddr);
         },
       },
       binder: {
         /** @param {string} localAddr */
-        async bind(localAddr) {
+        async bindPort(localAddr) {
           const { protocolHandler } = this.state;
 
           // Check if we are underspecified (ends in slash)

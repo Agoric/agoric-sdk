@@ -95,7 +95,9 @@ async function testRemotePeg(t) {
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const network = makeNetworkProtocol(makeLoopbackHandler());
 
-  const portP = when(E(network).bind('/ibc-channel/chanabc/ibc-port/portdef'));
+  const portP = when(
+    E(network).bindPort('/ibc-channel/chanabc/ibc-port/portdef'),
+  );
   const portName = await E(portP).getLocalAddress();
 
   /**

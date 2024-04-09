@@ -13,7 +13,7 @@ import { V as E } from '@agoric/vat-data/vow.js';
  */
 export const start = async (zcf, privateArgs, _baggage) => {
   const { address, networkVat } = privateArgs;
-  const myPort = await E(networkVat).bind(address);
+  const myPort = await E(networkVat).bindPort(address);
 
   const { log } = console;
   let connP;

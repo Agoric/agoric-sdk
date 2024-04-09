@@ -58,7 +58,7 @@ export const makeMock = log =>
 
       network: Far('network', {
         registerProtocolHandler: noop,
-        bind: () => harden({ addListener: noop }),
+        bindPort: () => harden({ addListener: noop }),
       }),
     },
   });
