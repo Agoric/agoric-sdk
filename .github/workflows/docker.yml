@@ -2,13 +2,13 @@ name: Build release Docker Images
 
 on:
   push:
-    branches:
-      # $default-branch
-      - master
-      - 'release-*'
-      - 'dev-*'
-    tags:
-      - '@agoric/sdk@*'
+    # branches:
+    #   # $default-branch
+    #   - master
+    #   - 'release-*'
+    #   - 'dev-*'
+    # tags:
+    #   - '@agoric/sdk@*'
   workflow_dispatch:
 env:
   REGISTRY: ghcr.io
