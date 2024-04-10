@@ -238,8 +238,3 @@ if $only_build; then
   echo "Build complete." 1>&2
   exit 0
 fi
-
-# Run the built Cosmos daemon.
-# shellcheck disable=SC2031
-export PATH="$thisdir/../packages/cosmic-swingset/bin:$PATH"
-exec "$thisdir/../$GOLANG_DAEMON" ${1+"$@"}
