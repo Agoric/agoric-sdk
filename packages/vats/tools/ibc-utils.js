@@ -1,18 +1,16 @@
 export const REMOTE_ADDR_RE =
-  /^(\/ibc-hop\/[^/]+)*\/ibc-port\/([^/]+)\/(ordered|unordered)\/([^/]+)$/s;
+  /^(?<hops>\/ibc-hop\/[^/]+)*\/ibc-port\/(?<portID>[^/]+)\/(?<order>ordered|unordered)\/(?<version>[^/]+)$/s;
 harden(REMOTE_ADDR_RE);
 /** @typedef {`/${string}ibc-port/${string}/${'ordered' | 'unordered'}/${string}`} RemoteIbcAddress */
 
-export const LOCAL_ADDR_RE = /^\/ibc-port\/([-a-zA-Z0-9._+#[\]<>]+)$/;
-harden(LOCAL_ADDR_RE);
+export const LOCAL_ADDR_RE = /^\/ibc-port\/(?<portID>[-a-zA-Z0-9._+#[\]<>]+)$/;
 /** @typedef {`/ibc-port/${string}`} LocalIbcAddress */
 
 /** @param {string} remoteAddr */
 export const decodeRemoteIbcAddress = remoteAddr => {
-  const match = remoteAddr.match(
-    /^(\/ibc-hop\/[^/]+)*\/ibc-port\/([^/]+)\/(ordered|unordered)\/([^/]+)$/s,
-  );
-  if (!match) {
+  const match = remoteAddr.match(REMOTE_ADDR_RE);
+  // .groups is to inform TS https://github.com/microsoft/TypeScript/issues/32098
+  if (!(match && match.groups)) {
     throw TypeError(
       `Remote address ${remoteAddr} must be '(/ibc-hop/CONNECTION)*/ibc-port/PORT/(ordered|unordered)/VERSION'`,
     );
@@ -20,9 +18,10 @@ export const decodeRemoteIbcAddress = remoteAddr => {
 
   /** @type {import('../src/types.js').IBCConnectionID[]} */
   const hops = [];
-  let h = match[1];
+
+  let h = match.groups.hops;
   while (h) {
-    const m = h.match(/^\/ibc-hop\/([^/]+)/);
+    const m = h.match(/^\/ibc-hop\/(?<hop>[^/]+)/);
     if (!m) {
       throw Error(
         `internal: ${JSON.stringify(h)} did not begin with "/ibc-hop/XXX"`,
@@ -30,15 +29,12 @@ export const decodeRemoteIbcAddress = remoteAddr => {
     }
     h = h.substr(m[0].length);
     // @ts-expect-error unchecked cast
-    hops.push(m[1]);
+    hops.push(m.groups.hop);
   }
-
   // Generate a circuit.
-  const rPortID = match[2];
+  const { portID: rPortID, version } = match.groups;
   /** @type {import('../src/types.js').IBCChannelOrdering} */
-  const order = match[3] === 'ordered' ? 'ORDERED' : 'UNORDERED';
-  const version = match[4];
-
+  const order = match.groups.order === 'ordered' ? 'ORDERED' : 'UNORDERED';
   return { rPortID, hops, order, version };
 };
 harden(decodeRemoteIbcAddress);
@@ -49,12 +45,13 @@ harden(decodeRemoteIbcAddress);
  */
 export const localAddrToPortID = localAddr => {
   const m = localAddr.match(LOCAL_ADDR_RE);
-  if (!m) {
+  // .groups is to inform TS https://github.com/microsoft/TypeScript/issues/32098
+  if (!(m && m.groups)) {
     throw TypeError(
       `Invalid port specification ${localAddr}; expected "/ibc-port/PORT"`,
     );
   }
-  return m[1];
+  return m.groups.portID;
 };
 harden(localAddrToPortID);
 
