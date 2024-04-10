@@ -38,9 +38,15 @@ ENV YARN_CACHE_FOLDER=/root/.yarn
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY --from=cosmos-go --link /usr/src/agoric-sdk/golang/cosmos .
+COPY --link scripts /usr/src/agoric-sdk/scripts
 
 RUN corepack enable
-RUN yarn install --frozen-lockfile
+RUN echo unknown > git-revision.txt
+
+# XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
+# RUN yarn install --frozen-lockfile
+RUN bash -c \
+  "for i in {1..3}; do yarn install --frozen-lockfile --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
 RUN yarn build:gyp
 
 # Remove dev dependencies.
@@ -63,6 +69,7 @@ ARG XSNAP_NATIVE_URL
 
 WORKDIR /usr/src/agoric-sdk
 COPY --link packages/xsnap packages/xsnap
+COPY --link scripts scripts
 
 WORKDIR /usr/src/agoric-sdk/packages/xsnap
 # Check out the specified submodule versions.
@@ -91,10 +98,14 @@ COPY --link lerna.json package.json repoconfig.sh tsconfig.json yarn.lock ./
 COPY --link bin bin
 COPY --link packages packages
 COPY --link patches patches
+COPY --link scripts scripts
 COPY --from=cosmos-package --link /usr/src/agoric-sdk/golang golang
 COPY --from=xsnap-package --link /usr/src/agoric-sdk/packages/xsnap packages/xsnap
 
-RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --frozen-lockfile
+# XXX until https://github.com/Agoric/agoric-sdk/issues/9043, then just:
+# RUN --mount=type=cache,target=$YARN_CACHE_FOLDER yarn install --frozen-lockfile
+RUN --mount=type=cache,target=$YARN_CACHE_FOLDER bash -c \
+  "for i in {1..3}; do yarn install --frozen-lockfile --network-timeout 1000000 && exit 0 || (echo retrying; sleep 15;) done; exit 1"
 
 # build everything except xsnap, built above. 'cosmos' was also built above but
 # it's safe to include here because its package "build" script is "exit 0".
