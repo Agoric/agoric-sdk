@@ -461,6 +461,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           trace('observing');
 
           void E.when(
+            // TODO get unit amounts elsewhere https://github.com/Agoric/agoric-sdk/issues/10235
+            // or use a hard-coded amount
             E(collateralBrand).getDisplayInfo(),
             ({ decimalPlaces = DEFAULT_DECIMALS }) => {
               const quoteNotifier = E(priceAuthority).makeQuoteNotifier(

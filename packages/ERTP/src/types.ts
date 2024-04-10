@@ -97,6 +97,7 @@ export type AssetKindForValue<V extends AmountValue> = V extends NatValue
       : V extends import('@endo/patterns').CopyBag
         ? 'copyBag'
         : never;
+/** @deprecated */
 export type DisplayInfo<K extends AssetKind = AssetKind> = {
   /**
    * Tells the display software how many
@@ -122,10 +123,7 @@ export type BrandMethods<K extends AssetKind> = {
    */
   isMyIssuer: (allegedIssuer: ERef<Issuer<K>>) => Promise<boolean>;
   getAllegedName: () => string;
-  /**
-   * Give information to UI on how
-   * to display the amount.
-   */
+  /** @deprecated look up in boardAux */
   getDisplayInfo: () => DisplayInfo<K>;
   getAmountShape: () => Pattern;
 };
@@ -199,10 +197,7 @@ export type IssuerMethods<K extends AssetKind, M extends Key> = {
    * Issuer.
    */
   getAssetKind: () => K;
-  /**
-   * Give information to UI on how
-   * to display amounts for this issuer.
-   */
+  /** @deprecated look up in boardAux */
   getDisplayInfo: () => DisplayInfo<K>;
   /**
    * Make an empty purse of this
