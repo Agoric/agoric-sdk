@@ -1,0 +1,5 @@
+#! /bin/bash
+# bin/agd - execute ../scripts/agd-builder.sh
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
+exec "$thisdir/../scripts/agd-builder.sh" ${1+"$@"}
