@@ -1,9 +1,6 @@
 import test from '@endo/ses-ava/prepare-endo.js';
-import {
-  makeTxPacket,
-  txToBase64,
-  parsePacketAck,
-} from '../../src/utils/tx.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import { makeTxPacket, parsePacketAck } from '../../src/utils/tx.js';
 
 test('makeTxPacket', t => {
   const mockMsg = {
@@ -21,12 +18,13 @@ test('makeTxPacket', t => {
     '{"type":1,"data":"ChcKCy9mb28uYmFyLnYxEggKBgoEc2VudBIFaGVsbG8YkE4=","memo":""}',
     'accepts options for TxBody',
   );
-  t.throws(() =>
+  t.deepEqual(
     makeTxPacket([
       {
         typeUrl: mockMsg.typeUrl,
       },
     ]),
+    '{"type":1,"data":"Cg0KCy9mb28uYmFyLnYx","memo":""}',
   );
   t.throws(() =>
     makeTxPacket([
@@ -40,7 +38,7 @@ test('makeTxPacket', t => {
 
 test('txToBase64', t => {
   t.deepEqual(
-    txToBase64({
+    Any.toJSON({
       typeUrl: '/foo.bar.v1',
       value: new Uint8Array([1, 2, 3]),
     }),
