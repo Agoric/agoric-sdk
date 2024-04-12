@@ -35,7 +35,12 @@ The kernel will invoke the following methods on the policy object (so all must e
 * `policy.crankFailed()`
 * `policy.emptyCrank()`
 
-All methods should return `true` if the kernel should keep running, or `false` if it should stop.
+All those methods should return `true` if the kernel should keep running, or `false` if it should stop.
+
+The following methods are optional (for backwards compatibility with policy objects created for older kernels):
+
+* `policy.allowCleanup()` : may return budget, see "Terminated-Vat Cleanup" below
+* `policy.didCleanup({ cleanups })` (if missing, kernel pretends it returned `true` to keep running)
 
 The `computrons` argument may be `undefined` (e.g. if the crank was delivered to a non-`xs worker`-based vat, such as the comms vat). The policy should probably treat this as equivalent to some "typical" number of computrons.
 
@@ -52,6 +57,27 @@ More arguments may be added in the future, such as:
 * `crankFailed`: the nature of the failure (we might be able to distinguish between 1: per-crank metering limit exceeded, 2: allocation limit exceed, 3: fatal syscall, 4: Meter exhausted)
 
 The run policy should be provided as the first argument to `controller.run()`. If omitted, the kernel defaults to `forever`, a policy that runs until the queue is empty.
+
+## Terminated-Vat Cleanup
+
+Some vats may grow very large (i.e. large c-lists with lots of imported/exported objects, or lots of vatstore entries). If/when these are terminated, the burst of cleanup work might overwhelm the kernel, especially when processing all the dropped imports (which trigger GC messages to other vats).
+
+To protect the system against these bursts, the run policy can be configured to terminate vats slowly. Instead of doing all the cleanup work immediately, the policy allows the kernel to do a little bit of work each time `controller.run()` is called (e.g. once per block, for kernels hosted inside a blockchain).
+
+There are two RunPolicy methods which control this. The first is `runPolicy.allowCleanup()`. This will be invoked many times during `controller.run()`, each time the kernel tries to decide what to do next (once per step). The return value will enable (or not) a fixed amount of cleanup work. The second is `runPolicy.didCleanup({ cleanups })`, which is called later, to inform the policy of how much cleanup work was actually done. The policy can count the cleanups and switch `allowCleanup()` to return `false` when it reaches a threshold. (We need the pre-check `allowCleanup` method because the simple act of looking for cleanup work is itself a cost that we might be able to afford).
+
+If `allowCleanup()` exists, it must either return a falsy value, or an object. This object may have a `budget` property, which must be a number.
+
+A falsy return value (eg `allowCleanup: () => false`) prohibits cleanup work. This can be useful in a "only clean up during idle blocks" approach (see below), but should not be the only policy used, otherwise vat cleanup would never happen.
+
+A numeric `budget` limits how many cleanups are allowed to happen (if any are needed). One "cleanup" will delete one vatstore row, or one c-list entry (note that c-list deletion may trigger GC work), or one heap snapshot record, or one transcript span (and its populated transcript items). Using `{ budget: 5 }` seems to be a reasonable limit on each call, balancing overhead against doing sufficiently small units of work that we can limit the total work performed.
+
+If `budget` is missing or `undefined`, the kernel will perform unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than anything else, followed by GC work, then BringOutYourDead, then message delivery.
+
+`didCleanup({ cleanups })` is called when the kernel actually performed some vat-termination cleanup, and the `cleanups` property is a number with the count of cleanups that took place. Each query to `allowCleanup()` might (or might not) be followed by a call to `didCleanup`, with a `cleanups` value that does not exceed the specified budget.
+
+To limit the work done per block (for blockchain-based applications) the host's RunPolicy objects must keep track of how many cleanups were reported, and change the behavior of `allowCleanup()` when it reaches a per-block threshold. See below for examples.
+
 
 ## Typical Run Policies
 
@@ -78,6 +104,7 @@ function make100CrankPolicy() {
       return true;
     },
   });
+  return policy;
 }
 ```
 
@@ -95,15 +122,15 @@ while(1) {
 
 Note that a new policy object should be provided for each call to `run()`.
 
-A more sophisticated one would count computrons. Suppose that experiments suggest that one million computrons take about 5 seconds to execute. The policy would look like:
+A more sophisticated one would count computrons. Suppose that experiments suggest that sixty-five million computrons take about 5 seconds to execute. The policy would look like:
 
 
 ```js
 function makeComputronCounterPolicy(limit) {
-  let total = 0;
+  let total = 0n;
   const policy = harden({
     vatCreated() {
-      total += 100000; // pretend vat creation takes 100k computrons
+      total += 1_000_000n; // pretend vat creation takes 1M computrons
       return (total < limit);
     },
     crankComplete(details) {
@@ -112,17 +139,118 @@ function makeComputronCounterPolicy(limit) {
       return (total < limit);
     },
     crankFailed() {
-      total += 1000000; // who knows, 1M is as good as anything
+      total += 65_000_000n; // who knows, 65M is as good as anything
       return (total < limit);
     },
     emptyCrank() {
       return true;
     }
   });
+  return policy;
 }
 ```
 
 See `src/runPolicies.js` for examples.
+
+To slowly terminate vats, limiting each block to 5 cleanups, the policy should start with a budget of 5, return the remaining `{ budget }` from `allowCleanup()`, and decrement it as `didCleanup` reports that budget being consumed:
+
+```js
+function makeSlowTerminationPolicy() {
+  let cranks = 0;
+  let vats = 0;
+  let cleanups = 5;
+  const policy = harden({
+    vatCreated() {
+      vats += 1;
+      return (vats < 2);
+    },
+    crankComplete(details) {
+      cranks += 1;
+      return (cranks < 100);
+    },
+    crankFailed() {
+      cranks += 1;
+      return (cranks < 100);
+    },
+    emptyCrank() {
+      return true;
+    },
+    allowCleanup() {
+      if (cleanups > 0) {
+        return { budget: cleanups };
+      } else {
+        return false;
+      }
+    },
+    didCleanup(spent) {
+      cleanups -= spent.cleanups;
+    },
+  });
+  return policy;
+}
+```
+
+A more conservative approach might only allow cleanup in otherwise-empty blocks. To accompish this, use two separate policy objects, and two separate "runs". The first run only performs deliveries, and prohibits all cleanups:
+
+```js
+function makeDeliveryOnlyPolicy() {
+  let empty = true;
+  const didWork = () => { empty = false; return true; };
+  const policy = harden({
+    vatCreated: didWork,
+    crankComplete: didWork,
+    crankFailed: didWork,
+    emptyCrank: didWork,
+    allowCleanup: () => false,
+  });
+  const wasEmpty = () => empty;
+  return [ policy, wasEmpty ];
+}
+```
+
+The second only performs cleanup, with a limited budget, stopping the run after any deliveries occur (such as GC actions):
+
+```js
+function makeCleanupOnlyPolicy() {
+  let cleanups = 5;
+  const stop: () => false;
+  const policy = harden({
+    vatCreated: stop,
+    crankComplete: stop,
+    crankFailed: stop,
+    emptyCrank: stop,
+    allowCleanup() {
+      if (cleanups > 0) {
+        return { budget: cleanups };
+      } else {
+        return false;
+      }
+    },
+    didCleanup(spent) {
+      cleanups -= spent.cleanups;
+    },
+  });
+  return policy;
+}
+```
+
+On each block, the host should only perform the second (cleanup) run if the first policy reports that the block was empty:
+
+```js
+async function doBlock() {
+  const [ firstPolicy, wasEmpty ] = makeDeliveryOnlyPolicy();
+  await controller.run(firstPolicy);
+  if (wasEmpty()) {
+    const secondPolicy = makeCleanupOnlyPolicy();
+    await controller.run(secondPolicy);
+  }
+}
+```
+
+Note that regardless of whatever computron/delivery budget is imposed by the first policy, the second policy will allow one additional delivery to be made (we do not yet have an `allowDelivery()` pre-check method that might inhibit this). The cleanup work, which may or may not happen, will sometimes trigger a GC delivery like `dispatch.dropExports`, but at most one such delivery will be made before the second policy returns `false` and stops `controller.run()`. If cleanup does not trigger such a delivery, or if no cleanup work needs to be done, then one normal run-queue delivery will be performed before the policy has a chance to say "stop". All other cleanup-triggered GC work will be deferred until the first run of the next block.
+
+Also note that `budget` and `cleanups` are plain `Number`s, whereas `comptrons` is a `BigInt`.
+
 
 ## Non-Consensus Wallclock Limits
 
