@@ -150,7 +150,7 @@ The `snapshotInitial` property is a special snapshot interval that applies only
 to the vat's very first snapshot.  We treat it as a special case because a few
 of the very first cranks of a vat (which involve initialization) can be quite
 expensive, and we'd like to be able to promptly capture the benefit having paid
-that expense so that future replays don't need to repeat the work.  Defaults to 2.
+that expense so that future replays don't need to repeat the work.  Defaults to 3.
 
 The code that realizes a vat or device can be specified in one of five
 ways:

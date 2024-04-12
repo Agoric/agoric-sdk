@@ -554,6 +554,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
     addItem: transcriptStore.addItem,
     readSpan: transcriptStore.readSpan,
+    stopUsingTranscript: transcriptStore.stopUsingTranscript,
     deleteVatTranscripts: transcriptStore.deleteVatTranscripts,
   };
 
