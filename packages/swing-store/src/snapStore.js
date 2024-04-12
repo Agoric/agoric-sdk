@@ -39,7 +39,7 @@ import { buffer } from './util.js';
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
- *   deleteVatSnapshots: (vatID: string) => void,
+ *   deleteVatSnapshots: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   stopUsingLastSnapshot: (vatID: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
@@ -173,11 +173,13 @@ export function makeSnapStore(
   `);
 
   function stopUsingLastSnapshot(vatID) {
+    // idempotent
     ensureTxn();
     const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
     if (oldInfo) {
       const rec = snapshotRec(vatID, oldInfo.snapPos, oldInfo.hash, 0);
       noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
+      noteExport(currentSnapshotMetadataKey(rec), undefined);
       if (keepSnapshots) {
         sqlStopUsingLastSnapshot.run(vatID);
       } else {
@@ -354,6 +356,11 @@ export function makeSnapStore(
     WHERE vatID = ?
   `);
 
+  const sqlDeleteOneVatSnapshot = db.prepare(`
+    DELETE FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
   const sqlGetSnapshotList = db.prepare(`
     SELECT snapPos
     FROM snapshots
@@ -362,20 +369,90 @@ export function makeSnapStore(
   `);
   sqlGetSnapshotList.pluck(true);
 
+  const sqlGetSnapshotListLimited = db.prepare(`
+    SELECT snapPos, inUse
+    FROM snapshots
+    WHERE vatID = ?
+    ORDER BY snapPos DESC
+    LIMIT ?
+  `);
+
   /**
-   * Delete all snapshots for a given vat (for use when, e.g., a vat is terminated)
+   * @param {string} vatID
+   * @returns {boolean}
+   */
+  function hasSnapshots(vatID) {
+    // the LIMIT 1 means we aren't really getting all entries
+    return !!sqlGetSnapshotListLimited.all(vatID, 1).length;
+  }
+
+  /**
+   *
+   * @param {string} vatID
+   * @param {number} budget
+   * @returns {{ done: boolean, cleanups: number }}
+   */
+  function deleteSomeVatSnapshots(vatID, budget) {
+    ensureTxn();
+    assert(budget >= 1);
+    let cleanups = 0;
+    // we can't use .iterate here because noteExport writes to the DB,
+    // and we can't have overlapping queries
+    const deletions = sqlGetSnapshotListLimited.all(vatID, budget);
+    if (!deletions.length) {
+      return { done: true, cleanups };
+    }
+    for (const { snapPos, inUse } of deletions) {
+      const exportRec = snapshotRec(vatID, snapPos, undefined);
+      if (inUse) {
+        // stopUsingLastSnapshot() wasn't called, remove .current
+        noteExport(currentSnapshotMetadataKey(exportRec), undefined);
+        // we don't need the rest of stopUsingLastSnapshot() because
+        // we're about to delete everything it would have changed or
+        // created
+      }
+      noteExport(snapshotMetadataKey(exportRec), undefined);
+      sqlDeleteOneVatSnapshot.run(vatID, snapPos);
+      cleanups += 1;
+    }
+    if (hasSnapshots(vatID)) {
+      return { done: false, cleanups };
+    }
+    return { done: true, cleanups };
+  }
+
+  /**
    *
    * @param {string} vatID
    */
-  function deleteVatSnapshots(vatID) {
+  function deleteAllVatSnapshots(vatID) {
     ensureTxn();
     const deletions = sqlGetSnapshotList.all(vatID);
     for (const snapPos of deletions) {
       const exportRec = snapshotRec(vatID, snapPos, undefined);
       noteExport(snapshotMetadataKey(exportRec), undefined);
     }
-    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
+    // fastest to delete them all in a single DB statement
     sqlDeleteVatSnapshots.run(vatID);
+    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
+  }
+
+  /**
+   * Delete some or all snapshots for a given vat (for use when, e.g.,
+   * a vat is terminated)
+   *
+   * @param {string} vatID
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   */
+  function deleteVatSnapshots(vatID, budget = undefined) {
+    if (budget) {
+      return deleteSomeVatSnapshots(vatID, budget);
+    } else {
+      deleteAllVatSnapshots(vatID);
+      // if you didn't set a budget, you won't be counting deletions
+      return { done: true, cleanups: 0 };
+    }
   }
 
   const sqlGetSnapshotInfo = db.prepare(`
@@ -452,7 +529,7 @@ export function makeSnapStore(
   `);
 
   /**
-   * Obtain artifact metadata records for spanshots contained in this store.
+   * Obtain artifact metadata records for snapshots contained in this store.
    *
    * @param {boolean} includeHistorical  If true, include all metadata that is
    *   present in the store regardless of its currency; if false, only include

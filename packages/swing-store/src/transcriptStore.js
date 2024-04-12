@@ -18,7 +18,8 @@ import { createSHA256 } from './hasher.js';
  *   rolloverSpan: (vatID: string) => number,
  *   rolloverIncarnation: (vatID: string) => number,
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, incarnation: number },
- *   deleteVatTranscripts: (vatID: string) => void,
+ *   stopUsingTranscript: (vatID: string) => void,
+ *   deleteVatTranscripts: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
  * }} TranscriptStore
@@ -252,10 +253,18 @@ export function makeTranscriptStore(
     ensureTxn();
     const { hash, startPos, endPos, incarnation } = getCurrentSpanBounds(vatID);
     const rec = spanRec(vatID, startPos, endPos, hash, 0, incarnation);
+
+    // add a new record for the now-old span
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+
+    // and change its DB row to isCurrent=0
     sqlEndCurrentSpan.run(vatID);
+
+    // create a new (empty) row, with isCurrent=1
     const incarnationToUse = isNewIncarnation ? incarnation + 1 : incarnation;
     sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, incarnationToUse);
+
+    // overwrite the transcript.${vatID}.current record with new span
     const newRec = spanRec(
       vatID,
       endPos,
@@ -265,7 +274,13 @@ export function makeTranscriptStore(
       incarnationToUse,
     );
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
+
     if (!keepTranscripts) {
+      // TODO: for #9174 (delete historical transcript spans), we need
+      // this DB statement to only delete the items of the old span
+      // (startPos..endPos), not all previous items, otherwise the
+      // first rollover after switching to keepTranscripts=false will
+      // do a huge DB commit and probably explode
       sqlDeleteOldItems.run(vatID, endPos);
     }
     return incarnationToUse;
@@ -314,19 +329,122 @@ export function makeTranscriptStore(
     ORDER BY startPos
   `);
 
+  const sqlGetSomeVatSpans = db.prepare(`
+    SELECT vatID, startPos, endPos, isCurrent
+    FROM transcriptSpans
+    WHERE vatID = ?
+    ORDER BY startPos DESC
+    LIMIT ?
+  `);
+
+  const sqlDeleteVatSpan = db.prepare(`
+    DELETE FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+
+  const sqlDeleteSomeItems = db.prepare(`
+    DELETE FROM transcriptItems
+    WHERE vatID = ? AND position >= ? AND position < ?
+  `);
+
   /**
-   * Delete all transcript data for a given vat (for use when, e.g., a vat is terminated)
+   * Prepare for vat deletion by marking the isCurrent span as not
+   * current. Idempotent.
+   *
+   * @param {string} vatID  The vat being terminated/deleted.
+   */
+  function stopUsingTranscript(vatID) {
+    ensureTxn();
+    // this transforms the current span into a (short) historical one
+    const bounds = sqlGetCurrentSpanBounds.get(vatID);
+    if (bounds) {
+      const { startPos, endPos, hash, incarnation } = bounds;
+      sqlEndCurrentSpan.run(vatID);
+      // so we delete the transcript.${vatID}.current record, and add a
+      // .startPos one to replace it
+      noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
+      const newRec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
+      noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
+    }
+  }
+
+  /**
    *
    * @param {string} vatID
+   * @returns {boolean}
    */
-  function deleteVatTranscripts(vatID) {
+  function hasSpans(vatID) {
+    // note the LIMIT 1: we aren't really fetching all spans
+    const spans = sqlGetSomeVatSpans.all(vatID, 1);
+    return !!spans.length;
+  }
+
+  /**
+   * Delete at most 'budget' transcript spans, and their items.
+   *
+   * @param {string} vatID
+   * @param {number} budget
+   * @returns {{ done: boolean, cleanups: number }}
+   */
+  function deleteSomeVatTranscripts(vatID, budget) {
     ensureTxn();
+    assert(budget >= 1);
+    let cleanups = 0;
+
+    // This query is ORDER BY startPos DESC, so we delete the newest
+    // spans first. If the kernel failed to call stopUsingTranscript,
+    // we might encounter an isCurrent=1 span, but we can delete those
+    // too.
+    const deletions = sqlGetSomeVatSpans.all(vatID, budget);
+
+    if (!deletions.length) {
+      return { done: true, cleanups };
+    }
+    for (const rec of deletions) {
+      // If rec.isCurrent is true, this will remove the
+      // transcript.$vatID.current export-data record. If false, it
+      // will remove the transcript.$vatID.$startPos record.
+      noteExport(spanMetadataKey(rec), undefined);
+      sqlDeleteVatSpan.run(vatID, rec.startPos);
+      sqlDeleteSomeItems.run(vatID, rec.startPos, rec.endPos);
+      cleanups += 1;
+    }
+    if (hasSpans(vatID)) {
+      return { done: false, cleanups };
+    }
+    return { done: true, cleanups };
+  }
+
+  function deleteAllVatTranscripts(vatID) {
+    ensureTxn();
+    // we can't use .iterate here because noteExport writes to the DB,
+    // and we can't have overlapping queries
     const deletions = sqlGetVatSpans.all(vatID);
     for (const rec of deletions) {
       noteExport(spanMetadataKey(rec), undefined);
     }
+    // might need to delete the .current record, if the caller failed
+    // to call stopUsingTranscript()
     sqlDeleteVatItems.run(vatID);
     sqlDeleteVatSpans.run(vatID);
+  }
+
+  /**
+   * Delete some or all transcript data for a given vat (for use when,
+   * e.g., a vat is terminated)
+   *
+   * @param {string} vatID
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   */
+  function deleteVatTranscripts(vatID, budget = undefined) {
+    if (budget) {
+      return deleteSomeVatTranscripts(vatID, budget);
+    } else {
+      deleteAllVatTranscripts(vatID);
+      // no budget? no accounting.
+      return { done: true, cleanups: 0 };
+    }
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
@@ -378,6 +496,12 @@ export function makeTranscriptStore(
    *
    * The only code path which could use 'false' would be `swingstore.dump()`,
    * which takes the same flag.
+   *
+   * Note that when a vat is terminated and has been partially
+   * deleted, we will retain (and return) a subset of the metadata
+   * records, because they must be deleted in-consensus and with
+   * updates to the noteExport hook. But we don't create any artifacts
+   * for the terminated vats, even for the spans that remain,
    *
    * @yields {readonly [key: string, value: string]}
    * @returns {IterableIterator<readonly [key: string, value: string]>}
@@ -432,9 +556,16 @@ export function makeTranscriptStore(
         }
       }
     } else if (artifactMode === 'archival') {
-      // everything
+      // every span for all vatIDs that have an isCurrent span (to
+      // ignore terminated/partially-deleted vats)
+      const vatIDs = new Set();
+      for (const { vatID } of sqlGetCurrentSpanMetadata.iterate()) {
+        vatIDs.add(vatID);
+      }
       for (const rec of sqlGetAllSpanMetadata.iterate()) {
-        yield spanArtifactName(rec);
+        if (vatIDs.has(rec.vatID)) {
+          yield spanArtifactName(rec);
+        }
       }
     } else if (artifactMode === 'debug') {
       // everything that is a complete span
@@ -774,6 +905,7 @@ export function makeTranscriptStore(
     getCurrentSpanBounds,
     addItem,
     readSpan,
+    stopUsingTranscript,
     deleteVatTranscripts,
 
     exportSpan,
