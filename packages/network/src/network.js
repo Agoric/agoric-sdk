@@ -1426,3 +1426,37 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
 
   return makeLoopbackProtocolHandler;
 }
+
+/**
+ *
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ */
+export const preparePortAllocator = (zone, { watch }) => {
+  const makePortAllocator = zone.exoClass(
+    'PortAllocator',
+    M.interface('PortAllocator', {
+      allocateIBCPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+    }),
+    ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
+    {
+      allocateIBCPort() {
+        const { state } = this;
+        // Allocate an IBC port with a unique generated name.
+        return watch(E(state.protocol).bindPort(`/ibc-port/`));
+      },
+      allocateICAControllerPort() {
+        const { state } = this;
+        state.lastICAPortNum += 1n;
+        return watch(
+          E(state.protocol).bindPort(
+            `/ibc-port/icacontroller-${state.lastICAPortNum}`,
+          ),
+        );
+      },
+    },
+  );
+
+  return makePortAllocator;
+};

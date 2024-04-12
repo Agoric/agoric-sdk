@@ -123,25 +123,25 @@ export const setupNetworkProtocols = async (
 
   networkVat.reset();
   networkVat.resolve(vats.network);
+  const portAllocator = E(vats.network).getPortAllocator();
   const bridgeManager = await bridgeManagerP;
   const dibcBridgeManager =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 
   // The Interchain Account (ICA) Controller must be bound to a port that starts
   // with 'icacontroller', so we provide one such port to each client.
-  let lastICAPort = 0;
   const makePorts = async () => {
     // Bind to some fresh ports (either unspecified name or `icacontroller-*`)
     // on the IBC implementation and provide them for the user to have.
     const ibcportP = [];
     for (let i = 0; i < NUM_IBC_PORTS_PER_CLIENT; i += 1) {
-      let bindAddr = '/ibc-port/';
       if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
-        lastICAPort += 1;
-        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
+        const portP = when(E(portAllocator).allocateICAControllerPort());
+        ibcportP.push(portP);
+      } else {
+        const portP = when(E(portAllocator).allocateIBCPort());
+        ibcportP.push(portP);
       }
-      const port = when(E(vats.network).bindPort(bindAddr));
-      ibcportP.push(port);
     }
     return Promise.all(ibcportP);
   };
@@ -168,6 +168,7 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         zoe: 'zoe',
         provisioning: 'provisioning',
         vatUpgradeInfo: true,
+        portAllocator: 'portAllocator',
       },
       produce: {
         networkVat: 'network',
