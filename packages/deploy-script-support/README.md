@@ -46,13 +46,6 @@ objects.
 
 ### Script
 
-
-**REVIEWERS**: _I don't know how much of this applies to building proposals for
-mainnet. I learned it by building proposals in a3p, so I'd appreciate
-confirmation of its generality, or a quick summary of how the corresponding task
-is done for main-net proposals._
-
-
 The script describes how to build the core proposal. For
 `agoric-3-proposals` and uploading to the chain, the script must be named in the
 `CoreProposalSteps` section in
