@@ -8,8 +8,8 @@
 set -ueo pipefail
 
 test $# -eq 2 || {
-    echo "Usage: $0 <FROM_BRANCH> <TO_BRANCH>" 1>&2
-    exit 1
+  echo "Usage: $0 <FROM_BRANCH> <TO_BRANCH>" 1>&2
+  exit 1
 }
 
 FROM_BRANCH="$1"
@@ -23,8 +23,8 @@ for tag in "$FROM_BRANCH" "$TO_BRANCH"; do
   qtag=${tag//\//_}
   for root in Makefile app cmd/gaiad; do
     case "$root" in
-    Makefile) echo "$root" ;;
-    *) git ls-tree --name-only --full-tree -r "$tag:$root" | sed -e "s!^!$root/!" ;;
+      Makefile) echo "$root" ;;
+      *) git ls-tree --name-only --full-tree -r "$tag:$root" | sed -e "s!^!$root/!" ;;
     esac
   done | while read -r src; do
     # echo "$src"
@@ -36,12 +36,12 @@ for tag in "$FROM_BRANCH" "$TO_BRANCH"; do
 done
 
 echo "Compute 3-way diffs between Gaia and us"
-(cd "$tmp/${FROM_BRANCH//\//_}" && find . -type f -print) | \
-  while read -r src; do
+(cd "$tmp/${FROM_BRANCH//\//_}" && find . -type f -print) \
+  | while read -r src; do
     # echo "$src"
     case "$src" in
-    ./cmd/gaiad/*) our=${src//cmd\/gaiad/daemon} ;;
-    *) our=$src ;;
+      ./cmd/gaiad/*) our=${src//cmd\/gaiad/daemon} ;;
+      *) our=$src ;;
     esac
 
     new="$tmp/diff3/$our"

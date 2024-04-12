@@ -129,12 +129,13 @@ export const prepareWatch = (
   );
 
   /**
-   * @template [T=any]
+   * @template [T=unknown]
    * @template [TResult1=T]
    * @template [TResult2=T]
+   * @template [C=unknown] watcher context
    * @param {import('./types.js').ERef<T | import('./types.js').Vow<T>>} specimenP
    * @param {import('./types.js').Watcher<T, TResult1, TResult2>} [watcher]
-   * @param {unknown} [watcherContext]
+   * @param {C} [watcherContext]
    */
   const watch = (specimenP, watcher, watcherContext) => {
     /** @type {import('./types.js').VowKit<TResult1 | TResult2>} */

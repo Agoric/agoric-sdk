@@ -40,6 +40,8 @@ import {
   setupElectorateReserveAndAuction,
 } from './vaultFactoryUtils.js';
 
+/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+
 /**
  * @typedef {Record<string, any> & {
  *   aeth: IssuerKit & import('../supports.js').AmountUtils;
@@ -60,7 +62,7 @@ const contractRoots = {
   auctioneer: './src/auction/auctioneer.js',
 };
 
-/** @typedef {import('../../src/vaultFactory/vaultFactory.js').VaultFactoryContract} VFC */
+/** @import {VaultFactoryContract} from '../../src/vaultFactory/vaultFactory.js' */
 
 const trace = makeTracer('TestVF', false);
 
@@ -2015,15 +2017,22 @@ test('governance publisher', async t => {
   ({
     value: { current },
   } = await managerGovNotifier.getUpdateSince());
-  // can't deepEqual because of non-literal objects so check keys and then partial shapes
-  t.deepEqual(Object.keys(current), [
-    'DebtLimit',
-    'InterestRate',
-    'LiquidationMargin',
-    'LiquidationPadding',
-    'LiquidationPenalty',
-    'MintFee',
-  ]);
+  t.deepEqual(
+    current,
+    await E(vfPublic).getGovernedParams({ collateralBrand: aeth.brand }),
+  );
+  t.deepEqual(
+    Object.keys(current),
+    [
+      'DebtLimit',
+      'InterestRate',
+      'LiquidationMargin',
+      'LiquidationPadding',
+      'LiquidationPenalty',
+      'MintFee',
+    ],
+    'param keys differ',
+  );
   t.like(current, {
     DebtLimit: { type: 'amount' },
     InterestRate: { type: 'ratio' },

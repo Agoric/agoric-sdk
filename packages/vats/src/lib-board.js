@@ -15,6 +15,8 @@ import { makeMarshal } from '@endo/marshal';
 
 import { crc6 } from './crc.js';
 
+/** @import {Key} from '@endo/patterns') */
+
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
@@ -75,10 +77,9 @@ const calcCrc = (data, crcDigits) => {
 /**
  * @typedef {ReturnType<typeof initDurableBoardState>} BoardState // TODO: use
  *   Key from @agoric/store when available
+ * @import {Passable} from '@endo/marshal'
  * @see {prepareExoClassKit}
  * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
- *
- * @typedef {import('@endo/marshal').Passable} Key
  */
 
 // TODO consider tightening initSequence to bigint only

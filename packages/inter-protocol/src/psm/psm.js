@@ -62,7 +62,7 @@ const { Fail } = assert;
  *   given by this contract
  */
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /** @type {ContractMeta} */
 export const meta = {

@@ -210,7 +210,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       serializeBodyFormat: 'smallcaps',
       // TODO Temporary hack.
       // See https://github.com/Agoric/agoric-sdk/issues/2780
-      errorIdNum: 60000,
+      errorIdNum: 60_000,
     });
     const args = kunser(m.serialize(harden([vatObj0s, deviceObj0s])));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);

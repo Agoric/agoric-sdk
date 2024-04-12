@@ -31,8 +31,9 @@ import {
   ratiosSame,
 } from '../contractSupport/ratio.js';
 
-/// <reference path="../../../ERTP/exported.js" />
-
+/**
+ * @import {LegacyMap} from '@agoric/store/exported.js'
+ */
 /** @typedef {bigint | number | string} ParsableNumber */
 /**
  * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission

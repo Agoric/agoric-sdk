@@ -7,6 +7,10 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
+/**
+ * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
+ */
+
 const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);
@@ -189,8 +193,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       const startedInstanceKit = await E(zoe).startInstance(
         governedContractInstallation,
         governedIssuerKeywordRecord,
-        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-        // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+
+        // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
         augmentedTerms,
         privateArgs.governed,
         governedContractLabel,

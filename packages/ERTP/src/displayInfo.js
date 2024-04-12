@@ -5,6 +5,8 @@ import { mustMatch } from '@agoric/store';
 
 import { DisplayInfoShape } from './typeGuards.js';
 
+/** @import {AdditionalDisplayInfo, AssetKind, DisplayInfo} from './types.js' */
+
 /**
  * @param {AdditionalDisplayInfo} allegedDisplayInfo
  * @param {AssetKind} assetKind

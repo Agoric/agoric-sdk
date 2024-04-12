@@ -4,18 +4,11 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
 
-import processAmbient from 'child_process';
-import { promises as fsAmbientPromises } from 'fs';
 import path from 'path';
 
-import { BridgeHandler } from '@agoric/vats';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import {
-  matchAmount,
-  makeProposalExtractor,
-  makeSwingsetTestKit,
-} from '../../tools/supports.ts';
+import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeZoeDriver } from '../../tools/drivers.ts';
 
 const filename = new URL(import.meta.url).pathname;
@@ -49,7 +42,7 @@ export const makeZoeTestContext = async t => {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
   });
 
-  const { controller, runUtils } = swingsetTestKit;
+  const { runUtils } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
@@ -73,7 +66,6 @@ export const makeZoeTestContext = async t => {
 
   return {
     ...swingsetTestKit,
-    controller,
     agoricNamesRemotes,
     zoeDriver,
   };

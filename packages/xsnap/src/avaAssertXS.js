@@ -66,7 +66,7 @@ function deepDifference(x, y) {
  * @param {(msg: TapMessage) => void} send
  *
  * @typedef { ReturnType<typeof tapFormat> } TapFormat
- * @typedef {import('./avaXS.js').TapMessage} TapMessage
+ * @import {TapMessage} from './avaXS.js'
  */
 function tapFormat(send) {
   return freeze({

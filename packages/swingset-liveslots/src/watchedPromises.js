@@ -2,9 +2,10 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
-import { E } from '@endo/eventual-send';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
@@ -198,7 +199,10 @@ export function makeWatchedPromiseManager({
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
       const { virtual, durable } = parseVatSlot(watcherVref);
-      assert(virtual || durable, 'promise watcher must be a virtual object');
+      virtual ||
+        durable ||
+        // separate line so easy to breakpoint on
+        Fail`promise watcher must be a virtual object`;
       if (watcher.onFulfilled) {
         assert.typeof(watcher.onFulfilled, 'function');
       }

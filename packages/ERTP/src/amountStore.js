@@ -1,5 +1,7 @@
 import { AmountMath } from './amountMath.js';
 
+/** @import {Amount, AssetKind, AmountValue, AssetKindForValue, AssetValueForKind, Brand, MathHelpers} from './types.js' */
+
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} AmountStore

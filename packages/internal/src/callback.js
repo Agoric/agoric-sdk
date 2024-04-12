@@ -3,6 +3,8 @@ import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
+/** @import { ERef } from '@endo/far' */
+
 const { Fail, quote: q } = assert;
 
 const { fromEntries } = Object;
@@ -14,8 +16,8 @@ const ownKeys =
   );
 
 /**
- * @template {import('@endo/exo/src/exo-makers.js').Methods} T
- * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo/src/exo-makers.js').Farable<T>} MakeAttenuator
+ * @template {import('@endo/exo').Methods} T
+ * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo').Farable<T>} MakeAttenuator
  */
 
 /**
@@ -101,9 +103,9 @@ harden(makeSyncFunctionCallback);
  * Create a callback from a potentially far function.
  *
  * @template {(...args: unknown[]) => any} I
- * @template {import('@endo/far').ERef<
+ * @template {ERef<
  *   (...args: [...B, ...Parameters<I>]) => ReturnType<I>
- * >} [T=import('@endo/far').ERef<I>]
+ * >} [T=ERef<I>]
  * @template {unknown[]} [B=[]]
  * @param {T} target
  * @param {B} bound
@@ -149,9 +151,9 @@ harden(makeSyncMethodCallback);
  *
  * @template {(...args: unknown[]) => any} I
  * @template {PropertyKey} P
- * @template {import('@endo/far').ERef<{
+ * @template {ERef<{
  *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>
- * }>} [T=import('@endo/far').ERef<{ [x in P]: I }>]
+ * }>} [T=ERef<{ [x in P]: I }>]
  * @template {unknown[]} [B=[]]
  * @param {T} target
  * @param {P} methodName

@@ -11,6 +11,10 @@ import {
 } from '../../../src/index.js';
 import { remoteNullMarshaller } from '../utils.js';
 
+/**
+ * @import {QuestionDetails} from '../../../src/types.js';
+ */
+
 const { quote: q } = assert;
 
 const makeVoterVat = async (log, vats, zoe) => {

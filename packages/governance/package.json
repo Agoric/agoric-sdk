@@ -10,8 +10,8 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
-    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build --clean tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*' src/types.js",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
@@ -40,19 +40,19 @@
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zoe": "^0.26.2",
-    "@endo/bundle-source": "^3.2.1",
-    "@endo/captp": "^4.1.0",
-    "@endo/eventual-send": "^1.2.0",
-    "@endo/far": "^1.1.0",
-    "@endo/marshal": "^1.4.0",
-    "@endo/nat": "^5.0.5",
-    "@endo/promise-kit": "^1.1.0",
+    "@endo/bundle-source": "^3.2.2",
+    "@endo/captp": "^4.1.1",
+    "@endo/eventual-send": "^1.2.1",
+    "@endo/far": "^1.1.1",
+    "@endo/marshal": "^1.4.1",
+    "@endo/nat": "^5.0.6",
+    "@endo/promise-kit": "^1.1.1",
     "import-meta-resolve": "^2.2.1"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/bundle-source": "^3.2.1",
-    "@endo/init": "^1.1.0",
+    "@endo/bundle-source": "^3.2.2",
+    "@endo/init": "^1.1.1",
     "ava": "^5.3.0",
     "c8": "^9.1.0"
   },
@@ -61,6 +61,7 @@
     "src/",
     "tools/",
     "exported.js",
+    "exported.d.ts",
     "NEWS.md"
   ],
   "ava": {
@@ -76,6 +77,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 89.27
+    "atLeast": 89.25
   }
 }

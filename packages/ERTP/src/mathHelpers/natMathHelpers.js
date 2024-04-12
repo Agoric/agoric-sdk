@@ -2,7 +2,7 @@
 
 import { Nat, isNat } from '@endo/nat';
 
-import '../types-ambient.js';
+/** @import {MathHelpers, NatValue} from '../types.js' */
 
 const { Fail } = assert;
 const empty = 0n;

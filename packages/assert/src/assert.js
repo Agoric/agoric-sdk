@@ -20,11 +20,9 @@
 // but we need to import it here as well.
 /// <reference path="./types.js" />
 
-/** @typedef {import('@endo/marshal').Checker} Checker */
-
 const { freeze } = Object;
 
-/** @type {Assert} */
+/** @type {import("ses").Assert} */
 const globalAssert = globalThis.assert;
 
 if (globalAssert === undefined) {

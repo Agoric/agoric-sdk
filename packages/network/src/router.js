@@ -93,7 +93,7 @@ export const prepareRouter = zone => {
 
 /**
  * @typedef {object} RouterProtocol
- * @property {(prefix: string) => PromiseVow<Port>} bind
+ * @property {(prefix: string) => PromiseVow<Port>} bindPort
  * @property {(paths: string[], protocolHandler: ProtocolHandler) => void} registerProtocolHandler
  * @property {(prefix: string, protocolHandler: ProtocolHandler) => void} unregisterProtocolHandler
  */
@@ -119,7 +119,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
         M.remotable(),
       ).returns(),
       unregisterProtocolHandler: M.call(M.string(), M.remotable()).returns(),
-      bind: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
+      bindPort: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
     }),
     () => {
       /** @type {Router<Protocol>} */
@@ -169,10 +169,10 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
         this.state.protocolHandlers.delete(prefix);
       },
       /** @param {Endpoint} localAddr */
-      async bind(localAddr) {
+      async bindPort(localAddr) {
         const [route] = this.state.router.getRoutes(localAddr);
         route !== undefined || Fail`No registered router for ${localAddr}`;
-        return E(route[1]).bind(localAddr);
+        return E(route[1]).bindPort(localAddr);
       },
     },
   );

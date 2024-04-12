@@ -21,9 +21,10 @@ export const delayByTurns = async turnCount => {
   }
 };
 
-/** @typedef {import('@endo/marshal').Passable} Passable */
-
-/** @typedef {import('ava').Assertions} Assertions */
+/**
+ * @import { Passable } from '@endo/marshal'
+ * @import { Assertions} from 'ava'
+ */
 
 const obj = harden({});
 const unresP = new Promise(_ => {});

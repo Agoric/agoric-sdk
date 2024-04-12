@@ -652,7 +652,7 @@ const prepareBinder = (zone, powers) => {
     {
       protocolImpl: Shape.ProtocolImplI,
       binder: M.interface('Binder', {
-        bind: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
+        bindPort: M.callWhen(Shape.Endpoint).returns(Shape.Vow$(Shape.Port)),
       }),
       binderInboundInstantiateWatcher: M.interface(
         'BinderInboundInstantiateWatcher',
@@ -840,13 +840,13 @@ const prepareBinder = (zone, powers) => {
             localAddr,
           });
         },
-        async bind(localAddr) {
-          return this.facets.binder.bind(localAddr);
+        async bindPort(localAddr) {
+          return this.facets.binder.bindPort(localAddr);
         },
       },
       binder: {
         /** @param {string} localAddr */
-        async bind(localAddr) {
+        async bindPort(localAddr) {
           const { protocolHandler } = this.state;
 
           // Check if we are underspecified (ends in slash)
@@ -962,9 +962,21 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundConnectWatcher: {
-        onFulfilled({ handler: rchandler }, watchContext) {
-          const { lastFailure, remoteAddr, localAddr, lchandler, port } =
-            watchContext;
+        onFulfilled(
+          {
+            handler: rchandler,
+            remoteAddress: negotiatedRemoteAddress,
+            localAddress: negotiatedLocalAddress,
+          },
+          watchContext,
+        ) {
+          const {
+            lastFailure,
+            lchandler,
+            localAddr: requestedLocalAddress,
+            remoteAddr: requestedRemoteAddress,
+            port,
+          } = watchContext;
 
           const { currentConnections } = this.state;
 
@@ -979,11 +991,11 @@ const prepareBinder = (zone, powers) => {
             /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
               lchandler
             ),
-            localAddr,
+            negotiatedLocalAddress || requestedLocalAddress,
             /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
               rchandler
             ),
-            remoteAddr,
+            negotiatedRemoteAddress || requestedRemoteAddress,
             makeConnection,
             current,
           )[0];
@@ -1406,6 +1418,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
     },
   );
 
+  /** @param {string} [instancePrefix] */
   const makeLoopbackProtocolHandler = instancePrefix => {
     const { protocolHandler } = makeLoopbackProtocolHandlerKit(instancePrefix);
     return harden(protocolHandler);

@@ -24,6 +24,11 @@ import { Far, deeplyFulfilled } from '@endo/marshal';
 const { details: X, quote: q, Fail } = assert;
 
 /**
+ * @import {ERef} from '@endo/far'
+ * @import {Amount} from '@agoric/ertp/src/types.js'
+ */
+
+/**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
  *   import('@agoric/inter-protocol/src/psm/psm.js').start
  * >} PsmInstance
@@ -54,8 +59,7 @@ const { details: X, quote: q, Fail } = assert;
  *
  * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
- *
- * @typedef {import('@agoric/vats/src/vat-bank.js').Bank} Bank
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /** @param {ProvisionPoolKitReferences} refs */
@@ -137,7 +141,7 @@ export const prepareProvisionPoolKit = (
     /**
      * @param {object} opts
      * @param {Purse<'nat'>} opts.fundPurse
-     * @param {Brand} opts.poolBrand
+     * @param {Brand<'nat'>} opts.poolBrand
      * @param {StorageNode} opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
@@ -441,7 +445,7 @@ export const prepareProvisionPoolKit = (
    * Prepare synchronous values before passing to real Exo maker
    *
    * @param {object} opts
-   * @param {Brand} opts.poolBrand
+   * @param {Brand<'nat'>} opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {

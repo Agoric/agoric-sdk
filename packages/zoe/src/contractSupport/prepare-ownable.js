@@ -1,5 +1,5 @@
 import { M } from '@endo/patterns';
-import { prepareRevocableKit } from '@agoric/base-zone/zone-helpers.js';
+import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { OfferHandlerI } from '../typeGuards.js';
 
 const TransferProposalShape = M.splitRecord({
@@ -44,30 +44,35 @@ export const prepareOwnable = (
   options = {},
 ) => {
   const { uInterfaceName = uKindName } = options;
-  const makeRevocableKit = prepareRevocableKit(zone, uKindName, uMethodNames, {
-    uInterfaceName,
-    extraMethodGuards: {
-      makeTransferInvitation: M.call().returns(M.promise()),
-    },
-    extraMethods: {
-      makeTransferInvitation() {
-        const { underlying } = this.state;
-        const { revoker } = this.facets;
-        const customDetails = underlying.getInvitationCustomDetails();
-        // eslint-disable-next-line no-use-before-define
-        const transferHandler = makeTransferHandler(underlying);
+  const { revoke, makeRevocable } = prepareRevocableMakerKit(
+    zone,
+    uKindName,
+    uMethodNames,
+    {
+      uInterfaceName,
+      extraMethodGuards: {
+        makeTransferInvitation: M.call().returns(M.promise()),
+      },
+      extraMethods: {
+        makeTransferInvitation() {
+          const { underlying } = this.state;
+          const { revocable } = this.facets;
+          const customDetails = underlying.getInvitationCustomDetails();
+          // eslint-disable-next-line no-use-before-define
+          const transferHandler = makeTransferHandler(underlying);
 
-        const invitation = makeInvitation(
-          transferHandler,
-          'transfer',
-          customDetails,
-          TransferProposalShape,
-        );
-        revoker.revoke();
-        return invitation;
+          const invitation = makeInvitation(
+            transferHandler,
+            'transfer',
+            customDetails,
+            TransferProposalShape,
+          );
+          revoke(revocable);
+          return invitation;
+        },
       },
     },
-  });
+  );
 
   const makeTransferHandler = zone.exoClass(
     'TransferHandler',
@@ -78,17 +83,14 @@ export const prepareOwnable = (
     {
       handle(seat) {
         const { underlying } = this.state;
-        const { revocable } = makeRevocableKit(underlying);
+        const revocable = makeRevocable(underlying);
         seat.exit();
         return revocable;
       },
     },
   );
 
-  const makeOwnable = underlying => {
-    const { revocable } = makeRevocableKit(underlying);
-    return revocable;
-  };
+  const makeOwnable = underlying => makeRevocable(underlying);
   return harden(makeOwnable);
 };
 harden(prepareOwnable);

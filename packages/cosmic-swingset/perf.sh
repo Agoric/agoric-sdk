@@ -21,7 +21,10 @@ curl "$url"
 # Run the Apache Benchmark:
 ab -n 16000 -c 5 "$url"
 
-{ sleep 1; : NOTE: This will time out because of rate limiting; } &
+{
+  sleep 1
+  : NOTE: This will time out because of rate limiting
+} &
 # This one hangs (because of rate limiting at around 16350 requests since the
 # last one started):
 ab -n 3000 -c 5 "$url"

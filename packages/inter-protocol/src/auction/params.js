@@ -6,8 +6,8 @@ import {
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').AsyncSpecTuple} AsyncSpecTuple */
-/** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').SyncSpecTuple} SyncSpecTuple */
+/** @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js' */
+/** @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js' */
 
 // TODO duplicated with zoe/src/TypeGuards.js
 export const InvitationShape = M.remotable('Invitation');

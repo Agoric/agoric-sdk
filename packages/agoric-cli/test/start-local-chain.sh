@@ -9,7 +9,7 @@ export AGC_START_ARGS="--pruning=nothing"
 
 CHAIN_LOG=$(mktemp -t Agoric-start-local-chain-log-XXXXXXX)
 if [[ $(uname) == "Darwin" ]]; then
-    open -a /System/Applications/Utilities/Console.app "$CHAIN_LOG"
+  open -a /System/Applications/Utilities/Console.app "$CHAIN_LOG"
 fi
 
 # ugly way to get SDK path regardless of cwd
@@ -19,12 +19,12 @@ WALLET=gov1
 WALLET_BECH32=$(agd keys --keyring-backend=test show "$WALLET" --output json | jq -r .address)
 
 if [ -z "$WALLET_BECH32" ]; then
-    echo "USAGE: $0 wallet-key"
-    # The key must be from the 'test' keyring, for non-interactive use.
-    # To migrate one of your 'os' keys:
-    #   agd keys export the-wallet-key-name > wallet.key
-    #   agd keys import --keyring-backend=test the-wallet-key-name wallet.key
-    exit 1
+  echo "USAGE: $0 wallet-key"
+  # The key must be from the 'test' keyring, for non-interactive use.
+  # To migrate one of your 'os' keys:
+  #   agd keys export the-wallet-key-name > wallet.key
+  #   agd keys import --keyring-backend=test the-wallet-key-name wallet.key
+  exit 1
 fi
 
 # this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
@@ -33,8 +33,8 @@ fi
 WALLET2=gov2
 WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
 if [ -z "$WALLET2_BECH32" ]; then
-    echo "missing oracle2 key in test keyring"
-    exit 1
+  echo "missing oracle2 key in test keyring"
+  exit 1
 fi
 
 echo CHAIN_LOG "$CHAIN_LOG"
@@ -48,14 +48,14 @@ echo "Logs written to $CHAIN_LOG"
 # specifies the address to use for chain config
 export PRIMARY_ADDRESS=$WALLET_BECH32
 # nobuild variety skips Golang artifacts; if you get errors try make scenario2-setup
-make scenario2-setup-nobuild >>"$CHAIN_LOG" 2>&1
+make scenario2-setup-nobuild >> "$CHAIN_LOG" 2>&1
 
 # TODO detect it's already running, indicate when it started and offer to restart
 # e.g. killall node xsnap-worker
 echo "Starting the chain..."
 # use -economy target to get the kitchen sink
 # disable pruning to keep all history https://docs.desmos.network/fullnode/overview/
-make AGC_START_ARGS="--pruning=nothing" CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vm-config/decentral-itest-vaults-config.json scenario2-run-chain >>"$CHAIN_LOG" 2>&1 &
+make AGC_START_ARGS="--pruning=nothing" CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vm-config/decentral-itest-vaults-config.json scenario2-run-chain >> "$CHAIN_LOG" 2>&1 &
 make wait-for-cosmos
 
 # xxx sleep to let it settle

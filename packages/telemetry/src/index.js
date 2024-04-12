@@ -61,9 +61,8 @@ export const getResourceAttributes = ({
       SDK_REVISION;
   }
   if (!resourceAttributes[SemanticResourceAttributes.SERVICE_INSTANCE_ID]) {
-    resourceAttributes[
-      SemanticResourceAttributes.SERVICE_INSTANCE_ID
-    ] = `${Math.random()}`;
+    resourceAttributes[SemanticResourceAttributes.SERVICE_INSTANCE_ID] =
+      `${Math.random()}`;
   }
   if (serviceName) {
     resourceAttributes[SemanticResourceAttributes.SERVICE_NAME] = serviceName;

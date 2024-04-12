@@ -16,6 +16,10 @@ import { QuorumRule } from './question.js';
 import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 import { prepareVoterKit } from './voterKit.js';
 
+/**
+ * @import {ElectorateCreatorFacet, CommitteeElectoratePublic, QuestionDetails, OutcomeRecord, AddQuestion} from './types.js';
+ */
+
 const { ceilDivide } = natSafeMath;
 
 /**

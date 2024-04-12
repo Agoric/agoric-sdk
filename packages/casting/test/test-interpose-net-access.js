@@ -1,10 +1,17 @@
 // @ts-check
 /* global globalThis */
-import { QueryClient, setupBankExtension } from '@cosmjs/stargate';
-import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 import anyTest from 'ava';
+import {
+  createProtobufRpcClient,
+  QueryClient,
+  setupBankExtension,
+} from '@cosmjs/stargate';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import {
+  QueryChildrenRequest,
+  QueryChildrenResponse,
+} from '@agoric/cosmic-proto/vstorage/query.js';
 
-import { agoric } from '@agoric/cosmic-proto';
 import { makeHttpClient } from '../src/makeHttpClient.js';
 import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
@@ -69,6 +76,24 @@ const scenario2 = {
   ],
 };
 
+// XXX open code until https://github.com/Agoric/agoric-sdk/issues/9200
+class QueryClientImpl {
+  rpc;
+
+  service;
+
+  constructor(rpc, opts) {
+    this.service = opts?.service || 'agoric.vstorage.Query';
+    this.rpc = rpc;
+  }
+
+  Children(request) {
+    const reqData = QueryChildrenRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, 'Children', reqData);
+    return promise.then(respData => QueryChildrenResponse.decode(respData));
+  }
+}
+
 test(`vstorage query: Children (RECORDING: ${RECORDING})`, async t => {
   const { context: io } = t;
 
@@ -77,13 +102,12 @@ test(`vstorage query: Children (RECORDING: ${RECORDING})`, async t => {
     : { fetch: replayIO(web2), web: new Map() };
   const rpcClient = makeHttpClient(scenario2.endpoint, fetchMock);
 
-  t.is(agoric.vstorage.Children.typeUrl, '/agoric.vstorage.Children');
-
   const tmClient = await Tendermint34Client.create(rpcClient);
   const qClient = new QueryClient(tmClient);
-  const queryService = agoric.vstorage.createRpcQueryExtension(qClient);
+  const rpc = createProtobufRpcClient(qClient);
+  const queryService = new QueryClientImpl(rpc);
 
-  const children = await queryService.children({ path: '' });
+  const children = await queryService.Children({ path: '' });
   if (io.recording) {
     t.snapshot(web);
   }

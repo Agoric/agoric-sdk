@@ -93,7 +93,7 @@ export default function makeDeviceManager(
       /** @type { DeviceInvocationResult } */
       const deviceResults = dispatch.invoke(target, method, args);
       // common error: raw devices returning capdata instead of ['ok', capdata]
-      assert.equal(deviceResults.length, 2, deviceResults);
+      assert.equal(deviceResults.length, 2, JSON.stringify(deviceResults));
       if (deviceResults[0] === 'ok') {
         insistCapData(deviceResults[1]);
       } else {

@@ -20,13 +20,8 @@ export const SECONDS_PER_HOUR = 60n * 60n;
 export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
-/**
- * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
- *
- * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
- *
- * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
- */
+/** @import {start as VFStart} from '../vaultFactory/vaultFactory.js' */
+/** @typedef {Awaited<ReturnType<VFStart>>['publicFacet']} VaultFactoryPublicFacet */
 
 /**
  * @typedef {object} PSMKit
@@ -65,9 +60,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *   reserveKit: GovernanceFacetKit<
  *     import('../reserve/assetReserve.js')['start']
  *   >;
- *   vaultFactoryKit: GovernanceFacetKit<
- *     import('../vaultFactory/vaultFactory.js')['start']
- *   >;
+ *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
  *   auctioneerKit: AuctioneerKit;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace

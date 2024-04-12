@@ -12,8 +12,10 @@ import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
 const { entries } = Object;
 
-/** @typedef {import('commander').Command} Command */
-/** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
+/**
+ * @import { Command } from 'commander';
+ * @import { BoardRemote } from '@agoric/vats/tools/board-utils.js';
+ */
 
 /**
  * @param {{ boardId: string, iface: string }} detail
@@ -37,7 +39,7 @@ const agoricNames = harden({
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
   },
 
-  /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
+  /** @type {Record<string,import('../src/lib/format.js').AssetDescriptor>} */
   vbankAsset: {
     ubld: {
       denom: 'ubld',

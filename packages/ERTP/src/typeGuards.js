@@ -1,6 +1,7 @@
 // @jessie-check
 
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
+/** @import {AmountValue, AssetKindForValue, AssetValueForKind, Brand, MathHelpers} from './types.js' */
 
 export const BrandShape = M.remotable('Brand');
 export const IssuerShape = M.remotable('Issuer');

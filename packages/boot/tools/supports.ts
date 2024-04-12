@@ -26,8 +26,9 @@ import {
 import type { ExecutionContext as AvaT } from 'ava';
 
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import type { CoreEvalSDKType } from '@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset';
-import type { BridgeHandler } from '@agoric/vats';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -289,6 +290,13 @@ export const makeSwingsetTestKit = async (
 
   const outboundMessages = new Map();
 
+  let inbound;
+  let ibcSequenceNonce = 0;
+
+  const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    return icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
+  };
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
@@ -356,6 +364,39 @@ export const makeSwingsetTestKit = async (
       }
       case BridgeId.CORE:
       case BridgeId.DIBC:
+        switch (obj.type) {
+          case 'IBC_METHOD':
+            switch (obj.method) {
+              case 'startChannelOpenInit':
+                inbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+                return undefined;
+              case 'sendPacket':
+                switch (obj.packet.data) {
+                  case protoMsgMocks.delegate.msg: {
+                    const msg = makeAckEvent(obj, protoMsgMocks.delegate.ack);
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                  case protoMsgMocks.delegateWithOpts.msg: {
+                    const msg = makeAckEvent(
+                      obj,
+                      protoMsgMocks.delegateWithOpts.ack,
+                    );
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                  default: {
+                    const msg = makeAckEvent(obj, protoMsgMocks.error.ack);
+                    inbound(BridgeId.DIBC, msg);
+                    return msg.packet;
+                  }
+                }
+              default:
+                return undefined;
+            }
+          default:
+            return undefined;
+        }
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
       case BridgeId.VTRANSFER:
@@ -390,7 +431,7 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
-  const { controller, timer } = await buildSwingset(
+  const { controller, timer, bridgeInbound } = await buildSwingset(
     new Map(),
     bridgeOutbound,
     kernelStorage,
@@ -406,6 +447,8 @@ export const makeSwingsetTestKit = async (
       debugVats,
     },
   );
+  inbound = bridgeInbound;
+
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
   const runUtils = makeRunUtils(controller);
@@ -491,6 +534,7 @@ export const makeSwingsetTestKit = async (
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
+    bridgeInbound,
     controller,
     evalProposal,
     getCrankNumber,

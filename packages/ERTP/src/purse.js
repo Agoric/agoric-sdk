@@ -3,6 +3,8 @@ import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
 
+/** @import {Amount, AssetKind, AmountValue, AssetKindForValue, RecoverySetsOption, Brand, Payment} from './types.js' */
+
 const { Fail } = assert;
 
 const EMPTY_COPY_SET = makeCopySet([]);

@@ -7,7 +7,7 @@
  * @property {PurseActions} actions
  */
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @typedef {PursesJSONState & PursesAddedState} PursesFullState
@@ -15,7 +15,7 @@
 
 /**
  * @typedef {object} PurseActions
- * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: AmountValue) => Promise<void>} send
+ * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: import('@agoric/ertp/exported.js').AmountValue) => Promise<void>} send
  * @property {(payment: Payment) => Promise<Amount>} receive
  * @property {(payment: Payment, amount?: Amount) => Promise<Amount>} deposit
  */
@@ -82,7 +82,7 @@
  * @property {string} [issuerBoardId]
  *
  * @typedef {object} PaymentActions
- * @property {(purseOrPetname?: (Purse | Petname)) => Promise<AmountValue>} deposit
+ * @property {(purseOrPetname?: (Purse | Petname)) => Promise<import('@agoric/ertp/exported.js').AmountValue>} deposit
  * @property {() => Promise<boolean>} refresh
  * @property {() => Promise<boolean>} getAmountOf
  */

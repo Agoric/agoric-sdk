@@ -17,6 +17,10 @@ import {
 } from '../../src/index.js';
 import { makeMultiCandidateVoteCounter } from '../../src/multiCandidateVoteCounter.js';
 
+/**
+ * @import {Position} from '../../src/types.js';
+ */
+
 const SIMPLE_ISSUE = harden({
   text: 'Fish or Beef or Pork or Chicken or Duck?',
 });

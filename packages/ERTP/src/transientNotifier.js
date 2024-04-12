@@ -4,6 +4,8 @@ import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
 
+/** @import {Purse} from './types.js' */
+
 // Note: Virtual for high cardinality, but *not* durable, and so
 // broken across an upgrade.
 export const makeTransientNotifierKit = () => {

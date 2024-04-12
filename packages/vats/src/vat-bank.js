@@ -33,9 +33,8 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 });
 
 /**
- * @typedef {import('./virtual-purse.js').VirtualPurseController} VirtualPurseController
- *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
+ * @import {VirtualPurseController} from './virtual-purse.js'
  */
 
 /**
@@ -627,7 +626,11 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<import('@endo/far').EOnly<DepositFacet>>}
+       * @returns {ERef<
+       *   import('@endo/far').EOnly<
+       *     import('@agoric/ertp/exported.js').DepositFacet
+       *   >
+       * >}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;

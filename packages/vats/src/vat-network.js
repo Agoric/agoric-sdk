@@ -35,7 +35,7 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     /** @param {Parameters<typeof protocol.unregisterProtocolHandler>} args */
     unregisterProtocolHandler: (...args) =>
       protocol.unregisterProtocolHandler(...args),
-    /** @param {Parameters<typeof protocol.bind>} args */
-    bind: (...args) => protocol.bind(...args),
+    /** @param {Parameters<typeof protocol.bindPort>} args */
+    bindPort: (...args) => protocol.bindPort(...args),
   });
 }

@@ -11,9 +11,9 @@
  */
 
 /**
- * @template {import('@endo/exo/src/exo-makers').Methods} M
+ * @template {import('@endo/exo').Methods} M
  * @template {(...args: any[]) => any} I
- * @typedef {M & ThisType<{ self: import('@endo/exo/src/exo-makers').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
+ * @typedef {M & ThisType<{ self: import('@endo/exo').Guarded<M>, state: ReturnType<I> }>} ExoClassMethods
  * Rearrange the exo types to make a cast of the methods (M) and init function (I) to a specific type.
  */
 
@@ -33,7 +33,7 @@
 
 /**
  * @typedef {object} Protocol The network Protocol
- * @property {(prefix: Endpoint) => PromiseVow<Port>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Port>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  */
 
@@ -182,7 +182,7 @@
  * @property {() => PromiseVow<void>} close Abort the attempt
  *
  * @typedef {object} ProtocolImpl Things the protocol can do for us
- * @property {(prefix: Endpoint) => PromiseVow<Remote<Port>>} bind Claim a port, or if
+ * @property {(prefix: Endpoint) => PromiseVow<Remote<Port>>} bindPort Claim a port, or if
  *   ending in ENDPOINT_SEPARATOR, a fresh name
  * @property {(
  *   listenAddr: Endpoint,

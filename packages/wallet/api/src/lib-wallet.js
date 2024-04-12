@@ -74,7 +74,7 @@ const cmp = (a, b) => {
  * zoe: ERef<ZoeService>,
  * }} opt
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  */
 export function makeWalletRoot({
   zoe,

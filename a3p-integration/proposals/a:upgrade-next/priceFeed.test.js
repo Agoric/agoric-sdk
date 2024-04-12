@@ -120,19 +120,23 @@ const getPriceQuote = async price => {
 
 test.serial('push prices', async t => {
   // There are no old prices for the other currencies.
+  t.log('awaiting ATOM price pre');
   const atomOutPre = await getPriceQuote('ATOM');
   t.is(atomOutPre, '+12010000');
 
+  t.log('adding oracle for each brand');
   await addOraclesForBrand('ATOM');
   await addOraclesForBrand('stATOM');
   await addOraclesForBrand('stTIA');
   await addOraclesForBrand('stOSMO');
 
+  t.log('pushing new prices');
   await pushPrices(11.2, 'ATOM');
   await pushPrices(11.3, 'stTIA');
   await pushPrices(11.4, 'stATOM');
   await pushPrices(11.5, 'stOSMO');
 
+  t.log('awaiting new quotes');
   // agd query -o json  vstorage data published.priceFeed.stOSMO-USD_price_feed |&
   //   jq '.value | fromjson | .values[0] | fromjson | .body[1:] | fromjson | .amountOut.value'
   const atomOut = await getPriceQuote('ATOM');

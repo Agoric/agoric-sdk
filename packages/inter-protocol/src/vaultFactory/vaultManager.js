@@ -100,8 +100,8 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
   }
 };
 
-/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
-/** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
+/** @import {NormalizedDebt} from './storeUtils.js' */
+/** @import {RelativeTime} from '@agoric/time' */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
@@ -208,7 +208,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;

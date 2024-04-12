@@ -4,7 +4,7 @@
 
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
- * @typedef {import('stream').Writable} Writable
+ * @import {Writable} from 'stream'
  */
 
 /**
@@ -98,7 +98,7 @@ export async function xsnap(options) {
   const platform = {
     Linux: 'lin',
     Darwin: 'mac',
-    Windows_NT: 'win',
+    // Windows_NT: 'win', // One can dream.
   }[os];
 
   if (platform === undefined) {

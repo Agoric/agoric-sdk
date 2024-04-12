@@ -19,7 +19,7 @@ const { log } = console;
 export const start = async (zcf, privateArgs, _baggage) => {
   const { address, networkVat } = privateArgs;
 
-  const boundPort = await E(networkVat).bind(address);
+  const boundPort = await E(networkVat).bindPort(address);
 
   /** @type {Array<[label: string, resolve: (value: any) => void, reject: (reason: any) => void]>} */
   const queue = [];

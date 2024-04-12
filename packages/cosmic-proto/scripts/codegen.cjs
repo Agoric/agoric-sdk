@@ -1,3 +1,4 @@
+const { spawnSync } = require('child_process');
 const { join } = require('path');
 const process = require('process');
 const telescope = require('@cosmology/telescope').default;
@@ -71,30 +72,37 @@ telescope({
         keepCase: false,
       },
       typingsFormat: {
-        duration: 'duration',
-        timestamp: 'date',
-        useExact: false,
         useDeepPartial: false,
-        num64: 'bigint',
-        customTypes: {
-          useCosmosSDKDec: true,
-        },
+
+        // [Defaults]
+        // timestamp: 'date',
+        // duration: 'duration',
+        // num64: 'bigint',
+        // useExact: false,
+        // customTypes: {
+        //   useCosmosSDKDec: true,
+        // },
       },
     },
     aminoEncoding: {
       // Necessary for getSigningAgoricClient
-      enabled: true,
+      enabled: false,
     },
     lcdClients: {
       enabled: false,
     },
     rpcClients: {
-      enabled: true,
+      enabled: false,
     },
   },
 })
   .then(() => {
-    console.log('✨ all done!');
+    spawnSync('yarn', ['prettier', '--write', 'src'], {
+      cwd: join(__dirname, '..'),
+    });
+
+    console.log('💅 code generated and formatted');
+    console.log('ℹ️ `yarn build && yarn test` to test it.');
   })
   .catch(e => {
     console.error(e);

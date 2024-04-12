@@ -30,7 +30,7 @@ import { prepareZcMint } from './zcfMint.js';
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
 
-/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
 
 const { Fail } = assert;
 
@@ -76,7 +76,7 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {ShutdownWithFailure} */
+  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
     E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();

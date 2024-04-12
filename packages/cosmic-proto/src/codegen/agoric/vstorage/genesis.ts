@@ -10,14 +10,6 @@ export interface GenesisStateProtoMsg {
   value: Uint8Array;
 }
 /** The initial or exported state. */
-export interface GenesisStateAmino {
-  data: DataEntryAmino[];
-}
-export interface GenesisStateAminoMsg {
-  type: '/agoric.vstorage.GenesisState';
-  value: GenesisStateAmino;
-}
-/** The initial or exported state. */
 export interface GenesisStateSDKType {
   data: DataEntrySDKType[];
 }
@@ -36,22 +28,6 @@ export interface DataEntry {
 export interface DataEntryProtoMsg {
   typeUrl: '/agoric.vstorage.DataEntry';
   value: Uint8Array;
-}
-/**
- * A vstorage entry.  The only necessary entries are those with data, as the
- * ancestor nodes are reconstructed on import.
- */
-export interface DataEntryAmino {
-  /**
-   * A "."-separated path with individual path elements matching
-   * `[-_A-Za-z0-9]+`
-   */
-  path?: string;
-  value?: string;
-}
-export interface DataEntryAminoMsg {
-  type: '/agoric.vstorage.DataEntry';
-  value: DataEntryAmino;
 }
 /**
  * A vstorage entry.  The only necessary entries are those with data, as the
@@ -115,23 +91,6 @@ export const GenesisState = {
     const message = createBaseGenesisState();
     message.data = object.data?.map(e => DataEntry.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: GenesisStateAmino): GenesisState {
-    const message = createBaseGenesisState();
-    message.data = object.data?.map(e => DataEntry.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: GenesisState): GenesisStateAmino {
-    const obj: any = {};
-    if (message.data) {
-      obj.data = message.data.map(e => (e ? DataEntry.toAmino(e) : undefined));
-    } else {
-      obj.data = message.data;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: GenesisStateAminoMsg): GenesisState {
-    return GenesisState.fromAmino(object.value);
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {
     return GenesisState.decode(message.value);
@@ -204,25 +163,6 @@ export const DataEntry = {
     message.path = object.path ?? '';
     message.value = object.value ?? '';
     return message;
-  },
-  fromAmino(object: DataEntryAmino): DataEntry {
-    const message = createBaseDataEntry();
-    if (object.path !== undefined && object.path !== null) {
-      message.path = object.path;
-    }
-    if (object.value !== undefined && object.value !== null) {
-      message.value = object.value;
-    }
-    return message;
-  },
-  toAmino(message: DataEntry): DataEntryAmino {
-    const obj: any = {};
-    obj.path = message.path === '' ? undefined : message.path;
-    obj.value = message.value === '' ? undefined : message.value;
-    return obj;
-  },
-  fromAminoMsg(object: DataEntryAminoMsg): DataEntry {
-    return DataEntry.fromAmino(object.value);
   },
   fromProtoMsg(message: DataEntryProtoMsg): DataEntry {
     return DataEntry.decode(message.value);

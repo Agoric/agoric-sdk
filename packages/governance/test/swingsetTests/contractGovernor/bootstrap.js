@@ -11,6 +11,10 @@ import {
 import { remoteNullMarshaller } from '../utils.js';
 import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 
+/**
+ * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
+ */
+
 const { quote: q } = assert;
 
 /**

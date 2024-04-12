@@ -20,6 +20,10 @@ import {
 import { documentStorageSchema } from '../../tools/storageDoc.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 
+/**
+ * @import {SimpleIssue} from '../../src/types.js';
+ */
+
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 

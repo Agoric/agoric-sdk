@@ -7,6 +7,10 @@ import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
+ * @import {DepositFacet} from '@agoric/ertp/exported.js'
+ */
+
+/**
  * Create or return an existing courier promise kit.
  *
  * @template K
@@ -29,7 +33,7 @@ export const getCourierPK = (key, keyToCourierPK) => {
 /**
  * Create the [send, receive] pair.
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  *
  * @typedef {object} CourierArgs
  * @property {ZCF} zcf

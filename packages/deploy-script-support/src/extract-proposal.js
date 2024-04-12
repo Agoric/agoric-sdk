@@ -185,8 +185,6 @@ export const extractCoreProposalBundles = async (
           /** @type {import('./externalTypes.js').PublishBundleRef} */
           const publishRef = async handleP => {
             const handle = await handleP;
-            // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-            // @ts-ignore xxx types
             bundleHandleToAbsolutePaths.has(handle) ||
               Fail`${handle} not in installed bundles`;
             return handle;

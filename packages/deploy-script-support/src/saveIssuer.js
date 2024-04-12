@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @param {ERef<any>} walletAdmin - an internal type of the

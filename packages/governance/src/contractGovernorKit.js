@@ -16,6 +16,10 @@ import {
 } from './contractGovernance/governParam.js';
 import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
 
+/**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ */
+
 const trace = makeTracer('CGK', false);
 
 const ContractGovernorKitI = {
@@ -172,8 +176,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         replaceElectorate(poserInvitation) {
           const { creatorFacet } = this.state;
           /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
-          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-          // @ts-ignore cast
+
+          // @ts-expect-error cast
           const paramMgr = E(E(creatorFacet).getParamMgrRetriever()).get({
             key: 'governedParams',
           });

@@ -1,9 +1,5 @@
 //@ts-nocheck
-import {
-  Packet,
-  PacketAmino,
-  PacketSDKType,
-} from '../../ibc/core/channel/v1/channel.js';
+import { Packet, PacketSDKType } from '../../ibc/core/channel/v1/channel.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
@@ -16,15 +12,6 @@ export interface MsgSendPacketProtoMsg {
   value: Uint8Array;
 }
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
-export interface MsgSendPacketAmino {
-  packet: PacketAmino;
-  sender: string;
-}
-export interface MsgSendPacketAminoMsg {
-  type: '/agoric.vibc.MsgSendPacket';
-  value: MsgSendPacketAmino;
-}
-/** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
 export interface MsgSendPacketSDKType {
   packet: PacketSDKType;
   sender: Uint8Array;
@@ -34,12 +21,6 @@ export interface MsgSendPacketResponse {}
 export interface MsgSendPacketResponseProtoMsg {
   typeUrl: '/agoric.vibc.MsgSendPacketResponse';
   value: Uint8Array;
-}
-/** Empty response for SendPacket. */
-export interface MsgSendPacketResponseAmino {}
-export interface MsgSendPacketResponseAminoMsg {
-  type: '/agoric.vibc.MsgSendPacketResponse';
-  value: MsgSendPacketResponseAmino;
 }
 /** Empty response for SendPacket. */
 export interface MsgSendPacketResponseSDKType {}
@@ -111,27 +92,6 @@ export const MsgSendPacket = {
     message.sender = object.sender ?? new Uint8Array();
     return message;
   },
-  fromAmino(object: MsgSendPacketAmino): MsgSendPacket {
-    const message = createBaseMsgSendPacket();
-    if (object.packet !== undefined && object.packet !== null) {
-      message.packet = Packet.fromAmino(object.packet);
-    }
-    if (object.sender !== undefined && object.sender !== null) {
-      message.sender = bytesFromBase64(object.sender);
-    }
-    return message;
-  },
-  toAmino(message: MsgSendPacket): MsgSendPacketAmino {
-    const obj: any = {};
-    obj.packet = message.packet
-      ? Packet.toAmino(message.packet)
-      : Packet.toAmino(Packet.fromPartial({}));
-    obj.sender = message.sender ? base64FromBytes(message.sender) : '';
-    return obj;
-  },
-  fromAminoMsg(object: MsgSendPacketAminoMsg): MsgSendPacket {
-    return MsgSendPacket.fromAmino(object.value);
-  },
   fromProtoMsg(message: MsgSendPacketProtoMsg): MsgSendPacket {
     return MsgSendPacket.decode(message.value);
   },
@@ -184,17 +144,6 @@ export const MsgSendPacketResponse = {
   fromPartial(_: Partial<MsgSendPacketResponse>): MsgSendPacketResponse {
     const message = createBaseMsgSendPacketResponse();
     return message;
-  },
-  fromAmino(_: MsgSendPacketResponseAmino): MsgSendPacketResponse {
-    const message = createBaseMsgSendPacketResponse();
-    return message;
-  },
-  toAmino(_: MsgSendPacketResponse): MsgSendPacketResponseAmino {
-    const obj: any = {};
-    return obj;
-  },
-  fromAminoMsg(object: MsgSendPacketResponseAminoMsg): MsgSendPacketResponse {
-    return MsgSendPacketResponse.fromAmino(object.value);
   },
   fromProtoMsg(message: MsgSendPacketResponseProtoMsg): MsgSendPacketResponse {
     return MsgSendPacketResponse.decode(message.value);

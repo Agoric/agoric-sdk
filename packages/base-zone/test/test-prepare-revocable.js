@@ -5,7 +5,7 @@ import { test } from './prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { M } from '@endo/patterns';
 import { makeHeapZone } from '../src/heap.js';
-import { prepareRevocableKit } from '../src/prepare-revocable.js';
+import { prepareRevocableMakerKit } from '../src/prepare-revocable.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
@@ -38,16 +38,17 @@ test('test revoke defineVirtualExoClass', t => {
     },
   );
 
-  const makeRevocableUpCounterKit = prepareRevocableKit(zone, 'UpCounter', [
-    'incr',
-  ]);
+  const { revoke, makeRevocable } = prepareRevocableMakerKit(
+    zone,
+    'UpCounter',
+    ['incr'],
+  );
 
-  const makeUpCounterKit = x =>
-    makeRevocableUpCounterKit(makeUnderlyingUpCounter(x));
+  const makeUpCounter = x => makeRevocable(makeUnderlyingUpCounter(x));
 
-  const { revoker, revocable: upCounter } = makeUpCounterKit(3);
+  const upCounter = makeUpCounter(3);
   t.is(upCounter.incr(5), 8);
-  t.is(revoker.revoke(), true);
+  t.is(revoke(upCounter), true);
   t.throws(() => upCounter.incr(1), {
     message: '"UpCounter_caretaker" revoked',
   });
@@ -79,7 +80,7 @@ test('test revoke defineVirtualExoClassKit', t => {
     },
   );
 
-  const makeRevocableUpCounterKit = prepareRevocableKit(
+  const { revoke, makeRevocable } = prepareRevocableMakerKit(
     zone,
     'UpCounter',
     ['incr'],
@@ -89,8 +90,12 @@ test('test revoke defineVirtualExoClassKit', t => {
       },
       extraMethods: {
         selfRevoke() {
-          const { revoker } = this.facets;
-          return revoker.revoke();
+          // Could directly use the revoker facet instead, but this
+          // should now be considered more of an internal detail that
+          // we should deemphasize. This tests the code pattern we wish
+          // to encourage.
+          const { revocable } = this.facets;
+          return revoke(revocable);
         },
       },
     },
@@ -98,8 +103,7 @@ test('test revoke defineVirtualExoClassKit', t => {
 
   const makeCounterKit = x => {
     const { up: upCounter, down: downCounter } = makeUnderlyingCounterKit(x);
-    const { revocable: revocableUpCounter } =
-      makeRevocableUpCounterKit(upCounter);
+    const revocableUpCounter = makeRevocable(upCounter);
     return harden({
       up: revocableUpCounter,
       down: downCounter,

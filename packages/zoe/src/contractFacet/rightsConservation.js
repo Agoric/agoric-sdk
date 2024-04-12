@@ -3,6 +3,9 @@ import { assert, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import '../internal-types.js';
+/**
+ * @import {MapStore} from '@agoric/store/exported.js'
+ */
 
 /**
  * Iterate over the amounts and sum, storing the sums in a

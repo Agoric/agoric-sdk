@@ -74,11 +74,11 @@ export function buildSerializationTools(syscall, deviceName) {
   }
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
-    marshalName: `device:${deviceName}`,
+    marshalName: `deviceTools:${deviceName}`,
     serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 60000,
+    errorIdNum: 40_000,
   });
 
   // for invoke(), these will unserialize the arguments, and serialize the

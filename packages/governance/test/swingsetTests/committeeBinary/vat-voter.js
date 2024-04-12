@@ -3,6 +3,10 @@ import { keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+/**
+ * @import {CommitteeElectoratePublic, Issue} from '../../../src/types.js';
+ */
+
 const { quote: q } = assert;
 
 /**

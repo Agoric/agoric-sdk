@@ -81,7 +81,7 @@ const exportTest = test.macro(async (t, mode) => {
   // historical transcript spans, and no historical snapshots
 
   assert.typeof(mode, 'string');
-  /** @typedef {import('../src/internal.js').ArtifactMode} ArtifactMode */
+  /** @import {ArtifactMode} from '../src/internal.js' */
   let artifactMode = /** @type {ArtifactMode} */ (mode);
   if (mode === 'debug-on-pruned') {
     artifactMode = 'debug';

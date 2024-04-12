@@ -22,7 +22,7 @@ import {
 
 // import '../internal-types.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 
 const { Fail, quote: q } = assert;

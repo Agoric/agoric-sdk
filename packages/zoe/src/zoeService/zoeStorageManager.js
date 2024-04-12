@@ -29,7 +29,7 @@ import {
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 const { ownKeys } = Reflect;
 
@@ -46,7 +46,7 @@ const { ownKeys } = Reflect;
  * @param {CreateZCFVat} createZCFVat - the ability to create a new
  * ZCF Vat
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {ShutdownWithFailure} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownZoeVat
  * @param {{
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,

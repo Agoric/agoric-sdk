@@ -16,10 +16,22 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/codegen/index.d.ts",
-      "default": "./dist/codegen/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vatsafe": {
+      "types": "./dist/vatsafe.d.ts",
+      "default": "./dist/vatsafe.js"
     },
     "./package.json": "./package.json",
+    "./cosmos": {
+      "types": "./dist/codegen/cosmos/bundle.d.ts",
+      "default": "./dist/codegen/cosmos/bundle.js"
+    },
+    "./cosmos/staking/v1beta1/tx": {
+      "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
+    },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
       "default": "./dist/codegen/agoric/swingset/msgs.js"
@@ -35,6 +47,14 @@
     "./vstorage/query.js": {
       "types": "./dist/codegen/agoric/vstorage/query.d.ts",
       "default": "./dist/codegen/agoric/vstorage/query.js"
+    },
+    "./cosmos/tx/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/tx/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/tx/v1beta1/tx.js"
+    },
+    "./cosmos/staking/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     }
   },
   "main": "dist/index.js",
@@ -50,7 +70,7 @@
   "scripts": {
     "build": "yarn tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
-    "codegen": "yarn protos-update && node scripts/codegen.cjs && yarn prettier --write src",
+    "codegen": "yarn protos-update && node scripts/codegen.cjs",
     "prepare": "npm run build",
     "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
@@ -65,22 +85,23 @@
   "devDependencies": {
     "@agoric/cosmos": "^0.34.1",
     "@ava/typescript": "^4.1.0",
-    "@cosmology/telescope": "^1.5.1",
+    "@cosmology/telescope": "^1.5.3",
     "ava": "^5.3.1",
-    "publish-scripts": "0.1.0",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
-    "typescript": "^5.4.3"
+    "typescript": "^5.5.0-dev.20240327"
   },
   "dependencies": {
     "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/math": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/init": "^1.1.0",
-    "axios": "^1.6.7"
+    "@endo/base64": "^1.0.3",
+    "@endo/init": "^1.1.1"
   },
   "resolutions": {
+    "**/axios": "^1.6.7",
     "**/protobufjs": "^7.2.4"
   },
   "ava": {

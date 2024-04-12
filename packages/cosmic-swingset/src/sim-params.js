@@ -63,7 +63,7 @@ export const defaultBeansPerUnit = [
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
 
-/** @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').PowerFlagFeeSDKType[]} */
+/** @type {import('@agoric/cosmic-proto/swingset/swingset.js').PowerFlagFeeSDKType[]} */
 export const defaultPowerFlagFees = [
   { power_flag: 'SMART_WALLET', fee: [makeCoin('ubld', 10_000_000n)] },
 ];
@@ -77,7 +77,7 @@ export const defaultQueueMax = [
 ];
 
 /**
- * @type {import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset.js').ParamsSDKType}
+ * @type {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType}
  */
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,

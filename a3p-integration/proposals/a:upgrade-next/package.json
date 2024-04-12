@@ -19,8 +19,7 @@
   },
   "ava": {
     "concurrency": 1,
-    "serial": true,
-    "timeout": "1m",
+    "timeout": "2m",
     "files": [
       "!submission"
     ]

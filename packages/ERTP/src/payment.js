@@ -2,6 +2,8 @@
 
 import { initEmpty } from '@agoric/store';
 
+/** @import {AssetKind, Brand, Payment} from './types.js' */
+
 // TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
  * @template {AssetKind} K

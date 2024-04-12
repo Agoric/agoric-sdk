@@ -11,8 +11,6 @@ import { AmountMath } from '@agoric/ertp';
 import { multiplyBy } from './ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
 
-/** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
-
 /**
  * Override `makeQuoteNotifier`, `quoteGiven` to provide an initial price
  * in case one is not yet available from the source.

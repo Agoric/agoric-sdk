@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Any, AnyAmino, AnySDKType } from '../../google/protobuf/any.js';
+import { Any, AnySDKType } from '../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 /**
@@ -12,17 +12,6 @@ export interface CosmosTx {
 export interface CosmosTxProtoMsg {
   typeUrl: '/agoric.vlocalchain.CosmosTx';
   value: Uint8Array;
-}
-/**
- * CosmosTx contains a list of sdk.Msg's. It should be used when sending
- * transactions to a local chain.
- */
-export interface CosmosTxAmino {
-  messages?: AnyAmino[];
-}
-export interface CosmosTxAminoMsg {
-  type: '/agoric.vlocalchain.CosmosTx';
-  value: CosmosTxAmino;
 }
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
@@ -42,16 +31,6 @@ export interface QueryRequestProtoMsg {
   value: Uint8Array;
 }
 /** QueryRequest is used internally to describe a query for the local chain. */
-export interface QueryRequestAmino {
-  full_method?: string;
-  request?: AnyAmino;
-  reply_type?: string;
-}
-export interface QueryRequestAminoMsg {
-  type: '/agoric.vlocalchain.QueryRequest';
-  value: QueryRequestAmino;
-}
-/** QueryRequest is used internally to describe a query for the local chain. */
 export interface QueryRequestSDKType {
   full_method: string;
   request?: AnySDKType;
@@ -68,16 +47,6 @@ export interface QueryResponseProtoMsg {
   value: Uint8Array;
 }
 /** QueryResponse is used internally to describe a response from the local chain. */
-export interface QueryResponseAmino {
-  height?: string;
-  reply?: AnyAmino;
-  error?: string;
-}
-export interface QueryResponseAminoMsg {
-  type: '/agoric.vlocalchain.QueryResponse';
-  value: QueryResponseAmino;
-}
-/** QueryResponse is used internally to describe a response from the local chain. */
 export interface QueryResponseSDKType {
   height: bigint;
   reply?: AnySDKType;
@@ -90,14 +59,6 @@ export interface QueryResponses {
 export interface QueryResponsesProtoMsg {
   typeUrl: '/agoric.vlocalchain.QueryResponses';
   value: Uint8Array;
-}
-/** QueryResponses is used to group multiple QueryResponse messages. */
-export interface QueryResponsesAmino {
-  responses?: QueryResponseAmino[];
-}
-export interface QueryResponsesAminoMsg {
-  type: '/agoric.vlocalchain.QueryResponses';
-  value: QueryResponsesAmino;
 }
 /** QueryResponses is used to group multiple QueryResponse messages. */
 export interface QueryResponsesSDKType {
@@ -157,25 +118,6 @@ export const CosmosTx = {
     const message = createBaseCosmosTx();
     message.messages = object.messages?.map(e => Any.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: CosmosTxAmino): CosmosTx {
-    const message = createBaseCosmosTx();
-    message.messages = object.messages?.map(e => Any.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: CosmosTx): CosmosTxAmino {
-    const obj: any = {};
-    if (message.messages) {
-      obj.messages = message.messages.map(e =>
-        e ? Any.toAmino(e) : undefined,
-      );
-    } else {
-      obj.messages = message.messages;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: CosmosTxAminoMsg): CosmosTx {
-    return CosmosTx.fromAmino(object.value);
   },
   fromProtoMsg(message: CosmosTxProtoMsg): CosmosTx {
     return CosmosTx.decode(message.value);
@@ -262,30 +204,6 @@ export const QueryRequest = {
         : undefined;
     message.replyType = object.replyType ?? '';
     return message;
-  },
-  fromAmino(object: QueryRequestAmino): QueryRequest {
-    const message = createBaseQueryRequest();
-    if (object.full_method !== undefined && object.full_method !== null) {
-      message.fullMethod = object.full_method;
-    }
-    if (object.request !== undefined && object.request !== null) {
-      message.request = Any.fromAmino(object.request);
-    }
-    if (object.reply_type !== undefined && object.reply_type !== null) {
-      message.replyType = object.reply_type;
-    }
-    return message;
-  },
-  toAmino(message: QueryRequest): QueryRequestAmino {
-    const obj: any = {};
-    obj.full_method =
-      message.fullMethod === '' ? undefined : message.fullMethod;
-    obj.request = message.request ? Any.toAmino(message.request) : undefined;
-    obj.reply_type = message.replyType === '' ? undefined : message.replyType;
-    return obj;
-  },
-  fromAminoMsg(object: QueryRequestAminoMsg): QueryRequest {
-    return QueryRequest.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryRequestProtoMsg): QueryRequest {
     return QueryRequest.decode(message.value);
@@ -379,30 +297,6 @@ export const QueryResponse = {
     message.error = object.error ?? '';
     return message;
   },
-  fromAmino(object: QueryResponseAmino): QueryResponse {
-    const message = createBaseQueryResponse();
-    if (object.height !== undefined && object.height !== null) {
-      message.height = BigInt(object.height);
-    }
-    if (object.reply !== undefined && object.reply !== null) {
-      message.reply = Any.fromAmino(object.reply);
-    }
-    if (object.error !== undefined && object.error !== null) {
-      message.error = object.error;
-    }
-    return message;
-  },
-  toAmino(message: QueryResponse): QueryResponseAmino {
-    const obj: any = {};
-    obj.height =
-      message.height !== BigInt(0) ? message.height.toString() : undefined;
-    obj.reply = message.reply ? Any.toAmino(message.reply) : undefined;
-    obj.error = message.error === '' ? undefined : message.error;
-    return obj;
-  },
-  fromAminoMsg(object: QueryResponseAminoMsg): QueryResponse {
-    return QueryResponse.fromAmino(object.value);
-  },
   fromProtoMsg(message: QueryResponseProtoMsg): QueryResponse {
     return QueryResponse.decode(message.value);
   },
@@ -473,26 +367,6 @@ export const QueryResponses = {
     message.responses =
       object.responses?.map(e => QueryResponse.fromPartial(e)) || [];
     return message;
-  },
-  fromAmino(object: QueryResponsesAmino): QueryResponses {
-    const message = createBaseQueryResponses();
-    message.responses =
-      object.responses?.map(e => QueryResponse.fromAmino(e)) || [];
-    return message;
-  },
-  toAmino(message: QueryResponses): QueryResponsesAmino {
-    const obj: any = {};
-    if (message.responses) {
-      obj.responses = message.responses.map(e =>
-        e ? QueryResponse.toAmino(e) : undefined,
-      );
-    } else {
-      obj.responses = message.responses;
-    }
-    return obj;
-  },
-  fromAminoMsg(object: QueryResponsesAminoMsg): QueryResponses {
-    return QueryResponses.fromAmino(object.value);
   },
   fromProtoMsg(message: QueryResponsesProtoMsg): QueryResponses {
     return QueryResponses.decode(message.value);

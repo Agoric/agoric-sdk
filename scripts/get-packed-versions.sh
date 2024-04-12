@@ -9,7 +9,10 @@ set -xueo pipefail
 
 cache_bust=true
 case $1 in
---no-cache-bust) cache_bust=false; shift ;;
+  --no-cache-bust)
+    cache_bust=false
+    shift
+    ;;
 esac
 
 WORKDIR=${1:-.}
@@ -52,7 +55,7 @@ yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
 
   # Write out the version entry.
   jq -n --arg name "$name" --arg file "$dst" \
-      '{ key: $name, value: ("file:" + $file) }'
+    '{ key: $name, value: ("file:" + $file) }'
 
   popd 1>&2
   ##################

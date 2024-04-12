@@ -77,7 +77,7 @@ const trace = makeTracer('VD', true);
 const shortfallInvitationKey = 'shortfallInvitation';
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint
@@ -302,7 +302,7 @@ const prepareVaultDirector = (
           SubscriberShape,
         ),
         getElectorateSubscription: M.call().returns(SubscriberShape),
-        getGovernedParams: M.call({ collateralBrand: BrandShape }).returns(
+        getGovernedParams: M.callWhen({ collateralBrand: BrandShape }).returns(
           M.record(),
         ),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
@@ -464,7 +464,12 @@ const prepareVaultDirector = (
         getElectorateSubscription() {
           return directorParamManager.getSubscription();
         },
-        /** @param {{ collateralBrand: Brand }} selector */
+        /**
+         * Note this works only for a collateral manager. For the director use,
+         * `getElectorateSubscription`
+         *
+         * @param {{ collateralBrand: Brand }} selector
+         */
         getGovernedParams({ collateralBrand }) {
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();

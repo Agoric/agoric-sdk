@@ -1,6 +1,5 @@
 // @ts-check
 /* global process */
-import { agoric } from '@agoric/cosmic-proto';
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
@@ -96,16 +95,21 @@ harden(execSwingsetTransaction);
 /**
  *
  * @param {import('./rpc.js').MinimalNetworkConfig} net
- * @returns {Promise<import('@agoric/cosmic-proto/dist/codegen/agoric/swingset/swingset').Params>}
  */
-export const fetchSwingsetParams = async net => {
-  const { rpcAddrs } = net;
-  const rpcEndpoint = rpcAddrs[0];
-  const client = await agoric.ClientFactory.createRPCQueryClient({
-    rpcEndpoint,
-  });
-  const { params } = await client.agoric.swingset.params();
-  return params;
+// TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
+export const fetchSwingsetParams = net => {
+  const { chainName, rpcAddrs } = net;
+  const cmd = [
+    `--node=${rpcAddrs[0]}`,
+    `--chain-id=${chainName}`,
+    'query',
+    'swingset',
+    'params',
+    '--output',
+    'json',
+  ];
+  const buffer = execFileSyncAmbient(agdBinary, cmd);
+  return JSON.parse(buffer.toString());
 };
 harden(fetchSwingsetParams);
 

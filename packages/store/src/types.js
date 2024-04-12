@@ -1,21 +1,14 @@
 /// <reference types="ses"/>
 
+// Ensure this is a module.
+export {};
+
 /**
  * Note TODO https://github.com/endojs/endo/issues/1488
  *
- * @typedef {import('@endo/pass-style').Passable} Passable
- */
-/** @typedef {import('@endo/pass-style').CopyTagged} CopyTagged */
-/** @typedef {import('@endo/patterns').Pattern} Pattern */
-/** @typedef {import('@endo/patterns').Key} Key */
-/**
- * @template {Key} [K=Key]
- * @typedef {import('@endo/patterns').CopySet<K>} CopySet
- */
-/**
- * @template {Key} [K=Key]
- * @template {Passable} [V=Passable]
- * @typedef {import('@endo/patterns').CopyMap<K, V>} CopyMap
+ * @import {Passable} from '@endo/pass-style'
+ * @import {CopySet, CopyMap, Pattern} from '@endo/patterns'
+ * @import {Key} from '@endo/patterns'
  */
 
 /**

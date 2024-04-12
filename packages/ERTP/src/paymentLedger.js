@@ -10,6 +10,11 @@ import { preparePurseKind } from './purse.js';
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
+/**
+ * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
+ */
+
 const { details: X, quote: q, Fail } = assert;
 
 /**
@@ -89,8 +94,8 @@ export const preparePaymentLedger = (
   // Should be
   // at-ts-expect-error XXX callWhen
   // but ran into the usual disagreement between local lint and CI
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
+
+  // @ts-expect-error
   const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -311,8 +316,8 @@ export const preparePaymentLedger = (
   // Should be
   // at-ts-expect-error cast due to callWhen discrepancy
   // but ran into the usual disagreement between local lint and CI
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
+
+  // @ts-expect-error
   const issuer = issuerZone.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
@@ -371,8 +376,7 @@ export const preparePaymentLedger = (
   // at-ts-expect-error checked cast
   // but ran into the usual disagreement between local lint and IDE lint.
   // Don't know yet about lint under CI.
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
+
   const mintRecoveryPurse = /** @type {Purse<K>} */ (
     issuerZone.makeOnce('mintRecoveryPurse', () => makeEmptyPurse())
   );
@@ -386,8 +390,7 @@ export const preparePaymentLedger = (
       // Should be
       // at-ts-expect-error checked cast
       // but ran into the usual disagreement between local lint and CI
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-      // @ts-ignore
+
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and
