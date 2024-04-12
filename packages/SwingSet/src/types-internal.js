@@ -143,10 +143,12 @@ export {};
  * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
  * @typedef { { type: 'negated-gc-action', vatID?: VatID } } RunQueueEventNegatedGCAction
  * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
+ * @typedef { { type: 'cleanup-terminated-vat', vatID: VatID,
+ *              budget: number | undefined } } RunQueueEventCleanupTerminatedVat
  * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
  *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
  *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
- *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
+ *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead | RunQueueEventCleanupTerminatedVat
  *          } RunQueueEvent
  */
 

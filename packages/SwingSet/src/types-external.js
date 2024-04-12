@@ -223,12 +223,17 @@ export {};
  * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
  * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
  * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
- * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
+ * @typedef { [tag: 'cleanup', details: { cleanups: number }] } PolicyInputCleanup
+ * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete |
+ *            PolicyInputCrankFailed | PolicyInputCleanup } PolicyInput
  * @typedef { boolean } PolicyOutput
- * @typedef { { vatCreated: (details: {}) => PolicyOutput,
+ * @typedef { {
+ *              allowCleanup?: () => false | { budget?: number },
+ *              vatCreated: (details: {}) => PolicyOutput,
  *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
+ *              didCleanup?: (details: { cleanups: number }) => PolicyOutput,
  *             } } RunPolicy
  *
  * @typedef {object} VatWarehousePolicy

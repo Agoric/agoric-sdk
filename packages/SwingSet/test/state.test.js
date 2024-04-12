@@ -209,6 +209,7 @@ test('kernel state', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
 });
 
@@ -249,6 +250,7 @@ test('kernelKeeper vat names', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
   t.deepEqual(k.getStaticVats(), [
     ['Frank', 'v2'],
@@ -303,6 +305,7 @@ test('kernelKeeper device names', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
   t.deepEqual(k.getDevices(), [
     ['Frank', 'd8'],
@@ -489,6 +492,7 @@ test('kernelKeeper promises', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
 
   k.deleteKernelObject(ko);

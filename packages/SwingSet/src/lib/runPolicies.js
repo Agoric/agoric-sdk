@@ -3,6 +3,9 @@ import { assert } from '@agoric/assert';
 export function foreverPolicy() {
   /** @type { RunPolicy } */
   return harden({
+    allowCleanup() {
+      return {}; // unlimited budget
+    },
     vatCreated(_details) {
       return true;
     },
@@ -27,6 +30,9 @@ export function crankCounter(
   let vats = 0;
   /** @type { RunPolicy } */
   const policy = harden({
+    allowCleanup() {
+      return { budget: 100 }; // limited budget
+    },
     vatCreated() {
       vats += 1;
       return vats < maxCreateVats;
@@ -52,6 +58,9 @@ export function computronCounter(limit) {
   let total = 0n;
   /** @type { RunPolicy } */
   const policy = harden({
+    allowCleanup() {
+      return { budget: 100 }; // limited budget
+    },
     vatCreated() {
       total += 100000n; // pretend vat creation takes 100k computrons
       return total < limit;
@@ -79,10 +88,42 @@ export function wallClockWaiter(seconds) {
   const timeout = Date.now() + 1000 * seconds;
   /** @type { RunPolicy } */
   const policy = harden({
+    allowCleanup: () => ({}), // unlimited budget
     vatCreated: () => Date.now() < timeout,
     crankComplete: () => Date.now() < timeout,
     crankFailed: () => Date.now() < timeout,
     emptyCrank: () => Date.now() < timeout,
+  });
+  return policy;
+}
+
+export function noCleanup() {
+  /** @type { RunPolicy } */
+  const policy = harden({
+    allowCleanup: () => false,
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+    emptyCrank: () => true,
+  });
+  return policy;
+}
+
+export function someCleanup(budget) {
+  let once = true;
+  /** @type { RunPolicy } */
+  const policy = harden({
+    allowCleanup: () => {
+      if (once) {
+        once = false;
+        return { budget };
+      }
+      return false;
+    },
+    vatCreated: () => true,
+    crankComplete: () => true,
+    crankFailed: () => true,
+    emptyCrank: () => true,
   });
   return policy;
 }

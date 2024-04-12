@@ -544,6 +544,10 @@ export function makeVatWarehouse({
       vatKeeper.addToTranscript(getTranscriptEntry(vd, deliveryResult));
     }
 
+    if (kd[0] === 'bringOutYourDead') {
+      vatKeeper.clearReapDirt(); // BOYD zeros out the when-to-BOYD counters
+    }
+
     // TODO: if per-vat policy decides it wants a BOYD or heap snapshot,
     // now is the time to do it, or to ask the kernel to schedule it
 
