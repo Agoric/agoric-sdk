@@ -167,8 +167,8 @@ type IBCPacketEvents = {
   timeoutPacket: {
     packet: IBCPacket;
   };
-  channelCloseInit: {}; // TODO update
-  channelCloseConfirm: {}; // TODO update
+  channelCloseInit: ConnectingInfo; // TODO update
+  channelCloseConfirm: ConnectingInfo; // TODO update
   sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
 };
 
