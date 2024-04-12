@@ -169,7 +169,7 @@ replace (
 	github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
 
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.1
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.2
 
 	// replace broken iavl
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
