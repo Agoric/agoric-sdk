@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Far } from '@endo/far';
+import { Far, isPassable } from '@endo/pass-style';
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -14,11 +14,7 @@ import {
   provideDurableWeakSetStore,
 } from '@agoric/vat-data';
 
-import {
-  agoricVatDataKeys as keys,
-  isPassable,
-  makeOnceKit,
-} from '@agoric/base-zone';
+import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
 const { Fail } = assert;
 
