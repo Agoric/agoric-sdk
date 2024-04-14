@@ -80,6 +80,45 @@ console messages to enable, pass it to `makeConsole`. For example:
 - `DEBUG=SwingSet:vat` enable for user code, regardless of vat.
 - `DEBUG=SwingSet:vat,SwingSet:ls` enable for liveslots and user code, all vats
 
+## ENDO_DELIVERY_BREAKPOINTS
+
+The value of this option should be a JSON string identifying for which
+eventual-send message deliveries should a JS `debugger;` statement be executed.
+The format of the JSON file is
+```json
+{
+  <class-like>: {
+    <method-like>: <countdown>,
+    <method-like>: <countdown>,
+    ...
+  },
+  <class-like>: {
+    <method-like>: <countdown>
+    ...
+  },
+  ...
+}
+```
+Where
+- `<class-like>` is either `"*"` or an alleged string tag of the receiving
+   remotable (exo or far) object
+- `<method-like>` is either `"*"` or a method name. There is not yet a syntax for symbols to name symbol-named methods, but there may eventually be.
+- `<countdown>` is either `"*"` or a non-negative integer saying how many occurrences to ignore before breakpointing.
+
+When the program is run under a debugger, it will breakpoint when the JS
+`debugger;` statement is executed. When run normally without a debugger, the
+`debugger;` statement will have no effect. The `debugger;` statement
+is executed *before* the method is entered.
+
+See https://github.com/endojs/endo/blob/master/packages/pass-style/test/prepare-breakpoints.js for an example.
+
+## ENDO_SEND_BREAKPOINTS
+
+The value of this option is a JSON string identifying for which eventual sends
+should a JS `debugger;` statement be executed. The format is the same as
+shown for `ENDO_DELIVERY_BREAKPOINTS` above, but the breakpoint happens
+when and where the message is sent, rather than when and where it is delivered.
+
 ## END_BLOCK_SPIN_MS
 
 Affects: cosmic-swingset
@@ -105,6 +144,14 @@ Lifetime: until chain is mature enough not to need any pretend tokens
 ## LOCKDOWN_*
 
 For the environment variables beginning with `LOCKDOWN_` , see [`lockdown` Options](https://github.com/endojs/endo/blob/master/packages/ses/docs/lockdown.md).
+
+## ONLY_WELL_FORMED_STRINGS_PASSABLE
+
+As part of the OCapN standards process, we have agreed that only so-called
+"well formed" unicode strings should be considered `Passable`. However, we are
+not yet confident about the performance impact of enforcing this ban, so it
+is `"disabled"` by default for now. To turn it on, set this option to `"enabled"`.
+See https://github.com/endojs/endo/blob/master/packages/pass-style/NEWS.md#v130-2024-03-19 for more explanation.
 
 ## OTEL_EXPORTER_PROMETHEUS_PORT
 
