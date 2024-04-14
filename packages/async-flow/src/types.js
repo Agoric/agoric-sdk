@@ -9,6 +9,15 @@
  */
 
 /**
+ * @typedef {'Running' |
+ *           'Sleeping' |
+ *           'Replaying' |
+ *           'Failed' |
+ *           'Done'
+ * } FlowState
+ */
+
+/**
  * @template {Passable} [T=Passable]
  * @typedef {T} Guest
  */
@@ -23,7 +32,7 @@
  * ephemeral guest promise.
  *
  * @template {Passable} [T=Passable]
- * @typedef {Host<Promise<T> | Vow<T> | Promise<Vow<T>>>} HostVow
+ * @typedef {Host<Vow<T>>} HostVow
  */
 
 /**
@@ -66,11 +75,11 @@
  *
  * @typedef {[ // ///////////////// From Host to Guest /////////////////////////
  *     op: 'doFulfill',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     fulfillment: Host,
  *   ] | [
  *     op: 'doReject',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     reason: Host,
  *   ] | [
  *     op: 'doReturn',
@@ -91,16 +100,17 @@
 
 /**
  * This would be the typedef for the full membrane log, if we supported
- * the guest sending promises and remotables to the host, for the host to
- * then use.
+ * - the guest sending guest-promises and guest-remotables to the host
+ * - the guest using `E` to eventual-send to guest wrappers of host
+ *   vows and remotables.
  *
  * at-typedef {[ // ///////////////// From Host to Guest ///////////////////////
  *     op: 'doFulfill',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     fulfillment: Host,
  *   ] | [
  *     op: 'doReject',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     reason: Host,
  *   ] | [
  *     op: 'doCall',
@@ -124,11 +134,11 @@
  *     problem: Host,
  *   ] | [ // ///////////////////// From Guest to Host /////////////////////////
  *     op: 'checkFulfill',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     fulfillment: Host,
  *   ] | [
  *     op: 'checkReject',
- *     prom: Host<HostVow>,
+ *     vow: HostVow,
  *     reason: Host,
  *   ] | [
  *     op: 'checkCall',

@@ -14,7 +14,7 @@ const { fromEntries, defineProperties } = Object;
  * @param {WeakBijection} bijection
  * @param {VowTools} vowTools
  * @param {(vowish: Promise | Vow) => void} watchWake
- * @param {(problem: Error) => void} panic
+ * @param {(problem: Error) => never} panic
  */
 export const makeReplayMembrane = (
   log,
@@ -179,7 +179,7 @@ export const makeReplayMembrane = (
         outcome = performCall(...args);
       }
     } catch (fatalError) {
-      return panic(fatalError);
+      throw panic(fatalError);
     }
 
     if (outcome.kind === 'return') {

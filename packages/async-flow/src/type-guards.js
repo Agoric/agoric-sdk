@@ -1,14 +1,20 @@
 import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 
-export const PropertyKeyShape = M.or(M.string(), M.symbol());
+export const FlowStateShape = M.or(
+  'Running',
+  'Sleeping',
+  'Replaying',
+  'Failed',
+  'Done',
+);
 
-export const HostVowShape = M.or(VowShape, M.promise());
+export const PropertyKeyShape = M.or(M.string(), M.symbol());
 
 export const LogEntryShape = M.or(
   // ////////////////////////////// From Host to Guest /////////////////////////
-  ['doFulfill', HostVowShape, M.any()],
-  ['doReject', HostVowShape, M.any()],
+  ['doFulfill', VowShape, M.any()],
+  ['doReject', VowShape, M.any()],
   // [
   //   'doCall',
   //   M.remotable('host wrapper of guest target'),
@@ -27,8 +33,8 @@ export const LogEntryShape = M.or(
   ['doThrow', M.number(), M.any()],
 
   // ////////////////////////////// From Guest to Host /////////////////////////
-  // ['checkFulfill', HostVowShape, M.any()],
-  // ['checkReject', HostVowShape, M.any()],
+  // ['checkFulfill', VowShape, M.any()],
+  // ['checkReject', VowShape, M.any()],
   [
     'checkCall',
     M.remotable('host target'),

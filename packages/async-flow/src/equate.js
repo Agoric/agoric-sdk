@@ -43,10 +43,10 @@ export const makeEquate = bijection => {
       // We *do* support passing a guest wrapper of a hostVow back
       // to the host, but that would be cause by `bijection.has` above.
       throw Fail`guest promises not yet passable`;
-      // define does not yet do enough checking anyway. For this case,
+      // `init` does not yet do enough checking anyway. For this case,
       // we should ensure that h is a host wrapper of a guest promise,
       // which is a wrapping we don't yet support.
-      // bijection.define(g, h);
+      // bijection.init(g, h);
       // return;
     }
     const hPassStyle = passStyleOf(h);
@@ -95,10 +95,10 @@ export const makeEquate = bijection => {
         // but that should have already been taken care of by the
         // `bijection.has` above.
         throw Fail`cannot yet send guest remotables to host ${g} vs ${h}`;
-        // define does not yet do enough checking anyway. For this case,
+        // `init` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest remotable,
         // which is a wrapping we don't yet support.
-        // bijection.define(g, h);
+        // bijection.init(g, h);
         // return;
       }
       case 'promise': {
@@ -107,10 +107,10 @@ export const makeEquate = bijection => {
         // but that should have already been taken care of by the
         // `bijection.has` above.
         throw Fail`cannot yet send guest promises to host ${g} vs ${h}`;
-        // define does not yet do enough checking anyway. For this case,
+        // `init` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest promise,
         // which is a wrapping we don't yet support.
-        // bijection.define(g, h);
+        // bijection.init(g, h);
         // return;
       }
       default: {

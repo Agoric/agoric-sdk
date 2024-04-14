@@ -95,7 +95,7 @@ export const makeConvertKit = (
         return bijection.hostToGuest(hRem);
       }
       const gRem = makeGuestForHostRemotable(hRem);
-      bijection.define(gRem, hRem);
+      bijection.init(gRem, hRem);
       return gRem;
     },
     hVow => {
@@ -103,7 +103,7 @@ export const makeConvertKit = (
         return bijection.hostToGuest(hVow);
       }
       const gP = makeGuestForHostVow(hVow);
-      bijection.define(gP, hVow);
+      bijection.init(gP, hVow);
       return gP;
     },
     hErr => {

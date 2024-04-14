@@ -35,21 +35,22 @@ const testBijection = (t, zone, { makeVowKit }) => {
   const g3 = harden(Promise.resolve('g3'));
 
   t.false(bij.has(g1, h1));
-  bij.define(g1, h1);
+  bij.init(g1, h1);
   t.true(bij.has(g1, h1));
-  t.throws(() => bij.define(g1, h2), {
+  t.throws(() => bij.init(g1, h2), {
     message:
-      'internal: g->h "[Alleged: g1]" -> "[Alleged: h2]" vs "[Alleged: h1]"',
+      'key already bound: "[Alleged: g1]" -> "[Alleged: h1]" vs "[Alleged: h2]"',
   });
-  t.throws(() => bij.define(g2, h1), {
-    message: 'key not found: "[Alleged: h1]"',
+  t.throws(() => bij.init(g2, h1), {
+    message:
+      'key already bound: "[Alleged: h1]" -> "[Alleged: g1]" vs "[Alleged: g2]"',
   });
   t.throws(() => bij.has(g1, h2), {
     message:
       'internal: g->h "[Alleged: g1]" -> "[Alleged: h2]" vs "[Alleged: h1]"',
   });
   t.false(bij.has(g2, h2));
-  bij.define(g2, h2);
+  bij.init(g2, h2);
   t.true(bij.has(g2, h2));
 
   t.false(bij.has(g3, h3));

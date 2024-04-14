@@ -1,19 +1,8 @@
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { getVowPayload } from '@agoric/vow/src/vow-utils.js';
 import { Far } from '@endo/pass-style';
+import { vowishKey } from '@agoric/vow';
 import { makeEphemera } from './ephemera.js';
-
-export const vowishKey = k => {
-  const payload = getVowPayload(k);
-  if (payload === undefined) {
-    return k;
-  }
-  const { vowV0 } = payload;
-  // vowMap.set(vowV0, h);
-  return vowV0;
-};
-harden(vowishKey);
 
 const WeakBijectionI = M.interface('WeakBijection', {
   reset: M.call().returns(),
@@ -23,7 +12,6 @@ const WeakBijectionI = M.interface('WeakBijection', {
   has: M.call(M.any(), M.any()).returns(M.boolean()),
   guestToHost: M.call(M.any()).returns(M.any()),
   hostToGuest: M.call(M.any()).returns(M.any()),
-  define: M.call(M.any(), M.any()).returns(),
 });
 
 /**
@@ -81,18 +69,13 @@ export const prepareWeakBijection = zone => {
       const guestToHost = g2h.for(self);
       const hostToGuest = h2g.for(self);
 
+      !hostToGuest.has(h) ||
+        Fail`key already bound: ${h} -> ${hostToGuest.get(h)} vs ${g}`;
       guestToHost.init(g, h);
       hostToGuest.init(h, g);
       self.has(g, h) ||
         // separate line so I can set a breakpoint
         Fail`internal: ${g} <-> ${h}`;
-    },
-    define(g, h) {
-      const { self } = this;
-
-      if (!self.has(g, h)) {
-        self.init(g, h);
-      }
     },
     hasGuest(g) {
       const { self } = this;

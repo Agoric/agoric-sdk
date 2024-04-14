@@ -22,8 +22,6 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
-const { apply } = Reflect;
-
 /**
  * @param {Zone} zone
  * @param {number} [k]
@@ -53,6 +51,8 @@ const prepareOrchestra = (zone, k = 1) =>
 
 const firstLogLen = 7;
 
+// TODO https://github.com/Agoric/agoric-sdk/issues/9231
+
 /**
  * @param {any} t
  * @param {Zone} zone
@@ -75,7 +75,6 @@ const testFirstPlay = async (t, zone, vowTools) => {
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
-      t.is(this, 'context');
       t.log('  firstPlay about to await gP');
       await gP;
       const g2 = gOrch7.vow();
@@ -100,9 +99,7 @@ const testFirstPlay = async (t, zone, vowTools) => {
 
   const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
 
-  const outcomeV = zone.makeOnce('outcomeV', () =>
-    apply(wrapperFunc, 'context', [hOrch7, v1]),
-  );
+  const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1));
 
   t.true(isVow(outcomeV));
   r1.resolve('x');
@@ -151,7 +148,6 @@ const testBadReplay = async (t, zone, vowTools) => {
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
-      t.is(this, 'context');
       t.log('  badReplay about to await gP');
       resolveStep(true);
       await gP;
@@ -218,7 +214,6 @@ const testGoodReplay = async (t, zone, vowTools) => {
 
   const { guestMethod } = {
     async guestMethod(gOrch7, gP) {
-      t.is(this, 'context');
       t.log('  goodReplay about to await gP');
       await gP;
       const g2 = gOrch7.vow();
@@ -321,10 +316,10 @@ const testAfterPlay = async (t, zone, vowTools) => {
     zone.makeOnce('outcomeV', () => Fail`outcomeV expected`)
   );
 
-  const flow = adminAsyncFlow.getFlowForOutcomeVow(outcomeV);
-  t.is(passStyleOf(flow), 'remotable');
-
-  t.deepEqual(flow.dump(), []);
+  t.throws(() => adminAsyncFlow.getFlowForOutcomeVow(outcomeV), {
+    message:
+      'key "[Alleged: VowInternalsKit vowV0]" not found in collection "flowForOutcomeVow"',
+  });
 
   t.log('testAfterDoneReplay done');
 };

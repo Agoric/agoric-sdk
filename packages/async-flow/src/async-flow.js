@@ -1,21 +1,21 @@
-import { annotateError, Fail, makeError, q, X } from '@endo/errors';
+import { annotateError, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
+import { vowishKey, VowShape } from '@agoric/vow';
 import { PromiseWatcherI } from '@agoric/vow/src/watch-promise.js';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
-import { vowishKey, prepareWeakBijection } from './weak-bijection.js';
+import { prepareWeakBijection } from './weak-bijection.js';
 import { makeEphemera } from './ephemera.js';
-import { LogEntryShape } from './type-guards.js';
+import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 const { defineProperties } = Object;
-const { apply } = Reflect;
 
 const AsyncFlowIKit = harden({
   flow: M.interface('Flow', {
-    restart: M.call().optional(M.raw(), M.boolean()).returns(),
+    getFlowState: M.call().returns(FlowStateShape),
+    restart: M.call().optional(M.boolean()).returns(),
     wake: M.call().returns(),
     getOutcome: M.call().returns(VowShape),
     dump: M.call().returns(M.arrayOf(LogEntryShape)),
@@ -23,8 +23,8 @@ const AsyncFlowIKit = harden({
   }),
   admin: M.interface('FlowAdmin', {
     reset: M.call().returns(),
-    done: M.call().returns(),
-    panic: M.call(M.error()).returns(),
+    complete: M.call().returns(),
+    panic: M.call(M.error()).returns(M.not(M.any())), // only throws
   }),
   wakeWatcher: PromiseWatcherI,
 });
@@ -41,6 +41,7 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
  */
 export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   const {
+    // TODO https://github.com/Agoric/agoric-sdk/issues/9231
     vowTools = prepareWatchableVowTools(outerZone),
     makeLogStore = prepareLogStore(outerZone),
     makeWeakBijection = prepareWeakBijection(outerZone),
@@ -48,12 +49,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   const { watch, makeVowKit } = vowTools;
 
   const failures = outerZone.mapStore('asyncFuncFailures', {
-    keyShape: M.remotable('flow'),
+    keyShape: M.remotable('flow'), // flowState === 'Failed'
     valueShape: M.error(),
   });
 
   const eagerWakers = outerZone.setStore(`asyncFuncEagerWakers`, {
-    keyShape: M.remotable('flow'),
+    keyShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
   const tmp = makeEphemera(() => ({
@@ -68,21 +69,18 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    */
   const flowForOutcomeVowKey = outerZone.mapStore('flowForOutcomeVow', {
     keyShape: M.remotable('vowishKey'),
-    valueShape: M.remotable('asyncFlow'),
+    valueShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
   /**
    * @param {Zone} zone
    * @param {string} tag
-   * @param {GuestAsyncFunc} [optGuestAsyncFunc]
+   * @param {GuestAsyncFunc} guestAsyncFunc
    * @param {{ startEager?: boolean }} [options]
    */
-  const prepareAsyncFlowKit = (
-    zone,
-    tag,
-    optGuestAsyncFunc = undefined,
-    options = {},
-  ) => {
+  const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
+    typeof guestAsyncFunc === 'function' ||
+      Fail`guestAsyncFunc must be a callable function ${guestAsyncFunc}`;
     const {
       // May change default to false, once instances reliably wake up
       startEager = true,
@@ -91,14 +89,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const internalMakeAsyncFlowKit = zone.exoClassKit(
       tag,
       AsyncFlowIKit,
-      (activationThis, activationArgs) => {
-        harden(activationThis);
+      activationArgs => {
         harden(activationArgs);
         const log = makeLogStore();
         const bijection = makeWeakBijection();
 
         return {
-          activationThis, // replay starts by reactivating with these
           activationArgs, // replay starts by reactivating with these
           log, // log to be accumulated or replayed
           bijection, // membrane's guest-host mapping
@@ -108,27 +104,56 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       },
       {
         flow: {
-          restart(func = optGuestAsyncFunc, eager = startEager) {
-            if (func === undefined) {
-              throw Fail`Function must either be in prepareAsyncFlowKit or restart args: ${q(
-                tag,
-              )}`;
-            }
+          /**
+           * @returns {FlowState}
+           */
+          getFlowState() {
             const { state, facets } = this;
-            const {
-              activationThis,
-              activationArgs,
-              log,
-              bijection,
-              outcomeKit,
-            } = state;
+            const { log, outcomeKit, isDone } = state;
+            const { flow } = facets;
+            const eph = tmp.for(flow);
+
+            if (isDone) {
+              eph.membrane === undefined ||
+                Fail`Done flow must drop membrane ${flow} ${eph.membrane}`;
+              !failures.has(flow) ||
+                Fail`Done flow must not be in failures ${flow} ${failures.get(flow)}`;
+              !eagerWakers.has(flow) ||
+                Fail`Done flow must not be in eagerWakers ${flow}`;
+              !flowForOutcomeVowKey.has(outcomeKit.vow) ||
+                Fail`Done flow must drop flow lookup from vow ${outcomeKit.vow}`;
+              (log.getIndex() === 0 && log.getLength() === 0) ||
+                Fail`Done flow must empty log ${flow} ${log}`;
+              return 'Done';
+            }
+            if (failures.has(flow)) {
+              return 'Failed';
+            }
+            if (eph.membrane === undefined) {
+              log.getIndex() === 0 ||
+                Fail`Sleeping flow must play from log start ${flow} ${log.getIndex()}`;
+              return 'Sleeping';
+            }
+            if (log.isReplaying()) {
+              return 'Replaying';
+            }
+            return 'Running';
+          },
+
+          /**
+           * Calls the guest function, either for the initial run or at the
+           * start of a replay.
+           *
+           * @param {boolean} [eager]
+           */
+          restart(eager = startEager) {
+            const { state, facets } = this;
+            const { activationArgs, log, bijection, outcomeKit } = state;
             const { flow, admin, wakeWatcher } = facets;
 
-            if (failures.has(flow)) {
-              failures.delete(flow);
-            }
+            const startFlowState = flow.getFlowState();
 
-            !state.isDone ||
+            startFlowState !== 'Done' ||
               // separate line so I can set a breakpoint
               Fail`Cannot restart a done flow ${flow}`;
 
@@ -157,10 +182,14 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             );
             const eph = tmp.for(flow);
             eph.membrane = membrane;
-            const guestThis = membrane.hostToGuest(activationThis);
             const guestArgs = membrane.hostToGuest(activationArgs);
 
-            // In case some host promises were settled before the guest makes
+            const flowState = flow.getFlowState();
+            flowState === 'Running' ||
+              flowState === 'Replaying' ||
+              Fail`Restarted flow must be Running or Replaying ${flow}`;
+
+            // In case some host vows were settled before the guest makes
             // the first call to a host object.
             membrane.wake();
 
@@ -175,9 +204,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             // and the host outcome vow kit.
             const guestResultP = (async () =>
               // async IFFE ensures guestResultP is a fresh promise
-              apply(func, guestThis, guestArgs))();
+              guestAsyncFunc(...guestArgs))();
 
-            bijection.define(guestResultP, outcomeKit.vow);
+            bijection.init(guestResultP, outcomeKit.vow);
             // log is driven at first by guestAyncFunc interaction through the
             // membrane with the host activationArgs. At the end of its first
             // turn, it returns a promise for its eventual guest result.
@@ -198,7 +227,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                   outcomeKit.resolver.resolve(
                     membrane.guestToHost(gFulfillment),
                   );
-                  admin.done();
+                  admin.complete();
                 }
               },
               guestReason => {
@@ -211,20 +240,18 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                 // so this leave the outcome vow unsettled, as it must.
                 if (bijection.hasGuest(guestResultP)) {
                   outcomeKit.resolver.reject(membrane.guestToHost(guestReason));
-                  admin.done();
+                  admin.complete();
                 }
               },
             );
           },
           wake() {
-            const { state, facets } = this;
+            const { facets } = this;
             const { flow } = facets;
             const eph = tmp.for(flow);
 
-            if (failures.has(flow)) {
-              throw failures.get(flow);
-            }
-            if (state.isDone) {
+            const flowState = flow.getFlowState();
+            if (flowState === 'Done' || flowState === 'Failed') {
               return;
             }
             if (eph.membrane) {
@@ -234,11 +261,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             }
           },
           getOutcome() {
-            const { state, facets } = this;
+            const { state } = this;
             const { outcomeKit } = state;
-            const { flow } = facets;
-
-            flow.wake();
             return outcomeKit.vow;
           },
           dump() {
@@ -264,10 +288,6 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             if (failures.has(flow)) {
               failures.delete(flow);
             }
-            if (eagerWakers.has(flow)) {
-              // For now, once an eagerWaker, always an eagerWaker
-              // eagerWakers.delete(flow);
-            }
             if (eph.membrane) {
               eph.membrane.stop();
             }
@@ -277,14 +297,20 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
 
             state.isDone = false;
           },
-          done() {
+          complete() {
             const { state, facets } = this;
             const { log } = state;
-            const { admin } = facets;
+            const { flow, admin } = facets;
 
             admin.reset();
+            if (eagerWakers.has(flow)) {
+              eagerWakers.delete(flow);
+            }
+            flowForOutcomeVowKey.delete(vowishKey(flow.getOutcome()));
             state.isDone = true;
             log.dispose();
+            flow.getFlowState() === 'Done' ||
+              Fail`Complete flow must be Done ${flow}`;
           },
           panic(fatalProblem) {
             const { state, facets } = this;
@@ -293,7 +319,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
-              failures.set(flow, fatalProblem);
+              const prevErr = failures.get(flow);
+              annotateError(
+                prevErr,
+                X`doubly failed somehow with ${fatalProblem}`,
+              );
+              // prevErr likely to be the more relevant diagnostic to report
+              fatalProblem = prevErr;
             } else {
               failures.init(flow, fatalProblem);
             }
@@ -304,6 +336,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             tmp.resetFor(flow);
             log.reset();
             bijection.reset();
+
+            flow.getFlowState() === 'Failed' ||
+              Fail`Paniced flow must be Failed ${flow}`;
 
             // This is not an expected throw, so in theory arbitrary chaos
             // may ensue from throwing it. But at this point
@@ -330,12 +365,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
         },
       },
     );
-    const makeAsyncFlowKit = (activationThis, activationArgs) => {
-      const asyncFlowKit = internalMakeAsyncFlowKit(
-        activationThis,
-        activationArgs,
-      );
-      asyncFlowKit.flow.restart();
+    const makeAsyncFlowKit = activationArgs => {
+      const asyncFlowKit = internalMakeAsyncFlowKit(activationArgs);
+      const { flow } = asyncFlowKit;
+
+      const vow = vowishKey(flow.getOutcome());
+      flowForOutcomeVowKey.init(vowishKey(vow), flow);
+      flow.restart();
       return asyncFlowKit;
     };
     return harden(makeAsyncFlowKit);
@@ -350,13 +386,11 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
     const makeAsyncFlowKit = prepareAsyncFlowKit(zone, tag, guestFunc, options);
-    const hostFuncName = `${guestFunc.name || 'anon'}_hostWrapper`;
+    const hostFuncName = `${tag}_hostFlow`;
     const wrapperFunc = {
       [hostFuncName](...args) {
-        const { flow } = makeAsyncFlowKit(this, args);
-        const outcomeVow = flow.getOutcome();
-        flowForOutcomeVowKey.init(vowishKey(outcomeVow), flow);
-        return outcomeVow;
+        const { flow } = makeAsyncFlowKit(args);
+        return flow.getOutcome();
       },
     }[hostFuncName];
     defineProperties(wrapperFunc, {

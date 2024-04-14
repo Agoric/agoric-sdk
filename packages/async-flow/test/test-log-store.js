@@ -7,14 +7,13 @@ import {
 } from './prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareVowTools, vowishKey } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareLogStore } from '../src/log-store.js';
-import { vowishKey } from '../src/weak-bijection.js';
 
 /**
  * @param {any} t
