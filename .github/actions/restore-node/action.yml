@@ -131,21 +131,23 @@ runs:
           sudo apt-get update
           sudo apt-get install libbsd-dev
         fi
+
+        # Preserve the original package.json to restore it after Endo replacements.
+        cp -a package.json package.json.orig
+
         # Replace the Endo packages with the ones built from the checked-out branch.
         if test -e ~/endo; then
           scripts/get-packed-versions.sh ~/endo | scripts/resolve-versions.sh
         fi
         yarn install
 
-        if ! cmp -s <(git cat-file blob HEAD:package.json) package.json; then
-          # In the event that the package.json has been modified by Endo
-          # replacements, we need to have a yarn-installed.sum that matches
-          # the unmodified package.json.  As long as we don't explicitly `yarn
-          # install` anywhere other than in this action and in the bin/agd
-          # script, we should be able to reuse even Endo-overridden built caches
-          # successfully.
-          git checkout HEAD -- package.json
-        fi
+        # In the event that the package.json has been modified by Endo
+        # replacements, we need to have a yarn-installed timestamp that
+        # corresponds to the unmodified package.json.  As long as we don't
+        # explicitly `yarn install` anywhere other than in this action and in
+        # the bin/agd script, we should be able to reuse even Endo-overridden
+        # built caches successfully.
+        mv package.json.orig package.json
 
         if test -e ~/endo; then
           # Stage the redirected `yarn install` consequences.
