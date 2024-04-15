@@ -4,7 +4,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { makeLiquidationTestContext } from './liquidation.js';
+import { makeLiquidationTestContext } from '../../tools/liquidation.ts';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeLiquidationTestContext>>>}
