@@ -172,7 +172,6 @@ test.serial('handle failure to create invitation', async t => {
         const amt = AmountMath.make(spendable.brand, 100n);
         const pmt = await E(spendable.mint).mintPayment(amt);
         await E(purse).deposit(pmt);
-        shared.thePurse = purse;
         const slowWithdrawPurse = {
           ...purse,
           withdraw: async a => {
@@ -180,6 +179,7 @@ test.serial('handle failure to create invitation', async t => {
             console.log('@@slow withdraw', a);
             return E(purse).withdraw(a);
           },
+          getCurrentAmount: () => purse.getCurrentAmount(),
         };
         return slowWithdrawPurse;
       },
@@ -188,10 +188,13 @@ test.serial('handle failure to create invitation', async t => {
       },
     });
 
+  const theBank = makeBank();
+  shared.thePurse = await theBank.getPurse(spendable.brand);
+
   const smartWallet = await makeSmartWallet({
     address,
     walletStorageNode,
-    bank: makeBank(),
+    bank: theBank,
     invitationPurse,
   });
   shared.theWallet = smartWallet;
@@ -221,7 +224,7 @@ test.serial('handle failure to create invitation', async t => {
   await delay(200);
 });
 
-test.serial.failing('funds should be back in the purse', async t => {
+test.serial('funds should be back in the purse', async t => {
   t.like(t.context.shared.thePurse.getCurrentAmount(), { value: 100n });
 });
 
