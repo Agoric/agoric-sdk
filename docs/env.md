@@ -84,7 +84,7 @@ console messages to enable, pass it to `makeConsole`. For example:
 
 The value of this option should be a JSON string identifying for which
 eventual-send message deliveries should a JS `debugger;` statement be executed.
-The format of the JSON file is
+The format of the JSON string is
 ```json
 {
   <class-like>: {
