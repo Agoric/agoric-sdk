@@ -92,7 +92,7 @@ in this branch. The release tags will be human-meaningful, the release branch ne
 
 - [ ] Generate new SDK version and per-package CHANGELOG.md files
 
-  Use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release.
+  To generate a `$VERSION-$PRE.$N` dev release that will not be accidentally selected by downstream package.json files, replace `--conventional-graduate` with `--conventional-prerelease --preid "$PRE"`.
 
   These instructions will:
 
@@ -107,7 +107,7 @@ in this branch. The release tags will be human-meaningful, the release branch ne
   - create a `$package@$version` git tag for every package that changed,
     including a special `@agoric/sdk@$n` "SDK version" tag that (among other
     things) CI will use for tagging a Docker image;
-  - create a special `v$version` tag derived from the `@agoric/cosmos@$version`
+  - create a special `v$version` git tag derived from the `@agoric/cosmos@$version`
     tag for
     [Go's opinionated reference scheme](https://go.dev/ref/mod#version-queries)
     as used in e.g. `go get github.com/Agoric/agoric-sdk@$version`.
