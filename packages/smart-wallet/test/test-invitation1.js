@@ -33,6 +33,7 @@ const mockBootstrapPowers = async (
   log,
   spaceNames = ['installation', 'instance', 'issuer', 'brand'],
 ) => {
+  /** @type {import('@agoric/vat-data').Baggage} */
   const baggage = makeScalarMapStore('bootstrap');
   const zone = makeDurableZone(baggage);
   const { produce, consume } = makePromiseSpace();
@@ -82,7 +83,9 @@ const makeTestContext = async t => {
   const makeSpendableAsset = () => {
     const tok1 = makeIssuerKit('Tok1');
     const { issuer, brand } = bootKit.powers;
+    // @ts-expect-error new symbol
     issuer.produce.Token1.resolve(tok1.issuer);
+    // @ts-expect-error new symbol
     brand.produce.Token1.resolve(tok1.brand);
     return tok1;
   };
@@ -114,6 +117,7 @@ const makeTestContext = async t => {
   /** @type {import('../src/smartWallet.js').BrandDescriptorRegistry} */
   const registry = await makeRegistry();
 
+  /** @type {import('@agoric/vat-data').Baggage} */
   const swBaggage = makeScalarMapStore('smart-wallet');
 
   const secretWalletFactoryKey = Far('Key', {});
@@ -151,6 +155,7 @@ test.serial('handle failure to create invitation', async t => {
   const invitationIssuer = powers.issuer.consume.Invitation;
   const address = 'agoric1234';
 
+  // @ts-expect-error It's a promise.
   const walletsStorage = E(chainStorage).makeChildNode('wallet');
   const walletStorageNode = await E(walletsStorage).makeChildNode(address);
 
