@@ -791,7 +791,7 @@ func NewAgoricApp(
 	for name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			upgrade14Handler(app, name),
+			upgrade15Handler(app, name),
 		)
 	}
 
@@ -831,9 +831,8 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"agoric-upgrade-14":       true,
-	"agorictest-upgrade-14":   true,
-	"agorictest-upgrade-14-2": true,
+	"agoric-upgrade-15":     true,
+	"agorictest-upgrade-15": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
@@ -845,25 +844,20 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-// upgrade14Handler performs standard upgrade actions plus custom actions for upgrade-14.
-func upgrade14Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade15Handler performs standard upgrade actions plus custom actions for upgrade-15.
+func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
 		// These CoreProposalSteps are not idempotent and should only be executed
-		// as part of the first upgrade-14 on any given chain.
+		// as part of the first upgrade using this handler on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// First, upgrade wallet factory
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
-				// Then, upgrade Zoe and ZCF
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/replace-zoe.js"),
-				// Next revive KREAd characters
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/revive-kread.js"),
+				// empty for now
 			}
 		}
 
