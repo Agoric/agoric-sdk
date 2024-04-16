@@ -28,9 +28,13 @@ The Release Owner and other appropriate stakeholders must agree on:
 
 - _**base branch**_: This should be `release-mainnet1B`, but might need to vary for a patch release.
 
-- _**release label**_: This is used for the cosmos-sdk upgrade name and git tags, and is currently expected to follow a sequential pattern (example: `agoric-upgrade-8`).
+- _**release label**_: This is used for the cosmos-sdk upgrade name and git tags, and is currently
+  expected to follow a sequential pattern (example: `agoric-upgrade-8`).
+  It is preceded by release candidates numbered from zero (example: `agoric-upgrade-8-rc0`), and the
+  actual release shares its commit (but not its label) with the final release candidate.
 
-- _**release short label**_: This is used for release artifacts, and is currently expected to be a simplified substring of _**release label**_ including the number (example: `upgrade-8`).
+- _**release short label**_: This is used for release artifacts, and is currently expected to be a
+  simplified substring of _**release label**_ including the number (example: `upgrade-8`).
 
 ### Create the "dev release" branch
 
