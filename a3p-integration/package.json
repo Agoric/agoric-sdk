@@ -1,7 +1,7 @@
 {
     "private": true,
     "agoricSyntheticChain": {
-        "fromTag": "use-upgrade-13"
+        "fromTag": "use-upgrade-14"
     },
     "scripts": {
         "build": "yarn run build:sdk && yarn run build:submission && yarn run build:synthetic-chain",
@@ -12,7 +12,7 @@
         "doctor": "yarn synthetic-chain doctor"
     },
     "dependencies": {
-        "@agoric/synthetic-chain": "^0.0.7"
+        "@agoric/synthetic-chain": "^0.0.10"
     },
     "packageManager": "yarn@4.1.0",
     "license": "Apache-2.0"
