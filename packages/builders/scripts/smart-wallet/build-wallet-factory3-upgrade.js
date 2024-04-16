@@ -1,5 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+import { getManifestForUpgradeWallet } from '@agoric/smart-wallet/src/proposals/upgrade-wallet-factory3-proposal.js';
+
 /**
  * @file
  *   `agoric run scripts/smart-wallet/build-wallet-factory3-upgrade.js`
@@ -13,11 +15,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     sourceSpec:
       '@agoric/smart-wallet/src/proposals/upgrade-wallet-factory3-proposal.js',
     getManifestCall: [
-      'getManifestForUpgradeWallet',
+      getManifestForUpgradeWallet.name,
       {
         walletRef: publishRef(
           install('@agoric/smart-wallet/src/walletFactory.js'),
         ),
+        zcfRef: publishRef(install('@agoric/zoe/src/contractFacet/vatRoot.js')),
       },
     ],
   });
