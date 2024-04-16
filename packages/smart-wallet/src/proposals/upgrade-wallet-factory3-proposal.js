@@ -1,6 +1,5 @@
 // @ts-check
 import { E } from '@endo/far';
-import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
 const toRecover = [
   // {
@@ -10,7 +9,8 @@ const toRecover = [
 ];
 
 /**
- * @param {BootstrapPowers & ChainBootstrapSpace} powers
+ * @param {BootstrapPowers & NonNullChainStorage} powers
+ * @typedef {PromiseSpaceOf<{ chainStorage: StorageNode }>} NonNullChainStorage
  * @param {object} options
  * @param {{ walletRef: VatSourceRef }} options.options
  */
@@ -33,7 +33,7 @@ export const upgradeWalletFactory = async (
 
   const [walletBridgeManager, walletStorageNode, ppFacets] = await Promise.all([
     walletBridgeManagerP,
-    makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH_SEGMENT),
+    E(chainStorage).makeChildNode(WALLET_STORAGE_PATH_SEGMENT),
     provisionPoolStartResult,
   ]);
   const walletReviver = await E(ppFacets.creatorFacet).getWalletReviver();
@@ -69,19 +69,26 @@ export const upgradeWalletFactory = async (
     }),
   );
 };
+harden(upgradeWalletFactory);
+
+// main and permit are for use with rollup-plugin-core-eval.js
+export const main = upgradeWalletFactory;
+
+export const permit = {
+  consume: {
+    walletFactoryStartResult: 'walletFactoryStartResult',
+    provisionPoolStartResult: 'provisionPoolStartResult',
+    chainStorage: 'chainStorage',
+    walletBridgeManager: 'walletBridgeManager',
+    bankManager: 'bank',
+    namesByAddressAdmin: 'provisioning',
+  },
+};
+export const manifest = {
+  [upgradeWalletFactory.name]: permit,
+};
 
 export const getManifestForUpgradeWallet = (_powers, { walletRef }) => ({
-  manifest: {
-    [upgradeWalletFactory.name]: {
-      consume: {
-        walletFactoryStartResult: 'walletFactoryStartResult',
-        provisionPoolStartResult: 'provisionPoolStartResult',
-        chainStorage: 'chainStorage',
-        walletBridgeManager: 'walletBridgeManager',
-        bankManager: 'bank',
-        namesByAddressAdmin: 'provisioning',
-      },
-    },
-  },
+  manifest,
   options: { walletRef },
 });
