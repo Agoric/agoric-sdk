@@ -92,7 +92,7 @@ The release contains at least the following fixes:
 
 The full set of changes in this release can be found at https://github.com/Agoric/agoric-sdk/pull/$RELEASE_PR.
 
-This code has satisfied all pre-release/testnet validation checks, and is now recommended for chains to upgrade from the previous `$PREV_RELEASE` release. As a state-machine-breaking upgrade, once approved, all chain validators will need to upgrade from `$PREV_RELEASE` to this new version (after the chain halts due to reaching the height required in a governance proposal).
+This code has satisfied all pre-release/testnet validation checks, and is now recommended for nodes to upgrade from the previous `$PREV_RELEASE` release. As a chain-halting upgrade, once approved, all chain validators will need to upgrade from `$PREV_RELEASE` to this new version (after the chain halts due to reaching the height required in a governance proposal).
 
 Since the `agoric-upgrade-11` release, state-sync snapshots include more data than before. Nodes which have inadvertently pruned this data (e.g. those created from a state-sync before the `agoric-upgrade-11` release) will not be able to produce such snapshots, and will need to be restored from state-sync. We are aware of continued performance issues related to state-sync. In particular, we've observed that on some deployments, the current implementation can require 100 GB of temporary free disk space and 16GB of memory.
 
