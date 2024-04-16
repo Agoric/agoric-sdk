@@ -129,6 +129,7 @@ Presuming that your node is running `$PREV_RELEASE`, once the upgrade height for
 cd agoric-sdk
 git fetch --all
 git checkout $TAG
+git clean -xdf
 yarn install
 yarn build
 (cd packages/cosmic-swingset && make)
