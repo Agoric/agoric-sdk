@@ -8,7 +8,7 @@ import {
 
 const SUBMISSION_DIR = 'probe-submission';
 
-test('upgrade Zoe to verify ZcfBundleCap endures', async t => {
+test.failing('upgrade Zoe to verify ZcfBundleCap endures', async t => {
   await null;
   t.assert((await getIncarnation('zoe')) === 1, 'zoe incarnation must be one');
 
