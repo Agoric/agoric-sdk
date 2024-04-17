@@ -16,6 +16,7 @@ jobs:
         if: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
         with:
           script: |
+            console.log("hero)
             const external_id = context.payload.workflow_run.html_url;
             const head_sha = context.payload.workflow_run.head_sha;
             const runs = await github.paginate(github.rest.checks.listForRef, {
