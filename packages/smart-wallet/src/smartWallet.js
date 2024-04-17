@@ -1051,6 +1051,15 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @throws if the seat can't be found or E(seatRef).tryExit() fails.
          */
         async tryExitOffer(offerId) {
+          const { facets } = this;
+          await facets.payments
+            .tryReclaimingWithdrawnPayments(offerId)
+            .catch(e => {
+              facets.helper.logWalletError(
+                'recovery failed reclaiming payments',
+                e,
+              );
+            });
           const seatRef = this.state.liveOfferSeats.get(offerId);
           await E(seatRef).tryExit();
         },

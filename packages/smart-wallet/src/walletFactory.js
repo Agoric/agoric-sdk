@@ -149,6 +149,8 @@ export const makeAssetRegistry = assetPublisher => {
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
   const upgrading = baggage.has(WALLETS_BY_ADDRESS);
+  console.log('@@walletFactory prepare', [...baggage.keys()]);
+
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -253,6 +255,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
 
+  console.log('@@@', { UPGRADE_TO_INCARNATION_TWO });
   // One time repair for incarnation 2. We're adding WatchedPromises to allow
   // wallets to durably monitor offer outcomes, but wallets that already exist
   // need to be backfilled. This code needs to run once at the beginning of
@@ -331,6 +334,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       void E(walletBridgeManager).initHandler(handleWalletAction);
     }
   }
+
+  console.log('@@@', { creatorFacet });
 
   return {
     creatorFacet,
