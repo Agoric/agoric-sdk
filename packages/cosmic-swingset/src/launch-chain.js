@@ -10,6 +10,8 @@ import anylogger from 'anylogger';
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
+/** @import {RunPolicy} from '@agoric/swingset-vat' */
+
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -242,7 +244,7 @@ export async function buildSwingset(
 }
 
 /**
- * @typedef {import('@agoric/swingset-vat').RunPolicy & {
+ * @typedef {RunPolicy & {
  *   shouldRun(): boolean;
  *   remainingBeans(): bigint | undefined;
  *   totalBeans(): bigint;

@@ -1,5 +1,7 @@
 // @jessie-check
 
+/** @import {TimerService} from '@agoric/time' */
+
 /**
  * @typedef {object} ManualTimerAdmin
  * @property {(msg?: string) => void | Promise<void>} tick Advance the timer by one tick.
@@ -10,5 +12,5 @@
  */
 
 /**
- * @typedef {import('@agoric/time').TimerService & ManualTimerAdmin} ManualTimer
+ * @typedef {TimerService & ManualTimerAdmin} ManualTimer
  */

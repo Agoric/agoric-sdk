@@ -1,5 +1,7 @@
 export {};
 
+/** @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js' */
+
 /**
  * @typedef { 'unranked' | 'order' | 'plurality' } ChoiceMethod
  * * UNRANKED: "unranked voting" means that the voter specifies some number of
@@ -696,7 +698,7 @@ export {};
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
+ * @typedef {ContractStartFunction
  * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
  */
 

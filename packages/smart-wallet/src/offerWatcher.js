@@ -12,18 +12,12 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
 
-/**
- * @typedef {import('./offers.js').OfferSpec & {
- *   error?: string,
- *   numWantsSatisfied?: number
- *   result?: unknown | typeof import('./offers.js').UNPUBLISHED_RESULT,
- *   payouts?: AmountKeywordRecord,
- * }} OfferStatus
- */
+/** @import {OfferSpec} from "./offers.js" */
+/** @import {PromiseWatcher} from '@agoric/swingset-liveslots' */
 
 /**
  * @template {any} T
- * @typedef {import('@agoric/swingset-liveslots').PromiseWatcher<T, [UserSeat]>} OfferPromiseWatcher<T, [UserSeat]
+ * @typedef {PromiseWatcher<T, [UserSeat]>} OfferPromiseWatcher<T, [UserSeat]
  */
 
 /**
@@ -117,7 +111,7 @@ export const prepareOfferWatcher = baggage => {
      *
      * @param {*} walletHelper
      * @param {*} deposit
-     * @param {import('./offers.js').OfferSpec} offerSpec
+     * @param {OfferSpec} offerSpec
      * @param {string} address
      * @param {Amount<'set'>} invitationAmount
      * @param {UserSeat} seatRef
