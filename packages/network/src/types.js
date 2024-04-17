@@ -1,14 +1,6 @@
 // @ts-check
 
-/**
- * @template T
- * @typedef {import('@agoric/vow').PromiseVow<T>} PromiseVow
- */
-
-/**
- * @template T
- * @typedef {import('@agoric/vow').Remote<T>} Remote
- */
+/** @import {PromiseVow, Remote} from '@agoric/vow' */
 
 /**
  * @template {import('@endo/exo').Methods} M

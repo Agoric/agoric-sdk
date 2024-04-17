@@ -81,10 +81,7 @@ export const makeVirtualPurseKitIKit = (
   return { VirtualPurseIKit, VirtualPurseControllerI };
 };
 
-/**
- * @template T
- * @typedef {import('@endo/far').EOnly<T>} EOnly
- */
+/** @import {EOnly} from '@endo/far'; */
 
 /** @typedef {(pmt: Payment, optAmountShape?: Pattern) => Promise<Amount>} Retain */
 /** @typedef {(amt: Amount) => Promise<Payment>} Redeem */
