@@ -131,3 +131,4 @@ that rolls up all the Zoe contract vat sources. This bundle file is needed by al
 * Unless the issue spans multiple packages, each branch should only modify
   a single package.
 * Releases should be made as according to [MAINTAINERS.md](MAINTAINERS.md).
+
