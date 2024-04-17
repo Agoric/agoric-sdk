@@ -896,6 +896,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
 				/* upgrade-15 evals */
+				// upgrade ZCF and smart-wallet
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/smart-wallet/build-wallet-factory3-upgrade.js"),
 				// upgrade the provisioning vat
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
 				// Enable low-level Orchestration.

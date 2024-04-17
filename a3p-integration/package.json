@@ -12,7 +12,7 @@
         "doctor": "yarn synthetic-chain doctor"
     },
     "dependencies": {
-        "@agoric/synthetic-chain": "^0.0.9"
+        "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.0.9#~/.yarn/patches/@agoric-synthetic-chain-npm-0.0.9-b987e51a8c.patch"
     },
     "packageManager": "yarn@4.1.1",
     "license": "Apache-2.0"
