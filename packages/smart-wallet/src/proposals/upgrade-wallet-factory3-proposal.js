@@ -8,8 +8,6 @@ const toRecover = [
   // },
 ];
 
-const exitOffers = async () => {};
-
 /**
  * @param {BootstrapPowers & NonNullChainStorage} powers
  * @typedef {PromiseSpaceOf<{ chainStorage: StorageNode }>} NonNullChainStorage
@@ -19,7 +17,6 @@ const exitOffers = async () => {};
 export const upgradeWalletFactory = async (
   {
     consume: {
-      vatStore,
       walletFactoryStartResult,
       provisionPoolStartResult,
       chainStorage,
@@ -33,18 +30,9 @@ export const upgradeWalletFactory = async (
   console.log('@@@ upgradeWalletFactory');
   const WALLET_STORAGE_PATH_SEGMENT = 'wallet';
 
-  const { walletRef, zcfRef } = options.options;
+  const { walletRef } = options.options;
 
-  const upgradeZcf = async () => {
-    const { root: zoeRoot } = await E(vatStore).get('zoe');
-
-    const zoeConfigFacet = await E(zoeRoot).getZoeConfigFacet();
-    await E(zoeConfigFacet).updateZcfBundleId(zcfRef.bundleID);
-    console.log(`ZCF BUNDLE ID: `, zcfRef.bundleID);
-  };
-  await upgradeZcf();
-
-  const upgradeWalletFactory = async () => {
+  const doUpgradeWalletFactory = async () => {
     const [walletBridgeManager, walletStorageNode, ppFacets] =
       await Promise.all([
         walletBridgeManagerP,
@@ -67,7 +55,7 @@ export const upgradeWalletFactory = async (
 
     console.log(`Successfully upgraded WalletFactory`);
   };
-  await upgradeWalletFactory();
+  await doUpgradeWalletFactory();
 
   const { creatorFacet } = await walletFactoryStartResult;
 
@@ -97,7 +85,6 @@ export const main = upgradeWalletFactory;
 export const permit = {
   consume: {
     vatAdminSvc: true,
-    vatStore: true,
     walletFactoryStartResult: 'walletFactoryStartResult',
     provisionPoolStartResult: 'provisionPoolStartResult',
     chainStorage: 'chainStorage',

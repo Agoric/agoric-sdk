@@ -20,7 +20,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
         walletRef: publishRef(
           install('@agoric/smart-wallet/src/walletFactory.js'),
         ),
-        zcfRef: publishRef(install('@agoric/zoe/src/contractFacet/vatRoot.js')),
       },
     ],
   });
