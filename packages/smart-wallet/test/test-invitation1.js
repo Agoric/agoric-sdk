@@ -155,7 +155,7 @@ test.serial('handle failure to create invitation', async t => {
   const invitationIssuer = powers.issuer.consume.Invitation;
   const address = 'agoric1234';
 
-  // @ts-expect-error It's a promise.
+  // @ts-expect-error Test setup ensures that chainStorage resolution is not undefined. (see #8247)
   const walletsStorage = E(chainStorage).makeChildNode('wallet');
   const walletStorageNode = await E(walletsStorage).makeChildNode(address);
 

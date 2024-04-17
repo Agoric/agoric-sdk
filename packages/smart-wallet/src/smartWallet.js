@@ -970,21 +970,20 @@ export const prepareSmartWallet = (baggage, shared) => {
             const invitationAmount =
               await E(invitationIssuer).getAmountOf(invitation);
 
-            const paymentKeywordRecord =
+            // 2. Begin executing offer
+            // No explicit signal to user that we reached here but if anything above
+            // failed they'd get an 'error' status update.
+
+            const withdrawnPayments =
               proposal?.give &&
               (await deeplyFulfilledObject(
                 facets.payments.withdrawGive(proposal.give, offerSpec.id),
               ));
 
-            // 2. Begin executing offer
-            // No explicit signal to user that we reached here but if anything above
-            // failed they'd get an 'error' status update.
-
-            /** @type {UserSeat} */
             seatRef = await E(zoe).offer(
               invitation,
               proposal,
-              paymentKeywordRecord,
+              withdrawnPayments,
               offerSpec.offerArgs,
             );
             facets.helper.logWalletInfo(offerSpec.id, 'seated');
