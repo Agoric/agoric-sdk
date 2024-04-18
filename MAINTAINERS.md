@@ -28,24 +28,31 @@ The Release Owner and other appropriate stakeholders must agree on:
 
 - _**base branch**_: This should be `release-mainnet1B`, but might need to vary for a patch release.
 
-- _**release label**_: This is used for the cosmos-sdk upgrade name and git tags, and is currently
-  expected to follow a sequential pattern (example: `agoric-upgrade-8`).
-  It is preceded by release candidates numbered from zero (example: `agoric-upgrade-8-rc0`), and the
-  actual release shares its commit (but not its label) with the final release candidate.
+- _**release label**_: This is used for the git tags, and is currently expected to follow a
+  sequential pattern (example: `agoric-upgrade-8`).
+  The mainnet release label is preceded by release candidates numbered from zero
+  (example: `agoric-upgrade-8-rc0`), and shares its commit with the final release candidate.
 
 - _**release short label**_: This is used for release artifacts, and is currently expected to be a
-  simplified substring of _**release label**_ including the number (example: `upgrade-8`).
+  simplified substring of _**release label**_ including the number (examples: `upgrade-8`,
+  `upgrade-8-rc0`).
+
+- _**upgrade name**_: This is used to coordinate with the cosmos-sdk UpgradeKeeper.
+  The name used to upgrade mainnet is currently expected to match the _**release label**_, but
+  other networks should use distinct names that indicate their testing-oriented purpose
+  (examples: `agorictest-upgrade-8`, `agorictest-upgrade-8-2`).
 
 ### Create the "dev release" branch
 
 - [ ] When a new release is planned, create a new branch from branch `release-mainnet1B` with a name like `dev-$releaseShortLabel` (example: `dev-upgrade-8`). This can be done from the command line or the [GitHub Branches UI](https://github.com/Agoric/agoric-sdk/branches).
 - [ ] Initialize the new branch for the planned upgrade:
-  - [ ] In **golang/cosmos/app/app.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**release label**_](#assign-release-parameters).
-  - [ ] Ensure that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release.
+  - [ ] In **golang/cosmos/app/app.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
+  - [ ] Ensure that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
+    (example: `use-upgrade-7`).
   - [ ] Ensure that **a3p-integration/proposals** contains a single subdirectory with the following characteristics
-    - named like "$prefix:[_**release short label**_](#assign-release-parameters)" per [agoric-3-proposals: Naming](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals#naming) (conventionally using "a" for the unreleased $prefix, e.g. `a:upgrade-8`)
-    - containing a **package.json** having an object-valued `agoricProposal` property with `sdkImageTag` set to "unreleased" and `planName` set to the [_**release label**_](#assign-release-parameters)
-    - containing other files appropriate for the upgrade per [agoric-3-proposals: Files](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals#files)
+    - named like "$prefix:[_**release short label**_](#assign-release-parameters)" per [agoric-3-proposals: Naming](https://github.com/Agoric/agoric-3-proposals#naming) (conventionally using "a" for the unreleased $prefix, e.g. `a:upgrade-8`)
+    - containing a **package.json** having an object-valued `agoricProposal` property with `sdkImageTag` set to "unreleased" and `planName` set to the [_**upgrade name**_](#assign-release-parameters)
+    - containing other files appropriate for the upgrade per [agoric-3-proposals: Files](https://github.com/Agoric/agoric-3-proposals#files)
 
     For example, see the [upgrade-14 PR](https://github.com/Agoric/agoric-sdk/pull/8755).
 
