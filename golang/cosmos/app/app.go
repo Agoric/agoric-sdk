@@ -857,7 +857,8 @@ func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// empty for now
+				// Upgrade ZCF only
+				vm.CoreProposalStepForModules("@agoric/vats/scripts/upgrade-zcf.js"),
 			}
 		}
 
