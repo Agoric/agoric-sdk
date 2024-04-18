@@ -4,5 +4,3 @@
 # The effects of this step are not persisted in further proposal layers.
 
 yarn ava
-
-./create-kread-item-test.sh
