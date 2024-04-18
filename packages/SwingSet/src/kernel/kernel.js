@@ -2067,6 +2067,16 @@ export default function buildKernel(
     hooks[hookName] = hook;
   }
 
+  function terminateVatExternally(vatID, reasonCD) {
+    assert(started, 'must do kernel.start() before terminateVatExternally()');
+    insistCapData(reasonCD);
+    assert(reasonCD.slots.length === 0, 'no slots allowed in reason');
+    // this fires a promise when worker is dead, mostly for tests, so don't
+    // give it to external callers
+    void terminateVat(vatID, true, reasonCD);
+    console.log(`scheduled vatID ${vatID} for termination`);
+  }
+
   const kernel = harden({
     // these are meant for the controller
     installBundle,
@@ -2142,6 +2152,7 @@ export default function buildKernel(
     kpStatus,
     kpResolution,
     addDeviceHook,
+    terminateVatExternally,
   });
 
   return kernel;

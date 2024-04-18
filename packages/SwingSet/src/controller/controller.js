@@ -21,6 +21,7 @@ import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQui
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
+import { insistCapData } from '../lib/capdata.js';
 import {
   buildKernelBundle,
   swingsetIsInitialized,
@@ -32,6 +33,10 @@ import {
 } from './bundle-handler.js';
 import { makeStartXSnap } from './startXSnap.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
+
+/**
+ * @typedef { import('../types-internal.js').VatID } VatID
+ */
 
 const endoZipBase64Sha512Shape = harden({
   moduleFormat: 'endoZipBase64',
@@ -440,6 +445,48 @@ export async function makeSwingsetController(
       );
       // no emitCrankHashes here because queueToVatRoot did that
       return result;
+    },
+
+    /**
+     * terminate a vat by ID
+     *
+     * This allows the host app to terminate any vat. The effect is
+     * equivalent to the holder of the vat's `adminNode` calling
+     * `E(adminNode).terminateWithFailure(reason)`, or the vat itself
+     * calling `vatPowers.exitVatWithFailure(reason)`. It accepts a
+     * reason capdata structure (use 'kser()' to build one), which
+     * will be included in rejection data for the promise available to
+     * `E(adminNode).done()`, just like the internal termination APIs.
+     * Note that no slots/krefs are allowed in 'reason' when
+     * terminating the vat externally.
+     *
+     * This is a superpower available only from the host app, not from
+     * within vats, since `vatID` is merely a string and can be forged
+     * trivially. The host app is responsible for supplying the right
+     * vatID to kill, by looking at the database or logs (note that
+     * vats do not know their own vatID, and `controller.vatNameToID`
+     * only works for static vats, not dynamic).
+     *
+     * This will cause state changes in the swing-store (specifically
+     * marking the vat as terminated, and rejection all its
+     * outstanding promises), which must be committed before they will
+     * be durable. Either call `hostStorage.commit()` immediately
+     * after calling this, or call `controller.run()` and *then*
+     * `hostStorage.commit()` as you would normally do in response to
+     * other IO or timer activity.
+     *
+     * The first `controller.run()` after this call will delete all
+     * the old vat's state at once, unless you use a `runPolicy` to
+     * rate-limit cleanups.
+     *
+     * @param {VatID} vatID
+     * @param {SwingSetCapData} reasonCD
+     */
+
+    terminateVat(vatID, reasonCD) {
+      insistCapData(reasonCD);
+      assert(reasonCD.slots.length === 0, 'no slots allowed in reason');
+      kernel.terminateVatExternally(vatID, reasonCD);
     },
   });
 
