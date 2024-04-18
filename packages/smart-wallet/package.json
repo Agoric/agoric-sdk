@@ -18,6 +18,7 @@
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/swingset-vat": "^0.32.2",
+    "@agoric/zone": "^0.2.2",
     "@endo/bundle-source": "^3.2.2",
     "@endo/captp": "^4.1.1",
     "@endo/init": "^1.1.1",
