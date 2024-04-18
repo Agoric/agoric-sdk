@@ -3,6 +3,7 @@
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
 /** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
+/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
 
 /**
  * Like @endo/nat but coerces
@@ -26,7 +27,7 @@ export const Natural = str => {
  */
 export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-/** @type {Partial<import('@agoric/vats/tools/board-utils.js').VBankAssetDetail>} */
+/** @type {Partial<VBankAssetDetail>} */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
@@ -35,10 +36,8 @@ const exampleAsset = {
   proposedName: 'Agoric staking token',
 };
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-
 /**
- * @param {AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  * @returns {(a: Amount & { brand: BoardRemote }) => [string | null, number | any[]]}
  */
 export const makeAmountFormatter = assets => amt => {
@@ -90,7 +89,7 @@ export const asBoardRemote = x => {
  * Summarize the balances array as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['purses']} purses
- * @param {AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 export const purseBalanceTuples = (purses, assets) => {
   const fmt = makeAmountFormatter(assets);

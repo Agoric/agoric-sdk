@@ -33,8 +33,8 @@ const bidInvitationShape = harden({
   callPipe: [['makeBidInvitation', M.any()]],
 });
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').TryExitOfferAction } TryExitOfferAction */
+/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
+/** @import {TryExitOfferAction} from '@agoric/smart-wallet/src/smartWallet.js'; */
 /** @import {OfferSpec as BidSpec} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
 /** @import {ScheduleNotification} from '@agoric/inter-protocol/src/auction/scheduler.js' */
 /** @import {BookDataNotification} from '@agoric/inter-protocol/src/auction/auctionBook.js' */
@@ -42,7 +42,7 @@ const bidInvitationShape = harden({
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
  *
- * @param {AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 const makeFormatters = assets => {
   const r4 = x => Math.round(x * 10_000) / 10_000;
@@ -138,7 +138,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: BidSpec}} bid
- * @param {import('../lib/format.js').AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 export const fmtBid = (bid, assets) => {
   const fmt = makeFormatters(assets);

@@ -15,7 +15,7 @@
 export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
 
 /**
- * @typedef {import('./offers.js').OfferSpec & {
+ * @typedef {OfferSpec & {
  * error?: string,
  * numWantsSatisfied?: number
  * result?: unknown | typeof UNPUBLISHED_RESULT,

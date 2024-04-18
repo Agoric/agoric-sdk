@@ -22,7 +22,10 @@ import {
   setUpInstallations,
 } from './tools.js';
 
-/** @import {TimerService} from '@agoric/time' */
+/**
+ * @import {TimerService} from '@agoric/time';
+ * @import {AuctionParams} from '../../src/auction/params.js';
+ */
 
 test('schedule start to finish', async t => {
   const { zcf, zoe } = await setupZCFTest();
@@ -50,7 +53,7 @@ test('schedule start to finish', async t => {
     StartFrequency: 10n,
     PriceLockPeriod: 5n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -273,7 +276,7 @@ test('lowest >= starting', async t => {
     LowestRate: 110n,
     StartingRate: 105n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -324,7 +327,7 @@ test('zero time for auction', async t => {
     AuctionStartDelay: 1n,
     PriceLockPeriod: 1n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -370,7 +373,7 @@ test('discountStep 0', async t => {
     ...defaultParams,
     DiscountStep: 0n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -417,7 +420,7 @@ test('discountStep larger than starting rate', async t => {
     StartingRate: 10100n,
     DiscountStep: 10500n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -463,7 +466,7 @@ test('start Freq 0', async t => {
     ...defaultParams,
     StartFrequency: 0n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -510,7 +513,7 @@ test('delay > freq', async t => {
     AuctionStartDelay: 40n,
     StartFrequency: 20n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -558,7 +561,7 @@ test('lockPeriod > freq', async t => {
     StartFrequency: 3600n,
     AuctionStartDelay: 500n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -613,7 +616,7 @@ test('duration = freq', async t => {
     LowestRate: 40n,
     DiscountStep: 10n,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -692,7 +695,7 @@ test('change Schedule', async t => {
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
 
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   defaultParams = {
     ...defaultParams,
     PriceLockPeriod: lockPeriodT,
@@ -704,7 +707,7 @@ test('change Schedule', async t => {
     DiscountStep: 10n,
   };
 
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -885,7 +888,7 @@ test('change Schedule late', async t => {
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
 
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   defaultParams = {
     ...defaultParams,
     PriceLockPeriod: lockPeriodT,
@@ -897,7 +900,7 @@ test('change Schedule late', async t => {
     DiscountStep: 10n,
   };
 
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),
@@ -1116,7 +1119,7 @@ test('schedule anomalies', async t => {
     AuctionStartDelay: delay,
     PriceLockPeriod: lock,
   };
-  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  /** @type {AuctionParams} */
   // @ts-expect-error ignore missing values for test
   const paramValues = objectMap(
     makeAuctioneerParams(defaultParams),

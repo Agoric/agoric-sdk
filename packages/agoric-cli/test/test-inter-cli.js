@@ -14,7 +14,7 @@ const { entries } = Object;
 
 /**
  * @import { Command } from 'commander';
- * @import { BoardRemote } from '@agoric/vats/tools/board-utils.js';
+ * @import { BoardRemote, VBankAssetDetail } from '@agoric/vats/tools/board-utils.js';
  */
 
 /**
@@ -39,7 +39,7 @@ const agoricNames = harden({
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
   },
 
-  /** @type {Record<string,import('../src/lib/format.js').AssetDescriptor>} */
+  /** @type {Record<string, VBankAssetDetail>} */
   vbankAsset: {
     ubld: {
       denom: 'ubld',

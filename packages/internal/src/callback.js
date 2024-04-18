@@ -4,6 +4,7 @@ import { isObject, isPassableSymbol } from '@endo/marshal';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
 /** @import { ERef } from '@endo/far' */
+/** @import { Callback, SyncCallback } from './types.js' */
 
 const { Fail, quote: q } = assert;
 
@@ -18,16 +19,6 @@ const ownKeys =
 /**
  * @template {import('@endo/exo').Methods} T
  * @typedef {(...args: Parameters<ReturnType<prepareAttenuator>>) => import('@endo/exo').Farable<T>} MakeAttenuator
- */
-
-/**
- * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types.js').Callback<I>} Callback
- */
-
-/**
- * @template {(...args: unknown[]) => any} I
- * @typedef {import('./types.js').SyncCallback<I>} SyncCallback
  */
 
 /**

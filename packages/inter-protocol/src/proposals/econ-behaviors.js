@@ -13,6 +13,8 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
+/** @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js' */
+
 const trace = makeTracer('RunEconBehaviors', true);
 
 export const SECONDS_PER_MINUTE = 60n;
@@ -67,12 +69,12 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ * @typedef {StartedInstanceKit<
  *   import('../econCommitteeCharter.js')['start']
  * >} EconCharterStartResult
  */
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ * @typedef {StartedInstanceKit<
  *   import('@agoric/governance/src/committee.js')['start']
  * >} CommitteeStartResult
  */
