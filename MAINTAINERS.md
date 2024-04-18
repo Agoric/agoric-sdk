@@ -322,21 +322,13 @@ to pass.
 
 ### Cleanup
 
-- [ ] Update the [_**base branch**_](#assign-release-parameters) **a3p-integration/proposals/*/package.json**
-  `agoricProposal` `sdkImageTag` string contents to match the number from the
-  ["Generate new SDK version" step](#user-content-generate-sdk-version).
-
-- [ ] Review recent changes in the [_**base branch**_](#assign-release-parameters) for anything that
-  should be merged into its ancestors, all the way up to `master`. This
-  should include the changes to CHANGELOG.md.
-
 - [ ] Remove the repository clone you created for this release, so you don't accidentally reuse it.
 
-- [ ] Open an [agoric-3-proposals](https://github.com/Agoric/agoric-3-proposals) PR to represent the mainnet proposal
-  corresponding with the upgrade. Include in the proposal files tests copied from this release.
-
-- [ ] Open an [agoric-3-proposals](https://github.com/Agoric/agoric-3-proposals) PR to represent the mainnet proposal
-  corresponding with the upgrade. Include tests copied from this repository in the proposal files.
+- [ ] Open an [agoric-3-proposals](https://github.com/Agoric/agoric-3-proposals) PR to represent
+  the mainnet proposal corresponding with the upgrade.
+  Include in the proposal files tests copied from this release's **a3p-integration/proposals**,
+  with the proposal directory's **package.json** `agoricProposal` updated to include `releaseNotes`
+  and `upgradeInfo` matching the mainnet proposal.
 
 ## More subtlety
 
