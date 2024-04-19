@@ -3,7 +3,7 @@ import test from 'ava';
 import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
-  walletFactory: { incarnation: 2 },
+  walletFactory: { incarnation: 3 },
   zoe: { incarnation: 1 },
 };
 
