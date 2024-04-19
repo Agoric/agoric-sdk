@@ -967,6 +967,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             const invitation = invitationFromSpec(offerSpec.invitationSpec);
 
+            // prettier-ignore
             const invitationAmount =
               await E(invitationIssuer).getAmountOf(invitation);
 
