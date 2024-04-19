@@ -898,6 +898,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				/* upgrade-15 evals */
 				// Upgrade ZCF only
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgrade-zcf.js"),
+				// Upgrade walletFactory
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js"),
 				// upgrade the provisioning vat
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
 				// Enable low-level Orchestration.
