@@ -902,7 +902,7 @@ export const prepareSmartWallet = (baggage, shared) => {
          * Find the live payments for the offer and deposit them back in the appropriate purses.
          *
          * @param {OfferId} offerId
-         * @returns {Promise<void>}
+         * @returns {Promise<Amount[]>}
          */
         async tryReclaimingWithdrawnPayments(offerId) {
           const { facets } = this;
@@ -913,8 +913,9 @@ export const prepareSmartWallet = (baggage, shared) => {
           if (liveOfferPayments.has(offerId)) {
             const brandPaymentRecord = liveOfferPayments.get(offerId);
             if (!brandPaymentRecord) {
-              return;
+              return [];
             }
+            const out = [];
             // Use allSettled to ensure we attempt all the deposits, regardless of
             // individual rejections.
             await Promise.allSettled(
@@ -924,10 +925,16 @@ export const prepareSmartWallet = (baggage, shared) => {
                 const purseP = facets.helper.purseForBrand(b);
 
                 // Now send it back to the purse.
-                return E(purseP).deposit(p);
+                return E(purseP)
+                  .deposit(p)
+                  .then(amt => {
+                    out.push(amt);
+                  });
               }),
             );
+            return harden(out);
           }
+          return [];
         },
       },
 
@@ -967,23 +974,24 @@ export const prepareSmartWallet = (baggage, shared) => {
 
             const invitation = invitationFromSpec(offerSpec.invitationSpec);
 
-            const [paymentKeywordRecord, invitationAmount] = await Promise.all([
-              proposal?.give &&
-                deeplyFulfilledObject(
-                  facets.payments.withdrawGive(proposal.give, offerSpec.id),
-                ),
-              E(invitationIssuer).getAmountOf(invitation),
-            ]);
+            // prettier-ignore
+            const invitationAmount =
+              await E(invitationIssuer).getAmountOf(invitation);
 
             // 2. Begin executing offer
             // No explicit signal to user that we reached here but if anything above
             // failed they'd get an 'error' status update.
 
-            /** @type {UserSeat} */
+            const withdrawnPayments =
+              proposal?.give &&
+              (await deeplyFulfilledObject(
+                facets.payments.withdrawGive(proposal.give, offerSpec.id),
+              ));
+
             seatRef = await E(zoe).offer(
               invitation,
               proposal,
-              paymentKeywordRecord,
+              withdrawnPayments,
               offerSpec.offerArgs,
             );
             facets.helper.logWalletInfo(offerSpec.id, 'seated');
@@ -1047,6 +1055,19 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @throws if the seat can't be found or E(seatRef).tryExit() fails.
          */
         async tryExitOffer(offerId) {
+          const { facets } = this;
+          const amts = await facets.payments
+            .tryReclaimingWithdrawnPayments(offerId)
+            .catch(e => {
+              facets.helper.logWalletError(
+                'recovery failed reclaiming payments',
+                e,
+              );
+              return [];
+            });
+          if (amts.length > 0) {
+            facets.helper.logWalletInfo('reclaimed', amts, 'from', offerId);
+          }
           const seatRef = this.state.liveOfferSeats.get(offerId);
           await E(seatRef).tryExit();
         },

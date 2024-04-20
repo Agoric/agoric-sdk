@@ -1,15 +1,15 @@
 {
   "agoricProposal": {
-    "releaseNotes": "https://github.com/Agoric/agoric-sdk/releases/tag/agoric-upgrade-14",
+    "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "agoric-upgrade-14",
+    "planName": "agoric-upgrade-15",
     "upgradeInfo": {},
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.0.7",
+    "@agoric/synthetic-chain": "^0.0.10",
     "ava": "^5.3.1"
   },
   "ava": {

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.26.3-u15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.26.3-u14.0...@agoric/zoe@0.26.3-u15.0) (2024-04-20)
+
+
+### Bug Fixes
+
+* fix ZCF to not await in first crank ([8e289fd](https://github.com/Agoric/agoric-sdk/commit/8e289fd679d89aec2fd2dd41f72f14cf41ae55a6)), closes [#8911](https://github.com/Agoric/agoric-sdk/issues/8911)
+
+
+
 ### [0.26.3-u14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/zoe@0.26.3-u13.0...@agoric/zoe@0.26.3-u14.0) (2024-02-27)
 
 

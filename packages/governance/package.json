@@ -1,6 +1,6 @@
 {
   "name": "@agoric/governance",
-  "version": "0.10.4-u14.1",
+  "version": "0.10.4-u15.0",
   "description": "Core governance support",
   "type": "module",
   "main": "src/index.js",
@@ -39,8 +39,8 @@
     "@agoric/swingset-vat": "^0.32.3-u14.0",
     "@agoric/time": "^0.3.3-u14.0",
     "@agoric/vat-data": "^0.5.3-u14.0",
-    "@agoric/vats": "^0.15.2-u14.1",
-    "@agoric/zoe": "^0.26.3-u14.0",
+    "@agoric/vats": "^0.15.2-u15.0",
+    "@agoric/zoe": "^0.26.3-u15.0",
     "@endo/captp": "3.1.1",
     "@endo/eventual-send": "0.17.2",
     "@endo/far": "0.2.18",
@@ -49,7 +49,7 @@
     "@endo/promise-kit": "0.2.56"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.4-u14.1",
+    "@agoric/deploy-script-support": "^0.10.4-u15.0",
     "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/init": "0.5.56",
     "ava": "^5.2.0",
