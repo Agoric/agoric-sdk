@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.22.3-u14.0",
+  "version": "0.22.3-u15.0",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "type": "module",
@@ -27,7 +27,7 @@
     "@agoric/swingset-vat": "^0.32.3-u14.0",
     "@agoric/telemetry": "^0.6.3-u14.0",
     "@agoric/vat-data": "^0.5.3-u14.0",
-    "@agoric/zoe": "^0.26.3-u14.0",
+    "@agoric/zoe": "^0.26.3-u15.0",
     "@endo/bundle-source": "2.5.2-upstream-rollup",
     "@endo/eventual-send": "0.17.2",
     "@endo/init": "0.5.56",

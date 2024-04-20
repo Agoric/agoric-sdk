@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u14.1...@agoric/cosmos@0.35.0-u15.0) (2024-04-20)
+
+
+### Features
+
+* upgrade zcf: install bundle and call updateZcfBundleId() ([74662d7](https://github.com/Agoric/agoric-sdk/commit/74662d73c0c213cbb537d7ff20e24fc31f35656d)), closes [#9250](https://github.com/Agoric/agoric-sdk/issues/9250)
+* **cosmos:** Next upgrade is `agoric-upgrade-15` ([6a84bb1](https://github.com/Agoric/agoric-sdk/commit/6a84bb15b436a9f1f1556604028d029ef2190a8d))
+
+
+### Bug Fixes
+
+* various fixes and features for u15 ([21e6f7c](https://github.com/Agoric/agoric-sdk/commit/21e6f7c7c36250d1cc270d97fada5590e8ae3a7f))
+
+
+
 ## [0.35.0-u14.1](https://github.com/gibson042/agoric-sdk/compare/@agoric/cosmos@0.35.0-u14.0...@agoric/cosmos@0.35.0-u14.1) (2024-03-12)
 
 

@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.16.2-u15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u14.1...@agoric/inter-protocol@0.16.2-u15.0) (2024-04-20)
+
+**Note:** Version bump only for package @agoric/inter-protocol
+
+
+
+
+
 ### [0.16.2-u14.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.2-u14.0...@agoric/inter-protocol@0.16.2-u14.1) (2024-03-12)
 
 **Note:** Version bump only for package @agoric/inter-protocol

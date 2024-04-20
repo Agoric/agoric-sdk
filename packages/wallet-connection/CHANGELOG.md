@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.18-u15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet-connection@0.1.18-u14.1...@agoric/wallet-connection@0.1.18-u15.0) (2024-04-20)
+
+**Note:** Version bump only for package @agoric/wallet-connection
+
+
+
+
+
 ### [0.1.18-u14.1](https://github.com/gibson042/agoric-sdk/compare/@agoric/wallet-connection@0.1.18-u14.0...@agoric/wallet-connection@0.1.18-u14.1) (2024-03-12)
 
 **Note:** Version bump only for package @agoric/wallet-connection

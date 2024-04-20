@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.5.4-u15.0](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u14.1...@agoric/smart-wallet@0.5.4-u15.0) (2024-04-20)
+
+
+### Features
+
+* **smart-wallet:** tryExitOffer reclaims withdrawn payments ([6f01f63](https://github.com/Agoric/agoric/commit/6f01f633be6ac3b43f965c704f8116405896c993))
+
+
+### Bug Fixes
+
+* in SmartWallet, if invitation is invalid, don't process offer ([29078f7](https://github.com/Agoric/agoric/commit/29078f75f59ae5a5b47b463f9a65f9a5d4d69a8e))
+
+
+
 ### [0.5.4-u14.1](https://github.com/Agoric/agoric/compare/@agoric/smart-wallet@0.5.4-u14.0...@agoric/smart-wallet@0.5.4-u14.1) (2024-03-12)
 
 **Note:** Version bump only for package @agoric/smart-wallet
