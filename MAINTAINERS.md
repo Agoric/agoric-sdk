@@ -169,7 +169,7 @@ the release process can be aborted.
   cd agoric-sdk
   ```
 
-- [ ] `git switch` to the [_**base branch**_](#assign-release-parameters).
+- [ ] `git switch` to the ["dev release" branch](#create-the-dev-release-branch).
 
 - [ ] <a id="release-branch"></a>Create a timestamped release branch for hosting the commit to be tagged as the release.
 
