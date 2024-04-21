@@ -75,7 +75,7 @@ const main = async () => {
       sendErrors.unshift(actualFlushError);
     }
 
-    return makeAggregateError(sendErrors.splice(0));
+    return AggregateError(sendErrors.splice(0));
   };
 
   process.on(

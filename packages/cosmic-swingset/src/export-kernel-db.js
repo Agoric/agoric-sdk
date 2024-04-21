@@ -239,7 +239,7 @@ export const initiateSwingStoreExport = (
         .catch(err => errors.push(err));
     }
     if (errors.length) {
-      const error = makeAggregateError(errors, 'Errors while cleaning up');
+      const error = AggregateError(errors, 'Errors while cleaning up');
       if (opErr) {
         Object.defineProperty(error, 'cause', { value: opErr });
       }

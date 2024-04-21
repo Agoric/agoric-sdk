@@ -78,7 +78,7 @@ export const makeFsStreamWriter = async filePath => {
         Promise.reject(
           written.then(
             () => err,
-            writtenError => makeAggregateError([err, writtenError]),
+            writtenError => AggregateError([err, writtenError]),
           ),
         ),
     );

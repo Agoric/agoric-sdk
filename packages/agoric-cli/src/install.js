@@ -174,9 +174,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             ({ status }) => status !== 'fulfilled',
           );
           if (failures.length) {
-            if (typeof AggregateError !== 'function') {
-              throw failures[0].reason;
-            }
             throw AggregateError(
               failures.map(({ reason }) => reason),
               'Failed to prune',

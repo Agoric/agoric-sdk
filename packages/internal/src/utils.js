@@ -68,21 +68,11 @@ export const makeMeasureSeconds = currentTimeMillisec => {
 };
 
 /**
+ * @deprecated Just use `AggregateError`
  * @param {Error[]} errors
  * @param {string} [message]
  */
-export const makeAggregateError = (errors, message) => {
-  const err = Error(message);
-  Object.defineProperties(err, {
-    name: {
-      value: 'AggregateError',
-    },
-    errors: {
-      value: errors,
-    },
-  });
-  return err;
-};
+export const makeAggregateError = AggregateError;
 
 /**
  * @template T
@@ -101,7 +91,7 @@ export const PromiseAllOrErrors = async items => {
     } else if (errors.length === 1) {
       throw errors[0];
     } else {
-      throw makeAggregateError(errors);
+      throw AggregateError(errors);
     }
   });
 };
@@ -119,7 +109,7 @@ export const aggregateTryFinally = async (trier, finalizer) =>
       finalizer(tryError)
         .then(
           () => tryError,
-          finalizeError => makeAggregateError([tryError, finalizeError]),
+          finalizeError => AggregateError([tryError, finalizeError]),
         )
         .then(error => Promise.reject(error)),
   );
