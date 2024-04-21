@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail, q } from '@agoric/assert';
-import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 
