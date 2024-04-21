@@ -42,7 +42,7 @@
     "**/@typescript-eslint/typescript-estree": "^7.2.0"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^21.7"
   },
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",

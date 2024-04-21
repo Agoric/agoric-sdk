@@ -50,7 +50,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^21.7"
   },
   "ava": {
     "files": [

@@ -7,7 +7,7 @@
   },
   "main": "index.cjs",
   "engines": {
-    "node": "^18.12 || ^20.9"
+    "node": "^18.12 || ^20.9 || ^21.7"
   },
   "packageManager": "yarn@1.22.19",
   "scripts": {
