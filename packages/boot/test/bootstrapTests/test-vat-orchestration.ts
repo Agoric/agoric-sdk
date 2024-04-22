@@ -7,7 +7,7 @@ import {
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
-import type { ChainAccount, Orchestration } from '@agoric/orchestration';
+import type { ChainAccount, OrchestrationService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
 import { makeWalletFactoryContext } from './walletFactory.ts';
@@ -100,7 +100,7 @@ test('ICA connection can be closed', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration: Orchestration =
+  const orchestration: OrchestrationService =
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).createAccount(

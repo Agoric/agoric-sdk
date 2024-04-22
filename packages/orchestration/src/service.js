@@ -2,11 +2,11 @@
 /** @file Orchestration service */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+import '@agoric/network/exported.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import { makeTxPacket, parsePacketAck } from './utils/tx.js';
-import '@agoric/network/exported.js';
 
 /**
  * @import { AttenuatedNetwork } from './types.js';
@@ -256,4 +256,4 @@ harden(prepareOrchestrationTools);
 /** @typedef {ChainAccountKit['account']} ChainAccount */
 /** @typedef {ReturnType<typeof prepareOrchestrationTools>} OrchestrationTools */
 /** @typedef {ReturnType<OrchestrationTools['makeOrchestration']>} OrchestrationKit */
-/** @typedef {OrchestrationKit['public']} Orchestration */
+/** @typedef {OrchestrationKit['public']} OrchestrationService */
