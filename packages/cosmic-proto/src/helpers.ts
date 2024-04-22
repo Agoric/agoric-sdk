@@ -2,6 +2,13 @@ import type { QueryAllBalancesRequest } from './codegen/cosmos/bank/v1beta1/quer
 import type { MsgSend } from './codegen/cosmos/bank/v1beta1/tx.js';
 import type { MsgDelegate } from './codegen/cosmos/staking/v1beta1/tx.js';
 
+/**
+ * The result of Any.toJSON(). The type in cosms-types says it returns
+ * `unknown` but it's actually this. The `value` string is a base64 encoding of
+ * the bytes array.
+ */
+export type AnyJson = { typeUrl: string; value: string };
+
 // TODO codegen this by modifying Telescope
 export type Proto3Shape = {
   '/cosmos.bank.v1beta1.MsgSend': MsgSend;
@@ -33,4 +40,12 @@ export const typedJson = <T extends keyof Proto3Shape>(
     '@type': typeStr,
     ...obj,
   } as TypedJson<T>;
+};
+
+// TODO make codegen toJSON() return these instead of unknown
+/**
+ * Proto Any with arrays encoded as base64
+ */
+export type Base64Any<T> = {
+  [Prop in keyof T]: T[Prop] extends Uint8Array ? string : T[Prop];
 };

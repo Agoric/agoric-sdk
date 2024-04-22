@@ -32,6 +32,10 @@
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     },
+    "./google/protobuf/any": {
+      "types": "./dist/codegen/google/protobuf/any.d.ts",
+      "default": "./dist/codegen/google/protobuf/any.js"
+    },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
       "default": "./dist/codegen/agoric/swingset/msgs.js"

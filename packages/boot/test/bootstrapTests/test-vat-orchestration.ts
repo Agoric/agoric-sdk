@@ -1,12 +1,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
+
+import type { AnyJson } from '@agoric/cosmic-proto';
 import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import type { ChainAccount, Orchestration } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
-import { txToBase64 } from '@agoric/orchestration';
 import { makeWalletFactoryContext } from './walletFactory.ts';
 
 const makeTestContext = async (t: ExecutionContext) =>
@@ -22,13 +25,13 @@ const test: TestFn<DefaultTestContext> = anyTest;
  * If adding a new msg, reference the mock in the `sendPacket` switch statement
  * in [supports.ts](../../tools/supports.ts).
  */
-const delegateMsgSuccess = txToBase64(
+const delegateMsgSuccess = Any.toJSON(
   MsgDelegate.toProtoMsg({
     delegatorAddress: 'cosmos1test',
     validatorAddress: 'cosmosvaloper1test',
     amount: { denom: 'uatom', amount: '10' },
   }),
-);
+) as AnyJson;
 
 test.before(async t => {
   t.context = await makeTestContext(t);
@@ -97,7 +100,8 @@ test('ICA connection can be closed', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration: Orchestration =
+    await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).createAccount(
     'connection-0',
@@ -120,13 +124,13 @@ test('ICA connection can send msg with proto3', async t => {
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
-  /** @type {ChainAccount} */
-  const account = await EV(orchestration).createAccount(
+  const account: ChainAccount = await EV(orchestration).createAccount(
     'connection-0',
     'connection-0',
   );
   t.truthy(account, 'createAccount returns an account');
 
+  // @ts-expect-error intentional
   await t.throwsAsync(EV(account).executeEncodedTx('malformed'), {
     message:
       'In "executeEncodedTx" method of (ChainAccount account): arg 0: string "malformed" - Must be a copyArray',
@@ -146,6 +150,7 @@ test('ICA connection can send msg with proto3', async t => {
 
   const txWithOptions = await EV(account).executeEncodedTx(
     [delegateMsgSuccess],
+    // @ts-expect-error XXX TxBody interface
     {
       memo: 'TESTING',
       timeoutHeight: 1_000_000_000n,
@@ -157,13 +162,14 @@ test('ICA connection can send msg with proto3', async t => {
     'txWithOptions',
   );
 
-  const delegateMsgFailure = txToBase64(
+  const delegateMsgFailure = Any.toJSON(
     MsgDelegate.toProtoMsg({
       delegatorAddress: 'cosmos1fail',
       validatorAddress: 'cosmosvaloper1fail',
       amount: { denom: 'uatom', amount: '10' },
     }),
-  );
+  ) as AnyJson;
+
   await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgFailure]), {
     message: 'ABCI code: 5: error handling packet: see events for details',
   });

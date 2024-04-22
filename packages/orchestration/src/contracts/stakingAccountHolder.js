@@ -11,12 +11,13 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { decodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
-import { txToBase64 } from '../utils/tx.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 
 /**
  * @import { ChainAccount, ChainAddress } from '../types.js';
  * @import { RecorderKit, MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import { Baggage } from '@agoric/swingset-liveslots';
+ * @import {AnyJson} from '@agoric/cosmic-proto';
  */
 
 const trace = makeTracer('StakingAccountHolder');
@@ -109,12 +110,14 @@ export const prepareStakingAccountHolder = (baggage, makeRecorderKit, zcf) => {
           const delegatorAddress = this.state.chainAddress;
 
           const result = await E(account).executeEncodedTx([
-            txToBase64(
-              MsgDelegate.toProtoMsg({
-                delegatorAddress,
-                validatorAddress,
-                amount,
-              }),
+            /** @type {AnyJson} */ (
+              Any.toJSON(
+                MsgDelegate.toProtoMsg({
+                  delegatorAddress,
+                  validatorAddress,
+                  amount,
+                }),
+              )
             ),
           ]);
 

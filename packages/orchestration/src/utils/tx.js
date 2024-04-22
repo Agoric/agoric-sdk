@@ -1,24 +1,20 @@
 // @ts-check
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { decodeBase64, encodeBase64 } from '@endo/base64';
-
-/** @typedef {{ typeUrl: string; value: string; }} Proto3Msg */
+import { encodeBase64 } from '@endo/base64';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 
 /**
  * Makes an IBC packet from an array of messages. Expects the `value` of each message
  * to be base64 encoded bytes.
  * Skips checks for malformed messages in favor of interface guards.
- * @param {Proto3Msg[]} msgs
+ * @param {import('@agoric/cosmic-proto').AnyJson[]} msgs
  * // XXX intellisense does not seem to infer well here
  * @param {Omit<TxBody, 'messages'>} [opts]
  * @returns {string} - IBC TX packet
  * @throws {Error} if malformed messages are provided
  */
 export function makeTxPacket(msgs, opts) {
-  const messages = msgs.map(msg => ({
-    typeUrl: msg.typeUrl,
-    value: decodeBase64(msg.value),
-  }));
+  const messages = msgs.map(Any.fromJSON);
   const bytes = TxBody.encode(
     TxBody.fromPartial({
       messages,
@@ -33,19 +29,6 @@ export function makeTxPacket(msgs, opts) {
   });
 }
 harden(makeTxPacket);
-
-/**
- * base64 encode an EncodeObject for cross-vat communication
- * @param {{ typeUrl: string, value: Uint8Array }} tx
- * @returns {Proto3Msg}
- */
-export function txToBase64(tx) {
-  return {
-    typeUrl: tx.typeUrl,
-    value: encodeBase64(tx.value),
-  };
-}
-harden(txToBase64);
 
 /**
  * Looks for a result or error key in the response string, and returns

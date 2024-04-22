@@ -18,7 +18,7 @@ import '@agoric/network/exported.js';
 const { Fail, bare } = assert;
 const trace = makeTracer('Orchestration');
 
-/** @import {Proto3Msg} from './utils/tx.js'; */
+/** @import {AnyJson} from '@agoric/cosmic-proto'; */
 
 // TODO improve me
 /** @typedef {string} ChainAddress */
@@ -124,7 +124,7 @@ const prepareChainAccount = zone =>
           return this.state.port;
         },
         /**
-         * @param {Proto3Msg[]} msgs
+         * @param {AnyJson[]} msgs
          * @param {Omit<TxBody, 'messages'>} [opts]
          * @returns {Promise<string>} - base64 encoded bytes string. Can be decoded using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
