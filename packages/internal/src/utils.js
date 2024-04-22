@@ -68,13 +68,6 @@ export const makeMeasureSeconds = currentTimeMillisec => {
 };
 
 /**
- * @deprecated Just use `AggregateError`
- * @param {Error[]} errors
- * @param {string} [message]
- */
-export const makeAggregateError = AggregateError;
-
-/**
  * @template T
  * @param {readonly (T | PromiseLike<T>)[]} items
  * @returns {Promise<T[]>}
