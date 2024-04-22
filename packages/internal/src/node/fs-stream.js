@@ -1,6 +1,5 @@
 import { createWriteStream } from 'node:fs';
 import { open } from 'node:fs/promises';
-import { makeAggregateError } from '../utils.js';
 
 /**
  * @param {import("fs").ReadStream | import("fs").WriteStream} stream
@@ -78,7 +77,7 @@ export const makeFsStreamWriter = async filePath => {
         Promise.reject(
           written.then(
             () => err,
-            writtenError => makeAggregateError([err, writtenError]),
+            writtenError => AggregateError([err, writtenError]),
           ),
         ),
     );

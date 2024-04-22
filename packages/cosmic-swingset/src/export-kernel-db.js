@@ -12,7 +12,6 @@ import { fileURLToPath } from 'url';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail, q } from '@agoric/assert';
-import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 
@@ -239,7 +238,7 @@ export const initiateSwingStoreExport = (
         .catch(err => errors.push(err));
     }
     if (errors.length) {
-      const error = makeAggregateError(errors, 'Errors while cleaning up');
+      const error = AggregateError(errors, 'Errors while cleaning up');
       if (opErr) {
         Object.defineProperty(error, 'cause', { value: opErr });
       }

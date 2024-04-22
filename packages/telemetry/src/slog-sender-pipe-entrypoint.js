@@ -1,7 +1,6 @@
 /* global process */
 import '@endo/init';
 
-import { makeAggregateError } from '@agoric/internal';
 import anylogger from 'anylogger';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
@@ -75,7 +74,7 @@ const main = async () => {
       sendErrors.unshift(actualFlushError);
     }
 
-    return makeAggregateError(sendErrors.splice(0));
+    return AggregateError(sendErrors.splice(0));
   };
 
   process.on(
