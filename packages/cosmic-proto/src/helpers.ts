@@ -41,3 +41,11 @@ export const typedJson = <T extends keyof Proto3Shape>(
     ...obj,
   } as TypedJson<T>;
 };
+
+// TODO make codegen toJSON() return these instead of unknown
+/**
+ * Proto Any with arrays encoded as base64
+ */
+export type Base64Any<T> = {
+  [Prop in keyof T]: T[Prop] extends Uint8Array ? string : T[Prop];
+};
