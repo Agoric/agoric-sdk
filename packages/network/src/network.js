@@ -1455,6 +1455,11 @@ export const preparePortAllocator = (zone, { watch }) => {
           ),
         );
       },
+      allocateIBCPegasusPort() {
+        const { state } = this;
+        // Allocate an IBC port with a unique generated name.
+        return watch(E(state.protocol).bindPort(`/ibc-port/pegasus`));
+      },
     },
   );
 

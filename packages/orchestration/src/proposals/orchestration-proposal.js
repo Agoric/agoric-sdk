@@ -48,9 +48,8 @@ export const setupOrchestrationVat = async (
   await networkVat;
   /** @type {AttenuatedNetwork} */
   const network = Far('Attenuated Network', {
-    /** @param {string} localAddr */
-    async bindPort(localAddr) {
-      return E(networkVat).bindPort(localAddr);
+    async getPortAllocator() {
+      return E(networkVat).getPortAllocator();
     },
   });
 

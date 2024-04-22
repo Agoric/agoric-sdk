@@ -122,7 +122,7 @@ test.serial('upgrade at many points in network API flow', async t => {
         installation.ibcServerMock,
         {},
         {},
-        { address: '/ibc-port/', networkVat },
+        { networkVat },
       );
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
       return [label, { server: started.creatorFacet }];
@@ -140,7 +140,7 @@ test.serial('upgrade at many points in network API flow', async t => {
         installation.ibcClientMock,
         {},
         {},
-        { address: '/ibc-port/', networkVat },
+        { networkVat },
       );
       t.truthy(started.creatorFacet, `${label} ibcClientMock`);
       return [label, { ...opts, client: started.creatorFacet }];

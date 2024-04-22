@@ -6,14 +6,15 @@ import { V as E } from '@agoric/vat-data/vow.js';
 /**
  * @param {ZCF} zcf
  * @param {{
- *   address: string,
  *   networkVat: ERef<ReturnType<typeof import('@agoric/vats/src/vat-network').buildRootObject>>;
  * }} privateArgs
  * @param {import("@agoric/vat-data").Baggage} _baggage
  */
 export const start = async (zcf, privateArgs, _baggage) => {
-  const { address, networkVat } = privateArgs;
-  const myPort = await E(networkVat).bindPort(address);
+  const { networkVat } = privateArgs;
+
+  const portAllocator = await E(networkVat).getPortAllocator();
+  const myPort = E(portAllocator).allocateIBCPort();
 
   const { log } = console;
   let connP;

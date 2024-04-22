@@ -17,9 +17,10 @@ const { log } = console;
  * @param {import("@agoric/vat-data").Baggage} _baggage
  */
 export const start = async (zcf, privateArgs, _baggage) => {
-  const { address, networkVat } = privateArgs;
+  const { networkVat } = privateArgs;
 
-  const boundPort = await E(networkVat).bindPort(address);
+  const portAllocator = await E(networkVat).getPortAllocator();
+  const boundPort = E(portAllocator).allocateIBCPort();
 
   /** @type {Array<[label: string, resolve: (value: any) => void, reject: (reason: any) => void]>} */
   const queue = [];

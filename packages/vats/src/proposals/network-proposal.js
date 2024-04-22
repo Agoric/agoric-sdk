@@ -77,7 +77,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
- *   produce: { networkVat: Producer<any> };
+ *   produce: { portAllocator: Producer<any> };
  * }} powers
  * @param {object} options
  * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
@@ -100,7 +100,7 @@ export const setupNetworkProtocols = async (
       provisioning,
       vatUpgradeInfo: vatUpgradeInfoP,
     },
-    produce: { networkVat, vatUpgradeInfo: produceVatUpgradeInfo },
+    produce: { portAllocator, vatUpgradeInfo: produceVatUpgradeInfo },
   },
   options,
 ) => {
@@ -121,9 +121,11 @@ export const setupNetworkProtocols = async (
   info.init('ibc', ibcRef);
   info.init('network', networkRef);
 
-  networkVat.reset();
-  networkVat.resolve(vats.network);
-  const portAllocator = E(vats.network).getPortAllocator();
+  const allocator = E(vats.network).getPortAllocator();
+
+  portAllocator.reset();
+  portAllocator.resolve(allocator);
+
   const bridgeManager = await bridgeManagerP;
   const dibcBridgeManager =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
@@ -136,10 +138,10 @@ export const setupNetworkProtocols = async (
     const ibcportP = [];
     for (let i = 0; i < NUM_IBC_PORTS_PER_CLIENT; i += 1) {
       if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
-        const portP = when(E(portAllocator).allocateICAControllerPort());
+        const portP = when(E(allocator).allocateICAControllerPort());
         ibcportP.push(portP);
       } else {
-        const portP = when(E(portAllocator).allocateIBCPort());
+        const portP = when(E(allocator).allocateIBCPort());
         ibcportP.push(portP);
       }
     }
@@ -152,7 +154,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(vats.network).bindPort('/ibc-port/echo'));
+  const echoPort = await when(E(allocator).allocateICAControllerPort());
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
@@ -168,10 +170,8 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         zoe: 'zoe',
         provisioning: 'provisioning',
         vatUpgradeInfo: true,
-        portAllocator: 'portAllocator',
       },
       produce: {
-        networkVat: 'network',
         vatUpgradeInfo: true,
       },
       zone: true,
