@@ -125,10 +125,12 @@ test('network - ibc', async t => {
     bridgeHandler,
   );
 
+  const portAllocator = await E(networkVat).getPortAllocator();
+
   // Actually test the ibc port binding.
   // TODO: Do more tests on the returned Port object.
   t.log('Opening a Listening Port');
-  const p = await when(E(networkVat).bindPort('/ibc-port/'));
+  const p = await when(E(portAllocator).allocateIBCPort());
   const ev1 = await events.next();
   t.assert(!ev1.done);
   t.deepEqual(ev1.value, ['bindPort', { packet: { source_port: 'port-1' } }]);

@@ -1,6 +1,4 @@
-import type { RouterProtocol } from '@agoric/network/src/router';
-
-export type AttenuatedNetwork = Pick<RouterProtocol, 'bindPort'>;
+import type { PortAllocator } from '@agoric/network/src/network';
 
 export type * from './orchestration.js';
 export type * from './vat-orchestration.js';

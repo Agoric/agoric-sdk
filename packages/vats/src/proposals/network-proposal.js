@@ -12,7 +12,6 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { when } from '@agoric/vat-data/vow.js';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
-const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
  * @param {SoloVats | NetVats} vats
@@ -121,10 +120,12 @@ export const setupNetworkProtocols = async (
   info.init('ibc', ibcRef);
   info.init('network', networkRef);
 
-  const allocator = E(vats.network).getPortAllocator();
+  const portAllocatorP = E(vats.network).getPortAllocator();
 
   portAllocator.reset();
-  portAllocator.resolve(allocator);
+  portAllocator.resolve(portAllocatorP);
+
+  const allocator = await portAllocatorP;
 
   const bridgeManager = await bridgeManagerP;
   const dibcBridgeManager =
@@ -172,6 +173,7 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         vatUpgradeInfo: true,
       },
       produce: {
+        portAllocator: 'portAllocator',
         vatUpgradeInfo: true,
       },
       zone: true,

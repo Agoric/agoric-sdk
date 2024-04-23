@@ -8,7 +8,7 @@ import { Far } from '@endo/far';
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     networkVat: NetworkVat;
+ *     portAllocator: PortAllocator;
  *   };
  *   produce: {
  *     orchestration: Producer<any>;
@@ -25,7 +25,7 @@ import { Far } from '@endo/far';
  */
 export const setupOrchestrationVat = async (
   {
-    consume: { loadCriticalVat, networkVat },
+    consume: { loadCriticalVat, portAllocator },
     produce: {
       orchestrationVat,
       orchestration,
@@ -45,16 +45,16 @@ export const setupOrchestrationVat = async (
   orchestrationVat.reset();
   orchestrationVat.resolve(vats.orchestration);
 
-  await networkVat;
-  /** @type {AttenuatedNetwork} */
-  const network = Far('Attenuated Network', {
-    async getPortAllocator() {
-      return E(networkVat).getPortAllocator();
+  await portAllocator;
+
+  const allocator = Far('PortAllocator', {
+    async allocateICAControllerPort() {
+      return E(portAllocator).allocateICAControllerPort();
     },
   });
 
   const newOrchestrationKit = await E(vats.orchestration).makeOrchestration({
-    network,
+    portAllocator: allocator,
   });
 
   orchestration.reset();
@@ -83,7 +83,7 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
     [setupOrchestrationVat.name]: {
       consume: {
         loadCriticalVat: true,
-        networkVat: true,
+        portAllocator: 'portAllocator',
       },
       produce: {
         orchestration: 'orchestration',

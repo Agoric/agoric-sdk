@@ -1438,6 +1438,7 @@ export const preparePortAllocator = (zone, { watch }) => {
     M.interface('PortAllocator', {
       allocateIBCPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
       allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateIBCPegasusPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
     }),
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
     {

@@ -19,7 +19,7 @@ export const getManifestForPegasus = ({ restoreRef }, { pegasusRef }) => ({
       },
     },
     listenPegasus: {
-      consume: { networkVat: t, pegasusConnectionsAdmin: t, zoe: t },
+      consume: { portAllocator: t, pegasusConnectionsAdmin: t, zoe: t },
       produce: { pegasusConnections: t, pegasusConnectionsAdmin: t },
       instance: {
         consume: { [CONTRACT_NAME]: t },
@@ -93,7 +93,7 @@ export const addPegasusTransferPort = async (
 harden(addPegasusTransferPort);
 
 export const listenPegasus = async ({
-  consume: { networkVat, pegasusConnectionsAdmin: pegasusNameAdmin, zoe },
+  consume: { portAllocator, pegasusConnectionsAdmin: pegasusNameAdmin, zoe },
   produce: { pegasusConnections, pegasusConnectionsAdmin },
   instance: {
     consume: { [CONTRACT_NAME]: pegasusInstance },
@@ -104,7 +104,7 @@ export const listenPegasus = async ({
   pegasusConnectionsAdmin.resolve(nameAdmin);
 
   const pegasus = await E(zoe).getPublicFacet(pegasusInstance);
-  const port = await E(networkVat).bindPort('/ibc-port/pegasus');
+  const port = await E(portAllocator).allocateIBCPegasusPort();
   return addPegasusTransferPort(port, pegasus, pegasusNameAdmin);
 };
 harden(listenPegasus);
