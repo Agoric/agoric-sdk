@@ -169,7 +169,9 @@ test('handled protocol', async t => {
 });
 
 test('verify port allocation', async t => {
-  const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
+  const zone = makeDurableZone(
+    provideBaggage('network-verify-port-allocation'),
+  );
   const powers = prepareVowTools(zone);
   const { when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
