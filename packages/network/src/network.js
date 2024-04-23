@@ -1439,6 +1439,7 @@ export const preparePortAllocator = (zone, { watch }) =>
       allocateIBCPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
       allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
       allocateIBCPegasusPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateLocalPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
     }),
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
     {
@@ -1458,8 +1459,13 @@ export const preparePortAllocator = (zone, { watch }) =>
       },
       allocateIBCPegasusPort() {
         const { state } = this;
-        // Allocate an IBC port with a unique generated name.
+        // Allocate a Pegasus IBC port with a unique generated name.
         return watch(E(state.protocol).bindPort(`/ibc-port/pegasus`));
+      },
+      allocateLocalPort() {
+        const { state } = this;
+        // Allocate a local port with a unique generated name.
+        return watch(E(state.protocol).bindPort(`/local/`));
       },
     },
   );

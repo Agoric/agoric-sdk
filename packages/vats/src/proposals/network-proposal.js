@@ -67,8 +67,8 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  *
  * Testing facilities include:
  *
- * - loopback ports: `E(networkVat).bindPort('/local/')`
- * - an echo port: `E(vats.network).bindPort('/ibc-port/echo')`
+ * - loopback ports: `E(portAllocator).allocateLocalPort()`
+ * - an echo port: `E(portAllocator).allocateIBCPort()`
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
