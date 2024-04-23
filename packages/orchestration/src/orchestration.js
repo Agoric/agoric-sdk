@@ -9,6 +9,7 @@ import { makeTxPacket, parsePacketAck } from './utils/tx.js';
 import '@agoric/network/exported.js';
 
 /**
+ * @import { AttenuatedPortAllocator } from './types.js';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -24,7 +25,7 @@ const trace = makeTracer('Orchestration');
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {PortAllocator} portAllocator
+ * @property {ERef<AttenuatedPortAllocator>} portAllocator
  */
 
 /**

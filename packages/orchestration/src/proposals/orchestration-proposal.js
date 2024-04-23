@@ -2,13 +2,13 @@
 import { V as E } from '@agoric/vat-data/vow.js';
 import { Far } from '@endo/far';
 
-/** @import { AttenuatedNetwork, Orchestration, OrchestrationVat } from '../types' */
+/** @import { AttenuatedPortAllocator, Orchestration, OrchestrationVat } from '../types' */
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     portAllocator: PortAllocator;
+ *     portAllocator: AttenuatedPortAllocator;
  *   };
  *   produce: {
  *     orchestration: Producer<any>;
@@ -47,6 +47,7 @@ export const setupOrchestrationVat = async (
 
   await portAllocator;
 
+  /** @type {AttenuatedPortAllocator} */
   const allocator = Far('PortAllocator', {
     async allocateICAControllerPort() {
       return E(portAllocator).allocateICAControllerPort();

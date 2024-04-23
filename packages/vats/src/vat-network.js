@@ -7,7 +7,7 @@ import {
   prepareRouterProtocol,
 } from '@agoric/network';
 import { prepareVowTools } from '@agoric/vat-data/vow.js';
-import { E, Far } from '@endo/far';
+import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _args, baggage) {
   const zone = makeDurableZone(baggage);
