@@ -224,8 +224,10 @@ the release process can be aborted.
 - [ ] Create the release PR:
   - Source branch: the [timestamped release branch](#user-content-release-branch)
   - Target branch: the [_**base branch**_](#assign-release-parameters)
-  - PR name: "chore(release): publish [_**release short label**_](#assign-release-parameters)"
-  - PR description: the contents of `have-news.md` from the previous step
+  - Title: "chore(release): publish [_**release short label**_](#assign-release-parameters)"
+  - Description: the contents of `have-news.md` from the previous step
+  - Labels
+    - `force:integration`
 
   Follow the example of previous releases for any other details of the PR.
 
