@@ -16,7 +16,7 @@
     "build:env": "node src/build.js --show-env > build.env",
     "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
     "build": "yarn build:bin && yarn build:env",
-    "postinstall": "yarn build:from-env",
+    "postinstall": "npm run build:from-env",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'src/**/*.js' 'test/**/*.js' api.js",

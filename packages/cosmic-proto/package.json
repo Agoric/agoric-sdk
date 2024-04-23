@@ -72,7 +72,7 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "yarn tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
     "codegen": "yarn protos-update && node scripts/codegen.cjs",
     "prepare": "npm run build",
