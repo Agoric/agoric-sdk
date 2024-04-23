@@ -248,7 +248,7 @@ the release process can be aborted.
 
 These steps cannot be undone, so be sure that you are ready to proceed.
 In particular, be sure that you have waited for the release PR's CI tests
-to pass.
+to pass and for reviewer approval.
 
 - [ ] Publish to NPM
   ```sh
