@@ -15,13 +15,13 @@ type ContractFacet<T extends {} = {}> = {
  * Installation of a contract, typed by its start function.
  */
 declare const StartFunction: unique symbol;
-export type Installation<SF> = {
+export type Installation<SF = any> = {
   getBundle: () => SourceBundle;
   getBundleLabel: () => string;
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
-export type Instance<SF> = Handle<'Instance'> & {
+export type Instance<SF = any> = Handle<'Instance'> & {
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
@@ -35,7 +35,7 @@ type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = {
+export interface AdminFacet<SF extends ContractStartFunction> {
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined
@@ -47,7 +47,7 @@ export type AdminFacet<SF extends ContractStartFunction> = {
   restartContract: Parameters<SF>[1] extends undefined
     ? () => Promise<VatUpgradeResults>
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
-};
+}
 
 type StartParams<SF> = SF extends ContractStartFunction
   ? Parameters<SF>[1] extends undefined
@@ -77,7 +77,7 @@ type StartContractInstance<C> = (
 ) => Promise<{
   creatorFacet: C['creatorFacet'];
   publicFacet: C['publicFacet'];
-  instance: Instance;
+  instance: Instance<C>;
   creatorInvitation: C['creatorInvitation'];
   adminFacet: AdminFacet<any>;
 }>;

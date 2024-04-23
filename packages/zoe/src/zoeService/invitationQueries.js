@@ -4,7 +4,7 @@ import { assert, details as X, Fail, quote as q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
-  /** @type {GetInvitationDetails} */
+  /** @type {ZoeService['getInvitationDetails']} */
   const getInvitationDetails = async invitationP => {
     const onRejected = reason => {
       const err = assert.error(
@@ -21,11 +21,11 @@ export const makeInvitationQueryFns = invitationIssuer => {
     return invAmount.value[0];
   };
 
-  /** @type {GetInstance} */
+  /** @type {ZoeService['getInstance']} */
   const getInstance = invitation =>
     E.get(getInvitationDetails(invitation)).instance;
 
-  /** @type {GetInstallation} */
+  /** @type {ZoeService['getInstallation']} */
   const getInstallation = invitation =>
     E.get(getInvitationDetails(invitation)).installation;
 

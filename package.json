@@ -33,7 +33,7 @@
     "prettier-plugin-sh": "^0.14.0",
     "type-coverage": "^2.27.1",
     "typedoc": "^0.25.12",
-    "typedoc-plugin-markdown": "^3.17.1",
+    "typedoc-plugin-markdown": "^4.0.0-next.54",
     "typescript": "^5.5.0-dev.20240327",
     "typescript-eslint": "^7.3.1"
   },
@@ -47,7 +47,7 @@
   "scripts": {
     "clean": "yarn lerna run --no-bail clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
-    "docs": "typedoc --tsconfig tsconfig.build.json",
+    "docs": "typedoc --tsconfig tsconfig.build.json --excludeInternal",
     "docs:markdown-for-agoric-documentation-repo": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.build.json",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",

@@ -127,16 +127,16 @@
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
  * @property {Issuer<'set'>} invitationIssuer
- * @property {InstallBundle} installBundle
- * @property {InstallBundleID} installBundleID
- * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
+ * @property {ZoeService['install']} installBundle
+ * @property {ZoeService['installBundleID']} installBundleID
+ * @property {ZoeService['getBundleIDFromInstallation']} getBundleIDFromInstallation
  * @property {import('./utils.js').GetPublicFacet} getPublicFacet
- * @property {GetBrands} getBrands
- * @property {GetIssuers} getIssuers
+ * @property {ZoeService['getBrands']} getBrands
+ * @property {ZoeService['getIssuers']} getIssuers
  * @property {import('./utils.js').GetTerms} getTerms
- * @property {GetOfferFilter} getOfferFilter
- * @property {SetOfferFilter} setOfferFilter
- * @property {GetInstallationForInstance} getInstallationForInstance
+ * @property {ZoeService['getOfferFilter']} getOfferFilter
+ * @property {(instance: Instance, strings: string[]) => void} setOfferFilter
+ * @property {ZoeService['getInstallationForInstance']} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation

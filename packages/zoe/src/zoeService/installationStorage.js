@@ -67,7 +67,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
    * an instance is started.
    */
 
-  /** @type {InstallBundle} */
+  /** @type {ZoeService['install']} */
   const installSourceBundle = async (bundle, bundleLabel) => {
     typeof bundle === 'object' || Fail`a bundle must be provided`;
     /** @type {Installation} */
