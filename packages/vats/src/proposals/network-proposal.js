@@ -56,15 +56,11 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * Create the network and IBC vats; produce `networkVat` in the core / bootstrap
- * space.
+ * Create the network and IBC vats; produce `portAllocator` in the core /
+ * bootstrap space.
  *
- * The `networkVat` is CLOSELY HELD in the core space, where later, we claim
- * ports using `E(networkVat).bindPort(_path_)`. As discussed in
- * `ProtocolHandler` docs, _path_ is:
- *
- * - /ibc-port/NAME for an IBC port with a known name or,
- * - /ibc-port/ for an IBC port with a fresh name.
+ * The `portAllocator` is CLOSELY HELD in the core space, where later, we claim
+ * ports using `E(portAllocator).allocateIBCPort`, for example.
  *
  * Contracts are expected to use the services of the network and IBC vats by way
  * of such ports.
@@ -155,7 +151,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(allocator).allocateICAControllerPort());
+  const echoPort = await when(E(allocator).allocateIBCPort());
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
