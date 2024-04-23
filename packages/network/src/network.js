@@ -1432,8 +1432,8 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
  */
-export const preparePortAllocator = (zone, { watch }) => {
-  const makePortAllocator = zone.exoClass(
+export const preparePortAllocator = (zone, { watch }) =>
+  zone.exoClass(
     'PortAllocator',
     M.interface('PortAllocator', {
       allocateIBCPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
@@ -1463,6 +1463,3 @@ export const preparePortAllocator = (zone, { watch }) => {
       },
     },
   );
-
-  return makePortAllocator;
-};
