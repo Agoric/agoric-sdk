@@ -134,7 +134,7 @@ export const makeMapStoreMethods = (
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template {Key} K
- * @template {Passable} V
+ * @template {Passable} [V=any]
  * @param {string} [tag] - the column name for the key
  * @param {StoreOptions} [options]
  * @returns {MapStore<K, V>}

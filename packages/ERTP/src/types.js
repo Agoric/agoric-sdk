@@ -119,9 +119,9 @@ export {};
 
 // XXX hack around JSDoc union handling
 /**
- * @template {AssetKind} [K=AssetKind]
+ * @template {AssetKind} K
  * @typedef {object} BrandMethods
- * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
+ * @property {(allegedIssuer: ERef<Issuer<K>>) => Promise<boolean>} isMyIssuer
  *   Should be used with `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
  * @property {() => DisplayInfo<K>} getDisplayInfo Give information to UI on how
@@ -183,14 +183,9 @@ export {};
  */
 
 /**
- * @template {AssetKind} [K=AssetKind]
- * @template {Key} [M=Key] member kind, for Amounts that have member values
- * @typedef {object} Issuer The issuer cannot mint a new amount, but it can
- *   create empty purses and payments. The issuer can also transform payments
- *   (splitting payments, combining payments, burning payments, and claiming
- *   payments exclusively). The issuer should be gotten from a trusted source
- *   and then relied upon as the decider of whether an untrusted payment is
- *   valid.
+ * @template {AssetKind} K
+ * @template {Key} M
+ * @typedef {object} IssuerMethods Work around JSDoc union handling
  * @property {() => Brand<K>} getBrand Get the Brand for this Issuer. The Brand
  *   indicates the type of digital asset and is shared by the mint, the issuer,
  *   and any purses and payments of this particular kind. The brand is not
@@ -198,14 +193,26 @@ export {};
  *   alone. Fake digital assets and amount can use another issuer's brand.
  * @property {() => string} getAllegedName Get the allegedName for this
  *   mint/issuer
- * @property {() => AssetKind} getAssetKind Get the kind of MathHelpers used by
- *   this Issuer.
+ * @property {() => K} getAssetKind Get the kind of MathHelpers used by this
+ *   Issuer.
  * @property {() => DisplayInfo<K>} getDisplayInfo Give information to UI on how
  *   to display amounts for this issuer.
- * @property {() => Purse<K>} makeEmptyPurse Make an empty purse of this brand.
+ * @property {() => Purse<K, M>} makeEmptyPurse Make an empty purse of this
+ *   brand.
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf<K, M>} getAmountOf
  * @property {IssuerBurn} burn
+ */
+
+/**
+ * @template {AssetKind} [K=AssetKind]
+ * @template {Key} [M=Key] member kind, for Amounts that have member values
+ * @typedef {RemotableObject & IssuerMethods<K, M>} Issuer The issuer cannot
+ *   mint a new amount, but it can create empty purses and payments. The issuer
+ *   can also transform payments (splitting payments, combining payments,
+ *   burning payments, and claiming payments exclusively). The issuer should be
+ *   gotten from a trusted source and then relied upon as the decider of whether
+ *   an untrusted payment is valid.
  */
 
 /**
@@ -304,11 +311,11 @@ export {};
 /**
  * @template {AssetKind} [K=AssetKind]
  * @template {Key} [M=Key] member kind, for Amounts that have member values
- * @typedef {RemotableObject & PurseMethods} Purse Purses hold amount of digital
- *   assets of the same brand, but unlike Payments, they are not meant to be
- *   sent to others. To transfer digital assets, a Payment should be withdrawn
- *   from a Purse. The amount of digital assets in a purse can change through
- *   the action of deposit() and withdraw().
+ * @typedef {RemotableObject & PurseMethods<K, M>} Purse Purses hold amount of
+ *   digital assets of the same brand, but unlike Payments, they are not meant
+ *   to be sent to others. To transfer digital assets, a Payment should be
+ *   withdrawn from a Purse. The amount of digital assets in a purse can change
+ *   through the action of deposit() and withdraw().
  */
 
 /**

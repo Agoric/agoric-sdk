@@ -61,7 +61,7 @@ const MAX_PIPE_LENGTH = 2;
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set'>} invitationsPurse
+ * @param {Purse<'set', InvitationDetails>} invitationsPurse
  * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
@@ -105,7 +105,6 @@ export const makeInvitationsHelper = (
       const { instance, description } = spec;
       // @ts-expect-error TS thinks it's always true. I'm doubtful.
       (instance && description) || Fail`missing instance or description`;
-      /** @type {Amount<'set'>} */
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
       const invitations = AmountMath.getValue(invitationBrand, purseAmount);
 
