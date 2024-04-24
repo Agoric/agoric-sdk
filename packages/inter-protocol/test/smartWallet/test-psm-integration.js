@@ -245,7 +245,7 @@ test('govern offerFilter', async t => {
           invitationBrand,
           'invitation brand from context matches zoe',
         );
-        /** @type {Amount<'set'>} */
+        /** @type {InvitationAmount} */
         const invitationsAmount = NonNullish(balances.get(brand));
         t.is(invitationsAmount?.value.length, len, 'invitation count');
         return invitationsAmount.value.filter(i => i.description === desc);

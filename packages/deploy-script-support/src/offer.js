@@ -28,7 +28,7 @@ export const makeOfferAndFindInvitationAmount = (
 ) => {
   /**
    * @param {Record<string, any>} invitationDetailsCriteria
-   * @returns {Promise<Amount<'set'>>} invitationAmount
+   * @returns {Promise<InvitationAmount>} invitationAmount
    */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();

@@ -6,6 +6,8 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
+type InvitationAmount = Amount<'set', InvitationDetails>;
+
 /**
  * Zoe Contract Facet
  *
@@ -243,7 +245,10 @@ type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
 
 declare const OfferReturn: unique symbol;
 declare const OfferArgs: unique symbol;
-type Invitation<R = unknown, A = undefined> = Payment<'set'> & {
+type Invitation<R = unknown, A = undefined> = Payment<
+  'set',
+  InvitationDetails
+> & {
   // because TS is structural, without this the generic is ignored
   [OfferReturn]?: R;
   [OfferArgs]?: A;
