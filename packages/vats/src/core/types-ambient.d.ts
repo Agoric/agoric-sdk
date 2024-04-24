@@ -348,7 +348,7 @@ type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration: import('@agoric/orchestration/src/orchestration.js').Orchestration;
+  orchestration: import('@agoric/orchestration/src/service.js').OrchestrationService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;

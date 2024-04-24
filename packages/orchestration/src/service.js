@@ -2,14 +2,16 @@
 /** @file Orchestration service */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+import '@agoric/network/exported.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
+import { PaymentShape, PurseShape } from '@agoric/ertp';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import { makeTxPacket, parsePacketAck } from './utils/tx.js';
-import '@agoric/network/exported.js';
 
 /**
- * @import { AttenuatedNetwork } from './types.js';
+ * @import { AttenuatedNetwork, ChainAccount, ChainAddress } from './types.js';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -19,9 +21,6 @@ const { Fail, bare } = assert;
 const trace = makeTracer('Orchestration');
 
 /** @import {AnyJson} from '@agoric/cosmic-proto'; */
-
-// TODO improve me
-/** @typedef {string} ChainAddress */
 
 /**
  * @typedef {object} OrchestrationPowers
@@ -59,10 +58,14 @@ export const ChainAccountI = M.interface('ChainAccount', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
+  executeTx: M.call(M.arrayOf(M.record())).returns(M.promise()),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
     .optional(M.record())
     .returns(M.promise()),
-  close: M.callWhen().returns(M.string()),
+  close: M.callWhen().returns(M.undefined()),
+  deposit: M.callWhen(PaymentShape).returns(M.undefined()),
+  getPurse: M.callWhen().returns(PurseShape),
+  prepareTransfer: M.callWhen().returns(InvitationShape),
 });
 
 export const ConnectionHandlerI = M.interface('ConnectionHandler', {
@@ -88,7 +91,7 @@ const prepareChainAccount = zone =>
        *   localAddress: string | undefined;
        *   requestedRemoteAddress: string;
        *   remoteAddress: string | undefined;
-       *   accountAddress: ChainAddress | undefined;
+       *   accountAddress: string | undefined;
        * }}
        */ (
         harden({
@@ -102,6 +105,9 @@ const prepareChainAccount = zone =>
       ),
     {
       account: {
+        /**
+         * @returns {string} the address of the account on the chain
+         */
         getAccountAddress() {
           return NonNullish(
             this.state.accountAddress,
@@ -123,7 +129,11 @@ const prepareChainAccount = zone =>
         getPort() {
           return this.state.port;
         },
+        executeTx() {
+          throw new Error('not yet implemented');
+        },
         /**
+         * Submit a transaction on behalf of the remote account for execution on the remote chain.
          * @param {AnyJson[]} msgs
          * @param {Omit<TxBody, 'messages'>} [opts]
          * @returns {Promise<string>} - base64 encoded bytes string. Can be decoded using the corresponding `Msg*Response` object.
@@ -138,6 +148,9 @@ const prepareChainAccount = zone =>
             ack => parsePacketAck(ack),
           );
         },
+        /**
+         * Close the remote account
+         */
         async close() {
           /// XXX what should the behavior be here? and `onClose`?
           // - retrieve assets?
@@ -145,7 +158,23 @@ const prepareChainAccount = zone =>
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
           await E(connection).close();
-          return 'Connection closed';
+        },
+        async deposit(payment) {
+          console.log('deposit got', payment);
+          throw new Error('not yet implemented');
+        },
+        /**
+         * get Purse for a brand to .withdraw() a Payment from the account
+         * @param {Brand} brand
+         */
+        async getPurse(brand) {
+          console.log('getPurse got', brand);
+          throw new Error('not yet implemented');
+        },
+
+        /* transfer account to new holder */
+        async prepareTransfer() {
+          throw new Error('not yet implemented');
         },
       },
       connectionHandler: {
@@ -253,7 +282,6 @@ export const prepareOrchestrationTools = zone => {
 harden(prepareOrchestrationTools);
 
 /** @typedef {ReturnType<ReturnType<typeof prepareChainAccount>>} ChainAccountKit */
-/** @typedef {ChainAccountKit['account']} ChainAccount */
 /** @typedef {ReturnType<typeof prepareOrchestrationTools>} OrchestrationTools */
 /** @typedef {ReturnType<OrchestrationTools['makeOrchestration']>} OrchestrationKit */
-/** @typedef {OrchestrationKit['public']} Orchestration */
+/** @typedef {OrchestrationKit['public']} OrchestrationService */

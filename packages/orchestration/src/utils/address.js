@@ -1,7 +1,10 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
 
-/** @import { IBCConnectionID } from '@agoric/vats'; */
+/**
+ * @import { IBCConnectionID } from '@agoric/vats';
+ * @import { ChainAddress, CosmosValidatorAddress } from '../types.js';
+ */
 
 /**
  * @param {IBCConnectionID} hostConnectionId Counterpart Connection ID
@@ -52,3 +55,4 @@ export const parseAddress = remoteAddressString => {
     return undefined;
   }
 };
+harden(parseAddress);
