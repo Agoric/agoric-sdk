@@ -430,7 +430,7 @@ export {};
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
  * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount<'set'>} getInvitationAmount
+ * @property {(name: string) => InvitationAmount} getInvitationAmount
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString

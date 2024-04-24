@@ -150,7 +150,7 @@ test.before(async t => (t.context = await makeTestContext(t)));
 test.serial('handle failure to create invitation', async t => {
   const { powers, makeSmartWallet, spendable, shared } = t.context;
   const { chainStorage, board } = powers.consume;
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'set', InvitationDetails>} */
   // @ts-expect-error cast
   const invitationIssuer = powers.issuer.consume.Invitation;
   const address = 'agoric1234';

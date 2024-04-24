@@ -401,6 +401,7 @@ export const makeZoeStorageManager = (
       contractBundleCap,
       contractLabel,
     );
+    // @ts-expect-error checked cast
     return makeInstanceStorageManager(instanceRecord, adminNode, root)
       .instanceStorageManager;
   };

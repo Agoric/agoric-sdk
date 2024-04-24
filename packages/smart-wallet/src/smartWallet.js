@@ -150,7 +150,7 @@ const trace = makeTracer('SmrtWlt');
  *   address: string,
  *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
  *   currentStorageNode: StorageNode,
- *   invitationPurse: Purse<'set'>,
+ *   invitationPurse: Purse<'set', InvitationDetails>,
  *   walletStorageNode: StorageNode,
  * }} UniqueParams
  *
