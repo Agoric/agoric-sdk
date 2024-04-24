@@ -1,48 +1,25 @@
 import test from 'ava';
 
 import {
-  agd,
   agops,
-  executeOffer,
+  ATOM_DENOM,
+  getISTBalance,
   getVatDetails,
-  GOV1ADDR,
-  GOV2ADDR,
-  GOV3ADDR,
-  newOfferId,
+  openVault,
+  USER1ADDR,
 } from '@agoric/synthetic-chain';
 
-const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
-
-const getOracleInstance = async price => {
-  const instanceRec = await agd.query(
-    'vstorage',
-    'data',
-    '--output',
-    'json',
-    `published.agoricNames.instance`,
-  );
-
-  // agd query -o json  vstorage data published.agoricNames.instance
-  //    |& jq '.value | fromjson | .values[-1] | fromjson | .body[1:]
-  //    | fromjson | .[-2] '
-
-  const value = JSON.parse(instanceRec.value);
-  const body = JSON.parse(value.values.at(-1));
-
-  const feeds = JSON.parse(body.body.substring(1));
-  const feedName = `${price}-USD price feed`;
-
-  const key = Object.keys(feeds).find(k => feeds[k][0] === feedName);
-  if (key) {
-    return body.slots[key];
-  }
-  return null;
-};
-
-const checkForOracle = async (t, name) => {
-  const instance = await getOracleInstance(name);
-  t.truthy(instance);
-};
+import { getDetailsMatchingVats } from './vatDetails.js';
+import {
+  addOraclesForBrand,
+  bankSend,
+  BID_OFFER_ID,
+  checkForOracle,
+  createBid,
+  getLiveOffers,
+  getPriceQuote,
+  pushPrices,
+} from './agd-tools.js';
 
 test.serial('check all priceFeed vats updated', async t => {
   const atomDetails = await getVatDetails('ATOM-USD_price_feed');
@@ -54,91 +31,34 @@ test.serial('check all priceFeed vats updated', async t => {
   t.is(stOsmoDetails.incarnation, 0);
   const stTiaDetails = await getVatDetails('stTIA');
   t.is(stTiaDetails.incarnation, 0);
-  await checkForOracle(t, 'ATOM');
-  await checkForOracle(t, 'stATOM');
-  await checkForOracle(t, 'stTIA');
-  await checkForOracle(t, 'stOSMO');
+  await Promise.all([
+    checkForOracle(t, 'ATOM'),
+    checkForOracle(t, 'stATOM'),
+    checkForOracle(t, 'stTIA'),
+    checkForOracle(t, 'stOSMO'),
+  ]);
 });
 
 const oraclesByBrand = new Map();
 
-const addOraclesForBrand = async brandIn => {
-  await null;
-  const promiseArray = [];
-
-  const oraclesWithID = [];
-  for (const oracleAddress of ORACLE_ADDRESSES) {
-    const offerId = await newOfferId();
-    oraclesWithID.push({ address: oracleAddress, offerId });
-
-    promiseArray.push(
-      executeOffer(
-        oracleAddress,
-        agops.oracle('accept', '--offerId', offerId, `--pair ${brandIn}.USD`),
-      ),
-    );
-  }
-  oraclesByBrand.set(brandIn, oraclesWithID);
-
-  return Promise.all(promiseArray);
-};
-
-const pushPrices = (price = 10.0, brandIn) => {
-  const promiseArray = [];
-
-  for (const oracle of oraclesByBrand.get(brandIn)) {
-    promiseArray.push(
-      executeOffer(
-        oracle.address,
-        agops.oracle(
-          'pushPriceRound',
-          '--price',
-          price,
-          '--oracleAdminAcceptOfferId',
-          oracle.offerId,
-        ),
-      ),
-    );
-  }
-
-  return Promise.all(promiseArray);
-};
-
-const getPriceQuote = async price => {
-  const priceQuote = await agd.query(
-    'vstorage',
-    'data',
-    '--output',
-    'json',
-    `published.priceFeed.${price}-USD_price_feed`,
-  );
-
-  const body = JSON.parse(JSON.parse(priceQuote.value).values[0]);
-  const bodyTruncated = JSON.parse(body.body.substring(1));
-  return bodyTruncated.amountOut.value;
-};
-
 test.serial('push prices', async t => {
   // There are no old prices for the other currencies.
-  t.log('awaiting ATOM price pre');
   const atomOutPre = await getPriceQuote('ATOM');
   t.is(atomOutPre, '+12010000');
 
   t.log('adding oracle for each brand');
-  await addOraclesForBrand('ATOM');
-  await addOraclesForBrand('stATOM');
-  await addOraclesForBrand('stTIA');
-  await addOraclesForBrand('stOSMO');
+  await addOraclesForBrand('ATOM', oraclesByBrand);
+  await addOraclesForBrand('stATOM', oraclesByBrand);
+  await addOraclesForBrand('stTIA', oraclesByBrand);
+  await addOraclesForBrand('stOSMO', oraclesByBrand);
 
   t.log('pushing new prices');
-  await pushPrices(11.2, 'ATOM');
-  await pushPrices(11.3, 'stTIA');
-  await pushPrices(11.4, 'stATOM');
-  await pushPrices(11.5, 'stOSMO');
+  await pushPrices(11.2, 'ATOM', oraclesByBrand);
+  await pushPrices(11.3, 'stTIA', oraclesByBrand);
+  await pushPrices(11.4, 'stATOM', oraclesByBrand);
+  await pushPrices(11.5, 'stOSMO', oraclesByBrand);
 
   t.log('awaiting new quotes');
-  // agd query -o json  vstorage data published.priceFeed.stOSMO-USD_price_feed |&
-  //   jq '.value | fromjson | .values[0] | fromjson | .body[1:] | fromjson | .amountOut.value'
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+11200000');
   const tiaOut = await getPriceQuote('stTIA');
@@ -147,4 +67,42 @@ test.serial('push prices', async t => {
   t.is(stAtomOut, '+11400000');
   const osmoOut = await getPriceQuote('stOSMO');
   t.is(osmoOut, '+11500000');
+});
+
+test.serial('create new bid', async t => {
+  await createBid('20', USER1ADDR, BID_OFFER_ID);
+  const liveOffer = await getLiveOffers(USER1ADDR);
+  t.true(liveOffer[0].includes(BID_OFFER_ID));
+});
+
+test.serial('open a marginal vault', async t => {
+  let user1IST = await getISTBalance(USER1ADDR);
+  await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
+  const currentVaults = await agops.vaults('list', '--from', USER1ADDR);
+
+  t.log('opening a vault');
+  await openVault(USER1ADDR, 5, 10);
+  user1IST += 5;
+  const istBalanceAfterVaultOpen = await getISTBalance(USER1ADDR);
+  t.is(istBalanceAfterVaultOpen, user1IST);
+
+  const activeVaultsAfter = await agops.vaults('list', '--from', USER1ADDR);
+  t.log(currentVaults, activeVaultsAfter);
+  t.true(
+    activeVaultsAfter.length > currentVaults.length,
+    `vaults count should increase, ${activeVaultsAfter.length}, ${currentVaults.length}`,
+  );
+});
+
+test.serial('trigger auction', async t => {
+  await pushPrices(5.2, 'ATOM', oraclesByBrand);
+
+  const atomOut = await getPriceQuote('ATOM');
+  t.is(atomOut, '+5200000');
+});
+
+test.serial('new auction vat', async t => {
+  const details = await getDetailsMatchingVats('auctioneer');
+  // This query matches both the auction and its governor, so double the count
+  t.true(Object.keys(details).length > 2);
 });
