@@ -62,7 +62,7 @@ const validRoundId = roundId => {
  * @property {number} roundTimeout
  */
 
-/** @typedef {IssuerKit<'set'>} QuoteKit */
+/** @typedef {IssuerKit<'set', PriceDescription>} QuoteKit */
 
 /**
  * @typedef {Readonly<

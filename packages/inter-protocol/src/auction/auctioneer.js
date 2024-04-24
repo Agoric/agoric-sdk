@@ -693,7 +693,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const creatorFacet = makeFarGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
-       * @param {Issuer} issuer
+       * @param {Issuer<'nat'>} issuer
        * @param {Keyword} kwd
        */
       async addBrand(issuer, kwd) {
