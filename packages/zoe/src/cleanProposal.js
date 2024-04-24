@@ -57,6 +57,7 @@ export const coerceAmountPatternKeywordRecord = (
   getAssetKindByBrand,
 ) => {
   cleanKeywords(allegedAmountKeywordRecord);
+  // FIXME objectMap should constrain the mapping function by the record's type
   return objectMap(allegedAmountKeywordRecord, amount => {
     // Check that each value can be coerced using the AmountMath
     // indicated by brand. `AmountMath.coerce` throws if coercion fails.

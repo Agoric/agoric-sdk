@@ -93,10 +93,7 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  // Should be
-  // at-ts-expect-error XXX callWhen
-  // but ran into the usual disagreement between local lint and CI
-  // @ts-expect-error
+  // @ts-expect-error XXX callWhen
   const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -298,6 +295,7 @@ export const preparePaymentLedger = (
   };
 
   /** @type {() => Purse<K>} */
+  // @ts-expect-error XXX amount kinds
   const makeEmptyPurse = preparePurseKind(
     issuerZone,
     name,

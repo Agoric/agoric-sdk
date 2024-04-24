@@ -1,11 +1,12 @@
 import { Far } from '@endo/marshal';
+import type { Key } from '@endo/patterns';
 import { expectType } from 'tsd';
-
 import { AmountMath, AssetKind } from '../src/index.js';
 import type {
   Amount,
   AssetValueForKind,
   Brand,
+  Issuer,
   SetValue,
 } from '../src/types.js';
 
@@ -42,4 +43,9 @@ import type {
 
   // @ts-expect-error 'n' doesn't satisfy AssetKind
   const n: AssetValueForKind<'n'> = null;
+}
+
+{
+  const issuer: Issuer = null as any;
+  expectType<Key>(issuer);
 }
