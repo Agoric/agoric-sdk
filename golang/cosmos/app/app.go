@@ -914,6 +914,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
 					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
 				),
+				// Add new auction contract. The old one will be retired shortly.
+				vm.CoreProposalStepForModules( "@agoric/builders/scripts/vats/add-auction.js"),
+				// upgrade vaultFactory.
+				vm.CoreProposalStepForModules( "@agoric/builders/scripts/vats/upgradeVaults.js"),
 			}
 		}
 
