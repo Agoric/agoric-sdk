@@ -53,7 +53,7 @@
  */
 
 /**
- * @typedef {object} ZoeSeatAdmin
+ * @typedef {RemotableObject} ZoeSeatAdmin
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason

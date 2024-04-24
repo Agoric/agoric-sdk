@@ -5,8 +5,9 @@
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 import { E } from '@endo/eventual-send';
-import { expectNotType, expectType } from 'tsd';
+import { expectType } from 'tsd';
 
+import type { Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 
@@ -78,4 +79,9 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   // @ts-expect-error
   result.notInResult;
   expectType<bigint>(result);
+}
+
+{
+  const zcfSeat: ZCFSeat = null as any;
+  expectType<Key>(zcfSeat);
 }

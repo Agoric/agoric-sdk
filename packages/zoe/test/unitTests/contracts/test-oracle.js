@@ -124,26 +124,15 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   t.truthy(await E(invitationIssuer).isLive(invitation3));
   t.truthy(await E(invitationIssuer).isLive(invitation4));
 
-  t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation1)).value[0].customDetails
-      .query,
-    query1,
-  );
-  t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation2)).value[0].customDetails
-      .query,
-    query2,
-  );
-  t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation3)).value[0].customDetails
-      .query,
-    query3,
-  );
-  t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation4)).value[0].customDetails
-      .query,
-    query4,
-  );
+  const getCustomDetailsQuery = async inv => {
+    const amt = await E(invitationIssuer).getAmountOf(inv);
+    return amt.value[0].customDetails?.query;
+  };
+
+  t.deepEqual(await getCustomDetailsQuery(invitation1), query1);
+  t.deepEqual(await getCustomDetailsQuery(invitation2), query2);
+  t.deepEqual(await getCustomDetailsQuery(invitation3), query3);
+  t.deepEqual(await getCustomDetailsQuery(invitation4), query4);
 
   const offer = E(zoe).offer(invitation1);
 
