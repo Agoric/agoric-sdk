@@ -102,6 +102,7 @@ const prepareVaultDirector = (
   marshaller,
   makeRecorderKit,
   makeERecorderKit,
+  managerParams,
 ) => {
   /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
@@ -120,7 +121,11 @@ const prepareVaultDirector = (
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   /** a powerful object; can modify parameters */
-  const vaultParamManagers = provideVaultParamManagers(baggage, marshaller);
+  const vaultParamManagers = provideVaultParamManagers(
+    baggage,
+    marshaller,
+    managerParams,
+  );
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
@@ -146,12 +151,10 @@ const prepareVaultDirector = (
     const oldInvitation = baggage.has(shortfallInvitationKey)
       ? baggage.get(shortfallInvitationKey)
       : undefined;
-    console.log('@@@@@ Old Invitation', oldInvitation);
 
     const newInvitation = await directorParamManager.getInternalParamValue(
       SHORTFALL_INVITATION_KEY,
     );
-    console.log('@@@@@ New Invitation', newInvitation);
 
     if (newInvitation === oldInvitation) {
       shortfallReporter ||

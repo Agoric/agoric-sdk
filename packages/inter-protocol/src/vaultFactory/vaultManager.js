@@ -51,7 +51,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { AuctionPFShape } from '../auction/auctioneer.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -340,7 +339,7 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(AuctionPFShape).returns(M.promise()),
+        liquidateVaults: M.call(M.promise()).returns(M.promise()),
       }),
     },
     initState,
