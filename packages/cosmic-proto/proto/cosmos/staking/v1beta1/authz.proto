@@ -11,7 +11,7 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
 //
 // Since: cosmos-sdk 0.43
 message StakeAuthorization {
-  option (cosmos_proto.implements_interface) = "cosmos.authz.Authorization";
+  option (cosmos_proto.implements_interface) = "Authorization";
 
   // max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
   // empty, there is no spend limit and any amount of coins can be delegated.

@@ -53,7 +53,7 @@ message MsgExecLegacyContent {
   option (cosmos.msg.v1.signer) = "authority";
 
   // content is the proposal's content.
-  google.protobuf.Any content = 1 [(cosmos_proto.accepts_interface) = "cosmos.gov.v1beta1.Content"];
+  google.protobuf.Any content = 1 [(cosmos_proto.accepts_interface) = "Content"];
   // authority must be the gov module address.
   string authority = 2;
 }
