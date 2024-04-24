@@ -4,7 +4,7 @@ import { provideDurableMapStore } from '@agoric/vat-data';
 /**
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @returns {ERef<Mint<'set'>>}
+ * @returns {ERef<Mint<'set', PriceDescription>>}
  */
 export const provideQuoteMint = baggage => {
   const issuerBaggage = provideDurableMapStore(
@@ -19,5 +19,6 @@ export const provideQuoteMint = baggage => {
     undefined,
     { recoverySetsOption: 'noRecoverySets' },
   );
+  // @ts-expect-error checked cast
   return issuerKit.mint;
 };
