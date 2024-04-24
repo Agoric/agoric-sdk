@@ -274,6 +274,14 @@ export const makeStartInstance = (
     },
   );
 
+  /**
+   *
+   * @param {Promise<Installation>} installationP
+   * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
+   * @param {unknown} customTerms
+   * @param {unknown} privateArgs
+   * @param {string} instanceLabel
+   */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
@@ -330,6 +338,7 @@ export const makeStartInstance = (
     void watchForAdminNodeDone(adminNode, instanceAdmin);
 
     /** @type {ZoeInstanceAdmin} */
+    // @ts-expect-error XXX saveIssuer
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
       zoeInstanceStorageManager,
       instanceAdmin,
