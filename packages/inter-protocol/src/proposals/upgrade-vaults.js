@@ -56,6 +56,11 @@ export const upgradeVaults = async (powers, { options }) => {
 
   const bundleID = vaultsRef.bundleID;
   console.log(`upgradeVaults: bundleId`, bundleID);
+  /**
+   * @type {Promise<
+   *   Installation<import('../../src/vaultFactory/vaultFactory.js')['start']>
+   * >}
+   */
   let installationP;
   await null;
   if (vaultsRef) {
