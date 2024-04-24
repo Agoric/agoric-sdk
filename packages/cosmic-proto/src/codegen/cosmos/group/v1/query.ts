@@ -410,6 +410,51 @@ export interface QueryTallyResultResponseProtoMsg {
 export interface QueryTallyResultResponseSDKType {
   tally: TallyResultSDKType;
 }
+/**
+ * QueryGroupsRequest is the Query/Groups request type.
+ *
+ * Since: cosmos-sdk 0.47.1
+ */
+export interface QueryGroupsRequest {
+  /** pagination defines an optional pagination for the request. */
+  pagination?: PageRequest;
+}
+export interface QueryGroupsRequestProtoMsg {
+  typeUrl: '/cosmos.group.v1.QueryGroupsRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryGroupsRequest is the Query/Groups request type.
+ *
+ * Since: cosmos-sdk 0.47.1
+ */
+export interface QueryGroupsRequestSDKType {
+  pagination?: PageRequestSDKType;
+}
+/**
+ * QueryGroupsResponse is the Query/Groups response type.
+ *
+ * Since: cosmos-sdk 0.47.1
+ */
+export interface QueryGroupsResponse {
+  /** `groups` is all the groups present in state. */
+  groups: GroupInfo[];
+  /** pagination defines the pagination in the response. */
+  pagination?: PageResponse;
+}
+export interface QueryGroupsResponseProtoMsg {
+  typeUrl: '/cosmos.group.v1.QueryGroupsResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryGroupsResponse is the Query/Groups response type.
+ *
+ * Since: cosmos-sdk 0.47.1
+ */
+export interface QueryGroupsResponseSDKType {
+  groups: GroupInfoSDKType[];
+  pagination?: PageResponseSDKType;
+}
 function createBaseQueryGroupInfoRequest(): QueryGroupInfoRequest {
   return {
     groupId: BigInt(0),
@@ -2695,6 +2740,173 @@ export const QueryTallyResultResponse = {
     return {
       typeUrl: '/cosmos.group.v1.QueryTallyResultResponse',
       value: QueryTallyResultResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryGroupsRequest(): QueryGroupsRequest {
+  return {
+    pagination: undefined,
+  };
+}
+export const QueryGroupsRequest = {
+  typeUrl: '/cosmos.group.v1.QueryGroupsRequest',
+  encode(
+    message: QueryGroupsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGroupsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryGroupsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 2:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryGroupsRequest {
+    return {
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryGroupsRequest): unknown {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryGroupsRequest>): QueryGroupsRequest {
+    const message = createBaseQueryGroupsRequest();
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryGroupsRequestProtoMsg): QueryGroupsRequest {
+    return QueryGroupsRequest.decode(message.value);
+  },
+  toProto(message: QueryGroupsRequest): Uint8Array {
+    return QueryGroupsRequest.encode(message).finish();
+  },
+  toProtoMsg(message: QueryGroupsRequest): QueryGroupsRequestProtoMsg {
+    return {
+      typeUrl: '/cosmos.group.v1.QueryGroupsRequest',
+      value: QueryGroupsRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryGroupsResponse(): QueryGroupsResponse {
+  return {
+    groups: [],
+    pagination: undefined,
+  };
+}
+export const QueryGroupsResponse = {
+  typeUrl: '/cosmos.group.v1.QueryGroupsResponse',
+  encode(
+    message: QueryGroupsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.groups) {
+      GroupInfo.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryGroupsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryGroupsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.groups.push(GroupInfo.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryGroupsResponse {
+    return {
+      groups: Array.isArray(object?.groups)
+        ? object.groups.map((e: any) => GroupInfo.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryGroupsResponse): unknown {
+    const obj: any = {};
+    if (message.groups) {
+      obj.groups = message.groups.map(e =>
+        e ? GroupInfo.toJSON(e) : undefined,
+      );
+    } else {
+      obj.groups = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryGroupsResponse>): QueryGroupsResponse {
+    const message = createBaseQueryGroupsResponse();
+    message.groups = object.groups?.map(e => GroupInfo.fromPartial(e)) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryGroupsResponseProtoMsg): QueryGroupsResponse {
+    return QueryGroupsResponse.decode(message.value);
+  },
+  toProto(message: QueryGroupsResponse): Uint8Array {
+    return QueryGroupsResponse.encode(message).finish();
+  },
+  toProtoMsg(message: QueryGroupsResponse): QueryGroupsResponseProtoMsg {
+    return {
+      typeUrl: '/cosmos.group.v1.QueryGroupsResponse',
+      value: QueryGroupsResponse.encode(message).finish(),
     };
   },
 };

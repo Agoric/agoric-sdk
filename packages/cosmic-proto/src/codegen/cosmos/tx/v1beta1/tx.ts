@@ -136,8 +136,12 @@ export interface SignDocDirectAux {
   /** sequence is the sequence number of the signing account. */
   sequence: bigint;
   /**
-   * Tip is the optional tip used for meta-transactions. It should be left
-   * empty if the signer is not the tipper for this transaction.
+   * Tip is the optional tip used for transactions fees paid in another denom.
+   * It should be left empty if the signer is not the tipper for this
+   * transaction.
+   *
+   * This field is ignored if the chain didn't enable tips, i.e. didn't add the
+   * `TipDecorator` in its posthandler.
    */
   tip?: Tip;
 }
@@ -227,7 +231,10 @@ export interface AuthInfo {
    */
   fee?: Fee;
   /**
-   * Tip is the optional tip used for meta-transactions.
+   * Tip is the optional tip used for transactions fees paid in another denom.
+   *
+   * This field is ignored if the chain didn't enable tips, i.e. didn't add the
+   * `TipDecorator` in its posthandler.
    *
    * Since: cosmos-sdk 0.46
    */
@@ -419,12 +426,12 @@ export interface AuxSignerData {
    */
   address: string;
   /**
-   * sign_doc is the SIGN_MOD_DIRECT_AUX sign doc that the auxiliary signer
+   * sign_doc is the SIGN_MODE_DIRECT_AUX sign doc that the auxiliary signer
    * signs. Note: we use the same sign doc even if we're signing with
    * LEGACY_AMINO_JSON.
    */
   signDoc?: SignDocDirectAux;
-  /** mode is the signing mode of the single signer */
+  /** mode is the signing mode of the single signer. */
   mode: SignMode;
   /** sig is the signature of the sign doc. */
   sig: Uint8Array;

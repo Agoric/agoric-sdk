@@ -14,14 +14,14 @@ import {
   fromJsonTimestamp,
 } from '../../../helpers.js';
 /**
- * BasicAllowance implements Allowance with a one-time grant of tokens
+ * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
  */
 export interface BasicAllowance {
   $typeUrl?: '/cosmos.feegrant.v1beta1.BasicAllowance';
   /**
-   * spend_limit specifies the maximum amount of tokens that can be spent
-   * by this allowance and will be updated as tokens are spent. If it is
+   * spend_limit specifies the maximum amount of coins that can be spent
+   * by this allowance and will be updated as coins are spent. If it is
    * empty, there is no spend limit and any amount of coins can be spent.
    */
   spendLimit: Coin[];
@@ -33,7 +33,7 @@ export interface BasicAllowanceProtoMsg {
   value: Uint8Array;
 }
 /**
- * BasicAllowance implements Allowance with a one-time grant of tokens
+ * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
  */
 export interface BasicAllowanceSDKType {
@@ -402,9 +402,7 @@ export const AllowedMsgAllowance = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.allowance = Cosmos_feegrantFeeAllowanceI_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.allowance = FeeAllowanceI_InterfaceDecoder(reader) as Any;
           break;
         case 2:
           message.allowedMessages.push(reader.string());
@@ -500,9 +498,7 @@ export const Grant = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.allowance = Cosmos_feegrantFeeAllowanceI_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.allowance = FeeAllowanceI_InterfaceDecoder(reader) as Any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -553,7 +549,7 @@ export const Grant = {
     };
   },
 };
-export const Cosmos_feegrantFeeAllowanceI_InterfaceDecoder = (
+export const FeeAllowanceI_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): BasicAllowance | PeriodicAllowance | AllowedMsgAllowance | Any => {
   const reader =
