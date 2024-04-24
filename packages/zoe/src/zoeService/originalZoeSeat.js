@@ -217,7 +217,7 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           }
 
           const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-          E.when(
+          void E.when(
             offerResultPromise,
             offerResult => {
               // Resolve the ephemeral promise for offerResult
