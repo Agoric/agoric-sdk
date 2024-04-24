@@ -312,7 +312,8 @@ export const makeZoeSeatAdminFactory = baggage => {
                     ephemeralOfferResultStore.delete(facets.zoeSeatAdmin);
                   } catch (err) {
                     console.warn(
-                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                      'non-durable offer result will be lost upon zoe vat termination:',
+                      offerResult,
                     );
                   }
                 },
