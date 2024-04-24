@@ -3,7 +3,10 @@ import type { Timestamp } from '@agoric/time';
 import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 import type { AnyJson } from '@agoric/cosmic-proto';
-import type { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type {
+  MsgCancelUnbondingDelegation,
+  MsgUndelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type {
   Delegation,
   Redelegation,
@@ -255,8 +258,7 @@ export interface ChainAccount {
 }
 
 export interface Undelegation {
-  // TODO return MsgCancelUnbondingDelegationResponse when that type is available
-  cancel: () => Promise<void>;
+  cancel: () => Promise<MsgCancelUnbondingDelegation>;
   response: MsgUndelegateResponse;
   /**
    * Resolves when the undelegation is complete and the tokens are no longer bonded.
