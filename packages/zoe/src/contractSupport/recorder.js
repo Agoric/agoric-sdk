@@ -94,7 +94,7 @@ export const prepareRecorder = (baggage, marshaller) => {
       /**
        * Marshalls before writing to storage or publisher to help ensure the two streams match.
        *
-       * @param {unknown} value
+       * @param {any} value
        * @returns {Promise<void>}
        */
       async write(value) {
@@ -111,7 +111,7 @@ export const prepareRecorder = (baggage, marshaller) => {
       /**
        * Like `write` but prevents future writes and terminates the publisher.
        *
-       * @param {unknown} value
+       * @param {any} value
        * @returns {Promise<void>}
        */
       async writeFinal(value) {
@@ -267,7 +267,7 @@ export const prepareMockRecorderKitMakers = () => {
  * whole thing to `any`.
  *
  * @template T
- * @typedef {{ validatedType?: T }} TypedMatcher
+ * @typedef {import('@endo/patterns').Matcher & { validatedType?: T }} TypedMatcher
  */
 
 /**
