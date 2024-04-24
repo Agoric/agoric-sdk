@@ -2,19 +2,19 @@ import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { getMethodNames, objectMap } from '@agoric/internal';
 import { ignoreContext, prepareExo } from '@agoric/vat-data';
-import { keyEQ, M } from '@agoric/store';
+import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { E } from '@endo/eventual-send';
-import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  */
 
-const { Fail, quote: q } = assert;
+const { Fail } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 
@@ -35,22 +35,17 @@ const publicMixinAPI = harden({
 });
 
 /**
+ * Verify that the electorate is represented by a live invitation.
+ *
  * @param {ZCF<GovernanceTerms<{}> & {}>} zcf
  * @param {import('./contractGovernance/typedParamManager.js').TypedParamManager<any>} paramManager
  */
 export const validateElectorate = (zcf, paramManager) => {
-  const { governedParams } = zcf.getTerms();
-  return E.when(paramManager.getParams(), finishedParams => {
-    try {
-      keyEQ(governedParams, finishedParams) ||
-        Fail`The 'governedParams' term must be an object like ${q(
-          finishedParams,
-        )}, but was ${q(governedParams)}`;
-      assertElectorateMatches(paramManager, governedParams);
-    } catch (err) {
-      zcf.shutdownWithFailure(err);
-    }
-  });
+  const invitation = paramManager.getInternalParamValue(CONTRACT_ELECTORATE);
+  return E.when(
+    E(zcf.getInvitationIssuer()).isLive(invitation),
+    isLive => isLive || Fail`Electorate invitation is not live.`,
+  );
 };
 harden(validateElectorate);
 

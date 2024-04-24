@@ -12,6 +12,7 @@ import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
@@ -36,6 +37,8 @@ export const vaultDirectorParamTypes = {
   [REFERENCED_UI_KEY]: ParamTypes.STRING,
 };
 harden(vaultDirectorParamTypes);
+
+const trace = makeTracer('Vault Params');
 
 /**
  * @param {Amount<'set'>} electorateInvitationAmount
@@ -165,6 +168,19 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
+
+// XXX Better to declare this as VaultManagerParamValues + brand. How?
+/**
+ * @typedef {object} VaultManagerParams
+ * @property {Brand} brand
+ * @property {Ratio} liquidationMargin
+ * @property {Ratio} liquidationPenalty
+ * @property {Ratio} interestRate
+ * @property {Ratio} mintFee
+ * @property {Amount<'nat'>} debtLimit
+ * @property {Ratio} [liquidationPadding]
+ */
+
 /**
  * Stop-gap which restores initial param values UNTIL
  * https://github.com/Agoric/agoric-sdk/issues/5200
@@ -173,8 +189,14 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
+ * @param {Record<string, VaultManagerParams>} managerParamValues - sets of
+ *   parameters (plus brand:) keyed by Keyword. override stored initial values
  */
-export const provideVaultParamManagers = (baggage, marshaller) => {
+export const provideVaultParamManagers = (
+  baggage,
+  marshaller,
+  managerParamValues,
+) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
@@ -199,10 +221,23 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
     return manager;
   };
 
-  // restore from baggage
-  // [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // restore from baggage, unless `managerParamValues` overrides.
   for (const [brand, args] of managerArgs.entries()) {
-    makeManager(brand, args);
+    let values;
+    for (const key of Object.keys(managerParamValues)) {
+      if (managerParamValues[key]?.brand === brand) {
+        values = managerParamValues[key];
+        break;
+      }
+    }
+
+    if (values) {
+      trace(`reviving params, override`, brand, values);
+      makeManager(brand, { ...args, initialParamValues: values });
+    } else {
+      trace(`reviving params, keeping`, brand, args.initialParamValues);
+      makeManager(brand, args);
+    }
   }
 
   return {
