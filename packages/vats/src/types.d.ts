@@ -1,3 +1,5 @@
+import type { Guarded } from '@endo/exo';
+
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
 >['board'];

@@ -147,7 +147,6 @@ test('quotes storage', async t => {
     quoteValue.amountIn.value,
     quoteValue.amountOut.value / quoteValue.amountIn.value,
   );
-  // @ts-expect-error thinks the left argument is Number
   t.is(quoteValue.amountOut.value / quoteValue.amountIn.value, highPrice);
 });
 

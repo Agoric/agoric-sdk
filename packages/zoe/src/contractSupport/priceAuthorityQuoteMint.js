@@ -11,6 +11,8 @@ export const provideQuoteMint = baggage => {
     baggage,
     'quoteMintIssuerBaggage',
   );
+  /** @type {IssuerKit<'set', PriceDescription>} */
+  // @ts-expect-error cast
   const issuerKit = prepareIssuerKit(
     issuerBaggage,
     'quote',
@@ -19,6 +21,5 @@ export const provideQuoteMint = baggage => {
     undefined,
     { recoverySetsOption: 'noRecoverySets' },
   );
-  // @ts-expect-error checked cast
   return issuerKit.mint;
 };

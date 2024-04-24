@@ -363,6 +363,7 @@ export const makeAnchorAsset = async (
   const brand = await E(issuer).getBrand();
   const kit = harden({ mint, issuer, brand });
 
+  // @ts-expect-error XXX AssetIssuerKit
   testFirstAnchorKit.resolve(kit);
 
   const toSlotReviver = makeHistoryReviver(
@@ -397,6 +398,7 @@ export const makeAnchorAsset = async (
       denom,
       keyword,
       proposedName,
+      // @ts-expect-error XXX AssetIssuerKit
       kit, // with mint
     ),
   ]);

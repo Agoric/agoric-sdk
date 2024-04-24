@@ -124,7 +124,9 @@ test.before(async t => {
   t.context = {
     ...frozenCtx,
     bundleCache,
+    // @ts-expect-error XXX AssetIssuerKit
     aeth,
+    // @ts-expect-error XXX AssetIssuerKit
     run,
   };
   trace(t, 'CONTEXT');
