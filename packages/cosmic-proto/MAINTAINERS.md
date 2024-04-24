@@ -8,7 +8,9 @@ The generated code is determined by the contents of `protos` and the config of `
 
 ## Maintaining protos
 
-The `protos` are held in this source tree and updated from `golang/cosmos/proto` during `yarn codegen` by `yarn protos-update`. The `cosmos` protos were sourced from [@protobufjs/cosmos](https://www.npmjs.com/package/@protobufs/cosmos) per [Telescope's instructions](https://github.com/cosmology-tech/telescope?tab=readme-ov-file#add-protobufs). However we don't use that as a dependency of the package because we need a more manual approach to merge with the Golang-managed protos in the repo.
+The `protos` are held in this source tree.
+
+To update existing definitions, simply run `yarn codegen`.
 
 To add new protobuf definitions:
 

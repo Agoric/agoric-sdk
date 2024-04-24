@@ -78,9 +78,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
-    "codegen": "yarn protos-update && node scripts/codegen.cjs",
+    "codegen": "./update-protos.sh && node scripts/codegen.cjs",
     "prepare": "npm run build",
-    "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",
     "test": "ava",
