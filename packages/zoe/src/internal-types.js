@@ -53,12 +53,15 @@
  */
 
 /**
- * @typedef {RemotableObject} ZoeSeatAdmin
+ * @typedef ZoeSeatAdminMethods
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {import('@agoric/swingset-vat').ShutdownWithFailure} fail called with the reason
  * for calling fail on this seat, where reason is normally an instanceof Error.
  * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
+ */
+/**
+ * @typedef {import('@endo/marshal').RemotableObject & ZoeSeatAdminMethods} ZoeSeatAdmin
  */
 
 /**
@@ -67,7 +70,7 @@
 
 /**
  * @typedef {object} HandleOfferResult
- * @property {Promise<unknown>} offerResultPromise
+ * @property {Promise<import('@endo/marshal').Passable>} offerResultPromise
  * @property {ExitObj} exitObj
  */
 

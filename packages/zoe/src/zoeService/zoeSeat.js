@@ -109,7 +109,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       return {
         currentAllocation: initialAllocation,
         proposal,
-        offerResult: undefined,
+        offerResult: /** @type {any} */ (undefined),
         offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
         withdrawFacet,
