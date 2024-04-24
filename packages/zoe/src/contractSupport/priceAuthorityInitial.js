@@ -23,7 +23,7 @@ import { mintQuote } from './priceAuthorityTransform.js';
  *
  * @param {Ratio} priceOutPerIn
  * @param {PriceAuthority} priceAuthority
- * @param {ERef<Mint<'set'>>} quoteMint
+ * @param {ERef<Mint<'set', PriceDescription>>} quoteMint
  * @param {Brand<'nat'>} brandIn
  * @param {Brand<'nat'>} brandOut
  * @returns {PriceAuthority}
