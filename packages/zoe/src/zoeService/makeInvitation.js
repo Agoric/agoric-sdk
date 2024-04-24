@@ -28,6 +28,9 @@ export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     // Upgrade this legacy state by simply deleting it.
     invitationKitBaggage.delete(ZOE_INVITATION_KIT);
   }
+
+  /** @type {IssuerKit<'set', InvitationDetails>} */
+  // @ts-expect-error cast
   const invitationKit = prepareIssuerKit(
     invitationKitBaggage,
     'Zoe Invitation',
