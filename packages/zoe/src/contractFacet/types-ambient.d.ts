@@ -164,7 +164,7 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * normally an instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
-type ZCFSeat = {
+type ZCFSeat = import('@endo/pass-style').RemotableObject & {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
