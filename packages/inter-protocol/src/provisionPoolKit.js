@@ -348,7 +348,6 @@ export const prepareProvisionPoolKit = (
                 console.log('provisionPool notified of new asset', desc.brand);
                 await zcf.saveIssuer(desc.issuer, desc.issuerName);
                 /** @type {ERef<Purse>} */
-                // @ts-expect-error vbank purse is close enough for our use.
                 const exchangePurse = E(poolBank).getPurse(desc.brand);
                 void observeNotifier(
                   E(exchangePurse).getCurrentAmountNotifier(),

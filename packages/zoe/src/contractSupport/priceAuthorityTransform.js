@@ -6,7 +6,7 @@ import { makeNotifier } from '@agoric/notifier';
 
 /**
  * @import {EOnly} from '@endo/eventual-send';
- * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {MutableQuote, PriceAuthority, PriceQuote, PriceDescription,} from '@agoric/zoe/tools/types.js';
  */
 
 /**
@@ -14,7 +14,7 @@ import { makeNotifier } from '@agoric/notifier';
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut
  * @param {import('@agoric/time').TimerService} timer
- * @param {import('@agoric/time').Timestamp} timestamp
+ * @param {import('@agoric/time').TimestampRecord} timestamp
  * @param {ERef<Mint<'set', PriceDescription>>} quoteMint
  * @returns {Promise<PriceQuote>}
  */

@@ -37,7 +37,7 @@ export type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = {
+export type AdminFacet<SF extends ContractStartFunction> = RemotableObject & {
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined

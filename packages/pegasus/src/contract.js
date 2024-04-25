@@ -8,6 +8,10 @@ import '@agoric/zoe/exported.js';
 import '../exported.js';
 
 /**
+ * @import {Remote} from '@agoric/vow';
+ */
+
+/**
  * @type {ContractStartFn<import('./pegasus.js').Pegasus, never, {}, {
  *   board: Remote<BoardDepositFacet>,
  *   namesByAddress: Remote<import('@agoric/vats').NameHub>

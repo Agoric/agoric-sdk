@@ -62,10 +62,13 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
     slots: ['board011'],
   });
 
-  /** @type {Brand[]} */
-  const [b1] = context.fromBoard.fromCapData(ammMetricsCapData);
-  /** @type {Brand[]} */
-  const [b2] = context.fromBoard.fromCapData(amm.getMetrics());
+  const [b1] = /** @type {Brand[]} */ (
+    context.fromBoard.fromCapData(ammMetricsCapData)
+  );
+
+  const [b2] = /** @type {Brand[]} */ (
+    context.fromBoard.fromCapData(amm.getMetrics())
+  );
   t.is(b1, b2, 'unserialization twice from same source');
 
   const myWallet = makeOnChainWallet(board);
@@ -85,6 +88,7 @@ test('makeImportContext preserves identity across AMM and wallet', t => {
     slots: ['board011', 'purse:ATOM'],
   });
 
+  /** @type {any} */
   const walletState = context.fromMyWallet.fromCapData(walletCapData);
   t.is(walletState[0].brand, b1, 'unserialization across sources');
 
