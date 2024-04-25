@@ -31,6 +31,19 @@ import * as _114 from './lightclients/localhost/v1/localhost.js';
 import * as _115 from './lightclients/solomachine/v1/solomachine.js';
 import * as _116 from './lightclients/solomachine/v2/solomachine.js';
 import * as _117 from './lightclients/tendermint/v1/tendermint.js';
+import * as _159 from './applications/interchain_accounts/controller/v1/query.rpc.Query.js';
+import * as _160 from './applications/interchain_accounts/host/v1/query.rpc.Query.js';
+import * as _161 from './applications/transfer/v1/query.rpc.Query.js';
+import * as _162 from './core/channel/v1/query.rpc.Query.js';
+import * as _163 from './core/client/v1/query.rpc.Query.js';
+import * as _164 from './core/connection/v1/query.rpc.Query.js';
+import * as _165 from './applications/interchain_accounts/controller/v1/tx.rpc.msg.js';
+import * as _166 from './applications/transfer/v1/tx.rpc.msg.js';
+import * as _167 from './core/channel/v1/tx.rpc.msg.js';
+import * as _168 from './core/client/v1/tx.rpc.msg.js';
+import * as _169 from './core/connection/v1/tx.rpc.msg.js';
+import * as _174 from './rpc.query.js';
+import * as _175 from './rpc.tx.js';
 export namespace ibc {
   export namespace applications {
     export namespace interchain_accounts {
@@ -39,6 +52,8 @@ export namespace ibc {
           ..._86,
           ..._87,
           ..._88,
+          ..._159,
+          ..._165,
         };
       }
       export namespace genesis {
@@ -50,6 +65,7 @@ export namespace ibc {
         export const v1 = {
           ..._90,
           ..._91,
+          ..._160,
         };
       }
       export const v1 = {
@@ -65,6 +81,8 @@ export namespace ibc {
         ..._97,
         ..._98,
         ..._99,
+        ..._161,
+        ..._166,
       };
       export const v2 = {
         ..._100,
@@ -78,6 +96,8 @@ export namespace ibc {
         ..._102,
         ..._103,
         ..._104,
+        ..._162,
+        ..._167,
       };
     }
     export namespace client {
@@ -86,6 +106,8 @@ export namespace ibc {
         ..._106,
         ..._107,
         ..._108,
+        ..._163,
+        ..._168,
       };
     }
     export namespace commitment {
@@ -99,6 +121,8 @@ export namespace ibc {
         ..._111,
         ..._112,
         ..._113,
+        ..._164,
+        ..._169,
       };
     }
   }
@@ -122,4 +146,8 @@ export namespace ibc {
       };
     }
   }
+  export const ClientFactory = {
+    ..._174,
+    ..._175,
+  };
 }

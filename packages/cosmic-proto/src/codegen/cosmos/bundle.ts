@@ -62,12 +62,39 @@ import * as _76 from './upgrade/v1beta1/tx.js';
 import * as _77 from './upgrade/v1beta1/upgrade.js';
 import * as _78 from './vesting/v1beta1/tx.js';
 import * as _79 from './vesting/v1beta1/vesting.js';
+import * as _135 from './auth/v1beta1/query.rpc.Query.js';
+import * as _136 from './authz/v1beta1/query.rpc.Query.js';
+import * as _137 from './bank/v1beta1/query.rpc.Query.js';
+import * as _138 from './base/node/v1beta1/query.rpc.Service.js';
+import * as _139 from './distribution/v1beta1/query.rpc.Query.js';
+import * as _140 from './feegrant/v1beta1/query.rpc.Query.js';
+import * as _141 from './gov/v1/query.rpc.Query.js';
+import * as _142 from './gov/v1beta1/query.rpc.Query.js';
+import * as _143 from './group/v1/query.rpc.Query.js';
+import * as _144 from './mint/v1beta1/query.rpc.Query.js';
+import * as _145 from './params/v1beta1/query.rpc.Query.js';
+import * as _146 from './staking/v1beta1/query.rpc.Query.js';
+import * as _147 from './tx/v1beta1/service.rpc.Service.js';
+import * as _148 from './upgrade/v1beta1/query.rpc.Query.js';
+import * as _149 from './authz/v1beta1/tx.rpc.msg.js';
+import * as _150 from './bank/v1beta1/tx.rpc.msg.js';
+import * as _151 from './distribution/v1beta1/tx.rpc.msg.js';
+import * as _152 from './feegrant/v1beta1/tx.rpc.msg.js';
+import * as _153 from './gov/v1/tx.rpc.msg.js';
+import * as _154 from './gov/v1beta1/tx.rpc.msg.js';
+import * as _155 from './group/v1/tx.rpc.msg.js';
+import * as _156 from './staking/v1beta1/tx.rpc.msg.js';
+import * as _157 from './upgrade/v1beta1/tx.rpc.msg.js';
+import * as _158 from './vesting/v1beta1/tx.rpc.msg.js';
+import * as _172 from './rpc.query.js';
+import * as _173 from './rpc.tx.js';
 export namespace cosmos {
   export namespace auth {
     export const v1beta1 = {
       ..._17,
       ..._18,
       ..._19,
+      ..._135,
     };
   }
   export namespace authz {
@@ -77,6 +104,8 @@ export namespace cosmos {
       ..._22,
       ..._23,
       ..._24,
+      ..._136,
+      ..._149,
     };
   }
   export namespace bank {
@@ -86,6 +115,8 @@ export namespace cosmos {
       ..._27,
       ..._28,
       ..._29,
+      ..._137,
+      ..._150,
     };
   }
   export namespace base {
@@ -97,6 +128,7 @@ export namespace cosmos {
     export namespace node {
       export const v1beta1 = {
         ..._31,
+        ..._138,
       };
     }
     export namespace query {
@@ -143,6 +175,8 @@ export namespace cosmos {
       ..._42,
       ..._43,
       ..._44,
+      ..._139,
+      ..._151,
     };
   }
   export namespace feegrant {
@@ -151,6 +185,8 @@ export namespace cosmos {
       ..._46,
       ..._47,
       ..._48,
+      ..._140,
+      ..._152,
     };
   }
   export namespace gov {
@@ -159,12 +195,16 @@ export namespace cosmos {
       ..._50,
       ..._51,
       ..._52,
+      ..._141,
+      ..._153,
     };
     export const v1beta1 = {
       ..._53,
       ..._54,
       ..._55,
       ..._56,
+      ..._142,
+      ..._154,
     };
   }
   export namespace group {
@@ -174,6 +214,8 @@ export namespace cosmos {
       ..._59,
       ..._60,
       ..._61,
+      ..._143,
+      ..._155,
     };
   }
   export namespace mint {
@@ -181,12 +223,14 @@ export namespace cosmos {
       ..._62,
       ..._63,
       ..._64,
+      ..._144,
     };
   }
   export namespace params {
     export const v1beta1 = {
       ..._65,
       ..._66,
+      ..._145,
     };
   }
   export namespace staking {
@@ -196,6 +240,8 @@ export namespace cosmos {
       ..._69,
       ..._70,
       ..._71,
+      ..._146,
+      ..._156,
     };
   }
   export namespace tx {
@@ -207,6 +253,7 @@ export namespace cosmos {
     export const v1beta1 = {
       ..._73,
       ..._74,
+      ..._147,
     };
   }
   export namespace upgrade {
@@ -214,12 +261,19 @@ export namespace cosmos {
       ..._75,
       ..._76,
       ..._77,
+      ..._148,
+      ..._157,
     };
   }
   export namespace vesting {
     export const v1beta1 = {
       ..._78,
       ..._79,
+      ..._158,
     };
   }
+  export const ClientFactory = {
+    ..._172,
+    ..._173,
+  };
 }
