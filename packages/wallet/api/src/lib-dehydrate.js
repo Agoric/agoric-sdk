@@ -86,10 +86,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   };
 
   /**
-   * @template T
    * @param {string} kind
    * @param {{ useLegacyMap?: boolean }} [legacyOptions]
-   * @returns {Mapping<T>}
+   * @returns {Mapping<any>}
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     typeof kind === 'string' || `kind ${kind} must be a string`;
@@ -97,9 +96,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     // These are actually either a LegacyMap or a MapStore depending on
     // useLegacyMap. Fortunately, the LegacyMap type is approximately the
     // intersection of these, so we can just use it.
-    /** @type {LegacyMap<T, string>} */
+    /** @type {LegacyMap<any, string>} */
     const rawValToPetname = makeMap('value');
-    /** @type {LegacyMap<T, string | Path>} */
+    /** @type {LegacyMap<any, string | Path>} */
     const valToPetname = {
       ...rawValToPetname,
       set(key, val) {
@@ -121,9 +120,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return mapIterable(rawValToPetname.values(), val => explode(val));
       },
     };
-    /** @type {MapStore<string, T>} */
+    /** @type {MapStore<string, any>} */
     const rawPetnameToVal = makeScalarMapStore('petname');
-    /** @type {MapStore<Path | string, T>} */
+    /** @type {MapStore<Path | string, any>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {
@@ -270,7 +269,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       petnameToVal.delete(petname);
       valToPetname.delete(val);
     };
-    /** @type {Mapping<T>} */
+    /** @type {Mapping<any>} */
     const mapping = harden({
       implode,
       explode,
