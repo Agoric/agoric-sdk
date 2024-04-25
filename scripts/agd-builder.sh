@@ -187,7 +187,7 @@ $do_not_build || (
     files=(package.json)
     while IFS= read -r line; do
       files+=("$line")
-    done < <(lazy_yarn -s workspaces info \
+    done < <(npm query .workspace \
       | sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
 
     src=$(find "${files[@]}" "${print[@]}" | head -1 || true)

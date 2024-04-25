@@ -14,7 +14,7 @@ DSTDIR=${2-$PWD/node_modules}
 pushd "$SRCDIR"
 yarn install
 yarn build
-yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
+npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   test "$(jq .private < "$dir/package.json")" != true || continue
 
