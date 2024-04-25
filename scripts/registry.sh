@@ -71,7 +71,7 @@ publish() {
     cat packages/*/package.json
 
     yarn --version
-    yarn install
+    yarn install --verbose
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
