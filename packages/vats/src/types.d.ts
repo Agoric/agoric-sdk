@@ -93,12 +93,12 @@ export type BridgeHandler = {
 };
 
 /** An object which handles messages for a specific bridge */
-export type ScopedBridgeManager = {
+export type ScopedBridgeManager = Guarded<{
   toBridge: (obj: any) => Promise<any>;
   fromBridge: (obj: any) => PromiseVow<void>;
   initHandler: (handler: ERef<BridgeHandler>) => void;
   setHandler: (handler: ERef<BridgeHandler>) => void;
-};
+}>;
 
 /** The object to manage this bridge */
 export type BridgeManager = {

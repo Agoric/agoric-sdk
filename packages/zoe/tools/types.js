@@ -24,7 +24,7 @@ export {};
  * The quoted result of trading `amountIn`
  * @property {import('@endo/pass-style').RemotableObject & import('@agoric/time').TimerService} timer
  * The service that gave the `timestamp`
- * @property {import('@agoric/time').Timestamp} timestamp
+ * @property {import('@agoric/time').TimestampRecord} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any} [conditions]
  * Additional conditions for the quote
