@@ -9,6 +9,7 @@ import { provideLazy } from '@agoric/store';
 let VatDataGlobal;
 if ('VatData' in globalThis) {
   globalThis.VatData || Fail`VatData defined in global as null or undefined`;
+  // @ts-expect-error XXX
   VatDataGlobal = globalThis.VatData;
 } else {
   // XXX this module has been known to get imported (transitively) in cases that

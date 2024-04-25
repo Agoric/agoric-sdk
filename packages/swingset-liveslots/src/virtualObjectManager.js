@@ -24,6 +24,7 @@ import {
  * @import {DurableKindHandle} from '@agoric/swingset-liveslots'
  * @import {DefineKindOptions} from '@agoric/swingset-liveslots'
  * @import {ClassContextProvider, KitContextProvider} from '@endo/exo'
+ * @import {ToCapData, FromCapData} from '@endo/marshal';
  */
 
 const {
@@ -276,8 +277,8 @@ const insistSameCapData = (oldCD, newCD) => {
  * @param {(slot: string) => object} requiredValForSlot
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {import('@endo/marshal').ToCapData<string>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').FromCapData<string>} unserialize  Unserializer for this vat
+ * @param {ToCapData<string>} serialize  Serializer for this vat
+ * @param {FromCapData<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  * @param {import('./types.js').LiveSlotsOptions} [liveSlotsOptions]
