@@ -32,3 +32,7 @@ test('agoric', t => {
 test('cosmos', t => {
   t.snapshot(Object.keys(index.cosmos).sort());
 });
+
+test('ibc', t => {
+  t.snapshot(Object.keys(index.ibc).sort());
+});
