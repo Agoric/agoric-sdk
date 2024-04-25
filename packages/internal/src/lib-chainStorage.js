@@ -5,7 +5,10 @@ import { M } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {PassableCap} from '@endo/marshal';
+ */
 
 const { Fail } = assert;
 
@@ -265,7 +268,7 @@ harden(makeStorageNodeChild);
 /**
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
- * @returns {(value: unknown) => Promise<void>}
+ * @returns {(value: PassableCap) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {
