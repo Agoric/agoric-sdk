@@ -228,6 +228,7 @@ test('Invitation', async t => {
 
   const { instance, zcf, zoe } = await setupZCFTest(issuerKeywordRecord, terms);
 
+  /** @type {Invitation} */
   const invitation = await E(E(zoe).getPublicFacet(instance)).makeInvitation();
 
   const invitationAmount = await E(E(zoe).getInvitationIssuer()).getAmountOf(
@@ -251,6 +252,7 @@ test('Invitation', async t => {
   await eventLoopIteration();
   const invitationActualAmount = paramManager.getInvite().value;
   t.deepEqual(invitationActualAmount, invitationAmount.value);
+  // @ts-expect-error XXX
   t.is(invitationActualAmount[0].description, 'simple');
 
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);
