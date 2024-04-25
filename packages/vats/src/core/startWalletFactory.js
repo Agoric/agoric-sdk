@@ -154,10 +154,12 @@ export const startWalletFactory = async (
     slotToBoardRemote,
   );
 
+  /** @type {() => any} */
   const reviveOldMetrics = () => {
     if (!dataReviver.has(OLD_POOL_METRICS_STORAGE_PATH)) {
       return undefined;
     }
+    /** @type {any} */
     const oldPoolMetrics = dataReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
     const newBrandFromOldSlotID = makeMap([
       [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), feeBrand],

@@ -86,6 +86,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeProvisionPoolKit({
         // XXX governance can change the brand of the amount but should only be able to change the value
         // NB: changing the brand will break this pool
+        // @ts-expect-error XXX Brand AssetKind
         poolBrand: params.getPerAccountInitialAmount().brand,
         storageNode: privateArgs.storageNode,
       }),
