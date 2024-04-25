@@ -14,6 +14,8 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
+/** @import {Marshal} from '@endo/marshal'; */
+
 /** @type {ContractMeta} */
 export const meta = {
   privateArgsShape: M.splitRecord(
@@ -45,7 +47,7 @@ harden(meta);
  *   >;
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   marshaller: Marshal<any>;
  *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
