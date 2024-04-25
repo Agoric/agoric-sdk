@@ -37,7 +37,7 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   name=$(jq -r .name < package.json)
   version=$(jq -r .version < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  file="$(pwd)/${stem}-v${version}.tgz"
+  file="$(pwd)/package.tgz"
 
   # Clean up.
   rm -f "${stem}"-v*.tgz
