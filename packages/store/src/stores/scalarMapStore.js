@@ -135,7 +135,7 @@ export const makeMapStoreMethods = (
  *
  * @param {string} [tag] - the column name for the key
  * @param {StoreOptions} [options]
- * @returns {RemotableObject & MapStore<any, any>}
+ * @returns {MapStore<any, any>}
  */
 export const makeScalarMapStore = (
   tag = 'key',
