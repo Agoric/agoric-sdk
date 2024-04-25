@@ -1,5 +1,6 @@
 // @ts-check
 import { AmountMath, BrandShape } from '@agoric/ertp';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import {
   observeIteration,
@@ -19,7 +20,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
-import { Far, deeplyFulfilled } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -197,7 +198,7 @@ export const prepareProvisionPoolKit = (
             namesByAddressAdmin,
             walletFactory,
           });
-          const refs = await deeplyFulfilled(obj);
+          const refs = await deeplyFulfilledObject(obj);
           Object.assign(this.state, refs);
         },
         makeHandler() {
