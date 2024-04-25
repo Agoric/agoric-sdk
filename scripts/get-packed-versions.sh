@@ -19,6 +19,7 @@ WORKDIR=${1:-.}
 cd -- "$WORKDIR" 1>&2
 
 # Install and build the source directory.
+corepack enable
 yarn install 1>&2
 yarn build 1>&2
 
