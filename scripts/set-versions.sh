@@ -14,7 +14,10 @@ VERSIONSHASH=$(git hash-object -w --stdin)
 npm query .workspace \
   | jq -r '.[].location | "\(.)/package.json"' \
   | while read PACKAGEJSON; do
+    echo PACKAGEJSON
     echo "$PACKAGEJSON"
+    echo BLOB "$VERSIONSHASH"
+    git cat-file blob "$VERSIONSHASH"
     PACKAGEJSONHASH=$(
       jq --slurpfile versions <(git cat-file blob "$VERSIONSHASH") '
       def update(name): if .[name] then {
