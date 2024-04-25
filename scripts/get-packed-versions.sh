@@ -25,7 +25,7 @@ yarn build 1>&2
 
 yarn lerna run build:types 1>&2
 
-yarn --silent workspaces info | jq -r '.[].location' | while read -r dir; do
+npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   echo "dir=$dir" 1>&2
   test "$(jq .private < "$dir/package.json")" != true || continue
