@@ -71,7 +71,8 @@ publish() {
     cat packages/*/package.json
 
     yarn --version
-    yarn install --verbose
+    # only Yarn v1 has verbose option
+    yarn install --verbose || yarn install
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
