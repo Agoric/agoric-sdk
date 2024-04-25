@@ -262,6 +262,7 @@ export const makePsmCommand = logger => {
           invitationMakerName: 'VoteOnParamChange',
         },
         proposal: {},
+        // @ts-expect-error XXX governance types
         offerArgs: {
           instance: psmInstance,
           params: { MintLimit: scaledAmount },

@@ -156,6 +156,7 @@ export const makeAuctionCommand = (
             previousOffer: opts.charterAcceptOfferId,
             invitationMakerName: 'VoteOnParamChange',
           },
+          // @ts-expect-error XXX governance types
           offerArgs,
           proposal: {},
         };

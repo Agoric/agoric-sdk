@@ -339,6 +339,7 @@ test('propose change to auction governance param', async t => {
       previousOffer: 'accept-charter-invitation',
       invitationMakerName: 'VoteOnParamChange',
     },
+    // @ts-expect-error XXX governance types
     offerArgs,
     proposal: {},
   });

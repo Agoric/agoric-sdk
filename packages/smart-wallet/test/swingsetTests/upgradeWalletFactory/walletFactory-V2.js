@@ -27,6 +27,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager } = privateArgs;
 
+  /** @type {MapStore<string, import('../../../src/smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 

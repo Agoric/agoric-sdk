@@ -147,7 +147,7 @@ export const fmtBid = (bid, assets) => {
   /** @type {{ price: string } | { discount: number }} */
   const spec =
     'offerPrice' in offerArgs
-      ? { price: fmt.price(offerArgs.offerPrice) }
+      ? { price: fmt.price(/** @type {Ratio} */ (offerArgs.offerPrice)) }
       : { discount: fmt.discount(offerArgs.offerBidScaling) };
 
   const {

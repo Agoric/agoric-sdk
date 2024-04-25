@@ -10,7 +10,7 @@ import '@agoric/zoe/src/zoeService/types-ambient.js';
  *   id: OfferId,
  *   invitationSpec: import('./invitations.js').InvitationSpec,
  *   proposal: Proposal,
- *   offerArgs?: unknown
+ *   offerArgs?: import('@endo/marshal').Passable,
  * }} OfferSpec
  */
 
