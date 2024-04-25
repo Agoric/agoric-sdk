@@ -123,9 +123,20 @@ export function broadcastModeToJSON(object: BroadcastMode): string {
 export interface GetTxsEventRequest {
   /** events is the list of transaction event type. */
   events: string[];
-  /** pagination defines a pagination for the request. */
+  /**
+   * pagination defines a pagination for the request.
+   * Deprecated post v0.46.x: use page and limit instead.
+   */
+  /** @deprecated */
   pagination?: PageRequest;
   orderBy: OrderBy;
+  /** page is the page number to query, starts at 1. If not provided, will default to first page. */
+  page: bigint;
+  /**
+   * limit is the total number of results to be returned in the result page.
+   * If left empty it will default to a value to be set by each app.
+   */
+  limit: bigint;
 }
 export interface GetTxsEventRequestProtoMsg {
   typeUrl: '/cosmos.tx.v1beta1.GetTxsEventRequest';
@@ -137,8 +148,11 @@ export interface GetTxsEventRequestProtoMsg {
  */
 export interface GetTxsEventRequestSDKType {
   events: string[];
+  /** @deprecated */
   pagination?: PageRequestSDKType;
   order_by: OrderBy;
+  page: bigint;
+  limit: bigint;
 }
 /**
  * GetTxsEventResponse is the response type for the Service.TxsByEvents
@@ -149,8 +163,14 @@ export interface GetTxsEventResponse {
   txs: Tx[];
   /** tx_responses is the list of queried TxResponses. */
   txResponses: TxResponse[];
-  /** pagination defines a pagination for the response. */
+  /**
+   * pagination defines a pagination for the response.
+   * Deprecated post v0.46.x: use total instead.
+   */
+  /** @deprecated */
   pagination?: PageResponse;
+  /** total is total number of results available */
+  total: bigint;
 }
 export interface GetTxsEventResponseProtoMsg {
   typeUrl: '/cosmos.tx.v1beta1.GetTxsEventResponse';
@@ -163,7 +183,9 @@ export interface GetTxsEventResponseProtoMsg {
 export interface GetTxsEventResponseSDKType {
   txs: TxSDKType[];
   tx_responses: TxResponseSDKType[];
+  /** @deprecated */
   pagination?: PageResponseSDKType;
+  total: bigint;
 }
 /**
  * BroadcastTxRequest is the request type for the Service.BroadcastTxRequest
@@ -352,6 +374,8 @@ function createBaseGetTxsEventRequest(): GetTxsEventRequest {
     events: [],
     pagination: undefined,
     orderBy: 0,
+    page: BigInt(0),
+    limit: BigInt(0),
   };
 }
 export const GetTxsEventRequest = {
@@ -368,6 +392,12 @@ export const GetTxsEventRequest = {
     }
     if (message.orderBy !== 0) {
       writer.uint32(24).int32(message.orderBy);
+    }
+    if (message.page !== BigInt(0)) {
+      writer.uint32(32).uint64(message.page);
+    }
+    if (message.limit !== BigInt(0)) {
+      writer.uint32(40).uint64(message.limit);
     }
     return writer;
   },
@@ -391,6 +421,12 @@ export const GetTxsEventRequest = {
         case 3:
           message.orderBy = reader.int32() as any;
           break;
+        case 4:
+          message.page = reader.uint64();
+          break;
+        case 5:
+          message.limit = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -407,6 +443,8 @@ export const GetTxsEventRequest = {
         ? PageRequest.fromJSON(object.pagination)
         : undefined,
       orderBy: isSet(object.orderBy) ? orderByFromJSON(object.orderBy) : -1,
+      page: isSet(object.page) ? BigInt(object.page.toString()) : BigInt(0),
+      limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
     };
   },
   toJSON(message: GetTxsEventRequest): unknown {
@@ -422,6 +460,10 @@ export const GetTxsEventRequest = {
         : undefined);
     message.orderBy !== undefined &&
       (obj.orderBy = orderByToJSON(message.orderBy));
+    message.page !== undefined &&
+      (obj.page = (message.page || BigInt(0)).toString());
+    message.limit !== undefined &&
+      (obj.limit = (message.limit || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<GetTxsEventRequest>): GetTxsEventRequest {
@@ -432,6 +474,14 @@ export const GetTxsEventRequest = {
         ? PageRequest.fromPartial(object.pagination)
         : undefined;
     message.orderBy = object.orderBy ?? 0;
+    message.page =
+      object.page !== undefined && object.page !== null
+        ? BigInt(object.page.toString())
+        : BigInt(0);
+    message.limit =
+      object.limit !== undefined && object.limit !== null
+        ? BigInt(object.limit.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: GetTxsEventRequestProtoMsg): GetTxsEventRequest {
@@ -452,6 +502,7 @@ function createBaseGetTxsEventResponse(): GetTxsEventResponse {
     txs: [],
     txResponses: [],
     pagination: undefined,
+    total: BigInt(0),
   };
 }
 export const GetTxsEventResponse = {
@@ -471,6 +522,9 @@ export const GetTxsEventResponse = {
         message.pagination,
         writer.uint32(26).fork(),
       ).ldelim();
+    }
+    if (message.total !== BigInt(0)) {
+      writer.uint32(32).uint64(message.total);
     }
     return writer;
   },
@@ -494,6 +548,9 @@ export const GetTxsEventResponse = {
         case 3:
           message.pagination = PageResponse.decode(reader, reader.uint32());
           break;
+        case 4:
+          message.total = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -512,6 +569,7 @@ export const GetTxsEventResponse = {
       pagination: isSet(object.pagination)
         ? PageResponse.fromJSON(object.pagination)
         : undefined,
+      total: isSet(object.total) ? BigInt(object.total.toString()) : BigInt(0),
     };
   },
   toJSON(message: GetTxsEventResponse): unknown {
@@ -532,6 +590,8 @@ export const GetTxsEventResponse = {
       (obj.pagination = message.pagination
         ? PageResponse.toJSON(message.pagination)
         : undefined);
+    message.total !== undefined &&
+      (obj.total = (message.total || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<GetTxsEventResponse>): GetTxsEventResponse {
@@ -543,6 +603,10 @@ export const GetTxsEventResponse = {
       object.pagination !== undefined && object.pagination !== null
         ? PageResponse.fromPartial(object.pagination)
         : undefined;
+    message.total =
+      object.total !== undefined && object.total !== null
+        ? BigInt(object.total.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: GetTxsEventResponseProtoMsg): GetTxsEventResponse {

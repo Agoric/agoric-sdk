@@ -98,7 +98,7 @@ export interface QueryProposalsResponseSDKType {
 export interface QueryVoteRequest {
   /** proposal_id defines the unique id of the proposal. */
   proposalId: bigint;
-  /** voter defines the oter address for the proposals. */
+  /** voter defines the voter address for the proposals. */
   voter: string;
 }
 export interface QueryVoteRequestProtoMsg {

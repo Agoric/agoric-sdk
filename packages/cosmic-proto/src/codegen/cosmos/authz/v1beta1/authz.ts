@@ -214,9 +214,7 @@ export const Grant = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.authorization = Cosmos_authzAuthorization_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 2:
           message.expiration = fromTimestamp(
@@ -324,9 +322,7 @@ export const GrantAuthorization = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.authorization = Cosmos_authzAuthorization_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 4:
           message.expiration = fromTimestamp(
@@ -456,7 +452,7 @@ export const GrantQueueItem = {
     };
   },
 };
-export const Cosmos_authzAuthorization_InterfaceDecoder = (
+export const Authorization_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): GenericAuthorization | SendAuthorization | StakeAuthorization | Any => {
   const reader =

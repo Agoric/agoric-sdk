@@ -6,28 +6,6 @@ import {
   Duration,
   DurationSDKType,
 } from '../../../google/protobuf/duration.js';
-import {
-  CommunityPoolSpendProposal,
-  CommunityPoolSpendProposalSDKType,
-  CommunityPoolSpendProposalWithDeposit,
-  CommunityPoolSpendProposalWithDepositSDKType,
-} from '../../distribution/v1beta1/distribution.js';
-import {
-  ParameterChangeProposal,
-  ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
-import {
-  SoftwareUpgradeProposal,
-  SoftwareUpgradeProposalSDKType,
-  CancelSoftwareUpgradeProposal,
-  CancelSoftwareUpgradeProposalSDKType,
-} from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ClientUpdateProposal,
-  ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '@cosmjs/math';
 import {
@@ -95,7 +73,7 @@ export function voteOptionToJSON(object: VoteOption): string {
 }
 /** ProposalStatus enumerates the valid statuses of a proposal. */
 export enum ProposalStatus {
-  /** PROPOSAL_STATUS_UNSPECIFIED - PROPOSAL_STATUS_UNSPECIFIED defines the default propopsal status. */
+  /** PROPOSAL_STATUS_UNSPECIFIED - PROPOSAL_STATUS_UNSPECIFIED defines the default proposal status. */
   PROPOSAL_STATUS_UNSPECIFIED = 0,
   /**
    * PROPOSAL_STATUS_DEPOSIT_PERIOD - PROPOSAL_STATUS_DEPOSIT_PERIOD defines a proposal status during the deposit
@@ -239,17 +217,7 @@ export interface DepositSDKType {
 /** Proposal defines the core field members of a governance proposal. */
 export interface Proposal {
   proposalId: bigint;
-  content?:
-    | (TextProposal &
-        CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        ParameterChangeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ClientUpdateProposal &
-        UpgradeProposal &
-        Any)
-    | undefined;
+  content?: (TextProposal & Any) | undefined;
   status: ProposalStatus;
   /**
    * final_tally_result is the final tally result of the proposal. When
@@ -270,17 +238,7 @@ export interface ProposalProtoMsg {
 /** Proposal defines the core field members of a governance proposal. */
 export interface ProposalSDKType {
   proposal_id: bigint;
-  content?:
-    | TextProposalSDKType
-    | CommunityPoolSpendProposalSDKType
-    | CommunityPoolSpendProposalWithDepositSDKType
-    | ParameterChangeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
-    | AnySDKType
-    | undefined;
+  content?: TextProposalSDKType | AnySDKType | undefined;
   status: ProposalStatus;
   final_tally_result: TallyResultSDKType;
   submit_time: Date;
@@ -717,9 +675,7 @@ export const Proposal = {
           message.proposalId = reader.uint64();
           break;
         case 2:
-          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.content = Content_InterfaceDecoder(reader) as Any;
           break;
         case 3:
           message.status = reader.int32() as any;
@@ -1314,38 +1270,15 @@ export const TallyParams = {
     };
   },
 };
-export const Cosmos_govv1beta1Content_InterfaceDecoder = (
+export const Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-):
-  | CommunityPoolSpendProposal
-  | CommunityPoolSpendProposalWithDeposit
-  | TextProposal
-  | ParameterChangeProposal
-  | SoftwareUpgradeProposal
-  | CancelSoftwareUpgradeProposal
-  | ClientUpdateProposal
-  | UpgradeProposal
-  | Any => {
+): TextProposal | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
-      return CommunityPoolSpendProposal.decode(data.value);
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
-      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
     case '/cosmos.gov.v1beta1.TextProposal':
       return TextProposal.decode(data.value);
-    case '/cosmos.params.v1beta1.ParameterChangeProposal':
-      return ParameterChangeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
-      return SoftwareUpgradeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
-      return CancelSoftwareUpgradeProposal.decode(data.value);
-    case '/ibc.core.client.v1.ClientUpdateProposal':
-      return ClientUpdateProposal.decode(data.value);
-    case '/ibc.core.client.v1.UpgradeProposal':
-      return UpgradeProposal.decode(data.value);
     default:
       return data;
   }

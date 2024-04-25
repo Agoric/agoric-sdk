@@ -113,9 +113,7 @@ export const MsgGrantAllowance = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.allowance = Cosmos_feegrantFeeAllowanceI_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.allowance = FeeAllowanceI_InterfaceDecoder(reader) as Any;
           break;
         default:
           reader.skipType(tag & 7);
@@ -359,7 +357,7 @@ export const MsgRevokeAllowanceResponse = {
     };
   },
 };
-export const Cosmos_feegrantFeeAllowanceI_InterfaceDecoder = (
+export const FeeAllowanceI_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
 ): BasicAllowance | PeriodicAllowance | AllowedMsgAllowance | Any => {
   const reader =

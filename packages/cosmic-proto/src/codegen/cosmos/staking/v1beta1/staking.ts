@@ -184,7 +184,11 @@ export interface Validator {
   unbondingTime: Date;
   /** commission defines the commission parameters. */
   commission: Commission;
-  /** min_self_delegation is the validator's self declared minimum self delegation. */
+  /**
+   * min_self_delegation is the validator's self declared minimum self delegation.
+   *
+   * Since: cosmos-sdk 0.46
+   */
   minSelfDelegation: string;
 }
 export interface ValidatorProtoMsg {

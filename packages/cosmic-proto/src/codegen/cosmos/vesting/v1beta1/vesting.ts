@@ -12,6 +12,7 @@ export interface BaseVestingAccount {
   originalVesting: Coin[];
   delegatedFree: Coin[];
   delegatedVesting: Coin[];
+  /** Vesting end time, as unix timestamp (in seconds). */
   endTime: bigint;
 }
 export interface BaseVestingAccountProtoMsg {
@@ -35,6 +36,7 @@ export interface BaseVestingAccountSDKType {
  */
 export interface ContinuousVestingAccount {
   baseVestingAccount?: BaseVestingAccount;
+  /** Vesting start time, as unix timestamp (in seconds). */
   startTime: bigint;
 }
 export interface ContinuousVestingAccountProtoMsg {
@@ -69,8 +71,14 @@ export interface DelayedVestingAccountProtoMsg {
 export interface DelayedVestingAccountSDKType {
   base_vesting_account?: BaseVestingAccountSDKType;
 }
-/** Period defines a length of time and amount of coins that will vest. */
+/**
+ * Period defines a length of time and amount of coins that will vest.
+ * A sequence of periods defines a sequence of vesting events, with the
+ * first period relative to an externally-provided start time,
+ * and subsequent periods relatie to their predecessor.
+ */
 export interface Period {
+  /** Period duration in seconds. */
   length: bigint;
   amount: Coin[];
 }
@@ -78,7 +86,12 @@ export interface PeriodProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.Period';
   value: Uint8Array;
 }
-/** Period defines a length of time and amount of coins that will vest. */
+/**
+ * Period defines a length of time and amount of coins that will vest.
+ * A sequence of periods defines a sequence of vesting events, with the
+ * first period relative to an externally-provided start time,
+ * and subsequent periods relatie to their predecessor.
+ */
 export interface PeriodSDKType {
   length: bigint;
   amount: CoinSDKType[];
@@ -128,6 +141,39 @@ export interface PermanentLockedAccountProtoMsg {
  */
 export interface PermanentLockedAccountSDKType {
   base_vesting_account?: BaseVestingAccountSDKType;
+}
+/**
+ * ClawbackVestingAccount implements the VestingAccount interface. It provides
+ * an account that can hold contributions subject to "lockup" (like a
+ * PeriodicVestingAccount), or vesting which is subject to clawback
+ * of unvested tokens, or a combination (tokens vest, but are still locked).
+ */
+export interface ClawbackVestingAccount {
+  baseVestingAccount?: BaseVestingAccount;
+  /** funder_address specifies the account which can perform clawback. */
+  funderAddress: string;
+  startTime: bigint;
+  /** unlocking schedule relative to the BaseVestingAccount start_time. */
+  lockupPeriods: Period[];
+  /** vesting (i.e. immunity from clawback) schedule relative to the BaseVestingAccount start_time. */
+  vestingPeriods: Period[];
+}
+export interface ClawbackVestingAccountProtoMsg {
+  typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount';
+  value: Uint8Array;
+}
+/**
+ * ClawbackVestingAccount implements the VestingAccount interface. It provides
+ * an account that can hold contributions subject to "lockup" (like a
+ * PeriodicVestingAccount), or vesting which is subject to clawback
+ * of unvested tokens, or a combination (tokens vest, but are still locked).
+ */
+export interface ClawbackVestingAccountSDKType {
+  base_vesting_account?: BaseVestingAccountSDKType;
+  funder_address: string;
+  start_time: bigint;
+  lockup_periods: PeriodSDKType[];
+  vesting_periods: PeriodSDKType[];
 }
 function createBaseBaseVestingAccount(): BaseVestingAccount {
   return {
@@ -740,6 +786,155 @@ export const PermanentLockedAccount = {
     return {
       typeUrl: '/cosmos.vesting.v1beta1.PermanentLockedAccount',
       value: PermanentLockedAccount.encode(message).finish(),
+    };
+  },
+};
+function createBaseClawbackVestingAccount(): ClawbackVestingAccount {
+  return {
+    baseVestingAccount: undefined,
+    funderAddress: '',
+    startTime: BigInt(0),
+    lockupPeriods: [],
+    vestingPeriods: [],
+  };
+}
+export const ClawbackVestingAccount = {
+  typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount',
+  encode(
+    message: ClawbackVestingAccount,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.baseVestingAccount !== undefined) {
+      BaseVestingAccount.encode(
+        message.baseVestingAccount,
+        writer.uint32(10).fork(),
+      ).ldelim();
+    }
+    if (message.funderAddress !== '') {
+      writer.uint32(18).string(message.funderAddress);
+    }
+    if (message.startTime !== BigInt(0)) {
+      writer.uint32(24).int64(message.startTime);
+    }
+    for (const v of message.lockupPeriods) {
+      Period.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.vestingPeriods) {
+      Period.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): ClawbackVestingAccount {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClawbackVestingAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.baseVestingAccount = BaseVestingAccount.decode(
+            reader,
+            reader.uint32(),
+          );
+          break;
+        case 2:
+          message.funderAddress = reader.string();
+          break;
+        case 3:
+          message.startTime = reader.int64();
+          break;
+        case 4:
+          message.lockupPeriods.push(Period.decode(reader, reader.uint32()));
+          break;
+        case 5:
+          message.vestingPeriods.push(Period.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ClawbackVestingAccount {
+    return {
+      baseVestingAccount: isSet(object.baseVestingAccount)
+        ? BaseVestingAccount.fromJSON(object.baseVestingAccount)
+        : undefined,
+      funderAddress: isSet(object.funderAddress)
+        ? String(object.funderAddress)
+        : '',
+      startTime: isSet(object.startTime)
+        ? BigInt(object.startTime.toString())
+        : BigInt(0),
+      lockupPeriods: Array.isArray(object?.lockupPeriods)
+        ? object.lockupPeriods.map((e: any) => Period.fromJSON(e))
+        : [],
+      vestingPeriods: Array.isArray(object?.vestingPeriods)
+        ? object.vestingPeriods.map((e: any) => Period.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: ClawbackVestingAccount): unknown {
+    const obj: any = {};
+    message.baseVestingAccount !== undefined &&
+      (obj.baseVestingAccount = message.baseVestingAccount
+        ? BaseVestingAccount.toJSON(message.baseVestingAccount)
+        : undefined);
+    message.funderAddress !== undefined &&
+      (obj.funderAddress = message.funderAddress);
+    message.startTime !== undefined &&
+      (obj.startTime = (message.startTime || BigInt(0)).toString());
+    if (message.lockupPeriods) {
+      obj.lockupPeriods = message.lockupPeriods.map(e =>
+        e ? Period.toJSON(e) : undefined,
+      );
+    } else {
+      obj.lockupPeriods = [];
+    }
+    if (message.vestingPeriods) {
+      obj.vestingPeriods = message.vestingPeriods.map(e =>
+        e ? Period.toJSON(e) : undefined,
+      );
+    } else {
+      obj.vestingPeriods = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<ClawbackVestingAccount>): ClawbackVestingAccount {
+    const message = createBaseClawbackVestingAccount();
+    message.baseVestingAccount =
+      object.baseVestingAccount !== undefined &&
+      object.baseVestingAccount !== null
+        ? BaseVestingAccount.fromPartial(object.baseVestingAccount)
+        : undefined;
+    message.funderAddress = object.funderAddress ?? '';
+    message.startTime =
+      object.startTime !== undefined && object.startTime !== null
+        ? BigInt(object.startTime.toString())
+        : BigInt(0);
+    message.lockupPeriods =
+      object.lockupPeriods?.map(e => Period.fromPartial(e)) || [];
+    message.vestingPeriods =
+      object.vestingPeriods?.map(e => Period.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(
+    message: ClawbackVestingAccountProtoMsg,
+  ): ClawbackVestingAccount {
+    return ClawbackVestingAccount.decode(message.value);
+  },
+  toProto(message: ClawbackVestingAccount): Uint8Array {
+    return ClawbackVestingAccount.encode(message).finish();
+  },
+  toProtoMsg(message: ClawbackVestingAccount): ClawbackVestingAccountProtoMsg {
+    return {
+      typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount',
+      value: ClawbackVestingAccount.encode(message).finish(),
     };
   },
 };
