@@ -9,7 +9,7 @@ export type Board = ReturnType<
  * allow passing a remote iterable, there would be an inordinate number of round
  * trips for the contents of even the simplest nameHub.
  */
-export type NameHub = {
+export type NameHub<Value = any> = {
   has: (key: string) => boolean;
   /**
    * Look up a path of keys starting from the current NameHub. Wait on any
@@ -17,11 +17,11 @@ export type NameHub = {
    */
   lookup: (...path: string[]) => Promise<any>;
   /** get all the entries available in the current NameHub */
-  entries: (includeReserved?: boolean) => [string, unknown][];
+  entries: (includeReserved?: boolean) => [string, Value][];
   /** get all names available in the current NameHub */
   keys: () => string[];
   /** get all values available in the current NameHub */
-  values: () => unknown[];
+  values: () => Value[];
 };
 
 /** write access to a node in a name hierarchy */
@@ -39,13 +39,13 @@ export type NameAdmin = {
    */
   default: <T>(key: string, newValue: T, newAdmin?: NameAdmin) => T;
   /** Update only if already initialized. Reject if not. */
-  set: (key: string, newValue: unknown, newAdmin?: NameAdmin) => void;
+  set: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
   /**
    * Fulfill an outstanding reserved promise (if any) to the newValue and set
    * the key to the newValue. If newAdmin is provided, set that to return via
    * lookupAdmin.
    */
-  update: (key: string, newValue: unknown, newAdmin?: NameAdmin) => void;
+  update: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
   /**
    * Look up the `newAdmin` from the path of keys starting from the current
    * NameAdmin. Wait on any reserved promises.
@@ -59,7 +59,7 @@ export type NameAdmin = {
 };
 
 export type NameHubUpdateHandler = {
-  write: (entries: [string, unknown][]) => void;
+  write: (entries: [string, V][]) => void;
 };
 
 /** a node in a name hierarchy */
