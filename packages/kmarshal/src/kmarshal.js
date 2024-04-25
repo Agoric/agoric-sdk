@@ -2,7 +2,10 @@ import { Far, passStyleOf } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import { ERef } from '@endo/far';
+ * @import {ConvertSlotToVal} from '@endo/marshal';
+ */
 
 // Simple wrapper for serializing and unserializing marshalled values inside the
 // kernel, where we don't actually want to use clists nor actually allocate real
@@ -98,9 +101,7 @@ export { makeStandinPromise };
 harden(makeStandinPromise);
 
 /**
- * @param {string} kref
- * @param {string} [iface]
- * @returns {ERef<KCap>}
+ * @type {ConvertSlotToVal<string>}
  */
 export const kslot = (kref, iface = 'undefined') => {
   assert.typeof(kref, 'string');
