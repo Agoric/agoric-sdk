@@ -66,6 +66,11 @@ publish() {
 
     (popd > /dev/null && git cat-file blob "$VERSIONSHASH") | "$thisdir/set-versions.sh" .
 
+    # DEBUG
+    cat package.json
+    cat packages/*/package.json
+
+    yarn --version
     yarn install
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
