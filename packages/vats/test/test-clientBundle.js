@@ -45,6 +45,7 @@ test('connectFaucet produces payments', async t => {
 
   const { zoe, feeMintAccessP, vatAdminSvc } = await setUpZoeForTest({
     feeIssuerConfig,
+    // @ts-expect-error XXX
     vatAdminSvc: makePopulatedFakeVatAdmin().vatAdminService,
   });
   produce.zoe.resolve(zoe);

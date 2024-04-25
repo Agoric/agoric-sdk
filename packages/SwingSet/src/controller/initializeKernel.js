@@ -212,6 +212,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       // See https://github.com/Agoric/agoric-sdk/issues/2780
       errorIdNum: 60_000,
     });
+    // @ts-expect-error xxx
     const args = kunser(m.serialize(harden([vatObj0s, deviceObj0s])));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
     const resultKpid = queueToKref(rootKref, 'bootstrap', args, 'panic');

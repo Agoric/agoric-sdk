@@ -303,6 +303,7 @@ export const prepareVirtualPurse = zone => {
       recoveryPurse,
       escrowPurse,
     }).purse;
+    // @ts-expect-error XXX
     return vpurse;
   };
 

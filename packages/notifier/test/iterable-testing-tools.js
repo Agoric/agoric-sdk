@@ -65,7 +65,7 @@ const refReason = Error('bar');
  *
  * @param {boolean} fails Does the returned async iterable finish successfully
  * or fail?
- * @returns {AsyncIterable<Passable>}
+ * @returns {AsyncIterable<any>}
  */
 const makeTestIterable = fails => {
   return harden({
@@ -251,7 +251,7 @@ export const paula = iterationObserver => {
  * See the Alice example  in the README
  *
  * @param {AsyncIterable<Passable>} asyncIterable
- * @returns {Promise<Passable[]>}
+ * @returns {Promise<any[]>}
  */
 export const alice = async asyncIterable => {
   const log = [];
