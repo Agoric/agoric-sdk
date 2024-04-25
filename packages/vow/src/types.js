@@ -1,6 +1,11 @@
 // @ts-check
 export {};
 
+/**
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {PromiseVow, Remote} from '@agoric/vow';
+ */
+
 /** @typedef {(...args: any[]) => any} Callable */
 
 /**
@@ -77,7 +82,7 @@ export {};
 /**
  * @template [T=any]
  * @typedef {object} VowPayload
- * @property {Remote<VowV0<T>>} vowV0
+ * @property {RemotableObject & Remote<VowV0<T>>} vowV0
  */
 
 /**
