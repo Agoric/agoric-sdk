@@ -40,7 +40,6 @@ test.before(async (/** @type {CentralSupplyTestContext} */ t) => {
   };
 
   t.context = await deeplyFulfilled(
-    // @ts-expect-error XXX
     harden({
       zoe,
       feeMintAccess: feeMintAccessP,

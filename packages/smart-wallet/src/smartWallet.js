@@ -770,7 +770,6 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { registry, invitationBrand } = shared;
 
           if (registry.has(brand)) {
-            // @ts-expect-error virtual purse
             return E(state.bank).getPurse(brand);
           } else if (invitationBrand === brand) {
             return state.invitationPurse;

@@ -756,6 +756,7 @@ export function makeWalletRoot({
   const addContact = async (petname, actions, address = undefined) => {
     // @ts-expect-error XXX ERef
     const already = await E(board).has(actions);
+    /** @type {any} */
     let depositFacet;
     if (already) {
       depositFacet = actions;
