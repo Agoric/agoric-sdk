@@ -79,6 +79,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       const governor = instanceToGovernor.get(instance);
       return E(governor).voteOnParamChanges(counter, deadline, {
         ...path,
+        // @ts-expect-error XXX
         changes: params,
       });
     };
