@@ -71,6 +71,7 @@ export const makeWeakMapStoreMethods = (
     addAll: entries => {
       if (typeof entries[Symbol.iterator] !== 'function') {
         if (Object.isFrozen(entries) && isCopyMap(entries)) {
+          // @ts-expect-error XXX
           entries = getCopyMapEntries(entries);
         } else {
           Fail`provided data source is not iterable: ${entries}`;
