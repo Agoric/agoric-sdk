@@ -8,7 +8,7 @@ import {
 
 /**
  * @import {Key} from '@endo/patterns';
- * @import {Passable} from '@endo/pass-style';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {WeakMapStore, StoreOptions} from '../types.js';
  */
 
@@ -102,7 +102,7 @@ export const makeWeakMapStoreMethods = (
  * @template K,V
  * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
- * @returns {WeakMapStore<K, V>}
+ * @returns {RemotableObject & WeakMapStore<K, V>}
  */
 export const makeScalarWeakMapStore = (
   tag = 'key',
