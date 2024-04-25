@@ -78,6 +78,7 @@ const setupParamGovernance = (
     paramSpec,
   ) => {
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
+    /** @type {import('@endo/marshal').Passable} */
     const changePs = {};
     for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(

@@ -7,6 +7,7 @@ import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
 
 /**
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {GovernableStartFn, ParamChangesSpec} from '../src/types.js';
  */
 
@@ -72,7 +73,7 @@ export const start = async (zcf, privateArgs) => {
 
   /**
    * @param {string} apiMethodName
-   * @param {unknown[]} methodArgs
+   * @param {Passable[]} methodArgs
    */
   const invokeAPI = async (apiMethodName, methodArgs) => {
     const governedNames = await E(governedCF).getGovernedApiNames();

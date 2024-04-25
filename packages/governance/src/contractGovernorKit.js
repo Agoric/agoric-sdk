@@ -129,7 +129,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
             ]);
             trace('setupApiGovernance');
             apiGovernance = governedNames.length
-              ? setupApiGovernance(governedApis, governedNames, timer, () =>
+              ? // @ts-expect-error FIXME
+                setupApiGovernance(governedApis, governedNames, timer, () =>
                   this.facets.helper.getUpdatedPoserFacet(),
                 )
               : {
