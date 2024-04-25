@@ -3,7 +3,10 @@
 // Ensure this is a module.
 export {};
 
-/** @import {PromiseVow, Remote} from '@agoric/vow' */
+/**
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {PromiseVow, Remote} from '@agoric/vow';
+ */
 
 /**
  * @template {import('@endo/exo').Methods} M
@@ -22,8 +25,11 @@ export {};
  */
 
 /**
- * @typedef {object} Closable A closable object
+ * @typedef {object} ClosableI A closable object
  * @property {() => PromiseVow<void>} close Terminate the object
+ */
+/**
+ * @typedef {RemotableObject & ClosableI} Closable
  */
 
 /**
@@ -73,7 +79,7 @@ export {};
  */
 
 /**
- * @typedef {object} Connection
+ * @typedef {object} ConnectionI
  * @property {(
  *   packetBytes: Bytes,
  *   opts?: Record<string, any>,
@@ -83,6 +89,9 @@ export {};
  * @property {() => Endpoint} getLocalAddress Get the locally bound name of this
  *   connection
  * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
+ */
+/**
+ * @typedef {RemotableObject & ConnectionI} Connection
  */
 
 /**
