@@ -10,6 +10,7 @@ import {
 } from '../question.js';
 
 /**
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation} from '../types.js';
  */
 
@@ -21,7 +22,7 @@ const { Fail, quote: q } = assert;
  * arguments that were provided.
  *
  * @param {string} apiMethodName
- * @param {unknown[]} methodArgs
+ * @param {Passable[]} methodArgs
  */
 const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
   const positive = harden({ apiMethodName, methodArgs });
@@ -32,7 +33,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
 /**
  * manage contracts that allow governance to invoke functions.
  *
- * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
+ * @param {ERef<{ [methodName: string]: (...args: any) => Passable }>} governedApis
  * @param {Array<string | symbol>} governedNames names of the governed API methods
  * @param {ERef<import('@agoric/time').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
