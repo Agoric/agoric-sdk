@@ -1,0 +1,2 @@
+# also ignored in packages/cosmic-proto/.eslintignore, but IDE's pick up the root config
+packages/cosmic-proto/src/codegen/

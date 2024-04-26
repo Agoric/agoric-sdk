@@ -2,4 +2,4 @@
 export * from './src/types.js';
 export * from './src/utils/address.js';
 export * from './src/utils/tx.js';
-export * from './src/orchestration.js';
+export * from './src/service.js';

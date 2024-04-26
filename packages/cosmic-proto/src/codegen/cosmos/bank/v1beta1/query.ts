@@ -79,6 +79,8 @@ export interface QueryAllBalancesResponseSDKType {
 /**
  * QuerySpendableBalancesRequest defines the gRPC request structure for querying
  * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface QuerySpendableBalancesRequest {
   /** address is the address to query spendable balances for. */
@@ -93,6 +95,8 @@ export interface QuerySpendableBalancesRequestProtoMsg {
 /**
  * QuerySpendableBalancesRequest defines the gRPC request structure for querying
  * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface QuerySpendableBalancesRequestSDKType {
   address: string;
@@ -101,6 +105,8 @@ export interface QuerySpendableBalancesRequestSDKType {
 /**
  * QuerySpendableBalancesResponse defines the gRPC response structure for querying
  * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface QuerySpendableBalancesResponse {
   /** balances is the spendable balances of all the coins. */
@@ -115,6 +121,8 @@ export interface QuerySpendableBalancesResponseProtoMsg {
 /**
  * QuerySpendableBalancesResponse defines the gRPC response structure for querying
  * an account's spendable balances.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface QuerySpendableBalancesResponseSDKType {
   balances: CoinSDKType[];
@@ -310,6 +318,8 @@ export interface QueryDenomOwnersRequestSDKType {
  * DenomOwner defines structure representing an account that owns or holds a
  * particular denominated token. It contains the account address and account
  * balance of the denominated token.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface DenomOwner {
   /** address defines the address that owns a particular denomination. */
@@ -325,12 +335,18 @@ export interface DenomOwnerProtoMsg {
  * DenomOwner defines structure representing an account that owns or holds a
  * particular denominated token. It contains the account address and account
  * balance of the denominated token.
+ *
+ * Since: cosmos-sdk 0.46
  */
 export interface DenomOwnerSDKType {
   address: string;
   balance: CoinSDKType;
 }
-/** QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query. */
+/**
+ * QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query.
+ *
+ * Since: cosmos-sdk 0.46
+ */
 export interface QueryDenomOwnersResponse {
   denomOwners: DenomOwner[];
   /** pagination defines the pagination in the response. */
@@ -340,7 +356,11 @@ export interface QueryDenomOwnersResponseProtoMsg {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomOwnersResponse';
   value: Uint8Array;
 }
-/** QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query. */
+/**
+ * QueryDenomOwnersResponse defines the RPC response of a DenomOwners RPC query.
+ *
+ * Since: cosmos-sdk 0.46
+ */
 export interface QueryDenomOwnersResponseSDKType {
   denom_owners: DenomOwnerSDKType[];
   pagination?: PageResponseSDKType;

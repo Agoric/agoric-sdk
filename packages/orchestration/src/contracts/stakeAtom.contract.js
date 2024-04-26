@@ -11,7 +11,7 @@ import { prepareStakingAccountHolder } from './stakingAccountHolder.js';
 
 const trace = makeTracer('StakeAtom');
 /**
- * @import { Orchestration } from '../types.js';
+ * @import { OrchestrationService } from '../service.js'
  * @import { Baggage } from '@agoric/vat-data';
  * @import { IBCConnectionID } from '@agoric/vats';
  */
@@ -27,7 +27,7 @@ const trace = makeTracer('StakeAtom');
  *
  * @param {ZCF<StakeAtomTerms>} zcf
  * @param {{
- *  orchestration: Orchestration;
+ *  orchestration: OrchestrationService;
  *  storageNode: StorageNode;
  *  marshaller: Marshaller;
  * }} privateArgs

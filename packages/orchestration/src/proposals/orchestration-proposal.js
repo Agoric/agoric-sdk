@@ -2,7 +2,11 @@
 import { V as E } from '@agoric/vat-data/vow.js';
 import { Far } from '@endo/far';
 
-/** @import { AttenuatedPortAllocator, Orchestration, OrchestrationVat } from '../types' */
+/**
+ * @import { AttenuatedPortAllocator } from '../types'
+ * @import { OrchestrationService } from '../service.js'
+ * @import { OrchestrationVat } from '../vat-orchestration.js'
+ */
 
 /**
  * @param {BootstrapPowers & {
@@ -67,7 +71,7 @@ export const setupOrchestrationVat = async (
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     orchestration: Orchestration;
+ *     orchestration: OrchestrationService;
  *   };
  * }} powers
  * @param {object} _options

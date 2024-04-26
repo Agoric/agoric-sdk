@@ -32,6 +32,10 @@
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     },
+    "./ibc/applications/transfer/v1/tx.js": {
+      "types": "./dist/codegen/ibc/applications/transfer/v1/tx.d.ts",
+      "default": "./dist/codegen/ibc/applications/transfer/v1/tx.js"
+    },
     "./google/protobuf/any": {
       "types": "./dist/codegen/google/protobuf/any.d.ts",
       "default": "./dist/codegen/google/protobuf/any.js"
@@ -56,6 +60,10 @@
       "types": "./dist/codegen/cosmos/tx/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/tx/v1beta1/tx.js"
     },
+    "./cosmos/staking/v1beta1/staking.js": {
+      "types": "./dist/codegen/cosmos/staking/v1beta1/staking.d.ts",
+      "default": "./dist/codegen/cosmos/staking/v1beta1/staking.js"
+    },
     "./cosmos/staking/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
@@ -74,9 +82,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
-    "codegen": "yarn protos-update && node scripts/codegen.cjs",
+    "codegen": "./update-protos.sh && node scripts/codegen.cjs",
     "prepare": "npm run build",
-    "protos-update": "cp -rf ../../golang/cosmos/third_party/proto . && cp -rf ../../golang/cosmos/proto/agoric proto",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",
     "test": "ava",

@@ -1,8 +1,6 @@
 //@ts-nocheck
-import { Grant, GrantSDKType, GenericAuthorization } from './authz.js';
+import { Grant, GrantSDKType } from './authz.js';
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
-import { SendAuthorization } from '../../bank/v1beta1/authz.js';
-import { StakeAuthorization } from '../../staking/v1beta1/authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
 /**
@@ -531,19 +529,13 @@ export const Sdk_Msg_InterfaceDecoder = (
       return data;
   }
 };
-export const Cosmos_authzAuthorization_InterfaceDecoder = (
+export const Authz_Authorization_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): GenericAuthorization | SendAuthorization | StakeAuthorization | Any => {
+): Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
-    case '/cosmos.authz.v1beta1.GenericAuthorization':
-      return GenericAuthorization.decode(data.value);
-    case '/cosmos.bank.v1beta1.SendAuthorization':
-      return SendAuthorization.decode(data.value);
-    case '/cosmos.staking.v1beta1.StakeAuthorization':
-      return StakeAuthorization.decode(data.value);
     default:
       return data;
   }

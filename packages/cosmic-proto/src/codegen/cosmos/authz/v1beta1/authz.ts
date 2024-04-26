@@ -9,6 +9,10 @@ import {
   StakeAuthorization,
   StakeAuthorizationSDKType,
 } from '../../staking/v1beta1/authz.js';
+import {
+  TransferAuthorization,
+  TransferAuthorizationSDKType,
+} from '../../../ibc/applications/transfer/v1/authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import {
   isSet,
@@ -43,7 +47,11 @@ export interface GenericAuthorizationSDKType {
  */
 export interface Grant {
   authorization?:
-    | (GenericAuthorization & SendAuthorization & StakeAuthorization & Any)
+    | (GenericAuthorization &
+        SendAuthorization &
+        StakeAuthorization &
+        TransferAuthorization &
+        Any)
     | undefined;
   /**
    * time when the grant will expire and will be pruned. If null, then the grant
@@ -65,6 +73,7 @@ export interface GrantSDKType {
     | GenericAuthorizationSDKType
     | SendAuthorizationSDKType
     | StakeAuthorizationSDKType
+    | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
   expiration?: Date;
@@ -77,7 +86,11 @@ export interface GrantAuthorization {
   granter: string;
   grantee: string;
   authorization?:
-    | (GenericAuthorization & SendAuthorization & StakeAuthorization & Any)
+    | (GenericAuthorization &
+        SendAuthorization &
+        StakeAuthorization &
+        TransferAuthorization &
+        Any)
     | undefined;
   expiration?: Date;
 }
@@ -96,6 +109,7 @@ export interface GrantAuthorizationSDKType {
     | GenericAuthorizationSDKType
     | SendAuthorizationSDKType
     | StakeAuthorizationSDKType
+    | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
   expiration?: Date;
@@ -214,9 +228,7 @@ export const Grant = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.authorization = Cosmos_authzAuthorization_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 2:
           message.expiration = fromTimestamp(
@@ -324,9 +336,7 @@ export const GrantAuthorization = {
           message.grantee = reader.string();
           break;
         case 3:
-          message.authorization = Cosmos_authzAuthorization_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 4:
           message.expiration = fromTimestamp(
@@ -456,9 +466,14 @@ export const GrantQueueItem = {
     };
   },
 };
-export const Cosmos_authzAuthorization_InterfaceDecoder = (
+export const Authorization_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-): GenericAuthorization | SendAuthorization | StakeAuthorization | Any => {
+):
+  | GenericAuthorization
+  | SendAuthorization
+  | StakeAuthorization
+  | TransferAuthorization
+  | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
@@ -469,6 +484,8 @@ export const Cosmos_authzAuthorization_InterfaceDecoder = (
       return SendAuthorization.decode(data.value);
     case '/cosmos.staking.v1beta1.StakeAuthorization':
       return StakeAuthorization.decode(data.value);
+    case '/ibc.applications.transfer.v1.TransferAuthorization':
+      return TransferAuthorization.decode(data.value);
     default:
       return data;
   }

@@ -10,28 +10,6 @@ import {
   voteOptionFromJSON,
   voteOptionToJSON,
 } from './gov.js';
-import {
-  CommunityPoolSpendProposal,
-  CommunityPoolSpendProposalSDKType,
-  CommunityPoolSpendProposalWithDeposit,
-  CommunityPoolSpendProposalWithDepositSDKType,
-} from '../../distribution/v1beta1/distribution.js';
-import {
-  ParameterChangeProposal,
-  ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
-import {
-  SoftwareUpgradeProposal,
-  SoftwareUpgradeProposalSDKType,
-  CancelSoftwareUpgradeProposal,
-  CancelSoftwareUpgradeProposalSDKType,
-} from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ClientUpdateProposal,
-  ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 /**
@@ -39,17 +17,7 @@ import { isSet } from '../../../helpers.js';
  * proposal Content.
  */
 export interface MsgSubmitProposal {
-  content?:
-    | (CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        TextProposal &
-        ParameterChangeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ClientUpdateProposal &
-        UpgradeProposal &
-        Any)
-    | undefined;
+  content?: (TextProposal & Any) | undefined;
   initialDeposit: Coin[];
   proposer: string;
 }
@@ -62,17 +30,7 @@ export interface MsgSubmitProposalProtoMsg {
  * proposal Content.
  */
 export interface MsgSubmitProposalSDKType {
-  content?:
-    | CommunityPoolSpendProposalSDKType
-    | CommunityPoolSpendProposalWithDepositSDKType
-    | TextProposalSDKType
-    | ParameterChangeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
-    | AnySDKType
-    | undefined;
+  content?: TextProposalSDKType | AnySDKType | undefined;
   initial_deposit: CoinSDKType[];
   proposer: string;
 }
@@ -209,9 +167,7 @@ export const MsgSubmitProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.content = Content_InterfaceDecoder(reader) as Any;
           break;
         case 2:
           message.initialDeposit.push(Coin.decode(reader, reader.uint32()));
@@ -792,38 +748,15 @@ export const MsgDepositResponse = {
     };
   },
 };
-export const Cosmos_govv1beta1Content_InterfaceDecoder = (
+export const Content_InterfaceDecoder = (
   input: BinaryReader | Uint8Array,
-):
-  | CommunityPoolSpendProposal
-  | CommunityPoolSpendProposalWithDeposit
-  | TextProposal
-  | ParameterChangeProposal
-  | SoftwareUpgradeProposal
-  | CancelSoftwareUpgradeProposal
-  | ClientUpdateProposal
-  | UpgradeProposal
-  | Any => {
+): TextProposal | Any => {
   const reader =
     input instanceof BinaryReader ? input : new BinaryReader(input);
   const data = Any.decode(reader, reader.uint32());
   switch (data.typeUrl) {
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
-      return CommunityPoolSpendProposal.decode(data.value);
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
-      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
     case '/cosmos.gov.v1beta1.TextProposal':
       return TextProposal.decode(data.value);
-    case '/cosmos.params.v1beta1.ParameterChangeProposal':
-      return ParameterChangeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
-      return SoftwareUpgradeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
-      return CancelSoftwareUpgradeProposal.decode(data.value);
-    case '/ibc.core.client.v1.ClientUpdateProposal':
-      return ClientUpdateProposal.decode(data.value);
-    case '/ibc.core.client.v1.UpgradeProposal':
-      return UpgradeProposal.decode(data.value);
     default:
       return data;
   }
