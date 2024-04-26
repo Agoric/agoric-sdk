@@ -4,6 +4,7 @@ import test from 'ava';
 import crypto from 'crypto';
 import { createRPCQueryClient as createCosmosRPCQueryClient } from '../dist/codegen/cosmos/rpc.query.js';
 import { createRPCQueryClient as createIBCRPCQueryClient } from '../dist/codegen/ibc/rpc.query.js';
+import { createRPCQueryClient as createICQRPCQueryClient } from '../dist/codegen/icq/rpc.query.js';
 import { QueryConnectionsResponse } from '../dist/codegen/ibc/core/connection/v1/query.js';
 import { QueryConnectionChannelsResponse } from '../dist/codegen/ibc/core/channel/v1/query.js';
 import { ClientState } from '../dist/codegen/ibc/lightclients/tendermint/v1/tendermint.js';
@@ -181,19 +182,80 @@ test('Denom Info', async t => {
     const { denomTraces } = await ibc.applications.transfer.v1.denomTraces();
     const denomTracesWithHashes = denomTraces.map(x => ({
       ...x,
-      hash: `ibc/${sha256(`${x.path}/${x.baseDenom}`).toUpperCase()}`,
+      denom: `ibc/${sha256(`${x.path}/${x.baseDenom}`).toUpperCase()}`,
     }));
 
     const { supply } = await cosmos.bank.v1beta1.totalSupply();
-    // XXX test all denoms match the `hash` in the list above / are accounted for
+    for (const { denom } of denomTracesWithHashes) {
+      t.true(
+        !!supply.find(x => x.denom === denom),
+        `${denom} not found in supply. check sha256 coversion`,
+      );
+    }
+
     // filter out values so we get a list of native tokens that are not in `denomTraces`, nor are the `bondDenom`
+    const nativeTokens = supply
+      // XXX account for cw20 and other non-native tokens
+      .filter(x => !x.denom.startsWith('ibc/'))
+      .map(x => ({ denom: x.denom, native: true }));
+
+    const denoms = [...nativeTokens, ...denomTracesWithHashes];
 
     chainInfo[name] = {
       bondDenom,
-      denomTraces: denomTracesWithHashes,
-      supply,
+      denoms,
     };
   }
 
   t.snapshot(chainInfo, 'Chain Info');
+});
+
+test('Allow Queries and Messages', async t => {
+  const allowInfo = {};
+  for (const [name, endpoint] of Object.entries(RPC_ENDPOINTS)) {
+    const { icq } = await createICQRPCQueryClient({
+      rpcEndpoint: endpoint,
+    });
+    const { ibc } = await createIBCRPCQueryClient({
+      rpcEndpoint: endpoint,
+    });
+
+    // Query allowed queries + host enabled (ICQ)
+    let interchainQueryParams;
+    try {
+      const { params } = await icq.v1.params();
+      interchainQueryParams = params;
+    } catch (e) {
+      if (e.message.includes('unknown query path')) {
+        interchainQueryParams = {
+          hostEnabled: false,
+        };
+      } else {
+        throw e;
+      }
+    }
+
+    // Query allowed messages + host enabled (ICA)
+    let interchainAccountsParams;
+    try {
+      const { params } =
+        await ibc.applications.interchain_accounts.host.v1.params();
+      interchainAccountsParams = params;
+    } catch (e) {
+      if (e.message.includes('unknown query path')) {
+        interchainAccountsParams = {
+          hostEnabled: false,
+        };
+      } else {
+        throw e;
+      }
+    }
+
+    allowInfo[name] = {
+      interchainQueryParams,
+      interchainAccountsParams,
+    };
+  }
+
+  t.snapshot(allowInfo, 'Allow Queries and Messages');
 });
