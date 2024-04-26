@@ -123,8 +123,13 @@ cometbft $COMETBFT_VERSION
 
 Presuming that your node is running `$PREV_RELEASE`, once the upgrade height for a subsequent proposal to upgrade to `$TAG` has been reached, your node will halt automatically allowing you to upgrade the agoric stack.
 
+### Prerequisites
+
+Install supported versions of Go, Node.js, and a compiler such as gcc or clang as documented in the [README](https://github.com/Agoric/agoric-sdk/tree/$TAG#prerequisites).
+
+### Building
+
 ```
-# (prepare by installing Go 1.20.2 or higher, Node 16 or 18, clang 10 or gcc 10)
 # (stop the agd service)
 cd agoric-sdk
 git fetch --all
@@ -137,19 +142,6 @@ yarn build
 ```
 
 Do _not_ copy the `agd` script or Go binary to another location. If you would like to have an executable `agd` in another location, then create a symlink in that location pointing to `agoric-sdk/bin/agd`.
-
-### Golang Version
-
-The `$TAG` release requires Go 1.20.2 or higher.
-
-### Node Version
-
-Node.js 16.13 or higher (previous LTS) or Node.js 18.12 or higher (maintenance LTS).
-Please note the current active LTS of Node 20 is not yet officially supported.
-
-### C Compiler Version
-
-Clang version 10 or GCC version 10 required.
 
 ### Troubleshooting `repoconfig.sh: No such file or directory`
 
