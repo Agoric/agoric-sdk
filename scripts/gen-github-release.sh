@@ -17,11 +17,12 @@ esac
 
 cd "$(dirname $0)"/..
 declare -r tag="$1"
-declare commit="$(git rev-parse "$tag")"
+commit="$(git rev-parse "$tag")"
 if [ -z "$commit" ]; then
   echo 1>&2 "Tag not found: $tag"
   commit="\$COMMIT"
 fi
+declare -r commit
 
 # Read version data from git tags or go.mod lines.
 declare -r AWK_SUFFIX='{
@@ -29,18 +30,19 @@ declare -r AWK_SUFFIX='{
     print substr($0, RLENGTH + 1, length($0) - RLENGTH);
   }
 }'
-declare -r git_tags="$(git tag -l --contains "$tag")"
+git_tags="$(git tag -l --contains "$tag")"
+declare -r git_tags
 version-from-git-tag() {
-  v="$(printf '%s' "$git_tags" | awk -v prefix="${1}@" "$AWK_SUFFIX" | tail -n1)"
-  printf '%s\n' "${v:-$2}"
+  printf '%s' "$git_tags" | awk -v prefix="${1}@" "$AWK_SUFFIX" | tail -n1
 }
-declare -r go_mod="$(git show -p "$tag":golang/cosmos/go.mod | sed 's#[[:space:]]*//.*##')"
+go_mod="$(git show -p "$tag":golang/cosmos/go.mod | sed 's#[[:space:]]*//.*##')"
+declare -r go_mod
 version-from-go-mod() {
   v="$(printf '%s' "$go_mod" | awk -v prefix=".*/$1(/[^ ]*| ) *" "$AWK_SUFFIX" | tail -n1)"
   # Strip any pre-release and/or build components.
   v="${v%%-*}"
   v="${v%%+*}"
-  printf '%s\n' "${v:-$2}"
+  printf '%s\n' "$v"
 }
 
 # Replace `$`-prefixed placeholders using provided "$NAME=$VALUE" arguments,
@@ -68,17 +70,20 @@ declare -r AWK_REPLACE_PLACEHOLDERS='
     print output rem;
   }
 '
+agoric_cosmos_version="$(version-from-git-tag '@agoric/cosmos' '$AGORIC_COSMOS_VERSION')"
+ibc_go_version="$(version-from-go-mod ibc-go '$IBC_GO_VERSION')"
+cosmos_sdk_version="$(version-from-go-mod cosmos-sdk '$COSMOS_SDK_VERSION')"
+cometbft_version="$(version-from-go-mod cometbft '$COMETBFT_VERSION')"
+# See ../MAINTAINERS.md for derivation of Docker image tag from git tag @agoric/sdk@...
+docker_image_tag="$(version-from-git-tag '@agoric/sdk')"
 set -- \
   TAG="$tag" \
   COMMIT="$commit" \
-  AGORIC_COSMOS_VERSION="$(version-from-git-tag '@agoric/cosmos' '$AGORIC_COSMOS_VERSION')" \
-  DOCKER_IMAGE_TAG="$(
-    # See ../MAINTAINERS.md for derivation of Docker image tag from git tag @agoric/sdk@...
-    version-from-git-tag '@agoric/sdk' '$DOCKER_IMAGE_TAG'
-  )" \
-  IBC_GO_VERSION="$(version-from-go-mod ibc-go '$IBC_GO_VERSION')" \
-  COSMOS_SDK_VERSION="$(version-from-go-mod cosmos-sdk '$COSMOS_SDK_VERSION')" \
-  COMETBFT_VERSION="$(version-from-go-mod cometbft '$COMETBFT_VERSION')"
+  AGORIC_COSMOS_VERSION="${agoric_cosmos_version:-\$AGORIC_COSMOS_VERSION}" \
+  IBC_GO_VERSION="${ibc_go_version:-\$IBC_GO_VERSION}" \
+  COSMOS_SDK_VERSION="${cosmos_sdk_version:-\$COSMOS_SDK_VERSION}" \
+  COMETBFT_VERSION="${cometbft_version:-\$COMETBFT_VERSION}" \
+  DOCKER_IMAGE_TAG="${docker_image_tag:-\$DOCKER_IMAGE_TAG}"
 cat << 'EOF' | awk "$AWK_REPLACE_PLACEHOLDERS" "$@"
 The Agoric OpCo engineering team is pleased to publish the **`$TAG`** release. This release is primarily intended to $REASON.
 
