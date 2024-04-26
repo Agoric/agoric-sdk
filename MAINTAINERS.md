@@ -77,6 +77,7 @@ For each set of changes to include:
       git config rerere.enabled true
       ```
     - [ ] Author a `rebase-todo` by selecting relevant changes from the `master` branch rebase log (see below).
+      - For a convenient starting point, use `scripts/gen-rebase-todo.sh $since` to get a todo list reflecting all merge-inclusive changes from $since to the current HEAD (but note that on a fresh clone, branch names will be generated from commit titles rather than corresponding with those of the primary fork).
       - Comment out any commit that should be excluded from a multi-commit PR.
       - If a small change from an unrelated PR is needed (rider commits), either:
         - Outside of a label/merge section, `pick` the commit, and indicate with a comment on the previous line the origin PR of the picked commit.
