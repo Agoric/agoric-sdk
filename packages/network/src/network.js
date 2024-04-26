@@ -1436,17 +1436,26 @@ export const preparePortAllocator = (zone, { watch }) =>
   zone.exoClass(
     'PortAllocator',
     M.interface('PortAllocator', {
-      allocateIBCPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateIBCPort: M.callWhen()
+        .optional(M.string())
+        .returns(Shape.Vow$(Shape.Port)),
       allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
-      allocateIBCPegasusPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
-      allocateLocalPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateLocalPort: M.callWhen()
+        .optional(M.string())
+        .returns(Shape.Vow$(Shape.Port)),
     }),
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
     {
-      allocateIBCPort() {
+      allocateIBCPort(specifiedName = '') {
         const { state } = this;
+        let localAddr = `/ibc-port/${specifiedName}`;
+
+        if (specifiedName) {
+          localAddr = `/ibc-port/custom-${specifiedName}`;
+        }
+
         // Allocate an IBC port with a unique generated name.
-        return watch(E(state.protocol).bindPort(`/ibc-port/`));
+        return watch(E(state.protocol).bindPort(localAddr));
       },
       allocateICAControllerPort() {
         const { state } = this;
@@ -1457,15 +1466,17 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateIBCPegasusPort() {
+      allocateLocalPort(specifiedName = '') {
         const { state } = this;
-        // Allocate the singleton Pegasus IBC port.
-        return watch(E(state.protocol).bindPort(`/ibc-port/pegasus`));
-      },
-      allocateLocalPort() {
-        const { state } = this;
+
+        let localAddr = `/local/${specifiedName}`;
+
+        if (specifiedName) {
+          localAddr = `/local/custom-${specifiedName}`;
+        }
+
         // Allocate a local port with a unique generated name.
-        return watch(E(state.protocol).bindPort(`/local/`));
+        return watch(E(state.protocol).bindPort(localAddr));
       },
     },
   );

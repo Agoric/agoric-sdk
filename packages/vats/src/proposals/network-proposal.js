@@ -68,7 +68,8 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * Testing facilities include:
  *
  * - loopback ports: `E(portAllocator).allocateLocalPort()`
- * - an echo port: `E(portAllocator).allocateIBCPort()`
+ * - an echo port: `E(portAllocator).allocateIBCPort("echo")d
+ *   /ibc-port/custom-echo
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
@@ -151,7 +152,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(allocator).allocateIBCPort());
+  const echoPort = await when(E(allocator).allocateIBCPort('echo'));
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);

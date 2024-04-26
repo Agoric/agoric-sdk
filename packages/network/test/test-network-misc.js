@@ -189,6 +189,9 @@ test('verify port allocation', async t => {
   const ibcPort = await when(portAllocator.allocateIBCPort());
   t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
 
+  const namedIbcPort = await when(portAllocator.allocateIBCPort('test-1'));
+  t.is(namedIbcPort.getLocalAddress(), '/ibc-port/custom-test-1');
+
   const icaControllerPort1 = await when(
     portAllocator.allocateICAControllerPort(),
   );
@@ -198,6 +201,12 @@ test('verify port allocation', async t => {
     portAllocator.allocateICAControllerPort(),
   );
   t.is(icaControllerPort2.getLocalAddress(), '/ibc-port/icacontroller-2');
+
+  const localPort = await when(portAllocator.allocateLocalPort());
+  t.is(localPort.getLocalAddress(), '/local/port-5');
+
+  const namedLocalPort = await when(portAllocator.allocateLocalPort('local-1'));
+  t.is(namedLocalPort.getLocalAddress(), '/local/custom-local-1');
 });
 
 test('protocol connection listen', async t => {
