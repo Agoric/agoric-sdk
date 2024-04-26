@@ -20,7 +20,9 @@ curl -L "$ZIP_URL" -o "$zipfile"
 echo "Generating SHA-256 checksum..." 1>&2
 CHECKSUM=sha256:$(shasum -a 256 "$zipfile" | cut -d' ' -f1)
 
-UPGRADE_INFO="{\"binaries\":{\"any\":\"$ZIP_URL//agoric-sdk-${COMMIT_ID}?checksum=$CHECKSUM\"},\"source\":\"$ZIP_URL?checksum=$CHECKSUM\"}"
+BINARY_URL="$ZIP_URL//agoric-sdk-${COMMIT_ID}?checksum=$CHECKSUM"
+SOURCE_URL="$ZIP_URL?checksum=$CHECKSUM"
+UPGRADE_INFO="{\"binaries\":{\"any\":\"$BINARY_URL\"},\"source\":\"$SOURCE_URL\"}"
 
 cat << 'EOF' 1>&2
 ------------------------------------------------------------------------
