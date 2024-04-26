@@ -86,9 +86,11 @@ For each set of changes to include:
       git rebase -i HEAD
       ```
       And replace the `noop` content with the authored `rebase-todo`.
-    - If encountering a commit with conflicts that do not have a straightforward resolution (3-way combine, strategy "theirs" or "ours"), check if picking any prior commit would help resolve the conflicts.
+    - If encountering a commit with conflicts that have a straightforward resolution (such as 3-way combine with strategy "theirs" or "ours"), prefix with an explanatory `##` comment in the `rebase-todo`.
+    - If encountering a commit with conflicts that do not have a straightforward resolution, check if picking any prior commit would help resolve the conflicts.
       - Abort the rebase, update the authored `rebase-todo`, and restart the interactive rebase.
-      - Avoid authoring manual changes unless absolutely necessary. If authoring changes, keep them as separate commits and indicate them as such on the authored rebase todo (insert a `pick` instruction with the id of the commit you just authored).
+      - Avoid authoring manual changes unless absolutely necessary. If authoring changes, keep them as separate commits and indicate them as such on the authored rebase todo (insert either a `pick` instruction with the id of the commit you just authored or an `exec` instruction that makes the modifications and ends with `git commit -m $message`, in either case prefixing with an explanatory `##` comment).
+        - For `exec`, make portable in-place edits with either `ed` or `alias sed-i="sed -i $(sed --help 2>&1 | sed 2q | grep -qe '-i ' && echo "''")"`, e.g. `printf 'H\n/\( *\)foo/ s##\\1// prettier-ignore\\\n&#\nw\n' | ed -s packages/path/to/file'` or `sed-i -E "$(printf 's#( *)foo#\\1// prettier-ignore\\\n&#')" packages/path/to/file`.
       - If a commit is empty, skip it and comment it out in the rebase todo.
     - [ ] Verify that tests pass. In particular:
       - Linting locally can catch incompatibilities in the cherry-pick, often requiring some changes to be reverted or more commits from `master` to be included. In those cases, update the authored `rebase-todo`, and redo the interactive rebase as necessary.
