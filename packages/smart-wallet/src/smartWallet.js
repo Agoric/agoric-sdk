@@ -62,7 +62,7 @@ const trace = makeTracer('SmrtWlt');
  *   id: OfferId,
  *   invitationSpec: import('./invitations').InvitationSpec,
  *   proposal: Proposal,
- *   offerArgs?: unknown
+ *   offerArgs?: any
  * }} OfferSpec
  */
 
