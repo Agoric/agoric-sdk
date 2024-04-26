@@ -13,12 +13,10 @@ COMMIT_ID=$(git rev-parse HEAD)
 ZIP_URL="https://github.com/Agoric/agoric-sdk/archive/${COMMIT_ID}.zip"
 
 echo "Verifying archive is at $ZIP_URL..." 1>&2
-zipfile=$(mktemp)
-trap 'rm -f "$zipfile"' EXIT
-curl -L "$ZIP_URL" -o "$zipfile"
+curl -fLI --no-progress-meter "$ZIP_URL" -o- > /dev/null
 
 echo "Generating SHA-256 checksum..." 1>&2
-CHECKSUM=sha256:$(shasum -a 256 "$zipfile" | cut -d' ' -f1)
+CHECKSUM=sha256:$(curl -fL "$ZIP_URL" -o- | shasum -a 256 | cut -d' ' -f1)
 
 BINARY_URL="$ZIP_URL//agoric-sdk-${COMMIT_ID}?checksum=$CHECKSUM"
 SOURCE_URL="$ZIP_URL?checksum=$CHECKSUM"
