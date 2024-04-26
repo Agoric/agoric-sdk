@@ -189,9 +189,4 @@
  *   Create an outbound connection
  */
 
-/**
- * @typedef {object} PortAllocator
- * @property {() => PromiseVow<Port>} allocateIBCPort
- * @property {() => PromiseVow<Port>} allocateICAControllerPort
- * @property {() => PromiseVow<Port>} allocateIBCPegasusPort
- */
+/** @typedef {ReturnType<ReturnType<typeof preparePortAllocator>>} PortAllocator */

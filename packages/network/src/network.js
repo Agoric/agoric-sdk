@@ -1459,7 +1459,7 @@ export const preparePortAllocator = (zone, { watch }) =>
       },
       allocateIBCPegasusPort() {
         const { state } = this;
-        // Allocate a Pegasus IBC port with a unique generated name.
+        // Allocate the singleton Pegasus IBC port.
         return watch(E(state.protocol).bindPort(`/ibc-port/pegasus`));
       },
       allocateLocalPort() {
