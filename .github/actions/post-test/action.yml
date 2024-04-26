@@ -48,7 +48,7 @@ runs:
         fi
     - name: Upload coverage reports to Codecov
       if: ${{ github.repository_owner == 'agoric' }} && ${{ steps.coverage-prep.outputs.skip == 'false' }} && (success() || failure())
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       continue-on-error: true
       with:
         token: ${{ inputs.codecov-token }}
