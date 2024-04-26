@@ -35,11 +35,11 @@
     "typedoc": "^0.25.13",
     "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.5.0-beta",
-    "typescript-eslint": "^7.3.1"
+    "typescript-eslint": "^7.7.1"
   },
   "resolutions": {
     "**/protobufjs": "^7.2.6",
-    "**/@typescript-eslint/typescript-estree": "^7.2.0"
+    "**/@typescript-eslint/typescript-estree": "^7.7.1"
   },
   "engines": {
     "node": "^18.12 || ^20.9"
