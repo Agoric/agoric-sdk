@@ -103,7 +103,6 @@ export const makeInvitationsHelper = (
       mustMatch(spec, shape.PurseInvitationSpec);
 
       const { instance, description } = spec;
-      // @ts-expect-error TS thinks it's always true. I'm doubtful.
       (instance && description) || Fail`missing instance or description`;
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
       const invitations = AmountMath.getValue(invitationBrand, purseAmount);
