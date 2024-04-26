@@ -12,12 +12,6 @@ import type {
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
-import type { PortAllocator } from '@agoric/network/src/network';
-
-export type AttenuatedPortAllocator = Pick<
-  PortAllocator,
-  'allocateICAControllerPort'
->;
 
 /**
  * static declaration of known chain types will allow type support for

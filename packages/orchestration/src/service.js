@@ -11,10 +11,11 @@ import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import { makeTxPacket, parsePacketAck } from './utils/tx.js';
 
 /**
- * @import { AttenuatedPortAllocator, ChainAccount, ChainAddress } from './types.js';
+ * @import { ChainAccount, ChainAddress } from './types.js';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ *
  */
 
 const { Fail, bare } = assert;
@@ -24,7 +25,7 @@ const trace = makeTracer('Orchestration');
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {ERef<AttenuatedPortAllocator>} portAllocator
+ * @property {ERef<PortAllocator>} portAllocator
  */
 
 /**

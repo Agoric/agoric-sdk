@@ -189,4 +189,4 @@
  *   Create an outbound connection
  */
 
-/** @typedef {ReturnType<ReturnType<typeof preparePortAllocator>>} PortAllocator */
+/** @typedef {ReturnType<ReturnType<typeof import('@agoric/network').preparePortAllocator>>} PortAllocator */

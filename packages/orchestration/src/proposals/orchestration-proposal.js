@@ -1,9 +1,7 @@
 // @ts-check
 import { V as E } from '@agoric/vat-data/vow.js';
-import { Far } from '@endo/far';
 
 /**
- * @import { AttenuatedPortAllocator } from '../types'
  * @import { OrchestrationService } from '../service.js'
  * @import { OrchestrationVat } from '../vat-orchestration.js'
  */
@@ -12,7 +10,7 @@ import { Far } from '@endo/far';
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     portAllocator: AttenuatedPortAllocator;
+ *     portAllocator: PortAllocator;
  *   };
  *   produce: {
  *     orchestration: Producer<any>;
@@ -29,7 +27,7 @@ import { Far } from '@endo/far';
  */
 export const setupOrchestrationVat = async (
   {
-    consume: { loadCriticalVat, portAllocator },
+    consume: { loadCriticalVat, portAllocator: portAllocatorP },
     produce: {
       orchestrationVat,
       orchestration,
@@ -49,17 +47,10 @@ export const setupOrchestrationVat = async (
   orchestrationVat.reset();
   orchestrationVat.resolve(vats.orchestration);
 
-  await portAllocator;
-
-  /** @type {AttenuatedPortAllocator} */
-  const allocator = Far('PortAllocator', {
-    async allocateICAControllerPort() {
-      return E(portAllocator).allocateICAControllerPort();
-    },
-  });
+  const portAllocator = await portAllocatorP;
 
   const newOrchestrationKit = await E(vats.orchestration).makeOrchestration({
-    portAllocator: allocator,
+    portAllocator,
   });
 
   orchestration.reset();

@@ -54,7 +54,7 @@ const prepareProtocolHandler = (
       },
       async generatePortID() {
         this.state.nonce += 1;
-        return `${this.state.nonce}`;
+        return `port-${this.state.nonce}`;
       },
       async onBind(port, localAddr) {
         t.assert(port, `port is supplied to onBind`);
@@ -187,7 +187,7 @@ test('verify port allocation', async t => {
   const portAllocator = makePortAllocator({ protocol });
 
   const ibcPort = await when(portAllocator.allocateIBCPort());
-  t.is(ibcPort.getLocalAddress(), '/ibc-port/1');
+  t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
 
   const icaControllerPort1 = await when(
     portAllocator.allocateICAControllerPort(),
