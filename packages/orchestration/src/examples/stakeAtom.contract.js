@@ -7,7 +7,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
-import { prepareStakingAccountHolder } from './stakingAccountHolder.js';
+import { prepareStakingAccountHolder } from '../contracts/stakingAccountHolder.js';
 
 const trace = makeTracer('StakeAtom');
 /**

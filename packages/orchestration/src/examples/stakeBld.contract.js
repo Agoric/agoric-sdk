@@ -10,7 +10,7 @@ import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import { prepareAccountHolder } from './localchainAccountHolder.js';
+import { prepareAccountHolder } from '../contracts/localchainAccountHolder.js';
 
 const trace = makeTracer('StakeBld');
 

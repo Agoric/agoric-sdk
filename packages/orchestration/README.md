@@ -2,4 +2,4 @@
 
 Build feature-rich applications that can orchestrate assets and services across the interchain.
 
-Interface for Cosmos Interchain Accounts [(ICS-27)](https://github.com/cosmos/ibc/blob/main/spec/app/ics-027-interchain-accounts/README.md).
+Usage examples can be found under [src/examples](https://github.com/Agoric/agoric-sdk/tree/master/packages/orchestration/src/examples). They are exported for integration testing with other packages.
