@@ -1451,6 +1451,15 @@ export const preparePortAllocator = (zone, { watch }) =>
         let localAddr = `/ibc-port/${specifiedName}`;
 
         if (specifiedName) {
+          // Contains at least two characters and only allows valid characters specified in IBC spec
+          const match = specifiedName.match(
+            new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$'),
+          );
+
+          if (!match) {
+            throw new Error(`Invalid IBC port name: ${specifiedName}`);
+          }
+
           localAddr = `/ibc-port/custom-${specifiedName}`;
         }
 
@@ -1472,6 +1481,15 @@ export const preparePortAllocator = (zone, { watch }) =>
         let localAddr = `/local/${specifiedName}`;
 
         if (specifiedName) {
+          // Contains at least two characters and only allows valid characters specified in IBC spec
+          const match = specifiedName.match(
+            new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$'),
+          );
+
+          if (!match) {
+            throw new Error(`Invalid IBC port name: ${specifiedName}`);
+          }
+
           localAddr = `/local/custom-${specifiedName}`;
         }
 
