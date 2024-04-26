@@ -1,6 +1,6 @@
 #! /bin/bash
 set -ueo pipefail
-declare -r USAGE="Usage: $0 <tag>
+declare -r USAGE="Usage: $0 {prerelease | latest} <tag>
 
 Generate initial contents for a GitHub release of the specified tag.
 "
@@ -12,11 +12,19 @@ usage() {
 case "${1-}" in
   --help) usage ;;
   -*) usage 1>&2 "Error: unknown option \"$1\"" ;;
-  '') usage 1>&2 "Error: missing tag name" ;;
+  '') usage 1>&2 "Error: missing maturity" ;;
+  prerelease | latest) declare -r maturity="$1" ;;
+  *) usage 1>&2 "Error: unknown maturity \"$1\"" ;;
 esac
+case "${2-}" in
+  --help) usage ;;
+  -*) usage 1>&2 "Error: unknown option \"$2\"" ;;
+  '') usage 1>&2 "Error: missing tag name" ;;
+  *) declare -r tag="$2" ;;
+esac
+[ $# -eq 2 ] || usage 1>&2 "Error: extra argument(s)"
 
 cd "$(dirname $0)"/..
-declare -r tag="$1"
 commit="$(git rev-parse "$tag")"
 if [ -z "$commit" ]; then
   echo 1>&2 "Tag not found: $tag"
@@ -70,13 +78,22 @@ declare -r AWK_REPLACE_PLACEHOLDERS='
     print output rem;
   }
 '
-agoric_cosmos_version="$(version-from-git-tag '@agoric/cosmos' '$AGORIC_COSMOS_VERSION')"
-ibc_go_version="$(version-from-go-mod ibc-go '$IBC_GO_VERSION')"
-cosmos_sdk_version="$(version-from-go-mod cosmos-sdk '$COSMOS_SDK_VERSION')"
-cometbft_version="$(version-from-go-mod cometbft '$COMETBFT_VERSION')"
+case "$maturity" in
+  prerelease)
+    declare -r checks_template='Assuming this release satisfies all pre-release/testnet validation checks, it will be promoted to `$NEXT_RELEASE`, and recommended for chains to upgrade from the previous `$PREV_RELEASE` release'
+    ;;
+  latest)
+    declare -r checks_template='This release has satisfied all pre-release/testnet validation checks, and is now recommended for chains to upgrade from the previous `$PREV_RELEASE` release'
+    ;;
+esac
+agoric_cosmos_version="$(version-from-git-tag '@agoric/cosmos')"
+ibc_go_version="$(version-from-go-mod ibc-go)"
+cosmos_sdk_version="$(version-from-go-mod cosmos-sdk)"
+cometbft_version="$(version-from-go-mod cometbft)"
 # See ../MAINTAINERS.md for derivation of Docker image tag from git tag @agoric/sdk@...
 docker_image_tag="$(version-from-git-tag '@agoric/sdk')"
 set -- \
+  CHECKS_TEXT="$(printf '%s' "$checks_template" | awk "$AWK_REPLACE_PLACEHOLDERS")" \
   TAG="$tag" \
   COMMIT="$commit" \
   AGORIC_COSMOS_VERSION="${agoric_cosmos_version:-\$AGORIC_COSMOS_VERSION}" \
@@ -97,7 +114,7 @@ The release contains at least the following fixes:
 
 The full set of changes in this release can be found at https://github.com/Agoric/agoric-sdk/pull/$RELEASE_PR.
 
-This code has satisfied all pre-release/testnet validation checks, and is now recommended for nodes to upgrade from the previous `$PREV_RELEASE` release. As a chain-halting upgrade, once approved, all chain validators will need to upgrade from `$PREV_RELEASE` to this new version (after the chain halts due to reaching the height required in a governance proposal).
+$CHECKS_TEXT. As a chain-halting upgrade, once approved, all chain validators will need to upgrade from `$PREV_RELEASE` to this new version (after the chain halts due to reaching the height required in a governance proposal).
 
 Since the `agoric-upgrade-11` release, state-sync snapshots include more data than before. Nodes which have inadvertently pruned this data (e.g. those created from a state-sync before the `agoric-upgrade-11` release) will not be able to produce such snapshots, and will need to be restored from state-sync. We are aware of continued performance issues related to state-sync. In particular, we've observed that on some deployments, the current implementation can require 100 GB of temporary free disk space and 16GB of memory.
 
