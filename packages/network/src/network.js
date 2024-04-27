@@ -47,6 +47,20 @@ export function getPrefixes(addr) {
 }
 
 /**
+ * Validate IBC port name
+ * @param {string} specifiedName
+ */
+function throwIfInvalidPortName(specifiedName) {
+  // Contains between 2 and 128 characters
+  // Can contain alphanumeric characters
+  // Valid symbols: ., ,, _, +, -, #, [, ], <, >
+  const portNameRegex = new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$');
+  if (!portNameRegex.test(specifiedName)) {
+    throw new Error(`Invalid IBC port name: ${specifiedName}`);
+  }
+}
+
+/**
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
  * @property {import('@agoric/vow').Remote<Required<ConnectionHandler>>[]} handlers
@@ -1448,17 +1462,10 @@ export const preparePortAllocator = (zone, { watch }) =>
     {
       allocateIBCPort(specifiedName = '') {
         const { state } = this;
-        let localAddr = `/ibc-port/${specifiedName}`;
+        let localAddr = `/ibc-port/`;
 
         if (specifiedName) {
-          // Contains at least two characters and only allows valid characters specified in IBC spec
-          const match = specifiedName.match(
-            new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$'),
-          );
-
-          if (!match) {
-            throw new Error(`Invalid IBC port name: ${specifiedName}`);
-          }
+          throwIfInvalidPortName(specifiedName);
 
           localAddr = `/ibc-port/custom-${specifiedName}`;
         }
@@ -1478,17 +1485,10 @@ export const preparePortAllocator = (zone, { watch }) =>
       allocateLocalPort(specifiedName = '') {
         const { state } = this;
 
-        let localAddr = `/local/${specifiedName}`;
+        let localAddr = `/local/`;
 
         if (specifiedName) {
-          // Contains at least two characters and only allows valid characters specified in IBC spec
-          const match = specifiedName.match(
-            new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$'),
-          );
-
-          if (!match) {
-            throw new Error(`Invalid IBC port name: ${specifiedName}`);
-          }
+          throwIfInvalidPortName(specifiedName);
 
           localAddr = `/local/custom-${specifiedName}`;
         }

@@ -207,6 +207,10 @@ test('verify port allocation', async t => {
 
   const namedLocalPort = await when(portAllocator.allocateLocalPort('local-1'));
   t.is(namedLocalPort.getLocalAddress(), '/local/custom-local-1');
+
+  await t.throwsAsync(when(portAllocator.allocateIBCPort('/test-1')), {
+    message: 'Invalid IBC port name: /test-1',
+  });
 });
 
 test('protocol connection listen', async t => {
