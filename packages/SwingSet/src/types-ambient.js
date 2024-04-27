@@ -85,3 +85,11 @@
  * SwingStoreHostStorage,
  * } from '@agoric/swing-store'
  */
+
+// XXX miscellaneous types that downstream code expects to be ambient
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {PromiseKit, PromiseRecord} from '@endo/promise-kit';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {EachTopic, IterableEachTopic, IterationObserver, LatestTopic, Marshaller, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscriber, StoredSubscription, Subscriber, Subscription, SubscriptionRecord, UpdateRecord, VStorageKey} from '@agoric/notifier';
+ */
