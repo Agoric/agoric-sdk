@@ -195,7 +195,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         governedContractInstallation,
         governedIssuerKeywordRecord,
 
-        // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- failed only when not built
+        // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
         augmentedTerms,
         privateArgs.governed,
         governedContractLabel,
