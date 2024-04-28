@@ -67,6 +67,7 @@
  * SwingSetConfigProperties,
  * SwingSetKernelConfig,
  * TerminationVatPowers,
+ * VatAdminSvc,
  * VatKeeper,
  * VatPowers,
  * VatSlog,
