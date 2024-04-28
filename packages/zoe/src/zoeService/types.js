@@ -46,7 +46,7 @@ export {};
  * @property {GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
- * @property {GetTerms} getTerms
+ * @property {import('./utils.js').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
@@ -135,7 +135,7 @@ export {};
  *
  * @param {Bundle | SourceBundle} bundle
  * @param {string} [bundleLabel]
- * @returns {Promise<Installation>}
+ * @returns {Promise<Installation<any>>}
  */
 
 // TODO consolidate installBundleID into install.
