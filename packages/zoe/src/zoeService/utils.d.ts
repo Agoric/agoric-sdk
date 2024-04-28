@@ -20,7 +20,7 @@ export type Installation<SF> = {
   getBundle: () => SourceBundle;
   getBundleLabel: () => string;
   // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
+  readonly [StartFunction]: SF;
 };
 export type Instance<SF extends ContractStartFunction = any> =
   Handle<'Instance'> & {
