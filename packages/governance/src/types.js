@@ -1,6 +1,10 @@
 export {};
 
-/** @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js' */
+/**
+ * @import {AdminFacet, Handle, Installation, Instance, Invitation, Keyword, IssuerKeywordRecord, ZCF} from '@agoric/zoe';
+ * @import {Ratio} from '@agoric/zoe/src/contractSupport/types.js';
+ * @import {ContractStartFunction, InstallationStart} from '@agoric/zoe/src/zoeService/utils.js';
+ */
 
 /**
  * @typedef { 'unranked' | 'order' | 'plurality' } ChoiceMethod

@@ -12,6 +12,10 @@ import {
 } from '../src/contractSupport/index.js';
 
 /**
+ * @import {PriceAuthority, PriceQuoteValue} from './types.js';
+ */
+
+/**
  * @param {object} options
  * @param {Brand<'nat'>} options.actualBrandIn
  * @param {Brand<'nat'>} options.actualBrandOut

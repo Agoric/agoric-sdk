@@ -8,6 +8,7 @@ import { prepareContractGovernorKit } from './contractGovernorKit.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 /**
+ * @import {ContractMeta, Handle, Installation, Instance, Keyword, IssuerKeywordRecord, Invitation, StandardTerms, ZCF, ZoeService} from '@agoric/zoe';
  * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
  */
 

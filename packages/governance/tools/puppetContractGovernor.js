@@ -7,6 +7,7 @@ import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
 
 /**
+ * @import {Installation, IssuerKeywordRecord} from '@agoric/zoe';
  * @import {GovernableStartFn, ParamChangesSpec} from '../src/types.js';
  */
 

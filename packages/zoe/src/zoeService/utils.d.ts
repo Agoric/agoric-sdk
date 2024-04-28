@@ -3,6 +3,7 @@ import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { Baggage } from '@agoric/swingset-liveslots';
 
 import type { IssuerKeywordRecord, Payment } from './types.js';
+import type { Handle } from '../types.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -21,15 +22,16 @@ export type Installation<SF> = {
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
-export type Instance<SF> = Handle<'Instance'> & {
-  // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
-};
+export type Instance<SF extends ContractStartFunction = any> =
+  Handle<'Instance'> & {
+    // because TS is structural, without this the generic is ignored
+    readonly [StartFunction]?: SF;
+  };
 
 export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
 
-type ContractStartFunction = (
+export type ContractStartFunction = (
   zcf?: ZCF,
   privateArgs?: {},
   baggage?: Baggage,
