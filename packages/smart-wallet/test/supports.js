@@ -18,6 +18,10 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
 
+/**
+ * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
+ */
+
 export { ActionType };
 
 /**

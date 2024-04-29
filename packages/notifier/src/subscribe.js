@@ -2,7 +2,10 @@ import { E, Far } from '@endo/far';
 import { isObject } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
-import './types-ambient.js';
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord, EachTopic, ForkableAsyncIterableIterator} from '../src/types.js';
+ */
 
 const { details: X, Fail } = assert;
 const sink = () => {};
@@ -50,7 +53,7 @@ const reconnectAsNeeded = async (getter, seed = []) => {
             X`Attempting to recover from disconnection: ${disconnection}`,
           );
         } catch (_err) {
-          // eslint-disable-next-line no-empty
+          // noop
         }
       }
       throw err;

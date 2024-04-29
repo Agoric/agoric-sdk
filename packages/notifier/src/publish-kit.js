@@ -5,7 +5,10 @@ import { E, Far } from '@endo/far';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import './types-ambient.js';
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {DurablePublishKitState, DurablePublishKitValueDurability, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, Subscriber, UpdateRecord} from '../src/types.js';
+ */
 
 const { Fail, quote: q } = assert;
 

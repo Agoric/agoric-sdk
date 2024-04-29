@@ -17,7 +17,6 @@ import {
   makeFakeMarshaller,
 } from '../tools/testSupports.js';
 
-import '../src/types-ambient.js';
 import { jsonPairs } from './marshal-corpus.js';
 
 test('stored subscription', async t => {

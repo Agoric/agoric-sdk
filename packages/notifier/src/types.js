@@ -1,10 +1,7 @@
 // @jessie-check
 
-/** @import { ERef } from '@endo/far' */
-
-/**
- * @import {PromiseKit, PromiseRecord} from '@endo/promise-kit'
- */
+// Ensure this is a module.
+export {};
 
 /**
  * @template T
@@ -46,7 +43,7 @@
 
 /**
  * @template T
- * @typedef {object} IterationObserver<T>
+ * @typedef {object} IterationObserver
  * A valid sequence of calls to the methods of an `IterationObserver`
  * represents an iteration. A valid sequence consists of any number of calls
  * to `updateState` with the successive non-final values, followed by a
@@ -155,14 +152,14 @@
 
 /**
  * @template T
- * @typedef {object} PublishKit<T>
+ * @typedef {object} PublishKit
  * @property {Publisher<T>} publisher
  * @property {Subscriber<T>} subscriber
  */
 
 /**
  * @template T
- * @typedef {object} StoredPublishKit<T>
+ * @typedef {object} StoredPublishKit
  * @property {Publisher<T>} publisher
  * @property {StoredSubscriber<T>} subscriber
  */
@@ -210,7 +207,7 @@
 
 /**
  * @template T
- * @typedef {object} UpdateRecord<T>
+ * @typedef {object} UpdateRecord
  * @property {T} value is whatever state the service wants to publish
  * @property {bigint} [updateCount] is a value that identifies the update.  For
  * the last update, it is `undefined`.
@@ -228,7 +225,7 @@
  * @typedef {NotifierInternals<T> &
  *   ForkableAsyncIterable<T, T> &
  *   SharableNotifier<T>
- * } Notifier<T> an object that can be used to get the current state or updates
+ * } Notifier an object that can be used to get the current state or updates
  */
 
 /**
@@ -247,7 +244,7 @@
 
 /**
  * @template T
- * @typedef {object} NotifierRecord<T> the produced notifier/updater pair
+ * @typedef {object} NotifierRecord the produced notifier/updater pair
  * @property {IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
@@ -257,7 +254,7 @@
 /**
  * @template T
  * @typedef {IterableEachTopic<T> & EachTopic<T> &
- *   SharableSubscription<T>} Subscription<T>
+ *   SharableSubscription<T>} Subscription
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
 
@@ -277,7 +274,7 @@
 
 /**
  * @template T
- * @typedef {object} SubscriptionRecord<T>
+ * @typedef {object} SubscriptionRecord
  * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
  */

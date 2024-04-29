@@ -3,7 +3,10 @@
 import { E } from '@endo/far';
 import { subscribeLatest } from './subscribe.js';
 
-import './types-ambient.js';
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {BaseNotifier, IterationObserver, LatestTopic} from '../src/types.js';
+ */
 
 /**
  * @deprecated Use `subscribeLatest` from `@agoric/notifier/subscribe.js` instead.

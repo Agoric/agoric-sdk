@@ -28,3 +28,6 @@ export {
 } from './asyncIterableAdaptor.js';
 export * from './storesub.js';
 export * from './stored-notifier.js';
+
+// eslint-disable-next-line import/export -- doesn't know types
+export * from './types.js';
