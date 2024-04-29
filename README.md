@@ -17,10 +17,11 @@ to use.
 ## Prerequisites
 
 * Git
-* Node.js LTS (version 16.13.0 or higher)
+* Go ^1.20.2
+* Node.js ^18.12 or ^20.9
   * we generally support the latest LTS release: use [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)
-* gcc-10 or newer, or a compiler with `__has_builtin()`
+* gcc >=10, clang >=10, or another compiler with `__has_builtin()`
 
 Any version of Yarn will do: the `.yarnrc` file should ensure that all
 commands use the specific checked-in version of Yarn (stored in
