@@ -10,6 +10,11 @@ import {
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
+/**
+ * @import {Key, Pattern} from '@endo/patterns');
+ * @import {SetStore, StoreOptions} from '../types.js';
+ */
+
 const { quote: q } = assert;
 
 /**

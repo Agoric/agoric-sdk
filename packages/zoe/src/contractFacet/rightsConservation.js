@@ -4,7 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import '../internal-types.js';
 /**
- * @import {MapStore} from '@agoric/store/exported.js'
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**

@@ -1,6 +1,9 @@
 import { Far } from '@endo/marshal';
 
-/** @import {RankCompare} from '@endo/marshal' */
+/**
+ * @import {RankCompare} from '@endo/marshal';
+ * @import {MapStore, WeakMapStore} from '../types.js';
+ */
 
 const { Fail, quote: q } = assert;
 

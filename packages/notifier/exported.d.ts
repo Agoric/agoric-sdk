@@ -1,5 +1,6 @@
-/** @file Declare common ambient types */
-/* eslint-disable import/named */
+/** @file Ambient exports until https://github.com/Agoric/agoric-sdk/issues/6512 */
+/** @see {@link /docs/typescript.md} */
+/* eslint-disable -- doesn't understand .d.ts */
 import {
   EachTopic as _EachTopic,
   IterableEachTopic as _IterableEachTopic,

@@ -8,7 +8,7 @@ import {
 
 const { quote: q, Fail } = assert;
 
-/** @import {WeakSetStore} from '@agoric/store/exported.js'; */
+/** @import {StoreOptions, WeakSetStore} from '@agoric/store'; */
 
 /**
  * @template K
