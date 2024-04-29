@@ -16,9 +16,7 @@ export const defaultProposalBuilder = async (
       {
         installKeys: {
           stakeAtom: publishRef(
-            install(
-              '@agoric/orchestration/src/contracts/stakeAtom.contract.js',
-            ),
+            install('@agoric/orchestration/src/examples/stakeAtom.contract.js'),
           ),
         },
         hostConnectionId,

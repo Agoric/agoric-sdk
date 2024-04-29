@@ -7,7 +7,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
-import { prepareStakingAccountHolder } from './stakingAccountHolder.js';
+import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
 
 const trace = makeTracer('StakeAtom');
 /**
@@ -41,7 +41,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const makeStakingAccountHolder = prepareStakingAccountHolder(
+  const makeStakingAccountKit = prepareStakingAccountKit(
     baggage,
     makeRecorderKit,
     zcf,
@@ -54,7 +54,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
     const accountAddress = await E(account).getAccountAddress();
     trace('account address', accountAddress);
-    const { holder, invitationMakers } = makeStakingAccountHolder(
+    const { holder, invitationMakers } = makeStakingAccountKit(
       account,
       storageNode,
       accountAddress,
