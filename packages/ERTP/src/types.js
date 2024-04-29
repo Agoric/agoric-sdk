@@ -136,8 +136,8 @@ export {};
  *   asset described. The alleged name (such as 'BTC' or 'moola') is provided by
  *   the maker of the issuer and should not be trusted as accurate.
  *
- *   Every amount created by a particular AmountMath will share the same brand,
- *   but recipients cannot rely on the brand to verify that a purported amount
+ *   Every amount created by a particular issuer will share the same brand, but
+ *   recipients cannot rely on the brand to verify that a purported amount
  *   represents the issuer they intended, since the same brand can be reused by
  *   a misbehaving issuer.
  */
