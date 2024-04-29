@@ -2,7 +2,10 @@
 /** @file Orchestration service */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/network/exported.js';
+
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';

@@ -1,5 +1,6 @@
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/ertp/exported.js';
+
 import '@agoric/zoe/src/contractFacet/types-ambient.js';
 import '@agoric/zoe/tools/types-ambient.js';
 import '@agoric/zoe/src/types.js';

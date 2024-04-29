@@ -1,9 +1,10 @@
 // @jessie-check
 
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '../../exported.js';
+import '@agoric/governance/exported.js';
 
 import { AmountMath } from '@agoric/ertp';
-import '@agoric/governance/exported.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';

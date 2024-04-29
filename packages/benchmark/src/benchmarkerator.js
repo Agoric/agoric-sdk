@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 
-// XXX The following four imports are present only to make `tsc` shut up.  They do no actual work.
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/vats/exported.js';
 import '@agoric/inter-protocol/exported.js';
 import '@agoric/zoe/exported.js';
