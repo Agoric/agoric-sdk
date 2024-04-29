@@ -17,7 +17,6 @@ import {
   Subscription as _Subscription,
   SubscriptionRecord as _SubscriptionRecord,
   UpdateRecord as _UpdateRecord,
-  VStorageKey as _VStorageKey,
 } from './src/types.js';
 
 declare global {
@@ -38,6 +37,5 @@ declare global {
     _Subscription as Subscription,
     _SubscriptionRecord as SubscriptionRecord,
     _UpdateRecord as UpdateRecord,
-    _VStorageKey as VStorageKey,
   };
 }

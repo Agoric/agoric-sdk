@@ -1,5 +1,9 @@
 // @jessie-check
 
+/**
+ * @import {StoredFacet, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ */
+
 // Ensure this is a module.
 export {};
 
@@ -280,42 +284,6 @@ export {};
  */
 
 // /////////////////////////////////////////////////////////////////////////////
-
-/** @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>} Marshaller */
-/** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
-
-/**
- * Defined by vstorageStoreKey in vstorage.go
- *
- * @typedef VStorageKey
- * @property {string} storeName
- * @property {string} storeSubkey
- * @property {string} dataPrefixBytes
- * @property {string} [noDataValue]
- */
-
-/**
- * This represents a node in an IAVL tree.
- *
- * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
- *
- * Vstorage is a hierarchical externally-reachable storage structure that
- * identifies children by restricted ASCII name and is associated with arbitrary
- * string-valued data for each node, defaulting to the empty string.
- *
- * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data (append to the node)
- * @property {() => string} getPath the chain storage path at which the node was constructed
- * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
- * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
- */
-
-/**
- * @typedef {object} StoredFacet
- * @property {() => Promise<string>} getPath the chain storage path at which the node was constructed
- * @property {StorageNode['getStoreKey']} getStoreKey DEPRECATED use getPath
- * @property {() => Unserializer} getUnserializer get the unserializer for the stored data
- */
 
 /**
  * @deprecated use StoredSubscriber

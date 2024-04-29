@@ -7,8 +7,8 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {BaseNotifier, Notifier, StoredFacet} from './types.js';
- * @import {Marshaller, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BaseNotifier, Notifier} from './types.js';
+ * @import {Marshaller, StoredFacet, StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

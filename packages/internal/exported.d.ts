@@ -16,7 +16,6 @@ import {
 declare global {
   export {
     _ERef as ERef,
-    _Passable as Passable,
     _Marshaller as Marshaller,
     _PromiseKit as PromiseKit,
     _PromiseRecord as PromiseRecord,
