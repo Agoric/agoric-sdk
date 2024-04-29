@@ -194,6 +194,8 @@ const isGTE = (leftAmount, rightAmount, brand = undefined) => {
  * the abstract right to participate in a particular exchange.
  */
 const AmountMath = {
+  // TODO use overloading to handle when Brand has an AssetKind and when it doesn't.
+  // a AmountForValue utility could help DRY those cases.
   /**
    * Make an amount from a value by adding the brand.
    *
