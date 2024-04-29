@@ -1,5 +1,7 @@
 // @jessie-check
 
+import '@agoric/internal/exported.js';
+
 export {
   makePublishKit,
   prepareDurablePublishKit,
