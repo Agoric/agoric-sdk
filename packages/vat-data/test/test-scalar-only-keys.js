@@ -16,7 +16,7 @@ test('scalar maps should reject non-scalar keys', t => {
 
 test('scalar big maps should reject non-scalar keys', t => {
   const bigMap = makeScalarBigMapStore('dummy', { keyShape: M.key() });
-  t.throws(() => bigMap.init(harden({ label: 'not a scalar' })), {
+  t.throws(() => bigMap.init(harden({ label: 'not a scalar' }), null), {
     message:
       /A "copyRecord" cannot be a scalar key: \{"label":"not a scalar"\}/,
   });
