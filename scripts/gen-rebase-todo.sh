@@ -87,15 +87,36 @@ since="$1"
   } \
   | {
     # Rename each label that receives `merge` in a block to
-    # "base-$branchName".
+    # "base-$branchName", and prefix each source of such merges with a
+    # PR reference to "pr-####--...".
     awk '
       function addLabel(label) {
         if (++labels[label] == 1) return;
         print "duplicate label: " label > "/dev/stderr";
         exit 1;
       }
+      function ere_escape(s) {
+        gsub(/[^a-zA-Z0-9_-]/, "[&]", s);
+        gsub(/[[][\\][]]/, "\\\\", s);
+        gsub(/[[]\^[]]/, "\\^", s);
+        return s;
+      }
+      $0 == "" && branch != "" && pr != "" {
+        re = "\n# [Bb]ranch " ere_escape(branch) "\n";
+        if (match(buf, re)) {
+          commentTail = substr(buf, RSTART + 3, RLENGTH - 4);
+          buf = sprintf("%s\n# %s\n%s",
+            substr(buf, 1, RSTART - 1),
+            sprintf("PR #%s %s", pr, commentTail),
+            substr(buf, RSTART + RLENGTH, length(buf) - RSTART - RLENGTH + 1));
+        }
+        newLabel = sprintf("pr-%s--%s", pr, branch);
+        addLabel(newLabel);
+        renames[++renameCount] = branch SUBSEP newLabel;
+      }
       match($0, /^$|^# .*[Bb]ranch /) {
         branch = substr($0, RLENGTH + 1, length($0) - RLENGTH);
+        pr = "";
       }
       branch != "" && match($0, /^merge /) && match(prev, /^reset /) {
         onto = substr(prev, RLENGTH + 1, length($0) - RLENGTH);
@@ -103,6 +124,13 @@ since="$1"
         newOnto = "base-" branch;
         addLabel(newOnto);
         renames[++renameCount] = onto SUBSEP newOnto;
+
+        if (!match($0, /(gh-|#)[0-9]+/)) {
+          pr = "";
+        } else {
+          pr = substr($0, RSTART, RLENGTH);
+          sub(/^[^0-9]*/, "", pr);
+        }
       }
       /^label / {
         addLabel(substr($0, RLENGTH + 1, length($0) - RLENGTH));
