@@ -275,10 +275,6 @@
  */
 
 /**
- * @import {VatAdminSvc} from '@agoric/swingset-vat'
- */
-
-/**
  * @typedef {{bundleCap: import('@agoric/swingset-vat').BundleCap } | {name: string} | {id: BundleID}} ZCFSpec
  */
 
