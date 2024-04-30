@@ -17,6 +17,7 @@ const trace = makeTracer('LIQ');
 /** @import {TimerWaker} from '@agoric/time' */
 /** @import {CancelToken} from '@agoric/time' */
 /** @import {RelativeTimeRecord} from '@agoric/time' */
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
 const makeCancelToken = makeCancelTokenMaker('liq');
 

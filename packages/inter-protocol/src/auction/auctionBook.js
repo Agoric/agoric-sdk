@@ -29,6 +29,11 @@ import {
   priceFrom,
 } from './util.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 const { Fail } = assert;
 const { makeEmpty } = AmountMath;
 
@@ -89,8 +94,6 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
     },
   );
 };
-
-/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @typedef {object} BookDataNotification

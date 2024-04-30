@@ -31,6 +31,10 @@ import {
 } from '../../../src/contractSupport/ratio.js';
 
 /**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * @callback MakeFakePriceOracle
  * @param {bigint} [valueOut]
  * @returns {Promise<OracleKit & { instance: Instance }>}

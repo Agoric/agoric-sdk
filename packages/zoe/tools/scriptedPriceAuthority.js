@@ -9,6 +9,10 @@ import {
   makeOnewayPriceAuthorityKit,
 } from '../src/contractSupport/index.js';
 
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 export function makeScriptedPriceAuthority(options) {
   const {
     actualBrandIn,

@@ -40,7 +40,10 @@ import {
   setupElectorateReserveAndAuction,
 } from './vaultFactoryUtils.js';
 
-/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js'
+ */
 
 /**
  * @typedef {Record<string, any> & {

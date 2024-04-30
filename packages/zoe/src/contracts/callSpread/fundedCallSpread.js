@@ -12,6 +12,10 @@ import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
 /**
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * This contract implements a fully collateralized call spread. This is a
  * combination of a call option bought at one strike price and a second call
  * option sold at a higher price. The invitations are produced in pairs, and the

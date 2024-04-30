@@ -1,4 +1,5 @@
-// @jessie-check
+// Ensure this is a module.
+export {};
 
 /**
  * @typedef {object} PriceQuote

@@ -19,6 +19,8 @@ import {
 } from '../lib/wallet.js';
 import { bigintReplacer } from '../lib/format.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));

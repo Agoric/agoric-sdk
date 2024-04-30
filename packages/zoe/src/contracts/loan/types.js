@@ -24,7 +24,7 @@
  *
  * @property {AutoswapInstance} autoswapInstance
  *
- * @property {PriceAuthority} priceAuthority
+ * @property {import('../../../tools/types.js').PriceAuthority} priceAuthority
  *
  *   Used for getting the current value of collateral and setting
  *   liquidation triggers.
@@ -66,7 +66,7 @@
  *
  *   A function to get the current debt
  *
- * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
+ * @property {PromiseRecord<import('../../../tools/types.js').PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -80,7 +80,7 @@
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {PromiseRecord<PriceQuote>} liquidationPromiseKit
+ * @property {PromiseRecord<import('../../../tools/types.js').PriceQuote>} liquidationPromiseKit
  *
  *   PromiseKit that includes a promise that resolves to a PriceQuote
  *   when liquidation is triggered
@@ -179,7 +179,7 @@
  * @property {PromiseRecord<any>} liquidationPromiseKit
  * @property {bigint} [mmr]
  * @property {Handle<'Instance'>} autoswapInstance
- * @property {PriceAuthority} priceAuthority
+ * @property {import('../../../tools/types.js').PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate
  * @property {import('@agoric/time').RelativeTime} interestPeriod
@@ -198,7 +198,7 @@
  *
  * Make an invitation to add collateral to protect against liquidation
  *
- * @property {() => Promise<PriceQuote>} getLiquidationPromise
+ * @property {() => Promise<import('../../../tools/types.js').PriceQuote>} getLiquidationPromise
  *
  * Get a promise for a priceQuote that will resolve if liquidation
  * occurs. The priceQuote is for the value of the collateral that

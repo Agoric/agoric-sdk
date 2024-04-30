@@ -15,6 +15,10 @@ import {
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 const { Fail } = assert;
 
 const PERCENT_BASE = 100n;

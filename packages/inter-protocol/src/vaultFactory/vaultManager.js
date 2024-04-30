@@ -64,6 +64,11 @@ import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');

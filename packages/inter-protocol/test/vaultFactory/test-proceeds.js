@@ -7,6 +7,8 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { calculateDistributionPlan } from '../../src/vaultFactory/proceeds.js';
 import { withAmountUtils } from '../supports.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 const debt = withAmountUtils(makeIssuerKit('IST'));
 const coll = withAmountUtils(makeIssuerKit('aEth'));
 

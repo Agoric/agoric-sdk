@@ -12,7 +12,6 @@
         "src/zoeService/utils.d.ts",
         "src/zoeService/zoe.js",
         "tools/internal-types.js",
-        "tools/manualTimer.js",
-        "tools/types-ambient.js",
+        "tools/manualTimer.js"
     ]
 }

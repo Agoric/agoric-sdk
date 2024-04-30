@@ -7,7 +7,10 @@ import {
 } from '../../src/vaultFactory/math.js';
 import { withAmountUtils } from '../supports.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 const stable = withAmountUtils(makeIssuerKit('Stable'));
+
 const aeth = withAmountUtils(makeIssuerKit('Aeth'));
 
 //#region maxDebtForVaults

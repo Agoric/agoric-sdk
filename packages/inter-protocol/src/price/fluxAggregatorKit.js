@@ -18,6 +18,8 @@ import { Far } from '@endo/marshal';
 import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 const trace = makeTracer('FlxAgg', true);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
