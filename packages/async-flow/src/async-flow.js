@@ -1,7 +1,7 @@
 import { annotateError, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { vowishKey, VowShape } from '@agoric/vow';
+import { toPassableCap, VowShape } from '@agoric/vow';
 import { PromiseWatcherI } from '@agoric/vow/src/watch-promise.js';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeReplayMembrane } from './replay-membrane.js';
@@ -68,7 +68,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * for their activations later.
    */
   const flowForOutcomeVowKey = outerZone.mapStore('flowForOutcomeVow', {
-    keyShape: M.remotable('vowishKey'),
+    keyShape: M.remotable('toPassableCap'),
     valueShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
@@ -306,7 +306,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             if (eagerWakers.has(flow)) {
               eagerWakers.delete(flow);
             }
-            flowForOutcomeVowKey.delete(vowishKey(flow.getOutcome()));
+            flowForOutcomeVowKey.delete(toPassableCap(flow.getOutcome()));
             state.isDone = true;
             log.dispose();
             flow.getFlowState() === 'Done' ||
@@ -369,8 +369,8 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       const asyncFlowKit = internalMakeAsyncFlowKit(activationArgs);
       const { flow } = asyncFlowKit;
 
-      const vow = vowishKey(flow.getOutcome());
-      flowForOutcomeVowKey.init(vowishKey(vow), flow);
+      const vow = toPassableCap(flow.getOutcome());
+      flowForOutcomeVowKey.init(toPassableCap(vow), flow);
       flow.restart();
       return asyncFlowKit;
     };
@@ -415,7 +415,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       }
     },
     getFlowForOutcomeVow(outcomeVow) {
-      return flowForOutcomeVowKey.get(vowishKey(outcomeVow));
+      return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
     },
   });
 

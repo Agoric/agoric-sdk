@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { Far } from '@endo/pass-style';
-import { vowishKey } from '@agoric/vow';
+import { toPassableCap } from '@agoric/vow';
 import { makeEphemera } from './ephemera.js';
 
 const WeakBijectionI = M.interface('WeakBijection', {
@@ -29,15 +29,15 @@ const makeVowishStore = name => {
 
   return Far(name, {
     init: (k, v) => {
-      const k2 = vowishKey(k);
+      const k2 = toPassableCap(k);
       !map.has(k2) ||
         // separate line so I can set a breakpoint
         Fail`key already bound: ${k} -> ${map.get(k2)} vs ${v}`;
       map.set(k2, v);
     },
-    has: k => map.has(vowishKey(k)),
+    has: k => map.has(toPassableCap(k)),
     get: k => {
-      const k2 = vowishKey(k);
+      const k2 = toPassableCap(k);
       map.has(k2) ||
         // separate line so I can set a breakpoint
         Fail`key not found: ${k}`;

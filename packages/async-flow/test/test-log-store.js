@@ -7,7 +7,7 @@ import {
 } from './prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-import { prepareVowTools, vowishKey } from '@agoric/vow';
+import { prepareVowTools, toPassableCap } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
@@ -42,8 +42,8 @@ const testLogStorePlay = async (t, zone, { makeVowKit }) => {
     ['doReject', v1, 'x'],
   ]);
   // Because t.deepEqual is too tolerant
-  t.is(vowishKey(log.dump()[0][1]), vowishKey(v1));
-  t.is(vowishKey(log.dump()[1][1]), vowishKey(v1));
+  t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
+  t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v1));
 
   t.is(log.getIndex(), 2);
   t.is(log.getLength(), 2);
@@ -73,8 +73,8 @@ const testLogStoreReplay = async (t, zone, _vowTools) => {
     ['doReject', v1, 'x'],
   ]);
   // Because t.deepEqual is too tolerant
-  t.is(vowishKey(log.dump()[0][1]), vowishKey(v1));
-  t.is(vowishKey(log.dump()[1][1]), vowishKey(v1));
+  t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
+  t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v1));
 
   t.deepEqual(log.nextEntry(), ['doFulfill', v1, 'x']);
   t.deepEqual(log.nextEntry(), ['doReject', v1, 'x']);
