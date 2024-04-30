@@ -14,7 +14,7 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       const { instance } = await E(zoe).startInstance(
         installations.offerArgsUsageContract,
         harden({
-          RUN: E(zoe).getFeeIssuer(),
+          RUN: await E(zoe).getFeeIssuer(),
         }),
         undefined,
       );

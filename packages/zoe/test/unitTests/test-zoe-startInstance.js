@@ -96,6 +96,7 @@ test('terms, issuerKeywordRecord switched', async t => {
     () =>
       E(zoe).startInstance(
         installation,
+        // @ts-expect-error intentional error
         { something: 2 },
         { Moola: moolaKit.issuer },
       ),
@@ -121,6 +122,7 @@ test('bad issuer, makeEmptyPurse throws', async t => {
     getBrand: () => brand,
   });
   await t.throwsAsync(
+    // @ts-expect-error intentional error
     () => E(zoe).startInstance(installation, { Money: badIssuer }),
     {
       message:
