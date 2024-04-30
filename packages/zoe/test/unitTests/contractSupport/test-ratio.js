@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import '../../../src/contractSupport/types.js';
+import '../../../src/contractSupport/types-ambient.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import {

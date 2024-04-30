@@ -1,4 +1,4 @@
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 import { q, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
