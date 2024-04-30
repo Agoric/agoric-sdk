@@ -17,6 +17,11 @@ import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
 import { ICS20TransferProtocol } from './ics20.js';
 import { makeCourierMaker, getCourierPK } from './courier.js';
 
+/**
+ * @import {CloseReason, Connection} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ */
+
 const DEFAULT_DENOM_TRANSFORMER = IBCSourceTraceDenomTransformer;
 const DEFAULT_TRANSFER_PROTOCOL = ICS20TransferProtocol;
 

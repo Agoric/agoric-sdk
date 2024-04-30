@@ -42,6 +42,9 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/zoe/exported.js';
+
 const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SmrtWlt');

@@ -2,6 +2,7 @@
 import { V as E } from '@agoric/vat-data/vow.js';
 
 /**
+ * @import {Connection, Port, PortAllocator} from '@agoric/network';
  * @import { OrchestrationService } from '../service.js'
  * @import { OrchestrationVat } from '../vat-orchestration.js'
  */

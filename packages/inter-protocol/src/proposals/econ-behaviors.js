@@ -3,6 +3,7 @@
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '../../exported.js';
 import '@agoric/governance/exported.js';
+import '@agoric/vats/src/core/types-ambient.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';

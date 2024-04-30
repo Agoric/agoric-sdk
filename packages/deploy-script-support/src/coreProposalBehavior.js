@@ -2,6 +2,10 @@
 const t = 'makeCoreProposalBehavior';
 
 /**
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
+/**
  * TODO import these from @agoric/vats when the types are better managed
  *
  * @typedef {*} ChainBootstrapSpace

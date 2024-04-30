@@ -8,6 +8,8 @@ import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/exported.js'
+ * @import {Connection} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
  */
 
 /**

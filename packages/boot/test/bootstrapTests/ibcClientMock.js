@@ -4,6 +4,10 @@ import { Far } from '@endo/far';
 import { V as E } from '@agoric/vat-data/vow.js';
 
 /**
+ * @import {ListenHandler, PortAllocator} from '@agoric/network';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {{
  *   portAllocator: ERef<PortAllocator>;

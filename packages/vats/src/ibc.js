@@ -14,7 +14,10 @@ import {
   encodeRemoteIbcAddress,
 } from '../tools/ibc-utils.js';
 
-/** @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js' */
+/**
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js';
+ * @import {AttemptDescription} from '@agoric/network';
+ */
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
@@ -24,9 +27,10 @@ const DEFAULT_ACKNOWLEDGEMENT = '\x00';
 const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
 
 /**
+ * @import {Endpoint, Connection, ConnectionHandler, InboundAttempt, Bytes, ProtocolHandler, ProtocolImpl} from '@agoric/network';
  * @import {BridgeHandler, ScopedBridgeManager, ConnectingInfo, IBCChannelID, IBCChannelOrdering, IBCEvent, IBCPacket, IBCPortID, IBCDowncallPacket, IBCDowncallMethod, IBCDowncall, IBCBridgeEvent} from './types.js';
  * @import {Zone} from '@agoric/base-zone';
- * @import {Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
+ * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
  */
 
 /** @typedef {VowKit<AttemptDescription>} OnConnectP */

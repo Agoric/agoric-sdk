@@ -1,6 +1,9 @@
 // @ts-check
 
 /// <reference types="ses"/>
+/**
+ * @import {Bytes, ConnectionHandler} from '@agoric/network';
+ */
 
 /**
  * @typedef {string} Denom
