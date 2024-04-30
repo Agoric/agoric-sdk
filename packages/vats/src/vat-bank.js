@@ -533,6 +533,12 @@ const BankManagerI = M.interface('BankManager', {
       payment: M.remotable('Payment'),
     }),
   ).returns(),
+  registerDenom: M.callWhen(
+    M.splitRecord(BaseIssuerKitShape, {
+      mint: M.remotable('Mint'),
+    }),
+    M.string(),
+  ).returns(),
   getAssetSubscription: M.call().returns(M.remotable('AssetSubscription')),
   getBankForAddress: M.callWhen(M.string()).returns(M.remotable('Bank')),
   getModuleAccountAddress: M.callWhen(M.string()).returns(
@@ -665,6 +671,37 @@ const prepareBankManager = (
           type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS',
           moduleName,
         });
+      },
+      /**
+       * @param {AssetIssuerKit} kit
+       * @param {string} issuerName
+       */
+      async registerDenom(kit, issuerName) {
+        const { brandToAssetRecord, bankChannel } = this.state;
+
+        const brand = await kit.brand;
+        if (brandToAssetRecord.has(brand)) {
+          throw Fail`Asset ${brand} already registered`;
+        }
+        // TODO check the kit has a valid mint, so we only the owner can register a denom
+
+        const assetKind = await E(kit.issuer).getAssetKind();
+        assert.equal(
+          assetKind,
+          AssetKind.NAT,
+          `Only fungible assets are allowed, not ${assetKind}`,
+        );
+
+        // TODO determine `baseDenom` for bank DenomMetadata
+        // use something generic like boardId to prevent squatting?
+        const baseDenom = `ertp/nat/${issuerName}`;
+        // TODO incorporate decimals from displayInfo?
+        const update = await bankChannel?.toBridge({
+          type: 'VBANK_REGISTER_DENOM',
+          denom: baseDenom,
+        });
+        await bankChannel?.fromBridge(update);
+        // TODO should this also call `addAsset`?
       },
 
       /**

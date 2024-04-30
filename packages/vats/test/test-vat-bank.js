@@ -50,7 +50,7 @@ test('provideAssetSubscription - MapStore insertion order preserved', async t =>
 });
 
 test('communication', async t => {
-  t.plan(32);
+  t.plan(34);
   const baggage = provideBaggage('communication');
   const bankVat = E(buildRootObject)(null, null, baggage);
 
@@ -117,6 +117,13 @@ test('communication', async t => {
           t.is(amount, '12');
           t.deepEqual(rest, {});
           ret = true;
+          break;
+        }
+
+        case 'VBANK_REGISTER_DENOM': {
+          const { denom } = obj;
+          t.is(denom, 'ertp/nat/myToken');
+          ret = 'true';
           break;
         }
 
@@ -236,4 +243,12 @@ test('communication', async t => {
     E(bankMgr).getRewardDistributorDepositFacet('ufee', feeKit),
   ).receive(feePayment);
   t.assert(AmountMath.isEqual(feeReceived, feeAmount));
+
+  const myTokenKit = makeIssuerKit(
+    'myToken',
+    AssetKind.NAT,
+    harden({ decimalPlaces: 6 }),
+  );
+  await E(bankMgr).registerDenom(myTokenKit, 'myToken');
+  // TODO call addAsset with denom (should registerDenom return a denom?)
 });

@@ -14,6 +14,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -195,6 +196,8 @@ type mockBank struct {
 	calls []string
 	// balances for each address
 	balances map[string]sdk.Coins
+	// metadata for each denom
+	metadata map[string]banktypes.Metadata
 }
 
 var _ types.BankKeeper = (*mockBank)(nil)
@@ -244,6 +247,17 @@ func (b *mockBank) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule st
 func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromModuleToModule %s %s %s", senderModule, recipientModule, amt))
 	return nil
+}
+
+func (b *mockBank) GetDenomMetaData(ctx sdk.Context, denom string) (banktypes.Metadata, bool) {
+	b.record(fmt.Sprintf("GetDenomMetaData %s", denom))
+	metadata, ok := b.metadata[denom]
+	return metadata, ok
+}
+
+func (b *mockBank) SetDenomMetaData(ctx sdk.Context, metadata banktypes.Metadata) {
+	b.record(fmt.Sprintf("SetDenomMetaData %+v", metadata))
+	b.metadata[metadata.Base] = metadata
 }
 
 // makeTestKit creates a minimal Keeper and Context for use in testing.
@@ -814,5 +828,82 @@ func Test_Module_Account(t *testing.T) {
 	missingAddr := sdk.MustAccAddressFromBech32(addr2)
 	if keeper.IsModuleAccount(ctx, missingAddr) {
 		t.Errorf("got IsModuleAccount missingAddr = false, want true")
+	}
+}
+
+func Test_Receive_RegisterDenom(t *testing.T) {
+	bank := &mockBank{
+			balances: map[string]sdk.Coins{},
+			metadata: map[string]banktypes.Metadata{},
+	}
+	keeper, ctx := makeTestKit(nil, bank)
+	ch := NewPortHandler(AppModule{}, keeper)
+	ctlCtx := sdk.WrapSDKContext(ctx)
+
+	// Test case 1: Register a new denom successfully
+	newDenom := "newtoken"
+	_, err := ch.Receive(ctlCtx, `{
+			"type": "VBANK_REGISTER_DENOM",
+			"denom": "`+newDenom+`"
+	}`)
+	if err != nil {
+			t.Fatalf("got error = %v", err)
+	}
+	metadata, found := bank.metadata[newDenom]
+	if !found {
+			t.Errorf("metadata not found for denom %s", newDenom)
+	}
+	if metadata.Base != newDenom {
+			t.Errorf("got metadata base %s, want %s", metadata.Base, newDenom)
+	}
+
+	// Test case 2: Register an existing denom
+	existingDenom := "existingtoken"
+	bank.metadata[existingDenom] = banktypes.Metadata{
+			Base:    existingDenom,
+			Display: existingDenom,
+	}
+	_, err = ch.Receive(ctlCtx, `{
+			"type": "VBANK_REGISTER_DENOM",
+			"denom": "`+existingDenom+`"
+	}`)
+	if err == nil {
+			t.Error("expected error for registering existing denom, got nil")
+	}
+}
+
+func Test_RegisterDenomIfNoneExists(t *testing.T) {
+	bank := &mockBank{
+			balances: map[string]sdk.Coins{},
+			metadata: map[string]banktypes.Metadata{},
+	}
+	keeper, ctx := makeTestKit(nil, bank)
+
+	// Test case 1: Register a new denom successfully
+	newDenom := "newtoken"
+	err := keeper.RegisterDenomIfNoneExists(ctx, newDenom)
+	if err != nil {
+			t.Fatalf("got error = %v", err)
+	}
+	metadata, found := bank.metadata[newDenom]
+	if !found {
+			t.Errorf("metadata not found for denom %s", newDenom)
+	}
+	if metadata.Base != newDenom {
+			t.Errorf("got metadata base %s, want %s", metadata.Base, newDenom)
+	}
+
+	// Test case 2: Register an existing denom
+	existingDenom := "existingtoken"
+	bank.metadata[existingDenom] = banktypes.Metadata{
+			Base:    existingDenom,
+			Display: existingDenom,
+	}
+	err = keeper.RegisterDenomIfNoneExists(ctx, existingDenom)
+	if err == nil {
+			t.Errorf("expected error for registering existing denom, got nil")
+	}
+	if err.Error() != "denom existingtoken already exists" {
+			t.Errorf("unexpected error message: %v", err)
 	}
 }

@@ -236,6 +236,12 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		ret = string(bz)
 
+	case "VBANK_REGISTER_DENOM":
+		if err := keeper.RegisterDenomIfNoneExists(ctx, msg.Denom); err != nil {
+			return "", fmt.Errorf("failed to register denom %s: %s", msg.Denom, err)
+		}
+		ret = "true"
+
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
 	}

@@ -1,12 +1,15 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -125,4 +128,32 @@ func (k Keeper) GetNextSequence(ctx sdk.Context) uint64 {
 	state.LastSequence = state.GetLastSequence() + 1
 	k.SetState(ctx, state)
 	return state.LastSequence
+}
+
+func (k Keeper) RegisterDenomIfNoneExists(ctx sdk.Context, denom string) error {
+	if _, found := k.bankKeeper.GetDenomMetaData(ctx, denom); found {
+		return fmt.Errorf("denom %s already exists", denom)
+	}
+
+	if err := sdk.ValidateDenom(denom); err != nil {
+		return fmt.Errorf("invalid denom %s: %s", denom, err)
+	}
+
+	denomMetaData := banktypes.Metadata{
+		Description: denom,
+		Base:        denom,
+		Display:     denom,
+		Name:        denom,
+		Symbol:      denom,
+		DenomUnits: []*banktypes.DenomUnit{
+			{
+				Denom:    denom,
+				Exponent: 0,
+			},
+		},
+	}
+
+	k.bankKeeper.SetDenomMetaData(ctx, denomMetaData)
+
+	return nil
 }
