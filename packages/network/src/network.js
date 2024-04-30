@@ -47,6 +47,20 @@ export function getPrefixes(addr) {
 }
 
 /**
+ * Validate IBC port name
+ * @param {string} specifiedName
+ */
+function throwIfInvalidPortName(specifiedName) {
+  // Contains between 2 and 128 characters
+  // Can contain alphanumeric characters
+  // Valid symbols: ., ,, _, +, -, #, [, ], <, >
+  const portNameRegex = new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$');
+  if (!portNameRegex.test(specifiedName)) {
+    throw new Error(`Invalid IBC port name: ${specifiedName}`);
+  }
+}
+
+/**
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
  * @property {import('@agoric/vow').Remote<Required<ConnectionHandler>>[]} handlers
@@ -1426,3 +1440,61 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
 
   return makeLoopbackProtocolHandler;
 }
+
+/**
+ *
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ */
+export const preparePortAllocator = (zone, { watch }) =>
+  zone.exoClass(
+    'PortAllocator',
+    M.interface('PortAllocator', {
+      allocateCustomIBCPort: M.callWhen()
+        .optional(M.string())
+        .returns(Shape.Vow$(Shape.Port)),
+      allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateCustomLocalPort: M.callWhen()
+        .optional(M.string())
+        .returns(Shape.Vow$(Shape.Port)),
+    }),
+    ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
+    {
+      allocateCustomIBCPort(specifiedName = '') {
+        const { state } = this;
+        let localAddr = `/ibc-port/`;
+
+        if (specifiedName) {
+          throwIfInvalidPortName(specifiedName);
+
+          localAddr = `/ibc-port/custom-${specifiedName}`;
+        }
+
+        // Allocate an IBC port with a unique generated name.
+        return watch(E(state.protocol).bindPort(localAddr));
+      },
+      allocateICAControllerPort() {
+        const { state } = this;
+        state.lastICAPortNum += 1n;
+        return watch(
+          E(state.protocol).bindPort(
+            `/ibc-port/icacontroller-${state.lastICAPortNum}`,
+          ),
+        );
+      },
+      allocateCustomLocalPort(specifiedName = '') {
+        const { state } = this;
+
+        let localAddr = `/local/`;
+
+        if (specifiedName) {
+          throwIfInvalidPortName(specifiedName);
+
+          localAddr = `/local/custom-${specifiedName}`;
+        }
+
+        // Allocate a local port with a unique generated name.
+        return watch(E(state.protocol).bindPort(localAddr));
+      },
+    },
+  );

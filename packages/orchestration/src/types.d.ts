@@ -13,8 +13,6 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 
-export type AttenuatedNetwork = Pick<RouterProtocol, 'bindPort'>;
-
 /**
  * static declaration of known chain types will allow type support for
  * additional chain-specific operations like `liquidStake`

@@ -74,7 +74,6 @@ export const makeMock = log =>
       network: Far('network', {
         registerProtocolHandler: noop,
         makeLoopbackProtocolHandler: noop,
-        bindPort: () => Far('network - listener', { addListener: noop }),
       }),
     },
   });

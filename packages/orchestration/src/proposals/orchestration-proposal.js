@@ -1,9 +1,7 @@
 // @ts-check
 import { V as E } from '@agoric/vat-data/vow.js';
-import { Far } from '@endo/far';
 
 /**
- * @import { AttenuatedNetwork } from '../types'
  * @import { OrchestrationService } from '../service.js'
  * @import { OrchestrationVat } from '../vat-orchestration.js'
  */
@@ -12,7 +10,7 @@ import { Far } from '@endo/far';
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     networkVat: NetworkVat;
+ *     portAllocator: PortAllocator;
  *   };
  *   produce: {
  *     orchestration: Producer<any>;
@@ -29,7 +27,7 @@ import { Far } from '@endo/far';
  */
 export const setupOrchestrationVat = async (
   {
-    consume: { loadCriticalVat, networkVat },
+    consume: { loadCriticalVat, portAllocator: portAllocatorP },
     produce: {
       orchestrationVat,
       orchestration,
@@ -49,17 +47,10 @@ export const setupOrchestrationVat = async (
   orchestrationVat.reset();
   orchestrationVat.resolve(vats.orchestration);
 
-  await networkVat;
-  /** @type {AttenuatedNetwork} */
-  const network = Far('Attenuated Network', {
-    /** @param {string} localAddr */
-    async bindPort(localAddr) {
-      return E(networkVat).bindPort(localAddr);
-    },
-  });
+  const portAllocator = await portAllocatorP;
 
   const newOrchestrationKit = await E(vats.orchestration).makeOrchestration({
-    network,
+    portAllocator,
   });
 
   orchestration.reset();
@@ -88,7 +79,7 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
     [setupOrchestrationVat.name]: {
       consume: {
         loadCriticalVat: true,
-        networkVat: true,
+        portAllocator: 'portAllocator',
       },
       produce: {
         orchestration: 'orchestration',

@@ -12,14 +12,14 @@ const { log } = console;
  * @param {ZCF} zcf
  * @param {{
  *   address: string,
- *   networkVat: ERef<ReturnType<typeof import('@agoric/vats/src/vat-network').buildRootObject>>;
+ *   portAllocator: ERef<PortAllocator>;
  * }} privateArgs
  * @param {import("@agoric/vat-data").Baggage} _baggage
  */
 export const start = async (zcf, privateArgs, _baggage) => {
-  const { address, networkVat } = privateArgs;
+  const { portAllocator } = privateArgs;
 
-  const boundPort = await E(networkVat).bindPort(address);
+  const boundPort = await E(portAllocator).allocateCustomIBCPort();
 
   /** @type {Array<[label: string, resolve: (value: any) => void, reject: (reason: any) => void]>} */
   const queue = [];

@@ -3,6 +3,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   prepareEchoConnectionKit,
   prepareLoopbackProtocolHandler,
+  preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
 import { prepareVowTools } from '@agoric/vat-data/vow.js';
@@ -20,6 +21,11 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     makeRouterProtocol(),
   );
 
+  const makePortAllocator = preparePortAllocator(zone, powers);
+  const portAllocator = zone.makeOnce('PortAllocator', _key =>
+    makePortAllocator({ protocol }),
+  );
+
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     powers,
@@ -35,7 +41,8 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     /** @param {Parameters<typeof protocol.unregisterProtocolHandler>} args */
     unregisterProtocolHandler: (...args) =>
       protocol.unregisterProtocolHandler(...args),
-    /** @param {Parameters<typeof protocol.bindPort>} args */
-    bindPort: (...args) => protocol.bindPort(...args),
+    getPortAllocator() {
+      return portAllocator;
+    },
   });
 }

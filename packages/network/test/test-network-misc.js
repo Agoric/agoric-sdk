@@ -14,6 +14,7 @@ import {
   prepareRouter,
   prepareLoopbackProtocolHandler,
   prepareNetworkProtocol,
+  preparePortAllocator,
 } from '../src/index.js';
 
 import '../src/types.js';
@@ -53,7 +54,7 @@ const prepareProtocolHandler = (
       },
       async generatePortID() {
         this.state.nonce += 1;
-        return `${this.state.nonce}`;
+        return `port-${this.state.nonce}`;
       },
       async onBind(port, localAddr) {
         t.assert(port, `port is supplied to onBind`);
@@ -165,6 +166,55 @@ test('handled protocol', async t => {
   await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
   await when(vow);
   await when(port.revoke());
+});
+
+test('verify port allocation', async t => {
+  const zone = makeDurableZone(
+    provideBaggage('network-verify-port-allocation'),
+  );
+  const powers = prepareVowTools(zone);
+  const { when } = powers;
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
+  const makeProtocolHandler = prepareProtocolHandler(
+    zone,
+    t,
+    makeEchoConnectionHandler,
+    powers,
+  );
+  const protocol = makeNetworkProtocol(makeProtocolHandler());
+  const makePortAllocator = preparePortAllocator(zone, powers);
+  const portAllocator = makePortAllocator({ protocol });
+
+  const ibcPort = await when(portAllocator.allocateCustomIBCPort());
+  t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
+
+  const namedIbcPort = await when(
+    portAllocator.allocateCustomIBCPort('test-1'),
+  );
+  t.is(namedIbcPort.getLocalAddress(), '/ibc-port/custom-test-1');
+
+  const icaControllerPort1 = await when(
+    portAllocator.allocateICAControllerPort(),
+  );
+  t.is(icaControllerPort1.getLocalAddress(), '/ibc-port/icacontroller-1');
+
+  const icaControllerPort2 = await when(
+    portAllocator.allocateICAControllerPort(),
+  );
+  t.is(icaControllerPort2.getLocalAddress(), '/ibc-port/icacontroller-2');
+
+  const localPort = await when(portAllocator.allocateCustomLocalPort());
+  t.is(localPort.getLocalAddress(), '/local/port-5');
+
+  const namedLocalPort = await when(
+    portAllocator.allocateCustomLocalPort('local-1'),
+  );
+  t.is(namedLocalPort.getLocalAddress(), '/local/custom-local-1');
+
+  await t.throwsAsync(when(portAllocator.allocateCustomIBCPort('/test-1')), {
+    message: 'Invalid IBC port name: /test-1',
+  });
 });
 
 test('protocol connection listen', async t => {
