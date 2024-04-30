@@ -188,6 +188,25 @@ test('makeFakeStorageKit', async t => {
     [{ method: 'set', args: [[childPath]] }],
     'child setValue message',
   );
+
+  await childNode.delete();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'delete', args: [childPath] }],
+    'child delete message',
+  );
+  await deepNode.delete();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'delete', args: [deepPath] }],
+    'granchild delete message',
+  );
+  await childNode.delete();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'delete', args: [childPath] }],
+    'child delete message',
+  );
 });
 
 test('makeFakeStorageKit sequence data', async t => {
@@ -260,6 +279,19 @@ test('makeFakeStorageKit sequence data', async t => {
     messages.slice(-1),
     [{ method: 'append', args: [[deepPath, 'qux']] }],
     'manual-sequence grandchild setValue message',
+  );
+
+  await childNode.delete();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'delete', args: [childPath] }],
+    'child delete message',
+  );
+  await deepNode.delete();
+  t.deepEqual(
+    messages.slice(-1),
+    [{ method: 'delete', args: [deepPath] }],
+    'granchild delete message',
   );
 });
 

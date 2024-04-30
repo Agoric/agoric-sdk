@@ -306,11 +306,7 @@
  * identifies children by restricted ASCII name and is associated with arbitrary
  * string-valued data for each node, defaulting to the empty string.
  *
- * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data (append to the node)
- * @property {() => string} getPath the chain storage path at which the node was constructed
- * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
- * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
+ * @typedef {import('@agoric/internal/src/lib-chainStorage').StorageNode} StorageNode
  */
 
 /**

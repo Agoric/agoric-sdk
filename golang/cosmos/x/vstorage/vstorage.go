@@ -31,14 +31,35 @@ func NewStorageHandler(keeper Keeper) vstorageHandler {
 	return vstorageHandler{keeper: keeper}
 }
 
-func unmarshalSinglePathFromArgs(args []json.RawMessage, path *string) error {
+func unmarshalString(jsonText json.RawMessage) (string, error) {
+	var str *string
+	if err := json.Unmarshal(jsonText, &str); err != nil {
+		return "", err
+	} else if str == nil {
+		return "", fmt.Errorf("cannot unmarshal `null` into string")
+	}
+	return *str, nil
+}
+
+func unmarshalSinglePathFromArgs(args []json.RawMessage) (string, error) {
 	if len(args) == 0 {
-		return fmt.Errorf("missing 'path' argument")
+		return "", fmt.Errorf("missing 'path' argument")
+	} else if len(args) != 1 {
+		return "", fmt.Errorf("extra arguments after 'path'")
 	}
-	if len(args) != 1 {
-		return fmt.Errorf("extra arguments after 'path'")
+	return unmarshalString(args[0])
+}
+
+func unmarshalPathsFromArgs(args []json.RawMessage) ([]string, error) {
+	paths := make([]string, len(args))
+	for i, arg := range args {
+		path, err := unmarshalString(arg)
+		if err != nil {
+			return nil, err
+		}
+		paths[i] = path
 	}
-	return json.Unmarshal(args[0], path)
+	return paths, nil
 }
 
 func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string, err error) {
@@ -105,6 +126,17 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		}
 		return "true", nil
 
+	case "delete":
+		paths, err := unmarshalPathsFromArgs(msg.Args)
+		if err != nil {
+			return "", err
+		}
+		for _, path := range paths {
+			newEntry := types.NewStorageEntryWithNoData(path)
+			keeper.SetStorageAndNotify(cctx.Context, newEntry)
+		}
+		return "true", nil
+
 	case "append":
 		for _, arg := range msg.Args {
 			var entry agoric.KVEntry
@@ -125,10 +157,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 
 	case "get":
 		// Note that "get" does not (currently) unwrap a StreamCell.
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 
 		entry := keeper.GetEntry(ctx, path)
@@ -139,10 +170,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		return string(bz), nil
 
 	case "getStoreKey":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		value := vstorageStoreKey{
 			StoreName:       keeper.GetStoreName(),
@@ -157,10 +187,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		return string(bz), nil
 
 	case "has":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		value := keeper.HasStorage(ctx, path)
 		if !value {
@@ -170,10 +199,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 
 	// TODO: "keys" is deprecated
 	case "children", "keys":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		children := keeper.GetChildren(ctx, path)
 		if children.Children == nil {
@@ -186,10 +214,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		return string(bytes), nil
 
 	case "entries":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		children := keeper.GetChildren(ctx, path)
 		entries := make([]agoric.KVEntry, len(children.Children))
@@ -208,10 +235,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		return string(bytes), nil
 
 	case "values":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		children := keeper.GetChildren(ctx, path)
 		vals := make([]*string, len(children.Children))
@@ -225,10 +251,9 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		return string(bytes), nil
 
 	case "size":
-		var path string
-		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		path, err := unmarshalSinglePathFromArgs(msg.Args)
 		if err != nil {
-			return
+			return "", err
 		}
 		children := keeper.GetChildren(ctx, path)
 		if children.Children == nil {
