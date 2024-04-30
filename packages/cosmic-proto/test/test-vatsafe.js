@@ -3,7 +3,7 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 import { cosmos } from '@agoric/cosmic-proto';
 
-import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx';
+import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 
 // @ts-expect-error
 cosmos.staking.v1beta1.MsgDelegate.missing;

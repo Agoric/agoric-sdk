@@ -1,5 +1,5 @@
 import test from '@endo/ses-ava/prepare-endo.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeTxPacket, parsePacketAck } from '../../src/utils/tx.js';
 
 test('makeTxPacket', t => {
