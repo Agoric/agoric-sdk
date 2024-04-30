@@ -76,13 +76,13 @@
 
 /**
  * @typedef {object} ZoeInstanceStorageManager
- * @property {InstanceStateGetTerms} getTerms
- * @property {InstanceRecordGetIssuers} getIssuers
- * @property {InstanceRecordGetBrands} getBrands
+ * @property {() => AnyTerms} getTerms
+ * @property {() => IssuerKeywordRecord} getIssuers
+ * @property {() => BrandKeywordRecord} getBrands
  * @property {ZCF['saveIssuer']} saveIssuer
  * @property {MakeZoeMint} makeZoeMint
  * @property {RegisterFeeMint} registerFeeMint
- * @property {GetInstanceRecord} getInstanceRecord
+ * @property {() => InstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin

@@ -25,7 +25,16 @@ import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 const { Fail } = assert;
 
-/** @type {CreateSeatManager} */
+/**
+ * The SeatManager holds the active zcfSeats and can reallocate and
+ * make new zcfSeats.
+ *
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
+ * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownWithFailure
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
+ */
 export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,

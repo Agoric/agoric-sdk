@@ -282,19 +282,6 @@
  */
 
 /**
- * @callback CreateSeatManager
- *
- * The SeatManager holds the active zcfSeats and can reallocate and
- * make new zcfSeats.
- *
- * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
- * @param {GetAssetKindByBrand} getAssetKindByBrand
- * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownWithFailure
- * @param {import('@agoric/vat-data').Baggage} zcfBaggage
- * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
- */
-
-/**
  * @callback InstanceStateAddIssuer
  *
  * Add an issuer and its keyword to the instanceRecord for the
@@ -306,43 +293,12 @@
  */
 
 /**
- * @callback InstanceStateGetTerms
- * @returns {AnyTerms}
- */
-
-/**
- * @callback InstanceStateGetInstallation
- * @returns {Installation}
- */
-
-/**
- * @callback InstanceRecordGetIssuers
- * @returns {IssuerKeywordRecord}
- */
-
-/**
- * @callback InstanceRecordGetBrands
- * @returns {BrandKeywordRecord}
- */
-
-/**
  * @typedef {object} InstanceState
  * @property {InstanceStateAddIssuer} addIssuer
- * @property {GetInstanceRecord} getInstanceRecord
- * @property {InstanceStateGetTerms} getTerms
- * @property {InstanceStateGetInstallation} getInstallation
- * @property {InstanceRecordGetIssuers} getIssuers
- * @property {InstanceRecordGetBrands} getBrands
+ * @property {() => InstanceRecord} getInstanceRecord
+ * @property {() => AnyTerms} getTerms
+ * @property {() => Installation} getInstallation
+ * @property {() => IssuerKeywordRecord} getIssuers
+ * @property {() => BrandKeywordRecord} getBrands
  * @property {(keyword: Keyword) => void} assertUniqueKeyword
- */
-
-/**
- * @callback GetInstanceRecord
- * @returns {InstanceRecord}
- */
-
-/**
- * @callback IssuerStorageGetIssuerRecords
- * @param {Issuer[]} issuers
- * @returns {IssuerRecords}
  */
