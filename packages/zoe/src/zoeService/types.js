@@ -193,33 +193,63 @@
  * @see {@link https://docs.agoric.com/zoe/api/zoe.html#userseat-object}}
  * @template {object} [OR=unknown]
  * @typedef {object} UserSeat
- * @property {() => Promise<ProposalRecord>} getProposal
- * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
- * returns a promise for a KeywordPaymentRecord containing all the payouts from
- * this seat. The promise will resolve after the seat has exited.
- * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
- * returns a promise for the Payment corresponding to the indicated keyword.
- * The promise will resolve after the seat has exited.
- * @property {() => Promise<OR>} getOfferResult
- * @property {() => void} [tryExit]
- * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
- * offer-safety guarantee applies no matter how a seat's interaction with a
- * contract ends. Under normal circumstances, the participant might be able to
- * call `tryExit()`, or the contract might do something explicitly. On exiting,
- * the seat holder gets its current `allocation` and the `seat` can no longer
- * interact with the contract.
- * @property {() => Promise<boolean>} hasExited
- * Returns true if the seat has exited, false if it is still active.
- * @property {() => Promise<0|1>} numWantsSatisfied returns 1 if the proposal's
- * want clause was satisfied by the final allocation, otherwise 0. This is
- * numeric to support a planned enhancement called "multiples" which will allow
- * the return value to be any non-negative number. The promise will resolve
- * after the seat has exited.
- * @property {() => Promise<Allocation>} getFinalAllocation
- * return a promise for the final allocation. The promise will resolve after the
- * seat has exited.
- * @property {() => Subscriber<Completion>} getExitSubscriber returns a subscriber that
- * will be notified when the seat has exited or failed.
+ * @property {() => Promise<ProposalRecord>} getProposal A _Proposal_ is
+ * represented by a _ProposalRecord_. It is the rules accompanying the escrow of
+ * Payments dictating what the user expects to get back from Zoe. It has keys
+ * _give_, _want_, and _exit_. _give_ and _want_ are records with
+ * {@link Keyword} as keys and {@link Amount} as values. If it is compatible
+ * with the contract, the contract tries to satisfy it. If not, the contract
+ * kicks the _seat_ out.
+ *
+ * Offer safety is always enforced; if kicked out, the user gets back what they
+ * put in. If the contract attempts to satisfy it, they either get what they
+ * asked for or Zoe ensures they get back their deposit.
+ *
+ * Example:
+ *
+ *     const { want, give, exit } = sellerSeat.getProposal();
+ *
+ * @property {() => Promise<PaymentPKeywordRecord>} getPayouts Returns a Promise
+ * for a KeywordRecord containing Promises for all the Payouts associated with
+ * the seat's offers. A Payout is a {@link Payment} that goes to a party in a
+ * successful transaction, redirecting escrowed assets in accordance with the
+ * result of the transaction.
+ *
+ * The promise will be resolved promptly once the seat exits.
+ *
+ * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout returns a
+ * promise for the Payment corresponding to the indicated keyword. The promise
+ * will resolve after the seat has exited.
+ * @property {() => Promise<OR>} getOfferResult Returns a Promise for an
+ * OfferResult. The OfferResult can be any Passable. For example, in the
+ * Automatic Refund example, it's the string "The offer was accepted". In the
+ * Covered Call example, it's a call option, which is an assayable Invitation to
+ * buy the underlying asset. Strings and invitations are the most common things
+ * returned. The value is the result returned by the offerHandler function
+ * passed in the first argument to zcf.makeInvitation(...).
+ * Since the contract can return whatever it wants as an offer result, there is no guarantee that the promise will resolve promptly.
+ * @property {() => void} tryExit Note: Only works if the seat's `proposal`
+ * has an `OnDemand` `exit` clause. Zoe's offer-safety guarantee applies no
+ * matter how a seat's interaction with a contract ends. Under normal
+ * circumstances, the participant might be able to call `tryExit()`, or the
+ * contract might do something explicitly. On exiting, the seat holder gets its
+ * current `allocation` and the `seat` can no longer interact with the contract.
+ * @property {() => Promise<boolean>} hasExited Returns true if the seat has
+ * exited, false if it is still active. Returns promptly.
+ * @property {() => Promise<0|1>} numWantsSatisfied Returns a Promise for a
+ * number which indicates the result of the exited Proposal, as described below:
+ *
+ * - 0: The user didn't get what they wanted from the Proposal, so their offer was refunded.
+ * - 1: The user got what they wanted from the Proposal, so their offer is spent & gone.
+ *
+ * This promise will be resolved promptly once the seat exits.
+ *
+ * This is numeric to support a planned enhancement called "multiples" which
+ * will allow the return value to be any non-negative number.
+ * @property {() => Promise<Allocation>} getFinalAllocation return a promise for
+ * the final allocation. The promise will be resolved promptly once the seat exits.
+ * @property {() => Subscriber<Completion>} getExitSubscriber returns a
+ * subscriber that will be notified when the seat has exited or failed.
  */
 
 /**
