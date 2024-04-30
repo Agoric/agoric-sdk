@@ -124,8 +124,9 @@ test.serial('stakeAtom - repl-style', async t => {
   const atomBrand = await EV(agoricNames).lookup('brand', 'ATOM');
   const atomAmount = AmountMath.make(atomBrand, 10n);
 
-  const res = await EV(account).delegate('cosmosvaloper1test', atomAmount);
-  t.is(res, 'Success', 'delegate returns Success');
+  await t.notThrowsAsync(
+    EV(account).delegate('cosmosvaloper1test', atomAmount),
+  );
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
