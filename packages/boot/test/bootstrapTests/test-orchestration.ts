@@ -4,7 +4,7 @@ import type { TestFn } from 'ava';
 
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import type { start as stakeBldStart } from '@agoric/orchestration/src/contracts/stakeBld.contract.js';
+import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import { makeWalletFactoryContext } from './walletFactory.ts';

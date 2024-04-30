@@ -54,8 +54,8 @@ const PUBLIC_TOPICS = {
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
-export const prepareStakingAccountHolder = (baggage, makeRecorderKit, zcf) => {
-  const makeAccountHolderKit = prepareExoClassKit(
+export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
+  const makeStakingAccountKit = prepareExoClassKit(
     baggage,
     'Staking Account Holder',
     {
@@ -193,5 +193,6 @@ export const prepareStakingAccountHolder = (baggage, makeRecorderKit, zcf) => {
       },
     },
   );
-  return makeAccountHolderKit;
+  return makeStakingAccountKit;
 };
+/** @typedef {ReturnType<ReturnType<typeof prepareStakingAccountKit>>} StakingAccountKit */

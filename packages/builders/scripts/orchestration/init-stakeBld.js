@@ -10,7 +10,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
       {
         installKeys: {
           stakeBld: publishRef(
-            install('@agoric/orchestration/src/contracts/stakeBld.contract.js'),
+            install('@agoric/orchestration/src/examples/stakeBld.contract.js'),
           ),
         },
       },

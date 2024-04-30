@@ -114,6 +114,8 @@ runs:
           ${{ inputs.path }}/endo-sha.txt
     - uses: kenchan0130/actions-system-info@master
       id: system-info
+    - run: corepack enable
+      shell: bash
     - name: restore built files
       id: built
       uses: actions/cache@v4

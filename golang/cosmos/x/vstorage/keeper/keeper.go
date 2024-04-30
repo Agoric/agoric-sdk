@@ -52,14 +52,6 @@ var _ ChangeManager = (*BatchingChangeManager)(nil)
 // 2 ** 256 - 1
 var MaxSDKInt = sdk.NewIntFromBigInt(new(big.Int).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)))
 
-// TODO: Use bytes.CutPrefix once we can rely upon go >= 1.20.
-func cutPrefix(s, prefix []byte) (after []byte, found bool) {
-	if !bytes.HasPrefix(s, prefix) {
-		return s, false
-	}
-	return s[len(prefix):], true
-}
-
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
 type Keeper struct {
@@ -164,7 +156,7 @@ func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*t
 		if !strings.HasPrefix(path, pathPrefix) {
 			continue
 		}
-		value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
+		value, hasPrefix := bytes.CutPrefix(rawValue, types.EncodedDataPrefix)
 		if !hasPrefix {
 			panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 		}
@@ -266,7 +258,7 @@ func (k Keeper) GetEntry(ctx sdk.Context, path string) agoric.KVEntry {
 	if bytes.Equal(rawValue, types.EncodedNoDataValue) {
 		return agoric.NewKVEntryWithNoValue(path)
 	}
-	value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
+	value, hasPrefix := bytes.CutPrefix(rawValue, types.EncodedDataPrefix)
 	if !hasPrefix {
 		panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 	}
