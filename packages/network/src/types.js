@@ -1,5 +1,8 @@
 // @ts-check
 
+// Ensure this is a module.
+export {};
+
 /** @import {PromiseVow, Remote} from '@agoric/vow' */
 
 /**
