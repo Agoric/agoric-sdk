@@ -22,7 +22,7 @@ const prepareNatBrand = zone => {
         const { name } = this.state;
         return name;
       },
-      // Give information to UI on how to display the amount.
+      /** @deprecated */
       getDisplayInfo() {
         const { displayInfo } = this.state;
         return displayInfo;

@@ -17,6 +17,8 @@ import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
+/** @import {BrandDescriptor} from './smartWallet.js'; */
+
 const trace = makeTracer('WltFct');
 
 export const customTermsShape = harden({
@@ -69,15 +71,6 @@ export const publishDepositFacet = async (
  */
 export const makeAssetRegistry = assetPublisher => {
   trace('makeAssetRegistry', assetPublisher);
-  /**
-   * @typedef {{
-   *   brand: Brand,
-   *   displayInfo: DisplayInfo,
-   *   issuer: Issuer,
-   *   petname: import('./types.js').Petname
-   * }} BrandDescriptor
-   * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
-   */
   /** @type {MapStore<Brand, BrandDescriptor>} */
   const brandDescriptors = makeScalarMapStore();
 
@@ -89,16 +82,12 @@ export const makeAssetRegistry = assetPublisher => {
         trace('registering asset', desc.issuerName);
         const { brand, issuer: issuerP, issuerName: petname } = desc;
         // await issuer identity for use in chainStorage
-        const [issuer, displayInfo] = await Promise.all([
-          issuerP,
-          E(brand).getDisplayInfo(),
-        ]);
+        const [issuer] = await Promise.all([issuerP]);
 
         brandDescriptors.init(desc.brand, {
           brand,
           issuer,
           petname,
-          displayInfo,
         });
       },
     },

@@ -171,6 +171,7 @@ export const registerScaledPriceAuthority = async (
     ]),
   ]);
 
+  // FIXME can this work without decimalPlaces? if so, read from boardAux
   // We need "unit amounts" of each brand in order to get the ratios right.  You
   // can ignore decimalPlaces when adding and subtracting a brand with itself,
   // but not when creating ratios.

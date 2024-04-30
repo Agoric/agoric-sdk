@@ -470,6 +470,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           trace('observing');
 
           void E.when(
+            // FIXME can this work without decimalPlaces? if so, read from boardAux
             E(collateralBrand).getDisplayInfo(),
             ({ decimalPlaces = DEFAULT_DECIMALS }) => {
               const quoteNotifier = E(priceAuthority).makeQuoteNotifier(

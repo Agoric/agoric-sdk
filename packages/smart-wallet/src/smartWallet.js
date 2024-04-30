@@ -135,11 +135,9 @@ const trace = makeTracer('SmrtWlt');
 /**
  * @typedef {{
  *   brand: Brand,
- *   displayInfo: DisplayInfo,
  *   issuer: Issuer,
  *   petname: import('./types.js').Petname
  * }} BrandDescriptor
- * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
 
 /**
@@ -596,15 +594,12 @@ export const prepareSmartWallet = (baggage, shared) => {
           }
 
           // Accept the issuer; rely on it in future offers.
-          const [displayInfo, purse] = await Promise.all([
-            E(issuer).getDisplayInfo(),
-            E(issuer).makeEmptyPurse(),
-          ]);
+          const [purse] = await Promise.all([E(issuer).makeEmptyPurse()]);
 
           // adopt edgeName as petname
           // NOTE: for decentralized introductions, qualify edgename by nameHub petname
           const petname = edgeName;
-          const assetInfo = { petname, brand, issuer, purse, displayInfo };
+          const assetInfo = { petname, brand, issuer, purse };
           appendToStoredArray(brandToPurses, brand, assetInfo);
           // NOTE: when we decentralize introduction of issuers,
           // process queued payments for this brand.
