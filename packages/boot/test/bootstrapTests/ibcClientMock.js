@@ -13,7 +13,7 @@ import { V as E } from '@agoric/vat-data/vow.js';
 export const start = async (zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;
 
-  const myPort = await E(portAllocator).allocateIBCPort();
+  const myPort = await E(portAllocator).allocateCustomIBCPort();
 
   const { log } = console;
   let connP;

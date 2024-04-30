@@ -104,7 +104,7 @@ export const listenPegasus = async ({
   pegasusConnectionsAdmin.resolve(nameAdmin);
 
   const pegasus = await E(zoe).getPublicFacet(pegasusInstance);
-  const port = await E(portAllocator).allocateIBCPort('pegasus');
+  const port = await E(portAllocator).allocateCustomIBCPort('pegasus');
   return addPegasusTransferPort(port, pegasus, pegasusNameAdmin);
 };
 harden(listenPegasus);

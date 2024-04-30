@@ -62,7 +62,7 @@ To get a listening port, you need a `NetworkInterface` object (such as the one o
 ```js
 // ask for a random allocation - ends with a slash
 E(home.network).getPortAllocator()
-  .then(portAllocator => E(portAllocator).allocateIBCPort())
+  .then(portAllocator => E(portAllocator).allocateCustomIBCPort())
   .then(port => usePort(port));
 ```
 

@@ -1450,17 +1450,17 @@ export const preparePortAllocator = (zone, { watch }) =>
   zone.exoClass(
     'PortAllocator',
     M.interface('PortAllocator', {
-      allocateIBCPort: M.callWhen()
+      allocateCustomIBCPort: M.callWhen()
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
       allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
-      allocateLocalPort: M.callWhen()
+      allocateCustomLocalPort: M.callWhen()
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
     }),
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
     {
-      allocateIBCPort(specifiedName = '') {
+      allocateCustomIBCPort(specifiedName = '') {
         const { state } = this;
         let localAddr = `/ibc-port/`;
 
@@ -1482,7 +1482,7 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateLocalPort(specifiedName = '') {
+      allocateCustomLocalPort(specifiedName = '') {
         const { state } = this;
 
         let localAddr = `/local/`;

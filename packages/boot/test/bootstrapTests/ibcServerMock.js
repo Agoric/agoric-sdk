@@ -19,7 +19,7 @@ const { log } = console;
 export const start = async (zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;
 
-  const boundPort = await E(portAllocator).allocateIBCPort();
+  const boundPort = await E(portAllocator).allocateCustomIBCPort();
 
   /** @type {Array<[label: string, resolve: (value: any) => void, reject: (reason: any) => void]>} */
   const queue = [];

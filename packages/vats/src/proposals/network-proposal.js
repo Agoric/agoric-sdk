@@ -60,16 +60,16 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * bootstrap space.
  *
  * The `portAllocator` is CLOSELY HELD in the core space, where later, we claim
- * ports using `E(portAllocator).allocateIBCPort`, for example.
+ * ports using `E(portAllocator).allocateCustomIBCPort`, for example.
  *
  * Contracts are expected to use the services of the network and IBC vats by way
  * of such ports.
  *
  * Testing facilities include:
  *
- * - loopback ports: `E(portAllocator).allocateLocalPort()`
- * - an echo port: `E(portAllocator).allocateIBCPort("echo")d
- *   /ibc-port/custom-echo
+ * - loopback ports: `E(portAllocator).allocateCustomLocalPort()`
+ * - an echo port: `E(portAllocator).allocateCustomIBCPort("echo")`
+ * - echo port addrees: /ibc-port/custom-echo
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
@@ -139,7 +139,7 @@ export const setupNetworkProtocols = async (
         const portP = when(E(allocator).allocateICAControllerPort());
         ibcportP.push(portP);
       } else {
-        const portP = when(E(allocator).allocateIBCPort());
+        const portP = when(E(allocator).allocateCustomIBCPort());
         ibcportP.push(portP);
       }
     }
@@ -152,7 +152,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(allocator).allocateIBCPort('echo'));
+  const echoPort = await when(E(allocator).allocateCustomIBCPort('echo'));
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
