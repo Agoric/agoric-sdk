@@ -113,7 +113,7 @@ const upgradeVats = async (t, EV, vatsToUpgrade) => {
 test.serial('upgrade at many points in network API flow', async t => {
   const { installation } = t.context;
   const { EV } = t.context.runUtils;
-  const networkVat = await EV.vat('bootstrap').consumeItem('networkVat');
+  const portAllocator = await EV.vat('bootstrap').consumeItem('portAllocator');
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
   const flow = entries({
@@ -122,7 +122,7 @@ test.serial('upgrade at many points in network API flow', async t => {
         installation.ibcServerMock,
         {},
         {},
-        { address: '/ibc-port/', networkVat },
+        { portAllocator },
       );
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
       return [label, { server: started.creatorFacet }];
@@ -140,7 +140,7 @@ test.serial('upgrade at many points in network API flow', async t => {
         installation.ibcClientMock,
         {},
         {},
-        { address: '/ibc-port/', networkVat },
+        { portAllocator },
       );
       t.truthy(started.creatorFacet, `${label} ibcClientMock`);
       return [label, { ...opts, client: started.creatorFacet }];

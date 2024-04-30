@@ -40,7 +40,7 @@ const PUBLIC_TOPICS = {
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
-export const prepareAccountHolder = (baggage, makeRecorderKit, zcf) => {
+export const prepareLocalchainAccountKit = (baggage, makeRecorderKit, zcf) => {
   const makeAccountHolderKit = prepareExoClassKit(
     baggage,
     'Account Holder',
@@ -152,3 +152,4 @@ export const prepareAccountHolder = (baggage, makeRecorderKit, zcf) => {
   );
   return makeAccountHolderKit;
 };
+/** @typedef {ReturnType<ReturnType<typeof prepareLocalchainAccountKit>>} LocalchainAccountKit */

@@ -12,7 +12,6 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { when } from '@agoric/vat-data/vow.js';
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
-const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
  * @param {SoloVats | NetVats} vats
@@ -57,27 +56,24 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * Create the network and IBC vats; produce `networkVat` in the core / bootstrap
- * space.
+ * Create the network and IBC vats; produce `portAllocator` in the core /
+ * bootstrap space.
  *
- * The `networkVat` is CLOSELY HELD in the core space, where later, we claim
- * ports using `E(networkVat).bindPort(_path_)`. As discussed in
- * `ProtocolHandler` docs, _path_ is:
- *
- * - /ibc-port/NAME for an IBC port with a known name or,
- * - /ibc-port/ for an IBC port with a fresh name.
+ * The `portAllocator` is CLOSELY HELD in the core space, where later, we claim
+ * ports using `E(portAllocator).allocateCustomIBCPort`, for example.
  *
  * Contracts are expected to use the services of the network and IBC vats by way
  * of such ports.
  *
  * Testing facilities include:
  *
- * - loopback ports: `E(networkVat).bindPort('/local/')`
- * - an echo port: `E(vats.network).bindPort('/ibc-port/echo')`
+ * - loopback ports: `E(portAllocator).allocateCustomLocalPort()`
+ * - an echo port: `E(portAllocator).allocateCustomIBCPort("echo")`
+ * - echo port addrees: /ibc-port/custom-echo
  *
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: VatLoader<any> };
- *   produce: { networkVat: Producer<any> };
+ *   produce: { portAllocator: Producer<any> };
  * }} powers
  * @param {object} options
  * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
@@ -100,7 +96,7 @@ export const setupNetworkProtocols = async (
       provisioning,
       vatUpgradeInfo: vatUpgradeInfoP,
     },
-    produce: { networkVat, vatUpgradeInfo: produceVatUpgradeInfo },
+    produce: { portAllocator, vatUpgradeInfo: produceVatUpgradeInfo },
   },
   options,
 ) => {
@@ -121,27 +117,31 @@ export const setupNetworkProtocols = async (
   info.init('ibc', ibcRef);
   info.init('network', networkRef);
 
-  networkVat.reset();
-  networkVat.resolve(vats.network);
+  const portAllocatorP = E(vats.network).getPortAllocator();
+
+  portAllocator.reset();
+  portAllocator.resolve(portAllocatorP);
+
+  const allocator = await portAllocatorP;
+
   const bridgeManager = await bridgeManagerP;
   const dibcBridgeManager =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 
   // The Interchain Account (ICA) Controller must be bound to a port that starts
   // with 'icacontroller', so we provide one such port to each client.
-  let lastICAPort = 0;
   const makePorts = async () => {
     // Bind to some fresh ports (either unspecified name or `icacontroller-*`)
     // on the IBC implementation and provide them for the user to have.
     const ibcportP = [];
     for (let i = 0; i < NUM_IBC_PORTS_PER_CLIENT; i += 1) {
-      let bindAddr = '/ibc-port/';
       if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
-        lastICAPort += 1;
-        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
+        const portP = when(E(allocator).allocateICAControllerPort());
+        ibcportP.push(portP);
+      } else {
+        const portP = when(E(allocator).allocateCustomIBCPort());
+        ibcportP.push(portP);
       }
-      const port = when(E(vats.network).bindPort(bindAddr));
-      ibcportP.push(port);
     }
     return Promise.all(ibcportP);
   };
@@ -152,7 +152,7 @@ export const setupNetworkProtocols = async (
   await registerNetworkProtocols(vats, dibcBridgeManager);
 
   // Add an echo listener on our ibc-port network (whether real or virtual).
-  const echoPort = await when(E(vats.network).bindPort('/ibc-port/echo'));
+  const echoPort = await when(E(allocator).allocateCustomIBCPort('echo'));
   const { listener } = await E(vats.network).makeEchoConnectionKit();
   await when(E(echoPort).addListener(listener));
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
@@ -170,7 +170,7 @@ export const getManifestForNetwork = (_powers, { networkRef, ibcRef }) => ({
         vatUpgradeInfo: true,
       },
       produce: {
-        networkVat: 'network',
+        portAllocator: 'portAllocator',
         vatUpgradeInfo: true,
       },
       zone: true,

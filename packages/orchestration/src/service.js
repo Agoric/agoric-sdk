@@ -11,10 +11,11 @@ import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import { makeTxPacket, parsePacketAck } from './utils/tx.js';
 
 /**
- * @import { AttenuatedNetwork, ChainAccount, ChainAddress } from './types.js';
+ * @import { ChainAccount, ChainAddress } from './types.js';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ *
  */
 
 const { Fail, bare } = assert;
@@ -24,7 +25,7 @@ const trace = makeTracer('Orchestration');
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {ERef<AttenuatedNetwork>} network
+ * @property {ERef<PortAllocator>} portAllocator
  */
 
 /**
@@ -232,17 +233,13 @@ const prepareOrchestration = (zone, createChainAccount) =>
           powers.init(/** @type {keyof OrchestrationPowers} */ (name), power);
         }
       }
-      return { powers, icaControllerNonce: 0 };
+      return { powers };
     },
     {
       self: {
         async bindPort() {
-          const network = getPower(this.state.powers, 'network');
-          const port = await E(network).bindPort(
-            `/ibc-port/icacontroller-${this.state.icaControllerNonce}`,
-          );
-          this.state.icaControllerNonce += 1;
-          return port;
+          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          return E(portAllocator).allocateICAControllerPort();
         },
       },
       public: {

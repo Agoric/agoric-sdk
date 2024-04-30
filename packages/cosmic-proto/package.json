@@ -100,7 +100,7 @@
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsimp": "^2.0.11",
-    "typescript": "^5.5.0-dev.20240327"
+    "typescript": "^5.5.0-beta"
   },
   "dependencies": {
     "@cosmjs/amino": "^0.32.3",

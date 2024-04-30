@@ -243,9 +243,7 @@ jobs:
           ignore-endo-branch: 'true'
         id: restore-node
       - name: setup a3p-integration
-        run: |
-          corepack enable
-          yarn install
+        run: yarn install
         working-directory: a3p-integration
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
