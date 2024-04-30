@@ -119,11 +119,17 @@ export const isAfterDeadlineExitRule = exit => {
   return exitKey === 'afterDeadline';
 };
 
+export const AnyTermsShape = M.splitRecord({
+  issuers: M.recordOf(KeywordShape, IssuerShape),
+  brands: M.recordOf(KeywordShape, BrandShape),
+});
+
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
   instance: InstanceHandleShape,
   installation: InstallationShape,
+  terms: AnyTermsShape,
 });
 
 export const OfferHandlerI = M.interface('OfferHandler', {
