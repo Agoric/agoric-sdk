@@ -43,10 +43,13 @@ export function netstringEncoderStream() {
   return new Transform({ transform, writableObjectMode: true });
 }
 
-// Input is a Buffer containing zero or more netstrings and maybe some
-// leftover bytes. Output is zero or more decoded Buffers, one per netstring,
-// plus a Buffer of leftover bytes.
-//
+/**
+ *
+ * @param {Buffer} data containing zero or more netstrings and maybe some
+ * leftover bytes
+ * @param {number} [optMaxChunkSize]
+ * @returns {{ leftover: Buffer, payloads: Buffer[] }} zero or more decoded Buffers, one per netstring,
+ */
 export function decode(data, optMaxChunkSize) {
   // TODO: it would be more efficient to accumulate pending data in an array,
   // rather than doing a concat each time
@@ -81,6 +84,11 @@ export function decode(data, optMaxChunkSize) {
   return { leftover, payloads };
 }
 
+/**
+ *
+ * @param {number} [optMaxChunkSize ]
+ * @returns {Transform}
+ */
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
