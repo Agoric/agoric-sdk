@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';

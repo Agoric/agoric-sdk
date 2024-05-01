@@ -32,7 +32,7 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 
-import '../../src/vaultFactory/types.js';
+import '../../src/vaultFactory/types-ambient.js';
 import { defaultParamValues } from './vaultFactoryUtils.js';
 
 /** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */

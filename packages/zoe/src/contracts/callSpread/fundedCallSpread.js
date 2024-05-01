@@ -1,4 +1,4 @@
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
