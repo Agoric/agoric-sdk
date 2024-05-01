@@ -19,7 +19,7 @@ import { makeTxPacket, parsePacketAck } from './utils/tx.js';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
- * @import { AttenuatedNetwork, ChainAccount, ChainAddress } from './types.js';
+ * @import { ChainAccount, ChainAddress } from './types.js';
  */
 
 const { Fail, bare } = assert;
@@ -58,8 +58,17 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
+export const ChainAddressShape = {
+  address: M.string(),
+  chainId: M.string(),
+  addressEncoding: M.string(),
+};
+
+/** @typedef {'UNPARSABLE_CHAIN_ADDRESS'}  UnparsableChainAddress */
+const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
+
 export const ChainAccountI = M.interface('ChainAccount', {
-  getAddress: M.call().returns(M.string()),
+  getAddress: M.call().returns(ChainAddressShape),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -96,7 +105,7 @@ const prepareChainAccount = zone =>
        *   localAddress: string | undefined;
        *   requestedRemoteAddress: string;
        *   remoteAddress: string | undefined;
-       *   address: ChainAddress['address'] | undefined;
+       *   chainAddress: ChainAddress | undefined;
        * }}
        */ (
         harden({
@@ -104,19 +113,19 @@ const prepareChainAccount = zone =>
           connection: undefined,
           requestedRemoteAddress,
           remoteAddress: undefined,
-          address: undefined,
+          chainAddress: undefined,
           localAddress: undefined,
         })
       ),
     {
       account: {
         /**
-         * @returns {ChainAddress['address']} the address of the account on the chain
+         * @returns {ChainAddress}
          */
         getAddress() {
           return NonNullish(
-            this.state.address,
-            'Error parsing account address from remote address',
+            this.state.chainAddress,
+            'ICA channel creation acknowledgement not yet received.',
           );
         },
         getLocalAddress() {
@@ -194,7 +203,15 @@ const prepareChainAccount = zone =>
           this.state.remoteAddress = remoteAddr;
           this.state.localAddress = localAddr;
           // XXX parseAddress currently throws, should it return '' instead?
-          this.state.address = parseAddress(remoteAddr);
+          this.state.chainAddress = harden({
+            address: parseAddress(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
+            // TODO get this from `Chain` object #9063
+            // XXX how do we get a chainId for an unknown chain? seems it may need to be a user supplied arg
+            chainId: 'FIXME',
+            addressEncoding: 'bech32',
+          });
+          trace('got chainAddress', this.state.chainAddress);
+          trace('parseAddress(remoteAddr)', parseAddress(remoteAddr));
         },
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
@@ -252,7 +269,7 @@ const prepareOrchestration = (zone, createChainAccount) =>
          *   the counterparty connection_id
          * @param {IBCConnectionID} controllerConnectionId
          *   self connection_id
-         * @returns {Promise<ChainAccountKit['account']>}
+         * @returns {Promise<ChainAccount>}
          */
         async makeAccount(hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.bindPort();

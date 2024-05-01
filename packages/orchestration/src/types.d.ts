@@ -419,12 +419,11 @@ export type TransferMsg = {
   data?: object;
 };
 
-// Example
-// await icaNoble.transferSteps(usdcAmt,
-//   osmosisSwap(tiaBrand, { pool: 1224, slippage: 0.05 }, icaCel.getChainAddress()));
-
 /**
  * @param pool - Required. Pool number
+ * @example
+ * await icaNoble.transferSteps(usdcAmt,
+ *  osmosisSwap(tiaBrand, { pool: 1224, slippage: 0.05 }, icaCel.getAddress()));
  */
 export type OsmoSwapOptions = {
   pool: string;

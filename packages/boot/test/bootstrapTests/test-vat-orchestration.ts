@@ -76,22 +76,21 @@ test('makeAccount returns an ICA connection', async t => {
     matches(account, M.remotable('ChainAccount')),
     'account is a remotable',
   );
-  const [remoteAddress, localAddress, accountAddress, port] = await Promise.all(
-    [
-      EV(account).getRemoteAddress(),
-      EV(account).getLocalAddress(),
-      EV(account).getAddress(),
-      EV(account).getPort(),
-    ],
-  );
+  const [remoteAddress, localAddress, chainAddress, port] = await Promise.all([
+    EV(account).getRemoteAddress(),
+    EV(account).getLocalAddress(),
+    EV(account).getAddress(),
+    EV(account).getPort(),
+  ]);
   t.regex(remoteAddress, /icahost/);
   t.regex(localAddress, /icacontroller/);
-  t.regex(accountAddress, /cosmos1/);
+  t.regex(chainAddress.address, /cosmos1/);
+  t.regex(chainAddress.chainId, /FIXME/); // TODO, use a real chainId #9063
   t.truthy(matches(port, M.remotable('Port')));
   t.log('ICA Account Addresses', {
     remoteAddress,
     localAddress,
-    accountAddress,
+    chainAddress,
   });
 });
 

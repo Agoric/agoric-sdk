@@ -14,8 +14,7 @@ import { E } from '@endo/far';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
- * @import { ChainAddress } from '../types.js';
- * @import { ChainAccountKit } from '../service.js';
+ * @import { ChainAccount, ChainAddress } from '../types.js';
  * @import { RecorderKit, MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import { Baggage } from '@agoric/swingset-liveslots';
  * @import {AnyJson} from '@agoric/cosmic-proto';
@@ -26,14 +25,14 @@ const trace = makeTracer('StakingAccountHolder');
 const { Fail } = assert;
 /**
  * @typedef {object} StakingAccountNotification
- * @property {ChainAddress['address']} address
+ * @property {ChainAddress} chainAddress
  */
 
 /**
  * @typedef {{
  *  topicKit: RecorderKit<StakingAccountNotification>;
- *  account: ChainAccountKit['account'];
- *  address: ChainAddress['address'];
+ *  account: ChainAccount;
+ *  chainAddress: ChainAddress;
  * }} State
  */
 
@@ -70,16 +69,16 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
       }),
     },
     /**
-     * @param {ChainAccountKit['account']} account
+     * @param {ChainAccount} account
      * @param {StorageNode} storageNode
-     * @param {ChainAddress['address']} address
+     * @param {ChainAddress} chainAddress
      * @returns {State}
      */
-    (account, storageNode, address) => {
+    (account, storageNode, chainAddress) => {
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
-      return { account, address, topicKit };
+      return { account, chainAddress, topicKit };
     },
     {
       helper: {
@@ -110,7 +109,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           };
 
           const account = this.facets.helper.owned();
-          const delegatorAddress = this.state.address;
+          const delegatorAddress = this.state.chainAddress.address;
 
           const result = await E(account).executeEncodedTx([
             /** @type {AnyJson} */ (
