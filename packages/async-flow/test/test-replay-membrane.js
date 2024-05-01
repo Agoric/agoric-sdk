@@ -8,8 +8,6 @@ import {
 } from './prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-// import { E } from '@endo/far';
-// import E from '@agoric/vow/src/E.js';
 import { isPromise } from '@endo/promise-kit';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
@@ -127,10 +125,10 @@ const testBadReplay = async (t, zone, vowTools) => {
   prepareOrchestra(zone);
 
   const log = /** @type {LogStore} */ (
-    zone.makeOnce('log', () => Fail`log expected`)
+    zone.makeOnce('log', () => Fail`need log`)
   );
   const bij = /** @type {WeakBijection} */ (
-    zone.makeOnce('bij', () => Fail`bij expected`)
+    zone.makeOnce('bij', () => Fail`need bij`)
   );
 
   const dump = log.dump();
@@ -173,10 +171,10 @@ const testGoodReplay = async (t, zone, vowTools) => {
   prepareOrchestra(zone, 2); // 2 is new incarnation behavior change
 
   const log = /** @type {LogStore} */ (
-    zone.makeOnce('log', () => Fail`log expected`)
+    zone.makeOnce('log', () => Fail`need log`)
   );
   const bij = /** @type {WeakBijection} */ (
-    zone.makeOnce('bij', () => Fail`bij expected`)
+    zone.makeOnce('bij', () => Fail`need bij`)
   );
 
   const dump = log.dump();

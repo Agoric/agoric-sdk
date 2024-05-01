@@ -60,9 +60,9 @@ const testLogStoreReplay = async (t, zone, _vowTools) => {
   prepareLogStore(zone);
 
   const log = /** @type {LogStore} */ (
-    zone.makeOnce('log', () => Fail`log expected`)
+    zone.makeOnce('log', () => Fail`need log`)
   );
-  const v1 = /** @type {Vow} */ (zone.makeOnce('v1', () => Fail`v1 expected`));
+  const v1 = /** @type {Vow} */ (zone.makeOnce('v1', () => Fail`need v1`));
 
   t.is(log.getIndex(), 0);
   t.is(log.getLength(), 2);

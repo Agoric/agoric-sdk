@@ -250,16 +250,18 @@ export const makeReplayMembrane = (
 
     void when(
       hVow,
-      hostFulfillment => {
-        if (!log.isReplaying() && guestPromiseMap.get(promise) !== 'settled') {
+      async hostFulfillment => {
+        await log.promiseReplayDone();
+        if (guestPromiseMap.get(promise) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doFulfill', hVow, hostFulfillment]);
           log.pushEntry(entry);
           interpretOne(topDispatch, entry);
         }
       },
-      hostReason => {
-        if (!log.isReplaying() && guestPromiseMap.get(promise) !== 'settled') {
+      async hostReason => {
+        await log.promiseReplayDone();
+        if (guestPromiseMap.get(promise) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doReject', hVow, hostReason]);
           log.pushEntry(entry);
