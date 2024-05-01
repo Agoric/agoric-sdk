@@ -70,14 +70,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     'StakeAtom',
     M.interface('StakeAtomI', {
       makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
-      makeAccountInvitation: M.call().returns(M.promise()),
+      makeNewAccountInvitation: M.call().returns(M.promise()),
     }),
     {
       async makeAccount() {
         trace('makeAccount');
         return makeAccount().then(({ account }) => account);
       },
-      makeAccountInvitation() {
+      makeNewAccountInvitation() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {

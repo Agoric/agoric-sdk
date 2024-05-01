@@ -1,10 +1,4 @@
-import type {
-  Amount,
-  Brand,
-  Payment,
-  Purse,
-  RemotableBrand,
-} from '@agoric/ertp/exported.js';
+import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/exported.js';
 import type { Timestamp } from '@agoric/time';
 import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';

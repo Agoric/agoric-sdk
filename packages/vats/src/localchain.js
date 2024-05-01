@@ -95,7 +95,7 @@ const prepareLocalChainAccount = zone =>
  */
 
 export const LocalChainI = M.interface('LocalChain', {
-  createAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
+  makeAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
   query: M.callWhen(M.record()).returns(M.record()),
   queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
@@ -106,9 +106,9 @@ export const LocalChainAdminI = M.interface('LocalChainAdmin', {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<typeof prepareLocalChainAccount>} createAccount
+ * @param {ReturnType<typeof prepareLocalChainAccount>} makeAccount
  */
-const prepareLocalChain = (zone, createAccount) =>
+const prepareLocalChain = (zone, makeAccount) =>
   zone.exoClassKit(
     'LocalChain',
     { public: LocalChainI, admin: LocalChainAdminI },
@@ -151,13 +151,13 @@ const prepareLocalChain = (zone, createAccount) =>
          * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
          * hash and block data hash.
          */
-        async createAccount() {
+        async makeAccount() {
           const { powers } = this.state;
           const system = getPower(powers, 'system');
           const address = await E(system).toBridge({
             type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
           });
-          return createAccount(address, powers);
+          return makeAccount(address, powers);
         },
         /**
          * Make a single query to the local chain. Will reject with an error if
@@ -205,8 +205,8 @@ const prepareLocalChain = (zone, createAccount) =>
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 export const prepareLocalChainTools = zone => {
-  const createAccount = prepareLocalChainAccount(zone);
-  const makeLocalChain = prepareLocalChain(zone, createAccount);
+  const makeAccount = prepareLocalChainAccount(zone);
+  const makeLocalChain = prepareLocalChain(zone, makeAccount);
 
   return harden({ makeLocalChain });
 };

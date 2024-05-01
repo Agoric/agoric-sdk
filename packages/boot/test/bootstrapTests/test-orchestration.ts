@@ -140,7 +140,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['stakeAtom'],
-      callPipe: [['makeAccountInvitation']],
+      callPipe: [['makeNewAccountInvitation']],
     },
     proposal: {},
   });
