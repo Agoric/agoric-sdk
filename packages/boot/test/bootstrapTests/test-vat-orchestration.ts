@@ -60,18 +60,18 @@ test.before(async t => {
 
 test.after.always(t => t.context.shutdown?.());
 
-test('createAccount returns an ICA connection', async t => {
+test('makeAccount returns an ICA connection', async t => {
   const {
     runUtils: { EV },
   } = t.context;
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
-  const account = await EV(orchestration).createAccount(
+  const account = await EV(orchestration).makeAccount(
     'connection-0',
     'connection-0',
   );
-  t.truthy(account, 'createAccount returns an account');
+  t.truthy(account, 'makeAccount returns an account');
   t.truthy(
     matches(account, M.remotable('ChainAccount')),
     'account is a remotable',
@@ -103,11 +103,11 @@ test('ICA connection can be closed', async t => {
   const orchestration: OrchestrationService =
     await EV.vat('bootstrap').consumeItem('orchestration');
 
-  const account = await EV(orchestration).createAccount(
+  const account = await EV(orchestration).makeAccount(
     'connection-0',
     'connection-0',
   );
-  t.truthy(account, 'createAccount returns an account');
+  t.truthy(account, 'makeAccount returns an account');
 
   await EV(account).close();
 
@@ -123,11 +123,11 @@ test('ICA connection can send msg with proto3', async t => {
 
   const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
-  const account: ChainAccount = await EV(orchestration).createAccount(
+  const account: ChainAccount = await EV(orchestration).makeAccount(
     'connection-0',
     'connection-0',
   );
-  t.truthy(account, 'createAccount returns an account');
+  t.truthy(account, 'makeAccount returns an account');
 
   // @ts-expect-error intentional
   await t.throwsAsync(EV(account).executeEncodedTx('malformed'), {

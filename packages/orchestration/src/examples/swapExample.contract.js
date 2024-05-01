@@ -48,8 +48,8 @@ export const start = async (zcf, privateArgs) => {
       const agoric = await orch.getChain('agoric');
 
       const [celestiaAccount, localAccount] = await Promise.all([
-        celestia.createAccount(),
-        agoric.createAccount(),
+        celestia.makeAccount(),
+        agoric.makeAccount(),
       ]);
 
       const tiaAddress = await celestiaAccount.getChainAddress();

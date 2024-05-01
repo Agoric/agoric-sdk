@@ -94,7 +94,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           return this.state.topicKit.recorder;
         },
         // TODO move this beneath the Orchestration abstraction,
-        // to the OrchestrationAccount provided by createAccount()
+        // to the OrchestrationAccount provided by makeAccount()
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
          * @param {string} validatorAddress

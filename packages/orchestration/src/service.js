@@ -210,7 +210,7 @@ const prepareChainAccount = zone =>
   );
 
 export const OrchestrationI = M.interface('Orchestration', {
-  createAccount: M.callWhen(M.string(), M.string()).returns(
+  makeAccount: M.callWhen(M.string(), M.string()).returns(
     M.remotable('ChainAccount'),
   ),
 });
@@ -254,7 +254,7 @@ const prepareOrchestration = (zone, createChainAccount) =>
          *   self connection_id
          * @returns {Promise<ChainAccount>}
          */
-        async createAccount(hostConnectionId, controllerConnectionId) {
+        async makeAccount(hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.bindPort();
 
           const remoteConnAddr = makeICAConnectionAddress(

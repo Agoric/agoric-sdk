@@ -113,9 +113,9 @@ test.serial('stakeAtom - repl-style', async t => {
   const publicFacet = await EV(zoe).getPublicFacet(instance);
   t.truthy(publicFacet, 'stakeAtom publicFacet is available');
 
-  const account = await EV(publicFacet).createAccount();
+  const account = await EV(publicFacet).makeAccount();
   t.log('account', account);
-  t.truthy(account, 'createAccount returns an account on ATOM connection');
+  t.truthy(account, 'makeAccount returns an account on ATOM connection');
   t.truthy(
     matches(account, M.remotable('ChainAccount')),
     'account is a remotable',
@@ -140,7 +140,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['stakeAtom'],
-      callPipe: [['makeCreateAccountInvitation']],
+      callPipe: [['makeAccountInvitation']],
     },
     proposal: {},
   });
