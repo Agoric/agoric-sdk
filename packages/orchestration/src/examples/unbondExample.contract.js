@@ -50,10 +50,8 @@ export const start = async (zcf, privateArgs) => {
       const celestiaAccount = await celestia.createAccount();
 
       const delegations = await celestiaAccount.getDelegations();
-      const [undelegation] = await celestiaAccount.undelegate(delegations);
-
       // wait for the undelegations to be complete (may take weeks)
-      await undelegation.completion;
+      await celestiaAccount.undelegate(delegations);
 
       // ??? should this be synchronous? depends on how names are resolved.
       const stride = await orch.getChain('stride');

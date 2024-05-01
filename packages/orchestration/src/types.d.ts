@@ -1,4 +1,10 @@
-import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/exported.js';
+import type {
+  Amount,
+  Brand,
+  Payment,
+  Purse,
+  RemotableBrand,
+} from '@agoric/ertp/exported.js';
 import type { Timestamp } from '@agoric/time';
 import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';
@@ -255,16 +261,6 @@ export interface ChainAccount {
   prepareTransfer: () => Promise<Invitation>;
 }
 
-export interface Undelegation {
-  cancel: () => Promise<MsgCancelUnbondingDelegation>;
-  response: MsgUndelegateResponse;
-  /**
-   * Resolves when the undelegation is complete and the tokens are no longer bonded.
-   * Note it may take weeks.
-   */
-  completion: Promise<void>;
-}
-
 /**
  * An object that supports high-level operations for an account on a remote chain.
  */
@@ -365,9 +361,10 @@ export interface BaseOrchestrationAccount {
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
-   * @param delegations - the delegation to undelegate
+   * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
+   * @param {Delegation[]} delegations - the delegation to undelegate
    */
-  undelegate: (delegations: Delegation[]) => Promise<Undelegation[]>;
+  undelegate: (delegations: Delegation[]) => Promise<void>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
