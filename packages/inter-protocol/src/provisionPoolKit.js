@@ -26,6 +26,7 @@ const { details: X, quote: q, Fail } = assert;
 /**
  * @import {ERef} from '@endo/far'
  * @import {Amount} from '@agoric/ertp/src/types.js'
+ * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  */
 
 /**
@@ -59,7 +60,6 @@ const { details: X, quote: q, Fail } = assert;
  *
  * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
  * @param {() => void} onProvisioned
- * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  */
 export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
   /** @param {ProvisionPoolKitReferences} refs */

@@ -85,7 +85,7 @@ export const partialAssign = (target, source) => {
 };
 harden(partialAssign);
 
-/** @import {StoreOptions} from '@agoric/store/exported.js' */
+/** @import {StoreOptions} from '@agoric/store' */
 
 /**
  * Unlike `provideLazy`, `provide` should be called at most once

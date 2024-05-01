@@ -6,7 +6,7 @@
   },
   "include": [
     "src/**/*.js",
-    "*.js",
+    // exclude exported.js so that stub doesn't overwrite exportd.d.ts
     "test/**/*.js",
     "tools/**/*.js",
   ],

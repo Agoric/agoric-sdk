@@ -1,5 +1,8 @@
 // @jessie-check
 
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/internal/exported.js';
+
 export {
   makePublishKit,
   prepareDurablePublishKit,
@@ -26,3 +29,6 @@ export {
 } from './asyncIterableAdaptor.js';
 export * from './storesub.js';
 export * from './stored-notifier.js';
+
+// eslint-disable-next-line import/export -- doesn't know types
+export * from './types.js';

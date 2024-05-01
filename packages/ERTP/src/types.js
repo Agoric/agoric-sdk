@@ -5,8 +5,9 @@ export {};
 
 /// <reference types="ses"/>
 /**
- * @import {Passable} from '@endo/pass-style')
- * @import {CopySet, Key} from '@endo/patterns')
+ * @import {ERef} from '@endo/far');
+ * @import {CopySet, Key} from '@endo/patterns');
+ * @import {LatestTopic, NotifierRecord} from '@agoric/notifier');
  */
 
 /**

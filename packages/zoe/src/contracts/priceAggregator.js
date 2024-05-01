@@ -32,7 +32,7 @@ import {
 } from '../contractSupport/ratio.js';
 
 /**
- * @import {LegacyMap} from '@agoric/store/exported.js'
+ * @import {LegacyMap} from '@agoric/store'
  */
 /** @typedef {bigint | number | string} ParsableNumber */
 /**

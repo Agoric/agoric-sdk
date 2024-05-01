@@ -3,9 +3,12 @@
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 
-import './types-ambient.js';
 import { makePublishKit } from './publish-kit.js';
 import { subscribeLatest } from './subscribe.js';
+
+/**
+ * @import {LatestTopic, Notifier, NotifierRecord, PublishKit, Subscriber, UpdateRecord} from './types.js';
+ */
 
 /**
  * @template T

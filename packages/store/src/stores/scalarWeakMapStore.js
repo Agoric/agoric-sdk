@@ -6,6 +6,8 @@ import {
   isCopyMap,
 } from '@endo/patterns';
 
+/** @import {WeakMapStore, StoreOptions} from '../types.js'; */
+
 const { quote: q, Fail } = assert;
 
 /**

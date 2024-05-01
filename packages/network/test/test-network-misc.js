@@ -17,7 +17,9 @@ import {
   preparePortAllocator,
 } from '../src/index.js';
 
-import '../src/types.js';
+/**
+ * @import {ListenHandler} from '../src/types.js';
+ */
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};

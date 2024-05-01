@@ -9,6 +9,7 @@ import type { ERef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
 import type { agoric } from '@agoric/cosmic-proto';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
+import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
 import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;

@@ -2,7 +2,10 @@
 /** @file Orchestration service */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/network/exported.js';
+
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
@@ -11,11 +14,12 @@ import { makeICAConnectionAddress, parseAddress } from './utils/address.js';
 import { makeTxPacket, parsePacketAck } from './utils/tx.js';
 
 /**
- * @import { ChainAccount, ChainAddress } from './types.js';
+ * @import {Connection, Port, PortAllocator} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
- *
+ * @import { AttenuatedNetwork, ChainAccount, ChainAddress } from './types.js';
  */
 
 const { Fail, bare } = assert;

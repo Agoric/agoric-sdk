@@ -8,6 +8,9 @@ import { Shape } from './shapes.js';
 
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
+/**
+ * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
+ */
 
 /**
  * Compatibility note: this must match what our peers use, so don't change it
@@ -409,7 +412,7 @@ const preparePort = (zone, powers) => {
    * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
    * @param {MapStore<string, Port>} opts.boundPorts
    * @param {import('@agoric/vow').Remote<ProtocolHandler>} opts.protocolHandler
-   * @param {Remote<ProtocolImpl>} opts.protocolImpl
+   * @param {import('@agoric/vow').Remote<ProtocolImpl>} opts.protocolImpl
    */
   const initPort = ({
     localAddr,
@@ -454,7 +457,9 @@ const preparePort = (zone, powers) => {
           }
           listening.set(localAddr, [
             this.facets.port,
-            /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
+            /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
+              listenHandler
+            ),
           ]);
           E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
@@ -462,7 +467,9 @@ const preparePort = (zone, powers) => {
             localAddr,
             harden([
               this.facets.port,
-              /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
+              /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
+                listenHandler
+              ),
             ]),
           );
         }
@@ -481,7 +488,7 @@ const preparePort = (zone, powers) => {
         );
         return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
       },
-      /** @param {Remote<ListenHandler>} listenHandler */
+      /** @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler */
       async removeListener(listenHandler) {
         const { listening, localAddr, protocolHandler } = this.state;
         listening.has(localAddr) || Fail`Port ${localAddr} is not listening`;
@@ -503,11 +510,11 @@ const preparePort = (zone, powers) => {
       },
       /**
        * @param {Endpoint} remotePort
-       * @param {Remote<ConnectionHandler>} [connectionHandler]
+       * @param {import('@agoric/vow').Remote<ConnectionHandler>} [connectionHandler]
        */
       async connect(
         remotePort,
-        connectionHandler = /** @type {Remote<ConnectionHandler>} */ (
+        connectionHandler = /** @type {import('@agoric/vow').Remote<ConnectionHandler>} */ (
           makeIncapable()
         ),
       ) {
@@ -724,8 +731,8 @@ const prepareBinder = (zone, powers) => {
      * @param {object} opts
      * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {MapStore<string, Port>} opts.boundPorts
-     * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
-     * @param {Remote<ProtocolHandler>} opts.protocolHandler
+     * @param {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} opts.listening
+     * @param {import('@agoric/vow').Remote<ProtocolHandler>} opts.protocolHandler
      */
     ({ currentConnections, boundPorts, listening, protocolHandler }) => {
       /** @type {SetStore<Connection>} */
@@ -771,7 +778,7 @@ const prepareBinder = (zone, powers) => {
 
           const innerVow = watch(
             E(
-              /** @type {Remote<Required<ProtocolHandler>>} */ (
+              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(
@@ -813,7 +820,7 @@ const prepareBinder = (zone, powers) => {
           // Allocate a local address.
           const instantiateInnerVow = watch(
             E(
-              /** @type {Remote<Required<ProtocolHandler>>} */ (
+              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(port, localAddr, remoteAddr, protocolHandler),
@@ -939,7 +946,7 @@ const prepareBinder = (zone, powers) => {
 
           const innerVow = watch(
             E(
-              /** @type {Remote<Required<ProtocolHandler>>} */ (
+              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(
@@ -1169,7 +1176,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinderKit = prepareBinder(zone, powers);
 
   /**
-   * @param {Remote<ProtocolHandler>} protocolHandler
+   * @param {import('@agoric/vow').Remote<ProtocolHandler>} protocolHandler
    * @returns {Protocol}
    */
   const makeNetworkProtocol = protocolHandler => {
@@ -1181,7 +1188,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
     /** @type {MapStore<string, Port>} */
     const boundPorts = detached.mapStore('addrToPort');
 
-    /** @type {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} */
+    /** @type {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} */
     const listening = detached.mapStore('listening');
 
     const { binder, protocolImpl } = makeBinderKit({
@@ -1293,7 +1300,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
 
   /** @param {string} [instancePrefix] */
   const initHandler = (instancePrefix = 'nonce/') => {
-    /** @type {MapStore<string, [Remote<Port>, Remote<Required<ListenHandler>>]>} */
+    /** @type {MapStore<string, [import('@agoric/vow').Remote<Port>, import('@agoric/vow').Remote<Required<ListenHandler>>]>} */
     const listeners = detached.mapStore('localAddr');
 
     return {
@@ -1325,7 +1332,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
          * @param {*} _port
          * @param {Endpoint} localAddr
          * @param {Endpoint} remoteAddr
-         * @returns {PromiseVow<AttemptDescription>}}
+         * @returns {import('@agoric/vow').PromiseVow<AttemptDescription>}}
          */
         async onConnect(_port, localAddr, remoteAddr) {
           const { listeners } = this.state;
@@ -1372,7 +1379,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
                 localAddr,
                 harden([
                   port,
-                  /** @type {Remote<Required<ListenHandler>>} */ (
+                  /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
                     listenHandler
                   ),
                 ]),
@@ -1383,15 +1390,17 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
               localAddr,
               harden([
                 port,
-                /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
+                /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
+                  listenHandler
+                ),
               ]),
             );
           }
         },
         /**
-         * @param {Remote<Port>} port
+         * @param {import('@agoric/vow').Remote<Port>} port
          * @param {Endpoint} localAddr
-         * @param {Remote<ListenHandler>} listenHandler
+         * @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler
          * @param {*} _protocolHandler
          */
         async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {

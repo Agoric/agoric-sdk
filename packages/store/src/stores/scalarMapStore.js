@@ -15,12 +15,13 @@ import {
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
-const { quote: q } = assert;
-
 /**
- * @import {Passable} from '@endo/pass-style')
- * @import {Key} from '@endo/patterns')
+ * @import {Passable} from '@endo/pass-style');
+ * @import {Key, Pattern} from '@endo/patterns');
+ * @import {MapStore, StoreOptions} from '../types.js';
  */
+
+const { quote: q } = assert;
 
 /**
  * @template {Key} K

@@ -3,6 +3,10 @@
 import { Fail } from '@agoric/assert';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
+/**
+ * @import {Bytes} from './types.js';
+ */
+
 /** @typedef {Bytes | Buffer | Uint8Array | Iterable<number>} ByteSource */
 
 /**

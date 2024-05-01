@@ -11,6 +11,11 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 // bootstrap vat can't yet be upgraded.
 import { when } from '@agoric/vat-data/vow.js';
 
+/**
+ * @import {ProtocolHandler} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ */
+
 const NUM_IBC_PORTS_PER_CLIENT = 3;
 
 /**

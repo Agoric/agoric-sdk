@@ -1,10 +1,11 @@
 // @jessie-check
 
-/** @import { ERef } from '@endo/far' */
-
 /**
- * @import {PromiseKit, PromiseRecord} from '@endo/promise-kit'
+ * @import {StoredFacet, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
  */
+
+// Ensure this is a module.
+export {};
 
 /**
  * @template T
@@ -46,7 +47,7 @@
 
 /**
  * @template T
- * @typedef {object} IterationObserver<T>
+ * @typedef {object} IterationObserver
  * A valid sequence of calls to the methods of an `IterationObserver`
  * represents an iteration. A valid sequence consists of any number of calls
  * to `updateState` with the successive non-final values, followed by a
@@ -155,14 +156,14 @@
 
 /**
  * @template T
- * @typedef {object} PublishKit<T>
+ * @typedef {object} PublishKit
  * @property {Publisher<T>} publisher
  * @property {Subscriber<T>} subscriber
  */
 
 /**
  * @template T
- * @typedef {object} StoredPublishKit<T>
+ * @typedef {object} StoredPublishKit
  * @property {Publisher<T>} publisher
  * @property {StoredSubscriber<T>} subscriber
  */
@@ -210,7 +211,7 @@
 
 /**
  * @template T
- * @typedef {object} UpdateRecord<T>
+ * @typedef {object} UpdateRecord
  * @property {T} value is whatever state the service wants to publish
  * @property {bigint} [updateCount] is a value that identifies the update.  For
  * the last update, it is `undefined`.
@@ -228,7 +229,7 @@
  * @typedef {NotifierInternals<T> &
  *   ForkableAsyncIterable<T, T> &
  *   SharableNotifier<T>
- * } Notifier<T> an object that can be used to get the current state or updates
+ * } Notifier an object that can be used to get the current state or updates
  */
 
 /**
@@ -247,7 +248,7 @@
 
 /**
  * @template T
- * @typedef {object} NotifierRecord<T> the produced notifier/updater pair
+ * @typedef {object} NotifierRecord the produced notifier/updater pair
  * @property {IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */
@@ -257,7 +258,7 @@
 /**
  * @template T
  * @typedef {IterableEachTopic<T> & EachTopic<T> &
- *   SharableSubscription<T>} Subscription<T>
+ *   SharableSubscription<T>} Subscription
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
 
@@ -277,48 +278,12 @@
 
 /**
  * @template T
- * @typedef {object} SubscriptionRecord<T>
+ * @typedef {object} SubscriptionRecord
  * @property {IterationObserver<T>} publication
  * @property {Subscription<T>} subscription
  */
 
 // /////////////////////////////////////////////////////////////////////////////
-
-/** @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>} Marshaller */
-/** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
-
-/**
- * Defined by vstorageStoreKey in vstorage.go
- *
- * @typedef VStorageKey
- * @property {string} storeName
- * @property {string} storeSubkey
- * @property {string} dataPrefixBytes
- * @property {string} [noDataValue]
- */
-
-/**
- * This represents a node in an IAVL tree.
- *
- * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
- *
- * Vstorage is a hierarchical externally-reachable storage structure that
- * identifies children by restricted ASCII name and is associated with arbitrary
- * string-valued data for each node, defaulting to the empty string.
- *
- * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data (append to the node)
- * @property {() => string} getPath the chain storage path at which the node was constructed
- * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
- * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
- */
-
-/**
- * @typedef {object} StoredFacet
- * @property {() => Promise<string>} getPath the chain storage path at which the node was constructed
- * @property {StorageNode['getStoreKey']} getStoreKey DEPRECATED use getPath
- * @property {() => Unserializer} getUnserializer get the unserializer for the stored data
- */
 
 /**
  * @deprecated use StoredSubscriber

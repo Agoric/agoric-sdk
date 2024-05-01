@@ -3,6 +3,10 @@ import { E, Far } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
+/**
+ * @import {Connection, Port, PortAllocator} from '@agoric/network';
+ */
+
 export const CONTRACT_NAME = 'Pegasus';
 
 const t = 'pegasus';

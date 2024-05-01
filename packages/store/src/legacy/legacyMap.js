@@ -1,4 +1,4 @@
-import '../types.js';
+/** @import {LegacyMap, LegacyWeakMap} from '../types.js'; */
 
 // TODO, once migrated to endo, import from @endo/errors instead
 const { Fail, quote: q } = assert;

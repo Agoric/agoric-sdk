@@ -8,6 +8,10 @@ const { quote: q, Fail } = assert;
 const { log } = console;
 
 /**
+ * @import {ListenHandler, PortAllocator} from '@agoric/network';
+ */
+
+/**
  *
  * @param {ZCF} zcf
  * @param {{

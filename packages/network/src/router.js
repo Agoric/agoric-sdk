@@ -5,8 +5,13 @@ import { Fail } from '@agoric/assert';
 import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
 import { Shape } from './shapes.js';
 
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
+/**
+ * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
+ * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
+ */
 
 /**
  * @template T

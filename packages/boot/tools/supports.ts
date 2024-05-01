@@ -17,7 +17,10 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
+
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/vats/exported.js';
+
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,

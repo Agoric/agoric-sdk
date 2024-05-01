@@ -1,6 +1,9 @@
 import { test } from './prepare-test-env-ava.js';
 import { makeNotifierKit } from '../src/index.js';
-import '../src/types-ambient.js';
+
+/**
+ * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
+ */
 
 test('notifier - initial state', async t => {
   /** @type {NotifierRecord<1>} */

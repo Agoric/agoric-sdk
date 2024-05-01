@@ -1,8 +1,7 @@
 import type { Callable } from '@agoric/internal/src/utils.js';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { Baggage } from '@agoric/swingset-liveslots';
-
-import type { IssuerKeywordRecord, Payment } from './types.js';
+import type { Issuer } from '@agoric/ertp/exported.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -71,7 +70,7 @@ export type ContractOf<S> = StartParams<S> & StartResult<S>;
 
 type StartContractInstance<C> = (
   installation: Installation<C>,
-  issuerKeywordRecord?: IssuerKeywordRecord,
+  issuerKeywordRecord?: Record<string, Issuer<any>>,
   terms?: object,
   privateArgs?: object,
 ) => Promise<{
@@ -113,7 +112,7 @@ export type StartedInstanceKit<SF> = {
  */
 export type StartInstance = <SF>(
   installation: Installation<SF> | PromiseLike<Installation<SF>>,
-  issuerKeywordRecord?: IssuerKeywordRecord,
+  issuerKeywordRecord?: Record<Keyword, Issuer<any>>,
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
   privateArgs?: Parameters<SF>[1],

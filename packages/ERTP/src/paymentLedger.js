@@ -7,7 +7,9 @@ import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
+// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/store/exported.js';
+
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /**

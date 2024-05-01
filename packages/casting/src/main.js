@@ -1,5 +1,7 @@
 // @jessie-check
 
+import '@agoric/internal/exported.js';
+
 // eslint-disable-next-line import/export
 export * from './types.js'; // no named exports
 export * from './defaults.js';

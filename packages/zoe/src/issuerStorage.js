@@ -170,7 +170,10 @@ export const provideIssuerStorage = zcfBaggage => {
     return brandToIssuerRecord.get(brand).issuer;
   };
 
-  /** @type {IssuerStorageGetIssuerRecords} */
+  /**
+   * @param {Issuer[]} issuers
+   * @returns {IssuerRecords}
+   */
   const getIssuerRecords = issuers => {
     assertInstantiated();
     return issuers.map(issuerToIssuerRecord.get);
