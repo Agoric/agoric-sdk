@@ -59,7 +59,7 @@ export const start = async (zcf, privateArgs) => {
 
       // TODO the `TIA` string actually needs to be the Brand from AgoricNames
       const tiaAmt = await celestiaAccount.getBalance('TIA');
-      await celestiaAccount.transfer(tiaAmt, strideAccount.getChainAddress());
+      await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
       await strideAccount.liquidStake(tiaAmt);
     },

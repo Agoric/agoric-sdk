@@ -59,7 +59,7 @@ export const Proto3Shape = {
 };
 
 export const ChainAccountI = M.interface('ChainAccount', {
-  getAccountAddress: M.call().returns(M.string()),
+  getAddress: M.call().returns(M.string()),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -96,7 +96,7 @@ const prepareChainAccount = zone =>
        *   localAddress: string | undefined;
        *   requestedRemoteAddress: string;
        *   remoteAddress: string | undefined;
-       *   accountAddress: string | undefined;
+       *   address: ChainAddress['address'] | undefined;
        * }}
        */ (
         harden({
@@ -104,18 +104,18 @@ const prepareChainAccount = zone =>
           connection: undefined,
           requestedRemoteAddress,
           remoteAddress: undefined,
-          accountAddress: undefined,
+          address: undefined,
           localAddress: undefined,
         })
       ),
     {
       account: {
         /**
-         * @returns {string} the address of the account on the chain
+         * @returns {ChainAddress['address']} the address of the account on the chain
          */
-        getAccountAddress() {
+        getAddress() {
           return NonNullish(
-            this.state.accountAddress,
+            this.state.address,
             'Error parsing account address from remote address',
           );
         },
@@ -194,7 +194,7 @@ const prepareChainAccount = zone =>
           this.state.remoteAddress = remoteAddr;
           this.state.localAddress = localAddr;
           // XXX parseAddress currently throws, should it return '' instead?
-          this.state.accountAddress = parseAddress(remoteAddr);
+          this.state.address = parseAddress(remoteAddr);
         },
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
@@ -252,7 +252,7 @@ const prepareOrchestration = (zone, createChainAccount) =>
          *   the counterparty connection_id
          * @param {IBCConnectionID} controllerConnectionId
          *   self connection_id
-         * @returns {Promise<ChainAccount>}
+         * @returns {Promise<ChainAccountKit['account']>}
          */
         async makeAccount(hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.bindPort();

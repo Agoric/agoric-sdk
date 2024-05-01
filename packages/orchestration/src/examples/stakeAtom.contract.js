@@ -52,12 +52,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       hostConnectionId,
       controllerConnectionId,
     );
-    const accountAddress = await E(account).getAccountAddress();
-    trace('account address', accountAddress);
+    const address = await E(account).getAddress();
+    trace('chain address', address);
     const { holder, invitationMakers } = makeStakingAccountKit(
       account,
       storageNode,
-      accountAddress,
+      address,
     );
     return {
       publicSubscribers: holder.getPublicTopics(),

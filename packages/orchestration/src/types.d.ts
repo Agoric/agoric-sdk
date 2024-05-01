@@ -236,7 +236,7 @@ export interface ChainAccount {
   /**
    * @returns the address of the account on the remote chain
    */
-  getAccountAddress: () => string;
+  getAddress: () => ChainAddress;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
@@ -271,7 +271,7 @@ export interface BaseOrchestrationAccount {
   /**
    * @returns the address of the account on the remote chain
    */
-  getChainAddress: () => ChainAddress;
+  getAddress: () => ChainAddress;
 
   /** @returns an array of amounts for every balance in the account. */
   getBalances: () => Promise<ChainAmount[]>;
@@ -427,7 +427,7 @@ export type TransferMsg = {
 
 // Example
 // await icaNoble.transferSteps(usdcAmt,
-//   osmosisSwap(tiaBrand, { pool: 1224, slippage: 0.05 }, icaCel.getAddress()));
+//   osmosisSwap(tiaBrand, { pool: 1224, slippage: 0.05 }, icaCel.getChainAddress()));
 
 /**
  * @param pool - Required. Pool number

@@ -80,7 +80,7 @@ test('makeAccount returns an ICA connection', async t => {
     [
       EV(account).getRemoteAddress(),
       EV(account).getLocalAddress(),
-      EV(account).getAccountAddress(),
+      EV(account).getAddress(),
       EV(account).getPort(),
     ],
   );

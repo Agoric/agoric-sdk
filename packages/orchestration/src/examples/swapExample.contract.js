@@ -52,7 +52,7 @@ export const start = async (zcf, privateArgs) => {
         agoric.makeAccount(),
       ]);
 
-      const tiaAddress = await celestiaAccount.getChainAddress();
+      const tiaAddress = await celestiaAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
       const seatKit = zcf.makeEmptySeatKit();

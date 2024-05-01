@@ -14,7 +14,8 @@ import { E } from '@endo/far';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
- * @import { ChainAccount, ChainAddress } from '../types.js';
+ * @import { ChainAddress } from '../types.js';
+ * @import { ChainAccountKit } from '../service.js';
  * @import { RecorderKit, MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import { Baggage } from '@agoric/swingset-liveslots';
  * @import {AnyJson} from '@agoric/cosmic-proto';
@@ -25,14 +26,14 @@ const trace = makeTracer('StakingAccountHolder');
 const { Fail } = assert;
 /**
  * @typedef {object} StakingAccountNotification
- * @property {string} address
+ * @property {ChainAddress['address']} address
  */
 
 /**
  * @typedef {{
  *  topicKit: RecorderKit<StakingAccountNotification>;
- *  account: ChainAccount;
- *  chainAddress: string;
+ *  account: ChainAccountKit['account'];
+ *  address: ChainAddress['address'];
  * }} State
  */
 
@@ -69,16 +70,16 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
       }),
     },
     /**
-     * @param {ChainAccount} account
+     * @param {ChainAccountKit['account']} account
      * @param {StorageNode} storageNode
-     * @param {string} chainAddress
+     * @param {ChainAddress['address']} address
      * @returns {State}
      */
-    (account, storageNode, chainAddress) => {
+    (account, storageNode, address) => {
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
-      return { account, chainAddress, topicKit };
+      return { account, address, topicKit };
     },
     {
       helper: {
@@ -109,7 +110,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           };
 
           const account = this.facets.helper.owned();
-          const delegatorAddress = this.state.chainAddress;
+          const delegatorAddress = this.state.address;
 
           const result = await E(account).executeEncodedTx([
             /** @type {AnyJson} */ (
