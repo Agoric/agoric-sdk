@@ -73,7 +73,10 @@ harden(meta);
  *   storageNode: ERef<StorageNode>;
  *   marshaller: ERef<Marshaller>;
  *   auctioneerInstance: Instance;
- *   managerParams: Record<string, import('./params.js').VaultManagerParams>;
+ *   managerParams: Record<
+ *     string,
+ *     import('./params.js').VaultManagerParamOverrides
+ *   >;
  * }} privateArgs
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */

@@ -16,18 +16,19 @@ const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 export const BID_OFFER_ID = 'bid-vaultUpgrade-test3';
 
-const agdQuery = path =>
+const queryVstorage = path =>
   agd.query('vstorage', 'data', '--output', 'json', path);
 
+// XXX use endo/marshal?
 const getQuoteBody = async path => {
-  const queryout = await agdQuery(path);
+  const queryOut = await queryVstorage(path);
 
-  const body = JSON.parse(JSON.parse(queryout.value).values[0]);
+  const body = JSON.parse(JSON.parse(queryOut.value).values[0]);
   return JSON.parse(body.body.substring(1));
 };
 
 export const getOracleInstance = async price => {
-  const instanceRec = await agdQuery(`published.agoricNames.instance`);
+  const instanceRec = await queryVstorage(`published.agoricNames.instance`);
 
   const value = JSON.parse(instanceRec.value);
   const body = JSON.parse(value.values.at(-1));

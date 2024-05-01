@@ -21,7 +21,7 @@ import {
 } from './agd-tools.js';
 import { getDetailsMatchingVats } from './vatDetails.js';
 
-test.serial('check all priceFeed vats updated', async t => {
+const checkPriceFeedVatsUpdated = async t => {
   const atomDetails = await getVatDetails('ATOM-USD_price_feed');
   // both the original and the new ATOM vault are incarnation 0
   t.is(atomDetails.incarnation, 0);
@@ -37,11 +37,11 @@ test.serial('check all priceFeed vats updated', async t => {
     checkForOracle(t, 'stTIA'),
     checkForOracle(t, 'stOSMO'),
   ]);
-});
+};
 
 const oraclesByBrand = new Map();
 
-test.serial('push prices', async t => {
+const tryPushPrices = async t => {
   // There are no old prices for the other currencies.
   const atomOutPre = await getPriceQuote('ATOM');
   t.is(atomOutPre, '+12010000');
@@ -67,15 +67,15 @@ test.serial('push prices', async t => {
   t.is(stAtomOut, '+11400000');
   const osmoOut = await getPriceQuote('stOSMO');
   t.is(osmoOut, '+11500000');
-});
+};
 
-test.serial('create new bid', async t => {
+const createNewBid = async t => {
   await createBid('20', USER1ADDR, BID_OFFER_ID);
   const liveOffer = await getLiveOffers(USER1ADDR);
   t.true(liveOffer[0].includes(BID_OFFER_ID));
-});
+};
 
-test.serial('open a marginal vault', async t => {
+const openMarginalVault = async t => {
   let user1IST = await getISTBalance(USER1ADDR);
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
   const currentVaults = await agops.vaults('list', '--from', USER1ADDR);
@@ -92,17 +92,38 @@ test.serial('open a marginal vault', async t => {
     activeVaultsAfter.length > currentVaults.length,
     `vaults count should increase, ${activeVaultsAfter.length}, ${currentVaults.length}`,
   );
-});
+};
 
-test.serial('trigger auction', async t => {
+const triggerAuction = async t => {
   await pushPrices(5.2, 'ATOM', oraclesByBrand);
 
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+5200000');
-});
+};
 
-test('new auction vat', async t => {
+const makeNewAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');
   // This query matches both the auction and its governor, so double the count
   t.true(Object.keys(details).length > 2);
+};
+
+// test.serial() isn't guaranteed to run tests in order, so we cobble together a driver
+test('driver', async t => {
+  t.log('starting upgrade vaults test');
+  await checkPriceFeedVatsUpdated(t);
+
+  t.log('starting pushPrices');
+  await tryPushPrices(t);
+
+  t.log('create a new Bid for the auction');
+  await createNewBid(t);
+
+  t.log('open a marginal vault');
+  await openMarginalVault(t);
+
+  t.log('trigger Auction');
+  await triggerAuction(t);
+
+  t.log('make new auction');
+  await makeNewAuctionVat(t);
 });

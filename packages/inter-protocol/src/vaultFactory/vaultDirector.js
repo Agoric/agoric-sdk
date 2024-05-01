@@ -303,7 +303,7 @@ const prepareVaultDirector = (
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
         makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
-        updateShortfallReporter: M.call(InvitationShape).returns(M.promise()),
+        setShortfallReporter: M.call(InvitationShape).returns(M.promise()),
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
@@ -447,7 +447,7 @@ const prepareVaultDirector = (
             allManagersDo(vm => vm.lockOraclePrices());
           });
         },
-        async updateShortfallReporter(newInvitation) {
+        async setShortfallReporter(newInvitation) {
           const zoe = zcf.getZoeService();
           shortfallReporter = await E(
             E(zoe).offer(newInvitation),

@@ -62,6 +62,7 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
+import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
@@ -339,7 +340,7 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(M.promise()).returns(M.promise()),
+        liquidateVaults: M.call(M.eref(AuctionPFShape)).returns(M.promise()),
       }),
     },
     initState,

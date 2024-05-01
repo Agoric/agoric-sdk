@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
 import {
   CONTRACT_ELECTORATE,
@@ -169,17 +169,7 @@ export const makeGovernedTerms = ({
 };
 harden(makeGovernedTerms);
 
-// XXX Better to declare this as VaultManagerParamValues + brand. How?
-/**
- * @typedef {object} VaultManagerParams
- * @property {Brand} brand
- * @property {Ratio} liquidationMargin
- * @property {Ratio} liquidationPenalty
- * @property {Ratio} interestRate
- * @property {Ratio} mintFee
- * @property {Amount<'nat'>} debtLimit
- * @property {Ratio} [liquidationPadding]
- */
+/** @typedef {VaultManagerParamValues & { brand: Brand }} VaultManagerParamOverrides */
 
 /**
  * Stop-gap which restores initial param values UNTIL
@@ -189,13 +179,12 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
- * @param {Record<string, VaultManagerParams>} managerParamValues - sets of
- *   parameters (plus brand:) keyed by Keyword. override stored initial values
+ * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */
 export const provideVaultParamManagers = (
   baggage,
   marshaller,
-  managerParamValues,
+  managerParamOverrides,
 ) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
@@ -221,19 +210,15 @@ export const provideVaultParamManagers = (
     return manager;
   };
 
-  // restore from baggage, unless `managerParamValues` overrides.
+  // restore from baggage, unless `managerParamOverrides` overrides.
   for (const [brand, args] of managerArgs.entries()) {
-    let values;
-    for (const key of Object.keys(managerParamValues)) {
-      if (managerParamValues[key]?.brand === brand) {
-        values = managerParamValues[key];
-        break;
-      }
-    }
+    const newInitial = Object.values(managerParamOverrides).find(
+      e => e.brand === brand,
+    );
 
-    if (values) {
-      trace(`reviving params, override`, brand, values);
-      makeManager(brand, { ...args, initialParamValues: values });
+    if (newInitial) {
+      trace(`reviving params, override`, brand, newInitial);
+      makeManager(brand, { ...args, initialParamValues: newInitial });
     } else {
       trace(`reviving params, keeping`, brand, args.initialParamValues);
       makeManager(brand, args);

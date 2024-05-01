@@ -153,16 +153,16 @@ export const upgradeVaults = async (powers, { options }) => {
       trace(`upgrading after delay`, price);
       await upgradeVaultFactory();
       auctioneerKitProducer.reset();
-      // @ts-expect-error It has a value until reset just below
+      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
       auctioneerKitProducer.resolve(auctioneerKit);
       auctioneerProducer.reset();
-      // @ts-expect-error It has a value until reset just below
+      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
       auctioneerProducer.resolve(auctioneerKit.instance);
       // We wanted it to be valid for only a short while.
       tempAuctioneerKit.reset();
       await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
         'auctioneer',
-        // @ts-expect-error It has a value until reset just below
+        // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
         auctioneerKit.instance,
       );
     },
@@ -171,7 +171,7 @@ export const upgradeVaults = async (powers, { options }) => {
   console.log(`upgradeVaults scheduled; waiting for priceFeeds`);
 };
 
-const t = 'upgradeVaults';
+const uV = 'upgradeVaults';
 /**
  * Return the manifest, installations, and options for upgrading Vaults.
  *
@@ -185,17 +185,17 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
-        agoricNamesAdmin: t,
-        newAuctioneerKit: t,
-        economicCommitteeCreatorFacet: t,
-        priceAuthority: t,
-        reserveKit: t,
-        vaultFactoryKit: t,
-        board: t,
-        zoe: t,
+        agoricNamesAdmin: uV,
+        newAuctioneerKit: uV,
+        economicCommitteeCreatorFacet: uV,
+        priceAuthority: uV,
+        reserveKit: uV,
+        vaultFactoryKit: uV,
+        board: uV,
+        zoe: uV,
       },
-      produce: { auctioneerKit: t, newAuctioneerKit: t },
-      instance: { produce: { auctioneer: t, newAuctioneerKit: t } },
+      produce: { auctioneerKit: uV, newAuctioneerKit: uV },
+      instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
     },
   },
   options: { ...vaultUpgradeOptions },
