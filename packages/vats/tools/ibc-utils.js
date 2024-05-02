@@ -6,8 +6,26 @@ harden(REMOTE_ADDR_RE);
 export const LOCAL_ADDR_RE = /^\/ibc-port\/(?<portID>[-a-zA-Z0-9._+#[\]<>]+)$/;
 /** @typedef {`/ibc-port/${string}`} LocalIbcAddress */
 
-/** @param {string} remoteAddr */
-export const decodeRemoteIbcAddress = remoteAddr => {
+/**
+ * @overload
+ * @param {string} remoteAddr
+ * @param {undefined | false} [returnMatch]
+ * @returns {boolean}
+ */
+/**
+ * @overload
+ * @param {string} remoteAddr
+ * @param {true} returnMatch
+ * @returns {RegExpMatchArray}
+ */
+/**
+ * Validates a remote IBC address format and returns true if the address is
+ * valid.
+ *
+ * @param {string} remoteAddr
+ * @param {boolean} [returnMatch]
+ */
+export const validateRemoteIbcAddress = (remoteAddr, returnMatch = false) => {
   const match = remoteAddr.match(REMOTE_ADDR_RE);
   // .groups is to inform TS https://github.com/microsoft/TypeScript/issues/32098
   if (!(match && match.groups)) {
@@ -15,6 +33,14 @@ export const decodeRemoteIbcAddress = remoteAddr => {
       `Remote address ${remoteAddr} must be '(/ibc-hop/CONNECTION)*/ibc-port/PORT/(ordered|unordered)/VERSION'`,
     );
   }
+  return returnMatch ? match : true;
+};
+
+/** @param {string} remoteAddr */
+export const decodeRemoteIbcAddress = remoteAddr => {
+  const match = validateRemoteIbcAddress(remoteAddr, true);
+  if (!match.groups)
+    throw Error('Unexpected error, validateRemoteIbcAddress should throw.');
 
   /** @type {import('../src/types.js').IBCConnectionID[]} */
   const hops = [];
