@@ -4,7 +4,7 @@ import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type {
-  MsgCancelUnbondingDelegation,
+  MsgBeginRedelegateResponse,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type {
@@ -18,6 +18,7 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { Port } from '@agoric/network';
+import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 
 /**
  * static declaration of known chain types will allow type support for
@@ -367,14 +368,14 @@ export interface BaseOrchestrationAccount {
     srcValidator: CosmosValidatorAddress,
     dstValidator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<void>;
+  ) => Promise<MsgBeginRedelegateResponse>;
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
    * @param {Delegation[]} delegations - the delegation to undelegate
    */
-  undelegate: (delegations: Delegation[]) => Promise<void>;
+  undelegate: (delegations: Delegation[]) => Promise<MsgUndelegateResponse>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
@@ -403,7 +404,7 @@ export interface BaseOrchestrationAccount {
     amount: AmountArg,
     destination: ChainAddress,
     memo?: string,
-  ) => Promise<void>;
+  ) => Promise<MsgTransferResponse>;
 
   /**
    * Transfer an amount to another account in multiple steps. The promise settles when
@@ -412,7 +413,10 @@ export interface BaseOrchestrationAccount {
    * @param msg - the transfer message, including follow-up steps
    * @returns void
    */
-  transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<void>;
+  transferSteps: (
+    amount: AmountArg,
+    msg: TransferMsg,
+  ) => Promise<MsgTransferResponse>;
   /**
    * deposit payment from zoe to the account. For remote accounts,
    * an IBC Transfer will be executed to transfer funds there.

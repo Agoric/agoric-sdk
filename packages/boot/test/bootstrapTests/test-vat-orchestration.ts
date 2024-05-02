@@ -150,7 +150,6 @@ test('ICA connection can send msg with proto3', async t => {
 
   const txWithOptions = await EV(account).executeEncodedTx(
     [delegateMsgSuccess],
-    // @ts-expect-error XXX TxBody interface
     {
       memo: 'TESTING',
       timeoutHeight: 1_000_000_000n,
