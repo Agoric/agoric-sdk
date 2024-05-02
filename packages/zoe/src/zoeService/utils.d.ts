@@ -1,4 +1,5 @@
 import type { Callable } from '@agoric/internal/src/utils.js';
+import type { Tagged } from '@agoric/internal/src/tagged.js';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import type { Issuer } from '@agoric/ertp/exported.js';
@@ -13,22 +14,24 @@ type ContractFacet<T extends {} = {}> = {
 /**
  * Installation of a contract, typed by its start function.
  */
-declare const StartFunction: unique symbol;
-export type Installation<SF> = {
-  getBundle: () => SourceBundle;
-  getBundleLabel: () => string;
-  // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
-};
-export type Instance<SF> = Handle<'Instance'> & {
-  // because TS is structural, without this the generic is ignored
-  [StartFunction]: SF;
-};
+export type Installation<SF extends ContractStartFunction | unknown> = Tagged<
+  {
+    getBundle: () => SourceBundle;
+    getBundleLabel: () => string;
+  },
+  'StartFunction',
+  SF
+>;
+export type Instance<SF extends ContractStartFunction | unknown> = Tagged<
+  Handle<'Instance'>,
+  'StartFunction',
+  SF
+>;
 
 export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
 
-type ContractStartFunction = (
+export type ContractStartFunction = (
   zcf?: ZCF,
   privateArgs?: {},
   baggage?: Baggage,

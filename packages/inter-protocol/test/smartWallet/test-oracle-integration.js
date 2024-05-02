@@ -20,6 +20,8 @@ import {
   voteForOpenQuestion,
 } from './contexts.js';
 
+/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+
 /**
  * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>> & {
  *   consume: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];

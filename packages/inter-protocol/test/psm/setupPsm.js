@@ -22,6 +22,8 @@ import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
+/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**

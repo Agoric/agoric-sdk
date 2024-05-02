@@ -1,5 +1,3 @@
-import '@agoric/zoe/src/zoeService/types-ambient.js';
-
 export {};
 
 /** @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js' */

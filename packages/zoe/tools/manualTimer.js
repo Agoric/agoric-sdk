@@ -3,7 +3,7 @@ import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 
-import './internal-types.js';
+/** @import {TimerService} from '@agoric/time' */
 
 const { Fail } = assert;
 
@@ -18,6 +18,19 @@ const { Fail } = assert;
  */
 
 const nolog = (..._args) => {};
+
+/**
+ * @typedef {object} ManualTimerAdmin
+ * @property {(msg?: string) => void | Promise<void>} tick Advance the timer by one tick.
+ * DEPRECATED: use `await tickN(1)` instead.  `tick` function errors might be
+ * thrown synchronously, even though success is signaled by returning anything
+ * other than a rejected promise.
+ * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
+ */
+
+/**
+ * @typedef {TimerService & ManualTimerAdmin} ManualTimer
+ */
 
 /**
  * A fake TimerService, for unit tests that do not use a real
