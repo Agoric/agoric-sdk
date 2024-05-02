@@ -107,8 +107,8 @@ const makeNewAuctionVat = async t => {
   t.true(Object.keys(details).length > 2);
 };
 
-// test.serial() isn't guaranteed to run tests in order, so we cobble together a driver
-test('driver', async t => {
+// test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
+test('liquidation post upgrade', async t => {
   t.log('starting upgrade vaults test');
   await checkPriceFeedVatsUpdated(t);
 
