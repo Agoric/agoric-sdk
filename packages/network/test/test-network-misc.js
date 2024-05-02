@@ -217,6 +217,16 @@ test('verify port allocation', async t => {
   await t.throwsAsync(when(portAllocator.allocateCustomIBCPort('/test-1')), {
     message: 'Invalid IBC port name: /test-1',
   });
+
+  const icqControllerPort1 = await when(
+    portAllocator.allocateICQControllerPort(),
+  );
+  t.is(icqControllerPort1.getLocalAddress(), '/ibc-port/icqcontroller-1');
+
+  const icqControllerPort2 = await when(
+    portAllocator.allocateICQControllerPort(),
+  );
+  t.is(icqControllerPort2.getLocalAddress(), '/ibc-port/icqcontroller-2');
 });
 
 test('protocol connection listen', async t => {
