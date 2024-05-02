@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package icq.v1;
+
+option go_package = "github.com/cosmos/ibc-apps/modules/async-icq/v8/types";
+
+import "gogoproto/gogo.proto";
+
+// Params defines the set of on-chain interchain query parameters.
+message Params {
+  // host_enabled enables or disables the host submodule.
+  bool host_enabled = 2 [(gogoproto.moretags) = "yaml:\"host_enabled\""];
+  // allow_queries defines a list of query paths allowed to be queried on a host chain.
+  repeated string allow_queries = 3 [(gogoproto.moretags) = "yaml:\"allow_queries\""];
+}
