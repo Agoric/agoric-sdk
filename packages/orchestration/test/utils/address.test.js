@@ -1,7 +1,7 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 import {
   makeICAChannelAddress,
-  parseAddress,
+  findAddressField,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
@@ -39,28 +39,28 @@ test('makeICAChannelAddress', t => {
   );
 });
 
-test('parseAddress', t => {
+test('findAddressField', t => {
   t.is(
-    parseAddress('/ibc-hop/'),
+    findAddressField('/ibc-hop/'),
     undefined,
     'returns undefined when version json is missing',
   );
   t.is(
-    parseAddress(
+    findAddressField(
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
     ),
     '',
     'returns empty string if address is an empty string',
   );
   t.is(
-    parseAddress(
+    findAddressField(
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq","encoding":"proto3","txType":"sdk_multi_msg"}',
     ),
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',
     'returns address',
   );
   t.is(
-    parseAddress(
+    findAddressField(
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controller_connection_id":"connection-0","host_connection_id":"connection-1","address":"osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq","encoding":"proto3","tx_type":"sdk_multi_msg"}/ibc-channel/channel-1',
     ),
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',

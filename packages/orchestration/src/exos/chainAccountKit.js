@@ -10,7 +10,7 @@ import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { parseAddress } from '../utils/address.js';
+import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parsePacketAck } from '../utils/tx.js';
 
 /**
@@ -175,9 +175,9 @@ export const prepareChainAccountKit = zone =>
           this.state.connection = connection;
           this.state.remoteAddress = remoteAddr;
           this.state.localAddress = localAddr;
-          // XXX parseAddress currently throws, should it return '' instead?
+          // XXX findAddressField currently throws, should it return '' instead?
           this.state.chainAddress = harden({
-            address: parseAddress(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
+            address: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
             // TODO get this from `Chain` object #9063
             // XXX how do we get a chainId for an unknown chain? seems it may need to be a user supplied arg
             chainId: 'FIXME',
