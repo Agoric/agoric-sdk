@@ -39,10 +39,10 @@ harden(makeTxPacket);
  * @returns {string} - base64 encoded bytes string
  * @throws {Error} if error key is detected in response string, or result key is not found
  */
-export function parsePacketAck(response) {
+export function parseTxPacket(response) {
   const { result, error } = JSON.parse(response);
   if (result) return result;
   else if (error) throw Error(error);
   else throw Error(response);
 }
-harden(parsePacketAck);
+harden(parseTxPacket);

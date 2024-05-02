@@ -11,7 +11,7 @@ import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { findAddressField } from '../utils/address.js';
-import { makeTxPacket, parsePacketAck } from '../utils/tx.js';
+import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
  * @import { Connection, Port } from '@agoric/network';
@@ -131,8 +131,8 @@ export const prepareChainAccountKit = zone =>
           if (!connection) throw Fail`connection not available`;
           return E.when(
             E(connection).send(makeTxPacket(msgs, opts)),
-            // if parsePacketAck cannot find a `result` key, it throws
-            ack => parsePacketAck(ack),
+            // if parseTxPacket cannot find a `result` key, it throws
+            ack => parseTxPacket(ack),
           );
         },
         /**

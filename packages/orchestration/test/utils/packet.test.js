@@ -1,6 +1,6 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { makeTxPacket, parsePacketAck } from '../../src/utils/tx.js';
+import { makeTxPacket, parseTxPacket } from '../../src/utils/packet.js';
 
 test('makeTxPacket', t => {
   const mockMsg = {
@@ -49,16 +49,16 @@ test('txToBase64', t => {
   );
 });
 
-test('parsePacketAck', t => {
+test('parseTxPacket', t => {
   t.is(
-    parsePacketAck(
+    parseTxPacket(
       `{"result":"Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U="}`,
     ),
     'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=',
   );
   t.throws(
     () =>
-      parsePacketAck(
+      parseTxPacket(
         `{"error":"ABCI code: 5: error handling packet: see events for details"}`,
       ),
     {
@@ -66,7 +66,7 @@ test('parsePacketAck', t => {
     },
   );
   t.throws(
-    () => parsePacketAck('{"foo":"bar"}'),
+    () => parseTxPacket('{"foo":"bar"}'),
     {
       message: '{"foo":"bar"}',
     },
