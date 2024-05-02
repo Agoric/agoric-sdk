@@ -12,6 +12,12 @@ import type {
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import type {
+  LocalIbcAddress,
+  RemoteIbcAddress,
+} from '@agoric/vats/tools/ibc-utils.js';
+import type { Port } from '@agoric/network';
 
 /**
  * static declaration of known chain types will allow type support for
@@ -239,10 +245,14 @@ export interface ChainAccount {
   executeTx: (msgs: Proto3JSONMsg[]) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param msgs - records for the transaction
-   * @returns acknowledge string
+   * @param {AnyJson[]} msgs - records for the transaction
+   * @param {Partial<Omit<TxBody, 'messages'>>} [opts] - optional parameters for the Tx, like `timeoutHeight` and `memo`
+   * @returns acknowledgement string
    */
-  executeEncodedTx: (msgs: AnyJson[]) => Promise<string>;
+  executeEncodedTx: (
+    msgs: AnyJson[],
+    opts?: Partial<Omit<TxBody, 'messages'>>,
+  ) => Promise<string>;
   /** deposit payment from zoe to the account*/
   deposit: (payment: Payment) => Promise<void>;
   /** get Purse for a brand to .withdraw() a Payment from the account */
@@ -253,6 +263,12 @@ export interface ChainAccount {
   close: () => Promise<void>;
   /* transfer account to new holder */
   prepareTransfer: () => Promise<Invitation>;
+  /** @returns the address of the remote channel */
+  getRemoteAddress: () => RemoteIbcAddress;
+  /** @returns the address of the local channel */
+  getLocalAddress: () => LocalIbcAddress;
+  /** @returns the port the ICA channel is bound to */
+  getPort: () => Port;
 }
 
 /**
@@ -442,6 +458,10 @@ export type OsmoSwapFn = (
   next: TransferMsg | ChainAddress,
 ) => TransferMsg;
 
-type AfterAction = { destChain: string; destAddress: ChainAddress };
-type SwapExact = { amountIn: Amount; amountOut: Amount };
-type SwapMaxSlippage = { amountIn: Amount; brandOut: Brand; slippage: number };
+export type AfterAction = { destChain: string; destAddress: ChainAddress };
+export type SwapExact = { amountIn: Amount; amountOut: Amount };
+export type SwapMaxSlippage = {
+  amountIn: Amount;
+  brandOut: Brand;
+  slippage: number;
+};

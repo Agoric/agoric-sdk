@@ -20,6 +20,7 @@ import { makeTxPacket, parsePacketAck } from './utils/tx.js';
  * @import { Zone } from '@agoric/base-zone';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import { ChainAccount, ChainAddress } from './types.js';
+ * @import { LocalIbcAddress, RemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
  */
 
 const { Fail, bare } = assert;
@@ -102,9 +103,9 @@ const prepareChainAccount = zone =>
        * @type {{
        *   port: Port;
        *   connection: Remote<Connection> | undefined;
-       *   localAddress: string | undefined;
+       *   localAddress: LocalIbcAddress | undefined;
        *   requestedRemoteAddress: string;
-       *   remoteAddress: string | undefined;
+       *   remoteAddress: RemoteIbcAddress | undefined;
        *   chainAddress: ChainAddress | undefined;
        * }}
        */ (
@@ -194,8 +195,8 @@ const prepareChainAccount = zone =>
       connectionHandler: {
         /**
          * @param {Remote<Connection>} connection
-         * @param {string} localAddr
-         * @param {string} remoteAddr
+         * @param {LocalIbcAddress} localAddr
+         * @param {RemoteIbcAddress} remoteAddr
          */
         async onOpen(connection, localAddr, remoteAddr) {
           trace(`ICA Channel Opened for ${localAddr} at ${remoteAddr}`);

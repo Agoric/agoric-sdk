@@ -7,7 +7,7 @@ import {
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import type { ChainAccount, OrchestrationService } from '@agoric/orchestration';
+import type { OrchestrationService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
 import { makeWalletFactoryContext } from './walletFactory.ts';
@@ -65,7 +65,8 @@ test('makeAccount returns an ICA connection', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration: OrchestrationService =
+    await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
     'connection-0',
@@ -120,9 +121,10 @@ test('ICA connection can send msg with proto3', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration: OrchestrationService =
+    await EV.vat('bootstrap').consumeItem('orchestration');
 
-  const account: ChainAccount = await EV(orchestration).makeAccount(
+  const account = await EV(orchestration).makeAccount(
     'connection-0',
     'connection-0',
   );
