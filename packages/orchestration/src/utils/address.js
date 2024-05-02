@@ -15,7 +15,7 @@ import { Fail } from '@agoric/assert';
  * @param {string} [opts.txType] - default is `sdk_multi_msg`
  * @param {string} [opts.version] - default is `ics27-1`
  */
-export const makeICAConnectionAddress = (
+export const makeICAChannelAddress = (
   hostConnectionId,
   controllerConnectionId,
   {

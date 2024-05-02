@@ -7,7 +7,7 @@ import '@agoric/network/exported.js';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { prepareChainAccountKit } from './exos/chainAccountKit.js';
-import { makeICAConnectionAddress } from './utils/address.js';
+import { makeICAChannelAddress } from './utils/address.js';
 
 /**
  * @import { PortAllocator} from '@agoric/network';
@@ -92,7 +92,7 @@ const prepareOrchestration = (zone, makeChainAccountKit) =>
         async makeAccount(hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.bindPort();
 
-          const remoteConnAddr = makeICAConnectionAddress(
+          const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
           );

@@ -1,37 +1,37 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 import {
-  makeICAConnectionAddress,
+  makeICAChannelAddress,
   parseAddress,
 } from '../../src/utils/address.js';
 
-test('makeICAConnectionAddress', t => {
-  t.throws(() => makeICAConnectionAddress(), {
+test('makeICAChannelAddress', t => {
+  t.throws(() => makeICAChannelAddress(), {
     message: 'hostConnectionId is required',
   });
-  t.throws(() => makeICAConnectionAddress('connection-0'), {
+  t.throws(() => makeICAChannelAddress('connection-0'), {
     message: 'controllerConnectionId is required',
   });
   t.is(
-    makeICAConnectionAddress('connection-1', 'connection-0'),
+    makeICAChannelAddress('connection-1', 'connection-0'),
     '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
     'returns connection string when controllerConnectionId and hostConnectionId are provided',
   );
   t.is(
-    makeICAConnectionAddress('connection-1', 'connection-0', {
+    makeICAChannelAddress('connection-1', 'connection-0', {
       version: 'ics27-0',
     }),
     '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-0","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
     'accepts custom version',
   );
   t.is(
-    makeICAConnectionAddress('connection-1', 'connection-0', {
+    makeICAChannelAddress('connection-1', 'connection-0', {
       encoding: 'test',
     }),
     '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"test","txType":"sdk_multi_msg"}',
     'accepts custom encoding',
   );
   t.is(
-    makeICAConnectionAddress('connection-1', 'connection-0', {
+    makeICAChannelAddress('connection-1', 'connection-0', {
       ordering: 'unordered',
     }),
     '/ibc-hop/connection-0/ibc-port/icahost/unordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
