@@ -14,6 +14,8 @@ import {
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
+/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
 

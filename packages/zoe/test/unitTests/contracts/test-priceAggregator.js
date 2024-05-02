@@ -32,6 +32,7 @@ import {
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {ManualTimer} from '../../../tools/manualTimer.js';
  */
 
 /**
