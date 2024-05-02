@@ -212,9 +212,9 @@ export const provideVaultParamManagers = (
 
   // restore from baggage, unless `managerParamOverrides` overrides.
   for (const [brand, args] of managerArgs.entries()) {
-    const newInitial = Object.values(managerParamOverrides).find(
-      e => e.brand === brand,
-    );
+    const newInitial = managerParamOverrides
+      ? Object.values(managerParamOverrides).find(e => e.brand === brand)
+      : undefined;
 
     if (newInitial) {
       trace(`reviving params, override`, brand, newInitial);
