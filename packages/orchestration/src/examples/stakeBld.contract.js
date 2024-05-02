@@ -48,7 +48,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           const { give } = seat.getProposal();
           trace('makeStakeBldInvitation', give);
           // XXX type appears local but it's remote
-          const account = await E(privateArgs.localchain).createAccount();
+          const account = await E(privateArgs.localchain).makeAccount();
           const lcaSeatKit = zcf.makeEmptySeatKit();
           atomicTransfer(zcf, seat, lcaSeatKit.zcfSeat, give);
           seat.exit();

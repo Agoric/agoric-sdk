@@ -47,17 +47,17 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
   );
 
-  async function createAccount() {
-    const account = await E(orchestration).createAccount(
+  async function makeAccount() {
+    const account = await E(orchestration).makeAccount(
       hostConnectionId,
       controllerConnectionId,
     );
-    const accountAddress = await E(account).getAccountAddress();
-    trace('account address', accountAddress);
+    const address = await E(account).getAddress();
+    trace('chain address', address);
     const { holder, invitationMakers } = makeStakingAccountKit(
       account,
       storageNode,
-      accountAddress,
+      address,
     );
     return {
       publicSubscribers: holder.getPublicTopics(),
@@ -69,20 +69,20 @@ export const start = async (zcf, privateArgs, baggage) => {
   const publicFacet = zone.exo(
     'StakeAtom',
     M.interface('StakeAtomI', {
-      createAccount: M.callWhen().returns(M.remotable('ChainAccount')),
-      makeCreateAccountInvitation: M.call().returns(M.promise()),
+      makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+      makeAcountInvitationMaker: M.call().returns(M.promise()),
     }),
     {
-      async createAccount() {
-        trace('createAccount');
-        return createAccount().then(({ account }) => account);
+      async makeAccount() {
+        trace('makeAccount');
+        return makeAccount().then(({ account }) => account);
       },
-      makeCreateAccountInvitation() {
+      makeAcountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {
             seat.exit();
-            return createAccount();
+            return makeAccount();
           },
           'wantStakingAccount',
           undefined,

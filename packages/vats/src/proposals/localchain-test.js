@@ -28,7 +28,7 @@ export const testLocalChain = async (
 
   let result;
   try {
-    const lca = await E(localchain).createAccount();
+    const lca = await E(localchain).makeAccount();
     console.info('created account', lca);
     const address = await E(lca).getAddress();
     console.info('address', address);

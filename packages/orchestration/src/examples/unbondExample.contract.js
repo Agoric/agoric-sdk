@@ -47,21 +47,19 @@ export const start = async (zcf, privateArgs) => {
       // ??? could these be passed in? It would reduce the size of this handler,
       // keeping it focused on long-running operations.
       const celestia = await orch.getChain('celestia');
-      const celestiaAccount = await celestia.createAccount();
+      const celestiaAccount = await celestia.makeAccount();
 
       const delegations = await celestiaAccount.getDelegations();
-      const [undelegation] = await celestiaAccount.undelegate(delegations);
-
       // wait for the undelegations to be complete (may take weeks)
-      await undelegation.completion;
+      await celestiaAccount.undelegate(delegations);
 
       // ??? should this be synchronous? depends on how names are resolved.
       const stride = await orch.getChain('stride');
-      const strideAccount = await stride.createAccount();
+      const strideAccount = await stride.makeAccount();
 
       // TODO the `TIA` string actually needs to be the Brand from AgoricNames
       const tiaAmt = await celestiaAccount.getBalance('TIA');
-      await celestiaAccount.transfer(tiaAmt, strideAccount.getChainAddress());
+      await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
       await strideAccount.liquidStake(tiaAmt);
     },

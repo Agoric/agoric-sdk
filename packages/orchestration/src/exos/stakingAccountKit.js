@@ -25,14 +25,14 @@ const trace = makeTracer('StakingAccountHolder');
 const { Fail } = assert;
 /**
  * @typedef {object} StakingAccountNotification
- * @property {string} address
+ * @property {ChainAddress} chainAddress
  */
 
 /**
  * @typedef {{
  *  topicKit: RecorderKit<StakingAccountNotification>;
  *  account: ChainAccount;
- *  chainAddress: string;
+ *  chainAddress: ChainAddress;
  * }} State
  */
 
@@ -71,7 +71,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
     /**
      * @param {ChainAccount} account
      * @param {StorageNode} storageNode
-     * @param {string} chainAddress
+     * @param {ChainAddress} chainAddress
      * @returns {State}
      */
     (account, storageNode, chainAddress) => {
@@ -94,7 +94,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           return this.state.topicKit.recorder;
         },
         // TODO move this beneath the Orchestration abstraction,
-        // to the OrchestrationAccount provided by createAccount()
+        // to the OrchestrationAccount provided by makeAccount()
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
          * @param {string} validatorAddress
@@ -109,7 +109,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           };
 
           const account = this.facets.helper.owned();
-          const delegatorAddress = this.state.chainAddress;
+          const delegatorAddress = this.state.chainAddress.address;
 
           const result = await E(account).executeEncodedTx([
             /** @type {AnyJson} */ (
