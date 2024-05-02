@@ -6,7 +6,7 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import type { ChainAccount, OrchestrationService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';

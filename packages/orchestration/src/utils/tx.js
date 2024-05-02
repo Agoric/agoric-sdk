@@ -1,7 +1,7 @@
 // @ts-check
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { encodeBase64 } from '@endo/base64';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
  * Makes an IBC packet from an array of messages. Expects the `value` of each message

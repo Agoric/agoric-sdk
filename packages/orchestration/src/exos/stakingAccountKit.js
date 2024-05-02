@@ -11,7 +11,7 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { decodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
  * @import { ChainAccount, ChainAddress } from '../types.js';
