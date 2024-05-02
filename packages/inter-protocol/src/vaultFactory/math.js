@@ -16,6 +16,8 @@ import {
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 /**
  * Calculate the minimum collateralization given the liquidation margin and the
  * "padding" from that liquidation threshold.

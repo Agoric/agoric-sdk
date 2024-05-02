@@ -6,8 +6,11 @@ import {
 import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
-/** @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js' */
-/** @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js' */
+/**
+ * @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {SyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 // TODO duplicated with zoe/src/TypeGuards.js
 export const InvitationShape = M.remotable('Invitation');

@@ -11,7 +11,7 @@ import {
 } from '@agoric/vats/src/nameHub.js';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 

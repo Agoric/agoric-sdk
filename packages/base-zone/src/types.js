@@ -1,6 +1,9 @@
 // eslint-disable-next-line no-unused-vars
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 
+// Ensure this is a module.
+export {};
+
 /** @typedef {'exoClass' | 'exoClassKit' | 'exo' | 'store' | 'zone'} KeyCategories */
 /** @typedef {Record<KeyCategories, (label: string) => string[]>} KeyMakers */
 

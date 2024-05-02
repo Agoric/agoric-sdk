@@ -21,7 +21,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
-import '../src/types.js';
+import '../src/types-ambient.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 

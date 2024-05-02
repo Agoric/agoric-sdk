@@ -14,10 +14,10 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @import {OracleStatus} from './priceOracleKit.js' */
 /**
- * @import {Timestamp} from '@agoric/time'
- * @import {TimerService} from '@agoric/time'
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp, TimerService} from '@agoric/time'
+ * @import {OracleStatus} from './priceOracleKit.js'
  */
 
 /** @type {string} */

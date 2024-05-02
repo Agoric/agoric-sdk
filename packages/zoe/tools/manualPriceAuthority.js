@@ -12,6 +12,10 @@ import {
 } from '../src/contractSupport/index.js';
 
 /**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * @param {object} options
  * @param {Brand<'nat'>} options.actualBrandIn
  * @param {Brand<'nat'>} options.actualBrandOut

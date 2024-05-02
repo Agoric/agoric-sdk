@@ -8,6 +8,8 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { normalizedCollRatio } from '../../src/vaultFactory/storeUtils.js';
 import { withAmountUtils } from '../supports.js';
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 export const mockBrand = Far('brand');
 
 const makeFakeQuote = (amountIn, amountOut) => {

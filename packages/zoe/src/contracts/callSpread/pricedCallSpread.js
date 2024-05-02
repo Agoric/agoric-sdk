@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
@@ -14,6 +14,10 @@ import {
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
+
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 const { Fail } = assert;
 

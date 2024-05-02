@@ -76,7 +76,7 @@
  * @typedef {object} GetVaultParams
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getMintFee
- * @property {() => Promise<PriceQuote>} getCollateralQuote
+ * @property {() => Promise<import('@agoric/zoe/tools/types.js').PriceQuote>} getCollateralQuote
  * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
  *   position
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at

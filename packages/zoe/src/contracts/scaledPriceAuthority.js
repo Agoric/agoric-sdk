@@ -10,6 +10,10 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
 import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js';
 
 /**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
+/**
  * @typedef {object} ScaledPriceAuthorityOpts
  * @property {ERef<PriceAuthority>} sourcePriceAuthority
  * @property {Ratio} scaleIn - sourceAmountIn:targetAmountIn

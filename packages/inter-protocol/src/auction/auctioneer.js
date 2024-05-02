@@ -35,7 +35,10 @@ import { auctioneerParamTypes } from './params.js';
 import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;

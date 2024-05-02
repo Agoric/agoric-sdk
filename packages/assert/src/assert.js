@@ -18,7 +18,7 @@
 // is a record of a failed attempt to remove '.types'.
 // To satisfy CI, not only do we need to keep the file,
 // but we need to import it here as well.
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 const { freeze } = Object;
 
