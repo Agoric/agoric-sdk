@@ -1,13 +1,19 @@
+// @ts-check
+
 import test from '@endo/ses-ava/prepare-endo.js';
+import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import {
   makeICAChannelAddress,
+  makeICQChannelAddress,
   findAddressField,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
+  // @ts-expect-error expected two arguments
   t.throws(() => makeICAChannelAddress(), {
     message: 'hostConnectionId is required',
   });
+  // @ts-expect-error expected two arguments
   t.throws(() => makeICAChannelAddress('connection-0'), {
     message: 'controllerConnectionId is required',
   });
@@ -41,6 +47,7 @@ test('makeICAChannelAddress', t => {
 
 test('findAddressField', t => {
   t.is(
+    // @ts-expect-error intentional
     findAddressField('/ibc-hop/'),
     undefined,
     'returns undefined when version json is missing',
@@ -65,5 +72,37 @@ test('findAddressField', t => {
     ),
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',
     'returns address when localAddrr is appended to version string',
+  );
+});
+
+test('makeICQChannelAddress', t => {
+  // @ts-expect-error expected 1 argument
+  t.throws(() => makeICQChannelAddress(), {
+    message: 'controllerConnectionId is required',
+  });
+  t.is(
+    makeICQChannelAddress('connection-0'),
+    '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-1',
+    'returns connection string when controllerConnectionId is provided',
+  );
+  t.is(
+    makeICQChannelAddress('connection-0', {
+      version: 'icq-2',
+    }),
+    '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-2',
+    'accepts custom version',
+  );
+  t.throws(
+    () =>
+      validateRemoteIbcAddress(
+        makeICQChannelAddress('connection-0', {
+          version: 'ic/q-/2',
+        }),
+      ),
+    {
+      message:
+        /must be '\(\/ibc-hop\/CONNECTION\)\*\/ibc-port\/PORT\/\(ordered\|unordered\)\/VERSION'/,
+    },
+    'makeICQChannelAddress not hardened against malformed version. use `validateRemoteIbcAddress` to detect this, or expect IBC ProtocolImpl to throw',
   );
 });

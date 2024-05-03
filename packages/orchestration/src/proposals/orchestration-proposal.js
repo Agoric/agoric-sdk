@@ -50,7 +50,7 @@ export const setupOrchestrationVat = async (
 
   const portAllocator = await portAllocatorP;
 
-  const newOrchestrationKit = await E(vats.orchestration).makeOrchestration({
+  const newOrchestrationKit = await E(vats.orchestration).makeOrchestrationKit({
     portAllocator,
   });
 

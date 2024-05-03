@@ -6,14 +6,19 @@ import '@agoric/network/exported.js';
 
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
+import { Shape as NetworkShape } from '@agoric/network';
 import { prepareChainAccountKit } from './exos/chainAccountKit.js';
-import { makeICAChannelAddress } from './utils/address.js';
+import { prepareICQConnectionKit } from './exos/icqConnectionKit.js';
+import {
+  makeICAChannelAddress,
+  makeICQChannelAddress,
+} from './utils/address.js';
 
 /**
- * @import { PortAllocator} from '@agoric/network';
- * @import { IBCConnectionID } from '@agoric/vats';
  * @import { Zone } from '@agoric/base-zone';
- * @import { ChainAccount } from './types.js';
+ * @import { Port, PortAllocator } from '@agoric/network';
+ * @import { IBCConnectionID } from '@agoric/vats';
+ * @import { ICQConnection, ChainAccount, ICQConnectionKit } from './types.js';
  */
 
 const { Fail, bare } = assert;
@@ -35,6 +40,10 @@ const { Fail, bare } = assert;
  */
 
 /**
+ * @typedef {MapStore<IBCConnectionID,ICQConnectionKit>} ICQConnectionStore
+ */
+
+/**
  * @template {keyof OrchestrationPowers} K
  * @param {PowerStore} powers
  * @param {K} name
@@ -48,18 +57,33 @@ export const OrchestrationI = M.interface('Orchestration', {
   makeAccount: M.callWhen(M.string(), M.string()).returns(
     M.remotable('ChainAccount'),
   ),
+  provideICQConnection: M.callWhen(M.string()).returns(
+    M.remotable('Connection'),
+  ),
 });
+
+/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore } } OrchestrationState */
 
 /**
  * @param {Zone} zone
  * @param {ReturnType<typeof prepareChainAccountKit>} makeChainAccountKit
+ * @param {ReturnType<typeof prepareICQConnectionKit>} makeICQConnectionKit
  */
-const prepareOrchestration = (zone, makeChainAccountKit) =>
+const prepareOrchestrationKit = (
+  zone,
+  makeChainAccountKit,
+  makeICQConnectionKit,
+) =>
   zone.exoClassKit(
     'Orchestration',
     {
       self: M.interface('OrchestrationSelf', {
-        bindPort: M.callWhen().returns(M.remotable()),
+        allocateICAControllerPort: M.callWhen().returns(
+          NetworkShape.Vow$(NetworkShape.Port),
+        ),
+        allocateICQControllerPort: M.callWhen().returns(
+          NetworkShape.Vow$(NetworkShape.Port),
+        ),
       }),
       public: OrchestrationI,
     },
@@ -72,11 +96,16 @@ const prepareOrchestration = (zone, makeChainAccountKit) =>
           powers.init(/** @type {keyof OrchestrationPowers} */ (name), power);
         }
       }
-      return { powers };
+      const icqConnections = zone.detached().mapStore('ICQConnections');
+      return /** @type {OrchestrationState} */ ({ powers, icqConnections });
     },
     {
       self: {
-        async bindPort() {
+        async allocateICAControllerPort() {
+          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          return E(portAllocator).allocateICAControllerPort();
+        },
+        async allocateICQControllerPort() {
           const portAllocator = getPower(this.state.powers, 'portAllocator');
           return E(portAllocator).allocateICAControllerPort();
         },
@@ -90,7 +119,7 @@ const prepareOrchestration = (zone, makeChainAccountKit) =>
          * @returns {Promise<ChainAccount>}
          */
         async makeAccount(hostConnectionId, controllerConnectionId) {
-          const port = await this.facets.self.bindPort();
+          const port = await this.facets.self.allocateICAControllerPort();
 
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
@@ -104,8 +133,34 @@ const prepareOrchestration = (zone, makeChainAccountKit) =>
             chainAccountKit.connectionHandler,
           );
           // XXX if we fail, should we close the port (if it was created in this flow)?
-
           return chainAccountKit.account;
+        },
+        /**
+         * @param {IBCConnectionID} controllerConnectionId
+         * @returns {Promise<ICQConnection>}
+         */
+        async provideICQConnection(controllerConnectionId) {
+          if (this.state.icqConnections.has(controllerConnectionId)) {
+            return this.state.icqConnections.get(controllerConnectionId)
+              .connection;
+          }
+          // allocate a new Port for every Connection
+          const port = await this.facets.self.allocateICQControllerPort();
+          const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
+          const icqConnectionKit = makeICQConnectionKit(port);
+
+          // await so we do not return/save a ICQConnection before it successfully instantiates
+          await E(port).connect(
+            remoteConnAddr,
+            icqConnectionKit.connectionHandler,
+          );
+
+          this.state.icqConnections.init(
+            controllerConnectionId,
+            icqConnectionKit,
+          );
+
+          return icqConnectionKit.connection;
         },
       },
     },
@@ -114,12 +169,17 @@ const prepareOrchestration = (zone, makeChainAccountKit) =>
 /** @param {Zone} zone */
 export const prepareOrchestrationTools = zone => {
   const makeChainAccountKit = prepareChainAccountKit(zone);
-  const makeOrchestration = prepareOrchestration(zone, makeChainAccountKit);
+  const makeICQConnectionKit = prepareICQConnectionKit(zone);
+  const makeOrchestrationKit = prepareOrchestrationKit(
+    zone,
+    makeChainAccountKit,
+    makeICQConnectionKit,
+  );
 
-  return harden({ makeOrchestration });
+  return harden({ makeOrchestrationKit });
 };
 harden(prepareOrchestrationTools);
 
 /** @typedef {ReturnType<typeof prepareOrchestrationTools>} OrchestrationTools */
-/** @typedef {ReturnType<OrchestrationTools['makeOrchestration']>} OrchestrationKit */
+/** @typedef {ReturnType<OrchestrationTools['makeOrchestrationKit']>} OrchestrationKit */
 /** @typedef {OrchestrationKit['public']} OrchestrationService */

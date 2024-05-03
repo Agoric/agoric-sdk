@@ -10,7 +10,7 @@ import { E, Far } from '@endo/far';
 import { prepareStakingAccountKit } from '../src/exos/stakingAccountKit.js';
 
 /**
- * @import {ChainAccount, ChainAddress} from '../src/types.js';
+ * @import {ChainAccount, ChainAddress, CosmosValidatorAddress, ICQConnection} from '../src/types.js';
  * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  */
 
@@ -22,7 +22,12 @@ const scenario1 = {
   acct1: {
     address: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
   },
-  validator: { address: 'agoric1valoper234', addressEncoding: 'bech32' },
+  /** @type {CosmosValidatorAddress} */
+  validator: {
+    address: 'agoric1valoper234',
+    addressEncoding: 'bech32',
+    chainId: 'agoriclocal',
+  },
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '200' },
   },
@@ -142,11 +147,16 @@ const makeScenario = () => {
   // @ts-expect-error mock
   const storageNode = Far('StorageNode', {});
 
+  /** @type {ICQConnection} */
+  // @ts-expect-error mock
+  const icqConnection = Far('ICQConnection', {});
+
   return {
     baggage,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode,
+    icqConnection,
     ...mockZCF(),
   };
 };
@@ -154,13 +164,19 @@ const makeScenario = () => {
 test('withdraw rewards from staking account holder', async t => {
   const s = makeScenario();
   const { account, calls } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf } = s;
+  const { baggage, makeRecorderKit, storageNode, zcf, icqConnection } = s;
   const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
 
   // Higher fidelity tests below use invitationMakers.
-  const { holder } = make(account, storageNode, account.getAddress());
+  const { holder } = make(
+    account,
+    storageNode,
+    account.getAddress(),
+    icqConnection,
+    'uatom',
+  );
   const { validator } = scenario1;
-  const actual = await E(holder).withdrawReward(validator.address);
+  const actual = await E(holder).withdrawReward(validator);
   t.deepEqual(actual, [{ denom: 'uatom', value: 2n }]);
   const msg = {
     typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
@@ -172,20 +188,23 @@ test('withdraw rewards from staking account holder', async t => {
 test(`delegate; withdraw rewards`, async t => {
   const s = makeScenario();
   const { account, calls } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, zoe } = s;
+  const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
   const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
 
-  const { invitationMakers } = make(account, storageNode, account.getAddress());
+  const { invitationMakers } = make(
+    account,
+    storageNode,
+    account.getAddress(),
+    icqConnection,
+    'uatom',
+  );
 
   const { validator, delegations } = scenario1;
   {
     const value = BigInt(Object.values(delegations)[0].amount);
     /** @type {Amount<'nat'>} */
     const anAmount = { brand: Far('Token'), value };
-    const toDelegate = await E(invitationMakers).Delegate(
-      validator.address,
-      anAmount,
-    );
+    const toDelegate = await E(invitationMakers).Delegate(validator, anAmount);
     const seat = E(zoe).offer(toDelegate);
     const result = await E(seat).getOfferResult();
 
@@ -199,9 +218,7 @@ test(`delegate; withdraw rewards`, async t => {
   }
 
   {
-    const toWithdraw = await E(invitationMakers).WithdrawReward(
-      validator.address,
-    );
+    const toWithdraw = await E(invitationMakers).WithdrawReward(validator);
     const seat = E(zoe).offer(toWithdraw);
     const result = await E(seat).getOfferResult();
 

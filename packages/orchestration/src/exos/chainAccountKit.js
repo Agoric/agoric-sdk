@@ -1,22 +1,27 @@
 // @ts-check
-/** @file Orchestration service */
-import { NonNullish } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+/** @file ChainAccount exo */
 
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/network/exported.js';
 
+import { NonNullish } from '@agoric/assert';
+import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vat-data/vow.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { findAddressField } from '../utils/address.js';
+import {
+  ConnectionHandlerI,
+  ChainAddressShape,
+  Proto3Shape,
+} from '../typeGuards.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
+ * @import { Zone } from '@agoric/base-zone';
  * @import { Connection, Port } from '@agoric/network';
  * @import { Remote } from '@agoric/vow';
- * @import { Zone } from '@agoric/base-zone';
  * @import { AnyJson } from '@agoric/cosmic-proto';
  * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import { LocalIbcAddress, RemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
@@ -24,18 +29,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  */
 
 const { Fail } = assert;
-const trace = makeTracer('ChainAccount');
-
-export const Proto3Shape = {
-  typeUrl: M.string(),
-  value: M.string(),
-};
-
-export const ChainAddressShape = {
-  address: M.string(),
-  chainId: M.string(),
-  addressEncoding: M.string(),
-};
+const trace = makeTracer('ChainAccountKit');
 
 /** @typedef {'UNPARSABLE_CHAIN_ADDRESS'}  UnparsableChainAddress */
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
@@ -55,32 +49,28 @@ export const ChainAccountI = M.interface('ChainAccount', {
   prepareTransfer: M.callWhen().returns(InvitationShape),
 });
 
-export const ConnectionHandlerI = M.interface('ConnectionHandler', {
-  onOpen: M.callWhen(M.any(), M.string(), M.string(), M.any()).returns(M.any()),
-  onClose: M.callWhen(M.any(), M.any(), M.any()).returns(M.any()),
-  onReceive: M.callWhen(M.any(), M.string()).returns(M.any()),
-});
+/**
+ * @typedef {{
+ *   port: Port;
+ *   connection: Remote<Connection> | undefined;
+ *   localAddress: LocalIbcAddress | undefined;
+ *   requestedRemoteAddress: string;
+ *   remoteAddress: RemoteIbcAddress | undefined;
+ *   chainAddress: ChainAddress | undefined;
+ * }} State
+ */
 
 /** @param {Zone} zone */
 export const prepareChainAccountKit = zone =>
   zone.exoClassKit(
-    'ChainAccount',
+    'ChainAccountKit',
     { account: ChainAccountI, connectionHandler: ConnectionHandlerI },
     /**
      * @param {Port} port
      * @param {string} requestedRemoteAddress
      */
     (port, requestedRemoteAddress) =>
-      /**
-       * @type {{
-       *   port: Port;
-       *   connection: Remote<Connection> | undefined;
-       *   localAddress: LocalIbcAddress | undefined;
-       *   requestedRemoteAddress: string;
-       *   remoteAddress: RemoteIbcAddress | undefined;
-       *   chainAddress: ChainAddress | undefined;
-       * }}
-       */ (
+      /** @type {State} */ (
         harden({
           port,
           connection: undefined,
@@ -175,7 +165,6 @@ export const prepareChainAccountKit = zone =>
           this.state.connection = connection;
           this.state.remoteAddress = remoteAddr;
           this.state.localAddress = localAddr;
-          // XXX findAddressField currently throws, should it return '' instead?
           this.state.chainAddress = harden({
             address: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
             // TODO get this from `Chain` object #9063

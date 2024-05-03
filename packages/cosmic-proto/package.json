@@ -32,17 +32,21 @@
       "types": "./dist/codegen/cosmos/*.d.ts",
       "default": "./dist/codegen/cosmos/*.js"
     },
-    "./cosmos/tx/v1beta1/tx.js": {
-      "types": "./dist/codegen/cosmos/tx/v1beta1/tx.d.ts",
-      "default": "./dist/codegen/cosmos/tx/v1beta1/tx.js"
+    "./cosmos/bank/v1beta1/query.js": {
+      "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
+      "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"
+    },
+    "./cosmos/distribution/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
     },
     "./cosmos/staking/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     },
-    "./cosmos/distribution/v1beta1/tx.js": {
-      "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
-      "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
+    "./cosmos/tx/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/tx/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/tx/v1beta1/tx.js"
     },
     "./google/*.js": {
       "types": "./dist/codegen/google/*.d.ts",
@@ -56,6 +60,18 @@
       "types": "./dist/codegen/ibc/*.d.ts",
       "default": "./dist/codegen/ibc/*.js"
     },
+    "./ibc/applications/interchain_accounts/v1/packet.js": {
+      "types": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.d.ts",
+      "default": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.js"
+    },
+    "./icq/*.js": {
+      "types": "./dist/codegen/icq/*.d.ts",
+      "default": "./dist/codegen/icq/v1/*.js"
+    },
+    "./icq/v1/packet.js": {
+      "types": "./dist/codegen/icq/v1/packet.d.ts",
+      "default": "./dist/codegen/icq/v1/packet.js"
+    },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",
       "default": "./dist/codegen/agoric/swingset/msgs.js"
@@ -67,6 +83,14 @@
     "./swingset/swingset.js": {
       "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
       "default": "./dist/codegen/agoric/swingset/swingset.js"
+    },
+    "./tendermint/*.js": {
+      "types": "./dist/codegen/tendermint/*.d.ts",
+      "default": "./dist/codegen/tendermint/*.js"
+    },
+    "./tendermint/abci/types.js": {
+      "types": "./dist/codegen/tendermint/abci/types.d.ts",
+      "default": "./dist/codegen/tendermint/abci/types.js"
     },
     "./vstorage/query.js": {
       "types": "./dist/codegen/agoric/vstorage/query.d.ts",
