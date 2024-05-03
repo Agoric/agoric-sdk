@@ -73,16 +73,17 @@ export type JsonSafe<T> = {
  */
 export type RequestQueryJson = JsonSafe<RequestQuery>;
 
-const QUERY_REQ_TYPEURL_RE = /^\/(\w+(?:\.\w+)*)\.Query(\w+)Request$/;
+const QUERY_REQ_TYPEURL_RE =
+  /^\/(?<serviceName>\w+(?:\.\w+)*)\.Query(?<methodName>\w+)Request$/;
 
 export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
   const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
-  if (!match) {
+  if (!(match && match.groups)) {
     throw new TypeError(
       `Invalid typeUrl: ${typeUrl}. Must be a Query Request.`,
     );
   }
-  const [, serviceName, methodName] = match;
+  const { serviceName, methodName } = match.groups;
   return `/${serviceName}.Query/${methodName}`;
 };
 

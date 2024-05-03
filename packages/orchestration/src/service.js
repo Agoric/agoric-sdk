@@ -145,6 +145,7 @@ const prepareOrchestrationKit = (
               .connection;
           }
           // allocate a new Port for every Connection
+          // TODO #9317 optimize ICQ port allocation
           const port = await this.facets.self.allocateICQControllerPort();
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
           const icqConnectionKit = makeICQConnectionKit(port);

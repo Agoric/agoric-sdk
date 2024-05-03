@@ -2,9 +2,9 @@
 import { V as E } from '@agoric/vat-data/vow.js';
 
 /**
- * @import {Connection, Port, PortAllocator} from '@agoric/network';
- * @import { OrchestrationService } from '../service.js'
- * @import { OrchestrationVat } from '../vat-orchestration.js'
+ * @import {PortAllocator} from '@agoric/network';
+ * @import {OrchestrationService} from '../service.js'
+ * @import {OrchestrationVat} from '../vat-orchestration.js'
  */
 
 /**
@@ -19,8 +19,7 @@ import { V as E } from '@agoric/vat-data/vow.js';
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
- * @param {object} options
- * @param {{ orchestrationRef: VatSourceRef }} options.options
+ * @param {{ options: { orchestrationRef: VatSourceRef }}} options
  *
  * @typedef {{
  *   orchestration: ERef<OrchestrationVat>;
@@ -84,8 +83,8 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
       },
       produce: {
         orchestration: 'orchestration',
-        orchestrationKit: 'orchestration',
-        orchestrationVat: 'orchestration',
+        orchestrationKit: 'orchestrationKit',
+        orchestrationVat: 'orchestrationVat',
       },
     },
   },

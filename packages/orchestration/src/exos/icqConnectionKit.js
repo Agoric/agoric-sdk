@@ -39,7 +39,20 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  * }} ICQConnectionKitState
  */
 
-/** @param {Zone} zone */
+/**
+ * Prepares an ICQ Connection Kit based on the {@link https://github.com/cosmos/ibc-apps/blob/e9b46e4bf0ad0a66cf6bc53b5e5496f6e2b4b02b/modules/async-icq/README.md | `icq/v1` IBC application protocol}.
+ *
+ * `icq/v1`, also referred to as `async-icq`, is a protocol for asynchronous queries
+ * between IBC-enabled chains. It allows a chain to send queries to another chain
+ * and receive responses asynchronously.
+ *
+ * The ICQ connection kit provides the necessary functionality to establish and manage
+ * an ICQ connection between two chains. It includes methods for retrieving the local
+ * and remote addresses of the connection, as well as sending queries and handling
+ * connection events.
+ *
+ * @param {Zone} zone
+ */
 export const prepareICQConnectionKit = zone =>
   zone.exoClassKit(
     'ICQConnectionKit',
