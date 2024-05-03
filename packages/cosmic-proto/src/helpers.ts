@@ -1,7 +1,8 @@
 import type { QueryAllBalancesRequest } from './codegen/cosmos/bank/v1beta1/query.js';
 import type { MsgSend } from './codegen/cosmos/bank/v1beta1/tx.js';
 import type { MsgDelegate } from './codegen/cosmos/staking/v1beta1/tx.js';
-import type { RequestQuery } from './codegen/tendermint/abci/types.js';
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
+import type { Any } from './codegen/google/protobuf/any.js';
 
 /**
  * The result of Any.toJSON(). The type in cosms-types says it returns
@@ -71,3 +72,30 @@ export type JsonSafe<T> = {
  * bigint fields are strings.
  */
 export type RequestQueryJson = JsonSafe<RequestQuery>;
+
+const QUERY_REQ_TYPEURL_RE = /^\/(\w+(?:\.\w+)*)\.Query(\w+)Request$/;
+
+export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
+  const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
+  if (!match) {
+    throw new TypeError(
+      `Invalid typeUrl: ${typeUrl}. Must be a Query Request.`,
+    );
+  }
+  const [, serviceName, methodName] = match;
+  return `/${serviceName}.Query/${methodName}`;
+};
+
+type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
+
+export const toRequestQueryJson = (
+  any: Any,
+  opts: RequestQueryOpts = {},
+): RequestQueryJson =>
+  RequestQuery.toJSON(
+    RequestQuery.fromPartial({
+      path: typeUrlToGrpcPath(any.typeUrl),
+      data: any.value,
+      ...opts,
+    }),
+  ) as RequestQueryJson;
