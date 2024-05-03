@@ -117,6 +117,10 @@ test('test prepareExo', t => {
       return x;
     },
   });
+  // @ts-expect-error must be a function
+  upCounter.incr + 1;
+  // @ts-expect-error arity
+  upCounter.incr(1, 2);
   t.is(upCounter.incr(5), 8);
   t.is(upCounter.incr(1), 9);
   t.throws(() => upCounter.incr(-3), {

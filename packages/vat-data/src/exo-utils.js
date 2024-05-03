@@ -5,8 +5,15 @@ import { initEmpty } from '@agoric/store';
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
 /**
+ * @import {Guarded} from '@endo/exo'
  * @import {InterfaceGuard} from '@endo/patterns'
  * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots'
+ * @import {MethodGuard} from '@endo/patterns'
+ * @import {GuardedMethods, TypedInterfaceGuard} from './types.js'
+ * @import {RemotableBrand} from '@endo/eventual-send'
+ * @import {ERef} from '@endo/far'
+ * @import {KindFacet} from '@agoric/swingset-liveslots'
+ * @import {KindFacets} from '@agoric/swingset-liveslots'
  */
 
 /**
@@ -267,13 +274,22 @@ export const makeExoUtils = VatData => {
   harden(prepareExoClassKit);
 
   /**
-   * @template {Record<PropertyKey, CallableFunction>} M methods
-   * @param {Baggage} baggage
-   * @param {string} kindName
-   * @param {InterfaceGuard | undefined} interfaceGuard
-   * @param {M} methods
-   * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {import('@endo/exo').Guarded<M>}
+   * @type {{
+   * <I extends TypedInterfaceGuard>(
+   * baggage: Baggage,
+   * kindName: string,
+   * interfaceGuard: I,
+   * methods: GuardedMethods<I>,
+   * options?: DefineKindOptions<{ self: GuardedMethods<I> }>)
+   * : GuardedMethods<I> & RemotableBrand<{}, GuardedMethods<I>>;
+   * <M extends Record<PropertyKey, CallableFunction>>(
+   * baggage: Baggage,
+   * kindName: string,
+   * interfaceGuard: InterfaceGuard | undefined,
+   * methods: M,
+   * options?: DefineKindOptions<{ self: M }>)
+   * : Guarded<M>;
+   * }};
    */
   const prepareExo = (
     baggage,
