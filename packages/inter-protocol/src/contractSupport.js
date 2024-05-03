@@ -79,14 +79,14 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @typedef {object} MetricsPublisherKit<T>
+ * @typedef {object} MetricsPublisherKit
  * @property {IterationObserver<T>} metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
 
 /**
  * @template T
- * @typedef {object} MetricsPublishKit<T>
+ * @typedef {object} MetricsPublishKit
  * @property {Publisher<T>} metricsPublisher
  * @property {StoredSubscriber<T>} metricsSubscriber
  */

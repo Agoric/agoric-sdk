@@ -61,7 +61,7 @@ export {};
 
 /**
  * @template {ParamType} [T=ParamType]
- * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped<T>
+ * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped
  */
 
 /**
@@ -73,7 +73,7 @@ export {};
  *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
  *     Electorate: 'invitation'
  *   }>
- * }} GovernanceTerms<T>
+ * }} GovernanceTerms
  */
 
 /**
