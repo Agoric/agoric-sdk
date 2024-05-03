@@ -40,6 +40,10 @@
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/staking/v1beta1/tx.js"
     },
+    "./cosmos/distribution/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
+    },
     "./google/*.js": {
       "types": "./dist/codegen/google/*.d.ts",
       "default": "./dist/codegen/google/*.js"
