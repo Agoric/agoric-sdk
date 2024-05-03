@@ -1,3 +1,5 @@
+// @ts-check
+import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 
 export const ConnectionHandlerI = M.interface('ConnectionHandler', {
@@ -18,3 +20,9 @@ export const Proto3Shape = {
 };
 
 export const CoinShape = { value: M.bigint(), denom: M.string() };
+
+export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
+
+export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
+
+export const DelegationShape = M.record(); // TODO: DelegationShape fields

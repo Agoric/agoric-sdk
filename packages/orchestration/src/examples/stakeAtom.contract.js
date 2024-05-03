@@ -63,11 +63,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
     const { holder, invitationMakers } = makeStakingAccountKit(
-      account,
-      storageNode,
       accountAddress,
-      icqConnection,
       bondDenom,
+      {
+        account,
+        storageNode,
+        icqConnection,
+        // @ts-expect-error only for undelegate, which we do not use
+        timer: harden({}),
+      },
     );
     return {
       publicSubscribers: holder.getPublicTopics(),

@@ -5,8 +5,11 @@ import {
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
+  MsgBeginRedelegate,
   MsgDelegate,
   MsgDelegateResponse,
+  MsgUndelegate,
+  MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import {
   QueryBalanceRequest,
@@ -15,19 +18,31 @@ import {
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { decodeBase64 } from '@endo/base64';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
-import { ChainAddressShape, CoinShape } from '../typeGuards.js';
+import {
+  AmountArgShape,
+  ChainAddressShape,
+  ChainAmountShape,
+  CoinShape,
+  DelegationShape,
+} from '../typeGuards.js';
+
+/** maximum clock skew, in seconds, for unbonding time reported from other chain */
+export const maxClockSkew = 10n * 60n;
 
 /**
- * @import {ChainAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection} from '../types.js';
+ * @import {AmountArg, ChainAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {AnyJson} from '@agoric/cosmic-proto';
+ * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import { Delegation } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {TimerService} from '@agoric/time';
  */
 
 const trace = makeTracer('StakingAccountHolder');
@@ -45,6 +60,7 @@ const { Fail } = assert;
  *  chainAddress: ChainAddress;
  *  icqConnection: ICQConnection;
  *  bondDenom: string;
+ *  timer: TimerService;
  * }} State
  */
 
@@ -52,8 +68,17 @@ export const ChainAccountHolderI = M.interface('ChainAccountHolder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
-  delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.record()),
-  withdrawReward: M.callWhen(ChainAddressShape).returns(M.arrayOf(CoinShape)),
+  delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
+  redelegate: M.callWhen(
+    ChainAddressShape,
+    ChainAddressShape,
+    AmountShape,
+  ).returns(M.undefined()),
+  withdrawReward: M.callWhen(ChainAddressShape).returns(
+    M.arrayOf(ChainAmountShape),
+  ),
+  withdrawRewards: M.callWhen().returns(M.arrayOf(ChainAmountShape)),
+  undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(M.undefined()),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -67,6 +92,25 @@ const PUBLIC_TOPICS = {
  * @returns {AnyJson}
  */
 const toAnyJSON = x => /** @type {AnyJson} */ (Any.toJSON(x));
+
+export const encodeTxResponse = (response, toProtoMsg) => {
+  const protoMsg = toProtoMsg(response);
+  const any1 = Any.fromPartial(protoMsg);
+  const any2 = Any.fromPartial({ value: Any.encode(any1).finish() });
+  const ackStr = encodeBase64(Any.encode(any2).finish());
+  return ackStr;
+};
+
+export const trivialDelegateResponse = encodeTxResponse(
+  {},
+  MsgDelegateResponse.toProtoMsg,
+);
+
+const expect = (actual, expected, message) => {
+  if (actual !== expected) {
+    console.log(message, { actual, expected });
+  }
+};
 
 /**
  * @template T
@@ -98,29 +142,46 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
     baggage,
     'Staking Account Holder',
     {
-      helper: UnguardedHelperI,
+      helper: M.interface('helper', {
+        owned: M.call().returns(M.remotable()),
+        getUpdater: M.call().returns(M.remotable()),
+        amountToCoin: M.call(AmountShape).returns(M.record()),
+      }),
       holder: ChainAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(ChainAddressShape, AmountShape).returns(M.promise()),
-        WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
-        CloseAccount: M.call().returns(M.promise()),
-        TransferAccount: M.call().returns(M.promise()),
+        Delegate: M.callWhen(ChainAddressShape, AmountShape).returns(
+          InvitationShape,
+        ),
+        Redelegate: M.callWhen(
+          ChainAddressShape,
+          ChainAddressShape,
+          AmountArgShape,
+        ).returns(InvitationShape),
+        WithdrawReward: M.callWhen(ChainAddressShape).returns(InvitationShape),
+        Undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(
+          InvitationShape,
+        ),
+        CloseAccount: M.callWhen().returns(InvitationShape),
+        TransferAccount: M.callWhen().returns(InvitationShape),
       }),
     },
     /**
-     * @param {ChainAccount} account
-     * @param {StorageNode} storageNode
      * @param {ChainAddress} chainAddress
-     * @param {ICQConnection} icqConnection
      * @param {string} bondDenom e.g. 'uatom'
+     * @param {object} io
+     * @param {ChainAccount} io.account
+     * @param {StorageNode} io.storageNode
+     * @param {ICQConnection} io.icqConnection
+     * @param {TimerService} io.timer
      * @returns {State}
      */
-    (account, storageNode, chainAddress, icqConnection, bondDenom) => {
+    (chainAddress, bondDenom, io) => {
+      const { storageNode, ...rest } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
-      return { account, chainAddress, topicKit, icqConnection, bondDenom };
+      return { chainAddress, bondDenom, topicKit, ...rest };
     },
     {
       helper: {
@@ -134,6 +195,23 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
         },
         getUpdater() {
           return this.state.topicKit.recorder;
+        },
+        /**
+         * @param {AmountArg} amount
+         * @returns {Coin}
+         */
+        amountToCoin(amount) {
+          const { bondDenom } = this.state;
+          if ('denom' in amount) {
+            assert.equal(amount.denom, bondDenom);
+          } else {
+            trace('TODO: handle brand', amount);
+            // FIXME(#9211) brand handling
+          }
+          return harden({
+            denom: bondDenom,
+            amount: String(amount.value),
+          });
         },
       },
       invitationMakers: {
@@ -150,6 +228,23 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             return this.facets.holder.delegate(validator, amount);
           }, 'Delegate');
         },
+        /**
+         * @param {CosmosValidatorAddress} srcValidator
+         * @param {CosmosValidatorAddress} dstValidator
+         * @param {AmountArg} amount
+         */
+        Redelegate(srcValidator, dstValidator, amount) {
+          trace('Redelegate', srcValidator, dstValidator, amount);
+
+          return zcf.makeInvitation(async seat => {
+            seat.exit();
+            return this.facets.holder.redelegate(
+              srcValidator,
+              dstValidator,
+              amount,
+            );
+          }, 'Redelegate');
+        },
         /** @param {CosmosValidatorAddress} validator */
         WithdrawReward(validator) {
           trace('WithdrawReward', validator);
@@ -158,6 +253,17 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             seat.exit();
             return this.facets.holder.withdrawReward(validator);
           }, 'WithdrawReward');
+        },
+        /**
+         * @param {Delegation[]} delegations
+         */
+        Undelegate(delegations) {
+          trace('Undelegate', delegations);
+
+          return zcf.makeInvitation(async seat => {
+            seat.exit();
+            return this.facets.holder.undelegate(delegations);
+          }, 'Undelegate');
         },
         CloseAccount() {
           throw Error('not yet implemented');
@@ -181,6 +287,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             },
           });
         },
+
         // TODO move this beneath the Orchestration abstraction,
         // to the OrchestrationAccount provided by makeAccount()
         /** @returns {ChainAddress} */
@@ -190,33 +297,47 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
          * @param {CosmosValidatorAddress} validator
-         * @param {Amount<'nat'>} ertpAmount
+         * @param {AmountArg} amount
          */
-        async delegate(validator, ertpAmount) {
-          trace('delegate', validator, ertpAmount);
+        async delegate(validator, amount) {
+          trace('delegate', validator, amount);
+          const { helper } = this.facets;
+          const { chainAddress } = this.state;
 
-          // FIXME brand handling and amount scaling #9211
-          trace('TODO: handle brand', ertpAmount);
-          const amount = {
-            amount: String(ertpAmount.value),
-            denom: this.state.bondDenom,
-          };
-
-          const account = this.facets.helper.owned();
-          const delegatorAddress = this.state.chainAddress.address;
-
-          const result = await E(account).executeEncodedTx([
+          const result = await E(helper.owned()).executeEncodedTx([
             toAnyJSON(
               MsgDelegate.toProtoMsg({
-                delegatorAddress,
+                delegatorAddress: chainAddress.address,
                 validatorAddress: validator.address,
-                amount,
+                amount: helper.amountToCoin(amount),
               }),
             ),
           ]);
 
-          if (!result) throw Fail`Failed to delegate.`;
-          return tryDecodeResponse(result, MsgDelegateResponse.fromProtoMsg);
+          expect(result, trivialDelegateResponse, 'MsgDelegateResponse');
+        },
+        /**
+         * _Assumes users has already sent funds to their ICA, until #9193
+         * @param {CosmosValidatorAddress} srcValidator
+         * @param {CosmosValidatorAddress} dstValidator
+         * @param {AmountArg} amount
+         */
+        async redelegate(srcValidator, dstValidator, amount) {
+          trace('redelegate', srcValidator, dstValidator, amount);
+          const { helper } = this.facets;
+          const { chainAddress } = this.state;
+
+          // NOTE: response, including completionTime, is currently discarded.
+          await E(helper.owned()).executeEncodedTx([
+            toAnyJSON(
+              MsgBeginRedelegate.toProtoMsg({
+                delegatorAddress: chainAddress.address,
+                validatorSrcAddress: srcValidator.address,
+                validatorDstAddress: dstValidator.address,
+                amount: helper.amountToCoin(amount),
+              }),
+            ),
+          ]);
         },
 
         /**
@@ -224,18 +345,21 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
          * @returns {Promise<ChainAmount[]>}
          */
         async withdrawReward(validator) {
+          trace('withdrawReward', validator);
+          const { helper } = this.facets;
           const { chainAddress } = this.state;
-          assert.typeof(validator.address, 'string');
           const msg = MsgWithdrawDelegatorReward.toProtoMsg({
             delegatorAddress: chainAddress.address,
             validatorAddress: validator.address,
           });
-          const account = this.facets.helper.owned();
+          const account = helper.owned();
           const result = await E(account).executeEncodedTx([toAnyJSON(msg)]);
-          const { amount: coins } = tryDecodeResponse(
+          const response = tryDecodeResponse(
             result,
             MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
           );
+          trace('withdrawReward response', response);
+          const { amount: coins } = response;
           return harden(coins.map(toChainAmount));
         },
         /**
@@ -262,9 +386,55 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toChainAmount(balance));
         },
+
+        withdrawRewards() {
+          throw assert.error('Not implemented');
+        },
+
+        /**
+         * @param {Delegation[]} delegations
+         */
+        async undelegate(delegations) {
+          trace('undelegate', delegations);
+          const { helper } = this.facets;
+          const { chainAddress, bondDenom, timer } = this.state;
+
+          const result = await E(helper.owned()).executeEncodedTx(
+            delegations.map(d =>
+              toAnyJSON(
+                MsgUndelegate.toProtoMsg({
+                  delegatorAddress: chainAddress.address,
+                  validatorAddress: d.validatorAddress,
+                  amount: { denom: bondDenom, amount: d.shares },
+                }),
+              ),
+            ),
+          );
+
+          const response = tryDecodeResponse(
+            result,
+            MsgUndelegateResponse.fromProtoMsg,
+          );
+          trace('undelegate response', response);
+          const { completionTime } = response;
+          const endTime = BigInt(completionTime.getTime() / 1000);
+
+          await E(timer).wakeAt(endTime + maxClockSkew);
+        },
       },
     },
   );
+
+  /** check holder facet against StakingAccountActions interface. */
+  // eslint-disable-next-line no-unused-vars
+  const typeCheck = () => {
+    /** @type {any} */
+    const arg = null;
+    /** @satisfies { StakingAccountActions } */
+    // eslint-disable-next-line no-unused-vars
+    const kit = makeStakingAccountKit(arg, arg, arg).holder;
+  };
+
   return makeStakingAccountKit;
 };
 

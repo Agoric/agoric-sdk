@@ -352,6 +352,7 @@ export interface StakingAccountActions {
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
+   * The unbonding time is padded by 10 minutes to account for clock skew.
    * @param {Delegation[]} delegations - the delegation to undelegate
    */
   undelegate: (delegations: Delegation[]) => Promise<void>;
