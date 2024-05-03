@@ -157,11 +157,10 @@ test('withdraw rewards from staking account holder', async t => {
   const { baggage, makeRecorderKit, storageNode, zcf } = s;
   const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
 
-  // `helper` is a somewhat internal API;
   // Higher fidelity tests below use invitationMakers.
-  const { helper } = make(account, storageNode, account.getAddress());
+  const { holder } = make(account, storageNode, account.getAddress());
   const { validator } = scenario1;
-  const actual = await E(helper).withdrawReward(validator.address);
+  const actual = await E(holder).withdrawReward(validator.address);
   t.deepEqual(actual, [{ denom: 'uatom', value: 2n }]);
   const msg = {
     typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
@@ -181,6 +180,7 @@ test(`delegate; withdraw rewards`, async t => {
   const { validator, delegations } = scenario1;
   {
     const value = BigInt(Object.values(delegations)[0].amount);
+    /** @type {Amount<'nat'>} */
     const anAmount = { brand: Far('Token'), value };
     const toDelegate = await E(invitationMakers).Delegate(
       validator.address,

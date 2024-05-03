@@ -42,11 +42,8 @@ const { Fail } = assert;
 
 const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
-  makeWithdrawRewardInvitation: M.call(M.string()).returns(M.promise()),
-  makeCloseAccountInvitation: M.call().returns(M.promise()),
-  makeTransferAccountInvitation: M.call().returns(M.promise()),
   delegate: M.callWhen(M.string(), AmountShape).returns(M.record()),
+  withdrawReward: M.callWhen(M.string()).returns(M.array()),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -94,12 +91,10 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
       helper: UnguardedHelperI,
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: HolderI.payload.methodGuards.makeDelegateInvitation,
-        WithdrawReward:
-          HolderI.payload.methodGuards.makeWithdrawRewardInvitation,
-        CloseAccount: HolderI.payload.methodGuards.makeCloseAccountInvitation,
-        TransferAccount:
-          HolderI.payload.methodGuards.makeTransferAccountInvitation,
+        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        WithdrawReward: M.call(M.string()).returns(M.promise()),
+        CloseAccount: M.call().returns(M.promise()),
+        TransferAccount: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -127,6 +122,52 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
         getUpdater() {
           return this.state.topicKit.recorder;
         },
+      },
+      invitationMakers: {
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} amount
+         */
+        Delegate(validatorAddress, amount) {
+          trace('Delegate', validatorAddress, amount);
+
+          return zcf.makeInvitation(async seat => {
+            seat.exit();
+            return this.facets.holder.delegate(validatorAddress, amount);
+          }, 'Delegate');
+        },
+        /** @param {string} validatorAddress */
+        WithdrawReward(validatorAddress) {
+          trace('WithdrawReward', validatorAddress);
+
+          return zcf.makeInvitation(async seat => {
+            seat.exit();
+            return this.facets.holder.withdrawReward(validatorAddress);
+          }, 'WithdrawReward');
+        },
+        CloseAccount() {
+          throw Error('not yet implemented');
+        },
+        /**
+         * Starting a transfer revokes the account holder. The associated updater
+         * will get a special notification that the account is being transferred.
+         */
+        TransferAccount() {
+          throw Error('not yet implemented');
+        },
+      },
+      holder: {
+        getPublicTopics() {
+          const { topicKit } = this.state;
+          return harden({
+            account: {
+              description: PUBLIC_TOPICS.account[0],
+              subscriber: topicKit.subscriber,
+              storagePath: topicKit.recorder.getStoragePath(),
+            },
+          });
+        },
         // TODO move this beneath the Orchestration abstraction,
         // to the OrchestrationAccount provided by makeAccount()
         /**
@@ -135,6 +176,8 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
          * @param {Amount<'nat'>} ertpAmount
          */
         async delegate(validatorAddress, ertpAmount) {
+          trace('delegate', validatorAddress, ertpAmount);
+
           // FIXME get values from proposal or args
           // FIXME brand handling and amount scaling
           trace('TODO: handle brand', ertpAmount);
@@ -178,79 +221,6 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
           );
           return harden(coins.map(toChainAmount));
-        },
-      },
-      invitationMakers: {
-        Delegate(validatorAddress, amount) {
-          return this.facets.holder.makeDelegateInvitation(
-            validatorAddress,
-            amount,
-          );
-        },
-        /** @param {string} validatorAddress */
-        WithdrawReward(validatorAddress) {
-          return this.facets.holder.makeWithdrawRewardInvitation(
-            validatorAddress,
-          );
-        },
-        CloseAccount() {
-          return this.facets.holder.makeCloseAccountInvitation();
-        },
-        TransferAccount() {
-          return this.facets.holder.makeTransferAccountInvitation();
-        },
-      },
-      holder: {
-        getPublicTopics() {
-          const { topicKit } = this.state;
-          return harden({
-            account: {
-              description: PUBLIC_TOPICS.account[0],
-              subscriber: topicKit.subscriber,
-              storagePath: topicKit.recorder.getStoragePath(),
-            },
-          });
-        },
-        /**
-         *
-         * @param {string} validatorAddress
-         * @param {Amount<'nat'>} ertpAmount
-         */
-        async delegate(validatorAddress, ertpAmount) {
-          trace('delegate', validatorAddress, ertpAmount);
-          return this.facets.helper.delegate(validatorAddress, ertpAmount);
-        },
-        /**
-         *
-         * @param {string} validatorAddress
-         * @param {Amount<'nat'>} ertpAmount
-         */
-        makeDelegateInvitation(validatorAddress, ertpAmount) {
-          trace('makeDelegateInvitation', validatorAddress, ertpAmount);
-
-          return zcf.makeInvitation(async seat => {
-            seat.exit();
-            return this.facets.helper.delegate(validatorAddress, ertpAmount);
-          }, 'Delegate');
-        },
-        /** @param {string} validatorAddress */
-        makeWithdrawRewardInvitation(validatorAddress) {
-          trace('makeWithdrawRewardInvitation', validatorAddress);
-
-          return zcf.makeInvitation(async seat => {
-            seat.exit();
-            return this.facets.helper.withdrawReward(validatorAddress);
-          }, 'WithdrawReward');
-        },
-        makeCloseAccountInvitation() {
-          throw Error('not yet implemented');
-        },
-        /**
-         * Starting a transfer revokes the account holder. The associated updater
-         * will get a special notification that the account is being transferred.
-         */
-        makeTransferAccountInvitation() {
-          throw Error('not yet implemented');
         },
       },
     },
