@@ -369,7 +369,7 @@ export interface BaseOrchestrationAccount {
 
   /**
    * Redelegate from one delegator to another.
-   * Settles when teh redelegation is established, not 21 days later.
+   * Settles when the redelegation is established, not 21 days later.
    * @param srcValidator - the current validator for the delegation.
    * @param dstValidator - the validator that will receive the delegation.
    * @param amount - how much to redelegate.
