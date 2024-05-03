@@ -2,12 +2,22 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import bundleSource from '@endo/bundle-source';
+import rawBundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { claim, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
+
+const bundleSource = (startFilename, options = {}, powers = undefined) =>
+  rawBundleSource(
+    startFilename,
+    {
+      cacheSourceMaps: true,
+      ...options,
+    },
+    powers,
+  );
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
