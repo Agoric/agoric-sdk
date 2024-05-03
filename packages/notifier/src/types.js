@@ -248,7 +248,7 @@ export {};
 
 /**
  * @template T
- * @typedef {object} NotifierRecord<T> the produced notifier/updater pair
+ * @typedef {object} NotifierRecord the produced notifier/updater pair
  * @property {import('@endo/marshal').RemotableObject & IterationObserver<T>} updater the (closely-held) notifier producer
  * @property {Notifier<T>} notifier the (widely-held) notifier consumer
  */

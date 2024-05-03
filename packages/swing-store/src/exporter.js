@@ -13,11 +13,11 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @template T
- *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
+ * @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable
  */
 /**
  * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator
  */
 
 /**

@@ -25,8 +25,7 @@ import { buffer } from './util.js';
  */
 
 /**
- * @template T
- *  @typedef { import('./exporter.js').AnyIterableIterator<T> } AnyIterableIterator<T>
+ * @import {AnyIterableIterator} from './exporter.js'
  */
 
 /**

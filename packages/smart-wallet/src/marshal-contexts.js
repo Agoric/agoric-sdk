@@ -27,7 +27,7 @@ const isDefaultBoardId = specimen => {
  * using prefixes.
  *
  * @template {Record<string, IdTable<*,*>>} T
- * @typedef {`${string & keyof T}:${Digits}`} WalletSlot<T>
+ * @typedef {`${string & keyof T}:${Digits}`} WalletSlot
  */
 /**
  * @template {string} K
@@ -74,7 +74,7 @@ const parseWalletSlot = (tables, slot) => {
  * we an mix them without confusion.
  *
  * @template {Record<string, IdTable<*,*>>} T
- * @typedef {WalletSlot<T> | BoardId} MixedSlot<T>
+ * @typedef {WalletSlot<T> | BoardId} MixedSlot
  */
 /**
  * @typedef {`1` | `12` | `123`} Digits - 1 or more digits.
