@@ -11,7 +11,11 @@ import {
   makeScalarBigWeakSetStore,
 } from '@agoric/vat-data';
 
-import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
+import {
+  agoricVatDataKeys as keys,
+  makeOnceKit,
+  watchPromise,
+} from '@agoric/base-zone';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);
@@ -79,6 +83,7 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     subZone: wrapProvider(makeSubZone),
 
     makeOnce,
+    watchPromise,
     detached: detachedVirtualStores.detached,
     isStorable: detachedVirtualStores.isStorable,
 

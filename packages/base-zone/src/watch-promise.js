@@ -1,15 +1,36 @@
 // @ts-check
 import { M } from '@endo/patterns';
-
-import { basicE } from './vow-utils.js';
+import { E } from '@endo/far';
 
 const { Fail } = assert;
 
 const { apply } = Reflect;
 
+/**
+ * A PromiseWatcher method guard callable with or more arguments, returning void.
+ */
+export const PromiseWatcherHandler = M.call(M.any()).rest(M.any()).returns();
+
+/**
+ * A PromiseWatcher interface that has both onFulfilled and onRejected handlers.
+ */
 export const PromiseWatcherI = M.interface('PromiseWatcher', {
-  onFulfilled: M.call(M.any()).rest(M.any()).returns(),
-  onRejected: M.call(M.any()).rest(M.any()).returns(),
+  onFulfilled: PromiseWatcherHandler,
+  onRejected: PromiseWatcherHandler,
+});
+
+/**
+ * A PromiseWatcher interface that has only an onFulfilled handler.
+ */
+export const PromiseWatcherFulfilledI = M.interface('PromiseWatcherFulfilled', {
+  onFulfilled: PromiseWatcherHandler,
+});
+
+/**
+ * A PromiseWatcher interface that has only an onRejected handler.
+ */
+export const PromiseWatcherRejectedI = M.interface('PromiseWatcherRejected', {
+  onRejected: PromiseWatcherHandler,
 });
 
 /**
@@ -49,13 +70,13 @@ const callMeMaybe = (that, prop, postArgs) => {
  * @param {...unknown} watcherArgs
  * @returns {void}
  */
-export const watchPromiseShim = (p, watcher, ...watcherArgs) => {
+export const watchPromise = (p, watcher, ...watcherArgs) => {
   Promise.resolve(p) === p || Fail`watchPromise only watches promises`;
   const onFulfilled = callMeMaybe(watcher, 'onFulfilled', watcherArgs);
   const onRejected = callMeMaybe(watcher, 'onRejected', watcherArgs);
   onFulfilled ||
     onRejected ||
     Fail`promise watcher must implement at least one handler method`;
-  void basicE.when(p, onFulfilled, onRejected);
+  void E.when(p, onFulfilled, onRejected);
 };
-harden(watchPromiseShim);
+harden(watchPromise);
