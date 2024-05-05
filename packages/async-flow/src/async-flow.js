@@ -206,7 +206,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               // async IFFE ensures guestResultP is a fresh promise
               guestAsyncFunc(...guestArgs))();
 
-            bijection.init(guestResultP, outcomeKit.vow);
+            if (flow.getFlowState() !== 'Failed') {
+              bijection.init(guestResultP, outcomeKit.vow);
+            }
             // log is driven at first by guestAyncFunc interaction through the
             // membrane with the host activationArgs. At the end of its first
             // turn, it returns a promise for its eventual guest result.
@@ -347,7 +349,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             // console logging and
             // resource exhaustion, including infinite loops
             const err = makeError(
-              X`In a replay failure: see getFailures() for more information`,
+              X`In a Failed state: see getFailures() for more information`,
             );
             annotateError(err, X`due to ${fatalProblem}`);
             throw err;

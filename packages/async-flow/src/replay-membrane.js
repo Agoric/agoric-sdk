@@ -119,6 +119,8 @@ export const makeReplayMembrane = (
       hostResult = optVerb
         ? hostTarget[optVerb](...hostArgs)
         : hostTarget(...hostArgs);
+      // Try converting here just to route the error correctly
+      hostToGuest(hostResult, `converting ${optVerb || 'host'} result`);
     } catch (hostProblem) {
       return logDo(nestDispatch, harden(['doThrow', callIndex, hostProblem]));
     }

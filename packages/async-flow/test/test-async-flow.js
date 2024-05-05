@@ -347,8 +347,6 @@ await test.serial('test virtual async-flow', async t => {
 
 await test.serial('test durable async-flow', async t => {
   annihilate();
-
-  nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
   const vowTools1 = prepareWatchableVowTools(zone1);
   await testFirstPlay(t, zone1, vowTools1);
@@ -372,7 +370,5 @@ await test.serial('test durable async-flow', async t => {
   nextLife();
   const zone4 = makeDurableZone(getBaggage(), 'durableRoot');
   const vowTools4 = prepareWatchableVowTools(zone4);
-  await testAfterPlay(t, zone4, vowTools4);
-
-  await eventLoopIteration();
+  return testAfterPlay(t, zone4, vowTools4);
 });
