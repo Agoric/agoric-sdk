@@ -56,9 +56,8 @@ resolver.resolve('now you know the answer');
 
 ## Durability
 
-The vow package supports Zones, which are used to integrate Agoric's vat
-upgrade mechanism and `watchPromise`.  To create vow tools that deal with
-durable objects:
+The `@agoric/vat-data/vow.js` module allows Zones to integrate Agoric's vat
+upgrade mechanism.  To create vow tools that deal with durable objects:
 
 ```js
 // NOTE: Cannot use `V` as it has non-durable internal state when unwrapping

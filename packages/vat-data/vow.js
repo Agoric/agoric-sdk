@@ -4,20 +4,6 @@ import { makeE, prepareVowTools as rawPrepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
-/** @type {any} */
-const vatData = globalThis.VatData;
-
-/**
- * Manually-extracted watchPromise so we don't accidentally get the 'unavailable'
- * version.  If it is `undefined`, `@agoric/vow` will shim it.
- * @type {undefined | ((
- *   p: Promise<any>,
- *   watcher: import('@agoric/vow/src/watch-promise.js').PromiseWatcher,
- *   ...args: unknown[]
- * ) => void)}
- */
-const watchPromise = vatData && vatData.watchPromise;
-
 /**
  * Return truthy if a rejection reason should result in a retry.
  * @param {any} reason
@@ -27,7 +13,6 @@ const isRetryableReason = reason => isUpgradeDisconnection(reason);
 
 export const defaultPowers = harden({
   isRetryableReason,
-  watchPromise,
 });
 
 /**

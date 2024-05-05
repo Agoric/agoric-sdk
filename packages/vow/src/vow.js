@@ -2,7 +2,7 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
-import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
+import { PromiseWatcherI } from '@agoric/base-zone';
 
 const sink = () => {};
 harden(sink);
@@ -14,9 +14,8 @@ harden(sink);
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {typeof watchPromiseShim} [watchPromise]
  */
-export const prepareVowKit = (zone, watchPromise = watchPromiseShim) => {
+export const prepareVowKit = zone => {
   /** @type {WeakMap<import('./types.js').VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
 
@@ -94,7 +93,7 @@ export const prepareVowKit = (zone, watchPromise = watchPromiseShim) => {
           const { promise, resolve } = getPromiseKitForResolution(resolver);
           if (resolve) {
             resolve(value);
-            watchPromise(promise, this.facets.watchNextStep);
+            zone.watchPromise(promise, this.facets.watchNextStep);
           }
         },
         /**
