@@ -298,7 +298,9 @@ export const makeSwingsetTestKit = async (
 
   const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
-    return icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
+    const msg = icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
+    inbound(BridgeId.DIBC, msg);
+    return msg.packet;
   };
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
@@ -376,22 +378,37 @@ export const makeSwingsetTestKit = async (
               case 'sendPacket':
                 switch (obj.packet.data) {
                   case protoMsgMocks.delegate.msg: {
-                    const msg = makeAckEvent(obj, protoMsgMocks.delegate.ack);
-                    inbound(BridgeId.DIBC, msg);
-                    return msg.packet;
+                    return makeAckEvent(obj, protoMsgMocks.delegate.ack);
                   }
                   case protoMsgMocks.delegateWithOpts.msg: {
-                    const msg = makeAckEvent(
+                    return makeAckEvent(
                       obj,
                       protoMsgMocks.delegateWithOpts.ack,
                     );
-                    inbound(BridgeId.DIBC, msg);
-                    return msg.packet;
+                  }
+                  case protoMsgMocks.queryBalance.msg: {
+                    return makeAckEvent(obj, protoMsgMocks.queryBalance.ack);
+                  }
+                  case protoMsgMocks.queryUnknownPath.msg: {
+                    return makeAckEvent(
+                      obj,
+                      protoMsgMocks.queryUnknownPath.ack,
+                    );
+                  }
+                  case protoMsgMocks.queryBalanceMulti.msg: {
+                    return makeAckEvent(
+                      obj,
+                      protoMsgMocks.queryBalanceMulti.ack,
+                    );
+                  }
+                  case protoMsgMocks.queryBalanceUnknownDenom.msg: {
+                    return makeAckEvent(
+                      obj,
+                      protoMsgMocks.queryBalanceUnknownDenom.ack,
+                    );
                   }
                   default: {
-                    const msg = makeAckEvent(obj, protoMsgMocks.error.ack);
-                    inbound(BridgeId.DIBC, msg);
-                    return msg.packet;
+                    return makeAckEvent(obj, protoMsgMocks.error.ack);
                   }
                 }
               default:

@@ -7,14 +7,14 @@ import { prepareOrchestrationTools } from './service.js';
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
-  const { makeOrchestration } = prepareOrchestrationTools(
+  const { makeOrchestrationKit } = prepareOrchestrationTools(
     zone.subZone('orchestration'),
   );
 
   return Far('OrchestrationVat', {
     /** @param {Partial<OrchestrationPowers>} [initialPowers] */
-    makeOrchestration(initialPowers = {}) {
-      return makeOrchestration(initialPowers);
+    makeOrchestrationKit(initialPowers = {}) {
+      return makeOrchestrationKit(initialPowers);
     },
   });
 };

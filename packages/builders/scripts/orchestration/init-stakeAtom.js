@@ -8,6 +8,7 @@ export const defaultProposalBuilder = async (
   const {
     hostConnectionId = 'connection-1',
     controllerConnectionId = 'connection-0',
+    bondDenom = 'uatom',
   } = options;
   return harden({
     sourceSpec: '@agoric/orchestration/src/proposals/start-stakeAtom.js',
@@ -21,6 +22,7 @@ export const defaultProposalBuilder = async (
         },
         hostConnectionId,
         controllerConnectionId,
+        bondDenom,
       },
     ],
   });

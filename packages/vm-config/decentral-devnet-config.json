@@ -172,7 +172,8 @@
           "args": [
             {
               "hostConnectionId": "connection-1",
-              "controllerConnectionId": "connection-0"
+              "controllerConnectionId": "connection-0",
+              "bondDenom": "uatom"
             }
           ]
         }

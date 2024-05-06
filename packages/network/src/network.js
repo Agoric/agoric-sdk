@@ -1463,11 +1463,12 @@ export const preparePortAllocator = (zone, { watch }) =>
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
       allocateICAControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
+      allocateICQControllerPort: M.callWhen().returns(Shape.Vow$(Shape.Port)),
       allocateCustomLocalPort: M.callWhen()
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
     }),
-    ({ protocol }) => ({ protocol, lastICAPortNum: 0n }),
+    ({ protocol }) => ({ protocol, lastICAPortNum: 0n, lastICQPortNum: 0n }),
     {
       allocateCustomIBCPort(specifiedName = '') {
         const { state } = this;
@@ -1488,6 +1489,15 @@ export const preparePortAllocator = (zone, { watch }) =>
         return watch(
           E(state.protocol).bindPort(
             `/ibc-port/icacontroller-${state.lastICAPortNum}`,
+          ),
+        );
+      },
+      allocateICQControllerPort() {
+        const { state } = this;
+        state.lastICQPortNum += 1n;
+        return watch(
+          E(state.protocol).bindPort(
+            `/ibc-port/icqcontroller-${state.lastICQPortNum}`,
           ),
         );
       },

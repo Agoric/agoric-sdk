@@ -19,6 +19,13 @@ import type {
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { Port } from '@agoric/network';
 import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { IBCConnectionID } from '@agoric/vats';
+import type { ICQConnection } from './exos/icqConnectionKit.js';
+
+export type * from './service.js';
+export type * from './vat-orchestration.js';
+export type * from './exos/chainAccountKit.js';
+export type * from './exos/icqConnectionKit.js';
 
 /**
  * static declaration of known chain types will allow type support for
@@ -114,6 +121,10 @@ export interface Orchestrator {
   getChain: <C extends keyof KnownChains>(chainName: C) => Promise<Chain<C>>;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
+  /** Send queries to ibc chains unknown to KnownChains */
+  provideICQConnection: (
+    controllerConnectionId: IBCConnectionID,
+  ) => ICQConnection;
 
   /**
    * For a denom, return information about a denom including the equivalent

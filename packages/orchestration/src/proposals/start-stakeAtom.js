@@ -27,10 +27,14 @@ export const startStakeAtom = async (
       produce: { stakeAtom: produceInstance },
     },
   },
-  { options: { hostConnectionId, controllerConnectionId } },
+  { options: { hostConnectionId, controllerConnectionId, bondDenom } },
 ) => {
   const VSTORAGE_PATH = 'stakeAtom';
-  trace('startStakeAtom', { hostConnectionId, controllerConnectionId });
+  trace('startStakeAtom', {
+    hostConnectionId,
+    controllerConnectionId,
+    bondDenom,
+  });
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
@@ -46,6 +50,7 @@ export const startStakeAtom = async (
     terms: {
       hostConnectionId,
       controllerConnectionId,
+      bondDenom,
     },
     privateArgs: {
       orchestration: await orchestration,

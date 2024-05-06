@@ -1,6 +1,8 @@
 import type { QueryAllBalancesRequest } from './codegen/cosmos/bank/v1beta1/query.js';
 import type { MsgSend } from './codegen/cosmos/bank/v1beta1/tx.js';
 import type { MsgDelegate } from './codegen/cosmos/staking/v1beta1/tx.js';
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
+import type { Any } from './codegen/google/protobuf/any.js';
 
 /**
  * The result of Any.toJSON(). The type in cosms-types says it returns
@@ -49,3 +51,52 @@ export const typedJson = <T extends keyof Proto3Shape>(
 export type Base64Any<T> = {
   [Prop in keyof T]: T[Prop] extends Uint8Array ? string : T[Prop];
 };
+
+// TODO make codegen toJSON() return these instead of unknown
+// https://github.com/cosmology-tech/telescope/issues/605
+/**
+ * Mimics behavor of .toJSON(), converting Uint8Array to base64 strings
+ * and bigints to strings
+ */
+export type JsonSafe<T> = {
+  [Prop in keyof T]: T[Prop] extends Uint8Array
+    ? string
+    : T[Prop] extends bigint
+      ? string
+      : T[Prop];
+};
+
+/**
+ * The result of RequestQuery.toJSON(). The type in cosms-types says it returns
+ * `unknown` but it's actually this. The Uint8Array fields are base64 encoded, while
+ * bigint fields are strings.
+ */
+export type RequestQueryJson = JsonSafe<RequestQuery>;
+
+const QUERY_REQ_TYPEURL_RE =
+  /^\/(?<serviceName>\w+(?:\.\w+)*)\.Query(?<methodName>\w+)Request$/;
+
+export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
+  const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
+  if (!(match && match.groups)) {
+    throw new TypeError(
+      `Invalid typeUrl: ${typeUrl}. Must be a Query Request.`,
+    );
+  }
+  const { serviceName, methodName } = match.groups;
+  return `/${serviceName}.Query/${methodName}`;
+};
+
+type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
+
+export const toRequestQueryJson = (
+  any: Any,
+  opts: RequestQueryOpts = {},
+): RequestQueryJson =>
+  RequestQuery.toJSON(
+    RequestQuery.fromPartial({
+      path: typeUrlToGrpcPath(any.typeUrl),
+      data: any.value,
+      ...opts,
+    }),
+  ) as RequestQueryJson;
