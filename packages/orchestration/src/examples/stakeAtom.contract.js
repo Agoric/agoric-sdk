@@ -4,7 +4,7 @@
  */
 import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
 import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';

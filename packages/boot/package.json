@@ -35,6 +35,7 @@
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/vm-config": "^0.1.0",
+    "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
     "@endo/bundle-source": "^3.2.2",

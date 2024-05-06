@@ -1,7 +1,7 @@
 /** @file Mock IBC Server */
 // @ts-check
 import { Far } from '@endo/far';
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 
 /**
  * @import {ListenHandler, PortAllocator} from '@agoric/network';

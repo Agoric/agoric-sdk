@@ -12,7 +12,7 @@ import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 
 import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
