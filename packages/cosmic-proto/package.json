@@ -136,8 +136,8 @@
     "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/base64": "^1.0.3",
-    "@endo/init": "^1.1.1"
+    "@endo/base64": "^1.0.5",
+    "@endo/init": "^1.1.2"
   },
   "resolutions": {
     "**/axios": "^1.6.7",
