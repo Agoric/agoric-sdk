@@ -1,7 +1,8 @@
 /**
  * Generated using gRPC queries to local simulated chains
  * See {@link https://github.com/Agoric/agoric-sdk/blob/43e0249502171e82460be7cf4bad8baf5db5aafd/packages/cosmic-proto/test/snapshots/test-chain-info.js.md | snapshots} and
- * their {@link https://github.com/Agoric/agoric-sdk/blob/43e0249502171e82460be7cf4bad8baf5db5aafd/packages/cosmic-proto/test/snapshots/test-chain-info.js.md | source test}.
+ * their {@link https://github.com/Agoric/agoric-sdk/blob/43e0249502171e82460be7cf4bad8baf5db5aafd/packages/cosmic-proto/test/test-chain-info.js | source test}.
+
  * // TODO check in some portion of above code
  */
 export const mockChainInfo = {
