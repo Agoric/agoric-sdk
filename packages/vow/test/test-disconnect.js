@@ -5,6 +5,8 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
 import { prepareVowTools } from '../src/tools.js';
 
+/** @import {Vow} from '../src/types.js' */
+
 test('retry on disconnection', async t => {
   const zone = makeHeapZone();
   const isRetryableReason = e => e && e.message === 'disconnected';
@@ -57,7 +59,7 @@ test('retry on disconnection', async t => {
     for await (const [final, ...plan] of PLANS) {
       t.log(`testing (plan=${plan}, ${pattern})`);
 
-      /** @type {import('../src/types.js').Vow<string>} */
+      /** @type {Vow<string>} */
       const vow = makeTagged('Vow', {
         vowV0: makeTestVowV0(plan),
       });

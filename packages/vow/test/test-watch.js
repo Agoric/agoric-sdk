@@ -6,8 +6,13 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { prepareVowTools } from '../src/tools.js';
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @import {ExecutionContext} from 'ava'
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
+/**
+ * @param {Zone} zone
+ * @param {ExecutionContext<unknown>} t
  */
 const prepareAckWatcher = (zone, t) => {
   return zone.exoClass('AckWatcher', undefined, packet => ({ packet }), {
@@ -27,8 +32,8 @@ const prepareAckWatcher = (zone, t) => {
 };
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {Zone} zone
+ * @param {ExecutionContext<unknown>} t
  */
 test('ack watcher - shim', async t => {
   const zone = makeHeapZone();

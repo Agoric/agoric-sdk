@@ -2,7 +2,12 @@
 
 import { M } from '@endo/patterns';
 
-/** @import {MapStore} from '@agoric/store/src/types.js' */
+/**
+ * @import {MapStore} from '@agoric/store/src/types.js'
+ * @import { Zone } from '@agoric/base-zone'
+ * @import { Watch } from './watch.js'
+ * @import {Specimen, VowKit} from './types.js'
+ */
 
 const VowShape = M.tagged(
   'Vow',
@@ -12,9 +17,9 @@ const VowShape = M.tagged(
 );
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {import('./watch.js').Watch} watch
- * @param {() => import('./types.js').VowKit<any>} makeVowKit
+ * @param {Zone} zone
+ * @param {Watch} watch
+ * @param {() => VowKit<any>} makeVowKit
  */
 export const prepareWatchUtils = (zone, watch, makeVowKit) => {
   const detached = zone.detached();
@@ -34,7 +39,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
        * @typedef {object} VowState
        * @property {number} remaining
        * @property {MapStore<number, any>} resultsMap
-       * @property {import('./types.js').VowKit['resolver']} resolver
+       * @property {VowKit['resolver']} resolver
        */
       /** @type {MapStore<bigint, VowState>} */
       const idToVowState = detached.mapStore('idToVowState');
@@ -48,7 +53,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
       utils: {
         /**
          * @template [T=any]
-         * @param {import('./types.js').Specimen<T>[]} vows
+         * @param {Specimen<T>[]} vows
          */
         all(vows) {
           const { nextId: id, idToVowState } = this.state;

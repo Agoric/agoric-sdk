@@ -4,25 +4,31 @@ import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {VowResolver, VowKit} from './types.js'
+ */
+
 const sink = () => {};
 harden(sink);
 
 /**
- * @typedef {Partial<import('@endo/promise-kit').PromiseKit<any>> &
- *   Pick<import('@endo/promise-kit').PromiseKit<any>, 'promise'>} VowEphemera
+ * @typedef {Partial<PromiseKit<any>> &
+ *   Pick<PromiseKit<any>, 'promise'>} VowEphemera
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareVowKit = zone => {
-  /** @type {WeakMap<import('./types.js').VowResolver, VowEphemera>} */
+  /** @type {WeakMap<VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
 
   /**
    * Get the current incarnation's promise kit associated with a vowV0.
    *
-   * @param {import('./types.js').VowResolver} resolver
+   * @param {VowResolver} resolver
    */
   const provideCurrentKit = resolver => {
     let pk = resolverToEphemera.get(resolver);
@@ -37,7 +43,7 @@ export const prepareVowKit = zone => {
   };
 
   /**
-   * @param {import('./types.js').VowResolver} resolver
+   * @param {VowResolver} resolver
    */
   const getPromiseKitForResolution = resolver => {
     const kit = provideCurrentKit(resolver);
@@ -123,7 +129,7 @@ export const prepareVowKit = zone => {
 
   /**
    * @template T
-   * @returns {import('./types.js').VowKit<T>}
+   * @returns {VowKit<T>}
    */
   const makeVowKit = () => {
     const { resolver, vowV0 } = makeVowInternalsKit();
