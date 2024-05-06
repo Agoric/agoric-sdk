@@ -139,7 +139,9 @@ const testBadHostReplay1 = async (t, zone, vowTools) => {
         },
         {
           message:
-            'converting badMethod result: "[Symbol(passStyle)]" property expected: "[Function <anon>]"',
+            // Be compat with before and after
+            // https://github.com/endojs/endo/pull/2267
+            /converting badMethod result:/,
         },
       );
       t.log('  badHost replay1 guest error caused by host error', gErr);
@@ -164,17 +166,16 @@ const testBadHostReplay1 = async (t, zone, vowTools) => {
   const flow = adminAsyncFlow.getFlowForOutcomeVow(outcomeV);
   await promiseStep;
 
-  t.deepEqual(flow.dump(), [
+  const logDump = flow.dump();
+  // Be compat with before and after
+  // https://github.com/endojs/endo/pull/2267
+  const message = logDump[3][2].message;
+
+  t.deepEqual(logDump, [
     ['checkCall', badHost, 'badMethod', [], 0],
     ['doReturn', 0, undefined],
     ['checkCall', badHost, 'badMethod', [], 2],
-    [
-      'doThrow',
-      2,
-      Error(
-        'converting badMethod result: "[Symbol(passStyle)]" property expected: "[Function <anon>]"',
-      ),
-    ],
+    ['doThrow', 2, Error(message)],
   ]);
   t.log('badHost replay1 done');
   return promiseStep;
