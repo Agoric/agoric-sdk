@@ -1,8 +1,8 @@
 /* global globalThis */
 // @ts-check
-import { makeE, prepareVowTools as rawPrepareVowTools } from '@agoric/vow';
-import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { makeE, prepareVowTools as rawPrepareVowTools } from './src/index.js';
 
 /**
  * Return truthy if a rejection reason should result in a retry.
@@ -25,7 +25,7 @@ export const { watch, when, makeVowKit, allVows } =
   prepareVowTools(makeHeapZone());
 
 /**
- * An vow-shortening E.  CAVEAT: This produces long-lived ephemeral
+ * A vow-shortening E.  CAVEAT: This produces long-lived ephemeral
  * promises that encapsulate the shortening behaviour, and so provides no way
  * for `watch` to durably shorten.  Use the standard `import('@endo/far').E` if
  * you need to `watch` its resulting promises.

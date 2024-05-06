@@ -2,7 +2,7 @@
 import test from 'ava';
 import { E, Far } from '@endo/far';
 
-import { V, makeVowKit } from '../vow.js';
+import { V, makeVowKit } from '../vat.js';
 
 test('heap messages', async t => {
   const greeter = Far('Greeter', {
