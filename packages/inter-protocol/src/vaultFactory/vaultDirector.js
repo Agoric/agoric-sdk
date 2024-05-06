@@ -4,7 +4,10 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
-import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
+import {
+  GovernorFacetShape,
+  InvitationShape,
+} from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import {
@@ -99,6 +102,7 @@ const prepareVaultDirector = (
   marshaller,
   makeRecorderKit,
   makeERecorderKit,
+  managerParams,
 ) => {
   /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
@@ -117,7 +121,11 @@ const prepareVaultDirector = (
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   /** a powerful object; can modify parameters */
-  const vaultParamManagers = provideVaultParamManagers(baggage, marshaller);
+  const vaultParamManagers = provideVaultParamManagers(
+    baggage,
+    marshaller,
+    managerParams,
+  );
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
@@ -143,6 +151,7 @@ const prepareVaultDirector = (
     const oldInvitation = baggage.has(shortfallInvitationKey)
       ? baggage.get(shortfallInvitationKey)
       : undefined;
+
     const newInvitation = await directorParamManager.getInternalParamValue(
       SHORTFALL_INVITATION_KEY,
     );
@@ -294,6 +303,7 @@ const prepareVaultDirector = (
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
         makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
+        setShortfallReporter: M.call(InvitationShape).returns(M.promise()),
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
@@ -436,6 +446,12 @@ const prepareVaultDirector = (
           return makeWaker('priceLockWaker', () => {
             allManagersDo(vm => vm.lockOraclePrices());
           });
+        },
+        async setShortfallReporter(newInvitation) {
+          const zoe = zcf.getZoeService();
+          shortfallReporter = await E(
+            E(zoe).offer(newInvitation),
+          ).getOfferResult();
         },
       },
       public: {

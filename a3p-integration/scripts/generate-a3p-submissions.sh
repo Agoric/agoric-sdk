@@ -1,7 +1,8 @@
 #!/bin/bash
 set -ueo pipefail
 
-SCRIPT_DIR=$( cd ${0%/*} && pwd -P )
+# cd prints its target, so without the redirect, we get two copies
+SCRIPT_DIR=$( cd ${0%/*} > /dev/null && pwd -P )
 
 IFS=$'\n'
 

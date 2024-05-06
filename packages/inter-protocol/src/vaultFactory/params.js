@@ -12,6 +12,7 @@ import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
@@ -36,6 +37,8 @@ export const vaultDirectorParamTypes = {
   [REFERENCED_UI_KEY]: ParamTypes.STRING,
 };
 harden(vaultDirectorParamTypes);
+
+const trace = makeTracer('Vault Params');
 
 /**
  * @param {Amount<'set'>} electorateInvitationAmount
@@ -128,7 +131,6 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {{
- *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>;
  *   electorateInvitationAmount: Amount<'set'>;
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
@@ -141,7 +143,6 @@ export const vaultParamPattern = M.splitRecord(
  * }} opts
  */
 export const makeGovernedTerms = ({
-  auctioneerPublicFacet,
   bootstrapPaymentValue,
   electorateInvitationAmount,
   interestTiming,
@@ -153,7 +154,6 @@ export const makeGovernedTerms = ({
   referencedUi = 'NO REFERENCE',
 }) => {
   return harden({
-    auctioneerPublicFacet,
     priceAuthority,
     reservePublicFacet,
     timerService: timer,
@@ -168,6 +168,9 @@ export const makeGovernedTerms = ({
   });
 };
 harden(makeGovernedTerms);
+
+/** @typedef {VaultManagerParamValues & { brand: Brand }} VaultManagerParamOverrides */
+
 /**
  * Stop-gap which restores initial param values UNTIL
  * https://github.com/Agoric/agoric-sdk/issues/5200
@@ -176,8 +179,13 @@ harden(makeGovernedTerms);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
+ * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */
-export const provideVaultParamManagers = (baggage, marshaller) => {
+export const provideVaultParamManagers = (
+  baggage,
+  marshaller,
+  managerParamOverrides,
+) => {
   /** @type {MapStore<Brand, VaultParamManager>} */
   const managers = makeScalarMapStore();
 
@@ -202,8 +210,20 @@ export const provideVaultParamManagers = (baggage, marshaller) => {
     return manager;
   };
 
-  // restore from baggage
-  [...managerArgs.entries()].map(([brand, args]) => makeManager(brand, args));
+  // restore from baggage, unless `managerParamOverrides` overrides.
+  for (const [brand, args] of managerArgs.entries()) {
+    const newInitial = managerParamOverrides
+      ? Object.values(managerParamOverrides).find(e => e.brand === brand)
+      : undefined;
+
+    if (newInitial) {
+      trace(`reviving params, override`, brand, newInitial);
+      makeManager(brand, { ...args, initialParamValues: newInitial });
+    } else {
+      trace(`reviving params, keeping`, brand, args.initialParamValues);
+      makeManager(brand, args);
+    }
+  }
 
   return {
     /**

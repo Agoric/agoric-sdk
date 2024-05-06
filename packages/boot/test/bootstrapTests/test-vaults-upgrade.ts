@@ -287,8 +287,25 @@ test.serial('restart vaultFactory', async t => {
     'vaultFactoryKit',
   ) as EconomyBootstrapSpace['consume']['vaultFactoryKit']);
 
-  // @ts-expect-error cast XXX missing from type
-  const { privateArgs } = vaultFactoryKit;
+  const reserveKit = await (EV.vat('bootstrap').consumeItem(
+    'reserveKit',
+  ) as EconomyBootstrapSpace['consume']['reserveKit']);
+  const bootstrapVat = EV.vat('bootstrap');
+  const electorateCreatorFacet = await (bootstrapVat.consumeItem(
+    'economicCommitteeCreatorFacet',
+  ) as EconomyBootstrapSpace['consume']['economicCommitteeCreatorFacet']);
+
+  const poserInvitation = await EV(electorateCreatorFacet).getPoserInvitation();
+  const creatorFacet1 = await EV.get(reserveKit).creatorFacet;
+  const shortfallInvitation =
+    await EV(creatorFacet1).makeShortfallReportingInvitation();
+
+  const privateArgs = {
+    // @ts-expect-error cast XXX missing from type
+    ...vaultFactoryKit.privateArgs,
+    initialPoserInvitation: poserInvitation,
+    initialShortfallInvitation: shortfallInvitation,
+  };
   console.log('reused privateArgs', privateArgs, vaultFactoryKit);
 
   const vfAdminFacet = await EV(
