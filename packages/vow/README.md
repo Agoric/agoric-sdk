@@ -26,12 +26,12 @@ Here they are: {
 }
 ```
 
-On Agoric, you can use `V` exported from `@agoric/vat-data/vow.js`, which
+On Agoric, you can use `V` exported from `@agoric/vow/vat.js`, which
 converts a chain of promises and vows to a promise for its final
 fulfilment, by unwrapping any intermediate vows:
 
 ```js
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 [...]
 const a = await E.when(w1);
 const b = await E(w2).something(...args);
@@ -45,7 +45,7 @@ On Agoric, use the following to create and resolve a vow:
 ```js
 // CAVEAT: `V` uses internal ephemeral promises, so while it is convenient,
 // it cannot be used by upgradable vats.  See "Durability" below:
-import { V as E, makeVowKit } from '@agoric/vat-data/vow.js';
+import { V as E, makeVowKit } from '@agoric/vow/vat.js';
 [...]
 const { resolver, vow } = makeVowKit();
 // Send vow to a potentially different vat.
@@ -56,15 +56,15 @@ resolver.resolve('now you know the answer');
 
 ## Durability
 
-The `@agoric/vat-data/vow.js` module allows Zones to integrate Agoric's vat
-upgrade mechanism.  To create vow tools that deal with durable objects:
+The `@agoric/vow/vat.js` module allows vows to integrate Agoric's vat upgrade
+mechanism.  To create vow tools that deal with durable objects:
 
 ```js
 // NOTE: Cannot use `V` as it has non-durable internal state when unwrapping
 // vows.  Instead, use the default vow-exposing `E` with the `watch`
 // operator.
 import { E } from '@endo/far';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone';
 
 // Only do the following once at the start of a new vat incarnation:
