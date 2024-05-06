@@ -97,6 +97,12 @@ export {};
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
  *     callIndex: number
+ *   ] | [
+ *     op: 'checkSend',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
  *   ]} LogEntry
  */
 

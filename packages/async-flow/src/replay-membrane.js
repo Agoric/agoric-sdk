@@ -8,8 +8,9 @@ import { makeConvertKit } from './convert.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Passable, PassableCap} from '@endo/pass-style'
  * @import {Zone} from '@agoric/base-zone';
- * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {Vow, VowTools, VowKit} from '@agoric/vow'
  * @import {AsyncFlow} from '../src/async-flow.js'
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
@@ -32,7 +33,7 @@ export const makeReplayMembrane = (
   watchWake,
   panic,
 ) => {
-  const { when } = vowTools;
+  const { when, makeVowKit } = vowTools;
 
   const equate = makeEquate(bijection);
 
@@ -214,12 +215,111 @@ export const makeReplayMembrane = (
 
   // //////////////// Eventual Send ////////////////////////////////////////////
 
+  /**
+   * @param {PassableCap} hostTarget
+   * @param {string | undefined} optVerb
+   * @param {Passable[]} hostArgs
+   * @param {number} callIndex
+   * @param {VowKit} hostResultKit
+   * @param {Promise} guestReturnedP
+   * @returns {Outcome}
+   */
+  const performSend = (
+    hostTarget,
+    optVerb,
+    hostArgs,
+    callIndex,
+    hostResultKit,
+    guestReturnedP,
+  ) => {
+    const { vow, resolver } = hostResultKit;
+    try {
+      const hostPromise = optVerb
+        ? E(hostTarget)[optVerb](...hostArgs)
+        : E(hostTarget)(...hostArgs);
+      resolver.resolve(hostPromise); // TODO does this always work?
+    } catch (hostProblem) {
+      throw Fail`internal: eventual send synchrously failed ${hostProblem}`;
+    }
+    try {
+      const entry = harden(['doReturn', callIndex, vow]);
+      log.pushEntry(entry);
+      const guestPromise = makeGuestForHostVow(vow, guestReturnedP);
+      // Note that `guestPromise` is not registered in the bijection since
+      // guestReturnedP is already the guest for vow. Rather, the handler
+      // returns guestPromise to resolve guestReturnedP to guestPromise.
+      const { kind } = doReturn(callIndex, vow);
+      kind === 'return' || Fail`internal: "return" kind expected ${q(kind)}`;
+      return harden({
+        kind: 'return',
+        result: guestPromise,
+      });
+    } catch (problem) {
+      throw panic(problem);
+    }
+  };
+
   const guestHandler = harden({
     applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
-      if (optVerb === undefined) {
-        throw Panic`guest eventual call not yet supported: ${guestTarget}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
-      } else {
-        throw Panic`guest eventual send not yet supported: ${guestTarget}.${b(optVerb)}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+      const callIndex = log.getIndex();
+      if (stopped || !bijection.hasGuest(guestTarget)) {
+        Fail`Sent from a previous run: ${guestTarget}`;
+      }
+      // TODO FIX BUG this is not quite right. When guestResultP is returned
+      // as the resolution of guestResultP, it create a visious cycle error.
+      const hostResultKit = makeVowKit();
+      bijection.init(guestReturnedP, hostResultKit.vow);
+      /** @type {Outcome} */
+      let outcome;
+      try {
+        const guestEntry = harden([
+          'checkSend',
+          guestTarget,
+          optVerb,
+          guestArgs,
+          callIndex,
+        ]);
+        if (log.isReplaying()) {
+          const entry = log.nextEntry();
+          equate(
+            guestEntry,
+            entry,
+            `replay ${callIndex}:
+     ${q(guestEntry)}
+  vs ${q(entry)}
+    `,
+          );
+          outcome = /** @type {Outcome} */ (nestInterpreter(callIndex));
+        } else {
+          const entry = guestToHost(guestEntry);
+          log.pushEntry(entry);
+          const [_op, hostTarget, _optVerb, hostArgs, _callIndex] = entry;
+          nestInterpreter(callIndex);
+          outcome = performSend(
+            hostTarget,
+            optVerb,
+            hostArgs,
+            callIndex,
+            hostResultKit,
+            guestReturnedP,
+          );
+        }
+      } catch (fatalError) {
+        throw panic(fatalError);
+      }
+
+      switch (outcome.kind) {
+        case 'return': {
+          return outcome.result;
+        }
+        case 'throw': {
+          throw outcome.problem;
+        }
+        default: {
+          // @ts-expect-error TS correctly knows this case would be outside
+          // the type. But that's what we want to check.
+          throw Panic`unexpected outcome kind ${q(outcome.kind)}`;
+        }
       }
     },
     applyFunction(guestTarget, guestArgs, guestReturnedP) {
@@ -321,11 +421,19 @@ export const makeReplayMembrane = (
 
   /**
    * @param {Vow} hVow
+   * @param {Promise} [promiseKey]
+   *   If provided, use this promise as the key in the guestPromiseMap
+   *   rather than the returned promise. This only happens when the
+   *   promiseKey ends up forwarded to the returned promise anyway, so
+   *   associating it with this resolve/reject pair is not incorrect.
+   *   It is needed when `promiseKey` is also entered into the bijection
+   *   paired with hVow.
    * @returns {Promise}
    */
-  const makeGuestForHostVow = hVow => {
+  const makeGuestForHostVow = (hVow, promiseKey = undefined) => {
     const { promise, resolve, reject } = makeGuestPromiseKit();
-    guestPromiseMap.set(promise, harden({ resolve, reject }));
+    promiseKey ??= promise;
+    guestPromiseMap.set(promiseKey, harden({ resolve, reject }));
 
     watchWake(hVow);
 
@@ -349,7 +457,7 @@ export const makeReplayMembrane = (
       hVow,
       async hostFulfillment => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doFulfill', hVow, hostFulfillment]);
           log.pushEntry(entry);
@@ -364,7 +472,7 @@ export const makeReplayMembrane = (
       },
       async hostReason => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doReject', hVow, hostReason]);
           log.pushEntry(entry);
