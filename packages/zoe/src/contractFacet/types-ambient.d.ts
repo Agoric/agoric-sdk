@@ -15,7 +15,10 @@ type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  */
-type ZCF<CT extends unknown = Record<string, unknown>> = {
+type ZCF<
+  CT extends unknown = Record<string, unknown>,
+  IKR extends Record<Keyword, AssetKind> = Record<Keyword, AssetKind>,
+> = {
   /**
    * - atomically reallocate amounts among seats.
    */
@@ -63,7 +66,7 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
-  getTerms: () => StandardTerms & CT;
+  getTerms: () => StandardTerms<IKR> & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
   getIssuerForBrand: <K_1 extends AssetKind>(brand: Brand<K_1>) => Issuer<K_1>;
   getAssetKind: GetAssetKindByBrand;

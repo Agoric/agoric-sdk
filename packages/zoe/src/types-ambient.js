@@ -13,24 +13,40 @@
 /**
  * @typedef {string} Keyword
  * @typedef {Handle<'Invitation'>} InvitationHandle - an opaque handle for an invitation
- * @typedef {Record<Keyword, Issuer<any>>} IssuerKeywordRecord
- * @typedef {Record<Keyword, ERef<Issuer<any>>>} IssuerPKeywordRecord
- * @typedef {Record<Keyword, Brand<any>>} BrandKeywordRecord
  */
 
 /**
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @typedef {{ [K in keyof IKR]: Issuer<IKR[K]> }} IssuerKeywordRecord
+ */
+
+/**
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @typedef {{ [K in keyof IKR]: Brand<IKR[K]> }} BrandKeywordRecord
+ */
+
+/**
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @typedef {{ [K in keyof IKR]: ERef<Issuer<IKR[K]>> }} IssuerPKeywordRecord
+ */
+
+/**
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
  * @typedef {object} StandardTerms
- * @property {IssuerKeywordRecord} issuers - record with
+ * @property {IssuerKeywordRecord<IKR>} issuers - record with
  * keywords keys, issuer values
- * @property {BrandKeywordRecord} brands - record with keywords
+ * @property {BrandKeywordRecord<IKR>} brands - record with keywords
  * keys, brand values
- *
- * @typedef {StandardTerms & Record<string, any>} AnyTerms
  *
  * @typedef {object} InstanceRecord
  * @property {Installation} installation
  * @property {import("./zoeService/utils.js").Instance<any>} instance
  * @property {AnyTerms} terms - contract parameters
+ */
+
+/**
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @typedef {StandardTerms<IKR> & Record<Keyword, any>} AnyTerms
  */
 
 /**
