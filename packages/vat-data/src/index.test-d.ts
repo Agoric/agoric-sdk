@@ -14,7 +14,7 @@ import {
   defineDurableKind,
   partialAssign,
   watchPromise,
-} from '.';
+} from './index.js';
 
 // for use in assignments below
 const anyVal = null as any;

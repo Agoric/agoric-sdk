@@ -12,6 +12,7 @@ import {
   provideDurableSetStore,
   provideDurableWeakMapStore,
   provideDurableWeakSetStore,
+  watchPromise,
 } from '@agoric/vat-data';
 
 import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
@@ -106,6 +107,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     subZone,
 
     makeOnce,
+    watchPromise,
     detached: attachedStores.detached,
     isStorable: attachedStores.isStorable,
 

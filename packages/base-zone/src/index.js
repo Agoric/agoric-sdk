@@ -10,3 +10,4 @@ export * from './exports.js';
 export * from './make-once.js';
 export * from './keys.js';
 export * from './is-passable.js';
+export * from './watch-promise.js';

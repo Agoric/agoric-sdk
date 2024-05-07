@@ -12,6 +12,7 @@ import {
 
 import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
+import { watchPromise } from './watch-promise.js';
 
 /**
  * @type {import('./types.js').Stores}
@@ -49,6 +50,7 @@ export const makeHeapZone = (baseLabel = 'heapZone') => {
     subZone: wrapProvider(makeSubZone),
 
     makeOnce,
+    watchPromise,
     detached: detachedHeapStores.detached,
     isStorable: detachedHeapStores.isStorable,
 

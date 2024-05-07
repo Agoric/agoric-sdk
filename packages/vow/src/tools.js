@@ -8,13 +8,12 @@ import { prepareWatchUtils } from './watch-utils.js';
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {object} [powers]
  * @param {(reason: any) => boolean} [powers.isRetryableReason]
- * @param {(p: PromiseLike<any>, watcher: import('./watch-promise.js').PromiseWatcher, ...args: unknown[]) => void} [powers.watchPromise]
  */
 export const prepareVowTools = (zone, powers = {}) => {
-  const { isRetryableReason = () => false, watchPromise } = powers;
-  const makeVowKit = prepareVowKit(zone, watchPromise);
+  const { isRetryableReason = () => false } = powers;
+  const makeVowKit = prepareVowKit(zone);
   const when = makeWhen(isRetryableReason);
-  const watch = prepareWatch(zone, makeVowKit, watchPromise, isRetryableReason);
+  const watch = prepareWatch(zone, makeVowKit, isRetryableReason);
   const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
   const watchUtils = makeWatchUtils();
 
