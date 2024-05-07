@@ -17,7 +17,7 @@ type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
  */
 type ZCF<
   CT extends unknown = Record<string, unknown>,
-  IKR extends Record<Keyword, AssetKind> = Record<Keyword, AssetKind>,
+  IKR extends Record<Keyword, AssetKind> = Record<Keyword, any>,
 > = {
   /**
    * - atomically reallocate amounts among seats.

@@ -16,22 +16,22 @@
  */
 
 /**
- * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, any>]
  * @typedef {{ [K in keyof IKR]: Issuer<IKR[K]> }} IssuerKeywordRecord
  */
 
 /**
- * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, any>]
  * @typedef {{ [K in keyof IKR]: Brand<IKR[K]> }} BrandKeywordRecord
  */
 
 /**
- * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, any>]
  * @typedef {{ [K in keyof IKR]: ERef<Issuer<IKR[K]>> }} IssuerPKeywordRecord
  */
 
 /**
- * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, AssetKind>]
+ * @template {Record<Keyword, AssetKind>} [IKR=Record<Keyword, any>]
  * @typedef {object} StandardTerms
  * @property {IssuerKeywordRecord<IKR>} issuers - record with
  * keywords keys, issuer values
