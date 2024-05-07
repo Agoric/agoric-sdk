@@ -7,7 +7,7 @@ import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @import {PassableCap} from '@endo/marshal';
+ * @import {PassableCap, RemotableObject} from '@endo/marshal';
  * @import {Key} from '@endo/patterns';
  * @import {BoardId} from '@agoric/vats/src/lib-board.js';
  */
@@ -212,14 +212,14 @@ export const makeExportContext = () => {
     purseEntries: walletObjects.purse.bySlot.entries,
     /**
      * @param {BoardId} id
-     * @param {PassableCap} val
+     * @param {RemotableObject} val
      */
     initBoardId: (id, val) => {
       initSlotVal(boardObjects, id, val);
     },
     /**
      * @param {BoardId} id
-     * @param {PassableCap} val
+     * @param {RemotableObject} val
      */
     ensureBoardId: (id, val) => {
       if (boardObjects.byVal.has(val)) {
