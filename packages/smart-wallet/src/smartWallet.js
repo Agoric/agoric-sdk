@@ -55,16 +55,7 @@ const trace = makeTracer('SmrtWlt');
  * @see {@link ../README.md}}
  */
 
-/** @typedef {number | string} OfferId */
-
-/**
- * @typedef {{
- *   id: OfferId,
- *   invitationSpec: import('./invitations').InvitationSpec,
- *   proposal: Proposal,
- *   offerArgs?: any
- * }} OfferSpec
- */
+/** @import {OfferSpec, OfferId} from './offers.js'; */
 
 /**
  * @typedef {{
