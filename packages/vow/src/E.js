@@ -7,6 +7,10 @@ const { assign, create } = Object;
 
 const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
+/**
+ * @import { HandledPromiseConstructor, RemotableBrand } from '@endo/eventual-send'
+ * @import { Unwrap, Vow } from './types.js'
+ */
 /** @typedef {(...args: any[]) => any} Callable */
 
 /** @type {ProxyHandler<any>} */
@@ -38,7 +42,7 @@ const baseFreezableProxyHandler = {
  * A Proxy handler for E(x).
  *
  * @param {any} recipient Any value passed to E(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
@@ -103,7 +107,7 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} recipient Any value passed to E.sendOnly(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
@@ -166,7 +170,7 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} x Any value passed to E.get(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {HandledPromiseConstructor} HandledPromise
  * @param {(x: any) => Promise<any>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
@@ -183,7 +187,7 @@ const resolve = x => HandledPromise.resolve(x);
 /**
  * @template [A={}]
  * @template {(x: any) => Promise<any>} [U=(x: any) => Promise<any>]
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {HandledPromiseConstructor} HandledPromise
  * @param {object} [powers]
  * @param {U} [powers.unwrap]
  * @param {A} [powers.additional]
@@ -263,10 +267,10 @@ const makeE = (
          * unwrapped(x).then(onfulfilled, onrejected)
          *
          * @template T
-         * @template [TResult1=import('./types.js').Unwrap<T>]
+         * @template [TResult1=Unwrap<T>]
          * @template [TResult2=never]
          * @param {ERef<T>} x value to convert to a handled promise
-         * @param {(value: import('./types.js').Unwrap<T>) => ERef<TResult1>} [onfulfilled]
+         * @param {(value: Unwrap<T>) => ERef<TResult1>} [onfulfilled]
          * @param {(reason: any) => ERef<TResult2>} [onrejected]
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
@@ -307,7 +311,7 @@ export default makeE;
 /**
  * @template {Callable} T
  * @typedef {(
- *   (...args: Parameters<T>) => Promise<import('./types.js').Unwrap<ReturnType<T>>>
+ *   (...args: Parameters<T>) => Promise<Unwrap<ReturnType<T>>>
  * )} ECallable
  */
 
@@ -393,11 +397,11 @@ export default makeE;
  *
  * @template T
  * @typedef {(
- *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>     // if a given T is some remote interface R
+ *   T extends RemotableBrand<infer L, infer R>     // if a given T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
+ *     : Awaited<T> extends RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
  *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('./types.js').Vow<infer U>
+ *     : Awaited<T> extends Vow<infer U>
  *     ? RemoteFunctions<U>                                           // then extract the remotable functions of U
  *     : T extends PromiseLike<infer U>                               // otherwise, if T is a promise
  *     ? Awaited<T>                                                   // then return resolved value T
@@ -408,11 +412,11 @@ export default makeE;
 /**
  * @template T
  * @typedef {(
- *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
+ *   T extends RemotableBrand<infer L, infer R>
  *     ? L
- *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
+ *     : Awaited<T> extends RemotableBrand<infer L, infer R>
  *     ? L
- *     : Awaited<T> extends import('./types.js').Vow<infer U>
+ *     : Awaited<T> extends Vow<infer U>
  *     ? LocalRecord<U>
  *     : T extends PromiseLike<infer U>
  *     ? Awaited<T>

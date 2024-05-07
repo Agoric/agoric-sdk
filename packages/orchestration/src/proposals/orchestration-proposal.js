@@ -1,5 +1,5 @@
 // @ts-check
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 
 /**
  * @import {PortAllocator} from '@agoric/network';

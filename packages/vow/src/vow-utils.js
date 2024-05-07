@@ -3,6 +3,8 @@ import { E as basicE } from '@endo/eventual-send';
 import { isPassable } from '@endo/pass-style';
 import { M, matches } from '@endo/patterns';
 
+/** @import {VowPayload, Vow} from './types' */
+
 export { basicE };
 
 export const VowShape = M.tagged(
@@ -25,16 +27,14 @@ harden(isVow);
  *
  * @template T
  * @param {any} specimen any value to verify as a vow
- * @returns {import('./types').VowPayload<T> | undefined} undefined if specimen is not a vow, otherwise the vow's payload.
+ * @returns {VowPayload<T> | undefined} undefined if specimen is not a vow, otherwise the vow's payload.
  */
 export const getVowPayload = specimen => {
   if (!isVow(specimen)) {
     return undefined;
   }
 
-  const vow = /** @type {import('./types').Vow<T>} */ (
-    /** @type {unknown} */ (specimen)
-  );
+  const vow = /** @type {Vow<T>} */ (/** @type {unknown} */ (specimen));
   return vow.payload;
 };
 harden(getVowPayload);

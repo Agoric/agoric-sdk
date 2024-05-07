@@ -1,7 +1,7 @@
 import { isPromise } from '@endo/promise-kit';
 import { Far } from '@endo/far';
-import { V as E } from '@agoric/vat-data/vow.js';
-import * as vowExports from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
+import * as vowExports from '@agoric/vow/vat.js';
 import * as farExports from '@endo/far';
 
 import { Nat } from '@endo/nat';

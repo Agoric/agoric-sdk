@@ -8,7 +8,7 @@ import {
   subscribeEach,
 } from '@agoric/notifier';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';

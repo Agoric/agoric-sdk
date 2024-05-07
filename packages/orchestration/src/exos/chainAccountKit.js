@@ -6,7 +6,7 @@ import '@agoric/network/exported.js';
 
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';

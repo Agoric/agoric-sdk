@@ -1,6 +1,12 @@
 // @ts-check
 export {};
 
+/**
+ * @import {RemotableBrand} from '@endo/eventual-send'
+ * @import {CopyTagged} from '@endo/pass-style'
+ * @import {prepareVowTools} from './tools.js'
+ */
+
 /** @typedef {(...args: any[]) => any} Callable */
 
 /**
@@ -43,9 +49,9 @@ export {};
  * @template T
  * @typedef {(
  *   T extends PromiseLike<infer U> ? Unwrap<U> :
- *   T extends import('./types').Vow<infer U> ? Unwrap<U> :
+ *   T extends Vow<infer U> ? Unwrap<U> :
  *   IsPrimitive<T> extends true ? T :
- *   T extends import('@endo/eventual-send').RemotableBrand<infer Local, infer Primary> ? Local & T :
+ *   T extends RemotableBrand<infer Local, infer Primary> ? Local & T :
  *   T
  * )} Unwrap
  */
@@ -55,10 +61,9 @@ export {};
  * returned from `Remotable` or `Far`.
  * @template Primary The type of the primary reference.
  * @template [Local=DataOnly<Primary>] The local properties of the object.
- * @typedef {Primary |
- *   import('@endo/eventual-send').RemotableBrand<Local, Primary>
- * } Remote A type that doesn't assume its parameter is local, but is
- * satisfied with both local and remote references.
+ * @typedef {Primary | RemotableBrand<Local, Primary>} Remote A type that
+ * doesn't assume its parameter is local, but is satisfied with both local
+ * and remote references.
  */
 
 /**
@@ -82,9 +87,7 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {import('@endo/pass-style').CopyTagged<
- *   'Vow', VowPayload<T>
- * >} Vow
+ * @typedef {CopyTagged<'Vow', VowPayload<T>>} Vow
  */
 
 /**
@@ -121,7 +124,7 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {import('./types.js').ERef<T | import('./types.js').Vow<T>>} Specimen
+ * @typedef {ERef<T | Vow<T>>} Specimen
  */
 
-/** @typedef {ReturnType<import('./tools.js').prepareVowTools>} VowTools */
+/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */

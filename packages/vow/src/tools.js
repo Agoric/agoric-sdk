@@ -4,8 +4,10 @@ import { prepareVowKit } from './vow.js';
 import { prepareWatch } from './watch.js';
 import { prepareWatchUtils } from './watch-utils.js';
 
+/** @import {Zone} from '@agoric/base-zone' */
+
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {object} [powers]
  * @param {(reason: any) => boolean} [powers.isRetryableReason]
  */

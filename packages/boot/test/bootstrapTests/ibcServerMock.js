@@ -2,7 +2,7 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 
 const { quote: q, Fail } = assert;
 const { log } = console;

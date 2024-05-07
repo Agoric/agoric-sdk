@@ -33,6 +33,7 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
+    "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
     "@endo/base64": "^1.0.4",

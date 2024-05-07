@@ -6,7 +6,7 @@ import {
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _args, baggage) {

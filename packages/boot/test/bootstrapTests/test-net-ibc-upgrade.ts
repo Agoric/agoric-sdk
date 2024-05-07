@@ -6,7 +6,7 @@ import type { BridgeHandler } from '@agoric/vats';
 import { BridgeId } from '@agoric/internal';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 // import { E } from '@endo/eventual-send';
-import { V as E } from '@agoric/vat-data/vow.js';
+import { V as E } from '@agoric/vow/vat.js';
 import { makeBridge } from './ibcBridgeMock.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
