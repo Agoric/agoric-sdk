@@ -109,6 +109,23 @@ const control = await E(vatAdmin).createVat(bundle, { meter });
 
 ## runPolicy
 
-TODO: The host application can limit the number of cranks processed in a single call to `controller.run()` by providing a `runPolicy` object. This policy object is informed about each crank and the number of computrons it consumed. By comparing the cumulative computrons against an experimentally (and externally) determined threshold, the `runLimit` object can tell the kernel to stop processing before the run-queue is drained. For a busy kernel, with an ever-increasing amount of work to do, this can limit the size of a commitment domain (e.g. the "block" in a blockchain / consensus machine).
+The host application can limit the number of cranks processed in a single call to `controller.run()` by providing a `runPolicy` object. This policy object is informed about each crank and the number of computrons it consumed. By comparing the cumulative computrons against an experimentally (and externally) determined threshold, the `runPolicy` object can tell the kernel to exit the `run()` loop before the run-queue is drained, leaving some work for the future.
 
-This is a work in process, please follow issue #3460 for progress.
+For a busy kernel, with an ever-increasing amount of work to do, this can limit the size of a commitment domain (e.g. the "block" in a blockchain / consensus machine).
+
+## External Refill
+
+In addition to refilling a `Meter` from *within* a Vat (using `E(meter).addRemaining(99n)`), the kernel offers an *external* API to refill all existing Meter objects. This may be useful for runtime-limitation approaches where the host application is willing to reset the meters on a periodic basis, but the vats holding the meters are not prepared to assist.
+
+Calling `controller.resetAllMeters(remaining)` will immediately change all existing Meters to the provided `remaining` value. It takes an absolute number of computrons, as a BigInt (unlike `E(meter).addRemaining()`, which takes a positive delta). This change in value will not trigger the `setThreshold` notification, even if `remaining` is actually lower than the old value.
+
+Only regular `Meter` objects, existing at the time of the call, will have their value changed. Meters created after the call will get whatever `remaining` value their `E(vatAdmin).createMeter()` call provides. `UnlimitedMeter` objects will remain unlimited.
+
+`resetAllMeters` should only be called while the kernel is idle: not during a `controller.step()` or `controller.run()`. Otherwise, the exact timing of when vats experience the meter's new value will be hard to predict.
+
+`resetAllMeters` causes the kernel to write changes to the swing-store DB, which should eventually be committed. Host applications should generally use a sequence like:
+
+* `controller.resetAllMeters()`
+* call device inputs
+* `await controller.run(runPolicy)`
+* `await swingstore.hostStorage.commit()`

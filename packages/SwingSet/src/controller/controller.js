@@ -333,6 +333,10 @@ export async function makeSwingsetController(
       kernel.changeKernelOptions(options);
     },
 
+    resetAllMeters(remaining) {
+      kernel.resetAllMeters(remaining);
+    },
+
     getStats() {
       return defensiveCopy(kernel.getStats());
     },
