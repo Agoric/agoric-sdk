@@ -4,10 +4,6 @@ import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type {
-  MsgBeginRedelegateResponse,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type {
   Delegation,
   Redelegation,
   UnbondingDelegation,
@@ -351,14 +347,14 @@ export interface StakingAccountActions {
     srcValidator: CosmosValidatorAddress,
     dstValidator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<MsgBeginRedelegateResponse>;
+  ) => Promise<void>;
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
    * @param {Delegation[]} delegations - the delegation to undelegate
    */
-  undelegate: (delegations: Delegation[]) => Promise<MsgUndelegateResponse>;
+  undelegate: (delegations: Delegation[]) => Promise<void>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
