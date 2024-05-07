@@ -14,6 +14,12 @@ type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
  * the Zoe state for that instance. The Zoe Contract Facet is accessed
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
+ *
+ * @template CT - The Custom Terms of the contract, which extend the
+ * StandardTerms. Defaults to `Record<string, unknown>`.
+ * @template IKR - The Issuer Keyword Record, which specifies the expected
+ * asset kinds for each keyword in the contract terms. Defaults to
+ * `Record<Keyword, any>`, allowing any keyword and asset kind combination.
  */
 type ZCF<
   CT extends unknown = Record<string, unknown>,
@@ -66,6 +72,11 @@ type ZCF<
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
+  /**
+   * Returns the contract terms, including both standard terms and custom terms.
+   * The standard terms include the `issuers` and `brands` properties, which are
+   * typed according to the `IKR` (issuer keyword record) generic parameter.
+   */
   getTerms: () => StandardTerms<IKR> & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
   getIssuerForBrand: <K_1 extends AssetKind>(brand: Brand<K_1>) => Issuer<K_1>;
