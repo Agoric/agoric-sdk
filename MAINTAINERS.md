@@ -308,8 +308,6 @@ Increment the meter type in `packages/xsnap/api.js`:
 export const METER_TYPE = 'xs-meter-0';
 ```
 
-Be sure to also update `test/test-xs-perf.js` with the new meter version.
-
 ```sh
 cd packages/xsnap
 git add api.js
