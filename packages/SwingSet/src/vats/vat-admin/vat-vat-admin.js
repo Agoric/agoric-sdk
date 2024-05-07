@@ -460,6 +460,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       } else {
         // eventually this option will go away: userspace will be obligated
         // to use an ID, not a full bundle
+        throw Error(`createVat(bundle) has been removed, #4486`);
         const bundle = bundleOrBundleCap;
         assert(
           bundle.moduleFormat,
