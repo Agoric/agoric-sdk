@@ -208,7 +208,7 @@ export {};
  * @template {AssetKind} [K=AssetKind]
  * @template {Key} [M=Key] member kind, for Amounts that have member values
  * @typedef {RemotableObject & IssuerMethods<K, M>} Issuer The issuer cannot
- *   mint a new amount, but it can create empty purses and payments. The issuer
+ *   mint a new payment, but it can create empty purses and payments. The issuer
  *   can also transform payments (splitting payments, combining payments,
  *   burning payments, and claiming payments exclusively). The issuer should be
  *   gotten from a trusted source and then relied upon as the decider of whether
