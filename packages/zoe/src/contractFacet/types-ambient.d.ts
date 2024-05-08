@@ -73,9 +73,12 @@ type ZCF<
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
   /**
-   * Returns the contract terms, including both standard terms and custom terms.
-   * The standard terms include the `issuers` and `brands` properties, which are
-   * typed according to the `IKR` (issuer keyword record) generic parameter.
+   * Returns the contract terms, including both standard terms and custom
+   * terms. The standard terms include the `issuers` and `brands` properties,
+   * which are typed according to the `IKR` (issuer keyword record) generic
+   * parameter. Custom Terms are immutable and can't be updated after
+   * instantiation. Standard Terms (brands and issuers) are append only and can
+   * be updated with `zcf.saveIssuer()` or `saveAllIssuers()`.
    */
   getTerms: () => StandardTerms<IKR> & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
