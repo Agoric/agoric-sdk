@@ -77,6 +77,11 @@ export const AmountShape = harden({
   value: AmountValueShape,
 });
 
+export const NatAmountShape = harden({
+  brand: BrandShape,
+  value: NatValueShape,
+});
+
 export const RatioShape = harden({
   numerator: AmountShape,
   denominator: AmountShape,
