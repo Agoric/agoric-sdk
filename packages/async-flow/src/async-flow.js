@@ -1,8 +1,8 @@
 import { annotateError, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { PromiseWatcherI } from '@agoric/base-zone';
 import { toPassableCap, VowShape } from '@agoric/vow';
-import { PromiseWatcherI } from '@agoric/vow/src/watch-promise.js';
 import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
