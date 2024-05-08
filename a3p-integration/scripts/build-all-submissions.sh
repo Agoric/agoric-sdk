@@ -10,7 +10,7 @@ for proposal in ./proposals/?:*; do
   cd $proposal
   while read -r line; do
     IFS=' ' parts=($line)
-    $SCRIPT_DIR/generate-a3p-submission.sh $proposal ${parts[@]}
+    $SCRIPT_DIR/build-submission.sh $proposal ${parts[@]}
   done < <(jq -r '.agoricProposal["sdk-generate"][]' < package.json)
   cd -
 done
