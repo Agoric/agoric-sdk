@@ -2,7 +2,12 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap } from '@agoric/internal';
+import {
+  allValues,
+  deeplyFulfilledObject,
+  makeTracer,
+  objectMap,
+} from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
@@ -12,7 +17,6 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { E } from '@endo/eventual-send';
-import { deeplyFulfilled } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -112,11 +116,13 @@ test.before(async t => {
     referencedUi: undefined,
     rates: defaultParamValues(run.brand),
   };
-  const frozenCtx = await deeplyFulfilled(harden(contextPs));
+  const frozenCtx = await deeplyFulfilledObject(harden(contextPs));
   t.context = {
     ...frozenCtx,
     bundleCache,
+    // @ts-expect-error XXX AssetIssuerKit
     aeth,
+    // @ts-expect-error XXX AssetIssuerKit
     run,
   };
   trace(t, 'CONTEXT');

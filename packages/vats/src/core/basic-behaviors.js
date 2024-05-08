@@ -63,6 +63,7 @@ export const makeVatsFromBundles = async ({
   // NOTE: we rely on multiple createVatAdminService calls
   // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+  // @ts-expect-error XXX
   vatAdminSvc.resolve(svc);
 
   const durableStore = await vatStore;
@@ -77,6 +78,7 @@ export const makeVatsFromBundles = async ({
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type {Promise<CreateVatResults>} */
+          // @ts-expect-error XXX
           const vatInfo = E(svc).createVatByName(bundleName, {
             ...defaultVatCreationOptions,
             name: vatName,
@@ -87,6 +89,7 @@ export const makeVatsFromBundles = async ({
         assert(bundleID);
         const bcap = await E(svc).getBundleCap(bundleID);
         /** @type {Promise<CreateVatResults>} */
+        // @ts-expect-error XXX
         const vatInfo = E(svc).createVat(bcap, {
           ...defaultVatCreationOptions,
           name: vatName,

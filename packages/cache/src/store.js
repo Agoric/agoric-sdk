@@ -7,7 +7,7 @@ import { withGroundState, makeState } from './state.js';
 /** @import {Passable} from '@endo/pass-style' */
 
 /**
- * @param {(obj: unknown) => unknown} [sanitize]
+ * @param {(obj: Passable) => Passable} [sanitize]
  * @returns {(key: Passable) => Promise<string>}
  */
 const makeKeyToString = (sanitize = obj => obj) => {
@@ -36,16 +36,16 @@ const makeKeyToString = (sanitize = obj => obj) => {
 
 /**
  * @param {string} keyStr
- * @param {(oldValue: unknown) => unknown} txn
+ * @param {(oldValue: Passable) => Passable} txn
  * @param {Pattern} guardPattern
- * @param {(obj: unknown) => unknown} sanitize Process keys and values with
+ * @param {(obj: Passable) => Passable} sanitize Process keys and values with
  * this function before storing them
  * @param {{
  * get(key: string): import('./state.js').State;
  * set(key: string, value: import('./state.js').State): void;
  * init(key: string, value: import('./state.js').State): void;
  * }} stateStore
- * @returns {Promise<unknown>} the value of the updated state
+ * @returns {Promise<Passable>} the value of the updated state
  */
 const applyCacheTransaction = async (
   keyStr,
@@ -112,6 +112,7 @@ const applyCacheTransaction = async (
  * @returns {Promise<string>}
  */
 const stringifyStateStore = async (stateStore, marshaller) => {
+  /** @type {Passable} */
   const obj = {};
   for (const [key, value] of stateStore.entries()) {
     obj[key] = E(marshaller).toCapData(value);
@@ -126,7 +127,7 @@ const stringifyStateStore = async (stateStore, marshaller) => {
  * currently enforce any cache eviction, but that would be a useful feature.
  *
  * @param {MapStore<string, import('./state.js').State>} [stateStore]
- * @param {(obj: unknown) => unknown} [sanitize] Process keys and values with
+ * @param {(obj: Passable) => Passable} [sanitize] Process keys and values with
  * this function before storing them. Defaults to deeplyFulfilled.
  */
 export const makeScalarStoreCoordinator = (

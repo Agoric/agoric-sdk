@@ -60,7 +60,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'set', PriceDescription>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
@@ -78,12 +78,11 @@ const start = async (zcf, privateArgs) => {
   const { marshaller, storageNode } = privateArgs;
   assertAllDefined({ marshaller, storageNode });
 
+  /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =
     privateArgs.quoteMint ||
     // makeIssuerKit fails upgrade, this contract is for demo only
     makeIssuerKit('quote', AssetKind.SET).mint;
-  /** @type {IssuerRecord<'set'>} */
-  // xxx saveIssuer not generic
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -101,8 +100,6 @@ const start = async (zcf, privateArgs) => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
-    /** @type {Amount<'set'>} */
-    // xxx type should be inferred from brand and value
     const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });

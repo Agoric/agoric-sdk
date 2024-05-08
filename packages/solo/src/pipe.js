@@ -31,6 +31,7 @@ export const connectToPipe = async ({ method, args, deliverInboundToMbx }) => {
       return;
     }
     // console.log('pipe.js', msg);
+    /** @type {any} */
     const as = parse(`${msg}`);
     deliverInboundToMbx(...as).then(() => cp.send('go'));
   });

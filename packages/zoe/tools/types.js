@@ -3,9 +3,9 @@ export {};
 
 /**
  * @typedef {object} PriceQuote
- * @property {Amount<'set'>} quoteAmount
+ * @property {Amount<'set', PriceDescription>} quoteAmount
  * Amount whose value is a PriceQuoteValue
- * @property {ERef<Payment<'set'>>} quotePayment
+ * @property {ERef<Payment<'set', PriceDescription>>} quotePayment
  * The `quoteAmount` wrapped as a payment
  */
 
@@ -22,7 +22,7 @@ export {};
  * The amount supplied to a trade
  * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
- * @property {import('@agoric/time').TimerService} timer
+ * @property {import('@endo/pass-style').RemotableObject & import('@agoric/time').TimerService} timer
  * The service that gave the `timestamp`
  * @property {import('@agoric/time').TimestampRecord} timestamp
  * A timestamp according to `timer` for the quote
@@ -64,7 +64,7 @@ export {};
  * An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *
- * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set'>>} getQuoteIssuer
+ * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set', PriceDescription>>} getQuoteIssuer
  * Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
  *
  * @property {(brandIn: Brand,

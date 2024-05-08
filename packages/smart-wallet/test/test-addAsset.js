@@ -185,8 +185,9 @@ const makeScenario = t => {
     const uiBridge = Far('UIBridge', {
       /** @param {import('@endo/marshal').CapData<string>} offerEncoding */
       proposeOffer: async offerEncoding => {
-        /** @type {import('../src/offers.js').OfferSpec} */
-        const offer = ctx.fromBoard.fromCapData(offerEncoding);
+        const offer = /** @type {import('../src/offers.js').OfferSpec} */ (
+          ctx.fromBoard.fromCapData(offerEncoding)
+        );
         const { give, want } = offer.proposal;
         for await (const [kw, amt] of entries({ ...give, ...want })) {
           // @ts-expect-error
@@ -435,7 +436,6 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
     const {
       status: { id, result, payouts },
     } = update;
-    // @ts-expect-error cast value to copyBag
     const names = payouts?.Places.value.payload.map(([name, _qty]) => name);
     t.log(id, 'result:', result, ', payouts:', names.join(', '));
 

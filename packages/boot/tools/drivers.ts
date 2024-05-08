@@ -96,25 +96,21 @@ export const makeWalletFactoryDriver = async (
     },
 
     getCurrentWalletRecord(): CurrentWalletRecord {
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}.current`,
-        fromCapData,
+        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
         -1,
-      );
+      ) as any;
     },
 
     getLatestUpdateRecord(): UpdateRecord {
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}`,
-        fromCapData,
+        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
         -1,
-      );
+      ) as any;
     },
   });
 
@@ -286,7 +282,7 @@ export const makeGovernanceDriver = async (
   const enactLatestProposal = async () => {
     const latestQuestionRecord = testKit.readLatest(
       'published.committees.Economic_Committee.latestQuestion',
-    );
+    ) as any;
 
     const chosenPositions = [latestQuestionRecord.positions[0]];
 

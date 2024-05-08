@@ -15,6 +15,11 @@ import {
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
+/**
+ * @import {Passable, RemotableObject} from '@endo/pass-style')
+ * @import {Key} from '@endo/patterns')
+ */
+
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
 // delay(), and Notifiers/Iterators (for each actively-waiting
 // client). Everything else should remain in the DB.
@@ -31,10 +36,10 @@ import { TimeMath } from '@agoric/time';
  * Handler is a user-provided Far object with .wake(time) used for callbacks
  * @property {(scheduled: Timestamp) => unknown} wake
  *
- * @typedef {unknown} CancelToken
+ * @typedef {Key} CancelToken
  * CancelToken must be pass-by-reference and durable, either local or remote
  *
- * @typedef {{
+ * @typedef {RemotableObject & {
  *  scheduleYourself: () => void,
  *  fired: (now: TimestampValue) => void,
  *  cancel: () => void,
@@ -42,7 +47,7 @@ import { TimeMath } from '@agoric/time';
  *
  * @typedef {MapStore<TimestampValue, Event[]>} Schedule
  *
- * @typedef {{ cancel: () => void }} Cancellable
+ * @typedef {RemotableObject & { cancel: () => void }} Cancellable
  *
  * @typedef {WeakMapStore<CancelToken, Cancellable[]>} CancelTable
  *

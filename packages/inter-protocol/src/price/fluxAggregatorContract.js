@@ -67,6 +67,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
   /** @type {import('./roundsManager.js').QuoteKit} */
+  // @ts-expect-error cast
   const quoteIssuerKit = prepareIssuerKit(
     baggage,
     'quote',

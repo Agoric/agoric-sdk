@@ -3,7 +3,11 @@ import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 
-/** @import {TimerService} from '@agoric/time' */
+/**
+ * @import {TimerServiceI} from '@agoric/time';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {RemotableBrand} from '@endo/eventual-send';
+ */
 
 const { Fail } = assert;
 
@@ -28,9 +32,7 @@ const nolog = (..._args) => {};
  * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
  */
 
-/**
- * @typedef {TimerService & ManualTimerAdmin} ManualTimer
- */
+/** @typedef {TimerServiceI & RemotableObject<'TimerService'> & RemotableBrand<ManualTimerAdmin, TimerServiceI & ManualTimerAdmin> & ManualTimerAdmin} ManualTimer */
 
 /**
  * A fake TimerService, for unit tests that do not use a real

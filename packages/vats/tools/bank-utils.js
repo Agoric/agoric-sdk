@@ -5,7 +5,7 @@ import { Far } from '@endo/marshal';
 
 /** @param {Pick<IssuerKit, 'brand' | 'issuer'>[]} issuerKits */
 export const makeFakeBankKit = issuerKits => {
-  /** @type {MapStore<Brand, ERef<Issuer>>} */
+  /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();
   /**
    * @type {MapStore<

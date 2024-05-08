@@ -52,6 +52,7 @@ export const prepareVaultHolder = (baggage, makeRecorderKit) => {
      */
     (vault, storageNode) => {
       // must be the fully synchronous maker because the kit is held in durable state
+      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.vault[1]);
 
       return { topicKit, vault };

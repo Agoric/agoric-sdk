@@ -9,7 +9,7 @@ import {
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
 import { makeHeapZone } from '@agoric/zone';
-import { deeplyFulfilled } from '@endo/marshal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 
 const { Fail, quote: q } = assert;
 
@@ -118,7 +118,7 @@ const updated = (updateCallback, hub, _newValue = undefined) => {
   }
 
   // wait for values to settle before writing
-  return E.when(deeplyFulfilled(hub.entries()), settledEntries =>
+  return E.when(deeplyFulfilledObject(hub.entries()), settledEntries =>
     E(updateCallback).write(settledEntries),
   );
 };

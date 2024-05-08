@@ -15,7 +15,10 @@ import { makeMarshal } from '@endo/marshal';
 
 import { crc6 } from './crc.js';
 
-/** @import {Key} from '@endo/patterns') */
+/**
+ * @import {PassableCap} from '@endo/marshal';
+ * @import {Key} from '@endo/patterns');
+ */
 
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
@@ -99,13 +102,13 @@ const initDurableBoardState = (
   const immutable = { prefix, crcDigits };
 
   const lastSequence = BigInt(initSequence);
-  /** @type {MapStore<BoardId, Key>} */
+  /** @type {MapStore<BoardId, PassableCap>} */
   const idToVal = makeScalarBigMapStore('idToVal', {
     durable: true,
     keyShape: IdShape,
     valueShape: ValShape,
   });
-  /** @type {MapStore<Key, BoardId>} */
+  /** @type {MapStore<PassableCap, BoardId>} */
   const valToId = makeScalarBigMapStore('valToId', {
     durable: true,
     keyShape: ValShape,
@@ -127,7 +130,7 @@ const initDurableBoardState = (
 // transient marshallers that get GCed when the function completes.
 
 /**
- * @param {Key} value
+ * @param {PassableCap} value
  * @param {BoardState} state
  */
 const getId = (value, state) => {
@@ -185,7 +188,7 @@ const makeSlotToVal = state => {
   /**
    * @param {BoardId} slot
    * @param {string} iface
-   * @returns {unknown}
+   * @returns {any}
    */
   const slotToVal = (slot, iface) => {
     if (slot !== null) {
@@ -264,7 +267,7 @@ export const prepareBoardKit = baggage => {
          * `value` for its entire lifetime. For a well-known board, this is
          * essentially forever.
          *
-         * @param {Key} value
+         * @param {PassableCap} value
          * @throws if `value` is not a Key in the @agoric/store sense
          */
         getId(value) {
@@ -295,13 +298,14 @@ export const prepareBoardKit = baggage => {
             return board;
           }
           const [first, ...rest] = path;
+          /** @type {any} */
           const firstValue = board.getValue(/** @type {BoardId} */ (first));
           if (rest.length === 0) {
             return firstValue;
           }
           return E(firstValue).lookup(...rest);
         },
-        /** @param {Key} val */
+        /** @param {PassableCap} val */
         has(val) {
           const { state } = this;
           return state.valToId.has(val);

@@ -6,16 +6,16 @@ import { makeNotifier } from '@agoric/notifier';
 
 /**
  * @import {EOnly} from '@endo/eventual-send';
- * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {MutableQuote, PriceAuthority, PriceQuote, PriceDescription,} from '@agoric/zoe/tools/types.js';
  */
 
 /**
  * @param {Brand<'set'>} quoteBrand
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut
- * @param {ERef<import('@agoric/time').TimerService>} timer
- * @param {import('@agoric/time').Timestamp} timestamp
- * @param {ERef<Mint<'set'>>} quoteMint
+ * @param {import('@agoric/time').TimerService} timer
+ * @param {import('@agoric/time').TimestampRecord} timestamp
+ * @param {ERef<Mint<'set', PriceDescription>>} quoteMint
  * @returns {Promise<PriceQuote>}
  */
 export const mintQuote = async (
@@ -39,7 +39,7 @@ export const mintQuote = async (
 
 /**
  * @param {object} opts
- * @param {ERef<Mint<'set'>>} opts.quoteMint
+ * @param {ERef<Mint<'set', PriceDescription>>} opts.quoteMint
  * @param {ERef<PriceAuthority>} opts.sourcePriceAuthority
  * @param {Brand<'nat'>} opts.sourceBrandIn
  * @param {Brand<'nat'>} opts.sourceBrandOut

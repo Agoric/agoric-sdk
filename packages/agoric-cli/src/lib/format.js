@@ -54,7 +54,9 @@ export const makeAmountFormatter = assets => amt => {
       return [issuerName, Number(value) / 10 ** decimalPlaces];
     case 'set':
       assert(Array.isArray(value));
+      // @ts-expect-error narrowed
       if (value[0]?.handle?.iface?.includes('InvitationHandle')) {
+        // @ts-expect-error narrowed
         return [issuerName, value.map(v => v.description)];
       }
       return [issuerName, value];

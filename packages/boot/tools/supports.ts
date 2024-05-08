@@ -283,7 +283,7 @@ export const makeSwingsetTestKit = async (
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
-  const readLatest = path => {
+  const readLatest = (path: string): any => {
     const data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
     trace('readLatest', path, 'returning', inspect(data, false, 20, true));
     return data;

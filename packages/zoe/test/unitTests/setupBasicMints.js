@@ -22,7 +22,7 @@ export const setup = () => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
-  /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
+  /** @type {(brand: Brand<'nat'>) => (value: bigint) => Amount<'nat'>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   const result = {

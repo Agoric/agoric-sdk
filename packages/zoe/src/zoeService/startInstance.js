@@ -274,9 +274,13 @@ export const makeStartInstance = (
     },
   );
 
+  /**
+   * @type {import('./utils.js').StartInstance}
+   */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
+    // @ts-expect-error FIXME may not match the expected terms of SF
     customTerms = harden({}),
     privateArgs = undefined,
     instanceLabel = '',
@@ -330,6 +334,7 @@ export const makeStartInstance = (
     void watchForAdminNodeDone(adminNode, instanceAdmin);
 
     /** @type {ZoeInstanceAdmin} */
+    // @ts-expect-error XXX saveIssuer
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
       zoeInstanceStorageManager,
       instanceAdmin,
@@ -355,6 +360,7 @@ export const makeStartInstance = (
 
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
+    // @ts-expect-error cast
     return E.when(
       Promise.all([
         creatorInvitationP,
@@ -383,6 +389,5 @@ export const makeStartInstance = (
       },
     );
   };
-  // @ts-expect-error cast
   return harden(startInstance);
 };

@@ -264,8 +264,8 @@ From `origin/master`, begin a branch for syncing Endo.
 
 ```sh
 NOW=`date -u +%Y-%m-%d-%H-%M-%S`
-git checkout -b "$USER-sync-endo-$NOW" origin/endo-integration-master
-git rebase origin/master
+git checkout -b "$USER-sync-endo-$NOW"
+git rebase origin/integration-endo-master
 ```
 
 Use a helper script from the Endo repository to update the dependency versions
@@ -307,8 +307,6 @@ Increment the meter type in `packages/xsnap/api.js`:
 ```js
 export const METER_TYPE = 'xs-meter-0';
 ```
-
-Be sure to also update `test/test-xs-perf.js` with the new meter version.
 
 ```sh
 cd packages/xsnap

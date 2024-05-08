@@ -9,7 +9,8 @@ import { provideLazy } from '@agoric/store';
 let VatDataGlobal;
 if ('VatData' in globalThis) {
   globalThis.VatData || Fail`VatData defined in global as null or undefined`;
-  VatDataGlobal = globalThis.VatData;
+  // XXX types incompatibility
+  VatDataGlobal = /** @type {any} */ (globalThis.VatData);
 } else {
   // XXX this module has been known to get imported (transitively) in cases that
   // never use it so we make a version that will satisfy module resolution but

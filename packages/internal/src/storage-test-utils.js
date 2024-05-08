@@ -6,6 +6,10 @@ import { makeTracer } from './debug.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 
+/**
+ * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
+ */
+
 const { Fail } = assert;
 
 const trace = makeTracer('StorTU', false);
@@ -113,9 +117,9 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     }
     return childEntries;
   };
-  /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
+  /** @type {StorageMessage[]} */
   const messages = [];
-  /** @param {import('../src/lib-chainStorage.js').StorageMessage} message */
+  /** @param {StorageMessage} message */
 
   const toStorage = message => {
     messages.push(message);
@@ -143,7 +147,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'set':
       case 'setWithoutNotify': {
         trace('toStorage set', message);
-        /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
+        /** @type {StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
           if (value != null) {
@@ -156,7 +160,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       }
       case 'append': {
         trace('toStorage append', message);
-        /** @type {import('../src/lib-chainStorage.js').StorageEntry[]} */
+        /** @type {StorageEntry[]} */
         const newEntries = message.args;
         for (const [key, value] of newEntries) {
           value != null || Fail`attempt to append with no value`;
@@ -203,6 +207,18 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
 harden(makeFakeStorageKit);
 /** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */
 
+/**
+ * @typedef MockChainStorageRootMethods
+ * @property {(path: string, marshaller?: Marshaller, index?: number) => unknown} getBody
+ * Defaults to deserializing slot references into plain Remotable
+ * objects having the specified interface name (as from `Far(iface)`),
+ * but can accept a different marshaller for producing Remotables
+ * that e.g. embed the slot string in their iface name.
+ * @property {() => string[]} keys
+ */
+/** @typedef {StorageNode & MockChainStorageRootMethods} MockChainStorageRoot */
+
+/** @returns {MockChainStorageRoot} */
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
   return Far('mockChainStorage', {
@@ -214,7 +230,7 @@ export const makeMockChainStorageRoot = () => {
      * that e.g. embed the slot string in their iface name.
      *
      * @param {string} path
-     * @param {import('./lib-chainStorage.js').Marshaller} marshaller
+     * @param {Marshaller} marshaller
      * @param {number} [index]
      * @returns {unknown}
      */
@@ -228,4 +244,3 @@ export const makeMockChainStorageRoot = () => {
     keys: () => [...data.keys()],
   });
 };
-/** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */

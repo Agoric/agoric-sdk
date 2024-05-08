@@ -6,7 +6,7 @@ export {};
 /**
  * Note TODO https://github.com/endojs/endo/issues/1488
  *
- * @import {Passable} from '@endo/pass-style'
+ * @import {Passable, RemotableObject} from '@endo/pass-style'
  * @import {CopySet, CopyMap, Pattern} from '@endo/patterns'
  * @import {Key} from '@endo/patterns'
  */
@@ -49,9 +49,10 @@ export {};
  * WeakStores, but with the additional query and query-update methods.
  */
 
+// TODO use Key for K
 /**
- * @template {Key & object} [K=Key]
- * @typedef {object} WeakSetStore
+ * @template K
+ * @typedef {object} WeakSetStoreMethods
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
  *   cannot be found in this store.
@@ -60,12 +61,17 @@ export {};
  *   this store. For example a scalar store only allows primitives and
  *   remotables.
  * @property {(key: K) => void} delete Remove the key. Throws if not found.
- * @property {(keys: CopySet<K> | Iterable<K>) => void} addAll
+ * @property {(keys: CopySet<any> | Iterable<K>) => void} addAll
+ */
+/**
+ * @template K
+ * @typedef {RemotableObject & WeakSetStoreMethods<K>} WeakSetStore
  */
 
+// TODO use Key for K
 /**
- * @template {Key} [K=Key]
- * @typedef {object} SetStore
+ * @template K
+ * @typedef {object} SetStoreMethods
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
  *   cannot be found in this store.
@@ -74,17 +80,23 @@ export {};
  *   this store. For example a scalar store only allows primitives and
  *   remotables.
  * @property {(key: K) => void} delete Remove the key. Throws if not found.
- * @property {(keys: CopySet<K> | Iterable<K>) => void} addAll
+ * @property {(keys: CopySet<any> | Iterable<K>) => void} addAll
  * @property {(keyPatt?: Pattern) => Iterable<K>} keys
  * @property {(keyPatt?: Pattern) => Iterable<K>} values
- * @property {(keyPatt?: Pattern) => CopySet<K>} snapshot
+ * @property {(keyPatt?: Pattern) => CopySet<any>} snapshot
  * @property {(keyPatt?: Pattern) => number} getSize
  * @property {(keyPatt?: Pattern) => void} clear
  */
-
 /**
- * @template {Key & object} [K=Key]
- * @template {Passable} [V=Passable]
+ * @template K
+ * @typedef {RemotableObject & SetStoreMethods<K>} SetStore
+ */
+
+// TODO use Key for K
+// TODO use Passable for V
+/**
+ * @template K
+ * @template V
  * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
@@ -96,13 +108,15 @@ export {};
  *   example a scalar store only allows primitives and remotables.
  * @property {(key: K, value: V) => void} set Set the key. Throws if not found.
  * @property {(key: K) => void} delete Remove the key. Throws if not found.
- * @property {(entries: CopyMap<K, V> | Iterable<[K, V]>) => void} addAll
+ * @property {(entries: CopyMap<any, any> | Iterable<[K, V]>) => void} addAll
  */
 
+// TODO use Key for K
+// TODO use Passable for V
 /**
- * @template {Key} [K=Key]
- * @template {Passable} [V=Passable]
- * @typedef {object} MapStore
+ * @template K
+ * @template V
+ * @typedef {object} MapStoreMethods
  * @property {(key: K) => boolean} has Check if a key exists. The key can be any
  *   JavaScript value, though the answer will always be false for keys that
  *   cannot be found in this map
@@ -113,13 +127,21 @@ export {};
  *   example a scalar store only allows primitives and remotables.
  * @property {(key: K, value: V) => void} set Set the key. Throws if not found.
  * @property {(key: K) => void} delete Remove the key. Throws if not found.
- * @property {(entries: CopyMap<K, V> | Iterable<[K, V]>) => void} addAll
+ * @property {(entries: CopyMap<any, Passable> | Iterable<[K, V]>) => void} addAll
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<K>} keys
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<V>} values
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<[K, V]>} entries
- * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => CopyMap<K, V>} snapshot
+ * @property {(
+ *   keyPatt?: Pattern,
+ *   valuePatt?: Pattern,
+ * ) => CopyMap<any, Passable>} snapshot
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => number} getSize
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => void} clear
+ */
+/**
+ * @template [K=any]
+ * @template [V=any]
+ * @typedef {RemotableObject & MapStoreMethods<K, V>} MapStore
  */
 
 // ///////////////////////// Deprecated Legacy /////////////////////////////////

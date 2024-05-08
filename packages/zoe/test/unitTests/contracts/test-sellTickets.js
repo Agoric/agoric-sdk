@@ -146,6 +146,7 @@ test(`mint and sell opera tickets`, async t => {
     brand: moolaBrand,
   } = makeIssuerKit('moola');
 
+  /** @param {bigint} value */
   const moola = value => AmountMath.make(moolaBrand, value);
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
@@ -442,7 +443,7 @@ test(`mint and sell opera tickets`, async t => {
     const bobPurse = await E(moolaIssuer).makeEmptyPurse();
     await E(bobPurse).deposit(moola100Payment);
 
-    /** @type {Amount} */
+    /** @type {Amount<'set', {number: number}>} */
     const availableTickets = await E(
       ticketSalesPublicFacet,
     ).getAvailableItems();

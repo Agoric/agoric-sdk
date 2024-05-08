@@ -62,7 +62,7 @@ const trace = makeTracer('SmrtWlt');
  *   id: OfferId,
  *   invitationSpec: import('./invitations').InvitationSpec,
  *   proposal: Proposal,
- *   offerArgs?: unknown
+ *   offerArgs?: any
  * }} OfferSpec
  */
 
@@ -150,7 +150,7 @@ const trace = makeTracer('SmrtWlt');
  *   address: string,
  *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
  *   currentStorageNode: StorageNode,
- *   invitationPurse: Purse<'set'>,
+ *   invitationPurse: Purse<'set', InvitationDetails>,
  *   walletStorageNode: StorageNode,
  * }} UniqueParams
  *
@@ -770,7 +770,6 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { registry, invitationBrand } = shared;
 
           if (registry.has(brand)) {
-            // @ts-expect-error virtual purse
             return E(state.bank).getPurse(brand);
           } else if (invitationBrand === brand) {
             return state.invitationPurse;

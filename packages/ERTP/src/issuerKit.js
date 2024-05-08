@@ -325,7 +325,7 @@ harden(prepareIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {IssuerOptionsRecord} [options]
- * @returns {IssuerKit<K>}
+ * @returns {IssuerKit<K, any>}
  */
 export const makeIssuerKit = (
   name,

@@ -117,6 +117,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
      */
     (account, storageNode, chainAddress, icqConnection, bondDenom) => {
       // must be the fully synchronous maker because the kit is held in durable state
+      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
       return { account, chainAddress, topicKit, icqConnection, bondDenom };

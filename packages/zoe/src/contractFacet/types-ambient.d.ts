@@ -6,6 +6,8 @@ type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 type Completion = any;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
+type InvitationAmount = Amount<'set', InvitationDetails>;
+
 /**
  * Zoe Contract Facet
  *
@@ -38,10 +40,10 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * @returns the AmountMath and brand synchronously accessible after
    * saving
    */
-  saveIssuer: (
-    issuerP: ERef<Issuer>,
+  saveIssuer: <I extends Issuer>(
+    issuerP: ERef<I>,
     keyword: Keyword,
-  ) => Promise<IssuerRecord<any>>;
+  ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>;
 
   /**
    * Make a credible Zoe invitation for a particular smart contract
@@ -162,7 +164,7 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * normally an instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
-type ZCFSeat = {
+type ZCFSeat = import('@endo/pass-style').RemotableObject & {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
@@ -243,7 +245,10 @@ type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
 
 declare const OfferReturn: unique symbol;
 declare const OfferArgs: unique symbol;
-type Invitation<R = unknown, A = undefined> = Payment<'set'> & {
+type Invitation<R = unknown, A = undefined> = Payment<
+  'set',
+  InvitationDetails
+> & {
   // because TS is structural, without this the generic is ignored
   [OfferReturn]?: R;
   [OfferArgs]?: A;

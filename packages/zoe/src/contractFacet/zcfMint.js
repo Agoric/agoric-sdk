@@ -15,10 +15,9 @@ import './types-ambient.js';
 const { Fail } = assert;
 
 /**
- * @template {AssetKind} K
  * @param {AmountKeywordRecord} amr
- * @param {IssuerRecord<K>} issuerRecord
- * @returns {Amount<K>}
+ * @param {IssuerRecord} issuerRecord
+ * @returns {Amount}
  */
 export const sumAmountKeywordRecord = (amr, issuerRecord) => {
   const empty = AmountMath.makeEmpty(

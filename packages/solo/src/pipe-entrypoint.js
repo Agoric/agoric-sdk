@@ -29,6 +29,7 @@ const main = async () => {
       mutex.resolve(undefined);
       return;
     }
+    /** @type {any} */
     const as = parse(`${msg}`);
     deliverator(...as).then(() => send('go'));
   });

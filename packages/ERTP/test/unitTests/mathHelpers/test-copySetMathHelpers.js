@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { getCopySetKeys, makeCopySet } from '@agoric/store';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
-import { mockBrand } from './mockBrand.js';
+import { mockCopySetBrand as mockBrand } from './mockBrand.js';
 
 /** @import {CopySet} from '@endo/patterns' */
 
@@ -209,6 +209,7 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a', 'a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b']) }),
       ),
     { message: /value has duplicate(| key)s: "a"/ },
@@ -218,6 +219,7 @@ test('copySet with strings add', t => {
     () =>
       m.add(
         harden({ brand: mockBrand, value: makeCopySet(['a']) }),
+        // @ts-expect-error deliberate invalid arguments for testing
         harden({ brand: mockBrand, value: makeCopySet(['b', 'b']) }),
       ),
     { message: /value has duplicate(| key)s: "b"/ },

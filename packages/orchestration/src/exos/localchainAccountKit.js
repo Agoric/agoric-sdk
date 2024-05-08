@@ -61,6 +61,7 @@ export const prepareLocalchainAccountKit = (baggage, makeRecorderKit, zcf) => {
      */
     (account, storageNode) => {
       // must be the fully synchronous maker because the kit is held in durable state
+      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
       return { account, topicKit };

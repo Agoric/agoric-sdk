@@ -20,7 +20,10 @@ const { quote: q, Fail } = assert;
 
 const trace = makeTracer('Vault', true);
 
-/** @import {NormalizedDebt} from './storeUtils.js' */
+/**
+ * @import {Brand} from '@agoric/ertp/src/types.js';
+ * @import {NormalizedDebt} from './storeUtils.js';
+ */
 
 /**
  * @file This has most of the logic for a Vault, to borrow Minted against
@@ -301,13 +304,20 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           );
         },
 
-        /** @param {ZCFSeat} seat */
+        /**
+         * @param {ZCFSeat} seat
+         * @returns {Amount<'nat'>}
+         */
         getCollateralAllocated(seat) {
           return seat.getAmountAllocated(
             'Collateral',
             this.facets.helper.collateralBrand(),
           );
         },
+        /**
+         * @param {ZCFSeat} seat
+         * @returns {Amount<'nat'>}
+         */
         getMintedAllocated(seat) {
           return seat.getAmountAllocated(
             'Minted',

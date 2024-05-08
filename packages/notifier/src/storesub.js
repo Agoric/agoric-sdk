@@ -44,7 +44,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
  * the iteration themselves, or obtain information to subscribe to the stored
  * data out-of-band.
  *
- * @template T
+ * @template {import('@endo/marshal').PassableCap} T
  * @param {Subscriber<T>} subscriber
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<ReturnType<typeof makeMarshal>>} marshaller

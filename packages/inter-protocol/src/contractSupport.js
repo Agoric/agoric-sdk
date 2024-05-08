@@ -21,11 +21,11 @@ export const ratioPattern = harden({
  * proposal. We use two Amounts because an Amount cannot represent a negative
  * number (so we use a "loss" that will be subtracted).
  *
- * @template {AssetKind} K
- * @param {Amount<K>} base
- * @param {Amount<K>} gain
- * @param {Amount<K>} loss
- * @returns {Amount<K>}
+ * @template {Amount} A
+ * @param {A} base
+ * @param {A} gain
+ * @param {A} loss
+ * @returns {A}
  */
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
@@ -79,14 +79,14 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 
 /**
  * @template T
- * @typedef {object} MetricsPublisherKit<T>
+ * @typedef {object} MetricsPublisherKit
  * @property {IterationObserver<T>} metricsPublication
  * @property {StoredSubscription<T>} metricsSubscription
  */
 
 /**
  * @template T
- * @typedef {object} MetricsPublishKit<T>
+ * @typedef {object} MetricsPublishKit
  * @property {Publisher<T>} metricsPublisher
  * @property {StoredSubscriber<T>} metricsSubscriber
  */

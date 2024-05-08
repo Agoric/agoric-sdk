@@ -8,6 +8,7 @@ import * as os from 'os';
 import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
+import { METER_TYPE } from '../api.js';
 
 import { options, decode, encode } from './message-tools.js';
 
@@ -61,7 +62,7 @@ test('meter details', async t => {
     },
     'evaluate returns meter details',
   );
-  t.is(meterType, 'xs-meter-27');
+  t.is(meterType, METER_TYPE);
 });
 
 // test disabled until rewritten to tolerate fast CI hosts getting
