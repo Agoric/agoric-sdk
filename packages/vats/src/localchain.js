@@ -5,6 +5,8 @@ import { AmountShape } from '@agoric/ertp';
 
 const { Fail, bare } = assert;
 
+/** @import {TypedJson, ResponseType, Proto3Shape} from '@agoric/cosmic-proto'; */
+
 /**
  * @typedef {{
  *   system: import('./types.js').ScopedBridgeManager;
@@ -32,6 +34,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   deposit: M.callWhen(M.remotable('Payment'))
     .optional(M.pattern())
     .returns(AmountShape),
+  withdraw: M.callWhen(AmountShape).returns(M.remotable('Payment')),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
@@ -63,9 +66,22 @@ const prepareLocalChainAccount = zone =>
         const bankManager = getPower(powers, 'bankManager');
 
         const allegedBrand = await E(payment).getAllegedBrand();
-        const bankAcct = E(bankManager).getBankForAddress(address);
-        const allegedPurse = E(bankAcct).getPurse(allegedBrand);
-        return E(allegedPurse).deposit(payment);
+        const acctsBank = E(bankManager).getBankForAddress(address);
+        const purse = E(acctsBank).getPurse(allegedBrand);
+        return E(purse).deposit(payment);
+      },
+      /**
+       * Withdraw a payment from the account's bank purse.
+       *
+       * @param {Amount} amount
+       */
+      async withdraw(amount) {
+        const { address, powers } = this.state;
+        const bankManager = getPower(powers, 'bankManager');
+
+        const acctsBank = E(bankManager).getBankForAddress(address);
+        const purse = E(acctsBank).getPurse(amount.brand);
+        return E(purse).withdraw(amount);
       },
       /**
        * @param {import('@agoric/cosmic-proto').TypedJson<unknown>[]} messages
@@ -164,8 +180,8 @@ const prepareLocalChain = (zone, makeAccount) =>
          * the query fails. Otherwise, return the response as a JSON-compatible
          * object.
          *
-         * @param {import('@agoric/cosmic-proto').TypedJson} request
-         * @returns {Promise<import('@agoric/cosmic-proto').TypedJson>}
+         * @param {TypedJson} request
+         * @returns {Promise<TypedJson>}
          */
         async query(request) {
           const requests = harden([request]);
@@ -183,11 +199,11 @@ const prepareLocalChain = (zone, makeAccount) =>
          * system error, will return all results to indicate their success or
          * failure.
          *
-         * @param {import('@agoric/cosmic-proto').TypedJson[]} requests
+         * @param {TypedJson[]} requests
          * @returns {Promise<
          *   {
          *     error?: string;
-         *     reply: import('@agoric/cosmic-proto').TypedJson;
+         *     reply: TypedJson;
          *   }[]
          * >}
          */
