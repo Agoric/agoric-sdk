@@ -1,5 +1,5 @@
 import { annotateError, Fail, makeError, X } from '@endo/errors';
-import { E } from '@endo/far';
+import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
 import { toPassableCap, VowShape } from '@agoric/vow';

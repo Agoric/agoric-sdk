@@ -66,7 +66,7 @@ harden(getVowPayload);
 export const toPassableCap = k => {
   const payload = getVowPayload(k);
   if (payload === undefined) {
-    return k;
+    return /** @type {PassableCap} */ (k);
   }
   const { vowV0 } = payload;
   // vowMap.set(vowV0, h);
