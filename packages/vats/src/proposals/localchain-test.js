@@ -1,6 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
-import { typedJson } from '@agoric/cosmic-proto';
+import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 
 /**
  * @param {BootstrapPowers & {
