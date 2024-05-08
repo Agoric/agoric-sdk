@@ -295,6 +295,7 @@ export const makeSwingsetTestKit = async (
 
   let inbound;
   let ibcSequenceNonce = 0;
+  let icaExecuteTxSequence = 0;
 
   const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
@@ -429,9 +430,25 @@ export const makeSwingsetTestKit = async (
         switch (obj.type) {
           case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
             return 'agoric1mockVlocalchainAddress';
-          case 'VLOCALCHAIN_EXECUTE_TX':
-            // returns one empty object per message
-            return obj.messages.map(() => ({}));
+          case 'VLOCALCHAIN_EXECUTE_TX': {
+            icaExecuteTxSequence += 1;
+            // returns one empty object per message unless specified
+            return obj.messages.map(message => {
+              switch (message['@type']) {
+                case '/ibc.applications.transfer.v1.MsgTransfer': {
+                  if (message.token.amount === '504') {
+                    throw Error('simulated MsgTransfer packet timeout');
+                  }
+                  // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
+                  return {
+                    sequence: icaExecuteTxSequence,
+                  };
+                }
+                default:
+                  return {};
+              }
+            });
+          }
           default:
             throw Error(`VLOCALCHAIN message of unknown type ${obj.type}`);
         }

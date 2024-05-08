@@ -7,8 +7,16 @@ export const defaultProposalBuilder = async (
 ) => {
   const {
     hostConnectionId = 'connection-1',
-    controllerConnectionId = 'connection-0',
+    controllerConnectionId = 'connection-1',
     bondDenom = 'uatom',
+    bondDenomLocal = 'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9',
+    transferChannel = {
+      counterpartyChannelId: 'channel-1',
+      counterpartyPortId: 'transfer',
+      sourceChannelId: 'channel-1',
+      sourcePortId: 'transfer',
+    },
+    icqEnabled = true,
   } = options;
   return harden({
     sourceSpec: '@agoric/orchestration/src/proposals/start-stakeAtom.js',
@@ -23,6 +31,9 @@ export const defaultProposalBuilder = async (
         hostConnectionId,
         controllerConnectionId,
         bondDenom,
+        bondDenomLocal,
+        transferChannel,
+        icqEnabled,
       },
     ],
   });

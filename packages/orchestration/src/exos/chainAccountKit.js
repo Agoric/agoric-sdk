@@ -136,6 +136,10 @@ export const prepareChainAccountKit = zone =>
           if (!connection) throw Fail`connection not available`;
           await E(connection).close();
         },
+        /**
+         * see stakingAccountKit.js for an example until #9212
+         * @param {Payment} payment
+         */
         async deposit(payment) {
           console.log('deposit got', payment);
           throw new Error('not yet implemented');

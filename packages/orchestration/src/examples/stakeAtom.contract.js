@@ -11,9 +11,11 @@ import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
 
 const trace = makeTracer('StakeAtom');
 /**
- * @import { Baggage } from '@agoric/vat-data';
- * @import { IBCConnectionID } from '@agoric/vats';
- * @import { ICQConnection, OrchestrationService } from '../types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {IBCChannelInfo, OrchestrationService, BrandToIssuer} from '@agoric/orchestration';
+ * @import {TimerBrand, TimerService} from '@agoric/time'
  */
 
 /**
@@ -21,6 +23,10 @@ const trace = makeTracer('StakeAtom');
  *  hostConnectionId: IBCConnectionID;
  *  controllerConnectionId: IBCConnectionID;
  *  bondDenom: string;
+ *  bondDenomLocal: string;
+ *  transferChannel: IBCChannelInfo;
+ *  icqEnabled: boolean;
+ *  chainTimerBrand: TimerBrand;
  * }} StakeAtomTerms
  */
 
@@ -28,17 +34,34 @@ const trace = makeTracer('StakeAtom');
  *
  * @param {ZCF<StakeAtomTerms>} zcf
  * @param {{
+ *  localchain: LocalChain;
  *  orchestration: OrchestrationService;
  *  storageNode: StorageNode;
  *  marshaller: Marshaller;
+ *  chainTimerService: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   // TODO #9063 this roughly matches what we'll get from Chain<C>.getChainInfo()
-  const { hostConnectionId, controllerConnectionId, bondDenom } =
-    zcf.getTerms();
-  const { orchestration, marshaller, storageNode } = privateArgs;
+  const {
+    hostConnectionId,
+    controllerConnectionId,
+    bondDenom,
+    bondDenomLocal,
+    transferChannel,
+    issuers,
+    brands,
+    icqEnabled,
+    chainTimerBrand,
+  } = zcf.getTerms();
+  const {
+    localchain,
+    orchestration,
+    marshaller,
+    storageNode,
+    chainTimerService,
+  } = privateArgs;
 
   const zone = makeDurableZone(baggage);
 
@@ -50,25 +73,40 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
   );
 
+  /** @type {BrandToIssuer} */
+  const brandToIssuer = zone.mapStore('brandToIssuer');
+  for (const [keyword, brand] of Object.entries(brands)) {
+    brandToIssuer.init(brand, issuers[keyword]);
+  }
+
   async function makeAccount() {
     const account = await E(orchestration).makeAccount(
       hostConnectionId,
       controllerConnectionId,
     );
-    // #9212 TODO do not fail if host does not have `async-icq` module;
-    // communicate to OrchestrationAccount that it can't send queries
-    const icqConnection = await E(orchestration).provideICQConnection(
-      controllerConnectionId,
-    );
-    const accountAddress = await E(account).getAddress();
-    trace('account address', accountAddress);
-    const { holder, invitationMakers } = makeStakingAccountKit(
+
+    // TODO #9063, #9212 this should come from Chain object
+    const icqConnection = icqEnabled
+      ? await E(orchestration).provideICQConnection(controllerConnectionId)
+      : undefined;
+
+    const localAccount = await E(localchain).makeAccount();
+    const localAccountAddress = await E(localAccount).getAddress();
+    const chainAddress = await E(account).getAddress();
+    const { holder, invitationMakers } = makeStakingAccountKit({
       account,
+      localAccount,
       storageNode,
-      accountAddress,
+      chainAddress,
+      localAccountAddress,
       icqConnection,
       bondDenom,
-    );
+      bondDenomLocal,
+      transferChannel,
+      brandToIssuer,
+      chainTimerService,
+      chainTimerBrand,
+    });
     return {
       publicSubscribers: holder.getPublicTopics(),
       invitationMakers,

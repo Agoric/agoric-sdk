@@ -3,6 +3,7 @@ import type { MsgSend } from './codegen/cosmos/bank/v1beta1/tx.js';
 import type { MsgDelegate } from './codegen/cosmos/staking/v1beta1/tx.js';
 import { RequestQuery } from './codegen/tendermint/abci/types.js';
 import type { Any } from './codegen/google/protobuf/any.js';
+import { MsgTransfer } from './codegen/ibc/applications/transfer/v1/tx.js';
 
 /**
  * The result of Any.toJSON(). The type in cosms-types says it returns
@@ -16,6 +17,7 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.MsgSend': MsgSend;
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
+  '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
 };
 
 /**

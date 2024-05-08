@@ -3,7 +3,10 @@ import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
-/** @import { StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract' */
+/**
+ * @import {Issuer} from '@agoric/ertp/exported.js';
+ * @import {StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract.js';
+ */
 
 const trace = makeTracer('StartStakeAtom', true);
 
@@ -17,6 +20,8 @@ export const startStakeAtom = async (
       agoricNames,
       board,
       chainStorage,
+      chainTimerService: chainTimerServiceP,
+      localchain,
       orchestration,
       startUpgradable,
     },
@@ -27,32 +32,62 @@ export const startStakeAtom = async (
       produce: { stakeAtom: produceInstance },
     },
   },
-  { options: { hostConnectionId, controllerConnectionId, bondDenom } },
+  {
+    options: {
+      hostConnectionId,
+      controllerConnectionId,
+      bondDenom,
+      bondDenomLocal,
+      transferChannel,
+      icqEnabled,
+    },
+  },
 ) => {
   const VSTORAGE_PATH = 'stakeAtom';
   trace('startStakeAtom', {
     hostConnectionId,
     controllerConnectionId,
     bondDenom,
+    bondDenomLocal,
+    transferChannel,
+    icqEnabled,
   });
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
-  const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
-  trace('ATOM Issuer', atomIssuer);
+
+  /** @type {Issuer[]} */
+  const [ATOM, BLD, IST] = await Promise.all([
+    E(agoricNames).lookup('issuer', 'ATOM'),
+    E(agoricNames).lookup('issuer', 'BLD'),
+    E(agoricNames).lookup('issuer', 'IST'),
+  ]);
+
+  const chainTimerService = await chainTimerServiceP;
+  const chainTimerBrand = await E(chainTimerService).getTimerBrand();
 
   /** @type {StartUpgradableOpts<StakeAtomSF>} */
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeAtom,
-    issuerKeywordRecord: harden({ ATOM: atomIssuer }),
+    issuerKeywordRecord: harden({
+      ATOM,
+      BLD,
+      IST,
+    }),
     terms: {
       hostConnectionId,
       controllerConnectionId,
       bondDenom,
+      bondDenomLocal,
+      transferChannel,
+      icqEnabled,
+      chainTimerBrand,
     },
     privateArgs: {
+      chainTimerService,
+      localchain: await localchain,
       orchestration: await orchestration,
       storageNode,
       marshaller,
@@ -75,6 +110,8 @@ export const getManifestForStakeAtom = (
           agoricNames: true,
           board: true,
           chainStorage: true,
+          chainTimerService: true,
+          localchain: true,
           orchestration: true,
           startUpgradable: true,
         },

@@ -4,14 +4,17 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, makeScalarMapStore } from '@agoric/vat-data';
 import { encodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { prepareStakingAccountKit } from '../src/exos/stakingAccountKit.js';
 
 /**
- * @import {ChainAccount, ChainAddress, CosmosValidatorAddress, ICQConnection} from '../src/types.js';
- * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import {BrandToIssuer, ChainAccount, ChainAddress, CosmosValidatorAddress, ICQConnection} from '../src/types.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  */
 
 const test = anyTest;
@@ -33,7 +36,14 @@ const scenario1 = {
   },
 };
 
-const makeScenario = () => {
+const mockTransferChannelInfo = {
+  counterpartyChannelId: 'channel-0',
+  counterpartyPortId: 'transfer',
+  sourceChannelId: 'channel-1',
+  sourcePortId: 'transfer',
+};
+
+const makeScenario = t => {
   const txEncode = (response, toProtoMsg) => {
     const protoMsg = toProtoMsg(response);
     const any1 = Any.fromPartial(protoMsg);
@@ -151,30 +161,67 @@ const makeScenario = () => {
   // @ts-expect-error mock
   const icqConnection = Far('ICQConnection', {});
 
+  /** @type {LocalChainAccount} */
+  // @ts-expect-error mock
+  const localAccount = Far('LocalAccount', {
+    getAddress: () => 'agoric1234',
+  });
+
+  /** @type {BrandToIssuer} */
+  const brandToIssuer = makeScalarMapStore('brandToIssuer');
+  const { brand, issuer } = makeIssuerKit('ATOM', AssetKind.NAT, {
+    decimalPlaces: 6,
+  });
+  brandToIssuer.init(brand, issuer);
+
+  const mockTimerService = buildManualTimer(t.log);
+  const mockTimerBrand = mockTimerService.getTimerBrand();
+
   return {
     baggage,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode,
     icqConnection,
+    localAccount,
+    brandToIssuer,
+    mockTimerService,
+    mockTimerBrand,
     ...mockZCF(),
   };
 };
 
 test('withdraw rewards from staking account holder', async t => {
-  const s = makeScenario();
+  const s = makeScenario(t);
   const { account, calls } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, icqConnection } = s;
+  const {
+    baggage,
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    icqConnection,
+    localAccount,
+    brandToIssuer,
+    mockTimerService,
+    mockTimerBrand,
+  } = s;
   const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
 
   // Higher fidelity tests below use invitationMakers.
-  const { holder } = make(
+  const { holder } = make({
     account,
+    localAccount,
     storageNode,
-    account.getAddress(),
+    chainAddress: account.getAddress(),
+    localAccountAddress: await localAccount.getAddress(),
     icqConnection,
-    'uatom',
-  );
+    bondDenom: 'uatom',
+    bondDenomLocal: 'ibc/12345',
+    transferChannel: mockTransferChannelInfo,
+    brandToIssuer,
+    chainTimerService: mockTimerService,
+    chainTimerBrand: mockTimerBrand,
+  });
   const { validator } = scenario1;
   const actual = await E(holder).withdrawReward(validator);
   t.deepEqual(actual, [{ denom: 'uatom', value: 2n }]);
@@ -186,18 +233,36 @@ test('withdraw rewards from staking account holder', async t => {
 });
 
 test(`delegate; withdraw rewards`, async t => {
-  const s = makeScenario();
+  const s = makeScenario(t);
   const { account, calls } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
+  const {
+    baggage,
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    localAccount,
+    brandToIssuer,
+    mockTimerService,
+    mockTimerBrand,
+  } = s;
   const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
 
-  const { invitationMakers } = make(
+  const { invitationMakers } = make({
     account,
+    localAccount,
     storageNode,
-    account.getAddress(),
+    chainAddress: account.getAddress(),
+    localAccountAddress: await localAccount.getAddress(),
     icqConnection,
-    'uatom',
-  );
+    bondDenom: 'uatom',
+    bondDenomLocal: 'ibc/12345',
+    transferChannel: mockTransferChannelInfo,
+    brandToIssuer,
+    chainTimerService: mockTimerService,
+    chainTimerBrand: mockTimerBrand,
+  });
 
   const { validator, delegations } = scenario1;
   {

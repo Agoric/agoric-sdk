@@ -26,6 +26,7 @@ export type * from './service.js';
 export type * from './vat-orchestration.js';
 export type * from './exos/chainAccountKit.js';
 export type * from './exos/icqConnectionKit.js';
+export type * from './exos/stakingAccountKit.js';
 
 /**
  * static declaration of known chain types will allow type support for
@@ -266,7 +267,7 @@ export interface ChainAccount {
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
   /** deposit payment from zoe to the account*/
-  deposit: (payment: Payment) => Promise<void>;
+  deposit: (payment: Payment) => Promise<{ sequence: number }>;
   /** get Purse for a brand to .withdraw() a Payment from the account */
   getPurse: (brand: Brand) => Promise<Purse>;
   /**
@@ -432,7 +433,7 @@ export interface BaseOrchestrationAccount {
    * deposit payment from zoe to the account. For remote accounts,
    * an IBC Transfer will be executed to transfer funds there.
    */
-  deposit: (payment: Payment) => Promise<void>;
+  deposit: (payment: Payment) => Promise<{ sequence: number }>;
 }
 
 export type OrchestrationAccount<C extends keyof KnownChains> =
@@ -479,4 +480,12 @@ export type SwapMaxSlippage = {
   amountIn: Amount;
   brandOut: Brand;
   slippage: number;
+};
+
+export type IBCChannelInfo = {
+  counterpartyChannelId: IBCChannelID;
+  counterpartyPortId: string;
+  sourceChannelId: IBCChannelID;
+  sourcePortId: string;
+  // consider including `order`, `version`, `state`
 };

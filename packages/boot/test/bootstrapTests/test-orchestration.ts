@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
@@ -150,6 +151,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
+  // 1. Make Account
   await wd.executeOffer({
     id: 'request-account',
     invitationSpec: {
@@ -167,9 +169,131 @@ test.serial('stakeAtom - smart wallet', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
-
-  const { ATOM } = agoricNamesRemotes.brand;
+  const { ATOM, DAI_axl, BLD } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
+  DAI_axl || Fail`DAI_axl missing from agoricNames`;
+  BLD || Fail`BLD missing from agoricNames`;
+
+  // 2. Deposit to Account
+  await wd.executeOffer({
+    id: 'request-deposit-success',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-account',
+      invitationMakerName: 'Deposit',
+    },
+    proposal: {
+      give: {
+        // @ts-expect-error BoardRemote is not assignable to Brand<any>
+        ATOM: { brand: ATOM, value: 100n },
+      },
+      exit: { waived: null },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-deposit-success', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-deposit-failure-no-want-allowed',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Deposit',
+      },
+      proposal: {
+        give: {
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          ATOM: { brand: ATOM, value: 100n },
+        },
+        want: {
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          BLD: { brand: BLD, value: 100n },
+        },
+        exit: { waived: null },
+      },
+    }),
+    {
+      message: /proposal: want(.*?)Must be: {}/,
+    },
+  );
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-deposit-failure-two-give-amounts',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Deposit',
+      },
+      proposal: {
+        give: {
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          ATOM: { brand: ATOM, value: 100n },
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          BLD: { brand: BLD, value: 100n },
+        },
+        exit: { waived: null },
+      },
+    }),
+    {
+      message: /proposal: give: Must not have more than 1 properties/,
+    },
+  );
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-deposit-failure-unknown-issuer',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Deposit',
+      },
+      proposal: {
+        give: {
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          DAI_axl: { brand: DAI_axl, value: 100n },
+        },
+        exit: { waived: null },
+      },
+    }),
+    {
+      message: /brand(.*?)not registered/,
+    },
+  );
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-deposit-failure-transfer-packet-timeout',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Deposit',
+      },
+      proposal: {
+        give: {
+          // @ts-expect-error BoardRemote is not assignable to Brand<any>
+          ATOM: { brand: ATOM, value: 504n },
+        },
+        exit: { waived: null },
+      },
+    }),
+    {
+      message: 'Deposit failed, payment returned.',
+    },
+  );
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'request-deposit-failure-transfer-packet-timeout',
+      numWantsSatisfied: 1,
+      payouts: {
+        ATOM: { value: 504n },
+      },
+    },
+  });
+
+  // 3. Delegate from Account to Validator
   const validatorAddress: CosmosValidatorAddress = {
     address: 'cosmosvaloper1test',
     chainId: 'gaiatest',
@@ -192,12 +316,12 @@ test.serial('stakeAtom - smart wallet', async t => {
     status: { id: 'request-delegate-success', numWantsSatisfied: 1 },
   });
 
+  // 4. Delegate Failure (invalid validator address or amount)
   const validatorAddressFail: CosmosValidatorAddress = {
     address: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
     addressEncoding: 'bech32',
   };
-
   await t.throwsAsync(
     wd.executeOffer({
       id: 'request-delegate-fail',
@@ -215,3 +339,5 @@ test.serial('stakeAtom - smart wallet', async t => {
     'delegate fails with invalid validator',
   );
 });
+
+test.todo('deposit to LCA fails, payment should be returned');
