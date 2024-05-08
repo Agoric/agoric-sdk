@@ -7,7 +7,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
-	ibckeeper "github.com/cosmos/ibc-go/v6/modules/core/keeper"
 
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 
@@ -19,7 +18,7 @@ const (
 	// asynchronous versions.  If it does, then the VM must supply an empty
 	// version string to indicate that the VM explicitly (possibly async)
 	// performs the Write* method.
-	AsyncVersions = ibckeeper.AsyncVersionNegotiation
+	AsyncVersions = false
 )
 
 var (
