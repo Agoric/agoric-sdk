@@ -79,3 +79,21 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
   result.notInResult;
   expectType<bigint>(result);
 }
+
+{
+  const zcf = {} as ZCF<{}, { In: 'nat'; Out: 'set' }>;
+  const terms = zcf.getTerms();
+  expectType<Issuer<'nat'>>(terms.issuers.In);
+  expectType<Brand<'set'>>(terms.brands.Out);
+  // @ts-expect-error
+  terms.issuers.NotInIKR;
+  // @ts-expect-error
+  terms.brands.NotInIKR;
+}
+
+{
+  const zcf = {} as ZCF;
+  const terms = zcf.getTerms();
+  expectType<Issuer<AssetKind>>(terms.issuers.AnyStringWorks);
+  expectType<Brand<AssetKind>>(terms.brands.AnyStringWorks);
+}

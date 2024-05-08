@@ -14,8 +14,17 @@ type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
  * the Zoe state for that instance. The Zoe Contract Facet is accessed
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
+ *
+ * @template CT - The Custom Terms of the contract, which extend the
+ * StandardTerms. Defaults to `Record<string, unknown>`.
+ * @template IKR - The Issuer Keyword Record, which specifies the expected
+ * asset kinds for each keyword in the contract terms. Defaults to
+ * `Record<Keyword, any>`, allowing any keyword and asset kind combination.
  */
-type ZCF<CT extends unknown = Record<string, unknown>> = {
+type ZCF<
+  CT extends unknown = Record<string, unknown>,
+  IKR extends Record<Keyword, AssetKind> = Record<Keyword, any>,
+> = {
   /**
    * - atomically reallocate amounts among seats.
    */
@@ -63,7 +72,15 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   shutdownWithFailure: ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
-  getTerms: () => StandardTerms & CT;
+  /**
+   * Returns the contract terms, including both standard terms and custom
+   * terms. The standard terms include the `issuers` and `brands` properties,
+   * which are typed according to the `IKR` (issuer keyword record) generic
+   * parameter. Custom Terms are immutable and can't be updated after
+   * instantiation. Standard Terms (brands and issuers) are append only and can
+   * be updated with `zcf.saveIssuer()` or `saveAllIssuers()`.
+   */
+  getTerms: () => StandardTerms<IKR> & CT;
   getBrandForIssuer: <K extends AssetKind>(issuer: Issuer<K>) => Brand<K>;
   getIssuerForBrand: <K_1 extends AssetKind>(brand: Brand<K_1>) => Issuer<K_1>;
   getAssetKind: GetAssetKindByBrand;
