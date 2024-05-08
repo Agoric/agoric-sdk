@@ -367,6 +367,8 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
 
           const { localAccount } = this.state;
           trace('Depositing funds to LCA');
+          // XXX consider adding exposing an interface to withdraw / send
+          // messages from the LCA (e.g., withdraw funds)
           await E(localAccount).deposit(payment);
 
           const timeoutTimestamp =
