@@ -18,4 +18,5 @@ for plan in $plans; do
   base=${plan%-plan.json}
   cp $(grep -oh '/.*b1-.*.json' "$base"-plan.json) "$submissionDir"
   mv "$base"* "$submissionDir"
+  ls -oS "$submissionDir"
 done
