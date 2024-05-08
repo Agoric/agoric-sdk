@@ -9,7 +9,8 @@ https://github.com/agoric-labs/cosmos-sdk/tree/Agoric/cosmovisor#readme
 ------------------------------------------------------------------------
 EOF
 
-COMMIT_ID=$(git rev-parse HEAD)
+UPGRADE_TO="${1:-HEAD}"
+COMMIT_ID=$(git rev-parse "$UPGRADE_TO")
 ZIP_URL="https://github.com/Agoric/agoric-sdk/archive/${COMMIT_ID}.zip"
 
 echo "Verifying archive is at $ZIP_URL..." 1>&2
