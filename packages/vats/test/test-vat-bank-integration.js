@@ -34,11 +34,9 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { vatAdminService } = makePopulatedFakeVatAdmin();
-  // @ts-expect-error XXX
   const { zoeService, feeMintAccess: fma } = makeZoeKitForTest(vatAdminService);
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(fma);
-  // @ts-expect-error XXX
   produce.vatAdminSvc.resolve(vatAdminService);
   await installBootContracts({
     consume,

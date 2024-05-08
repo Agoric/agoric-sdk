@@ -46,7 +46,11 @@ const DEFAULT_PACKET_TIMEOUT_NS = 60n * 60n * 1_000_000_000n;
  * }} Outbound
  */
 
-/** @param {Zone} zone */
+// FIXME(TS9006) remove 'any'
+/**
+ * @param {Zone} zone
+ * @returns {any}
+ */
 export const prepareIBCConnectionHandler = zone => {
   /**
    * @param {IBCChannelID} channelID
