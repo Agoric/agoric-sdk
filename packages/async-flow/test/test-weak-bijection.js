@@ -8,7 +8,6 @@ import {
 
 import { Far } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
@@ -19,9 +18,9 @@ import { prepareWeakBijection } from '../src/weak-bijection.js';
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testBijection = (t, zone, { makeVowKit }) => {
+const testBijection = (t, zone) => {
+  const { makeVowKit } = prepareVowTools(zone);
   const makeBijection = prepareWeakBijection(zone);
   const bij = zone.makeOnce('bij', makeBijection);
 
@@ -61,15 +60,13 @@ const testBijection = (t, zone, { makeVowKit }) => {
 
 test('test heap bijection', t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  testBijection(t, zone, vowTools);
+  testBijection(t, zone);
 });
 
 test.serial('test virtual bijection', t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  testBijection(t, zone, vowTools);
+  testBijection(t, zone);
 });
 
 test.serial('test durable bijection', t => {
@@ -77,13 +74,11 @@ test.serial('test durable bijection', t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  testBijection(t, zone1, vowTools1);
+  testBijection(t, zone1);
 
   // Bijections persist but revive empty since all the guests disappear anyway
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools2 = prepareWatchableVowTools(zone2);
-  testBijection(t, zone2, vowTools2);
+  testBijection(t, zone2);
 });

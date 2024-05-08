@@ -11,7 +11,6 @@ import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -40,15 +39,13 @@ const prepareBadHost = zone =>
 
 /** @typedef {ReturnType<ReturnType<prepareBadHost>>} BadHost */
 
-// TODO https://github.com/Agoric/agoric-sdk/issues/9231
-
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testBadHostFirstPlay = async (t, zone, vowTools) => {
+const testBadHostFirstPlay = async (t, zone) => {
   t.log('badHost firstPlay started');
+  const vowTools = prepareVowTools(zone);
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
@@ -106,10 +103,10 @@ const testBadHostFirstPlay = async (t, zone, vowTools) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testBadHostReplay1 = async (t, zone, vowTools) => {
+const testBadHostReplay1 = async (t, zone) => {
   t.log('badHost replay1 started');
+  const vowTools = prepareVowTools(zone);
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
@@ -183,27 +180,23 @@ const testBadHostReplay1 = async (t, zone, vowTools) => {
 
 await test.serial('test heap async-flow bad host', async t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  return testBadHostFirstPlay(t, zone, vowTools);
+  return testBadHostFirstPlay(t, zone);
 });
 
 await test.serial('test virtual async-flow bad host', async t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  return testBadHostFirstPlay(t, zone, vowTools);
+  return testBadHostFirstPlay(t, zone);
 });
 
 await test.serial('test durable async-flow bad host', async t => {
   annihilate();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  await testBadHostFirstPlay(t, zone1, vowTools1);
+  await testBadHostFirstPlay(t, zone1);
 
   await eventLoopIteration();
 
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools3 = prepareWatchableVowTools(zone3);
-  return testBadHostReplay1(t, zone3, vowTools3);
+  return testBadHostReplay1(t, zone3);
 });

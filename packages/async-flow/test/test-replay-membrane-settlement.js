@@ -9,7 +9,6 @@ import {
 import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -32,13 +31,13 @@ const preparePingee = zone =>
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testFirstPlay = async (t, zone, vowTools) => {
+const testFirstPlay = async (t, zone) => {
+  const vowTools = prepareVowTools(zone);
+  const { makeVowKit } = vowTools;
   const makeLogStore = prepareLogStore(zone);
   const makeBijection = prepareWeakBijection(zone);
   const makePingee = preparePingee(zone);
-  const { makeVowKit } = vowTools;
   const { vow: v1, resolver: r1 } = zone.makeOnce('v1', () => makeVowKit());
   const { vow: _v2, resolver: _r2 } = zone.makeOnce('v2', () => makeVowKit());
 
@@ -74,9 +73,9 @@ const testFirstPlay = async (t, zone, vowTools) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testReplay = async (t, zone, vowTools) => {
+const testReplay = async (t, zone) => {
+  const vowTools = prepareVowTools(zone);
   prepareLogStore(zone);
   prepareWeakBijection(zone);
   preparePingee(zone);
@@ -128,15 +127,13 @@ const testReplay = async (t, zone, vowTools) => {
 
 await test.serial('test heap replay-membrane settlement', async t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  return testFirstPlay(t, zone, vowTools);
+  return testFirstPlay(t, zone);
 });
 
 await test.serial('test virtual replay-membrane settlement', async t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  return testFirstPlay(t, zone, vowTools);
+  return testFirstPlay(t, zone);
 });
 
 await test.serial('test durable replay-membrane settlement', async t => {
@@ -144,11 +141,9 @@ await test.serial('test durable replay-membrane settlement', async t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  await testFirstPlay(t, zone1, vowTools1);
+  await testFirstPlay(t, zone1);
 
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools3 = prepareWatchableVowTools(zone3);
-  return testReplay(t, zone3, vowTools3);
+  return testReplay(t, zone3);
 });

@@ -10,7 +10,6 @@ import {
 import { X, makeError } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
@@ -22,10 +21,10 @@ import { makeEquate } from '../src/equate.js';
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  * @param {boolean} [showOnConsole]
  */
-const testEquate = (t, zone, { makeVowKit }, showOnConsole = false) => {
+const testEquate = (t, zone, showOnConsole = false) => {
+  const { makeVowKit } = prepareVowTools(zone);
   const makeBijection = prepareWeakBijection(zone);
   const bij = zone.makeOnce('bij', makeBijection);
 
@@ -92,15 +91,13 @@ const testEquate = (t, zone, { makeVowKit }, showOnConsole = false) => {
 
 test('test heap equate', t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  testEquate(t, zone, vowTools, asyncFlowVerbose());
+  testEquate(t, zone, asyncFlowVerbose());
 });
 
 test.serial('test virtual equate', t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  testEquate(t, zone, vowTools);
+  testEquate(t, zone);
 });
 
 test.serial('test durable equate', t => {
@@ -108,14 +105,12 @@ test.serial('test durable equate', t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  testEquate(t, zone1, vowTools1);
+  testEquate(t, zone1);
 
   // equate keeps its state only in the bijection,
   // which loses all its memory between incarnations.
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools2 = prepareWatchableVowTools(zone2);
-  testEquate(t, zone2, vowTools2);
+  testEquate(t, zone2);
 });

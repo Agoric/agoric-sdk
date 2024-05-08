@@ -8,7 +8,6 @@ import {
 
 import { Fail } from '@endo/errors';
 import { prepareVowTools, toPassableCap } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -18,9 +17,9 @@ import { prepareLogStore } from '../src/log-store.js';
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testLogStorePlay = async (t, zone, { makeVowKit }) => {
+const testLogStorePlay = async (t, zone) => {
+  const { makeVowKit } = prepareVowTools(zone);
   const makeLogStore = prepareLogStore(zone);
 
   const log = zone.makeOnce('log', () => makeLogStore());
@@ -56,9 +55,9 @@ const testLogStorePlay = async (t, zone, { makeVowKit }) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} _vowTools
  */
-const testLogStoreReplay = async (t, zone, _vowTools) => {
+const testLogStoreReplay = async (t, zone) => {
+  prepareVowTools(zone);
   prepareLogStore(zone);
 
   const log = /** @type {LogStore} */ (
@@ -89,15 +88,13 @@ const testLogStoreReplay = async (t, zone, _vowTools) => {
 
 await test('test heap log-store', async t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  return testLogStorePlay(t, zone, vowTools);
+  return testLogStorePlay(t, zone);
 });
 
 await test.serial('test virtual log-store', async t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  return testLogStorePlay(t, zone, vowTools);
+  return testLogStorePlay(t, zone);
 });
 
 await test.serial('test durable log-store', async t => {
@@ -105,11 +102,9 @@ await test.serial('test durable log-store', async t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  await testLogStorePlay(t, zone1, vowTools1);
+  await testLogStorePlay(t, zone1);
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools2 = prepareWatchableVowTools(zone2);
-  return testLogStoreReplay(t, zone2, vowTools2);
+  return testLogStoreReplay(t, zone2);
 });

@@ -2,8 +2,7 @@ import { annotateError, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
-import { toPassableCap, VowShape } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareWeakBijection } from './weak-bijection.js';
@@ -41,8 +40,7 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
  */
 export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   const {
-    // TODO https://github.com/Agoric/agoric-sdk/issues/9231
-    vowTools = prepareWatchableVowTools(outerZone),
+    vowTools = prepareVowTools(outerZone),
     makeLogStore = prepareLogStore(outerZone),
     makeWeakBijection = prepareWeakBijection(outerZone),
   } = outerOptions;

@@ -10,7 +10,6 @@ import {
 import { X, makeError, q } from '@endo/errors';
 import { Far, getInterfaceOf, passStyleOf } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
@@ -22,10 +21,10 @@ import { prepareWeakBijection } from '../src/weak-bijection.js';
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  * @param {boolean} [showOnConsole]
  */
-const testConvert = (t, zone, { makeVowKit }, showOnConsole = false) => {
+const testConvert = (t, zone, showOnConsole = false) => {
+  const { makeVowKit } = prepareVowTools(zone);
   const makeBijection = prepareWeakBijection(zone);
   const bij = zone.makeOnce('bij', makeBijection);
 
@@ -89,15 +88,13 @@ const testConvert = (t, zone, { makeVowKit }, showOnConsole = false) => {
 
 test('test heap convert', t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  testConvert(t, zone, vowTools, asyncFlowVerbose());
+  testConvert(t, zone, asyncFlowVerbose());
 });
 
 test.serial('test virtual convert', t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  testConvert(t, zone, vowTools);
+  testConvert(t, zone);
 });
 
 test.serial('test durable convert', t => {
@@ -105,14 +102,12 @@ test.serial('test durable convert', t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  testConvert(t, zone1, vowTools1);
+  testConvert(t, zone1);
 
   // These converters keep their state only in the bijection,
   // which loses all its memory between incarnations.
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools2 = prepareWatchableVowTools(zone2);
-  testConvert(t, zone2, vowTools2);
+  testConvert(t, zone2);
 });

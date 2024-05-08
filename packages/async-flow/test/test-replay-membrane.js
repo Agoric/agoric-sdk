@@ -10,7 +10,6 @@ import {
 import { Fail } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { prepareVowTools } from '@agoric/vow';
-import { prepareVowTools as prepareWatchableVowTools } from '@agoric/vat-data/vow.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -50,14 +49,14 @@ const prepareOrchestra = (zone, k = 1) =>
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  * @param {boolean} [showOnConsole]
  */
-const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
+const testFirstPlay = async (t, zone, showOnConsole = false) => {
+  const vowTools = prepareVowTools(zone);
+  const { makeVowKit } = vowTools;
   const makeLogStore = prepareLogStore(zone);
   const makeBijection = prepareWeakBijection(zone);
   const makeOrchestra = prepareOrchestra(zone);
-  const { makeVowKit } = vowTools;
   const { vow: v1, resolver: r1 } = makeVowKit();
   const { vow: v2, resolver: r2 } = makeVowKit();
 
@@ -117,9 +116,9 @@ const testFirstPlay = async (t, zone, vowTools, showOnConsole = false) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testBadReplay = async (t, zone, vowTools) => {
+const testBadReplay = async (t, zone) => {
+  const vowTools = prepareVowTools(zone);
   prepareLogStore(zone);
   prepareWeakBijection(zone);
   prepareOrchestra(zone);
@@ -163,9 +162,9 @@ const testBadReplay = async (t, zone, vowTools) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {VowTools} vowTools
  */
-const testGoodReplay = async (t, zone, vowTools) => {
+const testGoodReplay = async (t, zone) => {
+  const vowTools = prepareVowTools(zone);
   prepareLogStore(zone);
   prepareWeakBijection(zone);
   prepareOrchestra(zone, 2); // 2 is new incarnation behavior change
@@ -246,15 +245,13 @@ const testGoodReplay = async (t, zone, vowTools) => {
 
 await test.serial('test heap replay-membrane', async t => {
   const zone = makeHeapZone('heapRoot');
-  const vowTools = prepareVowTools(zone);
-  return testFirstPlay(t, zone, vowTools, asyncFlowVerbose());
+  return testFirstPlay(t, zone, asyncFlowVerbose());
 });
 
 await test.serial('test virtual replay-membrane', async t => {
   annihilate();
   const zone = makeVirtualZone('virtualRoot');
-  const vowTools = prepareVowTools(zone);
-  return testFirstPlay(t, zone, vowTools);
+  return testFirstPlay(t, zone);
 });
 
 await test.serial('test durable replay-membrane', async t => {
@@ -262,16 +259,13 @@ await test.serial('test durable replay-membrane', async t => {
 
   nextLife();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools1 = prepareWatchableVowTools(zone1);
-  await testFirstPlay(t, zone1, vowTools1);
+  await testFirstPlay(t, zone1);
 
   nextLife();
   const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools2 = prepareWatchableVowTools(zone2);
-  await testBadReplay(t, zone2, vowTools2);
+  await testBadReplay(t, zone2);
 
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
-  const vowTools3 = prepareWatchableVowTools(zone3);
-  return testGoodReplay(t, zone3, vowTools3);
+  return testGoodReplay(t, zone3);
 });
