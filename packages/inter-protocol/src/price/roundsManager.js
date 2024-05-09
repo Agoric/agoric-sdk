@@ -278,8 +278,10 @@ export const prepareRoundsManagerKit = baggage =>
           if (!helper.isNextRound(roundId)) return undefined;
           const { restartDelay } = this.state;
           const lastStarted = status.lastStartedRound; // cache storage reads
-          if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n)
+          if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) {
+            trace('No new round', roundId, lastStarted, restartDelay);
             return undefined;
+          }
           helper.initializeNewRound(roundId, blockTimestamp, status.oracleId);
 
           return harden({
@@ -301,7 +303,7 @@ export const prepareRoundsManagerKit = baggage =>
           helper.acceptingSubmissions(roundId) ||
             Fail`round ${q(
               Number(roundId),
-            )} not accepting submissions from oracle ${q(status.oracleId)}`;
+            )} not accepting submissions from oracle ${q(status.oracleId)}, ${details.has(roundId)}, ${details.has(roundId) && details.get(roundId)?.maxSubmissions}`;
 
           const lastRoundDetails = details.get(roundId);
           details.set(roundId, {
@@ -446,7 +448,7 @@ export const prepareRoundsManagerKit = baggage =>
             roundId !== add(reportingRoundId, 1) &&
             !helper.previousAndCurrentUnanswered(roundId, reportingRoundId)
           )
-            return 'invalid round to report';
+            return `invalid round (${reportingRoundId} to report (expecting ${roundId}`;
           if (roundId !== 1n && !canSupersede)
             return 'previous round not supersedable';
           return null;
@@ -550,11 +552,15 @@ export const prepareRoundsManagerKit = baggage =>
             blockTimestamp,
           );
           if (TimeMath.absValue(rounds.get(queriedRoundId).startedAt) > 0n) {
-            return (
-              helper.acceptingSubmissions(queriedRoundId) && error === null
-            );
+            const accepting =
+              helper.acceptingSubmissions(queriedRoundId) && error === null;
+            trace('eligible:accept', error, queriedRoundId, accepting);
+            return accepting;
           } else {
-            return helper.delayed(status, queriedRoundId) && error === null;
+            const delayed =
+              helper.delayed(status, queriedRoundId) && error === null;
+            trace('eligible:delay', status, delayed, error);
+            return delayed;
           }
         },
 
@@ -598,8 +604,8 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * a method to provide all current info oracleStatuses need. Intended
-         * only only to be callable by oracleStatuses. Not for use by contracts
-         * to read state.
+         * only to be callable by oracleStatuses. Not for use by contracts to
+         * read state.
          *
          * @param {OracleStatus} status
          * @param {Timestamp} blockTimestamp

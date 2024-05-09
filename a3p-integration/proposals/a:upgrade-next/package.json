@@ -14,6 +14,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/internal": "^0.4.0-u14.0",
     "@agoric/synthetic-chain": "^0.1.0",
     "ava": "^5.3.1"
   },
