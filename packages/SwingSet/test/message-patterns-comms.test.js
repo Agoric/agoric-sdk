@@ -21,7 +21,7 @@ import { buildPatterns } from './message-patterns.js';
 // This exercises all the patterns in 'message-patterns.js' twice with
 // comms vats in the path (a different file runs them all with a
 // direct connection). To enable/disable specific tests, run with e.g.
-// 'yarn test test/test-message-patterns.js -m "test pattern a72
+// 'yarn test test/message-patterns.test.js -m "test pattern a72
 // comms"' or '-m "*a72 comms"'
 
 // See message-patterns.js for details.

@@ -152,7 +152,8 @@
       "compile": false
     },
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ]
   }
 }
