@@ -1,29 +1,33 @@
 // Ambients
 import '@agoric/zoe/exported.js';
 
-import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/exported.js';
-import type { Timestamp } from '@agoric/time';
-import type { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type {
   Delegation,
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+import type {
+  MsgBeginRedelegateResponse,
+  MsgUndelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/exported.js';
+import type { Port } from '@agoric/network';
+import type { Timestamp } from '@agoric/time';
+import type { IBCConnectionID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { Port } from '@agoric/network';
-import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import type { IBCConnectionID } from '@agoric/vats';
+import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { ICQConnection } from './exos/icqConnectionKit.js';
 
-export type * from './service.js';
-export type * from './vat-orchestration.js';
 export type * from './exos/chainAccountKit.js';
 export type * from './exos/icqConnectionKit.js';
+export type * from './service.js';
+export type * from './vat-orchestration.js';
 
 /**
  * static declaration of known chain types will allow type support for
