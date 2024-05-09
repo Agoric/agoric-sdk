@@ -3,31 +3,21 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { AmountShape } from '@agoric/ertp';
 
-const { Fail, bare } = assert;
+const { Fail } = assert;
+
+/**
+ * @import {BankManager} from './vat-bank.js';
+ * @import {ScopedBridgeManager} from './types.js';
+ */
 
 /** @import {TypedJson, ResponseTo} from '@agoric/cosmic-proto'; */
 
 /**
  * @typedef {{
- *   system: import('./types.js').ScopedBridgeManager;
- *   bankManager: import('./vat-bank.js').BankManager;
+ *   system: ScopedBridgeManager;
+ *   bankManager: BankManager;
  * }} LocalChainPowers
- *
- * @typedef {MapStore<
- *   keyof LocalChainPowers,
- *   LocalChainPowers[keyof LocalChainPowers]
- * >} PowerStore
  */
-
-/**
- * @template {keyof LocalChainPowers} K
- * @param {PowerStore} powers
- * @param {K} name
- */
-const getPower = (powers, name) => {
-  powers.has(name) || Fail`need powers.${bare(name)} for this method`;
-  return /** @type {LocalChainPowers[K]} */ (powers.get(name));
-};
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
@@ -44,9 +34,9 @@ const prepareLocalChainAccount = zone =>
     LocalChainAccountI,
     /**
      * @param {string} address
-     * @param {PowerStore} powers
+     * @param {LocalChainPowers} powers
      */
-    (address, powers) => ({ address, powers }),
+    (address, powers) => ({ address, ...powers, reserved: undefined }),
     {
       // Information that the account creator needs.
       async getAddress() {
@@ -60,9 +50,7 @@ const prepareLocalChainAccount = zone =>
        * @param {Payment} payment
        */
       async deposit(payment) {
-        const { address, powers } = this.state;
-
-        const bankManager = getPower(powers, 'bankManager');
+        const { address, bankManager } = this.state;
 
         const allegedBrand = await E(payment).getAllegedBrand();
         const bankAcct = E(bankManager).getBankForAddress(address);
@@ -79,7 +67,7 @@ const prepareLocalChainAccount = zone =>
        * @returns {Promise<{ [K in keyof MT]: ResponseTo<MT[K]> }>}
        */
       async executeTx(messages) {
-        const { address, powers } = this.state;
+        const { address, system } = this.state;
         messages.length > 0 || Fail`need at least one message to execute`;
 
         const obj = {
@@ -90,7 +78,6 @@ const prepareLocalChainAccount = zone =>
           address,
           messages,
         };
-        const system = getPower(powers, 'system');
         return E(system).toBridge(obj);
       },
     },
@@ -107,105 +94,70 @@ export const LocalChainI = M.interface('LocalChain', {
   queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
-export const LocalChainAdminI = M.interface('LocalChainAdmin', {
-  setPower: M.callWhen(M.string(), M.await(M.any())).returns(),
-});
-
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<typeof prepareLocalChainAccount>} makeAccount
  */
 const prepareLocalChain = (zone, makeAccount) =>
-  zone.exoClassKit(
+  zone.exoClass(
     'LocalChain',
-    { public: LocalChainI, admin: LocalChainAdminI },
-    /** @param {Partial<LocalChainPowers>} [initialPowers] */
-    initialPowers => {
-      /** @type {PowerStore} */
-      const powers = zone.detached().mapStore('PowerStore');
-      if (initialPowers) {
-        for (const [name, power] of Object.entries(initialPowers)) {
-          powers.init(/** @type {keyof LocalChainPowers} */ (name), power);
-        }
-      }
-      return { powers };
+    LocalChainI,
+    /** @param {LocalChainPowers} powers */
+    powers => {
+      return { ...powers };
     },
     {
-      admin: {
-        /**
-         * @template {keyof LocalChainPowers} K
-         * @param {K} name
-         * @param {LocalChainPowers[K]} [power]
-         */
-        setPower(name, power) {
-          const { powers } = this.state;
-          if (power === undefined) {
-            // Remove from powers.
-            powers.delete(name);
-          } else if (powers.has(name)) {
-            // Replace an existing power.
-            powers.set(name, power);
-          } else {
-            // Add a new power.
-            powers.init(name, power);
-          }
-        },
+      /**
+       * Allocate a fresh address that doesn't correspond with a public key, and
+       * follows the ICA guidelines to help reduce collisions. See
+       * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
+       * hash and block data hash.
+       */
+      async makeAccount() {
+        const { system, bankManager } = this.state;
+        const address = await E(system).toBridge({
+          type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
+        });
+        return makeAccount(address, { system, bankManager });
       },
-      public: {
-        /**
-         * Allocate a fresh address that doesn't correspond with a public key,
-         * and follows the ICA guidelines to help reduce collisions. See
-         * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
-         * hash and block data hash.
-         */
-        async makeAccount() {
-          const { powers } = this.state;
-          const system = getPower(powers, 'system');
-          const address = await E(system).toBridge({
-            type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
-          });
-          return makeAccount(address, powers);
-        },
-        /**
-         * Make a single query to the local chain. Will reject with an error if
-         * the query fails. Otherwise, return the response as a JSON-compatible
-         * object.
-         *
-         * @param {import('@agoric/cosmic-proto').TypedJson} request
-         * @returns {Promise<import('@agoric/cosmic-proto').TypedJson>}
-         */
-        async query(request) {
-          const requests = harden([request]);
-          const results = await E(this.facets.public).queryMany(requests);
-          results.length === 1 ||
-            Fail`expected exactly one result; got ${results}`;
-          const { error, reply } = results[0];
-          if (error) {
-            throw Fail`query failed: ${error}`;
-          }
-          return reply;
-        },
-        /**
-         * Send a batch of query requests to the local chain. Unless there is a
-         * system error, will return all results to indicate their success or
-         * failure.
-         *
-         * @param {import('@agoric/cosmic-proto').TypedJson[]} requests
-         * @returns {Promise<
-         *   {
-         *     error?: string;
-         *     reply: import('@agoric/cosmic-proto').TypedJson;
-         *   }[]
-         * >}
-         */
-        async queryMany(requests) {
-          const { powers } = this.state;
-          const system = getPower(powers, 'system');
-          return E(system).toBridge({
-            type: 'VLOCALCHAIN_QUERY_MANY',
-            messages: requests,
-          });
-        },
+      /**
+       * Make a single query to the local chain. Will reject with an error if
+       * the query fails. Otherwise, return the response as a JSON-compatible
+       * object.
+       *
+       * @param {import('@agoric/cosmic-proto').TypedJson} request
+       * @returns {Promise<import('@agoric/cosmic-proto').TypedJson>}
+       */
+      async query(request) {
+        const requests = harden([request]);
+        const results = await E(this.self).queryMany(requests);
+        results.length === 1 ||
+          Fail`expected exactly one result; got ${results}`;
+        const { error, reply } = results[0];
+        if (error) {
+          throw Fail`query failed: ${error}`;
+        }
+        return reply;
+      },
+      /**
+       * Send a batch of query requests to the local chain. Unless there is a
+       * system error, will return all results to indicate their success or
+       * failure.
+       *
+       * @param {import('@agoric/cosmic-proto').TypedJson[]} requests
+       * @returns {Promise<
+       *   {
+       *     error?: string;
+       *     reply: import('@agoric/cosmic-proto').TypedJson;
+       *   }[]
+       * >}
+       */
+      async queryMany(requests) {
+        const { system } = this.state;
+        return E(system).toBridge({
+          type: 'VLOCALCHAIN_QUERY_MANY',
+          messages: requests,
+        });
       },
     },
   );
@@ -220,5 +172,4 @@ export const prepareLocalChainTools = zone => {
 harden(prepareLocalChainTools);
 
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
-/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChainKit */
-/** @typedef {LocalChainKit['public']} LocalChain */
+/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */

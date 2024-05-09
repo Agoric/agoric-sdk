@@ -6,13 +6,10 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     bridgeManager: import('../types').BridgeManager;
  *     localchainBridgeManager: import('../types').ScopedBridgeManager;
- *     bankManager: Promise<import('../vat-bank.js').BankManager>;
  *   };
  *   produce: {
  *     localchain: Producer<any>;
- *     localchainAdmin: Producer<any>;
  *     localchainVat: Producer<any>;
  *     localchainBridgeManager: Producer<any>;
  *   };
@@ -32,12 +29,7 @@ export const setupLocalChainVat = async (
       localchainBridgeManager: localchainBridgeManagerP,
       bankManager,
     },
-    produce: {
-      localchainVat,
-      localchain,
-      localchainAdmin: localchainAdminP,
-      localchainBridgeManager,
-    },
+    produce: { localchainVat, localchain, localchainBridgeManager },
   },
   options,
 ) => {
@@ -74,34 +66,13 @@ export const setupLocalChainVat = async (
     );
   }
 
-  const { admin: localChainAdmin, public: newLocalChain } = await E(
-    vats.localchain,
-  ).makeLocalChain({
+  const newLocalChain = await E(vats.localchain).makeLocalChain({
     system: scopedManager,
+    bankManager: await bankManager,
   });
 
   localchain.reset();
   localchain.resolve(newLocalChain);
-  localchainAdminP.reset();
-  localchainAdminP.resolve(localChainAdmin);
-
-  /** @type {Record<string, Promise<void>>} */
-  const descToPromise = {
-    'bank manager power': bankManager.then(bm =>
-      E(localChainAdmin).setPower('bankManager', bm),
-    ),
-  };
-  void Promise.all(
-    Object.entries(descToPromise).map(([desc, p]) =>
-      p
-        .then(() =>
-          console.info(`Completed configuration of localchain with ${desc}`),
-        )
-        .catch(e =>
-          console.error(`Failed to configure localchain with ${desc}:`, e),
-        ),
-    ),
-  );
 };
 
 /**
@@ -131,7 +102,6 @@ export const getManifestForLocalChain = (_powers, { localchainRef }) => ({
       },
       produce: {
         localchain: 'localchain',
-        localchainAdmin: 'localchain',
         localchainVat: 'localchain',
         localchainBridgeManager: 'localchain',
       },
