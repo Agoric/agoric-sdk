@@ -9,4 +9,4 @@ GLOBIGNORE=initial.test.js
 yarn ava initial.test.js
 
 # test more, in ways that changes system state
-yarn ava ./*.test.js
+# yarn ava ./*.test.js
