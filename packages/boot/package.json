@@ -77,8 +77,8 @@
       "ts": "module"
     },
     "files": [
-      "test/**/test-*.js",
-      "test/**/test-*.ts"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "nodeArguments": [
       "--loader=tsx",
