@@ -63,7 +63,7 @@ const { Fail } = assert;
  * }} State
  */
 
-export const ChainAccountHolderI = M.interface('ChainAccountHolder', {
+export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
@@ -146,7 +146,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
         getUpdater: M.call().returns(M.remotable()),
         amountToCoin: M.call(AmountShape).returns(M.record()),
       }),
-      holder: ChainAccountHolderI,
+      holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.callWhen(ChainAddressShape, AmountShape).returns(
           InvitationShape,

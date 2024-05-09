@@ -6,7 +6,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 import { orcUtils } from '../utils/orc.js';
 
 /**
- * @import {Orchestrator, ChainAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
@@ -34,7 +34,7 @@ export const start = async (zcf, privateArgs) => {
   });
 
   /** deprecated historical example */
-  /** @type {OfferHandler} */
+  /** @type {OfferHandler<unknown, {staked: Amount<'nat'>, validator: CosmosValidatorAddress}>} */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf },

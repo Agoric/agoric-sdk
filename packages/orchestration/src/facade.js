@@ -4,7 +4,7 @@
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
  * @import {OrchestrationService} from './service.js';
- * @import {OrchestrationHandlerMaker} from './types.js';
+ * @import {Orchestrator} from './types.js';
  */
 
 /**
@@ -34,7 +34,12 @@ export const makeOrchestrationFacade = ({
 
   return {
     /**
-     * @type {OrchestrationHandlerMaker}
+     * @template Context
+     * @template {any[]} Args
+     * @param {string} durableName
+     * @param {Context} ctx
+     * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
+     * @returns {(...args: Args) => Promise<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
       console.log('orchestrate got', durableName, ctx, fn);
