@@ -5,6 +5,8 @@ import { AmountShape } from '@agoric/ertp';
 
 const { Fail, bare } = assert;
 
+/** @import {TypedJson, ResponseTo} from '@agoric/cosmic-proto'; */
+
 /**
  * @typedef {{
  *   system: import('./types.js').ScopedBridgeManager;
@@ -68,8 +70,13 @@ const prepareLocalChainAccount = zone =>
         return E(allegedPurse).deposit(payment);
       },
       /**
-       * @param {import('@agoric/cosmic-proto').TypedJson<unknown>[]} messages
-       * @returns {Promise<import('@agoric/cosmic-proto').TypedJson[]>}
+       * Execute a batch of transactions and return the responses. Use
+       * `typedJson()` on the arguments to get typed return values.
+       *
+       * @template {TypedJson[]} MT messages tuple (use const with multiple
+       *   elements or it will be a mixed array)
+       * @param {MT} messages
+       * @returns {Promise<{ [K in keyof MT]: ResponseTo<MT[K]> }>}
        */
       async executeTx(messages) {
         const { address, powers } = this.state;
