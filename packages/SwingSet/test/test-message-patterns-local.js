@@ -21,7 +21,7 @@ import { buildPatterns } from './message-patterns.js';
 // vatA/vatB connected directly through the kernel (a different file
 // runs them all a second time with comms vats in the path). To
 // enable/disable specific tests, run with e.g.  'yarn test
-// test/test-message-patterns.js -m "test pattern a72 local"' or '-m
+// test/message-patterns.test.js -m "test pattern a72 local"' or '-m
 // "*a72 local"'
 
 // See message-patterns.js for details.

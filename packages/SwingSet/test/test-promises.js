@@ -217,7 +217,7 @@ test('refcount while queued', async t => {
 });
 
 test('local promises are rejected by vat upgrade', async t => {
-  // TODO: Generalize packages/SwingSet/test/upgrade/test-upgrade.js
+  // TODO: Generalize packages/SwingSet/test/upgrade/upgrade.test.js
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data

@@ -8,7 +8,7 @@ import { M } from '@endo/patterns';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-// TODO: factor out overlap with packages/vats/test/test-network.js
+// TODO: factor out overlap with packages/vats/test/network.test.js
 export const makeBridge = (
   t,
   baggage = makeScalarBigMapStore('baggage', {

@@ -426,8 +426,8 @@ yarn build
 
 ```sh
 cd packages/SwingSet
-yarn test test/test-xsnap-store.js --update-snapshots
-git add test/snapshots/test-xsnap-store.*
+yarn test test/xsnap-store.test.js --update-snapshots
+git add test/snapshots/xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
 cd ../..
 ```
