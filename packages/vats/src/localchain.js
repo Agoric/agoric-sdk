@@ -94,76 +94,70 @@ export const LocalChainI = M.interface('LocalChain', {
   queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
-// XXX vestigial? for future use?
-export const LocalChainAdminI = M.interface('LocalChainAdmin', {});
-
 /**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<typeof prepareLocalChainAccount>} makeAccount
  */
 const prepareLocalChain = (zone, makeAccount) =>
-  zone.exoClassKit(
+  zone.exoClass(
     'LocalChain',
-    { public: LocalChainI, admin: LocalChainAdminI },
+    LocalChainI,
     /** @param {LocalChainPowers} powers */
     powers => {
       return { ...powers };
     },
     {
-      admin: {},
-      public: {
-        /**
-         * Allocate a fresh address that doesn't correspond with a public key,
-         * and follows the ICA guidelines to help reduce collisions. See
-         * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
-         * hash and block data hash.
-         */
-        async makeAccount() {
-          const { system, bankManager } = this.state;
-          const address = await E(system).toBridge({
-            type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
-          });
-          return makeAccount(address, { system, bankManager });
-        },
-        /**
-         * Make a single query to the local chain. Will reject with an error if
-         * the query fails. Otherwise, return the response as a JSON-compatible
-         * object.
-         *
-         * @param {import('@agoric/cosmic-proto').TypedJson} request
-         * @returns {Promise<import('@agoric/cosmic-proto').TypedJson>}
-         */
-        async query(request) {
-          const requests = harden([request]);
-          const results = await E(this.facets.public).queryMany(requests);
-          results.length === 1 ||
-            Fail`expected exactly one result; got ${results}`;
-          const { error, reply } = results[0];
-          if (error) {
-            throw Fail`query failed: ${error}`;
-          }
-          return reply;
-        },
-        /**
-         * Send a batch of query requests to the local chain. Unless there is a
-         * system error, will return all results to indicate their success or
-         * failure.
-         *
-         * @param {import('@agoric/cosmic-proto').TypedJson[]} requests
-         * @returns {Promise<
-         *   {
-         *     error?: string;
-         *     reply: import('@agoric/cosmic-proto').TypedJson;
-         *   }[]
-         * >}
-         */
-        async queryMany(requests) {
-          const { system } = this.state;
-          return E(system).toBridge({
-            type: 'VLOCALCHAIN_QUERY_MANY',
-            messages: requests,
-          });
-        },
+      /**
+       * Allocate a fresh address that doesn't correspond with a public key, and
+       * follows the ICA guidelines to help reduce collisions. See
+       * x/vlocalchain/keeper/keeper.go AllocateAddress for the use of the app
+       * hash and block data hash.
+       */
+      async makeAccount() {
+        const { system, bankManager } = this.state;
+        const address = await E(system).toBridge({
+          type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
+        });
+        return makeAccount(address, { system, bankManager });
+      },
+      /**
+       * Make a single query to the local chain. Will reject with an error if
+       * the query fails. Otherwise, return the response as a JSON-compatible
+       * object.
+       *
+       * @param {import('@agoric/cosmic-proto').TypedJson} request
+       * @returns {Promise<import('@agoric/cosmic-proto').TypedJson>}
+       */
+      async query(request) {
+        const requests = harden([request]);
+        const results = await E(this.self).queryMany(requests);
+        results.length === 1 ||
+          Fail`expected exactly one result; got ${results}`;
+        const { error, reply } = results[0];
+        if (error) {
+          throw Fail`query failed: ${error}`;
+        }
+        return reply;
+      },
+      /**
+       * Send a batch of query requests to the local chain. Unless there is a
+       * system error, will return all results to indicate their success or
+       * failure.
+       *
+       * @param {import('@agoric/cosmic-proto').TypedJson[]} requests
+       * @returns {Promise<
+       *   {
+       *     error?: string;
+       *     reply: import('@agoric/cosmic-proto').TypedJson;
+       *   }[]
+       * >}
+       */
+      async queryMany(requests) {
+        const { system } = this.state;
+        return E(system).toBridge({
+          type: 'VLOCALCHAIN_QUERY_MANY',
+          messages: requests,
+        });
       },
     },
   );
@@ -178,5 +172,4 @@ export const prepareLocalChainTools = zone => {
 harden(prepareLocalChainTools);
 
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
-/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChainKit */
-/** @typedef {LocalChainKit['public']} LocalChain */
+/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */

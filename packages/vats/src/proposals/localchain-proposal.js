@@ -66,7 +66,7 @@ export const setupLocalChainVat = async (
     );
   }
 
-  const { public: newLocalChain } = await E(vats.localchain).makeLocalChain({
+  const newLocalChain = await E(vats.localchain).makeLocalChain({
     system: scopedManager,
     bankManager: await bankManager,
   });
