@@ -13,12 +13,13 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/agoric"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // DefaultController is a stub controller.
-var DefaultController = func(ctx context.Context, needReply bool, str string) (string, error) {
+var DefaultController vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
 	return "", fmt.Errorf("Controller not configured; did you mean to use `ag-chain-cosmos` instead?")
 }
 
@@ -28,7 +29,7 @@ func Run() {
 }
 
 // RunWithController starts the app with a custom upcall handler.
-func RunWithController(sendToController cmd.Sender) {
+func RunWithController(sendToController vm.Sender) {
 	// Exit on Control-C and kill.
 	// Without this explicitly, ag-chain-cosmos ignores them.
 	sigs := make(chan os.Signal, 1)
