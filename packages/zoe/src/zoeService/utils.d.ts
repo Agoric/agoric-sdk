@@ -1,8 +1,9 @@
-import type { Callable } from '@agoric/internal/src/utils.js';
-import type { Tagged } from '@agoric/internal/src/tagged.js';
-import type { VatUpgradeResults } from '@agoric/swingset-vat';
-import type { Baggage } from '@agoric/swingset-liveslots';
 import type { Issuer } from '@agoric/ertp/exported.js';
+import type { Tagged } from '@agoric/internal/src/tagged.js';
+import type { Callable } from '@agoric/internal/src/utils.js';
+import type { Baggage } from '@agoric/swingset-liveslots';
+import type { VatUpgradeResults } from '@agoric/swingset-vat';
+import type { RemotableObject } from '@endo/marshal';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -14,19 +15,18 @@ type ContractFacet<T extends {} = {}> = {
 /**
  * Installation of a contract, typed by its start function.
  */
-export type Installation<SF extends ContractStartFunction | unknown> = Tagged<
-  {
-    getBundle: () => SourceBundle;
-    getBundleLabel: () => string;
-  },
-  'StartFunction',
-  SF
->;
-export type Instance<SF extends ContractStartFunction | unknown> = Tagged<
-  Handle<'Instance'>,
-  'StartFunction',
-  SF
->;
+export type Installation<SF extends ContractStartFunction | unknown> =
+  RemotableObject &
+    Tagged<
+      {
+        getBundle: () => SourceBundle;
+        getBundleLabel: () => string;
+      },
+      'StartFunction',
+      SF
+    >;
+export type Instance<SF extends ContractStartFunction | unknown> =
+  RemotableObject & Tagged<Handle<'Instance'>, 'StartFunction', SF>;
 
 export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
@@ -37,7 +37,7 @@ export type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = {
+export type AdminFacet<SF extends ContractStartFunction> = RemotableObject & {
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined

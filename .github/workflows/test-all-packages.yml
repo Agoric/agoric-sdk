@@ -498,7 +498,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[A-Da-d]*' | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -540,7 +540,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js' | $TEST_COLLECT
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[E-Ie-i]*' | $TEST_COLLECT
       - name: yarn test (xsnap-lockdown)
         if: (success() || failure())
         run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -591,7 +591,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[J-Rj-r]*' | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -633,7 +633,7 @@ jobs:
 
       - name: yarn test (SwingSet)
         if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[S-Zs-z0-9.test]*.js' | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

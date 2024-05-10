@@ -166,6 +166,7 @@ export const setupReserve = async ({
   ]);
 
   reserveKit.resolve(
+    // @ts-expect-error XXX
     harden({
       label: 'AssetReserve',
       instance,
@@ -350,6 +351,7 @@ export const startVaultFactory = async (
   );
 
   vaultFactoryKit.resolve(
+    // @ts-expect-error XXX
     harden({
       label: 'VaultFactory',
       creatorFacet: vaultFactoryCreator,
@@ -465,6 +467,7 @@ export const startRewardDistributor = async ({
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
+    // @ts-expect-error XXX
     feeDistributorTerms,
     undefined,
     'feeDistributor',
@@ -623,6 +626,7 @@ export const startAuctioneer = async (
     ]);
 
   auctioneerKit.resolve(
+    // @ts-expect-error XXX
     harden({
       label: 'auctioneer',
       creatorFacet: governedCreatorFacet,

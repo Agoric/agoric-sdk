@@ -18,7 +18,7 @@ import { makeCurrentKeysKit } from './store-utils.js';
 /**
  * @import {Passable} from '@endo/pass-style');
  * @import {Key, Pattern} from '@endo/patterns');
- * @import {MapStore, StoreOptions} from '../types.js';
+ * @import {MapStore, MapStoreMethods, StoreOptions} from '../types.js';
  */
 
 const { quote: q } = assert;
@@ -31,7 +31,7 @@ const { quote: q } = assert;
  * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {(k: K) => void} [assertKeyOkToDelete]
  * @param {string} [tag]
- * @returns {MapStore<K, V>}
+ * @returns {MapStoreMethods<K, V>}
  */
 export const makeMapStoreMethods = (
   jsmap,
@@ -133,11 +133,9 @@ export const makeMapStoreMethods = (
  * or remotables. Other storeMaps will accept, for example, copyArrays and
  * copyRecords, as keys and look them up based on equality of their contents.
  *
- * @template {Key} K
- * @template {Passable} V
  * @param {string} [tag] - the column name for the key
  * @param {StoreOptions} [options]
- * @returns {MapStore<K, V>}
+ * @returns {MapStore<any, any>}
  */
 export const makeScalarMapStore = (
   tag = 'key',

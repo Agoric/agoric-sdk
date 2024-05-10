@@ -3,7 +3,7 @@
 
 Usage:
 
-  node avaXS.js [--debug] test-*.js
+  node avaXS.js [--debug] *.test.js
 
 */
 

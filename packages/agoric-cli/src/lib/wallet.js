@@ -187,7 +187,7 @@ export const sendAction = async (bridgeAction, opts) => {
  */
 export const findContinuingIds = (current, agoricNames) => {
   // XXX should runtime type-check
-  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
+  /** @type {{ offerToUsedInvitation: [string, InvitationAmount][]}} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
 
   Array.isArray(entries) || Fail`entries must be an array: ${entries}`;

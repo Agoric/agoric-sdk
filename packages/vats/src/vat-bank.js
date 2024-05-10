@@ -21,6 +21,11 @@ import {
 
 import '@agoric/notifier/exported.js';
 
+/**
+ * @import {Guarded} from '@endo/exo')
+ * @import {Passable, RemotableObject} from '@endo/pass-style')
+ */
+
 const { Fail } = assert;
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -38,8 +43,9 @@ const BridgeChannelI = M.interface('BridgeChannel', {
  */
 
 /**
- * @typedef {object} BalanceUpdater
- * @property {(value: string, nonce?: string) => void} update
+ * @typedef {Guarded<{
+ *   update: (value: string, nonce?: string) => void;
+ * }>} BalanceUpdater
  */
 
 const BalanceUpdaterI = M.interface('BalanceUpdater', {
@@ -348,8 +354,8 @@ const prepareAssetSubscription = zone => {
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} AssetIssuerKit
- * @property {ERef<Mint<K>>} [mint]
- * @property {ERef<Issuer<K>>} issuer
+ * @property {Mint<K>} [mint]
+ * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
 
@@ -362,12 +368,17 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
   mint: M.remotable('Mint'),
 });
 
-/** @typedef {AssetIssuerKit & { denom: string; escrowPurse?: ERef<Purse> }} AssetRecord */
+/**
+ * @typedef {AssetIssuerKit & {
+ *   denom: string;
+ *   escrowPurse?: RemotableObject & ERef<Purse>;
+ * }} AssetRecord
+ */
 
 /**
  * @typedef {object} AssetDescriptor
  * @property {Brand} brand
- * @property {ERef<Issuer>} issuer
+ * @property {RemotableObject & ERef<Issuer>} issuer
  * @property {string} issuerName
  * @property {string} denom
  * @property {string} proposedName
@@ -411,6 +422,7 @@ const prepareBank = (
   // (which we emulate, since we know both address and denom are JSONable).  If
   // we decide to partition the provider and use `brandToVPurse` directly, we'd
   // need ephemera for each `makeBank` call.
+  /** @type {MapStore<string, VirtualPurse>} */
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
   /**
    * @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<
@@ -584,7 +596,7 @@ const prepareBankManager = (
       /**
        * @type {MapStore<
        *   string,
-       *   { bank: Bank; brandToVPurse: MapStore<Brand, VirtualPurse> }
+       *   { bank: Guarded<Bank>; brandToVPurse: MapStore<Brand, VirtualPurse> }
        * >}
        */
       const addressToBank = detachedZone.mapStore('addressToBank');

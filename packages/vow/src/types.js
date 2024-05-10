@@ -4,9 +4,10 @@ export {};
 /**
  * @import {RemotableBrand} from '@endo/eventual-send'
  * @import {CopyTagged} from '@endo/pass-style'
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {PromiseVow, Remote} from '@agoric/vow';
  * @import {prepareVowTools} from './tools.js'
  */
-
 /** @typedef {(...args: any[]) => any} Callable */
 
 /**
@@ -82,7 +83,7 @@ export {};
 /**
  * @template [T=any]
  * @typedef {object} VowPayload
- * @property {Remote<VowV0<T>>} vowV0
+ * @property {RemotableObject & Remote<VowV0<T>>} vowV0
  */
 
 /**

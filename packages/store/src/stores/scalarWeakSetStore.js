@@ -8,15 +8,18 @@ import {
 
 const { quote: q, Fail } = assert;
 
-/** @import {StoreOptions, WeakSetStore} from '@agoric/store'; */
+/**
+ * @import {Key} from '@endo/patterns';
+ * @import {StoreOptions, WeakSetStore, WeakSetStoreMethods} from '@agoric/store';
+ */
 
 /**
- * @template K
+ * @template {Key} K
  * @param {WeakSet<K & object>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {(k: K) => void} [assertKeyOkToDelete]
  * @param {string} [keyName]
- * @returns {WeakSetStore<K>}
+ * @returns {WeakSetStoreMethods<K>}
  */
 export const makeWeakSetStoreMethods = (
   jsset,
@@ -50,6 +53,7 @@ export const makeWeakSetStoreMethods = (
     addAll: keys => {
       if (typeof keys[Symbol.iterator] !== 'function') {
         if (Object.isFrozen(keys) && isCopySet(keys)) {
+          // @ts-expect-error XXX
           keys = getCopySetKeys(keys);
         } else {
           Fail`provided data source is not iterable: ${keys}`;

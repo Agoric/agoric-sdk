@@ -28,7 +28,7 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {ERef<import('@agoric/time').TimerService>} timer
+ * @property {import('@agoric/time').TimerService} timer
  * @property {import('@agoric/time').RelativeTime} [quoteInterval]
  * @property {ERef<Mint<'set'>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]
@@ -117,16 +117,19 @@ export async function makeFakePriceAuthority(options) {
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
+    /** @type {Amount<'set', PriceDescription>} */
     const quoteAmount = AmountMath.make(
       quoteBrand,
-      harden([
-        {
-          amountIn,
-          amountOut: AmountMath.make(actualBrandOut, valueOut),
-          timer,
-          timestamp: quoteTime,
-        },
-      ]),
+      /** @type {[PriceDescription]} */ (
+        harden([
+          {
+            amountIn,
+            amountOut: AmountMath.make(actualBrandOut, valueOut),
+            timer,
+            timestamp: quoteTime,
+          },
+        ])
+      ),
     );
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),

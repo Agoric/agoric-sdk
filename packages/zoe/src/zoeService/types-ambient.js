@@ -49,7 +49,7 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer<'set'>>}
+ * @returns {Promise<Issuer<'set', InvitationDetails>>}
  */
 
 /**
@@ -232,7 +232,7 @@
  */
 
 /**
- * @typedef {Record<Keyword, Amount<any>>} AmountKeywordRecord
+ * @typedef {Record<Keyword, import('@agoric/ertp/exported.js').AnyAmount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: AmountMath.make(assetBrand, 5n), Price:

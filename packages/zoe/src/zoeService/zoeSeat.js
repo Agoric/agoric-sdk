@@ -109,7 +109,7 @@ export const makeZoeSeatAdminFactory = baggage => {
       return {
         currentAllocation: initialAllocation,
         proposal,
-        offerResult: undefined,
+        offerResult: /** @type {any} */ (undefined),
         offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
         withdrawFacet,
@@ -312,7 +312,8 @@ export const makeZoeSeatAdminFactory = baggage => {
                     ephemeralOfferResultStore.delete(facets.zoeSeatAdmin);
                   } catch (err) {
                     console.warn(
-                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                      'non-durable offer result will be lost upon zoe vat termination:',
+                      offerResult,
                     );
                   }
                 },

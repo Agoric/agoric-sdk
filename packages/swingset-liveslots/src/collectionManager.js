@@ -26,6 +26,10 @@ import {
 } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
 
+/**
+ * @import {ToCapData, FromCapData} from '@endo/marshal';
+ */
+
 // XXX TODO: The following key length limit was put in place due to limitations
 // in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
 // leaving it in place for the time being as a general defensive measure against
@@ -112,8 +116,8 @@ function makeSchemaCache(syscall, unserialize) {
  * @param {(val: any) => string | undefined} convertValToSlot
  * @param {*} convertSlotToVal
  * @param {*} registerValue
- * @param {import('@endo/marshal').ToCapData<string>} serialize
- * @param {import('@endo/marshal').FromCapData<string>} unserialize
+ * @param {ToCapData<string>} serialize
+ * @param {FromCapData<string>} unserialize
  * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
  */
 export function makeCollectionManager(

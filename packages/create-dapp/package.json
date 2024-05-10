@@ -39,7 +39,8 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "timeout": "2m",
     "workerThreads": false

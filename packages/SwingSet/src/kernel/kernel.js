@@ -858,7 +858,7 @@ export default function buildKernel(
     // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
     // and then ultimately moved to the kernel in a MUCH diminished form
     // (see #5342 and #6650, and testUpgrade in
-    // {@link ../../test/upgrade/test-upgrade.js}).
+    // {@link ../../test/upgrade/upgrade.test.js}).
     // We hope to eventually add back correct sophisticated logic
     // by e.g. having liveslots sweep the database when restoring a vat.
 
@@ -1867,7 +1867,7 @@ export default function buildKernel(
           );
         } else {
           // this should only happen during unit tests that are too lazy to
-          // build a complete kernel: test/bundles/test-bundles-kernel.js
+          // build a complete kernel: test/bundles/bundles-kernel.test.js
           console.log(`installBundle cannot notify, missing vatAdminRootKref`);
         }
       } finally {

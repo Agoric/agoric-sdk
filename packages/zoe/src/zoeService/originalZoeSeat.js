@@ -135,7 +135,7 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
         currentAllocation: initialAllocation,
         proposal,
         exitObj,
-        offerResult: undefined,
+        offerResult: /** @type {any} */ (undefined),
         offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
         withdrawFacet,
@@ -217,7 +217,7 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           }
 
           const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-          E.when(
+          void E.when(
             offerResultPromise,
             offerResult => {
               // Resolve the ephemeral promise for offerResult
@@ -240,7 +240,8 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
                     ephemeralOfferResultStore.delete(facets.userSeat);
                   } catch (err) {
                     console.warn(
-                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                      'non-durable offer result will be lost upon zoe vat termination:',
+                      offerResult,
                     );
                   }
                 },

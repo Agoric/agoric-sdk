@@ -275,8 +275,9 @@ export const makeZoeStorageManager = (
             ownKeys(customDetails).length >= 1
               ? harden({ customDetails })
               : harden({});
+          /** @type {InvitationAmount} */
           const invitationAmount = AmountMath.make(
-            invitationKit.brand,
+            /** @type {Brand<'set'>} */ (invitationKit.brand),
             harden([
               {
                 ...extraProperties,
@@ -401,6 +402,7 @@ export const makeZoeStorageManager = (
       contractBundleCap,
       contractLabel,
     );
+    // @ts-expect-error checked cast
     return makeInstanceStorageManager(instanceRecord, adminNode, root)
       .instanceStorageManager;
   };

@@ -139,7 +139,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     serializeBodyFormat: 'smallcaps',
   });
 
-  /** @param {import('@agoric/swingset-vat').SwingSetCapData} data */
+  /**
+   * @param {import('@agoric/swingset-vat').SwingSetCapData} data
+   * @returns {any}
+   */
   const unserialize = data => {
     try {
       const body = rawUnserialize(data);

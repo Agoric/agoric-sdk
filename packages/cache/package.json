@@ -23,8 +23,8 @@
     "@agoric/notifier": "^0.6.2",
     "@agoric/store": "^0.9.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^1.1.1",
-    "@endo/marshal": "^1.4.1"
+    "@endo/far": "^1.1.2",
+    "@endo/marshal": "^1.5.0"
   },
   "devDependencies": {
     "@agoric/zoe": "^0.26.2",
@@ -39,7 +39,8 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"
@@ -47,6 +48,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 90.97
+    "atLeast": 94.12
   }
 }

@@ -17,6 +17,7 @@ export function buildDevice(tools, endowments) {
 
   const dispatch = {
     invoke: (dnid, method, argsCapdata) => {
+      /** @type {any} */
       const args = unserialize(argsCapdata);
 
       if (dnid === ROOT) {

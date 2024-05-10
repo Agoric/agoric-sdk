@@ -131,6 +131,7 @@ export const buildRootObject = async () => {
      * @param {any} devices
      */
     bootstrap: async (vats, devices) => {
+      // @ts-expect-error XXX adminNode
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       ({ feeMintAccess, zoeService } = await E(vats.zoe).buildZoe(
         vatAdmin,
@@ -215,6 +216,7 @@ export const buildRootObject = async () => {
       governorFacets = await E(zoeService).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,
+        // @ts-expect-error XXX timer
         governorTerms,
         {
           governed: {

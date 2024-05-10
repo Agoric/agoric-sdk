@@ -1,6 +1,10 @@
 export {};
 
-/** @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js' */
+/**
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, Container} from '@endo/pass-style';
+ * @import {ContractStartFunction} from '@agoric/zoe/src/zoeService/utils.js';
+ */
 
 /**
  * @typedef { 'unranked' | 'order' | 'plurality' } ChoiceMethod
@@ -34,9 +38,9 @@ export {};
  */
 
 /**
- * @typedef { Amount | Brand | Installation | Instance | bigint |
+ * @typedef { Amount | Brand | Installation | Instance | number | bigint |
  *   Ratio | string | import('@agoric/time').TimestampRecord |
- *   import('@agoric/time').RelativeTimeRecord | unknown } ParamValue
+ *   import('@agoric/time').RelativeTimeRecord | Container<any, any> } ParamValue
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -61,7 +65,7 @@ export {};
 
 /**
  * @template {ParamType} [T=ParamType]
- * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped<T>
+ * @typedef {{ type: T, value: ParamValueForType<T> }} ParamValueTyped
  */
 
 /**
@@ -73,7 +77,7 @@ export {};
  *   governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & {
  *     Electorate: 'invitation'
  *   }>
- * }} GovernanceTerms<T>
+ * }} GovernanceTerms
  */
 
 /**
@@ -430,7 +434,7 @@ export {};
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
  * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount<'set'>} getInvitationAmount
+ * @property {(name: string) => InvitationAmount} getInvitationAmount
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
@@ -484,7 +488,7 @@ export {};
 
 /**
  * @typedef {object} ChangeParamsPosition
- * @property {Record<string,ParamValue>} changes one or more changes to parameters
+ * @property {Record<string, ParamValue>} changes one or more changes to parameters
  */
 
 /**
@@ -500,7 +504,7 @@ export {};
 /**
  * @typedef {object} InvokeApiPosition
  * @property {string} apiMethodName
- * @property {unknown[]} methodArgs
+ * @property {Passable[]} methodArgs
  */
 
 /**
@@ -625,7 +629,7 @@ export {};
 /**
  * @callback VoteOnApiInvocation
  * @param {string} apiMethodName
- * @param {unknown[]} methodArgs
+ * @param {Passable[]} methodArgs
  * @param {Installation} voteCounterInstallation
  * @param {import('@agoric/time').Timestamp} deadline
  * @returns {Promise<ContractGovernanceVoteResult>}
@@ -727,7 +731,7 @@ export {};
  * Akin to StartedInstanceKit but designed for the results of starting governed contracts. Used in bootstrap space.
  * @property {AdminFacet} adminFacet of the governed contract
  * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
- * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
+ * @property {Guarded<GovernorCreatorFacet<SF>>} governorCreatorFacet of the governing contract
  * @property {AdminFacet} governorAdminFacet of the governing contract
  * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
  * @property {Instance} instance

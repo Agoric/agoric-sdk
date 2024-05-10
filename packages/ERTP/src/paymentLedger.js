@@ -15,6 +15,7 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
+ * @import {Key} from '@endo/patterns';
  */
 
 const { details: X, quote: q, Fail } = assert;
@@ -93,11 +94,7 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  // Should be
-  // at-ts-expect-error XXX callWhen
-  // but ran into the usual disagreement between local lint and CI
-
-  // @ts-expect-error
+  // @ts-expect-error XXX callWhen
   const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -299,7 +296,7 @@ export const preparePaymentLedger = (
   };
 
   /** @type {() => Purse<K>} */
-  // @ts-expect-error type parameter confusion
+  // @ts-expect-error XXX amount kinds
   const makeEmptyPurse = preparePurseKind(
     issuerZone,
     name,
@@ -315,11 +312,7 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  // Should be
-  // at-ts-expect-error cast due to callWhen discrepancy
-  // but ran into the usual disagreement between local lint and CI
-
-  // @ts-expect-error
+  // @ts-expect-error XXX callWhen
   const issuer = issuerZone.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
@@ -374,11 +367,6 @@ export const preparePaymentLedger = (
    * `makeIssuerKit` drops it on the floor, it can still be recovered in an
    * emergency upgrade.
    */
-  // Should be
-  // at-ts-expect-error checked cast
-  // but ran into the usual disagreement between local lint and IDE lint.
-  // Don't know yet about lint under CI.
-
   const mintRecoveryPurse = /** @type {Purse<K>} */ (
     issuerZone.makeOnce('mintRecoveryPurse', () => makeEmptyPurse())
   );
@@ -389,10 +377,6 @@ export const preparePaymentLedger = (
       return issuer;
     },
     mintPayment(newAmount) {
-      // Should be
-      // at-ts-expect-error checked cast
-      // but ran into the usual disagreement between local lint and CI
-
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and

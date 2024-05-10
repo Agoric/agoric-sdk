@@ -7,7 +7,10 @@
  * @property {PurseActions} actions
  */
 
-/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Key} from '@endo/patterns';
+ */
 
 /**
  * @typedef {PursesJSONState & PursesAddedState} PursesFullState
@@ -51,7 +54,7 @@
  */
 
 /**
- * @template T
+ * @template {Key} T
  * @typedef {object} Mapping
  * @property {(petname: Petname) => string} implode
  * @property {(str: string) => Petname} explode

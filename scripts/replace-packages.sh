@@ -13,7 +13,9 @@ DSTDIR=${2-$PWD/node_modules}
 # Install and build the source directory.
 pushd "$SRCDIR"
 yarn install
-yarn build
+npm run build
+# Endo requires this
+npx lerna run build:types || true
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   test "$(jq .private < "$dir/package.json")" != true || continue
@@ -23,7 +25,7 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   name=$(jq -r .name < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
   rm -f "${stem}"-*.tgz
-  yarn pack
+  npm pack
   tar -xvf "${stem}"-*.tgz
 
   # Replace the destination package.

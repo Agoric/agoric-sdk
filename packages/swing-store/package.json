@@ -23,14 +23,14 @@
   "dependencies": {
     "@agoric/assert": "^0.6.0",
     "@agoric/internal": "^0.3.2",
-    "@endo/base64": "^1.0.4",
-    "@endo/bundle-source": "^3.2.2",
-    "@endo/check-bundle": "^1.0.6",
-    "@endo/nat": "^5.0.6",
+    "@endo/base64": "^1.0.5",
+    "@endo/bundle-source": "^3.2.3",
+    "@endo/check-bundle": "^1.0.7",
+    "@endo/nat": "^5.0.7",
     "better-sqlite3": "^9.1.1"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.1",
+    "@endo/init": "^1.1.2",
     "@types/better-sqlite3": "^7.6.9",
     "ava": "^5.3.0",
     "c8": "^9.1.0",
@@ -41,7 +41,8 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"

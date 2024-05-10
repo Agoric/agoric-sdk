@@ -88,6 +88,7 @@ const bidScalingRatioFromKey = (bidScaleFloat, numBrand, useDecimals) => {
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
+  // @ts-expect-error XXX
   const [pricePart, sequenceNumberPart] = decodeData(key);
   return [
     priceRatioFromFloat(pricePart, numBrand, denomBrand, useDecimals),

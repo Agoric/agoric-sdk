@@ -127,6 +127,7 @@
     "@cosmology/telescope": "^1.5.3",
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
+    "tsd": "^0.30.7",
     "tsimp": "^2.0.11",
     "typescript": "^5.5.0-beta"
   },
@@ -136,8 +137,8 @@
     "@cosmjs/proto-signing": "^0.32.3",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/base64": "^1.0.3",
-    "@endo/init": "^1.1.1"
+    "@endo/base64": "^1.0.5",
+    "@endo/init": "^1.1.2"
   },
   "resolutions": {
     "**/axios": "^1.6.7",
@@ -151,7 +152,8 @@
       "compile": false
     },
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ]
   }
 }

@@ -132,6 +132,8 @@ export const makePopulatedFakeVatAdmin = () => {
     return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);
   };
 
+  // FIXME(TS9006) remove 'any'
+  /** @type {any} */
   const vatAdminService = Far('vatAdminSvc', {
     ...fakeVatAdmin,
     createVat,

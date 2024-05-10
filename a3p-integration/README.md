@@ -88,7 +88,7 @@ access SDK code, a script can be used to generate the `submission` content.
 Until there is [native support for build scripts in the `synthetic-chain`
 tool](https://github.com/Agoric/agoric-3-proposals/issues/87),
 `a3p-integration`'s `build:submissions` step invokes
-`generate-a3p-submissions.sh` in `agoric-sdk` before starting the upgrade test.
+`build-all-submissions.sh` in `agoric-sdk` before starting the upgrade test.
 
 For core eval proposals executing before the chain software upgrade, the `submission` should be checked in, since bundles built from newer software may not be compatible with older chains.
 
@@ -127,7 +127,7 @@ make -C ../packages/deployment docker-build-sdk
 
 In a3p-integration, many core-eval proposals' `submission` content has to be
 generated from the local `agoric-sdk`, and must be rebuilt every time there is a
-change. The `scripts/generate-a3p-submissions.sh` script contains commands to
+change. The `scripts/build-all-submissions.sh` script contains commands to
 generate the core-eval content and move it to the expected proposal package's
 submission directory. The generation is executed as part of `a3p-integration`'s
 `build:submissions` step. Each proposal that requires such a build step should
@@ -145,7 +145,7 @@ If the submission does require bundle references or other options to be
 provided, it should be written as two parts: a core eval (in
 `.../vats/proposals`) and a builder for it (in `.../builders/scripts/vats`).
 
-The `generate-a3p-submissions.sh` script reads instructions from
+The `build-all-submissions.sh` script reads instructions from
 `agoricProposal.sdk-generate` in `package.json`. That field contains a list of
 strings, each of which describes a single submission. If there is only one
 submission, it can use the default directory name `submission` by specifying

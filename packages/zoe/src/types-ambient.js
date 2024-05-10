@@ -4,10 +4,7 @@
 
 /**
  * @template {string} H - the name of the handle
- * @typedef {H & import("@endo/marshal").Remotable} Handle A type constructor for an opaque type
- * identified by the H string. This uses an intersection type
- * ('MyHandle' & {}) to tag the handle's type even though the actual
- * value is just an empty object.
+ * @typedef {import("@endo/marshal").RemotableObject<H>} Handle Alias for RemotableObject
  */
 
 /**
@@ -35,9 +32,10 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {import("@endo/patterns").Key} [M=import("@endo/patterns").Key] member kind, for Amounts that have member values
  * @typedef {object} IssuerRecord
  * @property {Brand<K>} brand
- * @property {Issuer<K>} issuer
+ * @property {Issuer<K, M>} issuer
  * @property {K} assetKind
  * @property {DisplayInfo<K>} [displayInfo]
  *
