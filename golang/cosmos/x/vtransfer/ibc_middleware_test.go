@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
+	"text/template"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -14,6 +16,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
@@ -49,6 +52,16 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 
 type TestingAppMaker func() (ibctesting.TestingApp, map[string]json.RawMessage)
 
+// Each instance has unique IBC genesis state with deterministic
+// client/connection,channel sequence numbers
+// (respectively, X000/X010/X050 where X is the zero-based
+// instance number plus one, such that instance 0 uses
+// 1000/1010/1050, instance 1 uses 2000/2010/2050, etc.).
+func computeSequences(instance int) (channelSeq, connectionSeq, clientSeq int) {
+	baseSequence := 1000 * (instance + 1)
+	return baseSequence, baseSequence + 10, baseSequence + 50
+}
+
 func SetupAgoricTestingApp(instance int) TestingAppMaker {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
@@ -63,41 +76,49 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 		appd := app.NewAgoricApp(controller, vm.NewAgdServer(), log.TestingLogger(), db, nil,
 			true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
-		baseSequence := 1000 * (instance + 1)
-		genesisState["ibc"] = json.RawMessage(fmt.Sprintf(`
-  {
-		"channel_genesis": {
-			"ack_sequences": [],
-			"acknowledgements": [],
-			"channels": [],
-			"commitments": [],
-			"next_channel_sequence": "%d",
-			"receipts": [],
-			"recv_sequences": [],
-			"send_sequences": []
-		},
-		"client_genesis": {
-			"clients": [],
-			"clients_consensus": [],
-			"clients_metadata": [],
-			"create_localhost": false,
-			"next_client_sequence": "%d",
-			"params": {
-				"allowed_clients": [
-					"06-solomachine",
-					"07-tendermint"
-				]
-			}
-		},
-		"connection_genesis": {
-			"client_connection_paths": [],
-			"connections": [],
-			"next_connection_sequence": "%d",
-			"params": {
-				"max_expected_time_per_block": "30000000000"
-			}
-		}
-	}`, baseSequence+50, baseSequence, baseSequence+10))
+
+		t := template.Must(template.New("").Parse(`
+		{
+				"client_genesis": {
+						"clients": [],
+						"clients_consensus": [],
+						"clients_metadata": [],
+						"create_localhost": false,
+						"next_client_sequence": "{{.nextClientSequence}}",
+						"params": {
+								"allowed_clients": [
+										"06-solomachine",
+										"07-tendermint"
+								]
+						}
+				},
+				"connection_genesis": {
+						"client_connection_paths": [],
+						"connections": [],
+						"next_connection_sequence": "{{.nextConnectionSequence}}",
+						"params": {
+								"max_expected_time_per_block": "30000000000"
+						}
+				},
+				"channel_genesis": {
+						"ack_sequences": [],
+						"acknowledgements": [],
+						"channels": [],
+						"commitments": [],
+						"next_channel_sequence": "{{.nextChannelSequence}}",
+						"receipts": [],
+						"recv_sequences": [],
+						"send_sequences": []
+				}
+		}`))
+		var result strings.Builder
+		clientSeq, connectionSeq, channelSeq := computeSequences(instance)
+		t.Execute(&result, map[string]any{
+			"nextClientSequence":     clientSeq,
+			"nextConnectionSequence": connectionSeq,
+			"nextChannelSequence":    channelSeq,
+		})
+		genesisState["ibc"] = json.RawMessage(result.String())
 		return appd, genesisState
 	}
 }
@@ -194,8 +215,10 @@ func (s *IntegrationTestSuite) PeekQueue(chain *ibctesting.TestChain, queuePath 
 
 func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
 	path := ibctesting.NewPath(s.chainA, s.chainB)
-	path.EndpointA.ChannelID = "channel-1050"
-	path.EndpointB.ChannelID = "channel-2050"
+	_, _, channelASeq := computeSequences(0)
+	_, _, channelBSeq := computeSequences(1)
+	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq)
+	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
@@ -210,8 +233,10 @@ func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
 
 func (s *IntegrationTestSuite) SetupContract() *ibctesting.Path {
 	path := ibctesting.NewPath(s.chainA, s.chainB)
-	path.EndpointA.ChannelID = "channel-1050"
-	path.EndpointB.ChannelID = "channel-2050"
+	_, _, channelASeq := computeSequences(0)
+	_, _, channelBSeq := computeSequences(1)
+	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq)
+	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
@@ -335,15 +360,23 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 		{
-			qvalues, err := s.PeekQueue(s.chainA, "actionQueue")
+			records, err := swingsettesting.GetActionQueueRecords(
+				s.T(),
+				s.chainA.GetContext(),
+				s.GetApp(s.chainA).SwingSetKeeper,
+			)
 			s.Require().NoError(err)
 			expected := []swingsettypes.InboundQueueRecord{}
 
-			s.checkQueue(qvalues, expected)
+			s.checkQueue(records, expected)
 		}
 
 		{
-			qvalues, err := s.PeekQueue(s.chainB, "actionQueue")
+			records, err := swingsettesting.GetActionQueueRecords(
+				s.T(),
+				s.chainB.GetContext(),
+				s.GetApp(s.chainB).SwingSetKeeper,
+			)
 			s.Require().NoError(err)
 
 			expected := []swingsettypes.InboundQueueRecord{
@@ -389,7 +422,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 				},
 			}
 
-			s.checkQueue(qvalues, expected)
+			s.checkQueue(records, expected)
 
 			// write out a different acknowledgement from the "contract", one block later.
 			s.coordinator.CommitBlock(s.chainB)
@@ -410,7 +443,11 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 		{
-			qvalues, err := s.PeekQueue(s.chainA, "actionQueue")
+			records, err := swingsettesting.GetActionQueueRecords(
+				s.T(),
+				s.chainA.GetContext(),
+				s.GetApp(s.chainA).SwingSetKeeper,
+			)
 			s.Require().NoError(err)
 			expected := []swingsettypes.InboundQueueRecord{
 				{
@@ -434,7 +471,7 @@ func (s *IntegrationTestSuite) TestOnAcknowledgementPacket() {
 				},
 			}
 
-			s.checkQueue(qvalues, expected)
+			s.checkQueue(records, expected)
 		}
 	})
 }
