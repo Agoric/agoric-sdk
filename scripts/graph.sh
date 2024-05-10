@@ -24,7 +24,7 @@ DIR=$(dirname -- "${BASH_SOURCE[0]}")
     '
   echo '}'
   # normalize
-} | dot -Tcanon | tred > packages-graph.dot
+} | dot -Tcanon >packages-graph.dot
 dot -Tpng < packages-graph.dot > "$DIR"/../packages-graph.png
 
 dot -Tsvg < packages-graph.dot > "$DIR"/../packages-graph.svg
