@@ -57,12 +57,12 @@ func main() {
 	var shutdown func() error
 
 	nodePort := 1
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
+	var sendToNode vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
 		if vmClient == nil {
 			return "", errors.New("sendToVM called without VM client set up")
 		}
 
-		if str == "shutdown" {
+		if jsonRequest == "shutdown" {
 			// We could ask nicely, but don't bother.
 			if shutdown != nil {
 				return "", shutdown()
@@ -73,10 +73,10 @@ func main() {
 		msg := vm.Message{
 			Port:       nodePort,
 			NeedsReply: needReply,
-			Data:       str,
+			Data:       jsonRequest,
 		}
 		var reply string
-		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
 		return reply, err
 	}
 

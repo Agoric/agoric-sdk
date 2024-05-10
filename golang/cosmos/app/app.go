@@ -301,9 +301,8 @@ func NewGaiaApp(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
-	defaultController := func(ctx context.Context, needReply bool, str string) (string, error) {
-		fmt.Fprintln(os.Stderr, "FIXME: Would upcall to controller with", str)
-		return "null", nil
+	var defaultController vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
+		return "", fmt.Errorf("unexpected VM upcall with no controller: %s", jsonRequest)
 	}
 	return NewAgoricApp(
 		defaultController, vm.NewAgdServer(),
@@ -313,7 +312,7 @@ func NewGaiaApp(
 }
 
 func NewAgoricApp(
-	sendToController func(context.Context, bool, string) (string, error), agdServer *vm.AgdServer,
+	sendToController vm.Sender, agdServer *vm.AgdServer,
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
 	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
@@ -456,11 +455,11 @@ func NewAgoricApp(
 	)
 
 	// This function is tricky to get right, so we build it ourselves.
-	callToController := func(ctx sdk.Context, str string) (string, error) {
+	callToController := func(ctx sdk.Context, jsonRequest string) (jsonReply string, err error) {
 		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
 		defer app.AgdServer.SetControllerContext(ctx)()
-		return sendToController(sdk.WrapSDKContext(ctx), true, str)
+		return sendToController(sdk.WrapSDKContext(ctx), true, jsonRequest)
 	}
 
 	setBootstrapNeeded := func() {
