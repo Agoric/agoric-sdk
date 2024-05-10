@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "exit 0",
+    "prepack": "tsc --build tsconfig.build.json",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
