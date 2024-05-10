@@ -101,7 +101,9 @@ const makeInvitation = async (
   board,
   zoe,
 ) => {
-  const instance = E(board).getValue(instanceHandleBoardId);
+  const instance = /** @type {Promise<Instance>} */ (
+    E(board).getValue(instanceHandleBoardId)
+  );
   const publicFacet = E(zoe).getPublicFacet(instance);
   const { method, args = [] } = invitationMaker;
 

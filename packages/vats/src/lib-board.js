@@ -11,12 +11,12 @@ import {
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
+import { isRemotable, makeMarshal } from '@endo/marshal';
 
 import { crc6 } from './crc.js';
 
 /**
- * @import {PassableCap} from '@endo/marshal';
+ * @import {RemotableObject} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns');
  */
 
@@ -102,13 +102,13 @@ const initDurableBoardState = (
   const immutable = { prefix, crcDigits };
 
   const lastSequence = BigInt(initSequence);
-  /** @type {MapStore<BoardId, PassableCap>} */
+  /** @type {MapStore<BoardId, RemotableObject>} */
   const idToVal = makeScalarBigMapStore('idToVal', {
     durable: true,
     keyShape: IdShape,
     valueShape: ValShape,
   });
-  /** @type {MapStore<PassableCap, BoardId>} */
+  /** @type {MapStore<RemotableObject, BoardId>} */
   const valToId = makeScalarBigMapStore('valToId', {
     durable: true,
     keyShape: ValShape,
@@ -130,11 +130,14 @@ const initDurableBoardState = (
 // transient marshallers that get GCed when the function completes.
 
 /**
- * @param {PassableCap} value
+ * @param {RemotableObject} value
  * @param {BoardState} state
  */
 const getId = (value, state) => {
   const { idToVal, valToId, prefix, crcDigits } = state;
+  if (!isRemotable(value)) {
+    Fail`Board cannot create id for non-remotable`;
+  }
 
   if (valToId.has(value)) {
     return valToId.get(value);
@@ -267,8 +270,7 @@ export const prepareBoardKit = baggage => {
          * `value` for its entire lifetime. For a well-known board, this is
          * essentially forever.
          *
-         * @param {PassableCap} value
-         * @throws if `value` is not a Key in the @agoric/store sense
+         * @param {RemotableObject} value
          */
         getId(value) {
           return getId(value, this.state);
@@ -305,7 +307,7 @@ export const prepareBoardKit = baggage => {
           }
           return E(firstValue).lookup(...rest);
         },
-        /** @param {PassableCap} val */
+        /** @param {RemotableObject} val */
         has(val) {
           const { state } = this;
           return state.valToId.has(val);
