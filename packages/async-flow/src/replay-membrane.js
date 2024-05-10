@@ -66,7 +66,7 @@ export const makeReplayMembrane = (
     }
     const guestReason = hostToGuest(hostReason);
     status.reject(guestReason);
-    guestPromiseMap.delete(guestPromise);
+    guestPromiseMap.set(guestPromise, 'settled');
   };
 
   /**

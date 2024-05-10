@@ -207,6 +207,10 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               guestAsyncFunc(...guestArgs))();
 
             if (flow.getFlowState() !== 'Failed') {
+              // If the flow fails, that resets the bijection. Without this
+              // gating condition, the next line could grow the bijection
+              // of a failed flow, subverting other gating checks on bijection
+              // membership.
               bijection.init(guestResultP, outcomeKit.vow);
             }
             // log is driven at first by guestAyncFunc interaction through the
@@ -340,7 +344,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             bijection.reset();
 
             flow.getFlowState() === 'Failed' ||
-              Fail`Paniced flow must be Failed ${flow}`;
+              Fail`Panicked flow must be Failed ${flow}`;
 
             // This is not an expected throw, so in theory arbitrary chaos
             // may ensue from throwing it. But at this point
