@@ -18,6 +18,8 @@ const (
 	// asynchronous versions.  If it does, then the VM must supply an empty
 	// version string to indicate that the VM explicitly (possibly async)
 	// performs the Write* method.
+	// This flag is created in anticipation of ibc-go implementing async versions,
+	// see https://github.com/Agoric/agoric-sdk/issues/9358 for more details.
 	AsyncVersions = false
 )
 
