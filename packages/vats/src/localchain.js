@@ -6,11 +6,18 @@ import { AmountShape } from '@agoric/ertp';
 const { Fail } = assert;
 
 /**
- * @import {BankManager} from './vat-bank.js';
+ * @import {BankManager, Bank} from './vat-bank.js';
  * @import {ScopedBridgeManager} from './types.js';
  */
 
 /** @import {TypedJson, ResponseTo} from '@agoric/cosmic-proto'; */
+
+/**
+ * @typedef {{
+ *   system: ScopedBridgeManager;
+ *   bank: Bank;
+ * }} AccountPowers
+ */
 
 /**
  * @typedef {{
@@ -34,7 +41,7 @@ const prepareLocalChainAccount = zone =>
     LocalChainAccountI,
     /**
      * @param {string} address
-     * @param {LocalChainPowers} powers
+     * @param {AccountPowers} powers
      */
     (address, powers) => ({ address, ...powers, reserved: undefined }),
     {
@@ -50,12 +57,11 @@ const prepareLocalChainAccount = zone =>
        * @param {Payment} payment
        */
       async deposit(payment) {
-        const { address, bankManager } = this.state;
+        const { bank } = this.state;
 
         const allegedBrand = await E(payment).getAllegedBrand();
-        const bankAcct = E(bankManager).getBankForAddress(address);
-        const allegedPurse = E(bankAcct).getPurse(allegedBrand);
-        return E(allegedPurse).deposit(payment);
+        const purse = E(bank).getPurse(allegedBrand);
+        return E(purse).deposit(payment);
       },
       /**
        * Execute a batch of transactions and return the responses. Use
@@ -118,7 +124,8 @@ const prepareLocalChain = (zone, makeAccount) =>
         const address = await E(system).toBridge({
           type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
         });
-        return makeAccount(address, { system, bankManager });
+        const bank = await E(bankManager).getBankForAddress(address);
+        return makeAccount(address, { system, bank });
       },
       /**
        * Make a single query to the local chain. Will reject with an error if
