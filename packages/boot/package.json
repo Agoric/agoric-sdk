@@ -8,7 +8,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava 'test/bootstrapTests/**/test-*.js' 'test/upgrading/**/test-*.js'",
+    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test/bootstrapTests test/upgrading",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
@@ -77,8 +77,8 @@
       "ts": "module"
     },
     "files": [
-      "test/**/test-*.js",
-      "test/**/test-*.ts"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "nodeArguments": [
       "--loader=tsx",

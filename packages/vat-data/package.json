@@ -39,7 +39,8 @@
       "@endo/init/debug.js"
     ],
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ]
   },
   "publishConfig": {

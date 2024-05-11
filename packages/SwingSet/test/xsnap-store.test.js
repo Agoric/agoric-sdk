@@ -178,7 +178,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   t.log(`\
 This test fails under maintenance of xsnap dependencies.
 If these changes are expected, run:
-  yarn test --update-snapshots test/test-xsnap-store.js
+  yarn test --update-snapshots test/xsnap-store.test.js
 Then commit the changes in .../snapshots/ path.
 `);
 });
