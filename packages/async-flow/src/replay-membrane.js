@@ -198,6 +198,12 @@ export const makeReplayMembrane = (
   // //////////////// Converters ///////////////////////////////////////////////
 
   const makeGuestForHostRemotable = hRem => {
+    // Nothing here that captures `hRem` should make any use of it after the
+    // `makeGuestForHostRemotable` returns. This invariant enables
+    // `makeGuestForHostRemotable` to clear the `hRem` variable just before
+    // it returns, so any implementation-level capture of the variable does
+    // not inadvertently retain the host remotable which was the original
+    // value of the `hRem` variable.
     let gRem;
     /** @param {PropertyKey} [optVerb] */
     const makeGuestMethod = (optVerb = undefined) => {
@@ -238,6 +244,10 @@ export const makeReplayMembrane = (
       // use HandledPromise to make gRem a remote presence for hRem
       gRem = Remotable(guestIface, undefined, fromEntries(guestMethods));
     }
+    // See note at the top of the function to see why clearing the `hRem`
+    // variable is safe, and what invariant the above code needs to maintain so
+    // that it remains safe.
+    hRem = undefined;
     return gRem;
   };
   harden(makeGuestForHostRemotable);
