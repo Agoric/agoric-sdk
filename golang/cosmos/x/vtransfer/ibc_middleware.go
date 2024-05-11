@@ -10,16 +10,26 @@ import (
 	"github.com/cosmos/ibc-go/v6/modules/core/exported"
 )
 
+// IBCMiddleware forwards most of its methods to the next layer in the stack
+// (which may be the ibc-go transfer application or another middleware), but
+// hooks the packet-related methods and sends them to vtransferKeeper for async
+// interception outside of the middleware stack by the contract VM:
+//
+// Outbound packets: SendPacket.
+// Outbound packet results: OnAcknowledgementPacket, OnTimeoutPacket.
+// Inbound packets: OnRecvPacket.
+// Inbound packet results: WriteAcknowledgement.
+
 var _ porttypes.Middleware = (*IBCMiddleware)(nil)
 
 // IBCMiddleware implements the ICS26 callbacks for the middleware given the
-// keeper and the underlying application.
+// keeper and the underlying ibc-go application.
 type IBCMiddleware struct {
 	app             porttypes.IBCModule
 	vtransferKeeper keeper.Keeper
 }
 
-// NewIBCMiddleware creates a new IBCMiddleware given the wrapper and underlying application
+// NewIBCMiddleware creates a new IBCMiddleware given the keeper and underlying application
 func NewIBCMiddleware(app porttypes.IBCModule, vtransferKeeper keeper.Keeper) IBCMiddleware {
 	return IBCMiddleware{
 		app:             app,
@@ -27,7 +37,7 @@ func NewIBCMiddleware(app porttypes.IBCModule, vtransferKeeper keeper.Keeper) IB
 	}
 }
 
-// OnAcknowledgementPacket implements the IBCModule interface
+// OnAcknowledgementPacket implements the IBCModule interface.
 func (im IBCMiddleware) OnAcknowledgementPacket(
 	ctx sdk.Context,
 	packet channeltypes.Packet,
@@ -37,7 +47,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.app, packet, acknowledgement, relayer)
 }
 
-// SendPacket implements the ICS4 Wrapper interface
+// SendPacket implements the ICS4 Wrapper interface.
 func (im IBCMiddleware) SendPacket(
 	ctx sdk.Context,
 	chanCap *capabilitytypes.Capability,
@@ -50,7 +60,7 @@ func (im IBCMiddleware) SendPacket(
 	return im.vtransferKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
-// WriteAcknowledgement implements the ICS4 Wrapper interface
+// WriteAcknowledgement implements the ICS4 Wrapper interface.
 func (im IBCMiddleware) WriteAcknowledgement(
 	ctx sdk.Context,
 	chanCap *capabilitytypes.Capability,
@@ -60,7 +70,7 @@ func (im IBCMiddleware) WriteAcknowledgement(
 	return im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
-// OnChanCloseInit implements the IBCModule interface
+// OnChanCloseInit implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -74,7 +84,7 @@ func (im IBCMiddleware) OnChanOpenInit(
 	return im.app.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
 }
 
-// OnChanOpenTry implements the IBCModule interface
+// OnChanOpenTry implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenTry(
 	ctx sdk.Context,
 	order channeltypes.Order,
@@ -88,7 +98,7 @@ func (im IBCMiddleware) OnChanOpenTry(
 	return im.app.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
 }
 
-// OnChanOpenConfirm implements the IBCModule interface
+// OnChanOpenConfirm implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenConfirm(
 	ctx sdk.Context,
 	portID,
@@ -97,7 +107,7 @@ func (im IBCMiddleware) OnChanOpenConfirm(
 	return im.app.OnChanOpenConfirm(ctx, portID, channelID)
 }
 
-// OnChanOpenAck implements the IBCModule interface
+// OnChanOpenAck implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenAck(
 	ctx sdk.Context,
 	portID,
@@ -108,7 +118,7 @@ func (im IBCMiddleware) OnChanOpenAck(
 	return im.app.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 }
 
-// OnChanCloseInit implements the IBCModule interface
+// OnChanCloseInit implements the IBCModule interface.
 func (im IBCMiddleware) OnChanCloseInit(
 	ctx sdk.Context,
 	portID,
@@ -117,7 +127,7 @@ func (im IBCMiddleware) OnChanCloseInit(
 	return im.app.OnChanCloseInit(ctx, portID, channelID)
 }
 
-// OnChanCloseConfirm implements the IBCModule interface
+// OnChanCloseConfirm implements the IBCModule interface.
 func (im IBCMiddleware) OnChanCloseConfirm(
 	ctx sdk.Context,
 	portID,
