@@ -2,6 +2,8 @@
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
+import { provideLazy } from '@agoric/store';
+import { prepareVowTools } from '@agoric/vat-data/vow.js';
 import { prepareBridgeTargetModule } from './bridge-target.js';
 import { prepareTransferTools } from './transfer.js';
 
@@ -12,13 +14,16 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
     zone.subZone('bridge'),
   );
 
+  const vowTools = prepareVowTools(zone.subZone('vow'));
+
   const { makeTransferMiddleware } = prepareTransferTools(
     zone.subZone('transfer'),
+    vowTools,
   );
 
   /**
    * This 2-level structure is to avoid holding the bridge managers strongly, as
-   * well as mitigate the lack of complex keys.
+   * well as accommodate the lack of complex keys.
    *
    * @type {WeakMapStore<
    *   import('./types').ScopedBridgeManager,
@@ -33,18 +38,12 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
      */
     provideBridgeTargetKit(manager, inboundType = 'IBC_EVENT') {
       /** @type {MapStore<string, ReturnType<typeof makeBridgeTargetKit>>} */
-      let inboundTypeToKit;
-      if (managerToKits.has(manager)) {
-        inboundTypeToKit = managerToKits.get(manager);
-      } else {
-        inboundTypeToKit = zone.detached().mapStore('inboundTypeToKit');
-        managerToKits.init(manager, inboundTypeToKit);
-      }
-      if (inboundTypeToKit.has(inboundType)) {
-        return inboundTypeToKit.get(inboundType);
-      }
-      const kit = makeBridgeTargetKit(manager, inboundType);
-      inboundTypeToKit.init(inboundType, kit);
+      const inboundTypeToKit = provideLazy(managerToKits, manager, () =>
+        zone.detached().mapStore('inboundTypeToKit'),
+      );
+      const kit = provideLazy(inboundTypeToKit, inboundType, () =>
+        makeBridgeTargetKit(manager, inboundType),
+      );
       return kit;
     },
     /**
@@ -53,12 +52,12 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
      *
      * @param {Pick<
      *   ReturnType<typeof makeBridgeTargetKit>,
-     *   'system' | 'targetRegistry'
+     *   'targetHost' | 'targetRegistry'
      * >} kit
      */
     makeTransferMiddleware(kit) {
-      const { system, targetRegistry } = kit;
-      return makeTransferMiddleware(system, targetRegistry);
+      const { targetHost, targetRegistry } = kit;
+      return makeTransferMiddleware(targetHost, targetRegistry);
     },
   });
 };
