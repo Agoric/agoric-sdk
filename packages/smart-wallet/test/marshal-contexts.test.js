@@ -26,7 +26,6 @@ const makeOnChainWallet = board => {
         getCurrentAmount: () => harden({ brand, value: 100 }),
       });
       // only for private brands
-      //   context.initBrandId(boardId, brand);
       context.initBoardId(boardId, brand);
       // @ts-expect-error mock purse
       context.initPurseId(name, purse); // TODO: strong id rather than name?

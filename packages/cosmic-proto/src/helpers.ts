@@ -1,6 +1,15 @@
-import type { QueryAllBalancesRequest } from './codegen/cosmos/bank/v1beta1/query.js';
-import type { MsgSend } from './codegen/cosmos/bank/v1beta1/tx.js';
-import type { MsgDelegate } from './codegen/cosmos/staking/v1beta1/tx.js';
+import type {
+  QueryAllBalancesRequest,
+  QueryAllBalancesResponse,
+} from './codegen/cosmos/bank/v1beta1/query.js';
+import type {
+  MsgSend,
+  MsgSendResponse,
+} from './codegen/cosmos/bank/v1beta1/tx.js';
+import type {
+  MsgDelegate,
+  MsgDelegateResponse,
+} from './codegen/cosmos/staking/v1beta1/tx.js';
 import { RequestQuery } from './codegen/tendermint/abci/types.js';
 import type { Any } from './codegen/google/protobuf/any.js';
 
@@ -14,8 +23,18 @@ export type AnyJson = { typeUrl: string; value: string };
 // TODO codegen this by modifying Telescope
 export type Proto3Shape = {
   '/cosmos.bank.v1beta1.MsgSend': MsgSend;
+  '/cosmos.bank.v1beta1.MsgSendResponse': MsgSendResponse;
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
+  '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
+  '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
+};
+
+// Often s/Request$/Response/ but not always
+type ResponseMap = {
+  '/cosmos.bank.v1beta1.MsgSend': '/cosmos.bank.v1beta1.MsgSendResponse';
+  '/cosmos.bank.v1beta1.QueryAllBalancesRequest': '/cosmos.bank.v1beta1.QueryAllBalancesResponse';
+  '/cosmos.staking.v1beta1.MsgDelegate': '/cosmos.staking.v1beta1.MsgDelegateResponse';
 };
 
 /**
@@ -26,13 +45,16 @@ export type Proto3Shape = {
  * type with a string.
  */
 export type TypedJson<T extends unknown | keyof Proto3Shape = unknown> =
-  T extends unknown
-    ? { '@type': string }
-    : T extends keyof Proto3Shape
-      ? Proto3Shape[T] & {
-          '@type': T;
-        }
-      : never;
+  T extends keyof Proto3Shape
+    ? Proto3Shape[T] & {
+        '@type': T;
+      }
+    : { '@type': string };
+
+export type ResponseTo<T extends TypedJson> =
+  T['@type'] extends keyof ResponseMap
+    ? TypedJson<ResponseMap[T['@type']]>
+    : TypedJson;
 
 export const typedJson = <T extends keyof Proto3Shape>(
   typeStr: T,

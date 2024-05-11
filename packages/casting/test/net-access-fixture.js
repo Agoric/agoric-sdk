@@ -2,9 +2,9 @@ const { stringify: jq } = JSON;
 
 /**
  * @file to regenerate
- *   1. set RECORDING=true in test-interpose-net-access.js
- *   2. run: yarn test test/test-test-interpose-net-access.js --update-snapshots
- *   3. for each map in test-test-interpose-net-access.js.md, copy it and
+ *   1. set RECORDING=true in interpose-net-access.test.js
+ *   2. run: yarn test test/interpose-net-access.test.js --update-snapshots
+ *   3. for each map in interpose-net-access.test.js.md, copy it and
  *   4. replace all occurences of => with : and paste as args to Object.fromEntries()
  *   5. change RECORDING back to false
  */

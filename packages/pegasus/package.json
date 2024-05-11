@@ -60,7 +60,8 @@
   ],
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/test-*.*",
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"

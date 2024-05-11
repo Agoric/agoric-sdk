@@ -689,7 +689,7 @@ test('crankhash - initial state and additions', t => {
   t.log(`\
 This test fails under maintenance of initial kernel state.
 If these changes are expected, run:
-  yarn test --update-snapshots test/test-state.js
+  yarn test --update-snapshots test/state.test.js
 Then commit the changes in .../snapshots/ path.
 `);
 });

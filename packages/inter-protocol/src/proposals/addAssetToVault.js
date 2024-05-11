@@ -57,7 +57,7 @@ export const publishInterchainAssetFromBoardId = async (
   assert.typeof(issuerBoardId, 'string');
   assert.typeof(issuerName, 'string');
 
-  const issuer = await E(board).getValue(issuerBoardId);
+  const issuer = /** @type {Issuer} */ (await E(board).getValue(issuerBoardId));
   const brand = await E(issuer).getBrand();
 
   return Promise.all([
