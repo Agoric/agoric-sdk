@@ -153,7 +153,6 @@ test('vtransfer', async t => {
 
   // 0 interceptors for target
 
-  // TODO see if I can make a string template for Agoric address `agoric1…`
   // it's an error to target an address before an interceptor is registered
   await t.throwsAsync(
     EV(vtransferBridgeManager).fromBridge({

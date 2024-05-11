@@ -25,7 +25,7 @@ export const echoVtransfer = async (
 
   // TODO put something in promise space to unregister this one and register again
   // or maybe put all imperative stuff into promise space
-  await E(transferMiddleware).registerTap(target, tap);
+  await E(transferMiddleware).registerActiveTap(target, tap);
 
   console.warn('=== vtransfer echoer registered');
 };

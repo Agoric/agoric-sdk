@@ -11,6 +11,10 @@ import { encodeBase64, decodeBase64 } from '@endo/base64';
 const { details: X } = assert;
 
 /**
+ * This function is a coercer instead of an asserter because in a future where
+ * binary data has better support across vats and potentially its own type, we
+ * might allow more `specimen`s than just `ByteSource`.
+ *
  * @param {unknown} specimen
  * @returns {ByteSource}
  */

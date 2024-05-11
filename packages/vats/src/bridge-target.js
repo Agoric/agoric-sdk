@@ -1,87 +1,139 @@
-// @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { BridgeHandlerI } from './bridge.js';
 
+/** @import {PureData} from '@endo/pass-style'; */
+
 const { Fail } = assert;
 
 /**
- * @typedef {object} App
- * @property {(obj: any) => Promise<unknown>} upcall return value depends on the
- *   bridge semantics
+ * @typedef {object} TargetApp an object representing the app that receives
+ *   upcalls from the low-level TargetHost
+ * @property {(obj: PureData) => Promise<PureData>} upcall receive data from the
+ *   TargetHost, and return a data result
  */
-export const AppI = M.interface('App', {
-  upcall: M.call(M.any()).returns(M.promise()),
+// TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
+export const TargetAppI = M.interface('TargetApp', {
+  upcall: M.callWhen(M.any()).returns(M.any()),
 });
 
 /**
- * @typedef {object} System
- * @property {(obj: any) => Promise<any>} downcall
+ * @typedef {object} TargetHost an object representing the host that receives
+ *   downcalls from the high-level TargetApp
+ * @property {(obj: PureData) => Promise<PureData>} downcall send data to the
+ *   TargetHost, which returns a data result
  */
-export const SystemI = M.interface('System', {
-  downcall: M.callWhen(M.any()).returns(),
+// TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
+export const TargetHostI = M.interface('TargetHost', {
+  downcall: M.callWhen(M.any()).returns(M.any()),
 });
 
 /**
- * @typedef {object} TargetUnregister
- * @property {() => Promise<void>} unregister
+ * @typedef {object} TargetRegistration is an ExoClass of its own, and each
+ *   instance is an attenuation of a BridgeTargetKit `targetRegistry` facet that
+ *   has access to internal state thereof but has been scoped down to a single
+ *   target.
+ * @property {() => Promise<void>} revoke performs unregistration (and sends the
+ *   corresponding "BRIDGE_TARGET_UNREGISTER" message to the targetHost).
+ * @property {(targetApp: ERef<TargetApp>) => Promise<void>} updateTargetApp
+ *   replaces the app associated with the target (but with no corresponding
+ *   message).
  */
-const TargetUnregisterI = M.interface('TargetUnregister', {
-  unregister: M.callWhen().returns(),
+// TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
+export const TargetRegistrationI = M.interface('TargetRegistration', {
+  updateTargetApp: M.callWhen(M.await(M.remotable('TargetAppI'))).returns(),
+  revoke: M.callWhen().returns(),
 });
 
 /**
  * @typedef {object} TargetRegistry
- * @property {(target: string, app: ERef<App>) => Promise<TargetUnregister>} register
+ * @property {(
+ *   target: string,
+ *   targetApp: ERef<TargetApp>,
+ * ) => Promise<TargetRegistration>} register
+ * @property {(target: string, targetApp: ERef<TargetApp>) => Promise<void>} reregister
  * @property {(target: string) => Promise<void>} unregister
  */
+// TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
 const TargetRegistryI = M.interface('TargetRegistry', {
-  register: M.callWhen(M.string(), M.await(M.remotable('AppI'))).returns(
-    M.remotable('TargetUnregister'),
+  register: M.callWhen(M.string(), M.await(M.remotable('TargetAppI'))).returns(
+    M.remotable('TargetRegistration'),
   ),
+  reregister: M.callWhen(
+    M.string(),
+    M.await(M.remotable('TargetAppI')),
+  ).returns(),
   unregister: M.callWhen(M.string()).returns(),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
-export const prepareTargetUnregister = zone =>
+export const prepareTargetRegistration = zone =>
   zone.exoClass(
-    'TargetUnregister',
-    TargetUnregisterI,
+    'TargetRegistration',
+    TargetRegistrationI,
     /**
-     * @param {System} system
      * @param {string} target
-     * @param {MapStore<string, ERef<App>>} targetToApp
+     * @param {TargetRegistry} registry
      */
-    (system, target, targetToApp) => ({
-      system,
+    (target, registry) => ({
       target,
-      targetToApp,
-      registered: true,
+      /** @type {TargetRegistry | null} */
+      registry,
     }),
     {
-      async unregister() {
-        const { system, target, targetToApp, registered } = this.state;
-        if (!registered) {
-          throw Error(`This target is already unregistered`);
+      /**
+       * Atomically point the registration at a different app.
+       *
+       * @param {TargetApp} app new app to handle messages for the target
+       */
+      async updateTargetApp(app) {
+        const { target, registry } = this.state;
+        if (!registry) {
+          throw Fail`Registration for ${target} is already revoked`;
         }
-        this.state.registered = false;
-        targetToApp.delete(target);
-        await E(system).downcall({ type: 'BRIDGE_TARGET_UNREGISTER', target });
+        return E(registry).reregister(target, app);
+      },
+      /** Atomically delete the registration. */
+      async revoke() {
+        const { target, registry } = this.state;
+        if (!registry) {
+          throw Fail`Registration for ${target} is already revoked`;
+        }
+        this.state.registry = null;
+        return E(registry).unregister(target);
       },
     },
   );
 
 /**
+ * A BridgeTargetKit is associated with a ScopedBridgeManager (essentially a
+ * specific named channel on a bridge, cf. @link{./bridge.js}) and a particular
+ * inbound event type. It consists of three facets:
+ *
+ * - `targetHost` has a `downcall` method for sending outbound messages via the
+ *   bridge to the VM host.
+ * - `targetRegistry` has `register`, `reregister` and `unregister` methods to
+ *   register/reregister/unregister the "app" with a "target" corresponding to
+ *   an address on the targetHost. Each target may be associated with at most
+ *   one app at any given time, and registration and unregistration each send a
+ *   message to the targetHost of the state change (of type
+ *   "BRIDGE_TARGET_REGISTER" and "BRIDGE_TARGET_UNREGISTER", respectively).
+ *   `reregister` is a method that atomically redirects the target to a new
+ *   app.
+ * - `bridgeHandler` has a `fromBridge` method for receiving from the
+ *   ScopedBridgeManager inbound messages of the associated event type and
+ *   dispatching them to the app registered for their target.
+ *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<typeof prepareTargetUnregister>} makeTargetUnregister
+ * @param {ReturnType<typeof prepareTargetRegistration>} makeTargetRegistration
  */
-export const prepareBridgeTargetKit = (zone, makeTargetUnregister) =>
+export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
   zone.exoClassKit(
     'BridgeTargetKit',
     {
       bridgeHandler: BridgeHandlerI,
-      system: SystemI,
+      targetHost: TargetHostI,
       targetRegistry: TargetRegistryI,
     },
     /**
@@ -91,6 +143,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetUnregister) =>
     (manager, inboundEventType) => ({
       manager,
       inboundEventType,
+      /** @type {MapStore<string, ERef<TargetApp>>} */
       targetToApp: zone.detached().mapStore('targetToApp'),
     }),
     {
@@ -108,32 +161,65 @@ export const prepareBridgeTargetKit = (zone, makeTargetUnregister) =>
           return E(app).upcall(obj);
         },
       },
-      system: {
+      targetHost: {
         async downcall(obj) {
           const { manager } = this.state;
           return E(manager).toBridge(obj);
         },
       },
       targetRegistry: {
-        async unregister(target) {
-          const { system } = this.facets;
-          const { targetToApp } = this.state;
-          const unregistrar = makeTargetUnregister(system, target, targetToApp);
-          return unregistrar.unregister();
-        },
+        /**
+         * Register an app to handle messages for a target.
+         *
+         * @param {string} target
+         * @param {TargetApp} app
+         * @returns {Promise<TargetRegistration>} power to set or delete the
+         *   registration
+         */
         async register(target, app) {
-          const { system } = this.facets;
+          const { targetHost } = this.facets;
           const { targetToApp } = this.state;
 
-          const unregistrar = makeTargetUnregister(system, target, targetToApp);
-          if (targetToApp.has(target)) {
-            targetToApp.set(target, app);
-            return unregistrar;
-          }
+          !targetToApp.has(target) || Fail`Target ${target} already registered`;
 
           targetToApp.init(target, app);
-          await E(system).downcall({ type: 'BRIDGE_TARGET_REGISTER', target });
-          return unregistrar;
+          await E(targetHost).downcall({
+            type: 'BRIDGE_TARGET_REGISTER',
+            target,
+          });
+
+          const r = makeTargetRegistration(target, this.facets.targetRegistry);
+          return r;
+        },
+        /**
+         * Update the app that handles messages for a target.
+         *
+         * @param {string} target
+         * @param {TargetApp} app
+         * @returns {Promise<void>}
+         */
+        async reregister(target, app) {
+          const { targetToApp } = this.state;
+          !targetToApp.has(target) || Fail`This target is already unregistered`;
+
+          targetToApp.set(target, app);
+        },
+        /**
+         * Unregister the target, bypassing the attenuated `TargetRegistration`
+         * API.
+         *
+         * @param {string} target
+         * @returns {Promise<void>}
+         */
+        async unregister(target) {
+          const { targetHost } = this.facets;
+          const { targetToApp } = this.state;
+          !targetToApp.has(target) || Fail`This target is already deleted`;
+          targetToApp.delete(target);
+          await E(targetHost).downcall({
+            type: 'BRIDGE_TARGET_UNREGISTER',
+            target,
+          });
         },
       },
     },
@@ -142,10 +228,10 @@ harden(prepareBridgeTargetKit);
 
 /** @param {import('@agoric/base-zone').Zone} zone */
 export const prepareBridgeTargetModule = zone => {
-  const makeTargetUnregister = prepareTargetUnregister(zone);
+  const makeTargetRegistration = prepareTargetRegistration(zone);
   const makeBridgeTargetKit = prepareBridgeTargetKit(
     zone,
-    makeTargetUnregister,
+    makeTargetRegistration,
   );
 
   return harden({ makeBridgeTargetKit });
