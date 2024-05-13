@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 

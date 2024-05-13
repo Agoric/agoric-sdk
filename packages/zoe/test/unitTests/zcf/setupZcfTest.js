@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 
 import path from 'path';
 

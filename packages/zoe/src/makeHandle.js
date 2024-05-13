@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { initEmpty, makeExo } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 

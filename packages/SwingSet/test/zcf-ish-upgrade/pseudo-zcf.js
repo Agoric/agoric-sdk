@@ -5,7 +5,7 @@
 import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 import { defineDurableKind } from '@agoric/vat-data';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import {
   provideHandle,
   provideBaggageSubset as provideBaggageSubTree,

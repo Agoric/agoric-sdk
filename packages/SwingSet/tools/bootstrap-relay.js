@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
 import { buildManualTimer } from './manual-timer.js';

@@ -4,7 +4,7 @@
 /* global globalThis */
 
 import { importBundle } from '@endo/import-bundle';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { handlePWarning } from '../handleWarning.js';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {

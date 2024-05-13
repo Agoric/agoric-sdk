@@ -1,5 +1,5 @@
 import { Far, E } from '@endo/far';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
 const NUM_SENSORS = 39;
