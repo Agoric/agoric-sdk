@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, quote as q } from '@endo/errors';
 import { assertComplete } from './assertComplete.js';
 
 /**

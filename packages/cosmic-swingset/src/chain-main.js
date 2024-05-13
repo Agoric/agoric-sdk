@@ -18,7 +18,7 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { Fail, q } from '@agoric/assert';
+import { Fail, quote as q } from '@endo/errors';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
 import {

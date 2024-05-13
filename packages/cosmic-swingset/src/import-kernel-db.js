@@ -12,7 +12,7 @@ import fsPromisesPower from 'fs/promises';
 import pathPower from 'path';
 
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
-import { Fail, q } from '@agoric/assert';
+import { Fail, quote as q } from '@endo/errors';
 import { importSwingStore, openSwingStore } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
