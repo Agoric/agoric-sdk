@@ -2,7 +2,7 @@
 /**
  * @file Example contract that uses orchestration
  */
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
@@ -13,8 +13,19 @@ const trace = makeTracer('StakeAtom');
 /**
  * @import { Baggage } from '@agoric/vat-data';
  * @import { IBCConnectionID } from '@agoric/vats';
+ * @import { TimerService } from '@agoric/time';
  * @import { ICQConnection, OrchestrationService } from '../types.js';
  */
+
+export const meta = harden({
+  privateArgsShape: {
+    orchestration: M.remotable('orchestration'),
+    storageNode: StorageNodeShape,
+    marshaller: M.remotable('Marshaller'),
+    timer: M.remotable('TimerService'),
+  },
+});
+export const privateArgsShape = meta.privateArgsShape;
 
 /**
  * @typedef {{
@@ -31,6 +42,7 @@ const trace = makeTracer('StakeAtom');
  *  orchestration: OrchestrationService;
  *  storageNode: StorageNode;
  *  marshaller: Marshaller;
+ *  timer: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -38,7 +50,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   // TODO #9063 this roughly matches what we'll get from Chain<C>.getChainInfo()
   const { hostConnectionId, controllerConnectionId, bondDenom } =
     zcf.getTerms();
-  const { orchestration, marshaller, storageNode } = privateArgs;
+  const { orchestration, marshaller, storageNode, timer } = privateArgs;
 
   const zone = makeDurableZone(baggage);
 
@@ -69,8 +81,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         account,
         storageNode,
         icqConnection,
-        // @ts-expect-error only for undelegate, which we do not use
-        timer: harden({}),
+        timer,
       },
     );
     return {
