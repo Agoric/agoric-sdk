@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { mustMatch } from '@agoric/store';
 
 import { DisplayInfoShape } from './typeGuards.js';

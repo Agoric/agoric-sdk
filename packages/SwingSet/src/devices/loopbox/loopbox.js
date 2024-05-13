@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /*
  * The "loopbox" is a special device used for unit tests, which glues one

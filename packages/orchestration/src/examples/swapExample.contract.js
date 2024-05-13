@@ -1,5 +1,5 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { M } from '@endo/patterns';

@@ -1,7 +1,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =

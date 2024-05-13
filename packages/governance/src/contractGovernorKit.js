@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { UnguardedHelperI, makeTracer } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';

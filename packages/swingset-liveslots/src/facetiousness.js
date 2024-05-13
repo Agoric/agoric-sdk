@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * Assess the facetiousness of a value.  If the value is an object containing
