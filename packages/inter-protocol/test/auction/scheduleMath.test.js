@@ -211,8 +211,8 @@ const TWO_PM = 1680876000n;
 const FIVE_MINUTES = 5n * 60n;
 const FIFTEEN_MINUTES = 15n * 60n;
 const defaults = /** @type {any} */ (makeDefaultParams());
-const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
-const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
+const TWO_PM_SCHED = computeRoundTiming(defaults, coerceAbs(TWO_PM - 1n));
+const THREE_PM_SCHED = computeRoundTiming(defaults, coerceAbs(TWO_PM));
 
 const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
   const nowTime = coerceAbs(now);
