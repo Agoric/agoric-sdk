@@ -24,7 +24,6 @@
   "dependencies": {
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
-    "@agoric/spawner": "^0.6.8",
     "@agoric/store": "^0.9.2",
     "@cosmjs/encoding": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
