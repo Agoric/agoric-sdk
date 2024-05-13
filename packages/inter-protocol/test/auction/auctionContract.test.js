@@ -18,7 +18,7 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 
 import {
   setupReserve,

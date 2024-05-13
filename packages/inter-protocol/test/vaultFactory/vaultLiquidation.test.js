@@ -20,7 +20,7 @@ import { E } from '@endo/eventual-send';
 import { TimeMath } from '@agoric/time';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 
 import {
   SECONDS_PER_DAY as ONE_DAY,

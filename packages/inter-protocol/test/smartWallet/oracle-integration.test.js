@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { zip } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

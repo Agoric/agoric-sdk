@@ -4,7 +4,7 @@ import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 import '@agoric/zoe/exported.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import {
   computeRoundTiming,
   nextDescendingStepTime,

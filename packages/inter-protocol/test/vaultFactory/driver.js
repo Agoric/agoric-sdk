@@ -14,7 +14,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';

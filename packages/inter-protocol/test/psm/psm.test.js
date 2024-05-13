@@ -19,7 +19,7 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

@@ -1,6 +1,6 @@
 // @ts-check
 /** @file ICQConnection Exo */
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
