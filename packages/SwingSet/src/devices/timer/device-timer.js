@@ -23,7 +23,7 @@
  */
 
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 
 // Since we use harden when saving the state, we need to copy the arrays so they

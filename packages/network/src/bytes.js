@@ -1,6 +1,6 @@
 // @ts-check
 /// <reference path="./types.js" />
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 
 /**

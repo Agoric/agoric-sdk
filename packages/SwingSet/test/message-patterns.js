@@ -3,7 +3,7 @@
 // test.stuff patterns.
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { quote as q } from '@agoric/assert';
+import { q } from '@endo/errors';
 import { Far, E } from '@endo/far';
 import { ignore } from './vat-util.js';
 

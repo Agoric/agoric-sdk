@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
-import { Fail, q } from '@agoric/assert';
+import { Fail, quote as q } from '@endo/errors';
 import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
 import { buffer } from './util.js';
 

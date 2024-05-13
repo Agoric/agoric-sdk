@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';

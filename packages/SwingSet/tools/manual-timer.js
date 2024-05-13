@@ -1,5 +1,5 @@
 import { Far } from '@endo/far';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';

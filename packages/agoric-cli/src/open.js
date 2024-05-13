@@ -3,7 +3,7 @@ import opener from 'opener';
 
 import { getAccessToken } from '@agoric/access-token';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, X } from '@endo/errors';
 
 export default async function walletMain(_progname, _rawArgs, powers, opts) {
   const { anylogger } = powers;

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath, AmountShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';

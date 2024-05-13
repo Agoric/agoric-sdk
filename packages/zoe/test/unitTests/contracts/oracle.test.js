@@ -6,7 +6,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';

@@ -8,7 +8,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { AmountMath } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 
 const vaultRoot = './vault-contract-wrapper.js';

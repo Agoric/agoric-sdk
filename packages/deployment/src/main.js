@@ -3,7 +3,7 @@ import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
 import { streamFromString } from './files.js';

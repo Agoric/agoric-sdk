@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { objectMap } from '@agoric/internal';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';

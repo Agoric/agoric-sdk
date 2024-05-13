@@ -7,6 +7,7 @@ import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { defineDurableHandle } from '../makeHandle.js';
 
 /**
+ * @import {Details} from 'ses';
  * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {RemotableObject} from '@endo/pass-style';
  */

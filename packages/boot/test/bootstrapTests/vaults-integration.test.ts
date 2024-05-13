@@ -1,7 +1,7 @@
 /** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';

@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import { E } from '@endo/eventual-send';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {

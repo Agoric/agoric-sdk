@@ -7,7 +7,8 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';

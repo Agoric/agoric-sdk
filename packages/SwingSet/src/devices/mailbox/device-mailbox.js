@@ -1,7 +1,7 @@
 import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;

@@ -24,7 +24,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';

@@ -4,7 +4,7 @@ import test from 'ava';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { kslot, kser, kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';

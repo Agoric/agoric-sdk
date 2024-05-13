@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { kslot, kser } from '@agoric/kmarshal';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';

@@ -11,7 +11,7 @@ import pathPower from 'path';
 import { fileURLToPath } from 'url';
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail, q } from '@agoric/assert';
+import { Fail, quote as q } from '@endo/errors';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 

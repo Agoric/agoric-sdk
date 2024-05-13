@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/access-token": "^0.4.21",
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/cache": "^0.3.2",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/internal": "^0.3.2",

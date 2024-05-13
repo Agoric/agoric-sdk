@@ -1,5 +1,5 @@
 import path from 'path';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { type as osType } from 'os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 

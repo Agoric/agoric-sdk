@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 
 export function assertKnownOptions(options, knownNames) {
   assert(knownNames instanceof Array);

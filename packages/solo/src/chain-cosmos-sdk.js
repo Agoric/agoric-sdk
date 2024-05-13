@@ -12,7 +12,7 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,

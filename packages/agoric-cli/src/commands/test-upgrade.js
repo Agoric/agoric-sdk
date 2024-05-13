@@ -1,6 +1,6 @@
 // @ts-check
 /* global process */
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';

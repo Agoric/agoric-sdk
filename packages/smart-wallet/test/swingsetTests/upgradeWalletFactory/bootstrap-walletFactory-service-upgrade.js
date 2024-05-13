@@ -1,5 +1,5 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';

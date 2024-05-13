@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,

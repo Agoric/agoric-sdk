@@ -1,4 +1,4 @@
-import { assert, Fail, quote as q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';

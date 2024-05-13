@@ -3,7 +3,7 @@
 import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import {
   provideKindHandle,
   provideDurableMapStore,

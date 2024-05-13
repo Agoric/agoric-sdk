@@ -2,7 +2,7 @@
 
 import { makeMarshal, mapIterable } from '@endo/marshal';
 import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 
 /**
  * @typedef {string[]} Path

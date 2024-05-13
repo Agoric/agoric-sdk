@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import {
   offerTo,

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable.js';
 import { parseVatSlot } from '@agoric/swingset-vat/src/lib/parseVatSlots.js';
 

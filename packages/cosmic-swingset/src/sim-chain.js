@@ -11,7 +11,7 @@ import anylogger from 'anylogger';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './helpers/json-stable-stringify.js';

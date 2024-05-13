@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, Fail, X } from '@endo/errors';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
 import {
