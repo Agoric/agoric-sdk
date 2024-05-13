@@ -1,3 +1,5 @@
+import type { Bytes } from '@agoric/network';
+import type { PromiseVow } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
 import type { ERef } from '@endo/far';
 
@@ -42,13 +44,13 @@ export type NameAdmin = {
    */
   default: <T>(key: string, newValue: T, newAdmin?: NameAdmin) => T;
   /** Update only if already initialized. Reject if not. */
-  set: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
+  set: (key: string, newValue: any, newAdmin?: NameAdmin) => void;
   /**
    * Fulfill an outstanding reserved promise (if any) to the newValue and set
    * the key to the newValue. If newAdmin is provided, set that to return via
    * lookupAdmin.
    */
-  update: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
+  update: (key: string, newValue: any, newAdmin?: NameAdmin) => void;
   /**
    * Look up the `newAdmin` from the path of keys starting from the current
    * NameAdmin. Wait on any reserved promises.
@@ -62,7 +64,7 @@ export type NameAdmin = {
 };
 
 export type NameHubUpdateHandler = {
-  write: (entries: [string, V][]) => void;
+  write: (entries: [string, any][]) => void;
 };
 
 /** a node in a name hierarchy */
@@ -142,7 +144,7 @@ export type ConnectingInfo = {
 };
 
 /** see [ibc_module.go](../../../golang/cosmos/x/vibc/types/ibc_module.go) */
-type IBCBridgeEvent =
+export type IBCBridgeEvent =
   | 'channelOpenInit'
   | 'channelOpenTry'
   | 'channelOpenAck'
@@ -185,7 +187,7 @@ export type IBCEvent<E extends IBCBridgeEvent> = {
 };
 
 /** see [receiver.go](../../../golang/cosmos/x/vibc/types/receiver.go) */
-type IBCDowncallMethod =
+export type IBCDowncallMethod =
   | 'sendPacket'
   | 'tryOpenExecuted'
   | 'receiveExecuted'

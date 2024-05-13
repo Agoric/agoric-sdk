@@ -1,6 +1,5 @@
 // @ts-check
 
-/// <reference types="../../time/src/types.js" />
 /// <reference path="../../zoe/exported.js" />
 
 import { E } from '@endo/far';

@@ -14,7 +14,7 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  * Make a version of the argument function that takes a kind context but
  * ignores it.
  *
- * @type {<T extends Function>(fn: T) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
+ * @type {<T extends (...args: any) => any>(fn: T) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>

@@ -12,7 +12,7 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
-import type { StateShape } from '@endo/exo';
+import type { Amplify, IsInstance, ReceivePower, StateShape } from '@endo/exo';
 import type { RemotableObject } from '@endo/pass-style';
 import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
@@ -49,8 +49,15 @@ export type KindFacets<B> = {
 export type KindContext<S, F> = { state: S; self: KindFacet<F> };
 export type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-export type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
-export type FunctionsPlusContext<C, O> = {
+export type PlusContext<C, M extends (...args: any[]) => any> = (
+  c: C,
+  ...args: Parameters<M>
+) => ReturnType<M>;
+
+export type FunctionsPlusContext<
+  C,
+  O extends Record<string, (...args: any[]) => any>,
+> = {
   [K in keyof O]: PlusContext<C, O[K]>;
 };
 
@@ -88,7 +95,7 @@ export type DefineKindOptions<C> = {
    * this class kit as an argument, in which case it will return the facets
    * record, giving access to all the facet instances of the same cohort.
    */
-  receiveAmplifier?: ReceivePower<Amplify<F>>;
+  receiveAmplifier?: ReceivePower<Amplify>;
 
   /**
    * If a `receiveInstanceTester` function is provided, it will be called
@@ -169,7 +176,7 @@ export type DefineKindOptions<C> = {
 export type VatData = {
   // virtual kinds
   /** @deprecated Use defineVirtualExoClass instead */
-  defineKind: <P, S, F>(
+  defineKind: <P extends Array<any>, S, F>(
     tag: string,
     init: (...args: P) => S,
     facet: F,
@@ -177,7 +184,7 @@ export type VatData = {
   ) => (...args: P) => KindFacet<F>;
 
   /** @deprecated Use defineVirtualExoClassKit instead */
-  defineKindMulti: <P, S, B>(
+  defineKindMulti: <P extends Array<any>, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
@@ -188,7 +195,7 @@ export type VatData = {
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
 
   /** @deprecated Use defineDurableExoClass instead */
-  defineDurableKind: <P, S, F>(
+  defineDurableKind: <P extends Array<any>, S, F>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     facet: F,
@@ -196,7 +203,7 @@ export type VatData = {
   ) => (...args: P) => KindFacet<F>;
 
   /** @deprecated Use defineDurableExoClassKit instead */
-  defineDurableKindMulti: <P, S, B>(
+  defineDurableKindMulti: <P extends Array<any>, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     behavior: B,
@@ -246,7 +253,7 @@ export interface PickFacet {
 }
 
 /** @deprecated Use prepareExoClass instead */
-export type PrepareKind = <P, S, F>(
+export type PrepareKind = <P extends Array<any>, S, F>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
@@ -255,7 +262,7 @@ export type PrepareKind = <P, S, F>(
 ) => (...args: P) => KindFacet<F>;
 
 /** @deprecated Use prepareExoClassKit instead */
-export type PrepareKindMulti = <P, S, B>(
+export type PrepareKindMulti = <P extends Array<any>, S, B>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,

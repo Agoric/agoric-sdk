@@ -246,7 +246,9 @@ export const TimeMath = harden({
   relValue,
   coerceTimestampRecord,
   coerceRelativeTimeRecord,
+  // @ts-expect-error xxx dynamic typing
   addAbsRel,
+  // @ts-expect-error xxx dynamic typing
   addRelRel,
   subtractAbsAbs,
   clampedSubtractAbsAbs,
