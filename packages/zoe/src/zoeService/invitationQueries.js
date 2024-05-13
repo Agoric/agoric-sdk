@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { assert, details as X, Fail, quote as q } from '@agoric/assert';
+import { Fail, q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {

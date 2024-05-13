@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail, assert, details as X } from '@agoric/assert';
+import { Fail, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
