@@ -5,7 +5,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, Fail } from '@endo/errors';
+import { Fail, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -19,8 +19,6 @@ import { makeWatchedPromiseManager } from './watchedPromises.js';
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
-
-const { details: X } = assert;
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted

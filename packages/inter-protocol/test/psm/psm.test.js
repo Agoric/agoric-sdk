@@ -19,19 +19,18 @@ import {
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { NonNullish } from '@agoric/internal';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import {
   produceDiagnostics,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
+import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { makeHeapZone } from '@agoric/zone';
-import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import {
   makeMockChainStorageRoot,

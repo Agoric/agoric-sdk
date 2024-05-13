@@ -3,22 +3,22 @@ import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVot
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
-import * as utils from '@agoric/vats/src/core/utils.js';
-import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   makeNotifierFromAsyncIterable,
   observeIteration,
   subscribeEach,
 } from '@agoric/notifier';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
+import * as utils from '@agoric/vats/src/core/utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
 
 /** @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js' */
 

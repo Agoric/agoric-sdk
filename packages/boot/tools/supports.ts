@@ -7,10 +7,13 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { Fail } from '@endo/errors';
-import { NonNullish } from '@agoric/internal';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
+import {
+  BridgeId,
+  NonNullish,
+  VBankAccount,
+  makeTracer,
+} from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
@@ -18,6 +21,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
+import { Fail } from '@endo/errors';
 
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/vats/exported.js';
@@ -29,8 +33,8 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 

@@ -1,15 +1,14 @@
-import { NonNullish } from '@agoric/internal';
 import { E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /// <reference path="./types.js" />
+import { NonNullish, deeplyFulfilledObject } from '@agoric/internal';
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
 import { makeHeapZone } from '@agoric/zone';
-import { deeplyFulfilledObject } from '@agoric/internal';
 
 const { Fail, quote: q } = assert;
 

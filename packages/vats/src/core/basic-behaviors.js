@@ -1,19 +1,19 @@
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   BridgeId,
   deeplyFulfilledObject,
+  NonNullish,
   VBankAccount,
   WalletName,
 } from '@agoric/internal';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, getInterfaceOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 
 import { Fail } from '@endo/errors';
-import { NonNullish } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
