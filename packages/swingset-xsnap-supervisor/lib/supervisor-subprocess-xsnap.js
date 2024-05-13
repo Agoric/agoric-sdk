@@ -1,5 +1,5 @@
 /* global globalThis WeakRef FinalizationRegistry */
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import {
   makeLiveSlots,
