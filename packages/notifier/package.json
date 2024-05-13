@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
     "@endo/far": "^1.1.2",

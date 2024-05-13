@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@endo/nat": "^5.0.7",
     "@endo/patterns": "^1.4.0"
   },
