@@ -1,4 +1,4 @@
-import { assert, NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';

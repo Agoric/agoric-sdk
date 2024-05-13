@@ -12,7 +12,8 @@ import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, getInterfaceOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
