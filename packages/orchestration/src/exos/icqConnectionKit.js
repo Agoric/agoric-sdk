@@ -1,11 +1,10 @@
 // @ts-check
 /** @file ICQConnection Exo */
-import { NonNullish } from '@agoric/internal';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { ConnectionHandlerI } from '../typeGuards.js';
+import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';

@@ -4,18 +4,17 @@
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/network/exported.js';
 
-import { NonNullish } from '@agoric/internal';
-import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vow/vat.js';
-import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
+import { makeTracer, NonNullish } from '@agoric/internal';
+import { V as E } from '@agoric/vow/vat.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { findAddressField } from '../utils/address.js';
+import { M } from '@endo/patterns';
 import {
-  ConnectionHandlerI,
   ChainAddressShape,
+  ConnectionHandlerI,
   Proto3Shape,
 } from '../typeGuards.js';
+import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
