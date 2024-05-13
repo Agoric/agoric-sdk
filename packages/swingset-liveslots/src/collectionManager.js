@@ -1,4 +1,4 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/far';
 import {
   zeroPad,
