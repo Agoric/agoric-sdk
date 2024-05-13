@@ -143,7 +143,7 @@ module.exports = {
     'prettier/prettier': 'warn',
 
     // Not a risk with our coding style
-    'no-constant-condition': 'off',
+    'no-use-before-define': 'off',
   },
   settings: {
     jsdoc: {
@@ -229,8 +229,6 @@ module.exports = {
     {
       files: ['*.d.ts'],
       rules: {
-        // Irrelevant in a typedef
-        'no-use-before-define': 'off',
         // Linter confuses the type declaration with value declaration
         'no-redeclare': 'off',
       },
