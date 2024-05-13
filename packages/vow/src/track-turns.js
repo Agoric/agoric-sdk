@@ -6,7 +6,7 @@ import {
 } from '@endo/env-options';
 
 // NOTE: We can't import these because they're not in scope before lockdown.
-// import { assert, details as X, Fail } from '@agoric/assert';
+// import { assert, Fail, X } from '@endo/errors';
 
 // WARNING: Global Mutable State!
 // This state is communicated to `assert` that makes it available to the
