@@ -1,12 +1,12 @@
 import { annotateError, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
+import { makeScalarWeakMapStore } from '@agoric/store';
 import { PromiseWatcherI } from '@agoric/base-zone';
 import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareWeakBijection } from './weak-bijection.js';
-import { makeEphemera } from './ephemera.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 const { defineProperties } = Object;
@@ -55,11 +55,16 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     keyShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
-  const tmp = makeEphemera(() => ({
-    membrane: /** @type {ReplayMembrane} */ (
-      /** @type {unknown} */ (undefined)
-    ), // initialized by restart
-  }));
+  /** @type WeakMapStore<AsyncFlow, ReplayMembrane> */
+  const membraneMap = makeScalarWeakMapStore('membraneFor', {
+    keyShape: M.remotable('flow'),
+    valueShape: M.remotable('membrane'),
+  });
+
+  const hasMembrane = flow => membraneMap.has(flow);
+  const getMembrane = flow => membraneMap.get(flow);
+  const initMembrane = (flow, membrane) => membraneMap.init(flow, membrane);
+  const deleteMembrane = flow => membraneMap.delete(flow);
 
   /**
    * So we can give out wrapper functions easily and recover flow objects
@@ -109,11 +114,10 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const { state, facets } = this;
             const { log, outcomeKit, isDone } = state;
             const { flow } = facets;
-            const eph = tmp.for(flow);
 
             if (isDone) {
-              eph.membrane === undefined ||
-                Fail`Done flow must drop membrane ${flow} ${eph.membrane}`;
+              !hasMembrane(flow) ||
+                Fail`Done flow must drop membrane ${flow} ${getMembrane(flow)}`;
               !failures.has(flow) ||
                 Fail`Done flow must not be in failures ${flow} ${failures.get(flow)}`;
               !eagerWakers.has(flow) ||
@@ -127,7 +131,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             if (failures.has(flow)) {
               return 'Failed';
             }
-            if (eph.membrane === undefined) {
+            if (!hasMembrane(flow)) {
               log.getIndex() === 0 ||
                 Fail`Sleeping flow must play from log start ${flow} ${log.getIndex()}`;
               return 'Sleeping';
@@ -178,8 +182,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               wakeWatch,
               panic,
             );
-            const eph = tmp.for(flow);
-            eph.membrane = membrane;
+            initMembrane(flow, membrane);
             const guestArgs = membrane.hostToGuest(activationArgs);
 
             const flowState = flow.getFlowState();
@@ -252,14 +255,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
           wake() {
             const { facets } = this;
             const { flow } = facets;
-            const eph = tmp.for(flow);
 
             const flowState = flow.getFlowState();
             if (flowState === 'Done' || flowState === 'Failed') {
               return;
             }
-            if (eph.membrane) {
-              eph.membrane.wake();
+            if (hasMembrane(flow)) {
+              getMembrane(flow).wake();
             } else {
               flow.restart();
             }
@@ -287,15 +289,14 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const { state, facets } = this;
             const { bijection, log } = state;
             const { flow } = facets;
-            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               failures.delete(flow);
             }
-            if (eph.membrane) {
-              eph.membrane.stop();
+            if (hasMembrane(flow)) {
+              getMembrane(flow).stop();
+              deleteMembrane(flow);
             }
-            tmp.resetFor(flow);
             log.reset();
             bijection.reset();
 
@@ -320,7 +321,6 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
             const { state, facets } = this;
             const { bijection, log } = state;
             const { flow } = facets;
-            const eph = tmp.for(flow);
 
             if (failures.has(flow)) {
               const prevErr = failures.get(flow);
@@ -334,10 +334,10 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               failures.init(flow, fatalProblem);
             }
 
-            if (eph.membrane) {
-              eph.membrane.stop();
+            if (hasMembrane(flow)) {
+              getMembrane(flow).stop();
+              deleteMembrane(flow);
             }
-            tmp.resetFor(flow);
             log.reset();
             bijection.reset();
 

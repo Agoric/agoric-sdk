@@ -4,10 +4,6 @@ import type { Invitation } from '@agoric/zoe/exported.js';
 import type { Any } from '@agoric/cosmic-proto/google/protobuf/any';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type {
-  MsgBeginRedelegateResponse,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type {
   Delegation,
   Redelegation,
   UnbondingDelegation,
@@ -283,28 +279,7 @@ export interface ChainAccount {
   getPort: () => Port;
 }
 
-/**
- * An object that supports high-level operations for an account on a remote chain.
- */
-export interface BaseOrchestrationAccount {
-  /** @returns the underlying low-level operation object. */
-  getChainAcccount: () => Promise<ChainAccount>;
-
-  /**
-   * @returns the address of the account on the remote chain
-   */
-  getAddress: () => ChainAddress;
-
-  /** @returns an array of amounts for every balance in the account. */
-  getBalances: () => Promise<ChainAmount[]>;
-
-  /** @returns the balance of a specific denom for the account. */
-  getBalance: (denom: DenomArg) => Promise<ChainAmount>;
-
-  getDenomTrace: (
-    denom: string,
-  ) => Promise<{ path: string; base_denom: string }>;
-
+export interface StakingAccountQueries {
   /**
    * @returns all active delegations from the account to any validator (or [] if none)
    */
@@ -347,15 +322,8 @@ export interface BaseOrchestrationAccount {
    * @returns the amount of the account's rewards pending from a specific validator
    */
   getReward: (validator: CosmosValidatorAddress) => Promise<ChainAmount[]>;
-
-  /**
-   * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
-   * @param toAccount - the account to send the amount to. MUST be on the same chain
-   * @param amount - the amount to send
-   * @returns void
-   */
-  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
-
+}
+export interface StakingAccountActions {
   /**
    * Delegate an amount to a validator. The promise settles when the delegation is complete.
    * @param validator - the validator to delegate to
@@ -369,7 +337,7 @@ export interface BaseOrchestrationAccount {
 
   /**
    * Redelegate from one delegator to another.
-   * Settles when teh redelegation is established, not 21 days later.
+   * Settles when the redelegation is established, not 21 days later.
    * @param srcValidator - the current validator for the delegation.
    * @param dstValidator - the validator that will receive the delegation.
    * @param amount - how much to redelegate.
@@ -379,14 +347,15 @@ export interface BaseOrchestrationAccount {
     srcValidator: CosmosValidatorAddress,
     dstValidator: CosmosValidatorAddress,
     amount: AmountArg,
-  ) => Promise<MsgBeginRedelegateResponse>;
+  ) => Promise<void>;
 
   /**
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
+   * The unbonding time is padded by 10 minutes to account for clock skew.
    * @param {Delegation[]} delegations - the delegation to undelegate
    */
-  undelegate: (delegations: Delegation[]) => Promise<MsgUndelegateResponse>;
+  undelegate: (delegations: Delegation[]) => Promise<void>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
@@ -400,6 +369,39 @@ export interface BaseOrchestrationAccount {
    * @returns
    */
   withdrawReward: (validator: CosmosValidatorAddress) => Promise<ChainAmount[]>;
+}
+
+/**
+ * An object that supports high-level operations for an account on a remote chain.
+ */
+export interface BaseOrchestrationAccount
+  extends StakingAccountQueries,
+    StakingAccountActions {
+  /** @returns the underlying low-level operation object. */
+  getChainAcccount: () => Promise<ChainAccount>;
+
+  /**
+   * @returns the address of the account on the remote chain
+   */
+  getAddress: () => ChainAddress;
+
+  /** @returns an array of amounts for every balance in the account. */
+  getBalances: () => Promise<ChainAmount[]>;
+
+  /** @returns the balance of a specific denom for the account. */
+  getBalance: (denom: DenomArg) => Promise<ChainAmount>;
+
+  getDenomTrace: (
+    denom: string,
+  ) => Promise<{ path: string; base_denom: string }>;
+
+  /**
+   * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
+   * @param toAccount - the account to send the amount to. MUST be on the same chain
+   * @param amount - the amount to send
+   * @returns void
+   */
+  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
