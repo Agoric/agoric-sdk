@@ -20,7 +20,7 @@ import {
 } from '../src/exos/stakingAccountKit.js';
 
 /**
- * @import {ChainAccount, ChainAddress, ICQConnection} from '../src/types.js';
+ * @import {IcaAccount, ChainAddress, ICQConnection} from '../src/types.js';
  * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  */
 
@@ -130,7 +130,7 @@ const makeScenario = () => {
       chainId: 'FIXME',
     });
 
-    /** @type {ChainAccount} */
+    /** @type {IcaAccount} */
     const account = Far('MockAccount', {
       getAddress: () => chainAddress,
       executeEncodedTx: async msgs => {

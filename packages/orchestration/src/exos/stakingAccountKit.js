@@ -35,7 +35,7 @@ import {
 export const maxClockSkew = 10n * 60n;
 
 /**
- * @import {AmountArg, ChainAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {AnyJson} from '@agoric/cosmic-proto';
@@ -55,7 +55,7 @@ const { Fail } = assert;
 /**
  * @typedef {{
  *  topicKit: RecorderKit<StakingAccountNotification>;
- *  account: ChainAccount;
+ *  account: IcaAccount;
  *  chainAddress: ChainAddress;
  *  icqConnection: ICQConnection;
  *  bondDenom: string;
@@ -168,7 +168,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
      * @param {ChainAddress} chainAddress
      * @param {string} bondDenom e.g. 'uatom'
      * @param {object} io
-     * @param {ChainAccount} io.account
+     * @param {IcaAccount} io.account
      * @param {StorageNode} io.storageNode
      * @param {ICQConnection} io.icqConnection
      * @param {TimerService} io.timer
