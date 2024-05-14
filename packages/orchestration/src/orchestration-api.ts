@@ -10,7 +10,7 @@ import type { Timestamp } from '@agoric/time';
 import type { KnownChains } from './types.js';
 
 /**
- * A denom that designates a token type on some blockchain.
+ * A denom that designates a path to a token type on some blockchain.
  *
  * Multiple denoms may designate the same underlying base denom (e.g., `uist`,
  * `uatom`) on different Chains or on the same Chain via different paths. On
@@ -22,6 +22,8 @@ import type { KnownChains } from './types.js';
  */
 export type Denom = string; // ibc/... or uist
 
+// ??? when multiple Denoms provide paths to the same remote token type,
+// should the brand be 1:1 with that equivalence class or each Denom?
 /**
  * In many cases, either a denom string or a local Brand can be used to
  * designate a remote token type.
@@ -104,6 +106,7 @@ export interface Orchestrator {
     /** the Denom for the underlying asset on its issuer chain */
     baseDenom: Denom;
   };
+  // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.
    * @param amount - the described amount
