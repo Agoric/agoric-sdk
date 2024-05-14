@@ -259,9 +259,9 @@ export async function buildSwingset(
 /**
  * @param {BeansPerUnit} beansPerUnit
  * @param {boolean} [ignoreBlockLimit]
- * @returns {ChainRunPolicy}
+ * @returns {{ runPolicy: ChainRunPolicy, cleanupPolicy: ChainRunPolicy }}
  */
-function computronCounter(
+function makeRunPolicies(
   {
     [BeansPerBlockComputeLimit]: blockComputeLimit,
     [BeansPerVatCreation]: vatCreation,
@@ -272,18 +272,23 @@ function computronCounter(
   assert.typeof(blockComputeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
+  let didWork = false;
   let totalBeans = 0n;
   const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
   const remainingBeans = () =>
     ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
 
-  const policy = harden({
+  const runPolicy = harden({
+    allowCleanup: () => false,
+    didCleanup: () => true, // ignore and keep going
     vatCreated() {
+      didWork = true;
       totalBeans += vatCreation;
       return shouldRun();
     },
     crankComplete(details = {}) {
       assert.typeof(details, 'object');
+      didWork = true;
       if (details.computrons) {
         assert.typeof(details.computrons, 'bigint');
 
@@ -294,11 +299,13 @@ function computronCounter(
       return shouldRun();
     },
     crankFailed() {
+      didWork = true;
       const failedComputrons = 1000000n; // who knows, 1M is as good as anything
       totalBeans += failedComputrons * xsnapComputron;
       return shouldRun();
     },
     emptyCrank() {
+      didWork = true;
       return shouldRun();
     },
     shouldRun,
@@ -306,9 +313,32 @@ function computronCounter(
     totalBeans() {
       return totalBeans;
     },
+    didAnyWork() {
+      return didWork;
+    },
   });
-  return policy;
+
+  // This cleanupPolicy will only be used when the run-queue is empty,
+  // so we don't need to worry about pre-existing work.
+  //
+  // We allow one budget-limited cleanup crank, plus any deliveries it
+  // triggers (e.g. dropExports or BOYD), which are limited by the
+  // same computron counter as the main runPolicy.
+
+  // TODO: control budget with governance parameter
+  let budget = harden({ default: 5, kv : 50 });
+  let didAnyCleanup = false;
+  const stop: () => false;
+
+  const cleanupPolicy = harden({
+    ...runPolicy,
+    allowCleanup: () => didAnyCleanup ? false : budget,
+    didCleanup: () => { didAnyCleanup = true; return true; },
+  });
+
+  return { runPolicy, cleanupPolicy };
 }
+
 
 export async function launch({
   actionQueueStorage,
@@ -437,9 +467,9 @@ export async function launch({
    * @param {number} blockHeight
    * @param {ChainRunPolicy} runPolicy
    */
-  function makeRunSwingset(blockHeight, runPolicy) {
+  function makeRunSwingset(blockHeight) {
     let runNum = 0;
-    async function runSwingset() {
+    async function runSwingset(runPolicy) {
       const startBeans = runPolicy.totalBeans();
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-start',
@@ -478,10 +508,10 @@ export async function launch({
     timer.poll(blockTime);
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    const runPolicy = computronCounter(params.beansPerUnit, true);
-    const runSwingset = makeRunSwingset(blockHeight, runPolicy);
+    const { runPolicy } = makeRunPolicies(params.beansPerUnit, true);
+    const runSwingset = makeRunSwingset(blockHeight);
 
-    await runSwingset();
+    await runSwingset(runPolicy);
   }
 
   async function saveChainState() {
@@ -645,13 +675,13 @@ export async function launch({
    * @param {InboundQueue} inboundQueue
    * @param {ReturnType<typeof makeRunSwingset>} runSwingset
    */
-  async function processActions(inboundQueue, runSwingset) {
+  async function processActions(inboundQueue, runSwingset, runPolicy) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
       inboundQueueMetrics.decStat();
       await performAction(action, inboundNum);
-      keepGoing = await runSwingset();
+      keepGoing = await runSwingset(runPolicy);
       if (!keepGoing) {
         // any leftover actions will remain on the inbound queue for possible
         // processing in the next block
@@ -661,20 +691,21 @@ export async function launch({
     return keepGoing;
   }
 
-  async function runKernel(runSwingset, blockHeight, blockTime) {
+  async function runKernel(runSwingset, runPolicy, cleanupPolicy,
+                           blockHeight, blockTime) {
     // First, complete leftover work, if any
-    let keepGoing = await runSwingset();
+    let keepGoing = await runSwingset(runPolicy);
     if (!keepGoing) return;
 
     // Then, if we have anything in the special runThisBlock queue, process
     // it and do no further work.
     if (runThisBlock.size()) {
-      await processActions(runThisBlock, runSwingset);
+      await processActions(runThisBlock, runSwingset, runPolicy);
       return;
     }
 
     // Then, process as much as we can from the priorityQueue.
-    keepGoing = await processActions(highPriorityQueue, runSwingset);
+    keepGoing = await processActions(highPriorityQueue, runSwingset, runPolicy);
     if (!keepGoing) return;
 
     // Then, update the timer device with the new external time, which might
@@ -687,11 +718,19 @@ export async function launch({
     // We must run the kernel even if nothing was added since the kernel
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
-    keepGoing = await runSwingset();
+    keepGoing = await runSwingset(runPolicy);
     if (!keepGoing) return;
 
-    // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue, runSwingset);
+    // Then process as much as we can from the actionQueue.
+    keepGoing = await processActions(actionQueue, runSwingset, runPolicy);
+    if (!keepGoing) return;
+
+    // Finally, if and only if we did no swingset work, we can do a
+    // cleanup run, which allows a small amount of terminated-vat
+    // deletion work
+    if (!runPolicy.didAnyWork()) {
+      await runSwingset(cleanupPolicy);
+    }
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -709,11 +748,12 @@ export async function launch({
     // It will also run to completion any work that swingset still had pending.
     const neverStop = runThisBlock.size() > 0;
 
-    // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit, neverStop);
-    const runSwingset = makeRunSwingset(blockHeight, runPolicy);
+    // make a runPolicy that will be shared across all runs
+    const { runPolicy, cleanupPolicy } = makeRunPolicies(params.beansPerUnit, neverStop);
+    const runSwingset = makeRunSwingset(blockHeight);
 
-    await runKernel(runSwingset, blockHeight, blockTime);
+    await runKernel(runSwingset, runPolicy, cleanupPolicy,
+                    blockHeight, blockTime);
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
