@@ -7,23 +7,21 @@ import type {
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
-import type {
-  MsgBeginRedelegateResponse,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/exported.js';
 import type { Port } from '@agoric/network';
 import type { Timestamp } from '@agoric/time';
 import type { IBCConnectionID } from '@agoric/vats';
+import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type { EthChainInfo } from './ethereum-api.js';
 import type { ICQConnection } from './exos/icqConnectionKit.js';
 
+export type * from './ethereum-api.js';
 export type * from './exos/chainAccountKit.js';
 export type * from './exos/icqConnectionKit.js';
 export type * from './service.js';
@@ -165,14 +163,6 @@ export type OrchestrationHandlerMaker = <C extends object>(
   ctx: C,
   fn: (orc: Orchestrator, ctx2: C, ...args) => object,
 ) => (...args) => object;
-
-/**
- * Info for an Ethereum-based chain.
- */
-export type EthChainInfo = {
-  chainId: string;
-  allegedName: string;
-};
 
 /**
  * Info for a Cosmos-based chain.
