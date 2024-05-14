@@ -73,7 +73,6 @@ const mock = null as any;
 
 {
   const zcf = {} as ZCF;
-  const zoe = {} as ZoeService;
   const invitation = await zcf.makeInvitation(() => 1n, 'invitation');
   expectType<Invitation<bigint>>(invitation);
   const userSeat = E(zoe).offer(invitation);

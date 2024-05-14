@@ -7,6 +7,10 @@ import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
 
 /**
+ * @import {ContractOf} from '../zoeService/utils.js';
+ */
+
+/**
  * This contract provides oracle queries for a fee or for free.
  *
  * @param {ZCF} zcf

@@ -1,4 +1,5 @@
 // @jessie-check
+/// <reference types="@agoric/ertp/exported" />
 
 /**
  * @typedef {object} SeatData
@@ -163,7 +164,7 @@
  * @param {Keyword} keyword
  * @param {AssetKind} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {IssuerOptionsRecord} [options]
+ * @param {import('@agoric/ertp').IssuerOptionsRecord} [options]
  * @returns {ZoeMint}
  */
 

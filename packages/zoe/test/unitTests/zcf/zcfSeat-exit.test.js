@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -20,6 +19,7 @@ const contractRoot = `${dirname}/zcfTesterContract.js`;
 
 test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
   const { moolaIssuer, simoleanIssuer } = setup();
+  /** @type {any} */
   let testJig;
   const setJig = jig => {
     testJig = jig;
@@ -46,12 +46,11 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
   const zcf = testJig.zcf;
 
   /** @type {OfferHandler} */
   const throwSeatExit = seat => {
-    // @ts-expect-error Linting correctly identifies that exit takes no argument.
     throw seat.exit('here is a string');
   };
 
@@ -67,8 +66,6 @@ test(`zoe - wrongly throw zcfSeat.exit()`, async t => {
 
   /** @type {OfferHandler} */
   const throwSeatFail = seat => {
-    // @ts-expect-error Linting correctly identifies that the argument to
-    // fail must be an error, not a string.
     throw seat.fail('here is a string');
   };
 

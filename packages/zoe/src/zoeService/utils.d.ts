@@ -1,6 +1,9 @@
+// Ambient types
+import '../types-ambient.js';
+import '../contractFacet/types-ambient.js';
+
 import type { Issuer } from '@agoric/ertp/exported.js';
 import type { TagContainer } from '@agoric/internal/src/tagged.js';
-import type { Callable } from '@agoric/internal/src/utils.js';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { RemotableObject } from '@endo/marshal';
