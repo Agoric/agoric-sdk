@@ -57,11 +57,12 @@ jobs:
         with:
           fetch-depth: 0
       - shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_LABEL: ${{ github.event.pull_request.head.label }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_LABEL: ${{ github.event.pull_request.base.label }}
         run: |
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          HEAD_LABEL="${{ github.event.pull_request.head.label }}"
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          BASE_LABEL="${{ github.event.pull_request.base.label }}"
           merge_commits=$(git rev-list --merges "$BASE_SHA".."$HEAD_SHA")
 
           if [ -n "$merge_commits" ]; then
