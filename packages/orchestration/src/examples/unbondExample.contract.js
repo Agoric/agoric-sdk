@@ -1,4 +1,3 @@
-// @ts-check
 import { Fail } from '@agoric/assert';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { Far } from '@endo/far';

@@ -1,4 +1,3 @@
-// @ts-check
 /** @file Use-object for the owner of a staking account */
 import {
   MsgWithdrawDelegatorReward,

@@ -1,4 +1,3 @@
-// @ts-check
 /** @file ICQConnection Exo */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';

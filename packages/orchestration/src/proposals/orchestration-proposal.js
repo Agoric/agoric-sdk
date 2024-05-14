@@ -1,4 +1,3 @@
-// @ts-check
 import { V as E } from '@agoric/vow/vat.js';
 
 /**

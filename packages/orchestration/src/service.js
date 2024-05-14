@@ -1,4 +1,3 @@
-// @ts-check
 /** @file Orchestration service */
 
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512

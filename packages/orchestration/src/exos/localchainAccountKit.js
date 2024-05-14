@@ -1,4 +1,3 @@
-// @ts-check
 /** @file Use-object for the owner of a localchain account */
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape } from '@agoric/ertp';

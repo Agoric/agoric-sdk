@@ -1,4 +1,3 @@
-// @ts-check
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareOrchestrationTools } from './service.js';

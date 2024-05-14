@@ -1,4 +1,3 @@
-// @ts-check
 /** @import {AfterAction, SwapMaxSlippage, TransferMsg} from '../types.js' */
 
 export const orcUtils = {

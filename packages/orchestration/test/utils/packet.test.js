@@ -1,5 +1,3 @@
-// @ts-check
-
 import test from '@endo/ses-ava/prepare-endo.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {

@@ -1,4 +1,3 @@
-// @ts-check
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
