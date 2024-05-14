@@ -35,7 +35,7 @@ import {
 export const maxClockSkew = 10n * 60n;
 
 /**
- * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
  * @import {AnyJson} from '@agoric/cosmic-proto';
@@ -128,8 +128,8 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
   }
 };
 
-/** @type {(c: { denom: string, amount: string }) => ChainAmount} */
-const toChainAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
+/** @type {(c: { denom: string, amount: string }) => DenomAmount} */
+const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
  * @param {Baggage} baggage
@@ -341,7 +341,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
 
         /**
          * @param {CosmosValidatorAddress} validator
-         * @returns {Promise<ChainAmount[]>}
+         * @returns {Promise<DenomAmount[]>}
          */
         async withdrawReward(validator) {
           trace('withdrawReward', validator);
@@ -359,11 +359,11 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           );
           trace('withdrawReward response', response);
           const { amount: coins } = response;
-          return harden(coins.map(toChainAmount));
+          return harden(coins.map(toDenomAmount));
         },
         /**
-         * @param {ChainAmount['denom']} [denom] - defaults to bondDenom
-         * @returns {Promise<ChainAmount>}
+         * @param {DenomAmount['denom']} [denom] - defaults to bondDenom
+         * @returns {Promise<DenomAmount>}
          */
         async getBalance(denom) {
           const { chainAddress, icqConnection, bondDenom } = this.state;
@@ -383,7 +383,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             decodeBase64(result.key),
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
-          return harden(toChainAmount(balance));
+          return harden(toDenomAmount(balance));
         },
 
         withdrawRewards() {

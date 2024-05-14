@@ -33,16 +33,15 @@ export type DenomArg = Denom | Brand;
 /**
  * Count of some fungible token on some blockchain.
  *
- * NB: this is not an instance of the `Amount` type from ERTP but can be
- * converted to one surjectively
+ * @see {@link Orchestrator.asAmount} to convert to an Amount surjectively
  */
-export type ChainAmount = {
+export type DenomAmount = {
   denom: Denom;
   value: bigint; // Nat
 };
 
 /** Amounts can be provided as pure data using denoms or as native Amounts */
-export type AmountArg = ChainAmount | Amount;
+export type AmountArg = DenomAmount | Amount;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
@@ -112,7 +111,7 @@ export interface Orchestrator {
    * @param amount - the described amount
    * @returns the Amount in local structuerd format
    */
-  asAmount: (amount: ChainAmount) => NatAmount;
+  asAmount: (amount: DenomAmount) => NatAmount;
 }
 
 /**
@@ -125,10 +124,10 @@ export interface OrchestrationAccountI {
   getAddress: () => ChainAddress;
 
   /** @returns an array of amounts for every balance in the account. */
-  getBalances: () => Promise<ChainAmount[]>;
+  getBalances: () => Promise<DenomAmount[]>;
 
   /** @returns the balance of a specific denom for the account. */
-  getBalance: (denom: DenomArg) => Promise<ChainAmount>;
+  getBalance: (denom: DenomArg) => Promise<DenomAmount>;
 
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.

@@ -11,7 +11,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { AmountArg, ChainAddress, ChainAmount } from './types.js';
+import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
 export type TypeUrl = string;
@@ -94,14 +94,14 @@ export interface StakingAccountQueries {
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
    */
-  getRewards: () => Promise<ChainAmount[]>;
+  getRewards: () => Promise<DenomAmount[]>;
 
   /**
    * Get the rewards pending with a specific validator.
    * @param validator - the validator address to query for
    * @returns the amount of the account's rewards pending from a specific validator
    */
-  getReward: (validator: CosmosValidatorAddress) => Promise<ChainAmount[]>;
+  getReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
 }
 export interface StakingAccountActions {
   /**
@@ -141,14 +141,14 @@ export interface StakingAccountActions {
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
    * @returns The total amounts of rewards withdrawn
    */
-  withdrawRewards: () => Promise<ChainAmount[]>;
+  withdrawRewards: () => Promise<DenomAmount[]>;
 
   /**
    * Withdraw rewards from a specific validator. The promise settles when the rewards are withdrawn.
    * @param validator - the validator to withdraw rewards from
    * @returns
    */
-  withdrawReward: (validator: CosmosValidatorAddress) => Promise<ChainAmount[]>;
+  withdrawReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
 }
 
 /**
