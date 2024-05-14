@@ -17,6 +17,7 @@ export const startStakeAtom = async (
       agoricNames,
       board,
       chainStorage,
+      chainTimerService,
       orchestration,
       startUpgradable,
     },
@@ -56,6 +57,7 @@ export const startStakeAtom = async (
       orchestration: await orchestration,
       storageNode,
       marshaller,
+      timer: await chainTimerService,
     },
   };
 
@@ -75,6 +77,7 @@ export const getManifestForStakeAtom = (
           agoricNames: true,
           board: true,
           chainStorage: true,
+          chainTimerService: true,
           orchestration: true,
           startUpgradable: true,
         },
