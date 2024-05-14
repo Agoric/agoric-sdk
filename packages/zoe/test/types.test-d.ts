@@ -4,20 +4,22 @@
  * because "there is no JavaScript syntax for passing a a type argument"
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
-import { E } from '@endo/eventual-send';
-import { expectType } from 'tsd';
+import { E, RemoteFunctions } from '@endo/eventual-send';
+import { expectNotType, expectType } from 'tsd';
 
 import type { Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
+import type { Instance } from '../src/zoeService/utils.js';
+import { PASS_STYLE } from '@endo/marshal';
+
+const zoe = {} as ZoeService;
+const scaledPriceInstallation = {} as Installation<
+  typeof scaledPriceAuthorityStart
+>;
+const mock = null as any;
 
 {
-  const zoe = {} as ZoeService;
-  const scaledPriceInstallation = {} as Installation<
-    typeof scaledPriceAuthorityStart
-  >;
-
-  const mock = null as any;
   const kit = await E(zoe).startInstance(scaledPriceInstallation);
   // @ts-expect-error
   kit.notInKit;
@@ -84,4 +86,23 @@ import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scal
 {
   const zcfSeat: ZCFSeat = null as any;
   expectType<Key>(zcfSeat);
+}
+
+{
+  const { instance } = await E(zoe).startInstance(scaledPriceInstallation);
+  expectType<Instance<typeof scaledPriceAuthorityStart>>(instance);
+
+  // XXX remote method requires E()
+  const pf1 = await zoe.getPublicFacet(instance);
+  pf1.getPriceAuthority();
+  // @ts-expect-error
+  pf1.notInPublicFacet;
+
+  const rf: RemoteFunctions<typeof zoe> = mock;
+  rf.getPublicFacet;
+
+  const pf2 = await E(zoe).getPublicFacet(instance);
+  pf2.getPriceAuthority();
+  // @ts-expect-error
+  pf2.notInPublicFacet;
 }
