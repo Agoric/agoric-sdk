@@ -12,10 +12,6 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { AmountArg, ChainAddress, ChainAmount } from './types.js';
-import type {
-  MsgBeginRedelegateResponse,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 
 /** A helper type for type extensions. */
 export type TypeUrl = string;
