@@ -300,12 +300,12 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   const {
     board,
     automaticRefundInvitation,
-    autoswapInstallationHandle,
     automaticRefundInstance,
     wallet,
     pursesStateChangeLog,
     inboxStateChangeLog,
   } = await setupTest(t, { autoswap: true, automaticRefund: true });
+  const { autoswapInstallation: autoswapInstallationHandle } = t.context;
 
   const { issuer: bucksIssuer } = makeIssuerKit('bucks');
   const bucksIssuerBoardId = await E(board).getId(bucksIssuer);
