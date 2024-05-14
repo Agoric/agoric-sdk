@@ -251,7 +251,14 @@ type WellKnownSpaces = {
   };
   instance: {
     produce: Record<WellKnownName['instance'], Producer<Instance>>;
-    consume: Record<WellKnownName['instance'], Promise<Instance>>;
+    consume: Record<WellKnownName['instance'], Promise<Instance>> & {
+      // not worth defining for all contracts. One here just for testing getPublicFacet(instance)
+      reserve: Promise<
+        import('@agoric/zoe/src/zoeService/utils.js').Instance<
+          typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start
+        >
+      >;
+    };
   };
   uiConfig: {
     produce: Record<WellKnownName['uiConfig'], Producer<Record<string, any>>>;

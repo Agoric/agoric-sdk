@@ -8,10 +8,6 @@ import type { RemotableObject } from '@endo/marshal';
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
 
-type ContractFacet<T extends {} = {}> = {
-  readonly [P in keyof T]: T[P] extends Callable ? T[P] : never;
-};
-
 /**
  * Installation of a contract, typed by its start function.
  */
@@ -48,41 +44,30 @@ export type AdminFacet<SF extends ContractStartFunction> = RemotableObject & {
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
 };
 
-type StartParams<SF> = SF extends ContractStartFunction
+export type StartParams<SF> = SF extends ContractStartFunction
   ? Parameters<SF>[1] extends undefined
     ? {
-        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+        terms: ReturnType<ZcfOf<SF>['getTerms']>;
       }
     : {
-        terms: ReturnType<Parameters<SF>[0]['getTerms']>;
+        terms: ReturnType<ZcfOf<SF>['getTerms']>;
         privateArgs: Parameters<SF>[1];
       }
   : never;
 
-type StartResult<S> = S extends (...args: any) => Promise<infer U>
-  ? U
-  : ReturnType<S>;
+type StartResult<S extends (...args: any) => any> = Awaited<ReturnType<S>>;
+type ZcfOf<SF extends ContractStartFunction> = Parameters<SF>[0] extends ZCF
+  ? Parameters<SF>[0]
+  : ZCF<any>;
 
 /**
  * Convenience record for contract start function, merging its result with params.
  */
-export type ContractOf<S> = StartParams<S> & StartResult<S>;
-
-type StartContractInstance<C> = (
-  installation: Installation<C>,
-  issuerKeywordRecord?: Record<string, Issuer<any>>,
-  terms?: object,
-  privateArgs?: object,
-) => Promise<{
-  creatorFacet: C['creatorFacet'];
-  publicFacet: C['publicFacet'];
-  instance: Instance;
-  creatorInvitation: C['creatorInvitation'];
-  adminFacet: AdminFacet<any>;
-}>;
+export type ContractOf<S extends (...args: any) => any> = StartParams<S> &
+  StartResult<S>;
 
 /** The result of `startInstance` */
-export type StartedInstanceKit<SF> = {
+export type StartedInstanceKit<SF extends ContractStartFunction> = {
   instance: Instance<SF>;
   adminFacet: AdminFacet<SF>;
   // theses are empty by default. the return type will override
@@ -110,6 +95,7 @@ export type StartedInstanceKit<SF> = {
  * the creator facet, public facet, and creator invitation as defined
  * by the contract.
  */
+// XXX SF should extend ContractStartFunction but doing that triggers a bunch of tech debt type errors
 export type StartInstance = <SF>(
   installation: Installation<SF> | PromiseLike<Installation<SF>>,
   issuerKeywordRecord?: Record<Keyword, Issuer<any>>,
@@ -119,6 +105,7 @@ export type StartInstance = <SF>(
   label?: string,
 ) => Promise<StartedInstanceKit<SF>>;
 
+// XXX SF should extend ContractStartFunction but doing that triggers a bunch of tech debt type errors
 export type GetPublicFacet = <SF>(
   instance: Instance<SF> | PromiseLike<Instance<SF>>,
 ) => Promise<StartResult<SF>['publicFacet']>;

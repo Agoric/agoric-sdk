@@ -1,9 +1,11 @@
-type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
-type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
+/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@endo/pass-style" />
+/// <reference path="../zoeService/utils.d.ts" />
+
 /**
  * Any passable non-thenable. Often an explanatory string.
  */
-type Completion = any;
+type Completion = import('@endo/pass-style').Passable;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
 type InvitationAmount = Amount<'set', InvitationDetails>;
@@ -62,7 +64,7 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
     proposalShape?: Pattern,
   ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
-  shutdownWithFailure: ShutdownWithFailure;
+  shutdownWithFailure: import('@agoric/swingset-vat').ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
   getTerms: () => StandardTerms & CT;
@@ -73,7 +75,7 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
     keyword: Keyword,
     assetKind?: K_2 | undefined,
     displayInfo?: AdditionalDisplayInfo,
-    options?: IssuerOptionsRecord,
+    options?: import('@agoric/ertp').IssuerOptionsRecord,
   ) => Promise<ZCFMint<K_2>>;
   registerFeeMint: ZCFRegisterFeeMint;
   makeEmptySeatKit: ZCFMakeEmptySeatKit;
@@ -216,8 +218,8 @@ type OfferHandler<OR extends unknown = unknown, OA = never> =
       handle: HandleOffer<OR, OA>;
     };
 type ContractMeta = {
-  customTermsShape?: CopyRecord<any> | undefined;
-  privateArgsShape?: CopyRecord<any> | undefined;
+  customTermsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
+  privateArgsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
   upgradability?: 'none' | 'canBeUpgraded' | 'canUpgrade' | undefined;
 };
 /**
@@ -238,8 +240,10 @@ type ContractStartFn<
 type ContractStartFnResult<PF, CF> = {
   publicFacet?: PF;
   creatorFacet?: CF;
-  creatorInvitation?: Promise<Invitation<R, A>> | undefined;
+  creatorInvitation?: Promise<Invitation<any, any>> | undefined;
 };
+
+// XXX redef, losing documentation
 type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
 type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
 
