@@ -17,6 +17,8 @@ import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
+/** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
+
 const { details: X } = assert;
 
 /**

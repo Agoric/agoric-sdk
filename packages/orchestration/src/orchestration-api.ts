@@ -4,7 +4,12 @@
  * - must not have chain-specific types without runtime narrowing by chain id
  * - should remain relatively stable.
  */
-import type { Amount, Brand, NatAmount } from '@agoric/ertp/exported.js';
+import type {
+  Amount,
+  Brand,
+  NatAmount,
+  Payment,
+} from '@agoric/ertp/exported.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
 import type { KnownChains } from './types.js';
