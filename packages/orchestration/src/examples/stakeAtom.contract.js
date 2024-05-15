@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @file Example contract that uses orchestration
  */

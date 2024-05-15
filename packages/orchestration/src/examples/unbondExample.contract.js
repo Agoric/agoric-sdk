@@ -1,4 +1,3 @@
-// @ts-check
 import { Fail } from '@agoric/assert';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { Far } from '@endo/far';
@@ -6,7 +5,7 @@ import { M } from '@endo/patterns';
 import { makeOrchestrationFacade } from '../facade.js';
 
 /**
- * @import {Orchestrator, ChainAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';

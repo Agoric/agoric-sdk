@@ -1,4 +1,3 @@
-// @ts-check
 /** @file Orchestration service */
 
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
@@ -18,7 +17,7 @@ import {
  * @import { Zone } from '@agoric/base-zone';
  * @import { Port, PortAllocator } from '@agoric/network';
  * @import { IBCConnectionID } from '@agoric/vats';
- * @import { ICQConnection, ChainAccount, ICQConnectionKit } from './types.js';
+ * @import { ICQConnection, IcaAccount, ICQConnectionKit } from './types.js';
  */
 
 const { Fail, bare } = assert;
@@ -116,7 +115,7 @@ const prepareOrchestrationKit = (
          *   the counterparty connection_id
          * @param {IBCConnectionID} controllerConnectionId
          *   self connection_id
-         * @returns {Promise<ChainAccount>}
+         * @returns {Promise<IcaAccount>}
          */
         async makeAccount(hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.allocateICAControllerPort();

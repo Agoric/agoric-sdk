@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @file Stake BLD contract
  *

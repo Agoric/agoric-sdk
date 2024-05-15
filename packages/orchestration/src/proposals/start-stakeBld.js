@@ -6,7 +6,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('StartStakeBld', true);
 
 /**
- * @param {BootstrapPowers & {installation: {consume: {stakeBld: Installation<import('../../test/examples/stakeBld.contract.js').start>}}}} powers
+ * @param {BootstrapPowers & {installation: {consume: {stakeBld: Installation<import('../../src/examples/stakeBld.contract.js').start>}}}} powers
  */
 export const startStakeBld = async ({
   consume: { board, chainStorage, localchain, startUpgradable },
@@ -29,7 +29,7 @@ export const startStakeBld = async ({
   const marshaller = await E(board).getPublishingMarshaller();
 
   // FIXME this isn't detecting missing privateArgs
-  /** @type {StartUpgradableOpts<import('../../test/examples/stakeBld.contract.js').start>} */
+  /** @type {StartUpgradableOpts<import('../../src/examples/stakeBld.contract.js').start>} */
   const startOpts = {
     label: 'stakeBld',
     installation: stakeBld,

@@ -1,4 +1,3 @@
-// @ts-check
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
