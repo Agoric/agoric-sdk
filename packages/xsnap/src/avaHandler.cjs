@@ -12,7 +12,6 @@ HandledPromise is defined by eventual send shim.
 /// <reference types="ses" />
 /// <reference types="@endo/eventual-send" />
 
-// @ts-expect-error cannot redeclare encoder
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -33,7 +32,6 @@ function send(item) {
  */
 const bundleSource = async (startFilename, ...args) => {
   const msg = await send({ bundleSource: [startFilename, ...args] });
-  // @ts-expect-error send() returns void
   return JSON.parse(decoder.decode(msg));
 };
 
@@ -87,7 +85,6 @@ function handler(rawMessage) {
         __filename,
         console,
         assert,
-        // @ts-expect-error
         HandledPromise,
         URL: class URLStub {
           constructor(url, base) {

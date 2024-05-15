@@ -6,10 +6,9 @@
   },
   "include": [
     "*.js",
-    "lib/**/*.js",
-    "src/**/*.d.ts",
-    "src/**/*.js",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "lib",
+    "src",
+    "test",
+    "tools",
   ],
 }
