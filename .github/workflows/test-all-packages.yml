@@ -48,8 +48,22 @@ jobs:
       - name: Install graphviz
         run: sudo apt install -y graphviz
 
+      # This is now redundant with Lerna's --reject-cycles but keep it here so we have
+      # test coverage of this script we use for visualizing the dep graph.
       - name: Check for cycles
         run: scripts/check-dependency-cycles.sh
+
+      # install node_modules
+      - uses: ./.github/actions/restore-node
+
+      # Releasing SDK builds all packages in this order during `lerna publish`.
+      # Due to ambient types, certain build orders (from the dependency graph)
+      # may break the type resolution. Run this in the PR to find out before
+      # attempting to merge to master. This takes about 1min locally and since
+      # this job is about 30s in CI doing it here doesn't add to wall wait
+      # for CI resolution.
+      - name: Pack packages
+        run: yarn lerna exec --reject-cycles --concurrency 1 "npm pack"
 
   ##################
   # Lint tests
