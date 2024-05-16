@@ -1,6 +1,7 @@
-import { makeLoopback } from '@endo/captp';
+import { E, makeLoopback } from '@endo/captp';
 
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import bundleSource from '@endo/bundle-source';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
@@ -53,9 +54,23 @@ export const setUpZoeForTest = async ({
       zoeBaggage: makeScalarBigMapStore('zoe baggage', { durable: true }),
     }),
   );
+
+  /**
+   * @param {string} path
+   * @returns {Promise<Installation>}
+   */
+  const bundleAndInstall = async path => {
+    const bundle = await bundleSource(path);
+    const id = `b1-${path}`;
+    assert(vatAdminState, 'installBundle called before vatAdminState defined');
+    vatAdminState.installBundle(id, bundle);
+    return E(zoeService).installBundleID(id);
+  };
+
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
+    bundleAndInstall,
     vatAdminSvc,
     vatAdminState,
   };
