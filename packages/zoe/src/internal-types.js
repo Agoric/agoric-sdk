@@ -275,7 +275,7 @@
 /**
  * @typedef {object} ZcfSeatManager
  * @property {MakeZCFSeat} makeZCFSeat
- * @property {Reallocate} reallocate
+ * @property {ZCF['reallocate']} reallocate
  * @property {DropAllReferences} dropAllReferences
  */
 

@@ -3,7 +3,7 @@
         "../../typedoc.base.json"
     ],
     "entryPoints": [
-        "src/contractFacet/internal-types.js",
+        "src/contractFacet/internal-types.d.ts",
         "src/contractFacet/types-ambient.d.ts",
         "src/contractSupport/index.js",
         "src/contractSupport/types-ambient.js",
