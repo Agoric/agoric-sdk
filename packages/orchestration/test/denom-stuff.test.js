@@ -5,7 +5,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/far';
 import { mockChainInfo } from './chain-info.js';
 
-/** @import {ChainInfo, CosmosChainInfo} from '../src/types.js'; */
+/** @import {Chain, ChainInfo, CosmosChainInfo, DenomArg, Orchestrator} from '../src/types.js'; */
 
 const { entries, fromEntries, values } = Object;
 const { Fail } = assert;
@@ -64,8 +64,13 @@ const denomHash = async ({
   return sha256(`${path}/${denom}`).then(s => s.toUpperCase());
 };
 
-/** @param {typeof mockChainInfo.agoric} info */
-const mockChain = info => {
+/**
+ * @param {typeof mockChainInfo.agoric} info
+ * @param {Orchestrator} orchestrator
+ *
+ * @typedef {ReturnType<mockChain>} MChain
+ */
+const mockChain = (info, orchestrator) => {
   const pathToPeerId = new Map();
   const peerIdToPath = new Map();
   for (const conn of info.connections) {
@@ -93,60 +98,101 @@ const mockChain = info => {
     pfmEnabled: false,
   };
 
-  const it = harden({
+  /** @param { string } path */
+  const getTransferPeerId = path =>
+    pathToPeerId.get(path) || Fail`no such channel: ${path}`;
+  /** @param { string } id */
+  const getPathToPeer = id =>
+    peerIdToPath.get(id) || Fail`no path from ${info.chainId} to ${id}`;
+
+  const findDenom = (id, baseDenom) => {
+    const path = getPathToPeer(id);
+    const dInfo =
+      info.denoms.find(d => d.path === path && d.baseDenom === baseDenom) ||
+      Fail`not found: ${baseDenom} from ${id} on ${info.chainId}`;
+    return dInfo.denom;
+  };
+
+  /** @satisfies {Chain} */
+  const self = harden({
     [Symbol.toStringTag]: info.chainId,
-    getChainInfo: () => chainInfo,
-    getDenoms: () => info.denoms,
-    getTransferPeerId: path =>
-      pathToPeerId.get(path) || Fail`no such channel: ${path}`,
-    getPathToPeer: id =>
-      peerIdToPath.get(id) || Fail`no path from ${info.chainId} to ${id}`,
-    findDenom: (id, baseDenom) => {
-      const path = it.getPathToPeer(id);
-      const dInfo =
-        info.denoms.find(d => d.path === path && d.baseDenom === baseDenom) ||
-        Fail`not found: ${baseDenom} from ${id} on ${info.chainId}`;
-      return dInfo.denom;
+    getChainInfo: async () => chainInfo,
+
+    makeAccount: async () => Fail`not impl`,
+
+    findDenom,
+    getPathToPeer,
+    getTransferPeerId,
+
+    /** @param {DenomArg} b */
+    getLocalDenom: async b => {
+      await null;
+      let d0;
+      if (typeof b === 'string') {
+        d0 = b;
+      } else {
+        // XXX vbank access is async
+        const vba =
+          values(vbankAsset).find(a => a.brand === b) ||
+          Fail`${b} not in vbank`;
+        d0 = vba.denom;
+      }
+      const { chain, base, baseDenom } = orchestrator.getBrandInfo(d0);
+      if (base === self) return baseDenom;
+      if (chain === self) return d0;
+      const { chainId: baseId } = await base.getChainInfo();
+      return findDenom(baseId, baseDenom);
     },
   });
-  return it;
+
+  return self;
 };
 
 /** @param {typeof mockChainInfo} infoByName */
 const mockOrchestrator = infoByName => {
-  const chainByName = new Map(
-    entries(infoByName).map(([name, info]) => [name, mockChain(info)]),
-  );
-  const chains = [...chainByName.values()];
-  const chainById = new Map(
-    entries(infoByName).map(([name, info]) => [
-      info.chainId,
-      chainByName.get(name),
-    ]),
-  );
-  const byDenom = new Map(
-    chains.flatMap(chain =>
-      chain.getDenoms().map(d => {
-        const { denom, baseDenom, path } = d;
-        if (d.native)
-          return harden([denom, { chain, base: chain, baseDenom: denom }]);
-        assert(path);
-        const peerId = chain.getTransferPeerId(path);
-        const base = chainById.get(peerId) || Fail`no such peer: ${peerId}`;
+  /** @type {Map<string, MChain>} */
+  const chainByName = new Map();
+  /** @type {Map<string, MChain>} */
+  const chainById = new Map();
+  const byDenom = new Map();
 
-        return harden([denom, { chain, base, baseDenom }]);
-      }),
-    ),
-  );
-
-  const it = harden({
-    getChain: name => chainByName.get(name) || Fail`no such chain: ${name}`,
+  /** @type {Orchestrator} */
+  const self = harden({
+    getChain: async name =>
+      chainByName.get(name) || Fail`no such chain: ${name}`,
     // https://github.com/Agoric/agoric-sdk/blob/d1a35d8054beb60538fca459f276aeb5526e094e/packages/orchestration/src/orchestration-api.ts#L98
     getBrandInfo(denom) {
       return byDenom.get(denom) || Fail`no such denom: ${denom}`;
     },
+    makeLocalAccount: async () => Fail`not impl`,
+    asAmount: () => Fail`not impl`,
   });
-  return it;
+
+  for (const [name, info] of entries(infoByName)) {
+    const chain = mockChain(info, self);
+    chainByName.set(name, chain);
+  }
+  for (const [name, info] of entries(infoByName)) {
+    chainById.set(info.chainId, chainByName.get(name) || Fail`unreachable`);
+  }
+
+  for (const info of values(infoByName)) {
+    for (const d of info.denoms) {
+      const chain = chainById.get(info.chainId) || Fail`unreachable`;
+      const { denom, baseDenom, path } = d;
+      if (d.native) {
+        byDenom.set(denom, harden({ chain, base: chain, baseDenom: denom }));
+        continue;
+      }
+      assert(path);
+      const peerId = chain.getTransferPeerId(path);
+      const base = chainById.get(peerId) || Fail`no such peer: ${peerId}`;
+
+      byDenom.set(denom, harden({ chain, base, baseDenom }));
+    }
+  }
+
+  return self;
 };
 
 const coreEval1 = async (chainInfoRecord = mockChainInfo) => {
@@ -165,14 +211,14 @@ test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t
   t.truthy(base);
   assert(base); // for static typing
 
-  const getId = c => c.getChainInfo().chainId;
+  const getId = c => c[Symbol.toStringTag]; // XXX cheating
 
   t.log(getId(chain), vbank.ATOM.denom);
   t.log(getId(base), baseDenom);
   t.is(baseDenom, 'uatom');
 
-  const osmosis = orchestrator.getChain('osmosis');
-  const osmoDenom = osmosis.findDenom(getId(base), baseDenom);
+  const osmosis = await orchestrator.getChain('osmosis');
+  const osmoDenom = await osmosis.findDenom(getId(base), baseDenom);
   t.log(getId(osmosis), osmoDenom);
 
   const path = osmosis.getPathToPeer(getId(base));
@@ -189,7 +235,7 @@ test('Agoric USDC denom -> noble USDC denom -> osmosis USDC denom', async t => {
     vbank.USDC.denom,
   );
 
-  const getId = c => c.getChainInfo().chainId;
+  const getId = c => c[Symbol.toStringTag]; // XXX cheating
 
   t.truthy(base);
   assert(base); // for static typing
@@ -197,8 +243,8 @@ test('Agoric USDC denom -> noble USDC denom -> osmosis USDC denom', async t => {
   t.log(getId(base), baseDenom);
   t.is(baseDenom, 'uusdc');
 
-  const osmosis = orchestrator.getChain('osmosis');
-  const osmoDenom = osmosis.findDenom(getId(base), baseDenom);
+  const osmosis = await orchestrator.getChain('osmosis');
+  const osmoDenom = await osmosis.findDenom(getId(base), baseDenom);
   t.log(getId(osmosis), osmoDenom);
 
   const path = osmosis.getPathToPeer(getId(base));
@@ -207,9 +253,10 @@ test('Agoric USDC denom -> noble USDC denom -> osmosis USDC denom', async t => {
 });
 
 /** @param {ReturnType<typeof mockOrchestrator>} orchestrator */
-const makeOrcUtils = orchestrator => {
-  const osmosis = orchestrator.getChain('osmosis');
+const makeOrcUtils = async orchestrator => {
+  const osmosis = await orchestrator.getChain('osmosis');
 
+  const getId = c => c[Symbol.toStringTag]; // XXX cheating
   const it = harden({
     makeOsmosisSwap({ destChain, destAddress, amountIn, brandOut, slippage }) {
       //   const dest = orchestrator.getChain(destChain);
@@ -220,7 +267,7 @@ const makeOrcUtils = orchestrator => {
           Fail`${b} not in vbank`;
         const { base, baseDenom } = orchestrator.getBrandInfo(local.denom);
         if (base === osmosis) return baseDenom;
-        return osmosis.findDenom(base.getChainInfo().chainId, baseDenom);
+        return osmosis.findDenom(getId(base), baseDenom);
       };
 
       const denomIn = findOsmoDenom(amountIn.brand);
@@ -248,7 +295,7 @@ test('find denoms to swap USDC for ATOM on osmosis', async t => {
   const offerArgs = { staked: AmountMath.make(vbank.ATOM.brand, 200n) };
 
   const { orchestrator } = await coreEval1();
-  const orcUtils = makeOrcUtils(orchestrator);
+  const orcUtils = await makeOrcUtils(orchestrator);
 
   // https://github.com/Agoric/agoric-sdk/blob/f951cde10ee6618660938b2e5b404f797231d8e2/packages/orchestration/src/examples/swapExample.contract.js#L64C1-L71C10
   // but we don't have relevant mock chain config
@@ -263,11 +310,11 @@ test('find denoms to swap USDC for ATOM on osmosis', async t => {
     slippage: 0.03,
   });
 
-  const getId = c => c.getChainInfo().chainId;
+  const getId = c => c[Symbol.toStringTag]; // XXX cheating
   t.log(transferMsg);
-  const osmosis = orchestrator.getChain('osmosis');
-  const cosmos = orchestrator.getChain('cosmos');
-  const noble = orchestrator.getChain('noble');
+  const osmosis = await orchestrator.getChain('osmosis');
+  const cosmos = await orchestrator.getChain('cosmos');
+  const noble = await orchestrator.getChain('noble');
   const usdcOnOsmo = osmosis.findDenom(getId(noble), 'uusdc');
   const atomOnOsmo = osmosis.findDenom(getId(cosmos), 'uatom');
   t.deepEqual(transferMsg, {
