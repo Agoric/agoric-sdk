@@ -201,8 +201,34 @@ type WellKnownName = {
   uiConfig: 'VaultFactory';
 };
 
-type ContractInstallationPromises<StartFns> = {
+type ContractInstallationPromises<
+  StartFns extends Record<WellKnownNames['installation'], ContractStartFn>,
+> = {
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
+};
+
+type ContractInstancePromises<
+  StartFns extends Record<WellKnownNames['instance'], ContractStartFn>,
+> = {
+  [Property in keyof StartFns]: Promise<
+    import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>
+  >;
+};
+
+type WellKnownContracts = {
+  auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
+  centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
+  committee: typeof import('@agoric/governance/src/committee.js').start;
+  contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
+  econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
+  feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
+  mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
+  psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
+  provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
+  reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
+  // no typeof because walletFactory is exporting `start` as a type
+  walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
 };
 
 type WellKnownSpaces = {
@@ -233,32 +259,12 @@ type WellKnownSpaces = {
       WellKnownName['installation'],
       Promise<Installation<unknown>>
     > &
-      ContractInstallationPromises<{
-        auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
-        centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
-        committee: typeof import('@agoric/governance/src/committee.js').start;
-        contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-        econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
-        feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
-        mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
-        psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
-        provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
-        reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
-        VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
-        // no typeof because walletFactory is exporting `start` as a type
-        walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
-      }>;
+      ContractInstallationPromises<WellKnownContracts>;
   };
   instance: {
     produce: Record<WellKnownName['instance'], Producer<Instance>>;
-    consume: Record<WellKnownName['instance'], Promise<Instance>> & {
-      // not worth defining for all contracts. One here just for testing getPublicFacet(instance)
-      reserve: Promise<
-        import('@agoric/zoe/src/zoeService/utils.js').Instance<
-          typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start
-        >
-      >;
-    };
+    consume: Record<WellKnownName['instance'], Promise<Instance>> &
+      ContractInstancePromises<WellKnownContracts>;
   };
   uiConfig: {
     produce: Record<WellKnownName['uiConfig'], Producer<Record<string, any>>>;

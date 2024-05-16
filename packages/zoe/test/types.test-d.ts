@@ -4,6 +4,7 @@
  * because "there is no JavaScript syntax for passing a a type argument"
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
+
 import { E, RemoteFunctions } from '@endo/eventual-send';
 import { expectNotType, expectType } from 'tsd';
 
@@ -11,7 +12,6 @@ import type { Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';
-import { PASS_STYLE } from '@endo/marshal';
 
 const zoe = {} as ZoeService;
 const scaledPriceInstallation = {} as Installation<
