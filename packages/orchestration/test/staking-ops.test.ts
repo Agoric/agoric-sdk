@@ -8,21 +8,21 @@ import {
   MsgDelegateResponse,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import type { TimestampRecord, TimestampValue } from '@agoric/time';
+import type { AnyJson } from '@agoric/cosmic-proto';
 import {
   prepareStakingAccountKit,
   encodeTxResponse,
   trivialDelegateResponse,
 } from '../src/exos/stakingAccountKit.js';
 
-/**
- * @import {IcaAccount, ChainAddress, ICQConnection} from '../src/types.js';
- * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
- */
+import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 
 const { Fail } = assert;
 
@@ -33,7 +33,7 @@ test('MsgDelegateResponse trivial response', t => {
   );
 });
 
-const configStaking = /** @type {const} */ ({
+const configStaking = {
   acct1: {
     address: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
   },
@@ -47,9 +47,9 @@ const configStaking = /** @type {const} */ ({
   },
   startTime: '2024-06-01T00:00Z',
   completionTime: '2024-06-22T00:00Z',
-});
+} as const;
 
-const configRedelegate = /** @type {const} */ ({
+const configRedelegate = {
   validator: {
     address: 'agoric1valoper444',
     addressEncoding: 'bech32',
@@ -58,30 +58,26 @@ const configRedelegate = /** @type {const} */ ({
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '50' },
   },
-});
+} as const;
 
 const TICK = 5n * 60n;
 const DAY = (60n * 60n * 24n) / TICK;
 const DAYf = Number(DAY);
 
 const time = {
-  /**
-   * @param {string} dateString in YYYY-MM-DDTHH:mm:ss.sssZ format
-   * @returns {import('@agoric/time').Timestamp}
-   */
-  parse: dateString => BigInt(Date.parse(dateString) / 1000),
+  parse: (dateString: string) =>
+    BigInt(Date.parse(dateString) / 1000) as TimestampValue,
 
-  /** @param {import('@agoric/time').TimestampRecord} ts */
-  format: ts => new Date(Number(ts.absValue) * 1000).toISOString(),
+  format: (ts: TimestampRecord) =>
+    new Date(Number(ts.absValue) * 1000).toISOString(),
 };
 
 const makeScenario = () => {
-  /**
-   * @param {string} [addr]
-   * @param {Record<string, Coin>} [delegations]
-   */
-  const mockAccount = (addr = 'agoric1234', delegations = {}) => {
-    const calls = [];
+  const mockAccount = (
+    addr = 'agoric1234',
+    delegations = {} as Record<string, Coin>,
+  ) => {
+    const calls = [] as Array<{ msgs: AnyJson[] }>;
 
     const simulate = {
       '/cosmos.staking.v1beta1.MsgDelegate': _m => {
@@ -105,8 +101,9 @@ const makeScenario = () => {
           denom,
           amount: `${Number(amount) / 100}`,
         }));
-        /** @type {MsgWithdrawDelegatorRewardResponse} */
-        const response = { amount: rewards };
+        const response = {
+          amount: rewards,
+        } as MsgWithdrawDelegatorRewardResponse;
 
         return encodeTxResponse(
           response,
@@ -123,15 +120,13 @@ const makeScenario = () => {
       },
     };
 
-    /** @type {ChainAddress} */
-    const chainAddress = harden({
+    const chainAddress: ChainAddress = harden({
       address: addr,
       addressEncoding: 'bech32',
       chainId: 'FIXME',
     });
 
-    /** @type {IcaAccount} */
-    const account = Far('MockAccount', {
+    const account: IcaAccount = Far('MockAccount', {
       getAddress: () => chainAddress,
       executeEncodedTx: async msgs => {
         assert.equal(msgs.length, 1);
@@ -156,13 +151,10 @@ const makeScenario = () => {
 
   const mockZCF = () => {
     const toHandler = new Map();
-    /** @type {ZCF} */
-    const zcf = harden({
+    const zcf: ZCF = harden({
       // @ts-expect-error mock
       makeInvitation: async (handler, _desc, _c, _patt) => {
-        /** @type {Invitation} */
-        // @ts-expect-error mock
-        const invitation = Far('Invitation', {});
+        const invitation = Far('Invitation', {}) as unknown as Invitation;
         toHandler.set(invitation, handler);
         return invitation;
       },
@@ -183,25 +175,18 @@ const makeScenario = () => {
     return { zcf, zoe };
   };
 
-  const makeRecorderKit = () => {
-    /** @type {any} */
-    const kit = harden({});
-    return kit;
-  };
-  const baggage = makeScalarBigMapStore('b1');
+  const makeRecorderKit = () => harden({}) as any;
+
+  const baggage = makeScalarBigMapStore('b1') as Baggage;
 
   const { delegations, startTime } = configStaking;
 
   // TODO: when we write to chainStorage, test it.
   //   const { rootNode } = makeFakeStorageKit('mockChainStorageRoot');
 
-  /** @type {StorageNode} */
-  // @ts-expect-error mock
-  const storageNode = Far('StorageNode', {});
+  const storageNode = Far('StorageNode', {}) as unknown as StorageNode;
 
-  /** @type {ICQConnection} */
-  // @ts-expect-error mock
-  const icqConnection = Far('ICQConnection', {});
+  const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
   const timer = buildManualTimer(undefined, time.parse(startTime), {
     timeStep: TICK,
@@ -245,8 +230,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
-  /** @type {Brand<'nat'>} */
-  const aBrand = Far('Token');
+  const aBrand = Far('Token') as Brand<'nat'>;
   const makeAccountKit = prepareStakingAccountKit(
     baggage,
     makeRecorderKit,
@@ -362,8 +346,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const { validator, delegations } = configStaking;
 
   const value = BigInt(Object.values(delegations)[0].amount);
-  /** @type {Amount<'nat'>} */
-  const anAmount = { brand: Far('Token'), value };
+  const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
   const delegation = {
     delegatorAddress: account.getAddress().address,
     shares: `${anAmount.value}`,

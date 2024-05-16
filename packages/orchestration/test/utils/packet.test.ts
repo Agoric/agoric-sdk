@@ -6,14 +6,13 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { decodeBase64 } from '@endo/base64';
+import type { RequestQueryJson } from '@agoric/cosmic-proto';
 import {
   makeTxPacket,
   parseTxPacket,
   parseQueryPacket,
   makeQueryPacket,
 } from '../../src/utils/packet.js';
-
-/** @import { RequestQueryJson } from '@agoric/cosmic-proto'; */
 
 test('makeTxPacket', t => {
   const mockMsg = {
@@ -94,19 +93,17 @@ test('parseTxPacket', t => {
 });
 
 test('makeQueryPacket', t => {
-  const mockQuery = /** @type {RequestQueryJson} */ (
-    RequestQuery.toJSON(
-      RequestQuery.fromPartial({
-        path: '/cosmos.bank.v1beta1.Query/Balance',
-        data: QueryBalanceRequest.encode(
-          QueryBalanceRequest.fromPartial({
-            address: 'cosmos1test',
-            denom: 'uatom',
-          }),
-        ).finish(),
-      }),
-    )
-  );
+  const mockQuery = RequestQuery.toJSON(
+    RequestQuery.fromPartial({
+      path: '/cosmos.bank.v1beta1.Query/Balance',
+      data: QueryBalanceRequest.encode(
+        QueryBalanceRequest.fromPartial({
+          address: 'cosmos1test',
+          denom: 'uatom',
+        }),
+      ).finish(),
+    }),
+  ) as RequestQueryJson;
   t.is(
     makeQueryPacket([mockQuery]),
     '{"data":"CjoKFAoLY29zbW9zMXRlc3QSBXVhdG9tEiIvY29zbW9zLmJhbmsudjFiZXRhMS5RdWVyeS9CYWxhbmNl","memo":""}',
