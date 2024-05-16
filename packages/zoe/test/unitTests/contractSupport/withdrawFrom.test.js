@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -22,6 +21,7 @@ const dirname = path.dirname(filename);
 const contractRoot = `${dirname}/../zcf/zcfTesterContract.js`;
 
 async function setupContract(moolaIssuer, bucksIssuer) {
+  /** @type {any} */
   let testJig;
   const setJig = jig => {
     testJig = jig;
@@ -43,7 +43,7 @@ async function setupContract(moolaIssuer, bucksIssuer) {
 
   await E(zoe).startInstance(installation, issuerKeywordRecord);
 
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
   const zcf = testJig.zcf;
   return { zoe, zcf };
 }

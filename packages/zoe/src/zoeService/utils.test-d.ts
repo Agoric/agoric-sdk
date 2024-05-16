@@ -3,7 +3,7 @@ import type { StartedInstanceKit } from './utils';
 const someContractStartFn = (
   zcf: ZCF,
   privateArgs: { someNumber: number; someString: string },
-) => {};
+) => ({});
 
 type PsmInstanceKit = StartedInstanceKit<typeof someContractStartFn>;
 
