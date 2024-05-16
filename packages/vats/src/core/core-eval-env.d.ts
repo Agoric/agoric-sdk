@@ -2,7 +2,7 @@
 /**
  * @file typesdef for the CoreEval environment
  *
- *   To use add this to the top of the proposal
+ *   To use add this to the top of the proposal:
  *
  *   /// <reference types="@agoric/vats/src/core/core-eval-env" />
  *

@@ -1,6 +1,6 @@
 // @jessie-check
+/// <reference types="@agoric/governance/exported" />
 
-import '@agoric/governance/exported.js';
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
