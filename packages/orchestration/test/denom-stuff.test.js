@@ -26,7 +26,7 @@ const vbankAsset = {
     proposedName: 'USDC',
   },
 
-  // matches mockChainInfo
+  // matches mockChainInfo. TODO: match hash?
   'ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9': {
     brand: mockBrand('ATOM'),
     denom:
@@ -64,21 +64,6 @@ const denomHash = async ({
   return sha256(`${path}/${denom}`).then(s => s.toUpperCase());
 };
 
-const mockRegistry = () => {
-  const byName = new Map();
-  const it = harden({
-    register(name, info) {
-      byName.set(name, info);
-    },
-    lookup(name) {
-      const info = byName.get(name);
-      assert(info);
-      return info;
-    },
-  });
-  return it;
-};
-
 /** @param {typeof mockChainInfo.agoric} info */
 const mockChain = info => {
   const pathToPeerId = new Map();
@@ -97,13 +82,13 @@ const mockChain = info => {
     /** @returns {CosmosChainInfo} */
     getChainInfo: () => Fail`TODO`,
     getId: () => info.chainId,
-    getConnections: () => info.connections,
     getDenoms: () => info.denoms,
     getTransferPeerId: path =>
       pathToPeerId.get(path) || Fail`no such channel: ${path}`,
-    getPathToPeer: id => peerIdToPath.get(id) || Fail`no such peer: ${id}`,
+    getPathToPeer: id =>
+      peerIdToPath.get(id) || Fail`no path from ${info.chainId} to ${id}`,
     findDenom: (id, baseDenom) => {
-      const path = peerIdToPath.get(id) || Fail`${id}`;
+      const path = it.getPathToPeer(id);
       const dInfo =
         info.denoms.find(d => d.path === path && d.baseDenom === baseDenom) ||
         Fail`not found: ${baseDenom} from ${id} on ${info.chainId}`;
@@ -132,7 +117,8 @@ const mockOrchestrator = infoByName => {
         if (d.native)
           return harden([denom, { chain, base: chain, baseDenom: denom }]);
         assert(path);
-        const base = chainById.get(chain.getTransferPeerId(path));
+        const peerId = chain.getTransferPeerId(path);
+        const base = chainById.get(peerId) || Fail`no such peer: ${peerId}`;
 
         return harden([denom, { chain, base, baseDenom }]);
       }),
@@ -143,7 +129,7 @@ const mockOrchestrator = infoByName => {
     getChain: name => chainByName.get(name) || Fail`no such chain: ${name}`,
     // https://github.com/Agoric/agoric-sdk/blob/d1a35d8054beb60538fca459f276aeb5526e094e/packages/orchestration/src/orchestration-api.ts#L98
     getBrandInfo(denom) {
-      return byDenom.get(denom) || Fail`${denom}`;
+      return byDenom.get(denom) || Fail`no such denom: ${denom}`;
     },
   });
   return it;
@@ -154,7 +140,31 @@ const coreEval1 = async (chainInfoRecord = mockChainInfo) => {
   return { orchestrator };
 };
 
-test('given Agoric USDC denom, what is osmosis USDC denom?', async t => {
+test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t => {
+  // by issuer name
+  const vbank = fromEntries(values(vbankAsset).map(a => [a.issuerName, a]));
+
+  const { orchestrator } = await coreEval1();
+  const { chain, base, baseDenom } = orchestrator.getBrandInfo(
+    vbank.ATOM.denom,
+  );
+  t.truthy(base);
+  assert(base); // for static typing
+
+  t.log(chain.getId(), vbank.ATOM.denom);
+  t.log(base.getId(), baseDenom);
+  t.is(baseDenom, 'uatom');
+
+  const osmosis = orchestrator.getChain('osmosis');
+  const osmoDenom = osmosis.findDenom(base.getId(), baseDenom);
+  t.log(osmosis.getId(), osmoDenom);
+
+  const path = osmosis.getPathToPeer(base.getId());
+  const hash = await denomHash({ path, denom: 'uatom' });
+  t.is(osmoDenom, `ibc/${hash}`);
+});
+
+test('Agoric USDC denom -> noble USDC denom -> osmosis USDC denom', async t => {
   // by issuer name
   const vbank = fromEntries(values(vbankAsset).map(a => [a.issuerName, a]));
 
@@ -178,27 +188,49 @@ test('given Agoric USDC denom, what is osmosis USDC denom?', async t => {
   t.is(osmoDenom, `ibc/${hash}`);
 });
 
-test('given Agoric ATOM denom, what is cosmos hub ATOM denom?', async t => {
+/** @param {ReturnType<typeof mockOrchestrator>} orchestrator */
+const makeOrcUtils = orchestrator => {
+  const osmosis = orchestrator.getChain('osmosis');
+
+  const it = harden({
+    makeOsmosisSwap({ destChain, destAddress, amountIn, brandOut, slippage }) {
+      //   const dest = orchestrator.getChain(destChain);
+
+      const findOsmoDenom = b => {
+        const local =
+          values(vbankAsset).find(a => a.brand === b) ||
+          Fail`${b} not in vbank`;
+        const { base, baseDenom } = orchestrator.getBrandInfo(local.denom);
+        if (base === osmosis) return baseDenom;
+        return osmosis.findDenom(base.getId(), baseDenom);
+      };
+
+      const denomIn = findOsmoDenom(amountIn.brand);
+      const denomOut = findOsmoDenom(brandOut);
+      const swapDenomsEtc = {
+        swap: {
+          in: { denom: denomIn, value: amountIn.value },
+          out: { denom: denomOut },
+          slippage,
+        },
+        txfr: { destChain, destAddress },
+      };
+      return swapDenomsEtc;
+    },
+  });
+  return it;
+};
+
+test('find denoms to swap USDC for ATOM on osmosis', async t => {
   // by issuer name
   const vbank = fromEntries(values(vbankAsset).map(a => [a.issuerName, a]));
 
-  const { orchestrator } = await coreEval1();
-  const { chain, base, baseDenom } = orchestrator.getBrandInfo(
-    vbank.ATOM.denom,
-  );
-
-  t.log(chain.getId(), vbank.ATOM.denom);
-  t.log(base?.getId(), baseDenom);
-  t.is(baseDenom, 'uatom');
-});
-
-test.skip('top goal: PFM swap', async t => {
-  // by issuer name
-  const vbank = fromEntries(values(vbankAsset).map(a => [a.issuerName, a]));
-
-  const tiaAddress = 'does-not-matter';
+  const tiaAddress = 'cosmos123dest';
   const give = { USDC: AmountMath.make(vbank.USDC.brand, 100n) };
   const offerArgs = { staked: AmountMath.make(vbank.ATOM.brand, 200n) };
+
+  const { orchestrator } = await coreEval1();
+  const orcUtils = makeOrcUtils(orchestrator);
 
   // https://github.com/Agoric/agoric-sdk/blob/f951cde10ee6618660938b2e5b404f797231d8e2/packages/orchestration/src/examples/swapExample.contract.js#L64C1-L71C10
   // but we don't have relevant mock chain config
@@ -212,28 +244,27 @@ test.skip('top goal: PFM swap', async t => {
     brandOut: offerArgs.staked.brand,
     slippage: 0.03,
   });
-});
 
-test.skip('find denoms to swap ATOM on osmosis', async t => {
-  const atomAsset =
-    values(vbankAsset).find(a => a.issuerName === 'ATOM') || Fail``;
-
-  const { orchestrator } = await coreEval1();
-  const { baseDenom } = orchestrator.getBrandInfo(atomAsset.denom);
-  t.is(baseDenom, 'uatom', 'ATOM denom on cosmos');
-
-  // assume no chainId collisions
-  const registry = mockRegistry();
-  registry.register(
-    'cosmos',
-    mockChainInfo.agoric.connections.find(c => c.chainId === 'gaia-test'),
-  );
-  registry.register(
-    'osmosis',
-    mockChainInfo.agoric.connections.find(c => c.chainId === 'osmosis-test'),
-  );
-
-  mockChainInfo.osmosis.connections.find(c => c.chainId === XXX);
-
-  const d = await denomHash({ channel: osmoToCosmos, denom: atomBaseDenom });
+  t.log(transferMsg);
+  const osmosis = orchestrator.getChain('osmosis');
+  const cosmos = orchestrator.getChain('cosmos');
+  const noble = orchestrator.getChain('noble');
+  const usdcOnOsmo = osmosis.findDenom(noble.getId(), 'uusdc');
+  const atomOnOsmo = osmosis.findDenom(cosmos.getId(), 'uatom');
+  t.deepEqual(transferMsg, {
+    swap: {
+      in: {
+        denom: usdcOnOsmo,
+        value: 100n,
+      },
+      out: {
+        denom: atomOnOsmo,
+      },
+      slippage: 0.03,
+    },
+    txfr: {
+      destAddress: 'cosmos123dest',
+      destChain: 'cosmos',
+    },
+  });
 });
