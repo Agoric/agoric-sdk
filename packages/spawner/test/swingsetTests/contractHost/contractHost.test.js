@@ -8,8 +8,7 @@ import {
   loadBasedir,
 } from '@agoric/swingset-vat';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

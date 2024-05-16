@@ -12,8 +12,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const auctionRoot = `${dirname}/../../../src/contracts/auction/index.js`;
 

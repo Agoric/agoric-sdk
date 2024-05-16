@@ -17,8 +17,7 @@ import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const autoswap = `${dirname}/../../../src/contracts/autoswap.js`;
 

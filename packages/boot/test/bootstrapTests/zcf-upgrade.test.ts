@@ -11,8 +11,7 @@ import { TestFn } from 'ava';
 import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeZoeDriver } from '../../tools/drivers.ts';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const ZCF_PROBE_SRC = './zcfProbe.js';
 

@@ -14,8 +14,7 @@ import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
  * @param {import("ava").ExecutionContext<unknown>} t

@@ -15,8 +15,7 @@ import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js'
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const loanRoot = `${dirname}/../../../../src/contracts/loan/`;
 const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;

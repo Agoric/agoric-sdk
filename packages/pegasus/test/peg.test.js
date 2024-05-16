@@ -19,8 +19,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractPath = `${dirname}/../src/contract.js`;
 

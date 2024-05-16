@@ -6,8 +6,7 @@ import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const CONTRACT_FILES = ['privateArgsUsageContract'];
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
 const test = anyTest;

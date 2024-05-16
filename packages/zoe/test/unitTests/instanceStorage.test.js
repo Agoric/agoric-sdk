@@ -12,8 +12,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeInstanceRecordStorage } from '../../src/instanceRecordStorage.js';
 import { makeIssuerRecord } from '../../src/issuerRecord.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/bounty.js`;
 
