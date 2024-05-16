@@ -1,6 +1,6 @@
 /* global E */
 // @ts-check
-/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/core-eval-env" />
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)

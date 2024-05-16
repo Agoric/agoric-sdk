@@ -1,4 +1,4 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';

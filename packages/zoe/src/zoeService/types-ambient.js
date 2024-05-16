@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 /**
  * @typedef {object} ZoeService

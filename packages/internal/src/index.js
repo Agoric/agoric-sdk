@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 export * from './config.js';
 export * from './debug.js';
