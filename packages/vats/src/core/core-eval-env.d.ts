@@ -2,8 +2,9 @@
 /**
  * @file typesdef for the CoreEval environment
  *
- *   To use add this to the top of the proposal: /// <reference
- *   types="@agoric/vats/src/core/core-eval-env"/>
+ *   To use add this to the top of the proposal:
+ *
+ *   /// <reference types="@agoric/vats/src/core/core-eval-env" />
  *
  *   That directive has to be before imports, but this one's only useful in
  *   modules that have no imports or named exports.

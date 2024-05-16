@@ -1,4 +1,4 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';

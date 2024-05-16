@@ -1,5 +1,5 @@
 // @ts-check
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 // Based on
 // https://github.com/endojs/endo/blob/HEAD/packages/ses/src/error/types.js

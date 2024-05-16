@@ -1,4 +1,4 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';

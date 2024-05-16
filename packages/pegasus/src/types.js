@@ -1,6 +1,6 @@
 // @ts-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 /**
  * @import {Bytes, ConnectionHandler} from '@agoric/network';
  */

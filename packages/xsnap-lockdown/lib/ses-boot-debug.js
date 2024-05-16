@@ -5,7 +5,7 @@
 
 /* eslint-disable import/no-extraneous-dependencies */
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { setObjectInspector } from './console-shim.js';
 import '@endo/init/debug.js';

@@ -13,7 +13,7 @@ const {
 } = chainBehaviorsPlus;
 const behaviors = { ...basicBehaviors, ...chainBehaviors };
 
-const modules = {
+export const modules = {
   behaviors: { ...behaviors },
   utils: { ...utils },
 };

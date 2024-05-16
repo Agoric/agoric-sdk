@@ -1,4 +1,4 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 // Ensure this is a module.
 export {};

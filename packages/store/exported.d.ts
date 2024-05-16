@@ -14,7 +14,6 @@ import { Pattern as _Pattern } from '@endo/patterns';
 declare global {
   export {
     _LegacyMap as LegacyMap,
-    _LegacyMap as LegacyMap,
     _LegacyWeakMap as LegacyWeakMap,
     _MapStore as MapStore,
     _SetStore as SetStore,

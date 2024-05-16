@@ -3,7 +3,7 @@
 // Ensure this is a module.
 export {};
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style')
  * @import {CopyBag, CopySet, Key} from '@endo/patterns')

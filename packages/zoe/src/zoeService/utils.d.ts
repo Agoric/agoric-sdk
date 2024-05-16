@@ -1,5 +1,5 @@
 import type { Issuer } from '@agoric/ertp/exported.js';
-import type { Tagged } from '@agoric/internal/src/tagged.js';
+import type { TagContainer } from '@agoric/internal/src/tagged.js';
 import type { Callable } from '@agoric/internal/src/utils.js';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
@@ -16,17 +16,14 @@ type ContractFacet<T extends {} = {}> = {
  * Installation of a contract, typed by its start function.
  */
 export type Installation<SF extends ContractStartFunction | unknown> =
-  RemotableObject &
-    Tagged<
-      {
-        getBundle: () => SourceBundle;
-        getBundleLabel: () => string;
-      },
-      'StartFunction',
-      SF
-    >;
+  TagContainer<SF> &
+    RemotableObject & {
+      getBundle: () => SourceBundle;
+      getBundleLabel: () => string;
+    };
+
 export type Instance<SF extends ContractStartFunction | unknown> =
-  RemotableObject & Tagged<Handle<'Instance'>, 'StartFunction', SF>;
+  TagContainer<SF> & RemotableObject & Handle<'Instance'>;
 
 export type InstallationStart<I> =
   I extends Installation<infer SF> ? SF : never;
