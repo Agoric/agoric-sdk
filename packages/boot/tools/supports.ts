@@ -57,15 +57,10 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
-/**
- * @param {string} bundleDir
- * @param {string} specifier
- * @param {ManagerType} [defaultManagerType]
- */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
-  defaultManagerType = 'local',
+  defaultManagerType = 'local' as ManagerType,
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -81,7 +76,7 @@ export const getNodeTestVaultsConfig = async (
   //     - exhibits inconsistent GC behavior from run to run
   //   'xs-worker'
   //     - timing results more accurately reflect production
-  config.defaultManagerType = defaultManagerType as ManagerType;
+  config.defaultManagerType = defaultManagerType;
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });

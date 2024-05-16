@@ -133,7 +133,7 @@ export interface StakingAccountActions {
    * Undelegate multiple delegations (concurrently). To delegate independently, pass an array with one item.
    * Resolves when the undelegation is complete and the tokens are no longer bonded. Note it may take weeks.
    * The unbonding time is padded by 10 minutes to account for clock skew.
-   * @param {Delegation[]} delegations - the delegation to undelegate
+   * @param delegations - the delegation to undelegate
    */
   undelegate: (delegations: Delegation[]) => Promise<void>;
 
@@ -168,8 +168,8 @@ export interface IcaAccount {
   executeTx: (msgs: Proto3JSONMsg[]) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param {AnyJson[]} msgs - records for the transaction
-   * @param {Partial<Omit<TxBody, 'messages'>>} [opts] - optional parameters for the Tx, like `timeoutHeight` and `memo`
+   * @param msgs - records for the transaction
+   * @param [opts] - optional parameters for the Tx, like `timeoutHeight` and `memo`
    * @returns acknowledgement string
    */
   executeEncodedTx: (
