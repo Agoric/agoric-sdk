@@ -76,12 +76,26 @@ const mockChain = info => {
       peerIdToPath.set(conn.chainId, path);
     }
   }
+  const { chainId, allowedMessages, allowedQueries } = info;
+  const ibcConnectionInfo = info.connections.map(c => c.connectionInfo);
+
+  /** @type {CosmosChainInfo} */
+  const chainInfo = {
+    chainId,
+    allowedMessages,
+    allowedQueries,
+    // @ts-expect-error clientId => client_id etc.
+    ibcConnectionInfo,
+    // these flags are iffy???
+    ibcHooksEnabled: false,
+    icaEnabled: info.icaParams.hostEnabled,
+    icqEnabled: info.icqParams.hostEnabled,
+    pfmEnabled: false,
+  };
 
   const it = harden({
     [Symbol.toStringTag]: info.chainId,
-    /** @returns {CosmosChainInfo} */
-    getChainInfo: () => Fail`TODO`,
-    getId: () => info.chainId,
+    getChainInfo: () => chainInfo,
     getDenoms: () => info.denoms,
     getTransferPeerId: path =>
       pathToPeerId.get(path) || Fail`no such channel: ${path}`,
@@ -151,15 +165,17 @@ test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t
   t.truthy(base);
   assert(base); // for static typing
 
-  t.log(chain.getId(), vbank.ATOM.denom);
-  t.log(base.getId(), baseDenom);
+  const getId = c => c.getChainInfo().chainId;
+
+  t.log(getId(chain), vbank.ATOM.denom);
+  t.log(getId(base), baseDenom);
   t.is(baseDenom, 'uatom');
 
   const osmosis = orchestrator.getChain('osmosis');
-  const osmoDenom = osmosis.findDenom(base.getId(), baseDenom);
-  t.log(osmosis.getId(), osmoDenom);
+  const osmoDenom = osmosis.findDenom(getId(base), baseDenom);
+  t.log(getId(osmosis), osmoDenom);
 
-  const path = osmosis.getPathToPeer(base.getId());
+  const path = osmosis.getPathToPeer(getId(base));
   const hash = await denomHash({ path, denom: 'uatom' });
   t.is(osmoDenom, `ibc/${hash}`);
 });
@@ -173,17 +189,19 @@ test('Agoric USDC denom -> noble USDC denom -> osmosis USDC denom', async t => {
     vbank.USDC.denom,
   );
 
+  const getId = c => c.getChainInfo().chainId;
+
   t.truthy(base);
   assert(base); // for static typing
-  t.log(chain.getId(), vbank.USDC.denom);
-  t.log(base.getId(), baseDenom);
+  t.log(getId(chain), vbank.USDC.denom);
+  t.log(getId(base), baseDenom);
   t.is(baseDenom, 'uusdc');
 
   const osmosis = orchestrator.getChain('osmosis');
-  const osmoDenom = osmosis.findDenom(base.getId(), baseDenom);
-  t.log(osmosis.getId(), osmoDenom);
+  const osmoDenom = osmosis.findDenom(getId(base), baseDenom);
+  t.log(getId(osmosis), osmoDenom);
 
-  const path = osmosis.getPathToPeer(base.getId());
+  const path = osmosis.getPathToPeer(getId(base));
   const hash = await denomHash({ path, denom: 'uusdc' });
   t.is(osmoDenom, `ibc/${hash}`);
 });
@@ -202,7 +220,7 @@ const makeOrcUtils = orchestrator => {
           Fail`${b} not in vbank`;
         const { base, baseDenom } = orchestrator.getBrandInfo(local.denom);
         if (base === osmosis) return baseDenom;
-        return osmosis.findDenom(base.getId(), baseDenom);
+        return osmosis.findDenom(base.getChainInfo().chainId, baseDenom);
       };
 
       const denomIn = findOsmoDenom(amountIn.brand);
@@ -245,12 +263,13 @@ test('find denoms to swap USDC for ATOM on osmosis', async t => {
     slippage: 0.03,
   });
 
+  const getId = c => c.getChainInfo().chainId;
   t.log(transferMsg);
   const osmosis = orchestrator.getChain('osmosis');
   const cosmos = orchestrator.getChain('cosmos');
   const noble = orchestrator.getChain('noble');
-  const usdcOnOsmo = osmosis.findDenom(noble.getId(), 'uusdc');
-  const atomOnOsmo = osmosis.findDenom(cosmos.getId(), 'uatom');
+  const usdcOnOsmo = osmosis.findDenom(getId(noble), 'uusdc');
+  const atomOnOsmo = osmosis.findDenom(getId(cosmos), 'uatom');
   t.deepEqual(transferMsg, {
     swap: {
       in: {
