@@ -7,6 +7,9 @@
  * @import {Orchestrator} from './types.js';
  */
 
+/** @type {any} */
+const anyVal = null;
+
 /**
  *
  * @param {{
@@ -43,7 +46,35 @@ export const makeOrchestrationFacade = ({
      */
     orchestrate(durableName, ctx, fn) {
       console.log('orchestrate got', durableName, ctx, fn);
-      throw new Error('Not yet implemented');
+      /** @type {Orchestrator} */
+      const orc = {
+        getChain: async name => ({
+          getChainInfo: async () => anyVal,
+          /** @type {any} */
+          makeAccount: async () => {
+            if (name === 'agoric') {
+              return {
+                deposit(payment) {
+                  console.log('deposit got', payment);
+                },
+                transferSteps(amount, msg) {
+                  console.log('transferSteps got', amount, msg);
+                  return Promise.resolve();
+                },
+              };
+            }
+            return {
+              getAddress() {
+                return 'an address!';
+              },
+            };
+          },
+        }),
+        makeLocalAccount: anyVal,
+        getBrandInfo: anyVal,
+        asAmount: anyVal,
+      };
+      return async (...args) => fn(orc, ctx, ...args);
     },
   };
 };

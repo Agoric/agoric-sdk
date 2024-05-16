@@ -41,7 +41,7 @@ export const start = async (zcf, privateArgs) => {
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
       const { give } = seat.getProposal();
-      !AmountMath.isEmpty(give.USDC.value) || Fail`Must provide USDC.`;
+      !AmountMath.isEmpty(give.USDC) || Fail`Must provide USDC.`;
 
       const celestia = await orch.getChain('celestia');
       const agoric = await orch.getChain('agoric');
@@ -51,12 +51,13 @@ export const start = async (zcf, privateArgs) => {
         agoric.makeAccount(),
       ]);
 
-      const tiaAddress = await celestiaAccount.getAddress();
+      const tiaAddress = celestiaAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
       const seatKit = zcf.makeEmptySeatKit();
       zcf.atomicRearrange(harden([[seat, seatKit.zcfSeat, give]]));
-      // seat.exit() // exit user seat now, or later?
+      seat.exit();
+      await E(seatKit.userSeat).tryExit();
       const payment = await E(seatKit.userSeat).getPayout('USDC');
       await localAccount.deposit(payment);
 
@@ -65,7 +66,7 @@ export const start = async (zcf, privateArgs) => {
         destChain: 'celestia',
         destAddress: tiaAddress,
         amountIn: give.USDC,
-        brandOut: offerArgs.staked.brand,
+        brandOut: /** @type {any} */ ('FIXME'),
         slippage: 0.03,
       });
 
@@ -77,7 +78,7 @@ export const start = async (zcf, privateArgs) => {
         .catch(e => console.error(e));
 
       // XXX close localAccount?
-      return celestiaAccount; // should be continuing inv since this is an offer?
+      // return continuing inv since this is an offer?
     },
   );
 
