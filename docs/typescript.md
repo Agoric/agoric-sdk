@@ -8,12 +8,16 @@ Our use of TypeScript has to accomodate both .js development in agoric-sdk (whic
 - package entrypoint(s) exports explicit types
 - for packages upon which other packages expect ambient types:
   - `exported.js` exports the explicit types and ambient re-exports
+- don't use runtime imports to get types ([issue](https://github.com/Agoric/agoric-sdk/issues/6512))
 
 ## .d.ts modules
 
-We cannot use `.ts` files any modules that are transitively imported into an Endo bundle. The reason is that the Endo bundler doesn't understand `.ts` syntax and we don't want it to until we have sufficient auditability of the transformation. Moreover we've tried to avoid a build step in order to import a module. (The one exception so far is `@agoric/cosmic-proto` because we codegen the types. Those modules are written in `.ts` syntax and build to `.js` by a build step that creates `dist`, which is the package export.)
+We cannot use `.ts` files in any modules that are transitively imported into an Endo bundle. The reason is that the Endo bundler doesn't understand `.ts` syntax and we don't want it to until we have sufficient auditability of the transformation. Moreover we've tried to avoid a build step in order to import a module. (The one exception so far is `@agoric/cosmic-proto` because we codegen the types. Those modules are written in `.ts` syntax and build to `.js` by a build step that creates `dist`, which is the package export.)
 
-A `.d.ts` module allows defining the type in `.ts` syntax, without any risk that it will be included in runtime code. The `.js` is what actually gets imported.
+### Benefits
+
+- A `.d.ts` module allows defining the type in `.ts` syntax, without any risk that it will be included in runtime code. The `.js` is what actually gets imported.
+- Only `.d.ts` files can be used in [triple-slash reference types](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types-)
 
 The are some consequences to this approach.
 
