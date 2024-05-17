@@ -1,6 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types-ambient.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';

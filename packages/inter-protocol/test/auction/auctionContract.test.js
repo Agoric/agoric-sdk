@@ -1,7 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '@agoric/zoe/exported.js';
-
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';

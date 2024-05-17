@@ -1,7 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '@agoric/zoe/exported.js';
-
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 

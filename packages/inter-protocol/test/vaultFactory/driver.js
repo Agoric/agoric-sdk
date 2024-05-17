@@ -1,5 +1,3 @@
-import '@agoric/zoe/exported.js';
-
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';

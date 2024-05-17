@@ -13,9 +13,6 @@ import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { calculateDebtCosts } from './math.js';
 import { prepareVaultKit } from './vaultKit.js';
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/exported.js';
-
 const { quote: q, Fail } = assert;
 
 const trace = makeTracer('Vault', true);

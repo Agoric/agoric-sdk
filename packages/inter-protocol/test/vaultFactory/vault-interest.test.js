@@ -1,5 +1,4 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
