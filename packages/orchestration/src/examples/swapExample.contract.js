@@ -1,5 +1,7 @@
-import { E, Far } from '@endo/far';
-import { M } from '@endo/patterns';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
+import { M, objectMap } from '@endo/patterns';
 import { makeOrchestrationFacade } from '../facade.js';
 import { orcUtils } from '../utils/orc.js';
 
@@ -62,12 +64,8 @@ export const start = async (zcf, privateArgs) => {
       const tiaAddress = celestiaAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
-      const seatKit = zcf.makeEmptySeatKit();
-      zcf.atomicRearrange(harden([[seat, seatKit.zcfSeat, give]]));
-      seat.exit();
-      await E(seatKit.userSeat).tryExit();
-      const payment = await E(seatKit.userSeat).getPayout('Stable');
-      await localAccount.deposit(payment);
+      const payments = await withdrawFromSeat(zcf, seat, give);
+      await deeplyFulfilled(objectMap(payments, localAccount.deposit));
 
       // build swap instructions with orcUtils library
       const transferMsg = orcUtils.makeOsmosisSwap({
