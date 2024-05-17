@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "maxNodeModuleJsDepth": 2,
+    "maxNodeModuleJsDepth": 1,
   },
   "include": [
     "contractFacet.js",
