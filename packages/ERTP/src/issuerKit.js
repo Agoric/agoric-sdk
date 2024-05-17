@@ -122,12 +122,9 @@ export const upgradeIssuerKit = (
   ) {
     Fail`Cannot (yet?) upgrade from 'noRecoverySets' to 'hasRecoverySets'`;
   }
-  if (
-    oldRecoverySetsState === 'hasRecoverySets' &&
-    recoverySetsOption === 'noRecoverySets'
-  ) {
-    Fail`Cannot (yet?) upgrade from 'hasRecoverySets' to 'noRecoverySets'`;
-  }
+  // if the existing state was 'hasRecoverySets' and recoverySetsOption is
+  // 'noRecoverySets', then we'll leave the old recoverySet in place, but not
+  // add to it.
   const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
   return setupIssuerKit(
     issuerRecord,
