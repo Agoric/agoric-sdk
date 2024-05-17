@@ -11,7 +11,7 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 const contractFile = `${dirname}/../../src/examples/swapExample.contract.js`;
 
 test('start', async t => {
-  const usdc = withAmountUtils(makeIssuerKit('IST'));
+  const stable = withAmountUtils(makeIssuerKit('IST'));
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation = await bundleAndInstall(contractFile);
 
@@ -24,7 +24,7 @@ test('start', async t => {
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer },
+    { Stable: stable.issuer },
     {},
     privateArgs,
   );
@@ -36,11 +36,11 @@ test('start', async t => {
     'Swap for TIA and stake',
   );
 
-  const ten = usdc.units(10);
+  const ten = stable.units(10);
   const userSeat = await E(zoe).offer(
     inv,
-    harden({ give: { USDC: ten } }),
-    harden({ USDC: usdc.mint.mintPayment(ten) }),
+    { give: { Stable: ten } },
+    { Stable: stable.mint.mintPayment(ten) },
   );
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);

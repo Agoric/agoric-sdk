@@ -1,5 +1,3 @@
-import { Fail } from '@agoric/assert';
-import { AmountMath, AmountShape } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeOrchestrationFacade } from '../facade.js';
@@ -13,6 +11,15 @@ import { orcUtils } from '../utils/orc.js';
  * @import {Zone} from '@agoric/zone';
  */
 
+// XXX copied from inter-protocol
+// TODO move to new `@agoric/contracts` package when we have it
+/**
+ * @param {Brand} brand must be a 'nat' brand, not checked
+ * @param {NatValue} [min]
+ */
+export const makeNatAmountShape = (brand, min) =>
+  harden({ brand, value: min ? M.gte(min) : M.nat() });
+
 /**
  * @param {ZCF} zcf
  * @param {{
@@ -23,6 +30,8 @@ import { orcUtils } from '../utils/orc.js';
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
+  const { brands } = zcf.getTerms();
+
   const { orchestrationService, storageNode, timerService, zone } = privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
@@ -41,7 +50,6 @@ export const start = async (zcf, privateArgs) => {
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
       const { give } = seat.getProposal();
-      !AmountMath.isEmpty(give.USDC) || Fail`Must provide USDC.`;
 
       const celestia = await orch.getChain('celestia');
       const agoric = await orch.getChain('agoric');
@@ -58,20 +66,20 @@ export const start = async (zcf, privateArgs) => {
       zcf.atomicRearrange(harden([[seat, seatKit.zcfSeat, give]]));
       seat.exit();
       await E(seatKit.userSeat).tryExit();
-      const payment = await E(seatKit.userSeat).getPayout('USDC');
+      const payment = await E(seatKit.userSeat).getPayout('Stable');
       await localAccount.deposit(payment);
 
       // build swap instructions with orcUtils library
       const transferMsg = orcUtils.makeOsmosisSwap({
         destChain: 'celestia',
         destAddress: tiaAddress,
-        amountIn: give.USDC,
+        amountIn: give.Stable,
         brandOut: /** @type {any} */ ('FIXME'),
         slippage: 0.03,
       });
 
       await localAccount
-        .transferSteps(give.USDC, transferMsg)
+        .transferSteps(give.Stable, transferMsg)
         .then(_txResult =>
           celestiaAccount.delegate(offerArgs.validator, offerArgs.staked),
         )
@@ -88,7 +96,7 @@ export const start = async (zcf, privateArgs) => {
       'Swap for TIA and stake',
       undefined,
       harden({
-        give: { USDC: AmountShape },
+        give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
         want: {}, // XXX ChainAccount Ownable?
         exit: M.any(),
       }),
