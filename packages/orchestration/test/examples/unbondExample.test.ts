@@ -1,21 +1,21 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeHeapZone } from '@agoric/zone';
+import { E } from '@endo/far';
+import path from 'path';
 import { makeBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/swapExample.contract.js`;
+const contractFile = `${dirname}/../../src/examples/unbondExample.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/swapExample.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/unbondExample.contract.js').start;
 
 test('start', async t => {
   const issuerKit = makeIssuerKit('IST');
@@ -60,11 +60,11 @@ test('start', async t => {
     privateArgs,
   );
 
-  const inv = E(publicFacet).makeSwapAndStakeInvitation();
+  const inv = E(publicFacet).makeUnbondAndLiquidStakeInvitation();
 
   t.is(
     (await E(zoe).getInvitationDetails(inv)).description,
-    'Swap for TIA and stake',
+    'Unbond and liquid stake',
   );
 
   const ten = stable.units(10);
@@ -72,14 +72,7 @@ test('start', async t => {
     inv,
     { give: { Stable: ten } },
     { Stable: stable.mint.mintPayment(ten) },
-    {
-      staked: ten,
-      validator: {
-        chainId: 'agoric-3',
-        address: 'agoric1valoperfufu',
-        addressEncoding: 'bech32',
-      } as const,
-    },
+    { validator: 'agoric1valopsfufu' },
   );
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
