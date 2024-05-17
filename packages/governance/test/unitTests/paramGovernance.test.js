@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';

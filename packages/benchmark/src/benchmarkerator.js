@@ -7,7 +7,6 @@ import '@endo/init';
 // XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/vats/exported.js';
 import '@agoric/inter-protocol/exported.js';
-import '@agoric/zoe/exported.js';
 import '@agoric/cosmic-swingset/src/launch-chain.js';
 
 import { Fail } from '@agoric/assert';
