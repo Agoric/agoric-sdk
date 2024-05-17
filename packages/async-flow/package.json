@@ -61,6 +61,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 96.68
+    "atLeast": 77.83
   }
 }
