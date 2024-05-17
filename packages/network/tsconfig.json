@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "checkJs": false,
-    "maxNodeModuleJsDepth": 1,
   },
   "include": [
     "*.js",
