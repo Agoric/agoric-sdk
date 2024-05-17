@@ -24,10 +24,12 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 
 export const BASIS_POINTS = 10000n;
 
+/** @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js'; */
+
 /**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<
  *     ReturnType<
  *       typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache
