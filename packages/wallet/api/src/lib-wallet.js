@@ -44,7 +44,6 @@ import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
 
 import '@agoric/store/exported.js';
-import '@agoric/zoe/exported.js';
 
 import './internal-types.js';
 /// <reference path="./types.js" />

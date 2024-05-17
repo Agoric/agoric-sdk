@@ -1,6 +1,3 @@
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/exported.js';
-
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import {

@@ -10,7 +10,6 @@ import {
 import { makeSubscriptionKit } from '@agoric/notifier';
 
 import '@agoric/network/exported.js';
-import '@agoric/zoe/exported.js';
 
 import '../exported.js';
 import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
