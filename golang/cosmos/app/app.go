@@ -918,6 +918,8 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules( "@agoric/builders/scripts/vats/add-auction.js"),
 				// upgrade vaultFactory.
 				vm.CoreProposalStepForModules( "@agoric/builders/scripts/vats/upgradeVaults.js"),
+				// upgrade scaledPriceAuthorities.
+				vm.CoreProposalStepForModules( "@agoric/builders/scripts/vats/upgradeScaledPriceAuthorities.js"),
 			}
 		}
 
