@@ -1,70 +1,91 @@
+// @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { E } from '@endo/far';
-import { M, matches } from '@endo/patterns';
+import { M } from '@endo/patterns';
+import { getInterfaceOf } from '@endo/marshal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { buildRootObject } from '../src/vat-bank.js';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
+
+/**
+ * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
+ * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ */
 
 /** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
 const test = anyTest;
 
+const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
+const provideBaggage = key => {
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.mapStore(`${key} baggage`);
+};
+
+// TODO use testing facilities from #9396
 const makeTestContext = async t => {
-  const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
-  const provideBaggage = key => {
-    const root = fakeVomKit.cm.provideBaggage();
-    const zone = makeDurableZone(root);
-    return zone.mapStore(`${key} baggage`);
+  const makeBridgeManager = async () => {
+    const zone = makeDurableZone(provideBaggage('mockBridgeManager'));
+    /** @type {undefined | ERef<BridgeHandler>} */
+    let bridgeHandler;
+
+    /** @type {ScopedBridgeManager} */
+    const bridgeManager = zone.exo('BridgeManager', undefined, {
+      async fromBridge(obj) {
+        t.is(typeof obj, 'string');
+      },
+      async toBridge(obj) {
+        switch (obj.type) {
+          case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
+            t.log('VLOCALCHAIN_ALLOCATE_ADDRESS', obj);
+            return 'agoricfoo';
+          }
+          default: {
+            t.is(obj, null);
+            return undefined;
+          }
+        }
+      },
+      initHandler(newHandler) {
+        bridgeHandler = newHandler;
+      },
+      setHandler(newHandler) {
+        bridgeHandler = newHandler;
+      },
+    });
+    return { bridgeManager, bridgeHandler };
   };
-  const baggage = provideBaggage('localchainTest');
-  const bankVat = E(buildRootObject)(null, null, baggage);
 
-  const zone = makeDurableZone(baggage);
+  const { bridgeManager } = await makeBridgeManager();
 
-  /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
-  let bankHandler;
+  const makeBankManager = () => {
+    const zone = makeDurableZone(provideBaggage('bank'));
+    return buildBankVatRoot(
+      undefined,
+      undefined,
+      zone.mapStore('bankManager'),
+    ).makeBankManager();
+  };
 
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
-  const fakeBridgeManager = zone.exo('fakeBankBridgeManager', undefined, {
-    async fromBridge(obj) {
-      t.is(typeof obj, 'string');
-    },
-    async toBridge(obj) {
-      let ret;
-      switch (obj.type) {
-        case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
-          ret = 'agoricfoo';
-          break;
-        }
-        default: {
-          t.is(obj, null);
-        }
-      }
-      return ret;
-    },
-    initHandler(newHandler) {
-      bankHandler = newHandler;
-    },
-    setHandler(newHandler) {
-      bankHandler = newHandler;
-    },
-  });
-  const bankManager = await E(bankVat).makeBankManager(fakeBridgeManager);
+  const bankManager = await makeBankManager();
 
-  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
+  /** @param {LocalChainPowers} powers */
+  const makeLocalChain = async powers => {
+    const zone = makeDurableZone(provideBaggage('localchain'));
+    return prepareLocalChainTools(zone.subZone('localchain')).makeLocalChain(
+      powers,
+    );
+  };
 
-  const powers = {
-    system: fakeBridgeManager,
+  const localchain = await makeLocalChain({
+    system: bridgeManager,
     bankManager,
-  };
-  const localchain = makeLocalChain(powers);
+  });
 
   return {
-    baggage,
-    zone,
-    bankHandler,
-    fakeBridgeManager,
-    bankVat,
     bankManager,
     localchain,
   };
@@ -75,11 +96,88 @@ test.beforeEach(t => {
 });
 
 test('localchain - deposit and withdraw', async t => {
-  const { localchain } = await t.context;
+  const issuerKits = ['BLD', 'BEAN'].map(x =>
+    makeIssuerKit(x, AssetKind.NAT, harden({ decimalPlaces: 6 })),
+  );
+  const [bld, bean] = issuerKits.map(withAmountUtils);
 
-  const lca = await E(localchain).makeAccount();
-  t.true(matches(lca, M.remotable('LocalChainAccount')));
+  const boot = async () => {
+    const { bankManager } = await t.context;
+    await t.notThrowsAsync(
+      E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', issuerKits[0]),
+    );
+  };
+  await boot();
 
-  const address = await E(lca).getAddress();
-  t.is(address, 'agoricfoo');
+  const makeContract = async () => {
+    const { localchain } = await t.context;
+    /** @type {LocalChainAccount | undefined} */
+    let contractsLca;
+    const contractsBldPurse = bld.issuer.makeEmptyPurse();
+    // contract starts with 100 BLD in its Purse
+    contractsBldPurse.deposit(bld.mint.mintPayment(bld.make(100_000_000n)));
+
+    return {
+      makeAccount: async () => {
+        const lca = await E(localchain).makeAccount();
+        t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccount');
+
+        const address = await E(lca).getAddress();
+        t.is(address, 'agoricfoo');
+        contractsLca = lca;
+      },
+      deposit: async () => {
+        if (!contractsLca) throw Error('LCA not found.');
+        const fiftyBldAmt = bld.make(50_000_000n);
+        const res = await E(contractsLca).deposit(
+          contractsBldPurse.withdraw(fiftyBldAmt),
+        );
+        t.true(AmountMath.isEqual(res, fiftyBldAmt));
+        const payment2 = contractsBldPurse.withdraw(fiftyBldAmt);
+        await t.throwsAsync(
+          () =>
+            // @ts-expect-error LCA is possibly undefined
+            E(contractsLca).deposit(payment2, {
+              brand: M.remotable('Brand'),
+              value: M.record(),
+            }),
+          {
+            message: /amount(.+) Must be a copyRecord/,
+          },
+        );
+        await E(contractsLca).deposit(payment2, {
+          brand: M.remotable('Brand'),
+          value: M.nat(),
+        });
+      },
+      withdraw: async () => {
+        if (!contractsLca) throw Error('LCA not found.');
+        const oneHundredBldAmt = bld.make(100_000_000n);
+        const oneHundredBeanAmt = bean.make(100_000_000n);
+        const payment = await E(contractsLca).withdraw(oneHundredBldAmt);
+        // @ts-expect-error Argument of type 'Payment' is not assignable to parameter of type 'ERef<Payment<"nat", any>>'.
+        const paymentAmount = await E(bld.issuer).getAmountOf(payment);
+        t.true(AmountMath.isEqual(paymentAmount, oneHundredBldAmt));
+
+        await t.throwsAsync(
+          // @ts-expect-error LCA is possibly undefined
+          () => E(contractsLca).withdraw(oneHundredBldAmt),
+          {
+            message: /Withdrawal (.+) failed (.+) purse only contained/,
+          },
+        );
+
+        // @ts-expect-error LCA is possibly undefined
+        await t.throwsAsync(() => E(contractsLca).withdraw(oneHundredBeanAmt), {
+          message: /not found in collection "brandToAssetRecord"/,
+        });
+      },
+    };
+  };
+
+  const anOrchestrationContract = await makeContract();
+  await anOrchestrationContract.makeAccount();
+
+  await anOrchestrationContract.deposit();
+  await anOrchestrationContract.withdraw();
 });

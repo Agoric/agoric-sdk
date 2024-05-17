@@ -1,16 +1,15 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { AmountShape } from '@agoric/ertp';
+import { AmountShape, PaymentShape } from '@agoric/ertp';
 
 const { Fail } = assert;
 
 /**
+ * @import {TypedJson, ResponseTo} from '@agoric/cosmic-proto';
  * @import {BankManager, Bank} from './vat-bank.js';
  * @import {ScopedBridgeManager} from './types.js';
  */
-
-/** @import {TypedJson, ResponseTo} from '@agoric/cosmic-proto'; */
 
 /**
  * @typedef {{
@@ -28,9 +27,8 @@ const { Fail } = assert;
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
-  deposit: M.callWhen(M.remotable('Payment'))
-    .optional(M.pattern())
-    .returns(AmountShape),
+  deposit: M.callWhen(PaymentShape).optional(M.pattern()).returns(AmountShape),
+  withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
@@ -54,14 +52,28 @@ const prepareLocalChainAccount = zone =>
        * This is safe, since even if the payment lies about its brand, ERTP will
        * reject spoofed payment objects when depositing into a purse.
        *
-       * @param {Payment} payment
+       * @param {Payment<'nat'>} payment
+       * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
+       *   does not match the provided Pattern
+       * @returns {Promise<Amount>}
        */
-      async deposit(payment) {
+      async deposit(payment, optAmountShape) {
         const { bank } = this.state;
 
         const allegedBrand = await E(payment).getAllegedBrand();
         const purse = E(bank).getPurse(allegedBrand);
-        return E(purse).deposit(payment);
+        return E(purse).deposit(payment, optAmountShape);
+      },
+      /**
+       * Withdraw a payment from the account's bank purse of the amount's brand.
+       *
+       * @param {Amount<'nat'>} amount
+       * @returns {Promise<Payment>} payment
+       */
+      async withdraw(amount) {
+        const { bank } = this.state;
+        const purse = E(bank).getPurse(amount.brand);
+        return E(purse).withdraw(amount);
       },
       /**
        * Execute a batch of transactions and return the responses. Use
