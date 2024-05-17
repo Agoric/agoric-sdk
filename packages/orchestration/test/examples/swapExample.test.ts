@@ -4,22 +4,50 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { withAmountUtils } from '../supports.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeHeapZone } from '@agoric/zone';
+import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractFile = `${dirname}/../../src/examples/swapExample.contract.js`;
 
 test('start', async t => {
-  const stable = withAmountUtils(makeIssuerKit('IST'));
+  const issuerKit = makeIssuerKit('IST');
+  const stable = withAmountUtils(issuerKit);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation = await bundleAndInstall(contractFile);
 
+  const zone = makeHeapZone();
+  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
+  const bankManager = await buildBankVatRoot(
+    undefined,
+    undefined,
+    zone.mapStore('bankManager'),
+  ).makeBankManager();
+
+  await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
+
+  const fakeBridgeKit = makeBridge(t);
+
+  const localchain = makeLocalChain({
+    bankManager,
+    system: fakeBridgeKit.bridgeHandler,
+  });
+
+  const storage = makeFakeStorageKit('mockChainStorageRoot', {
+    sequence: false,
+  });
+
   const privateArgs = {
-    orchestrationService: null,
-    storageNode: null,
-    timerService: null,
-    zone: null,
+    localchain,
+    orchestrationService: null as any,
+    storageNode: storage.rootNode,
+    timerService: null as any,
+    zone,
   };
 
   const { publicFacet } = await E(zoe).startInstance(
@@ -41,6 +69,7 @@ test('start', async t => {
     inv,
     { give: { Stable: ten } },
     { Stable: stable.mint.mintPayment(ten) },
+    { validator: 'agoric1valopsfufu' },
   );
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);

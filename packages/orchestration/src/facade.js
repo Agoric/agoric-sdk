@@ -1,8 +1,12 @@
 /** @file Orchestration service */
 
+import { E } from '@endo/far';
+
 /**
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {ERef} from '@endo/far';
  * @import {OrchestrationService} from './service.js';
  * @import {Orchestrator} from './types.js';
  */
@@ -15,9 +19,10 @@ const anyVal = null;
  * @param {{
  *   zone: Zone;
  *   timerService: ERef<TimerService>;
- *   zcf: ERef<ZCF>;
+ *   zcf: ZCF;
  *   storageNode: ERef<StorageNode>;
  *   orchestrationService: ERef<OrchestrationService>;
+ *   localchain: ERef<LocalChain>;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -26,6 +31,7 @@ export const makeOrchestrationFacade = ({
   zcf,
   storageNode,
   orchestrationService,
+  localchain,
 }) => {
   console.log('makeOrchestrationFacade got', {
     zone,
@@ -45,17 +51,22 @@ export const makeOrchestrationFacade = ({
      * @returns {(...args: Args) => Promise<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
-      console.log('orchestrate got', durableName, ctx, fn);
       /** @type {Orchestrator} */
       const orc = {
         getChain: async name => ({
           getChainInfo: async () => anyVal,
           /** @type {any} */
           makeAccount: async () => {
+            await null;
+            console.log('makeAccount got', name);
             if (name === 'agoric') {
+              const account = await E(localchain).makeAccount();
+
               return {
                 deposit(payment) {
                   console.log('deposit got', payment);
+                  // XXX yet again tripped up on remote methods looking local statically
+                  return E(account).deposit(payment);
                 },
                 transferSteps(amount, msg) {
                   console.log('transferSteps got', amount, msg);
@@ -64,6 +75,10 @@ export const makeOrchestrationFacade = ({
               };
             }
             return {
+              delegate(validator, amount) {
+                console.log('delegate got', validator, amount);
+                return Promise.resolve();
+              },
               getAddress() {
                 return 'an address!';
               },

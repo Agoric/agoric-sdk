@@ -1,3 +1,4 @@
+import { StorageNodeShape } from '@agoric/internal';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -8,10 +9,24 @@ import { orcUtils } from '../utils/orc.js';
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
  * @import {Zone} from '@agoric/zone';
  */
+
+/** @type {ContractMeta} */
+export const meta = {
+  privateArgsShape: {
+    localchain: M.any(),
+    orchestrationService: M.any(),
+    storageNode: StorageNodeShape,
+    timerService: M.any(),
+    zone: M.any(),
+  },
+  upgradability: 'canUpgrade',
+};
+harden(meta);
 
 // XXX copied from inter-protocol
 // TODO move to new `@agoric/contracts` package when we have it
@@ -25,6 +40,7 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
+ * localchain: ERef<LocalChain>;
  * orchestrationService: ERef<OrchestrationService>;
  * storageNode: ERef<StorageNode>;
  * timerService: ERef<TimerService>;
@@ -34,12 +50,14 @@ export const makeNatAmountShape = (brand, min) =>
 export const start = async (zcf, privateArgs) => {
   const { brands } = zcf.getTerms();
 
-  const { orchestrationService, storageNode, timerService, zone } = privateArgs;
+  const { localchain, orchestrationService, storageNode, timerService, zone } =
+    privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
     zone,
     timerService,
     zcf,
+    localchain,
     storageNode,
     orchestrationService,
   });

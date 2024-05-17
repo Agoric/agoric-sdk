@@ -7,6 +7,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
  * @import {Zone} from '@agoric/zone';
@@ -15,16 +16,19 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @param {ZCF} zcf
  * @param {{
+ * localchain: ERef<LocalChain>;
  * orchestrationService: ERef<OrchestrationService>;
  * storageNode: ERef<StorageNode>;
  * timerService: ERef<TimerService>;
  * zone: Zone;
  * }} privateArgs
  */
-export const start = async (zcf, privateArgs) => {
-  const { orchestrationService, storageNode, timerService, zone } = privateArgs;
+
+  const { localchain, orchestrationService, storageNode, timerService, zone } =
+    privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
+    localchain,
     zone,
     timerService,
     zcf,
