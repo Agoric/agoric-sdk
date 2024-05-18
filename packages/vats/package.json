@@ -58,8 +58,7 @@
     "src/",
     "scripts/",
     "tools/",
-    "index.*",
-    "exported.*"
+    "index.*"
   ],
   "publishConfig": {
     "access": "public"

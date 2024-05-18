@@ -55,7 +55,6 @@
   "files": [
     "scripts/",
     "src/",
-    "exported.js",
     "NEWS.md"
   ],
   "ava": {
