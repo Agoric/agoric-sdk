@@ -2,9 +2,6 @@ import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/internal/exported.js';
-
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
 const trace = makeTracer('WUTIL', false);
