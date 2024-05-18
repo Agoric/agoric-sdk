@@ -5,6 +5,8 @@
 // XXX also explicit exports because `@agoric/ertp` top level confuses the type and value of `AssetKind`
 export * from './src/types.js';
 
+import '@agoric/notifier/exported.js';
+
 import {
   Amount as _Amount,
   Brand as _Brand,

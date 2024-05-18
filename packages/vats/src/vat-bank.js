@@ -19,8 +19,6 @@ import {
   prepareVirtualPurse,
 } from './virtual-purse.js';
 
-import '@agoric/notifier/exported.js';
-
 /**
  * @import {Guarded} from '@endo/exo')
  * @import {Passable, RemotableObject} from '@endo/pass-style')

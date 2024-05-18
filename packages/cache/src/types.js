@@ -3,7 +3,6 @@
 /// <reference types="@agoric/store/exported.js" />
 
 // XXX package factoring debt
-import '@agoric/notifier/exported.js';
 
 // Ensure this is a module.
 export {};

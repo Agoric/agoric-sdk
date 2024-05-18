@@ -10,7 +10,6 @@ import {
   PaymentShape,
 } from '@agoric/ertp/src/typeGuards.js';
 
-import '@agoric/notifier/exported.js';
 import { getInterfaceGuardPayload } from '@endo/patterns';
 
 const { Fail } = assert;
