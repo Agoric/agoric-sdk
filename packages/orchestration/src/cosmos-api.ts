@@ -5,7 +5,7 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import type { Brand, Payment, Purse } from '@agoric/ertp/exported.js';
+import type { Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type {
   LocalIbcAddress,

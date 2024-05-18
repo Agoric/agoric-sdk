@@ -39,5 +39,5 @@
  */
 
 /**
- * @typedef {Record<Keyword, import('@agoric/ertp/exported.js').AnyAmount>} Allocation
+ * @typedef {Record<Keyword, import('@agoric/ertp/src/types.js').AnyAmount>} Allocation
  */

@@ -638,7 +638,7 @@ const prepareBankManager = (
        * @param {AssetIssuerKit} feeKit
        * @returns {ERef<
        *   import('@endo/far').EOnly<
-       *     import('@agoric/ertp/exported.js').DepositFacet
+       *     import('@agoric/ertp/src/types.js').DepositFacet
        *   >
        * >}
        */

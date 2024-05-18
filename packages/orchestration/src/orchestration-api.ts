@@ -9,7 +9,7 @@ import type {
   Brand,
   NatAmount,
   Payment,
-} from '@agoric/ertp/exported.js';
+} from '@agoric/ertp/src/types.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
 import type { KnownChains } from './types.js';

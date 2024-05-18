@@ -2,9 +2,6 @@
 /** @see {@link /docs/typescript.md} */
 /* eslint-disable -- doesn't understand .d.ts */
 
-// XXX also explicit exports because `@agoric/ertp` top level confuses the type and value of `AssetKind`
-export * from './src/types.js';
-
 import '@agoric/notifier/exported.js';
 
 import {

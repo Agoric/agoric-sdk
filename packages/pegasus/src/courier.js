@@ -7,7 +7,7 @@ import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp/exported.js'
+ * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {Connection} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
  */
