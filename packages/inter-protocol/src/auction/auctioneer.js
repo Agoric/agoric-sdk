@@ -1,6 +1,5 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
-import '@agoric/zoe/src/contracts/exported.js';
 
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
