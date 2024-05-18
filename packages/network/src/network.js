@@ -1,12 +1,13 @@
 // @ts-check
 
+/// <reference types="@agoric/store/exported.js" />
+
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Fail } from '@agoric/assert';
 import { toBytes } from './bytes.js';
 import { Shape } from './shapes.js';
 
-import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
 /**
  * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';

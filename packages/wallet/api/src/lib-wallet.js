@@ -43,10 +43,7 @@ import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
 
-import '@agoric/store/exported.js';
-
 import './internal-types.js';
-/// <reference path="./types.js" />
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};

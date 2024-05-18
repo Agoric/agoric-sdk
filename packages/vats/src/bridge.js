@@ -1,5 +1,4 @@
 import { M } from '@agoric/store';
-import '@agoric/store/exported.js';
 import { E } from '@endo/far';
 
 const { Fail, details: X } = assert;

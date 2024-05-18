@@ -5,4 +5,3 @@ import './src/contracts/exported.js';
 import './src/types-ambient.js';
 import '@agoric/notifier/exported.js';
 import '@agoric/ertp/exported.js';
-import '@agoric/store/exported.js';

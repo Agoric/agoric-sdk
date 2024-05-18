@@ -5,7 +5,6 @@ import { E } from '@endo/far';
 
 import { dataToBase64, base64ToBytes } from '@agoric/network';
 
-import '@agoric/store/exported.js';
 import '@agoric/network/exported.js';
 import {
   localAddrToPortID,

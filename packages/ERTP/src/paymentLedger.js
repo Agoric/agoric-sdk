@@ -1,14 +1,13 @@
 // @jessie-check
 
+/// <reference types="@agoric/store/exported.js" />
+
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
-
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/store/exported.js';
 
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
