@@ -9,8 +9,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
-import '@agoric/network/exported.js';
-
 import '../exported.js';
 import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
 import { ICS20TransferProtocol } from './ics20.js';
