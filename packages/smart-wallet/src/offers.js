@@ -1,6 +1,3 @@
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/src/zoeService/types-ambient.js';
-
 /**
  * @typedef {number | string} OfferId
  */

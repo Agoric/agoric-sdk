@@ -1,7 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '../../src/vaultFactory/types-ambient.js';
-
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';

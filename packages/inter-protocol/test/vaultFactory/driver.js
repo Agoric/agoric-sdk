@@ -23,7 +23,6 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   installPuppetGovernance,
   setupBootstrap,

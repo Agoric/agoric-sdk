@@ -12,7 +12,6 @@ import {
   setupReserve,
   startAuctioneer,
 } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   installPuppetGovernance,
   produceInstallations,

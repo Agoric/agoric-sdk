@@ -28,7 +28,6 @@ import { E } from '@endo/eventual-send';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   metricsTracker,
   reserveInitialState,

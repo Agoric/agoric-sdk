@@ -28,7 +28,6 @@ import {
   SECONDS_PER_WEEK as ONE_WEEK,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   reserveInitialState,
   subscriptionTracker,

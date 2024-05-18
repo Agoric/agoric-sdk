@@ -6,8 +6,6 @@ import { E } from '@endo/eventual-send';
 import { assertTopicPathData, subscriptionKey } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
-import '../../src/vaultFactory/types-ambient.js';
-
 /** @typedef {import('./driver.js').DriverContext & {}} Context */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
