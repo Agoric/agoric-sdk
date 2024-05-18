@@ -7,7 +7,7 @@ Our use of TypeScript has to accomodate both .js development in agoric-sdk (whic
 - `.d.ts` for types modules
 - package entrypoint(s) exports explicit types
 - for packages upon which other packages expect ambient types:
-  - `exported.js` exports the explicit types and ambient re-exports
+  - `exported.js` supplies ambients
 - don't use runtime imports to get types ([issue](https://github.com/Agoric/agoric-sdk/issues/6512))
 
 ## .d.ts modules
