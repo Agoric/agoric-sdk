@@ -14,7 +14,6 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 
-import '@agoric/ertp/exported.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
