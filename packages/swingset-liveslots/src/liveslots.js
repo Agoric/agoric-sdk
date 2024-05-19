@@ -160,10 +160,8 @@ function build(
     const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
     if (type === 'object' && allocatedByVat) {
       if (virtual || durable) {
-        // eslint-disable-next-line no-use-before-define
         vrm.setExportStatus(vref, 'reachable');
       } else {
-        // eslint-disable-next-line no-use-before-define
         const remotable = requiredValForSlot(vref);
         exportedRemotables.add(remotable);
         kernelRecognizableRemotables.add(vref);
@@ -234,7 +232,6 @@ function build(
 
     if (wr && !wr.deref()) {
       // we're in the COLLECTED state, or FINALIZED after a re-introduction
-      // eslint-disable-next-line no-use-before-define
       addToPossiblyDeadSet(baseRef);
       slotToVal.delete(baseRef);
     }
@@ -274,7 +271,6 @@ function build(
         const { virtual, durable, type } = parseVatSlot(baseRef);
         assert(type === 'object', `unprepared to track ${type}`);
         if (virtual || durable) {
-          // eslint-disable-next-line no-use-before-define
           if (vrm.isVirtualObjectReachable(baseRef)) {
             continue; // vdata or export pillar remains
           }
@@ -289,11 +285,9 @@ function build(
       // lost a recognizer recently. TODO recheck this
 
       for (const vref of possiblyRetiredSet) {
-        // eslint-disable-next-line no-use-before-define
         if (!getValForSlot(vref) && !deadSet.has(vref)) {
           // Don't retire things that haven't yet made the transition to dead,
           // i.e., always drop before retiring
-          // eslint-disable-next-line no-use-before-define
           if (!vrm.isVrefRecognizable(vref)) {
             importsToRetire.add(vref);
           }
@@ -309,7 +303,6 @@ function build(
         type === 'object' || Fail`unprepared to track ${type}`;
         if (virtual || durable) {
           // Representative: send nothing, but perform refcount checking
-          // eslint-disable-next-line no-use-before-define
           const [gcAgain, retirees] = vrm.deleteVirtualObject(baseRef);
           if (retirees) {
             retirees.map(retiree => exportsToRetire.add(retiree));
@@ -324,10 +317,9 @@ function build(
           }
         } else {
           // Presence: send dropImport unless reachable by VOM
-          // eslint-disable-next-line no-lonely-if, no-use-before-define
+          // eslint-disable-next-line no-lonely-if
           if (!vrm.isPresenceReachable(baseRef)) {
             importsToDrop.add(baseRef);
-            // eslint-disable-next-line no-use-before-define
             if (!vrm.isVrefRecognizable(baseRef)) {
               // for presences, baseRef === vref
               importsToRetire.add(baseRef);
@@ -367,11 +359,9 @@ function build(
         // Support: o~.[prop](...args) remote method invocation
         lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError;
         }
-        // eslint-disable-next-line no-use-before-define
         return queueMessage(slot, prop, args, returnedP);
       },
       applyFunction(o, args, returnedP) {
@@ -380,7 +370,6 @@ function build(
       get(o, prop) {
         lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError;
         }
@@ -452,7 +441,6 @@ function build(
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
         }
-        // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
       },
       get(p, prop) {
@@ -505,17 +493,14 @@ function build(
   // use a slot from the corresponding allocateX
 
   function allocateExportID() {
-    // eslint-disable-next-line no-use-before-define
     return vrm.allocateNextID('exportID');
   }
 
   function allocateCollectionID() {
-    // eslint-disable-next-line no-use-before-define
     return vrm.allocateNextID('collectionID');
   }
 
   function allocatePromiseID() {
-    // eslint-disable-next-line no-use-before-define
     const promiseID = vrm.allocateNextID('promiseID');
     return makeVatSlot('promise', true, promiseID);
   }
@@ -543,10 +528,8 @@ function build(
       // do a syscall.resolve when it fires. The caller must finish
       // doing their syscall before this turn finishes, to ensure the
       // kernel isn't surprised by a spurious resolution.
-      // eslint-disable-next-line no-use-before-define
       const p = requiredValForSlot(vpid);
       // if (!knownResolutions.has(p)) { // TODO really?
-      // eslint-disable-next-line no-use-before-define
       followForKernel(vpid, p);
       return true;
     }
@@ -558,7 +541,6 @@ function build(
     return makeVatSlot('object', true, exportID);
   }
 
-  // eslint-disable-next-line no-use-before-define
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `liveSlots:${forVatID}`,
     serializeBodyFormat: 'smallcaps',
@@ -571,7 +553,6 @@ function build(
       console.warn('Logging sent error stack', err),
   });
   const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
-  // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
   function getSlotForVal(val) {
@@ -616,7 +597,6 @@ function build(
     allocateExportID,
     getSlotForVal,
     requiredValForSlot,
-    // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
@@ -629,10 +609,8 @@ function build(
     vrm,
     allocateExportID,
     allocateCollectionID,
-    // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     unmeteredConvertSlotToVal,
-    // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
@@ -644,7 +622,6 @@ function build(
     vrm,
     vom,
     collectionManager,
-    // eslint-disable-next-line no-use-before-define
     convertValToSlot,
     convertSlotToVal: unmeteredConvertSlotToVal,
     maybeExportPromise,
@@ -674,7 +651,6 @@ function build(
         slot = allocatePromiseID();
       } else {
         if (disavowedPresences.has(val)) {
-          // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
           throw disavowalError; // cannot reference a disavowed object
         }
@@ -815,7 +791,6 @@ function build(
           const priorResolution = knownResolutions.get(p);
           if (priorResolution && !doneResolutions.has(slot)) {
             const [priorRejected, priorRes] = priorResolution;
-            // eslint-disable-next-line no-use-before-define
             collect(slot, priorRejected, priorRes);
           }
         }
@@ -1101,7 +1076,6 @@ function build(
       }
       // in both cases, we are now the decider, so treat it like an
       // exported promise
-      // eslint-disable-next-line no-use-before-define
       followForKernel(resultVPID, p);
     }
   }
@@ -1377,7 +1351,6 @@ function build(
     possiblyRetiredSet,
     slotToVal,
     valToSlot,
-    // eslint-disable-next-line no-use-before-define
     afterDispatchActions,
   });
 
@@ -1526,7 +1499,6 @@ function build(
     // Now flush all the vatstore changes (deletions and refcounts) we
     // made. dispatch() calls afterDispatchActions() automatically for
     // most methods, but not bringOutYourDead().
-    // eslint-disable-next-line no-use-before-define
     afterDispatchActions();
     // XXX TODO: make this conditional on a config setting
     return getRetentionStats();

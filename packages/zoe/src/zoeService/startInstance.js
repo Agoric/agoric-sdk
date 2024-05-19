@@ -88,7 +88,6 @@ export const makeStartInstance = (
       onRejected: (/** @type {Error} */ reason, instanceAdmin, adminNode) => {
         if (isUpgradeDisconnection(reason)) {
           console.log(`resetting promise watcher after upgrade`, reason);
-          // eslint-disable-next-line no-use-before-define
           watchForAdminNodeDone(adminNode, instanceAdmin);
         } else {
           instanceAdmin.failAllSeats(reason);

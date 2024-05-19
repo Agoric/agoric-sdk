@@ -27,7 +27,6 @@ export function buildRootObject(vatPowers) {
 
   const lookup = async (...path) => {
     // Take a snapshot of the current home.
-    // eslint-disable-next-line no-use-before-define
     const root = replObjects.home;
 
     if (path.length === 1 && Array.isArray(path[0])) {

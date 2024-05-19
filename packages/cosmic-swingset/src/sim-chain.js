@@ -173,7 +173,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
 
       clearTimeout(nextBlockTimeout);
-      // eslint-disable-next-line no-use-before-define
       nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
       // TODO: maybe add latency to the inbound messages.

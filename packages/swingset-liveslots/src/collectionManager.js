@@ -141,56 +141,48 @@ export function makeCollectionManager(
     scalarMapStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateMapStore,
       durable: false,
     },
     scalarWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakMapStore,
       durable: false,
     },
     scalarSetStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateSetStore,
       durable: false,
     },
     scalarWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakSetStore,
       durable: false,
     },
     scalarDurableMapStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateMapStore,
       durable: true,
     },
     scalarDurableWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakMapStore,
       durable: true,
     },
     scalarDurableSetStore: {
       hasWeakKeys: false,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateSetStore,
       durable: true,
     },
     scalarDurableWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
-      // eslint-disable-next-line no-use-before-define
       reanimator: reanimateWeakSetStore,
       durable: true,
     },
@@ -213,7 +205,6 @@ export function makeCollectionManager(
       vrm.registerKind(
         kindID,
         storeKindInfo[kind].reanimator,
-        // eslint-disable-next-line no-use-before-define
         deleteCollection,
         storeKindInfo[kind].durable,
       );
@@ -294,7 +285,6 @@ export function makeCollectionManager(
     }
 
     const encodeRemotable = remotable => {
-      // eslint-disable-next-line no-use-before-define
       const ordinal = getOrdinal(remotable);
       ordinal !== undefined || Fail`no ordinal for ${remotable}`;
       const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);

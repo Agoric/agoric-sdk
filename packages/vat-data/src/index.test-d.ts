@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import { expectType } from 'tsd';
 import type {
   KindFacets,

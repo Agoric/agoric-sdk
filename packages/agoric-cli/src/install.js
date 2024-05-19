@@ -132,7 +132,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         // Ensure we update the package.json before exiting.
         const updatePackageJson = async () => {
           // Don't update on exit anymore.
-          // eslint-disable-next-line no-use-before-define
           process.off('beforeExit', updatePackageJsonOnExit);
           log.info(`updating ${pjson}`);
           await fs.writeFile(

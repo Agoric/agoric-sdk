@@ -127,9 +127,7 @@ const makeDurableZoeKit = ({
         name,
         vatParameters: {
           contractBundleCap,
-          // eslint-disable-next-line no-use-before-define
           zoeService,
-          // eslint-disable-next-line no-use-before-define
           invitationIssuer: invitationIssuerAccess.getInvitationIssuer(),
         },
       }),

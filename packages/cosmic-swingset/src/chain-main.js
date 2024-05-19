@@ -179,7 +179,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
-  // eslint-disable-next-line no-use-before-define
   const nodePort = registerPortHandler(toSwingSet);
 
   // Need to keep the process alive until Go exits.

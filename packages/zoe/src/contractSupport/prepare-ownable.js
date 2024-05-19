@@ -58,7 +58,6 @@ export const prepareOwnable = (
           const { underlying } = this.state;
           const { revocable } = this.facets;
           const customDetails = underlying.getInvitationCustomDetails();
-          // eslint-disable-next-line no-use-before-define
           const transferHandler = makeTransferHandler(underlying);
 
           const invitation = makeInvitation(

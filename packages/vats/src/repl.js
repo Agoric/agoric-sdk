@@ -16,7 +16,6 @@ const UNJSONABLES = new Map([
 // A REPL-specific data dump-to-string.  This specifically is *not* JSON, but its
 // output is unambiguous (even though it cannot be round-tripped).
 export const dump = (value, spaces = 0) =>
-  // eslint-disable-next-line no-use-before-define
   dump0(value, spaces, new WeakSet(), 0);
 
 function dump0(value, spaces, inProgress, depth) {

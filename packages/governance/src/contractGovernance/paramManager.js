@@ -122,7 +122,6 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     });
 
     // names are keywords so they will necessarily be TitleCase
-    // eslint-disable-next-line no-use-before-define
     getters[`get${name}`] = () => getTypedParam(type, name);
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return the updateFns
@@ -294,7 +293,6 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       getVisibleValue,
     });
 
-    // eslint-disable-next-line no-use-before-define
     getters[`get${name}`] = () => getTypedParam(ParamTypes.INVITATION, name);
     // CRUCIAL: here we're creating the update functions that can change the
     // values of the governed contract's parameters. We'll return updateParams

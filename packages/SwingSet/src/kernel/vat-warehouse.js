@@ -389,7 +389,6 @@ export function makeVatWarehouse({
     //   entriesReplayed, // retval of replayTranscript() above
     // );
     ephemeral.vats.set(vatID, result);
-    // eslint-disable-next-line no-use-before-define
     await applyAvailabilityPolicy(vatID);
     return result;
   }
@@ -592,7 +591,6 @@ export function makeVatWarehouse({
     //
     /** @type { KernelDeliveryObject } */
     const kd = harden(['bringOutYourDead']);
-    // eslint-disable-next-line no-use-before-define
     const vd = kernelDeliveryToVatDelivery(vatID, kd);
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     await deliverToVat(vatID, kd, vd, vs);

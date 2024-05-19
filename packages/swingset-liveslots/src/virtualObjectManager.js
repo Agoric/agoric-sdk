@@ -1,5 +1,5 @@
 /* global globalThis */
-/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-returns-type */
 
 import { environmentOptionsListHas } from '@endo/env-options';
 import {

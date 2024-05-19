@@ -1,7 +1,6 @@
 import fs from 'fs';
 import process from 'process';
 
-/* eslint-disable no-use-before-define */
 export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
   const transcriptStore = kernelStorage.transcriptStore;
   let out;

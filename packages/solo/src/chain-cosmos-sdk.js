@@ -696,14 +696,12 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
             .then(txResult => {
               // The result had an error code (not 0 or undefined for success).
               if (txResult.code) {
-                // eslint-disable-next-line no-use-before-define
                 failedSend(
                   assert.error(`Error in tx processing: ${txResult.log}`),
                 );
               }
             })
             .catch(err =>
-              // eslint-disable-next-line no-use-before-define
               failedSend(assert.error(`Error in tx processing: ${err}`)),
             );
 

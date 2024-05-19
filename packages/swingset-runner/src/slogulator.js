@@ -5,8 +5,6 @@ import yargs from 'yargs';
 
 import { Fail } from '@agoric/assert';
 
-/* eslint-disable no-use-before-define */
-
 function usage() {
   console.error('usage message goes here');
 }

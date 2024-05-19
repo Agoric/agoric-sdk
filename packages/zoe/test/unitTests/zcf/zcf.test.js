@@ -201,7 +201,6 @@ test(`zcf.saveIssuer - bad issuer`, async t => {
 test(`zcf.saveIssuer - bad issuer, makeEmptyPurse throws`, async t => {
   const { zcf } = await setupZCFTest();
   const brand = Far('brand', {
-    // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
     getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   });

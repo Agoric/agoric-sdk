@@ -1,6 +1,5 @@
 // @jessie-check
 
-/* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
 import { AmountMath } from './amountMath.js';

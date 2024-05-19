@@ -2,7 +2,6 @@ import { Fail } from '@agoric/assert';
 import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable.js';
 import { parseVatSlot } from '@agoric/swingset-vat/src/lib/parseVatSlots.js';
 
-/* eslint-disable no-use-before-define */
 export function auditRefCounts(store, doDump, printPrefix) {
   const refCounts = new Map();
   const refSites = new Map();

@@ -370,7 +370,6 @@ export async function makeHTTPListener(
           return;
         }
 
-        // eslint-disable-next-line no-use-before-define
         sendJSON({ ...res, meta });
       } catch (error) {
         inboundCommand(

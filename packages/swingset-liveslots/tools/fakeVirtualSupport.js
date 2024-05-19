@@ -232,7 +232,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
         assert.fail('fake liveSlots stuff configured without vrm');
       }
     }
-    // eslint-disable-next-line no-use-before-define
     registerEntry(baseRef, val, facet !== undefined);
     if (!result) {
       result = val;

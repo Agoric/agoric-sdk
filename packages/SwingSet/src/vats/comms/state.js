@@ -150,7 +150,6 @@ export function makeState(syscall) {
       store.set('r.nextID', '1');
       store.set('initialized', 'true');
       if (controller) {
-        // eslint-disable-next-line no-use-before-define
         addMetaObject(controller);
         cdebug(`comms controller is ${controller}`);
       }
@@ -393,7 +392,6 @@ export function makeState(syscall) {
             // the object is unreachable
 
             const { owner, isReachable, isRecognizable } =
-              // eslint-disable-next-line no-use-before-define
               getOwnerAndStatus(lref);
             if (isReachable) {
               // but the exporter doesn't realize it yet, so schedule a
@@ -558,7 +556,6 @@ export function makeState(syscall) {
       isReachable = isReachableByKernel(lref);
       isRecognizable = !!mapToKernel(lref);
     } else {
-      // eslint-disable-next-line no-use-before-define
       const remote = getRemote(owner);
       isReachable = remote.isReachable(lref);
       isRecognizable = !!remote.mapToRemote(lref);
@@ -794,7 +791,6 @@ export function makeState(syscall) {
     insistPromiseIsUnresolved,
     markPromiseAsResolved,
 
-    // eslint-disable-next-line no-use-before-define
     getRemote,
     addRemote,
     getRemoteIDForName,

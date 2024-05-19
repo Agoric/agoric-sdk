@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';

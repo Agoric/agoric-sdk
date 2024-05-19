@@ -111,7 +111,6 @@ test('bad issuer, makeEmptyPurse throws', async t => {
   const { zoe } = setup();
   const installation = await E(zoe).installBundleID('b1-contract');
   const brand = Far('brand', {
-    // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
     getDisplayInfo: () => ({ decimalPlaces: 6, assetKind: AssetKind.NAT }),
   });

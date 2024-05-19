@@ -18,13 +18,13 @@ export const fsStreamReady = stream =>
     }
 
     const onReady = () => {
-      cleanup(); // eslint-disable-line no-use-before-define
+      cleanup();
       resolve();
     };
 
     /** @param {Error} err */
     const onError = err => {
-      cleanup(); // eslint-disable-line no-use-before-define
+      cleanup();
       reject(err);
     };
 

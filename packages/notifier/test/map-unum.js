@@ -23,7 +23,6 @@ export const makeMapLeader = initialEntries => {
 
   const change = delta => {
     if (deltaCount >= m.size) {
-      // eslint-disable-next-line no-use-before-define
       snapshot();
     } else {
       deltaPublication.updateState(delta);

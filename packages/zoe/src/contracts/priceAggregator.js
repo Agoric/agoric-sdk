@@ -153,7 +153,6 @@ const start = async (zcf, privateArgs) => {
       });
       if (!querierPs.length) {
         // Only have push results, so publish them.
-        // eslint-disable-next-line no-use-before-define
         querierPs.push(updateQuote(timestamp));
       }
       await Promise.all(querierPs).catch(console.error);

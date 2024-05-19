@@ -764,7 +764,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
     let idx = 0;
     for (const dataSlot of capdata.slots) {
-      // eslint-disable-next-line no-use-before-define
       incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
       idx += 1;
     }
@@ -787,7 +786,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function cleanupAfterTerminatedVat(vatID) {
     insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
     const vatKeeper = provideVatKeeper(vatID);
     const exportPrefix = `${vatID}.c.o+`;
     const importPrefix = `${vatID}.c.o-`;
@@ -1262,7 +1260,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           if (reachable === 0) {
             const ownerVatID = ownerOfKernelObject(kref);
             if (ownerVatID) {
-              // eslint-disable-next-line no-use-before-define
               const vatKeeper = provideVatKeeper(ownerVatID);
               const isReachable = vatKeeper.getReachableFlag(kref);
               if (isReachable) {

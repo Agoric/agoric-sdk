@@ -588,7 +588,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  // eslint-disable-next-line no-use-before-define
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
@@ -655,7 +654,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         );
       },
       getSchedules() {
-        // eslint-disable-next-line no-use-before-define
         return scheduler.getSchedule();
       },
       getScheduleUpdates() {

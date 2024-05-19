@@ -480,7 +480,6 @@ export async function xsnap(options) {
         if (cleaned) return;
         cleaned = true;
         sourceStream.unpipe(output);
-        // eslint-disable-next-line no-use-before-define
         output.off('data', onData);
         output.end();
       };

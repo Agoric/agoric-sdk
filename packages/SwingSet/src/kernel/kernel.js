@@ -989,7 +989,6 @@ export default function buildKernel(
     } else if (message.type === 'changeVatOptions') {
       // prettier-ignore
       return `changeVatOptions ${message.vatID} options: ${JSON.stringify(message.options)}`;
-      // eslint-disable-next-line no-use-before-define
     } else if (gcMessages.includes(message.type)) {
       // prettier-ignore
       return `${message.type} ${message.vatID} ${message.krefs.map(e=>`@${e}`).join(' ')}`;

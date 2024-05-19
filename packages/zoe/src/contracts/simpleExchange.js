@@ -32,7 +32,6 @@ import {
 const start = zcf => {
   let sellSeats = [];
   let buySeats = [];
-  // eslint-disable-next-line no-use-before-define
   const { notifier, updater } = makeNotifierKit(getBookOrders());
 
   assertIssuerKeywords(zcf, harden(['Asset', 'Price']));

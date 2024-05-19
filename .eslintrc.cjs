@@ -78,6 +78,9 @@ module.exports = {
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
+
+    // Not a risk with our coding style
+    'no-use-before-define': 'off',
   },
   settings: {
     jsdoc: {
@@ -156,8 +159,6 @@ module.exports = {
     {
       files: ['*.d.ts'],
       rules: {
-        // Irrelevant in a typedef
-        'no-use-before-define': 'off',
         // Linter confuses the type declaration with value declaration
         'no-redeclare': 'off',
       },

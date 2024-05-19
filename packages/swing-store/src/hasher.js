@@ -16,7 +16,6 @@ import { createHash } from 'crypto';
 function createSHA256(initial = undefined) {
   const hash = createHash('sha256');
   let done = false;
-  // eslint-disable-next-line no-use-before-define
   const self = harden({ add, finish, sample });
   function add(more) {
     !done || Fail`hash already finished`;

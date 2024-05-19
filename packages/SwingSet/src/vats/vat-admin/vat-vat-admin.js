@@ -84,7 +84,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // getNotifier: ({ state }) => state.notifier, // XXX RESTORE
       getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
-    // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
   );
 
@@ -104,18 +103,15 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // getNotifier: ({ state }) => state.notifier, // will never fire // XXX RESTORE
       getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
-    // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
   );
 
   function finishMeter({ state, self }) {
-    // eslint-disable-next-line no-use-before-define
     meterByID.init(
       state.meterID,
       // harden({ meter: self, updater: state.updater }), // XXX RESTORE
       harden({ meter: self }), // XXX TEMP
     );
-    // eslint-disable-next-line no-use-before-define
     meterIDByMeter.set(self, state.meterID);
   }
 
