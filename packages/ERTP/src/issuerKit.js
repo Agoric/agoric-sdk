@@ -122,9 +122,9 @@ export const upgradeIssuerKit = (
   ) {
     Fail`Cannot (yet?) upgrade from 'noRecoverySets' to 'hasRecoverySets'`;
   }
-  // if the existing state was 'hasRecoverySets' and recoverySetsOption is
-  // 'noRecoverySets', then we'll leave the old recoverySet in place, but not
-  // add to it.
+  // Extant sets are not currently deleted. If the new option is
+  // 'noRecoverySets', they won't be used but extant ones will remain. Future
+  // upgrades may make it possible to delete elements from them.
   const recoverySetsState = recoverySetsOption || oldRecoverySetsState;
   return setupIssuerKit(
     issuerRecord,
