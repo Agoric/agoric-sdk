@@ -18,7 +18,7 @@
 
 /**
  * @typedef {object} PurseActions
- * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: import('@agoric/ertp/exported.js').AmountValue) => Promise<void>} send
+ * @property {(receiverP: ERef<{ receive: (payment: Payment) => void }>, valueToSend: import('@agoric/ertp/src/types.js').AmountValue) => Promise<void>} send
  * @property {(payment: Payment) => Promise<Amount>} receive
  * @property {(payment: Payment, amount?: Amount) => Promise<Amount>} deposit
  */
@@ -85,7 +85,7 @@
  * @property {string} [issuerBoardId]
  *
  * @typedef {object} PaymentActions
- * @property {(purseOrPetname?: (Purse | Petname)) => Promise<import('@agoric/ertp/exported.js').AmountValue>} deposit
+ * @property {(purseOrPetname?: (Purse | Petname)) => Promise<import('@agoric/ertp/src/types.js').AmountValue>} deposit
  * @property {() => Promise<boolean>} refresh
  * @property {() => Promise<boolean>} getAmountOf
  */

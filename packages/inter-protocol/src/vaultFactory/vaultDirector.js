@@ -1,6 +1,5 @@
 /// <reference types="@agoric/governance/exported" />
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
@@ -89,6 +88,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
+ * @param managerParams
  */
 const prepareVaultDirector = (
   baggage,

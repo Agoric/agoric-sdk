@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
@@ -29,7 +28,6 @@ import { E } from '@endo/eventual-send';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   metricsTracker,
   reserveInitialState,

@@ -269,7 +269,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
     /**
      * @param {import('@endo/far').EOnly<
-     *   import('@agoric/ertp/exported.js').DepositFacet
+     *   import('@agoric/ertp/src/types.js').DepositFacet
      * >} depositFacet
      */
     makeDepositFacetDestination: depositFacet => {

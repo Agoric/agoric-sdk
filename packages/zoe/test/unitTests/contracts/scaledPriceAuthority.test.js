@@ -13,8 +13,6 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
-import '../../../src/contracts/exported.js';
-
 // This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext

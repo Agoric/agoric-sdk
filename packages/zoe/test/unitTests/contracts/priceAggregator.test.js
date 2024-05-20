@@ -21,7 +21,6 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
 
-import '../../../src/contracts/exported.js';
 import {
   addRatios,
   makeRatio,

@@ -1,8 +1,6 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/exported.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';

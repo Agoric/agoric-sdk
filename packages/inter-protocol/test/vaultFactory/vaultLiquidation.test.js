@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -29,7 +28,6 @@ import {
   SECONDS_PER_WEEK as ONE_WEEK,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   reserveInitialState,
   subscriptionTracker,

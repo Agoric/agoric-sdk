@@ -5,8 +5,6 @@ import { HandledPromise } from '@endo/eventual-send';
 import { Remotable } from '@endo/marshal';
 import { Far, E } from '@endo/far';
 
-import '@agoric/store/exported.js';
-
 /**
  * @template T
  * @typedef {T | PromiseLike<T>} ERef

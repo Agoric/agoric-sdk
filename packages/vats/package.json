@@ -58,8 +58,7 @@
     "src/",
     "scripts/",
     "tools/",
-    "index.*",
-    "exported.*"
+    "index.*"
   ],
   "publishConfig": {
     "access": "public"
@@ -79,6 +78,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 91.26
+    "atLeast": 91.27
   }
 }

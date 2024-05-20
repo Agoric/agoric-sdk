@@ -3,10 +3,6 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makePegasus } from './pegasus.js';
 
-import '@agoric/zoe/exported.js';
-
-import '../exported.js';
-
 /**
  * @import {Remote} from '@agoric/vow';
  */

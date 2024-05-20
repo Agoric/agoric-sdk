@@ -5,7 +5,6 @@ import { E } from '@endo/eventual-send';
 
 import { makeScalarWeakMapStore } from '@agoric/store';
 
-import '../exported.js';
 import './internal-types.js';
 
 /**

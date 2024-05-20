@@ -55,7 +55,6 @@
   "files": [
     "scripts/",
     "src/",
-    "exported.js",
     "NEWS.md"
   ],
   "ava": {
@@ -72,6 +71,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 90.61
+    "atLeast": 90.6
   }
 }

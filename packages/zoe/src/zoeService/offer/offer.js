@@ -8,8 +8,6 @@ import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
 import { makeInvitationQueryFns } from '../invitationQueries.js';
 
-import '@agoric/ertp/exported.js';
-import '@agoric/store/exported.js';
 import '../internal-types.js';
 
 const { quote: q, Fail } = assert;

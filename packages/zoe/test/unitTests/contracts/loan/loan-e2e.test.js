@@ -2,8 +2,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 
-import '../../../../exported.js';
-
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';

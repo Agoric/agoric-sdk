@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     // XXX to resolve the swingset-liveslots types
-    "maxNodeModuleJsDepth": 1,
     // "strict": true, // disabled for compat with >0 module depth
     // "noImplicitAny": false, // for compat with peer packages using ambient types
   },

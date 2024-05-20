@@ -4,9 +4,6 @@ import { InvitationHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/exported.js';
-
 const { Fail } = assert;
 
 // A safety limit

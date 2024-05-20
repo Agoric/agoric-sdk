@@ -4,8 +4,6 @@ import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'path';
 
-import '../../../../exported.js';
-
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';

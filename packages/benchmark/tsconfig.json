@@ -3,7 +3,6 @@
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "checkJs": true,
-    "maxNodeModuleJsDepth": 2,
   },
   "include": [
     "*.js",

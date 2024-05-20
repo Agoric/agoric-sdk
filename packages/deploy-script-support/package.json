@@ -58,8 +58,7 @@
   },
   "files": [
     "src",
-    "NEWS.md",
-    "exported.js"
+    "NEWS.md"
   ],
   "ava": {
     "files": [

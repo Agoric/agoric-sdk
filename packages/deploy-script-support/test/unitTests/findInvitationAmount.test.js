@@ -3,8 +3,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
-
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('findInvitationAmount', async t => {

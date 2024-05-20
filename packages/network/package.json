@@ -40,17 +40,13 @@
     "c8": "^9.1.0"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./exported.js": "./exported.js"
+    ".": "./src/index.js"
   },
   "files": [
     "CHANGELOG.md",
     "src/",
     "scripts/",
-    "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
+    "tools/"
   ],
   "publishConfig": {
     "access": "public"

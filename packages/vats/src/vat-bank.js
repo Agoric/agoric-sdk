@@ -19,8 +19,6 @@ import {
   prepareVirtualPurse,
 } from './virtual-purse.js';
 
-import '@agoric/notifier/exported.js';
-
 /**
  * @import {Guarded} from '@endo/exo')
  * @import {Passable, RemotableObject} from '@endo/pass-style')
@@ -640,7 +638,7 @@ const prepareBankManager = (
        * @param {AssetIssuerKit} feeKit
        * @returns {ERef<
        *   import('@endo/far').EOnly<
-       *     import('@agoric/ertp/exported.js').DepositFacet
+       *     import('@agoric/ertp/src/types.js').DepositFacet
        *   >
        * >}
        */

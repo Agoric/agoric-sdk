@@ -12,7 +12,6 @@ import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
-import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';

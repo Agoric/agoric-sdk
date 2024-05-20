@@ -12,8 +12,6 @@ import { E } from '@endo/eventual-send';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
-import '../../../src/contracts/exported.js';
-
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe

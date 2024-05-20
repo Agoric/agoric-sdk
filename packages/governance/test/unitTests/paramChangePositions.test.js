@@ -1,5 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import '@agoric/zoe/exported.js';
+
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 

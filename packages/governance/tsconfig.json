@@ -1,8 +1,6 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "maxNodeModuleJsDepth": 2,
-  },
+  "compilerOptions": {},
   "include": [
     // omit exported.js because 1) it need not be included in the typecheck of
     // this package because it's only consumed by other packages and 2)

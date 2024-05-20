@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -36,7 +35,6 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 
-import '../../src/vaultFactory/types-ambient.js';
 import { defaultParamValues } from './vaultFactoryUtils.js';
 
 /**

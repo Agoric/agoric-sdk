@@ -13,7 +13,6 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 
-import '../src/types.js';
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

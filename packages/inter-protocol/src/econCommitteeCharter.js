@@ -1,11 +1,10 @@
 // @jessie-check
 /// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
 import {
   InstallationShape,
   InstanceHandleShape,

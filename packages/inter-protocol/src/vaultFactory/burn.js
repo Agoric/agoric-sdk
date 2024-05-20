@@ -1,7 +1,6 @@
 // @jessie-check
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
 import { E } from '@endo/eventual-send';
 
