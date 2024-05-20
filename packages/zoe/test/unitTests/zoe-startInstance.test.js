@@ -9,8 +9,7 @@ import path from 'path';
 import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 test('bad installation', async t => {
   const { zoe } = setup();

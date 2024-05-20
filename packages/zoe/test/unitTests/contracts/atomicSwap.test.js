@@ -12,8 +12,7 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
 

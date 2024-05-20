@@ -10,8 +10,7 @@ import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const barter = `${dirname}/../../../src/contracts/barterExchange.js`;
 

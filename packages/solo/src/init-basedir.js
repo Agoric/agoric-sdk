@@ -12,8 +12,7 @@ const console = anylogger('ag-solo:init');
 
 const DEFAULT_WALLET = '@agoric/wallet';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
  * @param {string} basedir

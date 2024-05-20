@@ -24,8 +24,7 @@ import '../../../src/contracts/exported.js';
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractPath = `${dirname}/../../../src/contracts/oracle.js`;
 

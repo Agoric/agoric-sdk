@@ -6,8 +6,7 @@ import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const logger = anylogger('slog-sender-pipe');
 

@@ -11,8 +11,7 @@ import bundleSource from '@endo/bundle-source';
 import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();

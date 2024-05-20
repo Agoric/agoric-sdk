@@ -45,10 +45,8 @@ test('DelegateResponse decoding', t => {
   t.like(any, { $typeUrl: '/google.protobuf.Any', typeUrl: '' });
   t.true(any.value instanceof Uint8Array);
 
-  /** @import {MsgDelegateResponseProtoMsg} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js'; */
-  /** @type {MsgDelegateResponseProtoMsg} */
   // @ts-expect-error we can tell this is the type from tye typeUrl
-  const protoMsg = Any.decode(any.value);
+  const protoMsg: MsgDelegateResponseProtoMsg = Any.decode(any.value);
   t.like(protoMsg, {
     $typeUrl: '/google.protobuf.Any',
     typeUrl: '/cosmos.staking.v1beta1.MsgDelegateResponse',
@@ -72,8 +70,9 @@ test('tryDecodeResponse from withdraw', t => {
 
 test('MsgWithdrawDelegatorRewardResponse encoding', t => {
   const { delegations } = scenario1;
-  /** @type {MsgWithdrawDelegatorRewardResponse} */
-  const response = { amount: Object.values(delegations) };
+  const response: MsgWithdrawDelegatorRewardResponse = {
+    amount: Object.values(delegations),
+  };
   const protoMsg = MsgWithdrawDelegatorRewardResponse.toProtoMsg(response);
 
   const typeUrl =

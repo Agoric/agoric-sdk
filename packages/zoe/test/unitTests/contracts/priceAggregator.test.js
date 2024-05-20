@@ -69,8 +69,7 @@ const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
  * @property {IssuerKit} link
  */
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;

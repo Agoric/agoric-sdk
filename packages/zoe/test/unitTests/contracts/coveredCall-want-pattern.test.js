@@ -12,8 +12,7 @@ import { TimeMath } from '@agoric/time';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const coveredCallRoot = `${dirname}/../../../src/contracts/coveredCall.js`;
 const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;

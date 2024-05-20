@@ -47,12 +47,13 @@ import {
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js'
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  */
 
 /**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;

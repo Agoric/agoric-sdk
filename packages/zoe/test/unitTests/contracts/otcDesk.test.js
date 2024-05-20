@@ -11,8 +11,7 @@ import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../../../src/contracts/otcDesk.js`;
 

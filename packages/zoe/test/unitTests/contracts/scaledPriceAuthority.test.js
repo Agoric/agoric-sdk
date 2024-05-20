@@ -28,8 +28,7 @@ import '../../../src/contracts/exported.js';
 
 const test = /** @type {import('ava').TestFn<TestContext>} */ (unknownTest);
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const scaledPricePath = `${dirname}/../../../src/contracts/scaledPriceAuthority.js`;
 

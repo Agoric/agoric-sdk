@@ -14,8 +14,7 @@ import {
 } from '../../zoeTestHelpers.js';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const fundedCallSpread = `${dirname}/../../../src/contracts/callSpread/fundedCallSpread.js`;
 const pricedCallSpread = `${dirname}/../../../src/contracts/callSpread/pricedCallSpread.js`;

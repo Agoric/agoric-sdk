@@ -25,8 +25,7 @@ import { remoteNullMarshaller } from '../swingsetTests/utils.js';
  * @import {SimpleIssue} from '../../src/types.js';
  */
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
