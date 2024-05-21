@@ -40,12 +40,9 @@ test('start', async t => {
     'Unbond and liquid stake',
   );
 
-  const userSeat = await E(zoe).offer(
-    inv,
-    {},
-    {},
-    { validator: 'agoric1valopsfufu' },
-  );
+  const userSeat = await E(zoe).offer(inv, undefined, undefined, {
+    validator: 'agoric1valopsfufu',
+  });
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
 });
