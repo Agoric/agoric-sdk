@@ -119,7 +119,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 			ReadNextArtifact:    artifactProvider.ReadNextArtifact,
 		},
 		keeper.SwingStoreRestoreOptions{
-			ArtifactMode:   keeper.SwingStoreArtifactModeReplay,
+			ArtifactMode:   keeper.SwingStoreArtifactModeOperational,
 			ExportDataMode: keeper.SwingStoreExportDataModeAll,
 		},
 	)
@@ -145,9 +145,8 @@ func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingSto
 		// The export will fail if the export of a historical height was requested
 		snapshotHeight,
 		eventHandler,
-		// The export will fail if the swing-store does not contain all replay artifacts
 		keeper.SwingStoreExportOptions{
-			ArtifactMode:   keeper.SwingStoreArtifactModeReplay,
+			ArtifactMode:   keeper.SwingStoreArtifactModeOperational,
 			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
 		},
 	)
