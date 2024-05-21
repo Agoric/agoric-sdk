@@ -47,7 +47,6 @@ test('start', async t => {
     orchestrationService: null as any,
     storageNode: storage.rootNode,
     timerService: null as any,
-    zone,
   };
 
   const { publicFacet } = await E(zoe).startInstance(

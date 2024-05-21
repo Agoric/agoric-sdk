@@ -1,14 +1,15 @@
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeOrchestrationFacade } from '../facade.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
- * @import {Zone} from '@agoric/zone';
  */
 
 /**
@@ -18,12 +19,12 @@ import { makeOrchestrationFacade } from '../facade.js';
  * orchestrationService: ERef<OrchestrationService>;
  * storageNode: ERef<StorageNode>;
  * timerService: ERef<TimerService>;
- * zone: Zone;
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
   const { localchain, orchestrationService, storageNode, timerService, zone } =
     privateArgs;
+export const start = async (zcf, privateArgs, baggage) => {
 
   const { orchestrate } = makeOrchestrationFacade({
     localchain,
