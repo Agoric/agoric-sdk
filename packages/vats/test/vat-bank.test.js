@@ -27,13 +27,15 @@ test('provideAssetSubscription - MapStore insertion order preserved', async t =>
     );
 
     const forwardMap = zone.mapStore(`${name} forward map`);
-    handleToId.forEach((id, h) => forwardMap.init(h, id));
+    for (const [h, id] of handleToId.entries()) {
+      forwardMap.init(h, id);
+    }
     const forwardMapIds = [...forwardMap.values()];
 
     const reverseMap = zone.mapStore(`${name} reverse map`);
-    [...handleToId.entries()]
-      .reverse()
-      .forEach(([h, id]) => reverseMap.init(h, id));
+    for (const [h, id] of [...handleToId.entries()].reverse()) {
+      reverseMap.init(h, id);
+    }
     const reverseMapIds = [...reverseMap.values()];
 
     t.deepEqual(
