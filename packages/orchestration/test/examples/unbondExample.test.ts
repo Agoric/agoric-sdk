@@ -10,7 +10,10 @@ import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
 import path from 'path';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import {
+  makePromiseSpaceForNameHub,
+  makeWellKnownSpaces,
+} from '@agoric/vats/src/core/utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeFakeLocalchainBridge } from '../supports.js';
@@ -19,6 +22,7 @@ import { CosmosChainInfo } from '../../src/cosmos-api.js';
 import { configStaking, mockAccount } from '../mockAccount.js';
 import type { OrchestrationService } from '../../src/service.js';
 import type { ICQConnection } from '../../src/types.js';
+import { agoricPeerInfo, chainRegistryInfo } from '../chain-info-fixture.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -43,24 +47,15 @@ const mockOrchestrationService = () => {
 };
 
 test('start', async t => {
+  t.log('bootstrap');
   const issuerKit = makeIssuerKit('IST');
   const stable = withAmountUtils(issuerKit);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
 
   const zone = makeHeapZone();
-  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
   const { bankManager } = await makeFakeBankManagerKit();
 
   await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
-
-  const localchainBridge = makeFakeLocalchainBridge(zone);
-
-  const localchain = makeLocalChain({
-    bankManager,
-    system: localchainBridge,
-  });
 
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
     sequence: false,
@@ -69,59 +64,55 @@ test('start', async t => {
   const board = makeFakeBoard();
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
-  const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log, [
-    CHAIN_KEY,
-  ]);
+  const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log);
 
-  const celestiaInfo = {
-    chainId: 'celestia-123',
-    ibcConnectionInfo: {
-      id: 'connection-0',
-      client_id: '07-tendermint-0',
-      state: 'OPEN',
-      counterparty: {
-        client_id: '07-tendermint-34',
-        connection_id: 'connection-32',
-        prefix: {
-          key_prefix: 'agoric',
-        },
-      },
-      versions: [{ identifier: 'TODO', features: [] }],
-      delay_period: 100n,
-    },
-    stakingTokens: [{ denom: 'tia' }],
-    allowedMessages: [],
-    allowedQueries: [],
-    ibcHooksEnabled: false,
-    icaEnabled: true,
-    icqEnabled: true,
-    pfmEnabled: true,
+  t.log('orchestration coreEval');
+  const localchainBridge = makeFakeLocalchainBridge(zone);
+  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
+  const localchain = makeLocalChain({
+    bankManager,
+    system: localchainBridge,
+  });
+
+  // see makeWellKnownSpaces
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(CHAIN_KEY);
+  const subSpaceLog = (...args) => t.log(CHAIN_KEY, ...args);
+  makePromiseSpaceForNameHub(nameAdmin, subSpaceLog);
+
+  const info = {
+    ...agoricPeerInfo.osmosis,
+    ...chainRegistryInfo.celestia,
   } as CosmosChainInfo;
+  await nameAdmin.update('celestia', info);
 
-  spaces.chain.produce.celestia.resolve(celestiaInfo); // BLD staker action
+  const orchestrationService = mockOrchestrationService();
+
+  t.log('contract coreEval');
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
 
   const privateArgs = {
     localchain,
-    orchestrationService: mockOrchestrationService(),
-    storageNode: storage.rootNode,
+    orchestrationService,
+    storageNode: E(storage.rootNode).makeChildNode('unbondExample'),
     timerService: null as any,
     board,
     agoricNames,
   };
 
-  const { publicFacet } = await E(zoe).startInstance(
+  const { instance } = await E(zoe).startInstance(
     installation,
     { Stable: stable.issuer },
     {},
     privateArgs,
   );
 
+  t.log('do offer');
+  const publicFacet = await E(zoe).getPublicFacet(instance);
   const inv = E(publicFacet).makeUnbondAndLiquidStakeInvitation();
 
-  t.is(
-    (await E(zoe).getInvitationDetails(inv)).description,
-    'Unbond and liquid stake',
-  );
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.is(amt.description, 'Unbond and liquid stake');
 
   const userSeat = await E(zoe).offer(inv, undefined, undefined, {
     validator: 'agoric1valopsfufu',
