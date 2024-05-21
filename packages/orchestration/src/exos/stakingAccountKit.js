@@ -394,6 +394,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
          */
         async undelegate(delegations) {
           trace('undelegate', delegations);
+          delegations.length > 0 || Fail`undelegate: empty delegations`;
           const { helper } = this.facets;
           const { chainAddress, bondDenom, timer } = this.state;
 
