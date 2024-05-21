@@ -17,7 +17,7 @@ import {
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
@@ -37,10 +37,10 @@ export const maxClockSkew = 10n * 60n;
 /**
  * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
- * @import {Baggage} from '@agoric/swingset-liveslots';
- * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
- * @import { Delegation } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TimerService} from '@agoric/time';
+ * @import {Zone} from '@agoric/zone';
  */
 
 const trace = makeTracer('StakingAccountHolder');
@@ -124,13 +124,12 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
 const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
- * @param {Baggage} baggage
+ * @param {Zone} zone
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
-export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
-  const makeStakingAccountKit = prepareExoClassKit(
-    baggage,
+export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
+  const makeStakingAccountKit = zone.exoClassKit(
     'Staking Account Holder',
     {
       helper: M.interface('helper', {
