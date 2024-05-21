@@ -1,13 +1,15 @@
 /** @file upgrade network / IBC vat at many points in state machine */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { createRequire } from 'module';
-import type { TestFn } from 'ava';
-import type { BridgeHandler } from '@agoric/vats';
 import { BridgeId } from '@agoric/internal';
+import type { BridgeHandler } from '@agoric/vats';
+import { makeFakeIbcBridge } from '@agoric/vats/tools/fake-bridge.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-// import { E } from '@endo/eventual-send';
-import { V as E } from '@agoric/vow/vat.js';
-import { makeBridge } from './ibcBridgeMock.js';
+import type { TestFn } from 'ava';
+import { createRequire } from 'module';
+
+import type { Baggage } from '@agoric/swingset-liveslots';
+import { M, makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const { entries, assign } = Object;
@@ -22,7 +24,18 @@ const asset = {
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const { bridgeHandler, events } = makeBridge(t);
+
+  const baggage = makeScalarBigMapStore('baggage', {
+    keyShape: M.string(),
+    durable: true,
+  }) as Baggage;
+  const zone = makeDurableZone(baggage);
+
+  const bridgeHandler = makeFakeIbcBridge(
+    zone,
+    () => {},
+    (handler, obj) => t.context.EV(handler).toBridge(obj),
+  );
   const bundleDir = 'bundles/vaults';
   const bundleCache = await makeNodeBundleCache(
     bundleDir,

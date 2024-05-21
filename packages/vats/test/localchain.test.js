@@ -1,14 +1,16 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
-import { getInterfaceOf } from '@endo/marshal';
-import { makeDurableZone } from '@agoric/zone/durable.js';
+
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
+import { getInterfaceOf } from '@endo/marshal';
+import { M } from '@endo/patterns';
 import { prepareLocalChainTools } from '../src/localchain.js';
+import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
+import { makeFakeLocalchainBridge } from '../tools/fake-bridge.js';
 
 /**
  * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
@@ -25,41 +27,10 @@ const provideBaggage = key => {
   return zone.mapStore(`${key} baggage`);
 };
 
-// TODO use testing facilities from #9396
-const makeTestContext = async t => {
-  const makeBridgeManager = async () => {
-    const zone = makeDurableZone(provideBaggage('mockBridgeManager'));
-    /** @type {undefined | ERef<BridgeHandler>} */
-    let bridgeHandler;
-
-    /** @type {ScopedBridgeManager<'vlocalchain'>} */
-    const bridgeManager = zone.exo('BridgeManager', undefined, {
-      async fromBridge(obj) {
-        t.is(typeof obj, 'string');
-      },
-      async toBridge(obj) {
-        switch (obj.type) {
-          case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
-            t.log('VLOCALCHAIN_ALLOCATE_ADDRESS', obj);
-            return 'agoricfoo';
-          }
-          default: {
-            t.is(obj, null);
-            return undefined;
-          }
-        }
-      },
-      initHandler(newHandler) {
-        bridgeHandler = newHandler;
-      },
-      setHandler(newHandler) {
-        bridgeHandler = newHandler;
-      },
-    });
-    return { bridgeManager, bridgeHandler };
-  };
-
-  const { bridgeManager } = await makeBridgeManager();
+const makeTestContext = async _t => {
+  const localchainBridge = makeFakeLocalchainBridge(
+    makeDurableZone(provideBaggage('localchain')),
+  );
 
   const makeBankManager = () => {
     const zone = makeDurableZone(provideBaggage('bank'));
@@ -81,7 +52,7 @@ const makeTestContext = async t => {
   };
 
   const localchain = await makeLocalChain({
-    system: bridgeManager,
+    system: localchainBridge,
     bankManager,
   });
 
@@ -123,7 +94,7 @@ test('localchain - deposit and withdraw', async t => {
         t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccount');
 
         const address = await E(lca).getAddress();
-        t.is(address, 'agoricfoo');
+        t.is(address, 'agoric1fakeBridgeAddress');
         contractsLca = lca;
       },
       deposit: async () => {

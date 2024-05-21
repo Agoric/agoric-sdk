@@ -9,7 +9,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeBridge } from '../supports.js';
+import { makeFakeLocalchainBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -34,11 +34,11 @@ test('start', async t => {
 
   await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
 
-  const fakeBridgeKit = makeBridge(t);
+  const localchainBridge = makeFakeLocalchainBridge(zone);
 
   const localchain = makeLocalChain({
     bankManager,
-    system: fakeBridgeKit.bridgeHandler,
+    system: localchainBridge,
   });
 
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
