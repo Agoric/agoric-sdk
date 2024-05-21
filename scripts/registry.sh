@@ -70,16 +70,10 @@ publish() {
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
-    # Convention used in Endo
-    yarn lerna run build:types
-
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
     yarn lerna version --concurrency 1 prerelease --exact \
       --preid=dev --no-push --no-git-tag-version --yes
-
-    # Convention used in Endo
-    yarn lerna run clean:types
 
     # Change any version prefices to an exact match, and merge our versions.
     VERSIONSHASH=$(jq --slurpfile versions <(popd > /dev/null && git cat-file blob "$VERSIONSHASH") \

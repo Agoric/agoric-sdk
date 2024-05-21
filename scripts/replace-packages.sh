@@ -14,8 +14,7 @@ DSTDIR=${2-$PWD/node_modules}
 pushd "$SRCDIR"
 yarn install
 npm run build
-# Endo requires this
-npx lerna run build:types || true
+
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   test "$(jq .private < "$dir/package.json")" != true || continue
