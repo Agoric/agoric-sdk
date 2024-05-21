@@ -1,5 +1,3 @@
-import { Fail } from '@agoric/assert';
-import { AmountMath, AmountShape } from '@agoric/ertp';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeOrchestrationFacade } from '../facade.js';
@@ -7,6 +5,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
  * @import {Zone} from '@agoric/zone';
@@ -15,6 +14,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @param {ZCF} zcf
  * @param {{
+ * localchain: ERef<LocalChain>;
  * orchestrationService: ERef<OrchestrationService>;
  * storageNode: ERef<StorageNode>;
  * timerService: ERef<TimerService>;
@@ -22,9 +22,11 @@ import { makeOrchestrationFacade } from '../facade.js';
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const { orchestrationService, storageNode, timerService, zone } = privateArgs;
+  const { localchain, orchestrationService, storageNode, timerService, zone } =
+    privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
+    localchain,
     zone,
     timerService,
     zcf,
@@ -37,11 +39,8 @@ export const start = async (zcf, privateArgs) => {
     'LSTTia',
     { zcf },
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (/** @type {Orchestrator} */ orch, { zcf }, seat, _offerArgs) => {
+    async (/** @type {Orchestrator} */ orch, { zcf }, _seat, _offerArgs) => {
       console.log('zcf within the membrane', zcf);
-      const { give } = seat.getProposal();
-      !AmountMath.isEmpty(give.USDC.value) || Fail`Must provide USDC.`;
-
       // We would actually alreaady have the account from the orchestrator
       // ??? could these be passed in? It would reduce the size of this handler,
       // keeping it focused on long-running operations.
@@ -70,7 +69,8 @@ export const start = async (zcf, privateArgs) => {
       'Unbond and liquid stake',
       undefined,
       harden({
-        give: { USDC: AmountShape },
+        // Nothing to give; the funds come from undelegating
+        give: {},
         want: {}, // XXX ChainAccount Ownable?
         exit: M.any(),
       }),

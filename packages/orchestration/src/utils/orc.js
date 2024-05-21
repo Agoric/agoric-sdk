@@ -1,4 +1,4 @@
-/** @import {AfterAction, SwapMaxSlippage, TransferMsg} from '../types.js' */
+/** @import {AfterAction, SwapExact, SwapMaxSlippage, TransferMsg} from '../types.js' */
 
 export const orcUtils = {
   /**
