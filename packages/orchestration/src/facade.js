@@ -2,8 +2,9 @@
 
 import { E } from '@endo/far';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { M, mustMatch } from '@endo/patterns';
+import { mustMatch } from '@endo/patterns';
 import { prepareStakingAccountKit } from './exos/stakingAccountKit.js';
+import { CosmosChainInfoShape } from './typeGuards.js';
 
 const { Fail } = assert;
 
@@ -177,38 +178,6 @@ const makeRemoteChainFacade = (
     },
   };
 };
-
-export const CosmosChainInfoShape = M.splitRecord(
-  {
-    chainId: M.string(),
-    ibcConnectionInfo: M.splitRecord({
-      id: M.string(), // TODO: IBCConnectionIDShape?
-      client_id: M.string(),
-      state: M.or('OPEN', 'TRYOPEN', 'INIT', 'CLOSED'),
-      counterparty: {
-        client_id: M.string(),
-        connection_id: M.string(),
-        prefix: {
-          key_prefix: M.string(),
-        },
-      },
-      versions: M.arrayOf({
-        identifier: M.string(),
-        features: M.arrayOf(M.string()),
-      }),
-      delay_period: M.nat(),
-    }),
-    stakingTokens: M.arrayOf({ denom: M.string() }),
-  },
-  {
-    icaEnabled: M.boolean(),
-    icqEnabled: M.boolean(),
-    pfmEnabled: M.boolean(),
-    ibcHooksEnabled: M.boolean(),
-    allowedMessages: M.arrayOf(M.string()),
-    allowedQueries: M.arrayOf(M.string()),
-  },
-);
 
 /**
  *
