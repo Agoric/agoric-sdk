@@ -62,7 +62,7 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 
   manifest.data || Fail`State-sync manifest missing export data`;
 
-  const { artifactMode = manifest.artifactMode || 'replay' } = options;
+  const { artifactMode = manifest.artifactMode || 'operational' } = options;
 
   if (artifactMode === 'none') {
     throw Fail`Cannot import "export data" without at least "operational" artifacts`;
