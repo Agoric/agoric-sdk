@@ -11,6 +11,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import type { IBCConnectionID } from '@agoric/vats';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
@@ -35,12 +36,12 @@ export type CosmosValidatorAddress = ChainAddress & {
 export type CosmosChainInfo = {
   chainId: string;
   ibcConnectionInfo: {
-    id: string; // e.g. connection-0
+    id: IBCConnectionID; // e.g. connection-0
     client_id: string; // '07-tendermint-0'
     state: 'OPEN' | 'TRYOPEN' | 'INIT' | 'CLOSED';
     counterparty: {
       client_id: string;
-      connection_id: string;
+      connection_id: IBCConnectionID;
       prefix: {
         key_prefix: string;
       };
