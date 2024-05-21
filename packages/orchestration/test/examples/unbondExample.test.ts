@@ -30,7 +30,6 @@ test('start', async t => {
       orchestrationService: null as any,
       storageNode: bootstrap.storage.rootNode,
       timerService: bootstrap.timer,
-      zone: bootstrap.rootZone,
     },
   );
 
