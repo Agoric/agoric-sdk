@@ -110,7 +110,7 @@ test.serial('make IBC callbacks before upgrade', async t => {
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const { root: ibc } = await EV(vatStore).get('ibc');
   t.log('E(ibc).makeCallbacks(m1)');
-  const dummyBridgeManager = null as unknown as ScopedBridgeManager;
+  const dummyBridgeManager = null as unknown as ScopedBridgeManager<any>;
   const callbacks = await EV(ibc).makeCallbacks(dummyBridgeManager);
   t.truthy(callbacks);
   t.context.shared.ibcCallbacks = callbacks;

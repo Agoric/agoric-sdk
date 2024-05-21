@@ -32,10 +32,11 @@ export const makeBridge = (
 
   let hndlr;
 
-  const bridgeHandler: ScopedBridgeManager = zone.exo(
+  const bridgeHandler: ScopedBridgeManager<'vlocalchain'> = zone.exo(
     'IBC Bridge Manager',
     undefined,
     {
+      getBridgeId: () => 'vlocalchain',
       toBridge: async obj => {
         const { method, type, ...params } = obj;
         publisher.publish([method, params]);

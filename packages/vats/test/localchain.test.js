@@ -32,7 +32,7 @@ const makeTestContext = async t => {
     /** @type {undefined | ERef<BridgeHandler>} */
     let bridgeHandler;
 
-    /** @type {ScopedBridgeManager} */
+    /** @type {ScopedBridgeManager<'vlocalchain'>} */
     const bridgeManager = zone.exo('BridgeManager', undefined, {
       async fromBridge(obj) {
         t.is(typeof obj, 'string');

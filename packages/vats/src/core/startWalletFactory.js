@@ -70,8 +70,8 @@ const publishRevivableWalletState = async (
  *       >['creatorFacet'];
  *       adminFacet: AdminFacet;
  *     };
- *     walletBridgeManager: import('../types.js').ScopedBridgeManager;
- *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager;
+ *     walletBridgeManager: import('../types.js').ScopedBridgeManager<'wallet'>;
+ *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager<'provisionWallet'>;
  *   }>} powers
  * @param {{
  *   options?: {

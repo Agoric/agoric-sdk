@@ -93,7 +93,7 @@ test('network - ibc', async t => {
   const events = subscribeEach(pinnedHistoryTopic)[Symbol.asyncIterator]();
 
   let hndlr;
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  /** @type {import('../src/types.js').ScopedBridgeManager<'dibc'>} */
   const bridgeHandler = zone.exo('IBC Bridge Manager', undefined, {
     toBridge: async obj => {
       const { method, type, ...params } = obj;

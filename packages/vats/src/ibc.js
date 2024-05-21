@@ -814,7 +814,7 @@ export const prepareCallbacks = zone => {
   return zone.exoClass(
     'callbacks',
     undefined,
-    /** @param {ScopedBridgeManager} dibcBridgeManager */
+    /** @param {ScopedBridgeManager<'dibc'>} dibcBridgeManager */
     dibcBridgeManager => ({ dibcBridgeManager }),
     {
       /**

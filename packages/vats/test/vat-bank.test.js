@@ -61,7 +61,7 @@ test('communication', async t => {
   /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;
 
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  /** @type {import('../src/types.js').ScopedBridgeManager<'bank'>} */
   const bankBridgeMgr = zone.exo('fakeBankBridgeManager', undefined, {
     async fromBridge(obj) {
       t.is(typeof obj, 'string');

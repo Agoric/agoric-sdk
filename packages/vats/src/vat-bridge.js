@@ -20,7 +20,7 @@ export function buildRootObject(vatPowers, _args, baggage) {
   );
 
   /**
-   * @param {ERef<import('./types.js').ScopedBridgeManager>} storageBridgeManagerP
+   * @param {ERef<import('./types.js').ScopedBridgeManager<'storage'>>} storageBridgeManagerP
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */

@@ -659,6 +659,8 @@ export const addBankAssets = async ({
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
 
   const bridgeManager = await bridgeManagerP;
+  /** @type {import('../types.js').ScopedBridgeManager<'bank'> | undefined} */
+  // @ts-expect-error XXX EProxy
   const bankBridgeManager =
     bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(

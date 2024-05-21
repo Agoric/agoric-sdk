@@ -361,6 +361,8 @@ export const makeChainStorage = async ({
     return;
   }
 
+  /** @type {import('../types.js').ScopedBridgeManager<'storage'>} */
+  // @ts-expect-error XXX EProxy
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
   storageBridgeManagerP.resolve(storageBridgeManager);
 
