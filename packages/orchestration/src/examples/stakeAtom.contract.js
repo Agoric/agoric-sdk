@@ -58,7 +58,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   const makeStakingAccountKit = prepareStakingAccountKit(
-    baggage,
+    zone,
     makeRecorderKit,
     zcf,
   );
