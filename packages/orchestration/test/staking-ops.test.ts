@@ -16,6 +16,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import type { AnyJson } from '@agoric/cosmic-proto';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   prepareStakingAccountKit,
   encodeTxResponse,
@@ -178,6 +179,7 @@ const makeScenario = () => {
   const makeRecorderKit = () => harden({}) as any;
 
   const baggage = makeScalarBigMapStore('b1') as Baggage;
+  const zone = makeDurableZone(baggage);
 
   const { delegations, startTime } = configStaking;
 
@@ -194,6 +196,7 @@ const makeScenario = () => {
   });
   return {
     baggage,
+    zone,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode,
@@ -206,8 +209,8 @@ const makeScenario = () => {
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, icqConnection } = s;
-  const make = prepareStakingAccountKit(baggage, makeRecorderKit, zcf);
+  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
+  const make = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
 
   // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
@@ -229,13 +232,9 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
 test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
+  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
   const aBrand = Far('Token') as Brand<'nat'>;
-  const makeAccountKit = prepareStakingAccountKit(
-    baggage,
-    makeRecorderKit,
-    zcf,
-  );
+  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -299,12 +298,8 @@ test(`delegate; redelegate using invitationMakers`, async t => {
 test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
-  const makeAccountKit = prepareStakingAccountKit(
-    baggage,
-    makeRecorderKit,
-    zcf,
-  );
+  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -329,12 +324,8 @@ test(`withdraw rewards using invitationMakers`, async t => {
 test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { baggage, makeRecorderKit, storageNode, zcf, zoe, icqConnection } = s;
-  const makeAccountKit = prepareStakingAccountKit(
-    baggage,
-    makeRecorderKit,
-    zcf,
-  );
+  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
