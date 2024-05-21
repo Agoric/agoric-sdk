@@ -67,13 +67,9 @@ test('start', async t => {
     'Unbond and liquid stake',
   );
 
-  const ten = stable.units(10);
-  const userSeat = await E(zoe).offer(
-    inv,
-    { give: { Stable: ten } },
-    { Stable: stable.mint.mintPayment(ten) },
-    { validator: 'agoric1valopsfufu' },
-  );
+  const userSeat = await E(zoe).offer(inv, undefined, undefined, {
+    validator: 'agoric1valopsfufu',
+  });
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
 });
