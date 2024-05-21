@@ -36,6 +36,7 @@ const checkPriceFeedVatsUpdated = async t => {
     checkForOracle(t, 'stATOM'),
     checkForOracle(t, 'stTIA'),
     checkForOracle(t, 'stOSMO'),
+    checkForOracle(t, 'stkATOM'),
   ]);
 };
 
@@ -51,12 +52,14 @@ const tryPushPrices = async t => {
   await addOraclesForBrand('stATOM', oraclesByBrand);
   await addOraclesForBrand('stTIA', oraclesByBrand);
   await addOraclesForBrand('stOSMO', oraclesByBrand);
+  await addOraclesForBrand('stkATOM', oraclesByBrand);
 
   t.log('pushing new prices');
   await pushPrices(11.2, 'ATOM', oraclesByBrand);
   await pushPrices(11.3, 'stTIA', oraclesByBrand);
   await pushPrices(11.4, 'stATOM', oraclesByBrand);
   await pushPrices(11.5, 'stOSMO', oraclesByBrand);
+  await pushPrices(11.6, 'stkATOM', oraclesByBrand);
 
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
@@ -67,6 +70,8 @@ const tryPushPrices = async t => {
   t.is(stAtomOut, '+11400000');
   const osmoOut = await getPriceQuote('stOSMO');
   t.is(osmoOut, '+11500000');
+  const stkAtomOut = await getPriceQuote('stkATOM');
+  t.is(stkAtomOut, '+11600000');
 };
 
 const createNewBid = async t => {
