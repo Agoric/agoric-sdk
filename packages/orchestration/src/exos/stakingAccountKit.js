@@ -11,6 +11,10 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import {
+  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
@@ -35,7 +39,7 @@ import {
 export const maxClockSkew = 10n * 60n;
 
 /**
- * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, StakingAccountQueries} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -66,6 +70,7 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
+  getDelegations: M.callWhen().returns(M.arrayOf(DelegationShape)),
   delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
   redelegate: M.callWhen(
     ChainAddressShape,
@@ -375,6 +380,28 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
+        },
+
+        /**
+         * @type {StakingAccountQueries['getDelegations']}
+         *
+         * TODO: move queries to a read-only facet?
+         */
+        async getDelegations() {
+          const { chainAddress, icqConnection } = this.state;
+          const [result] = await E(icqConnection).query([
+            toRequestQueryJson(
+              QueryDelegatorDelegationsRequest.toProtoMsg({
+                delegatorAddr: chainAddress.address,
+              }),
+            ),
+          ]);
+          const { delegationResponses, pagination } =
+            QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
+          if (pagination) {
+            console.error('pagination not implemented', pagination);
+          }
+          return delegationResponses.map(d => d.delegation);
         },
 
         withdrawRewards() {

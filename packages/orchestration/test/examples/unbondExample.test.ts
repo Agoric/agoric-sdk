@@ -1,24 +1,27 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, Far } from '@endo/far';
-import path from 'path';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
-import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
+import type { JsonSafe } from '@agoric/cosmic-proto';
+import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
+import { makeNameHubKit } from '@agoric/vats';
 import {
   makePromiseSpaceForNameHub,
   makeWellKnownSpaces,
 } from '@agoric/vats/src/core/utils.js';
-import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { commonSetup, makeFakeLocalchainBridge } from '../supports.js';
-import { CHAIN_KEY } from '../../src/facade.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { encodeBase64 } from '@endo/base64';
+import { E, Far } from '@endo/far';
+import path from 'path';
 import { CosmosChainInfo } from '../../src/cosmos-api.js';
-import { configStaking, mockAccount } from '../mockAccount.js';
+import { CHAIN_KEY } from '../../src/facade.js';
 import type { OrchestrationService } from '../../src/service.js';
 import type { ICQConnection } from '../../src/types.js';
 import { agoricPeerInfo, chainRegistryInfo } from '../chain-info-fixture.js';
+import { configStaking, mockAccount } from '../mockAccount.js';
+import { commonSetup, makeFakeLocalchainBridge } from '../supports.js';
+
+const { values } = Object;
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -27,6 +30,11 @@ type StartFn =
   typeof import('@agoric/orchestration/src/examples/unbondExample.contract.js').start;
 
 const mockOrchestrationService = () => {
+  globalThis.Decimal = {
+    fromAtomics: () => {
+      throw Error('is this thing on?');
+    },
+  };
   const it = Far('MockOrchestrationService', {
     makeAccount(idhost, idController) {
       const addr = 'addrTODO';
@@ -35,7 +43,42 @@ const mockOrchestrationService = () => {
       return account;
     },
     provideICQConnection(idController) {
-      const icqConnection = Far('ICQConnection', {}) as ICQConnection;
+      const icqConnection = Far('ICQConnection', {
+        async query(msgs) {
+          console.log('ICQ query', msgs);
+          if (
+            msgs[0].path !==
+            '/cosmos.staking.v1beta1.Query/DelegatorDelegations'
+          ) {
+            throw assert.error(`not supported: ${msgs[0].path}`);
+          }
+
+          const { delegations } = configStaking;
+          const qddr = QueryDelegatorDelegationsResponse.fromPartial({
+            delegationResponses: values(delegations).map(d => ({
+              delegation: {
+                delegatorAddress: 'addrDelegatorTODO',
+                validatorAddress: 'addrValidatorTODO',
+                shares: '1000000',
+              },
+              balance: d,
+            })),
+          });
+
+          const thing1 =
+            QueryDelegatorDelegationsResponse.encode(qddr).finish();
+          const results = [
+            { key: encodeBase64(thing1) } as JsonSafe<ResponseQuery>,
+          ];
+          return results;
+        },
+        getLocalAddress() {
+          throw assert.error('not yet implemented');
+        },
+        getRemoteAddress() {
+          throw assert.error('not yet implemented');
+        },
+      }) as ICQConnection;
       return icqConnection;
     },
   }) as any as OrchestrationService;
