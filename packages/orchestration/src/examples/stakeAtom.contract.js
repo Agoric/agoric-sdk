@@ -6,6 +6,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
+import { icq } from '@agoric/cosmic-proto';
 import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
 
 const trace = makeTracer('StakeAtom');
@@ -71,6 +72,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const icqConnection = await E(orchestration).provideICQConnection(
       controllerConnectionId,
     );
+
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
     const { holder, invitationMakers } = makeStakingAccountKit(
