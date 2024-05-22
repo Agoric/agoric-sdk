@@ -1,11 +1,13 @@
 /**
  * @file Example contract that uses orchestration
  */
+
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { V as E } from '@agoric/vow/vat.js';
-import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { M } from '@endo/patterns';
 import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
 
 const trace = makeTracer('StakeAtom');
@@ -61,7 +63,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
   );
 
-  async function makeAccount() {
+  async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
       hostConnectionId,
       controllerConnectionId,
@@ -94,19 +96,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     'StakeAtom',
     M.interface('StakeAtomI', {
       makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
-      makeAcountInvitationMaker: M.call().returns(M.promise()),
+      makeAcountInvitationMaker: M.callWhen().returns(InvitationShape),
     }),
     {
       async makeAccount() {
         trace('makeAccount');
-        return makeAccount().then(({ account }) => account);
+        const { account } = await makeAccountKit();
+        return account;
       },
       makeAcountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {
             seat.exit();
-            return makeAccount();
+            return makeAccountKit();
           },
           'wantStakingAccount',
           undefined,

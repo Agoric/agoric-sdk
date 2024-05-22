@@ -1,7 +1,10 @@
 import { Fail } from '@agoric/assert';
 import assert from 'node:assert/strict';
 
-/** @import {ScopedBridgeManager} from '../src/types.js'; */
+/**
+ * @import {MsgDelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+ * @import {ScopedBridgeManager} from '../src/types.js';
+ */
 
 /**
  * @param {import('@agoric/zone').Zone} zone
@@ -50,6 +53,7 @@ export const makeFakeLocalchainBridge = (
   onFromBridge = () => {},
 ) => {
   let hndlr;
+  let lcaExecuteTxSequence = 0;
   return zone.exo('Fake Localchain Bridge Manager', undefined, {
     getBridgeId: () => 'vlocalchain',
     toBridge: async obj => {
@@ -58,7 +62,33 @@ export const makeFakeLocalchainBridge = (
       console.info('toBridge', type, method, params);
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return 'agoric1fakeBridgeAddress';
+          return 'agoric1fakeLCAAddress';
+        case 'VLOCALCHAIN_EXECUTE_TX': {
+          lcaExecuteTxSequence += 1;
+          return obj.messages.map(message => {
+            switch (message['@type']) {
+              // TODO #9402 reference bank to ensure caller has tokens they are transferring
+              case '/ibc.applications.transfer.v1.MsgTransfer': {
+                if (message.token.amount === '504') {
+                  throw Error(
+                    'simulated unexpected MsgTransfer packet timeout',
+                  );
+                }
+                // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
+                // XXX should vlocalchain return a string instead of number for bigint?
+                return {
+                  sequence: lcaExecuteTxSequence,
+                };
+              }
+              case '/cosmos.staking.v1beta1.MsgDelegate': {
+                return /** @type {MsgDelegateResponse} */ {};
+              }
+              // returns one empty object per message unless specified
+              default:
+                return {};
+            }
+          });
+        }
         default:
           Fail`unknown type ${type}`;
       }

@@ -12,6 +12,10 @@ import type {
 } from './codegen/cosmos/staking/v1beta1/tx.js';
 import { RequestQuery } from './codegen/tendermint/abci/types.js';
 import type { Any } from './codegen/google/protobuf/any.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from './codegen/ibc/applications/transfer/v1/tx.js';
 
 /**
  * The result of Any.toJSON(). The type in cosms-types says it returns
@@ -28,6 +32,8 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
   '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
+  '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
+  '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
 };
 
 // Often s/Request$/Response/ but not always
@@ -35,6 +41,7 @@ type ResponseMap = {
   '/cosmos.bank.v1beta1.MsgSend': '/cosmos.bank.v1beta1.MsgSendResponse';
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': '/cosmos.bank.v1beta1.QueryAllBalancesResponse';
   '/cosmos.staking.v1beta1.MsgDelegate': '/cosmos.staking.v1beta1.MsgDelegateResponse';
+  '/ibc.applications.transfer.v1.MsgTransfer': '/ibc.applications.transfer.v1.MsgTransferResponse';
 };
 
 /**

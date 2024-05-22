@@ -84,6 +84,7 @@ export const start = async (zcf, privateArgs) => {
       // deposit funds from user seat to LocalChainAccount
       const payments = await withdrawFromSeat(zcf, seat, give);
       await deeplyFulfilled(objectMap(payments, localAccount.deposit));
+      seat.exit();
 
       // build swap instructions with orcUtils library
       const transferMsg = orcUtils.makeOsmosisSwap({

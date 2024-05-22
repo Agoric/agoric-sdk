@@ -45,7 +45,7 @@ export type DenomAmount = {
   value: bigint; // Nat
 };
 
-/** Amounts can be provided as pure data using denoms or as native Amounts */
+/** Amounts can be provided as pure data using denoms or as ERTP Amounts */
 export type AmountArg = DenomAmount | Amount;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
@@ -145,9 +145,9 @@ export interface OrchestrationAccountI {
   /**
    * Transfer an amount to another account, typically on another chain.
    * The promise settles when the transfer is complete.
-   * @param {AmountArg} amount - the amount to transfer.
-   * @param {ChainAddress} destination - the account to transfer the amount to.
-   * @param {IBCMsgTransferOptions} [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
+   * @param amount - the amount to transfer. Can be provided as pure data using denoms or as ERTP Amounts.
+   * @param destination - the account to transfer the amount to.
+   * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
    * @returns void
    *
    * TODO document the mapping from the address to the destination chain.

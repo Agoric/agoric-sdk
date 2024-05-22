@@ -1,11 +1,30 @@
 /** @file Use-object for the owner of a localchain account */
+import { NonNullish } from '@agoric/assert';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
-import { AmountShape } from '@agoric/ertp';
+import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
+import {
+  AmountArgShape,
+  ChainAddressShape,
+  IBCTransferOptionsShape,
+} from '../typeGuards.js';
+import { makeTimestampHelper } from '../utils/time.js';
+
+/**
+ * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, CosmosChainInfo} from '@agoric/orchestration';
+ * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {TimerService, TimerBrand} from '@agoric/time';
+ * @import {TimestampHelper} from '../utils/time.js';
+ */
+
+// partial until #8879
+/** @typedef {Pick<CosmosChainInfo, 'connections'>} AgoricChainInfo */
 
 const trace = makeTracer('LCAH');
 
@@ -17,8 +36,9 @@ const { Fail } = assert;
 
 /**
  * @typedef {{
- *   topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<LocalChainAccountNotification>;
- *   account: import('@agoric/vats/src/localchain.js').LocalChainAccount | null;
+ *   topicKit: RecorderKit<LocalChainAccountNotification>;
+ *   account: LocalChainAccount | null;
+ *   address: ChainAddress['address'];
  * }} State
  */
 
@@ -27,6 +47,12 @@ const HolderI = M.interface('holder', {
   makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
   makeCloseAccountInvitation: M.call().returns(M.promise()),
   makeTransferAccountInvitation: M.call().returns(M.promise()),
+  deposit: M.callWhen(PaymentShape).returns(AmountShape),
+  withdraw: M.callWhen(AmountShape).returns(PaymentShape),
+  transfer: M.call(AmountArgShape, ChainAddressShape)
+    .optional(IBCTransferOptionsShape)
+    .returns(M.promise()),
+  getAddress: M.call().returns(M.string()),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -35,11 +61,22 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {Baggage} baggage
+ * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
+ * @param {TimerService} timerService
+ * @param {TimerBrand} timerBrand
+ * @param {AgoricChainInfo} agoricChainInfo
  */
-export const prepareLocalChainAccountKit = (baggage, makeRecorderKit, zcf) => {
+export const prepareLocalChainAccountKit = (
+  baggage,
+  makeRecorderKit,
+  zcf,
+  timerService,
+  timerBrand,
+  agoricChainInfo,
+) => {
+  const timestampHelper = makeTimestampHelper(timerService, timerBrand);
   const makeAccountHolderKit = prepareExoClassKit(
     baggage,
     'Account Holder',
@@ -54,16 +91,19 @@ export const prepareLocalChainAccountKit = (baggage, makeRecorderKit, zcf) => {
       }),
     },
     /**
-     * @param {import('@agoric/vats/src/localchain.js').LocalChainAccount} account
-     * @param {StorageNode} storageNode
+     * @param {object} initState
+     * @param {LocalChainAccount} initState.account
+     * @param {ChainAddress['address']} initState.address
+     * @param {StorageNode} initState.storageNode
      * @returns {State}
      */
-    (account, storageNode) => {
+    ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
-      return { account, topicKit };
+      // #9162 use ChainAddress object instead of `address` string
+      return { account, address, topicKit };
     },
     {
       helper: {
@@ -112,8 +152,7 @@ export const prepareLocalChainAccountKit = (baggage, makeRecorderKit, zcf) => {
         async makeDelegateInvitation(validatorAddress, ertpAmount) {
           trace('makeDelegateInvitation', validatorAddress, ertpAmount);
 
-          // FIXME get values from proposal or args
-          // FIXME brand handling and amount scaling
+          // TODO #9211 lookup denom from brand
           const amount = {
             amount: String(ertpAmount.value),
             denom: 'ubld',
@@ -126,7 +165,7 @@ export const prepareLocalChainAccountKit = (baggage, makeRecorderKit, zcf) => {
             trace('lca', lca);
             const delegatorAddress = await E(lca).getAddress();
             trace('delegatorAddress', delegatorAddress);
-            const result = await E(lca).executeTx([
+            const [result] = await E(lca).executeTx([
               typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
                 amount,
                 validatorAddress,
@@ -146,6 +185,65 @@ export const prepareLocalChainAccountKit = (baggage, makeRecorderKit, zcf) => {
          */
         makeTransferAccountInvitation() {
           throw Error('not yet implemented');
+        },
+        /** @type {LocalChainAccount['deposit']} */
+        async deposit(payment, optAmountShape) {
+          return E(this.facets.helper.owned()).deposit(payment, optAmountShape);
+        },
+        /** @type {LocalChainAccount['withdraw']} */
+        async withdraw(amount) {
+          return E(this.facets.helper.owned()).withdraw(amount);
+        },
+        /**
+         * @returns {ChainAddress['address']}
+         */
+        getAddress() {
+          return NonNullish(this.state.address, 'Chain address not available.');
+        },
+        /**
+         * @param {AmountArg} amount an ERTP {@link Amount} or a {@link DenomAmount}
+         * @param {ChainAddress} destination
+         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or timeoutTimestamp are not supplied, a default timeoutTimestamp will be set for 5 minutes in the future
+         * @returns {Promise<void>}
+         */
+        async transfer(amount, destination, opts) {
+          trace('Transferring funds from LCA over IBC');
+          // TODO #9211 lookup denom from brand
+          if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
+
+          // TODO #8879 chainInfo and #9063 well-known chains
+          const { transferChannel } = agoricChainInfo.connections.get(
+            destination.chainId,
+          );
+
+          await null;
+          // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
+          // TODO #9324 what's a reasonable default? currently 5 minutes
+          const timeoutTimestamp =
+            opts?.timeoutTimestamp ??
+            (opts?.timeoutHeight
+              ? 0n
+              : await timestampHelper.getTimeoutTimestampNS());
+
+          const [result] = await E(this.facets.helper.owned()).executeTx([
+            typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
+              sourcePort: transferChannel.portId,
+              sourceChannel: transferChannel.channelId,
+              token: {
+                amount: String(amount.value),
+                denom: amount.denom,
+              },
+              sender: this.state.address,
+              receiver: destination.address,
+              timeoutHeight: opts?.timeoutHeight ?? {
+                revisionHeight: 0n,
+                revisionNumber: 0n,
+              },
+              timeoutTimestamp,
+              memo: opts?.memo ?? '',
+            }),
+          ]);
+          trace('MsgTransfer result', result);
         },
       },
     },

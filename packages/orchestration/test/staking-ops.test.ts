@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';

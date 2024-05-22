@@ -12,7 +12,12 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { IBCChannelID } from '@agoric/vats';
+import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type {
+  Order,
+  State as IBCChannelState,
+} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
 import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
@@ -32,14 +37,14 @@ export type CosmosValidatorAddress = ChainAddress & {
   addressEncoding: 'bech32';
 };
 
-/** Info for an IBC Connection (Chain:Chain relationship, that can contain multiple Channels) */
+/** Represents an IBC Connection between two chains, which can contain multiple Channels. */
 export type IBCConnectionInfo = {
-  id: string; // e.g. connection-0
+  id: IBCConnectionID; // e.g. connection-0
   client_id: string; // '07-tendermint-0'
-  state: 'OPEN' | 'TRYOPEN' | 'INIT' | 'CLOSED';
+  state: IBCConnectionState;
   counterparty: {
     client_id: string;
-    connection_id: string;
+    connection_id: IBCConnectionID;
     prefix: {
       key_prefix: string;
     };
@@ -51,6 +56,9 @@ export type IBCConnectionInfo = {
     channelId: IBCChannelID;
     counterPartyPortId: string;
     counterPartyChannelId: IBCChannelID;
+    ordering: Order;
+    state: IBCChannelState;
+    version: string; // e.eg. 'ics20-1'
   };
 };
 

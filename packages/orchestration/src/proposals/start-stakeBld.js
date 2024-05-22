@@ -9,7 +9,13 @@ const trace = makeTracer('StartStakeBld', true);
  * @param {BootstrapPowers & {installation: {consume: {stakeBld: Installation<import('../../src/examples/stakeBld.contract.js').start>}}}} powers
  */
 export const startStakeBld = async ({
-  consume: { board, chainStorage, localchain, startUpgradable },
+  consume: {
+    board,
+    chainStorage,
+    chainTimerService: chainTimerServiceP,
+    localchain,
+    startUpgradable,
+  },
   installation: {
     consume: { stakeBld },
   },
@@ -28,15 +34,21 @@ export const startStakeBld = async ({
   // NB: committee must only publish what it intended to be public
   const marshaller = await E(board).getPublishingMarshaller();
 
-  // FIXME this isn't detecting missing privateArgs
+  const [timerService, timerBrand] = await Promise.all([
+    chainTimerServiceP,
+    chainTimerServiceP.then(ts => E(ts).getTimerBrand()),
+  ]);
+
   /** @type {StartUpgradableOpts<import('../../src/examples/stakeBld.contract.js').start>} */
   const startOpts = {
     label: 'stakeBld',
     installation: stakeBld,
-    issuerKeywordRecord: harden({ BLD: await stakeIssuer }),
+    issuerKeywordRecord: harden({ In: await stakeIssuer }),
     terms: {},
     privateArgs: {
       localchain: await localchain,
+      timerService,
+      timerBrand,
       storageNode,
       marshaller,
     },
@@ -54,6 +66,7 @@ export const getManifestForStakeBld = ({ restoreRef }, { installKeys }) => {
         consume: {
           board: true,
           chainStorage: true,
+          chainTimerService: true,
           localchain: true,
           startUpgradable: true,
         },
