@@ -85,7 +85,6 @@ const makeRemoteChainFacade = (
     // TODO: any is horked
     /** @returns {Promise<OrchestrationAccount<unknown>>} */
     makeAccount: async () => {
-      debugger;
       console.log('makeAccount on', chainInfo.chainId);
       // TODO: require exactly 1 staking token in the static type?
       chainInfo.stakingTokens.length >= 1 || Fail`no staking tokens`;
