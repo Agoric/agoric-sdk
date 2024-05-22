@@ -9,7 +9,7 @@ import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import { prepareLocalchainAccountKit } from '../exos/localchainAccountKit.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 const trace = makeTracer('StakeBld');
 
@@ -34,7 +34,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     privateArgs.marshaller,
   );
-  const makeLocalchainAccountKit = prepareLocalchainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     baggage,
     makeRecorderKit,
     zcf,
@@ -55,7 +55,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           await E(lcaSeatKit.userSeat).tryExit();
           trace('awaiting payouts');
           const payouts = await E(lcaSeatKit.userSeat).getPayouts();
-          const { holder, invitationMakers } = makeLocalchainAccountKit(
+          const { holder, invitationMakers } = makeLocalChainAccountKit(
             account,
             privateArgs.storageNode,
           );
