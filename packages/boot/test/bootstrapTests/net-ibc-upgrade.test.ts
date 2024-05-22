@@ -31,11 +31,6 @@ export const makeTestContext = async t => {
   }) as Baggage;
   const zone = makeDurableZone(baggage);
 
-  const bridgeHandler = makeFakeIbcBridge(
-    zone,
-    () => {},
-    (handler, obj) => t.context.EV(handler).toBridge(obj),
-  );
   const bundleDir = 'bundles/vaults';
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
@@ -44,9 +39,6 @@ export const makeTestContext = async t => {
   );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
-    bridgeHandlers: {
-      [BridgeId.DIBC]: obj => bridgeHandler.toBridge(obj),
-    },
   });
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
