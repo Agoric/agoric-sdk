@@ -102,8 +102,8 @@ const makeRemoteChainFacade = (
       const icqConnection = await E(orchestrationService).provideICQConnection(
         controllerConnectionId,
       );
-      const addr = await E(newICA).getAddress();
-      const staking = makeStakingAccountKit(addr, baseDenom, {
+      const chainAddr = await E(newICA).getAddress();
+      const staking = makeStakingAccountKit(chainAddr, baseDenom, {
         account: newICA, // TODO: should an ERef work here?
         storageNode: await storageNode, // TODO: child node? ERef OK?
         icqConnection, // TODO: should an ERef work here?
@@ -119,27 +119,22 @@ const makeRemoteChainFacade = (
           console.log('delegate got', validator, amount);
           return E(staking.holder).delegate(validator, amount);
         },
-        deposit(payment) {
-          console.log('deposit got', payment);
-          return Promise.resolve();
+        deposit(_payment) {
+          assert.fail('cannot deposit Payment to remote chain');
         },
         getAddress() {
-          return {
-            chainId: chainInfo.chainId,
-            address: 'an address!',
-            addressEncoding: 'bech32',
-          };
+          return chainAddr;
         },
-        getBalance(_denom) {
-          console.error('getBalance not yet implemented');
-          return Promise.resolve({ denom: 'fixme', value: 0n });
+        getBalance(denom) {
+          if (typeof denom !== 'string')
+            throw assert.error(`getBalance for Brand not yet implemented`);
+          return E(staking.holder).getBalance(denom);
         },
         getBalances() {
           throw new Error('not yet implemented');
         },
         getDelegations() {
-          console.error('getDelegations not yet implemented');
-          return [];
+          return E(staking.holder).getDelegations();
         },
         getRedelegations() {
           throw new Error('not yet implemented');
