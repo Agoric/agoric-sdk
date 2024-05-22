@@ -12,7 +12,7 @@ import type {
 } from '@agoric/ertp/src/types.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
-import type { KnownChains } from './types.js';
+import type { IBCMsgTransferOptions, KnownChains } from './types.js';
 
 /**
  * A denom that designates a path to a token type on some blockchain.
@@ -145,9 +145,9 @@ export interface OrchestrationAccountI {
   /**
    * Transfer an amount to another account, typically on another chain.
    * The promise settles when the transfer is complete.
-   * @param amount - the amount to transfer.
-   * @param destination - the account to transfer the amount to.
-   * @param memo - an optional memo to include with the transfer, which could drive custom PFM behavior
+   * @param {AmountArg} amount - the amount to transfer.
+   * @param {ChainAddress} destination - the account to transfer the amount to.
+   * @param {IBCMsgTransferOptions} [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
    * @returns void
    *
    * TODO document the mapping from the address to the destination chain.
@@ -155,7 +155,7 @@ export interface OrchestrationAccountI {
   transfer: (
     amount: AmountArg,
     destination: ChainAddress,
-    memo?: string,
+    opts?: IBCMsgTransferOptions,
   ) => Promise<void>;
 
   /**

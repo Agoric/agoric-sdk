@@ -11,6 +11,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { IBCChannelID } from '@agoric/vats';
 import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
@@ -207,4 +208,10 @@ export interface IcaAccount {
 
 export type LiquidStakingMethods = {
   liquidStake: (amount: AmountArg) => Promise<void>;
+};
+
+export type IBCMsgTransferOptions = {
+  timeoutHeight?: MsgTransfer['timeoutHeight'];
+  timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
+  memo?: string;
 };
