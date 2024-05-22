@@ -15,6 +15,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { Decimal } from '@cosmjs/math';
 import { makeBridge } from '../supports.js';
 import { CHAIN_KEY } from '../../src/facade.js';
 import { CosmosChainInfo } from '../../src/cosmos-api.js';
@@ -28,6 +29,10 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 const contractFile = `${dirname}/../../src/examples/unbondExample.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/unbondExample.contract.js').start;
+
+test.skip('decimal?', t => {
+  t.deepEqual(Decimal.fromAtomics('1000000', 18), Decimal.one(18));
+});
 
 const mockOrchestrationService = () => {
   const it = Far('MockOrchestrationService', {
