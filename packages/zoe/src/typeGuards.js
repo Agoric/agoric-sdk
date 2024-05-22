@@ -8,6 +8,7 @@ import {
   IssuerKitShape,
   IssuerShape,
   PaymentShape,
+  PurseShape,
 } from '@agoric/ertp';
 import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
@@ -291,6 +292,7 @@ export const ZoeStorageManagerIKit = harden({
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
       M.opt(M.pattern()),
     ),
+    provideLocalPurse: M.call(IssuerShape, BrandShape).returns(PurseShape),
   }),
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
     getAssetKindByBrand: M.call(BrandShape).returns(AssetKindShape),
