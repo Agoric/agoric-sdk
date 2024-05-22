@@ -11,6 +11,8 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import { IBCChannelID } from '@agoric/vats';
+import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
@@ -29,25 +31,34 @@ export type CosmosValidatorAddress = ChainAddress & {
   addressEncoding: 'bech32';
 };
 
+/** Info for an IBC Connection (Chain:Chain relationship, that can contain multiple Channels) */
+export type IBCConnectionInfo = {
+  id: string; // e.g. connection-0
+  client_id: string; // '07-tendermint-0'
+  state: 'OPEN' | 'TRYOPEN' | 'INIT' | 'CLOSED';
+  counterparty: {
+    client_id: string;
+    connection_id: string;
+    prefix: {
+      key_prefix: string;
+    };
+  };
+  versions: { identifier: string; features: string[] }[];
+  delay_period: bigint;
+  transferChannel: {
+    portId: string;
+    channelId: IBCChannelID;
+    counterPartyPortId: string;
+    counterPartyChannelId: IBCChannelID;
+  };
+};
+
 /**
  * Info for a Cosmos-based chain.
  */
 export type CosmosChainInfo = {
   chainId: string;
-  ibcConnectionInfo: {
-    id: string; // e.g. connection-0
-    client_id: string; // '07-tendermint-0'
-    state: 'OPEN' | 'TRYOPEN' | 'INIT' | 'CLOSED';
-    counterparty: {
-      client_id: string;
-      connection_id: string;
-      prefix: {
-        key_prefix: string;
-      };
-    };
-    versions: { identifier: string; features: string[] }[];
-    delay_period: bigint;
-  };
+  connections: MapStore<string, IBCConnectionInfo>; // chainId or wellKnownName
   icaEnabled: boolean;
   icqEnabled: boolean;
   pfmEnabled: boolean;
