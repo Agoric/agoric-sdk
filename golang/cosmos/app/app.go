@@ -593,7 +593,6 @@ func NewAgoricApp(
 	// NewAppModule uses a pointer to the host keeper in case there's a need to
 	// tie a circular knot with IBC middleware before icahostkeeper.NewKeeper
 	// can be called.
-	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
 		app.GetSubspace(icahosttypes.SubModuleName),
@@ -605,6 +604,7 @@ func NewAgoricApp(
 		app.MsgServiceRouter(),
 	)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 
 	ics20TransferModule := ibctransfer.NewAppModule(app.TransferKeeper)
 
@@ -726,10 +726,11 @@ func NewAgoricApp(
 		vbank.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		vibc.ModuleName,
-		paramstypes.ModuleName,
+		// Cosmos-SDK modules appear roughly used by simapp and gaiad.
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
+		// vibc is an Agoric-specific IBC app, so group it here with other IBC apps.ß
+		vibc.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
@@ -744,10 +745,14 @@ func NewAgoricApp(
 		minttypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
+		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		// Putting vbank before SwingSet VM will enable vbank to capture all event
+		// history that was produced all the other modules, and push those balance
+		// changes on the VM's actionQueue.
 		vbank.ModuleName,
-		// SwingSet needs to be last, for it to capture all the pushed actions.
+		// SwingSet VM needs to be last, for it to capture all the pushed actions.
 		swingset.ModuleName,
 		// And then vstorage, to produce SwingSet-induced events.
 		vstorage.ModuleName,
