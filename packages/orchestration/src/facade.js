@@ -40,7 +40,6 @@ const makeLocalChainFacade = localchain => {
       return {
         deposit(payment) {
           console.log('deposit got', payment);
-          // XXX yet again tripped up on remote methods looking local statically
           return E(account).deposit(payment);
         },
         transferSteps(amount, msg) {

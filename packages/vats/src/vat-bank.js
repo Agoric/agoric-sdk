@@ -206,6 +206,10 @@ const prepareBankChannelHandler = zone =>
                 try {
                   updater.update(value, nonce);
                 } catch (e) {
+                  // ??? Is this an invariant that should complain louder?
+
+                  // NB: this failure does not propagate. The update() method is
+                  // responsible for propagating the errow without side-effects.
                   console.error('Error updating balance', update, e);
                 }
               }

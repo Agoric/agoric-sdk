@@ -9,6 +9,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeLocalchainBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -26,11 +27,7 @@ test('start', async t => {
 
   const zone = makeHeapZone();
   const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
-  const bankManager = await buildBankVatRoot(
-    undefined,
-    undefined,
-    zone.mapStore('bankManager'),
-  ).makeBankManager();
+  const { bankManager } = await makeFakeBankManagerKit();
 
   await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
 

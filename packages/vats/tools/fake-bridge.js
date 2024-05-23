@@ -1,6 +1,5 @@
-import { Fail } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeTracer, VBankAccount } from '@agoric/internal';
-import assert from 'node:assert/strict';
 import { E } from '@endo/far';
 import { makeWhen } from '@agoric/vow/src/when.js';
 import { Nat } from '@endo/nat';
@@ -10,7 +9,7 @@ import { Nat } from '@endo/nat';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
  */
-const trace = makeTracer('FakeBridge', false);
+const trace = makeTracer('FakeBridge');
 
 const when = makeWhen();
 
@@ -28,6 +27,7 @@ const INFINITE_AMOUNT = 99999999999n;
  * @param {object} opts
  * @param {Balances} opts.balances initial balances
  * @returns {ScopedBridgeManager<'bank'>}
+ * @see {makeFakeBankManagerKit} and its `pourPayment` for a helper
  */
 export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
   const { balances } = opts;
@@ -102,6 +102,7 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
+      trace('fromBridge', obj);
       return when(E(hndlr).fromBridge(obj));
     },
     initHandler: h => {
@@ -110,7 +111,6 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
     },
     setHandler: h => {
       if (!hndlr) throw Error('must init first');
-      trace('fromBridge', obj);
       hndlr = h;
     },
   });
@@ -151,6 +151,8 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
   });
 };
 
+export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
+
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} [onToBridge]
@@ -168,7 +170,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
       trace('toBridge', type, method, params);
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return 'agoric1fakeLCAAddress';
+          return LOCALCHAIN_DEFAULT_ADDRESS;
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
           return obj.messages.map(message => {

@@ -1,23 +1,26 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { NonNullish } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { getInterfaceOf } from '@endo/marshal';
-import { M } from '@endo/patterns';
 import { prepareLocalChainTools } from '../src/localchain.js';
-import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
-import { makeFakeLocalchainBridge } from '../tools/fake-bridge.js';
+import { makeFakeBankManagerKit } from '../tools/bank-utils.js';
+import {
+  LOCALCHAIN_DEFAULT_ADDRESS,
+  makeFakeLocalchainBridge,
+} from '../tools/fake-bridge.js';
 
 /**
  * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  */
 
-/** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -28,20 +31,20 @@ const provideBaggage = key => {
 };
 
 const makeTestContext = async _t => {
+  const issuerKits = ['BLD', 'BEAN'].map(x =>
+    makeIssuerKit(x, AssetKind.NAT, harden({ decimalPlaces: 6 })),
+  );
+  const [bld, bean] = issuerKits.map(withAmountUtils);
+
   const localchainBridge = makeFakeLocalchainBridge(
     makeDurableZone(provideBaggage('localchain')),
   );
 
-  const makeBankManager = () => {
-    const zone = makeDurableZone(provideBaggage('bank'));
-    return buildBankVatRoot(
-      undefined,
-      undefined,
-      zone.mapStore('bankManager'),
-    ).makeBankManager();
-  };
-
-  const bankManager = await makeBankManager();
+  const { bankManager, pourPayment } = await makeFakeBankManagerKit({
+    balances: {
+      // agoric1fakeBridgeAddress: { ubld: bld.units(100).value },
+    },
+  });
 
   /** @param {LocalChainPowers} powers */
   const makeLocalChain = async powers => {
@@ -55,36 +58,34 @@ const makeTestContext = async _t => {
   });
 
   return {
+    bld,
+    bean,
     bankManager,
+    issuerKits,
     localchain,
+    pourPayment,
   };
 };
 
-test.beforeEach(t => {
-  t.context = makeTestContext(t);
+test.beforeEach(async t => {
+  t.context = await makeTestContext(t);
 });
 
 test('localchain - deposit and withdraw', async t => {
-  const issuerKits = ['BLD', 'BEAN'].map(x =>
-    makeIssuerKit(x, AssetKind.NAT, harden({ decimalPlaces: 6 })),
-  );
-  const [bld, bean] = issuerKits.map(withAmountUtils);
+  const { bld, bean, pourPayment } = t.context;
 
   const boot = async () => {
     const { bankManager } = await t.context;
     await t.notThrowsAsync(
-      E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', issuerKits[0]),
+      E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', bld.issuerKit),
     );
   };
   await boot();
 
   const makeContract = async () => {
-    const { localchain } = await t.context;
+    const { localchain } = t.context;
     /** @type {LocalChainAccount | undefined} */
     let contractsLca;
-    const contractsBldPurse = bld.issuer.makeEmptyPurse();
-    // contract starts with 100 BLD in its Purse
-    contractsBldPurse.deposit(bld.mint.mintPayment(bld.make(100_000_000n)));
 
     return {
       makeAccount: async () => {
@@ -92,54 +93,63 @@ test('localchain - deposit and withdraw', async t => {
         t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccount');
 
         const address = await E(lca).getAddress();
-        t.is(address, 'agoric1fakeLCAAddress');
+        t.is(address, LOCALCHAIN_DEFAULT_ADDRESS);
         contractsLca = lca;
       },
       deposit: async () => {
-        if (!contractsLca) throw Error('LCA not found.');
-        const fiftyBldAmt = bld.make(50_000_000n);
+        assert(contractsLca, 'first makeAccount');
+        t.deepEqual(
+          await E(contractsLca).getBalance(bld.brand),
+          bld.makeEmpty(),
+        );
+
+        const fiftyBldAmt = bld.units(50);
         const res = await E(contractsLca).deposit(
-          contractsBldPurse.withdraw(fiftyBldAmt),
+          await pourPayment(fiftyBldAmt),
         );
         t.true(AmountMath.isEqual(res, fiftyBldAmt));
-        const payment2 = contractsBldPurse.withdraw(fiftyBldAmt);
-        await t.throwsAsync(
-          () =>
-            // @ts-expect-error LCA is possibly undefined
-            E(contractsLca).deposit(payment2, {
-              brand: M.remotable('Brand'),
-              value: M.record(),
-            }),
-          {
-            message: /amount(.+) Must be a copyRecord/,
-          },
+        const payment2 = await pourPayment(fiftyBldAmt);
+        // TODO check optAmountShape after https://github.com/Agoric/agoric-sdk/issues/9407
+        // await t.throwsAsync(
+        //   () =>
+        //     E(NonNullish(contractsLca)).deposit(payment2, {
+        //       brand: bld.brand,
+        //       value: M.record(),
+        //     }),
+        //   {
+        //     message: /amount(.+) Must be a copyRecord/,
+        //   },
+        // );
+        await E(contractsLca).deposit(payment2);
+        t.deepEqual(
+          await E(contractsLca).getBalance(bld.brand),
+          bld.units(100),
         );
-        await E(contractsLca).deposit(payment2, {
-          brand: M.remotable('Brand'),
-          value: M.nat(),
-        });
       },
       withdraw: async () => {
-        if (!contractsLca) throw Error('LCA not found.');
-        const oneHundredBldAmt = bld.make(100_000_000n);
-        const oneHundredBeanAmt = bean.make(100_000_000n);
+        assert(contractsLca, 'first makeAccount');
+        const oneHundredBldAmt = bld.units(100);
+        const oneHundredBeanAmt = bean.units(100);
+        t.deepEqual(
+          await E(contractsLca).getBalance(bld.brand),
+          bld.units(100),
+        );
         const payment = await E(contractsLca).withdraw(oneHundredBldAmt);
-        // @ts-expect-error Argument of type 'Payment' is not assignable to parameter of type 'ERef<Payment<"nat", any>>'.
+        t.deepEqual(await E(contractsLca).getBalance(bld.brand), bld.units(0));
         const paymentAmount = await E(bld.issuer).getAmountOf(payment);
         t.true(AmountMath.isEqual(paymentAmount, oneHundredBldAmt));
 
         await t.throwsAsync(
-          // @ts-expect-error LCA is possibly undefined
-          () => E(contractsLca).withdraw(oneHundredBldAmt),
-          {
-            message: /Withdrawal (.+) failed (.+) purse only contained/,
-          },
+          () => E(NonNullish(contractsLca)).withdraw(oneHundredBldAmt),
+          // fake bank is has different error messages than production
         );
 
-        // @ts-expect-error LCA is possibly undefined
-        await t.throwsAsync(() => E(contractsLca).withdraw(oneHundredBeanAmt), {
-          message: /not found in collection "brandToAssetRecord"/,
-        });
+        await t.throwsAsync(
+          () => E(NonNullish(contractsLca)).withdraw(oneHundredBeanAmt),
+          {
+            message: /not found in collection "brandToAssetRecord"/,
+          },
+        );
       },
     };
   };

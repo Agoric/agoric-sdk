@@ -7,9 +7,9 @@ import path from 'path';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeFakeBankBridge } from '@agoric/vats/tools/fake-bridge.js';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
+import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { makeFakeLocalchainBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -28,11 +28,7 @@ test('start', async t => {
   const zone = makeHeapZone();
   const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
 
-  const bankManager = await buildBankVatRoot(
-    undefined,
-    undefined,
-    zone.mapStore('bankManager'),
-  ).makeBankManager(makeFakeBankBridge(zone));
+  const { bankManager, pourPayment } = await makeFakeBankManagerKit();
 
   await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
 
@@ -70,7 +66,7 @@ test('start', async t => {
   );
 
   const bank = await E(bankManager).getBankForAddress(
-    'agoric1fakeBridgeAddress',
+    LOCALCHAIN_DEFAULT_ADDRESS,
   );
 
   const istPurse = await E(bank).getPurse(issuerKit.brand);
@@ -81,7 +77,7 @@ test('start', async t => {
   const userSeat = await E(zoe).offer(
     inv,
     { give: { Stable: ten } },
-    { Stable: stable.mint.mintPayment(ten) },
+    { Stable: await pourPayment(ten) },
     {
       staked: ten,
       validator: {
