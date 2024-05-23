@@ -21,6 +21,7 @@ import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 import { AmountMath, BrandShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { getCopySetKeys } from '@endo/patterns';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -208,9 +209,7 @@ const makeDurableZoeKit = ({
       await null;
       trace(`${brand} recoverySet has ${recoverySet.payload.length} payments`);
       let count = 0;
-      // recoverySet claims to be a copySet, but it's a record with a payload
-      // field containing an array of payment promises
-      for (const p of recoverySet.payload) {
+      for (const p of getCopySetKeys(recoverySet)) {
         // eslint-disable-next-line @jessie.js/no-nested-await
         const amount = await issuer.getAmountOf(p);
         if (AmountMath.isEmpty(amount, brand)) {
