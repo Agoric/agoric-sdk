@@ -8,7 +8,7 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   floorDivideBy,
   floorMultiplyBy,
@@ -114,7 +114,7 @@ const makeTestContext = async () => {
     mintHolder: await E(zoe).install(mintHolderBundle),
   };
 
-  const board = makeFakeBoard();
+  const board = fakeBoard();
   const marshaller = board.getReadonlyMarshaller();
 
   const chainStorage = makeMockChainStorageRoot();
@@ -206,7 +206,7 @@ async function makePsmDriver(t, customTerms) {
         .makeChildNode('psm')
         .makeChildNode('IST')
         .makeChildNode('AUSD'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: fakeBoard().getReadonlyMarshaller(),
     }),
   );
 

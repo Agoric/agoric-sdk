@@ -7,8 +7,8 @@ import { isPromise } from '@endo/promise-kit';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
-import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
-import { makeFakeCollectionManager } from './fakeCollectionManager.js';
+import { fakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
+import { fakeCollectionManager } from './fakeCollectionManager.js';
 
 const { Fail } = assert;
 
@@ -39,7 +39,7 @@ class FakeWeakRef {
   }
 }
 
-export function makeFakeLiveSlotsStuff(options = {}) {
+export function fakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
     assert(!vrm, 'vrm already configured');
@@ -302,7 +302,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   };
 }
 
-export function makeFakeVirtualReferenceManager(
+export function fakeVirtualReferenceManager(
   fakeStuff,
   relaxDurabilityRules = true,
 ) {
@@ -318,7 +318,7 @@ export function makeFakeVirtualReferenceManager(
   );
 }
 
-export function makeFakeWatchedPromiseManager(
+export function fakeWatchedPromiseManager(
   vrm,
   vom,
   collectionManager,
@@ -346,42 +346,42 @@ export function makeFakeWatchedPromiseManager(
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]
  */
-export function makeFakeVirtualStuff(options = {}) {
+export function fakeVirtualStuff(options = {}) {
   const actualOptions = {
     relaxDurabilityRules: true,
     ...options,
   };
   const { relaxDurabilityRules } = actualOptions;
-  const fakeStuff = makeFakeLiveSlotsStuff(actualOptions);
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  const fakeStuff = fakeLiveSlotsStuff(actualOptions);
+  const vrm = fakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   fakeStuff.setVrm(vrm);
-  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
+  const vom = fakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
-  const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
-  const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
+  const cm = fakeCollectionManager(vrm, fakeStuff, actualOptions);
+  const wpm = fakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
   wpm.preparePromiseWatcherTables();
   return { fakeStuff, vrm, vom, cm, wpm };
 }
 
 export function makeStandaloneFakeVirtualObjectManager(options = {}) {
-  const fakeStuff = makeFakeLiveSlotsStuff(options);
+  const fakeStuff = fakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  const vrm = fakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   fakeStuff.setVrm(vrm);
-  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
+  const vom = fakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
   return vom;
 }
 
 export function makeStandaloneFakeCollectionManager(options = {}) {
-  const fakeStuff = makeFakeLiveSlotsStuff(options);
+  const fakeStuff = fakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
-  const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
+  const vrm = fakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
   fakeStuff.setVrm(vrm);
-  return makeFakeCollectionManager(vrm, fakeStuff, options);
+  return fakeCollectionManager(vrm, fakeStuff, options);
 }
 
 export {
-  makeStandaloneFakeVirtualObjectManager as makeFakeVirtualObjectManager,
-  makeStandaloneFakeCollectionManager as makeFakeCollectionManager,
+  makeStandaloneFakeVirtualObjectManager as fakeVirtualObjectManager,
+  makeStandaloneFakeCollectionManager as fakeCollectionManager,
 };

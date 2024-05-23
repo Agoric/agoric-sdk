@@ -9,7 +9,7 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeRatio } from '../../../src/contractSupport/ratio.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
@@ -33,7 +33,7 @@ const scaledPricePath = `${dirname}/../../../src/contracts/scaledPriceAuthority.
 test.before('setup scaled price authority', async ot => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
-  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { admin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(admin);
 
   // Pack the contracts.

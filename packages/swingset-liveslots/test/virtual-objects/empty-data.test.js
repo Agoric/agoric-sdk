@@ -1,9 +1,9 @@
 import test from 'ava';
 
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 test('non-object initial data message', t => {
-  const vom = makeFakeVirtualObjectManager();
+  const vom = fakeVirtualObjectManager();
   const goodInit = () => ({ value: 0 });
   // 'badInit' is  () =>  { value: 0 }
   //

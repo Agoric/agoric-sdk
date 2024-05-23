@@ -3,7 +3,7 @@ import { E, makeLoopback } from '@endo/captp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
-import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
+import fakeVatAdmin, { fakeVatAdmin } from './fakeVatAdmin.js';
 
 /**
  * @param {VatAdminSvc} [vatAdminSvc]
@@ -39,10 +39,10 @@ export const setUpZoeForTest = async ({
 } = {}) => {
   const { makeFar, makeNear } = makeLoopback('zoeTest');
 
-  /** @type {ReturnType<typeof makeFakeVatAdmin>['vatAdminState'] | undefined} */
+  /** @type {ReturnType<typeof fakeVatAdmin>['vatAdminState'] | undefined} */
   let vatAdminState;
   if (!vatAdminSvc) {
-    ({ admin: vatAdminSvc, vatAdminState } = makeFakeVatAdmin(
+    ({ admin: vatAdminSvc, vatAdminState } = fakeVatAdmin(
       setJig,
       useNearRemote ? makeNear : undefined,
     ));

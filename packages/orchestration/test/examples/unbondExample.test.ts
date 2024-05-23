@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -9,7 +9,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeFakeLocalchainBridge } from '../supports.js';
+import { fakeLocalchainBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -34,14 +34,14 @@ test('start', async t => {
 
   await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
 
-  const localchainBridge = makeFakeLocalchainBridge(zone);
+  const localchainBridge = fakeLocalchainBridge(zone);
 
   const localchain = makeLocalChain({
     bankManager,
     system: localchainBridge,
   });
 
-  const storage = makeFakeStorageKit('mockChainStorageRoot', {
+  const storage = fakeStorageKit('mockChainStorageRoot', {
     sequence: false,
   });
 

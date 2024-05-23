@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import {
   makeNameHubKit,
@@ -13,14 +13,14 @@ import { makeWalletRoot } from '../src/lib-wallet.js';
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
-function makeFakeMyAddressNameAdmin() {
+function fakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();
   return mixinMyAddress(nameAdmin, 'agoric1test1');
 }
 
 const setup = async () => {
   const zoe = makeZoeForTest();
-  const board = makeFakeBoard();
+  const board = fakeBoard();
 
   const pursesStateChangeHandler = _data => {};
   const inboxStateChangeHandler = _data => {};
@@ -28,7 +28,7 @@ const setup = async () => {
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe,
     board,
-    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    myAddressNameAdmin: fakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });

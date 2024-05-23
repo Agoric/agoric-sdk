@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeStoredPublishKit } from '@agoric/notifier';
 import {
   eventLoopIteration,
-  makeFakeMarshaller,
+  fakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
@@ -41,7 +41,7 @@ const FAKE_COUNTER_INSTANCE = makeHandle('Instance');
 
 function makePublisherFromFakes() {
   const storageRoot = makeMockChainStorageRoot();
-  const publishKit = makeStoredPublishKit(storageRoot, makeFakeMarshaller());
+  const publishKit = makeStoredPublishKit(storageRoot, fakeMarshaller());
   return { publisher: publishKit.publisher, storageRoot };
 }
 

@@ -3,8 +3,8 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
 import {
-  makeFakeMarshaller,
-  makeFakeStorage,
+  fakeMarshaller,
+  fakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
 import {
   prepareRecorderKit,
@@ -16,7 +16,7 @@ import {
   multiplyBy,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -29,7 +29,7 @@ const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
 const DAY = SECONDS_PER_HOUR * 24n;
 
-const marshaller = makeFakeMarshaller();
+const marshaller = fakeMarshaller();
 
 /**
  * @param {ZCF} zcf
@@ -71,7 +71,7 @@ export async function start(zcf, privateArgs, baggage) {
     tradeList: undefined,
     timer,
   };
-  const priceAuthority = await makeFakePriceAuthority(options);
+  const priceAuthority = await fakePriceAuthority(options);
   const collateralUnit = await unitAmount(collateralBrand);
   const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
     collateralUnit,
@@ -182,7 +182,7 @@ export async function start(zcf, privateArgs, baggage) {
     managerMock,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
-    makeFakeStorage('test.vaultContractWrapper'),
+    fakeStorage('test.vaultContractWrapper'),
   );
 
   const advanceRecordingPeriod = async () => {
@@ -212,7 +212,7 @@ export async function start(zcf, privateArgs, baggage) {
   }));
 
   async function makeHook(seat) {
-    const vaultKit = await vault.initVaultKit(seat, makeFakeStorage('test'));
+    const vaultKit = await vault.initVaultKit(seat, fakeStorage('test'));
     return {
       vault,
       stableMint,

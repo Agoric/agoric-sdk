@@ -6,7 +6,7 @@ import { initEmpty } from '@agoric/store';
 
 import engineGC from '../engine-gc.js';
 import { makeGcAndFinalize, watchCollected } from '../gc-and-finalize.js';
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 function makeStashKit(name = 'held') {
   const held = Far(name);
@@ -57,7 +57,7 @@ function stashRemotableFour(holderMaker) {
 test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
   const vomOptions = { weak: true };
-  const { vom, cm } = makeFakeVirtualStuff(vomOptions);
+  const { vom, cm } = fakeVirtualStuff(vomOptions);
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('ws');

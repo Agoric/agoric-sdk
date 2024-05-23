@@ -1,9 +1,9 @@
 import test from 'ava';
 
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 test('facets', t => {
-  const vom = makeFakeVirtualObjectManager();
+  const vom = fakeVirtualObjectManager();
   const init = () => ({ value: 0 });
   const behavior = {
     mutable: {

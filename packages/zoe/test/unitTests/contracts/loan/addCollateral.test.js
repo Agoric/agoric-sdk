@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 
 import {
@@ -34,7 +34,7 @@ test('makeAddCollateralInvitation', async t => {
 
   const timer = buildManualTimer(t.log);
 
-  const priceAuthority = await makeFakePriceAuthority({
+  const priceAuthority = await fakePriceAuthority({
     priceList: [],
     timer,
     actualBrandIn: collateralKit.brand,

@@ -6,11 +6,11 @@ import { E, Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { allValues } from '@agoric/internal';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
@@ -38,7 +38,7 @@ const mockBootstrapPowers = async (
   const zone = makeDurableZone(baggage);
   const { produce, consume } = makePromiseSpace();
 
-  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { admin, vatAdminState } = fakeVatAdmin();
   const { zoeService: zoe } = makeZoeKitForTest(admin);
   produce.zoe.resolve(zoe);
 
@@ -56,7 +56,7 @@ const mockBootstrapPowers = async (
   const chainStorage = makeMockChainStorageRoot();
   produce.chainStorage.resolve(chainStorage);
 
-  const board = makeFakeBoard();
+  const board = fakeBoard();
   produce.board.resolve(board);
 
   /** @type {BootstrapPowers} */

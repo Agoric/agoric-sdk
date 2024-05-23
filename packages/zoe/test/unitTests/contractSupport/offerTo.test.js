@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { setup } from '../setupBasicMints.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { offerTo, swapExact } from '../../../src/contractSupport/zoeHelpers.js';
 import { makeOffer } from '../makeOffer.js';
 
@@ -20,7 +20,7 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
   const setJig = jig => {
     instanceToZCF.set(jig.instance, jig.zcf);
   };
-  const fakeVatAdmin = makeFakeVatAdmin(setJig);
+  const fakeVatAdmin = fakeVatAdmin(setJig);
   const zoe = makeZoeForTest(fakeVatAdmin.admin);
 
   // pack the contract

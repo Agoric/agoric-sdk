@@ -13,7 +13,7 @@ import {
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
@@ -70,7 +70,7 @@ export const setupBootstrap = async (t, optTimer) => {
   const timer = optTimer || buildManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
-  produce.board.resolve(makeFakeBoard());
+  produce.board.resolve(fakeBoard());
 
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);
@@ -160,7 +160,7 @@ export const subscriptionKey = subscription => {
       const [space, unique] = storeKey.storeSubkey.split(':');
       assert(
         space === 'fake',
-        'subscriptionKey only works with makeFakeStorageKit',
+        'subscriptionKey only works with fakeStorageKit',
       );
       return unique;
     });

@@ -7,7 +7,7 @@ import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
@@ -17,7 +17,7 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 
 test('zoe - mint payments', async t => {
   t.plan(2);
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const makeAlice = () => {
@@ -90,7 +90,7 @@ test('zoe - mint payments', async t => {
 
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');

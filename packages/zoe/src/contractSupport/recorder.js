@@ -2,8 +2,8 @@ import { Fail } from '@agoric/assert';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import {
-  makeFakeMarshaller,
-  makeFakeStorage,
+  fakeMarshaller,
+  fakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
@@ -252,10 +252,10 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
  */
 export const prepareMockRecorderKitMakers = () => {
   const baggage = makeScalarBigMapStore('mock recorder baggage');
-  const marshaller = makeFakeMarshaller();
+  const marshaller = fakeMarshaller();
   return {
     ...prepareRecorderKitMakers(baggage, marshaller),
-    storageNode: makeFakeStorage('mock recorder storage'),
+    storageNode: fakeStorage('mock recorder storage'),
   };
 };
 

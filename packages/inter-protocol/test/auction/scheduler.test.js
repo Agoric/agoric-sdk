@@ -17,7 +17,7 @@ import { subscriptionTracker } from '../metrics.js';
 import {
   getInvitation,
   makeDefaultParams,
-  makeFakeAuctioneer,
+  fakeAuctioneer,
   makeGovernancePublisherFromFakes,
   setUpInstallations,
 } from './tools.js';
@@ -34,7 +34,7 @@ test('schedule start to finish', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
 
   const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
@@ -265,7 +265,7 @@ test('lowest >= starting', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
   const recorderKit = makeRecorderKit(storageNode);
@@ -313,7 +313,7 @@ test('zero time for auction', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
   const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
@@ -362,7 +362,7 @@ test('discountStep 0', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -408,7 +408,7 @@ test('discountStep larger than starting rate', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -455,7 +455,7 @@ test('start Freq 0', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -501,7 +501,7 @@ test('delay > freq', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -548,7 +548,7 @@ test('lockPeriod > freq', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -597,7 +597,7 @@ test('duration = freq', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -685,7 +685,7 @@ test('change Schedule', async t => {
   const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
   const clockStep = 60n;
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -878,7 +878,7 @@ test('change Schedule late', async t => {
   const startDelay = TimeMath.coerceRelativeTimeRecord(startDelayT, timerBrand);
   const clockStep = 60n;
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
 
@@ -1096,7 +1096,7 @@ test('schedule anomalies', async t => {
   const timestamp = time => TimeMath.coerceTimestampRecord(time, timerBrand);
   const relative = time => TimeMath.coerceRelativeTimeRecord(time, timerBrand);
 
-  const fakeAuctioneer = makeFakeAuctioneer();
+  const fakeAuctioneer = fakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
 
   const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();

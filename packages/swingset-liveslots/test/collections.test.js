@@ -4,14 +4,14 @@ import test from 'ava';
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
 import { makeCopyMap, makeCopySet } from '@endo/patterns';
-import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
+import { fakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   makeScalarBigSetStore,
   makeScalarBigWeakSetStore,
-} = makeFakeCollectionManager();
+} = fakeCollectionManager();
 
 function makeGenericRemotable(typeName) {
   return Far(typeName, {

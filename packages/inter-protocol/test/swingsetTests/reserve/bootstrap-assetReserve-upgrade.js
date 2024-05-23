@@ -4,9 +4,9 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -20,10 +20,10 @@ export const arV1BundleName = 'assetReserveV1';
 const moola = withAmountUtils(makeIssuerKit('moola'));
 
 export const buildRootObject = async () => {
-  const storageKit = makeFakeStorageKit('assetReserveUpgradeTest');
+  const storageKit = fakeStorageKit('assetReserveUpgradeTest');
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
   const timer = buildManualTimer();
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const marshaller = fakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();
 

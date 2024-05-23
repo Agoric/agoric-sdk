@@ -1,8 +1,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import { fakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
@@ -180,8 +180,8 @@ test('replace electorate of Economic Committee', async t => {
     harden({}),
     electorateTerms,
     {
-      marshaller: Far('fake marshaller', { ...makeFakeMarshaller() }),
-      storageNode: makeFakeStorageKit('governedPsmTest').rootNode,
+      marshaller: Far('fake marshaller', { ...fakeMarshaller() }),
+      storageNode: fakeStorageKit('governedPsmTest').rootNode,
     },
   );
 

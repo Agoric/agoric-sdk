@@ -10,7 +10,7 @@ import { getInterfaceOf } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalChainTools } from '../src/localchain.js';
 import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
-import { makeFakeLocalchainBridge } from '../tools/fake-bridge.js';
+import { fakeLocalchainBridge } from '../tools/fake-bridge.js';
 
 /**
  * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
@@ -28,7 +28,7 @@ const provideBaggage = key => {
 };
 
 const makeTestContext = async _t => {
-  const localchainBridge = makeFakeLocalchainBridge(
+  const localchainBridge = fakeLocalchainBridge(
     makeDurableZone(provideBaggage('localchain')),
   );
 

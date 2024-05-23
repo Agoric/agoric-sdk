@@ -6,7 +6,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
-import { makeFakeVault } from './interestSupport.js';
+import { fakeVault } from './interestSupport.js';
 
 /** @type {Brand<'nat'>} */
 const brand = Far('brand');
@@ -15,7 +15,7 @@ const mockVault = (vaultId, runCount, collateralCount) => {
   const debtAmount = AmountMath.make(brand, runCount);
   const collateralAmount = AmountMath.make(brand, collateralCount);
 
-  return makeFakeVault(vaultId, debtAmount, collateralAmount);
+  return fakeVault(vaultId, debtAmount, collateralAmount);
 };
 
 const BIGGER_INT = BigInt(Number.MAX_VALUE) + 1n;

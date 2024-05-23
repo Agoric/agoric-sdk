@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
  * @param {(handler, obj) => Promise<void>} onFromBridge
  * @returns {ScopedBridgeManager<'dibc'>}
  */
-export const makeFakeIbcBridge = (zone, onToBridge, onFromBridge) => {
+export const fakeIbcBridge = (zone, onToBridge, onFromBridge) => {
   let hndlr;
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => 'dibc',
@@ -44,7 +44,7 @@ export const makeFakeIbcBridge = (zone, onToBridge, onFromBridge) => {
  * @param {(handler, obj) => ERef<void>} [onFromBridge]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
-export const makeFakeLocalchainBridge = (
+export const fakeLocalchainBridge = (
   zone,
   onToBridge = () => {},
   onFromBridge = () => {},

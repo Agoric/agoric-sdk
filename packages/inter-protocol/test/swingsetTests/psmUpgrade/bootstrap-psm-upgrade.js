@@ -4,9 +4,9 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { mustMatch } from '@agoric/store';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
@@ -27,9 +27,9 @@ const secondGive = anchor.units(3);
 /** @import {start as PsmSF} from '../../../src/psm/psm.js' */
 
 export const buildRootObject = async () => {
-  const storageKit = makeFakeStorageKit('psmUpgradeTest');
+  const storageKit = fakeStorageKit('psmUpgradeTest');
   const timer = buildManualTimer();
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const marshaller = fakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();
 

@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/far';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
   makeExportContext,
@@ -52,7 +52,7 @@ const makeOnChainWallet = board => {
 test('makeImportContext preserves identity across AMM and wallet', t => {
   const context = makeImportContext();
 
-  const board = makeFakeBoard(0, { prefix: 'board' });
+  const board = fakeBoard(0, { prefix: 'board' });
   const amm = makeAMM(board);
   const ammMetricsCapData = amm.getMetrics();
 

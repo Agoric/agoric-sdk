@@ -9,7 +9,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -17,7 +17,7 @@ const root = `${dirname}/../minimalMakeKindContract.js`;
 
 test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
   vatAdminState.installBundle('b1-minimal', bundle);
   const installation = await E(zoe).installBundleID('b1-minimal');

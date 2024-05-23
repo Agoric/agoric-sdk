@@ -26,7 +26,7 @@ export const zcfBundleCap = fakeBundleCap();
  * @param {(...args) => unknown} [testContextSetter]
  * @param {(x: unknown) => unknown} [makeRemote]
  */
-function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
+function fakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()
   let exitMessage;
@@ -159,11 +159,11 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
 }
 
 // Tests which use this global/shared fakeVatAdmin should really import
-// makeFakeVatAdmin() instead, and build their own private instance. This
+// fakeVatAdmin() instead, and build their own private instance. This
 // will be forced when #4565 requires them to use
 // vatAdminState.installBundle().
 
-const fakeVatAdmin = makeFakeVatAdmin().admin;
+const fakeVatAdmin = fakeVatAdmin().admin;
 
 export default fakeVatAdmin;
-export { makeFakeVatAdmin };
+export { fakeVatAdmin };

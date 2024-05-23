@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { Far } from '@endo/far';
 
 import {
@@ -143,7 +143,7 @@ const agoricNamesDataEntriesFixture = [
 ];
 
 test('makeAgoricNamesRemotesFromFakeStorage', t => {
-  const fakeStorageKit = makeFakeStorageKit('');
+  const fakeStorageKit = fakeStorageKit('');
   fakeStorageKit.data = new Map(agoricNamesDataEntriesFixture);
   const agoricNamesRemotes =
     makeAgoricNamesRemotesFromFakeStorage(fakeStorageKit);

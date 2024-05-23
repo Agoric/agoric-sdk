@@ -12,7 +12,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 
 import { assert } from '@agoric/assert';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   makeNameHubKit,
   prepareMixinMyAddress,
@@ -25,7 +25,7 @@ const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
 
-function makeFakeMyAddressNameAdmin() {
+function fakeMyAddressNameAdmin() {
   const { nameAdmin } = makeNameHubKit();
   return mixinMyAddress(nameAdmin, 'agoric1test1');
 }
@@ -57,7 +57,7 @@ async function setupTest(
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
   const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
-  const board = makeFakeBoard();
+  const board = fakeBoard();
 
   const automaticRefundP = (automaticRefund &&
     (async () => {
@@ -102,7 +102,7 @@ async function setupTest(
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
-    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    myAddressNameAdmin: fakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -1490,7 +1490,7 @@ test('addOffer offer.invitation', async t => {
 });
 
 test('addOffer makeContinuingInvitation', async t => {
-  const board = makeFakeBoard();
+  const board = fakeBoard();
 
   // Create ContinuingInvitationExample instance
   const url = await importMetaResolve(
@@ -1517,7 +1517,7 @@ test('addOffer makeContinuingInvitation', async t => {
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
-    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    myAddressNameAdmin: fakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -1580,7 +1580,7 @@ test('addOffer makeContinuingInvitation', async t => {
 });
 
 test('getZoe, getBoard', async t => {
-  const board = makeFakeBoard();
+  const board = fakeBoard();
 
   const pursesStateChangeHandler = (/** @type {any} */ _data) => {};
   const inboxStateChangeHandler = (/** @type {any} */ _data) => {};
@@ -1588,7 +1588,7 @@ test('getZoe, getBoard', async t => {
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
-    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    myAddressNameAdmin: fakeMyAddressNameAdmin(),
     pursesStateChangeHandler,
     inboxStateChangeHandler,
   });
@@ -1599,7 +1599,7 @@ test('getZoe, getBoard', async t => {
 });
 
 test('stamps from dateNow', async t => {
-  const board = makeFakeBoard();
+  const board = fakeBoard();
 
   const startDateMS = new Date(2020, 0, 1).valueOf();
   let currentDateMS = startDateMS;
@@ -1608,7 +1608,7 @@ test('stamps from dateNow', async t => {
   const { admin: wallet, initialized } = makeWalletRoot({
     zoe: t.context.zoe,
     board,
-    myAddressNameAdmin: makeFakeMyAddressNameAdmin(),
+    myAddressNameAdmin: fakeMyAddressNameAdmin(),
     dateNow,
   });
   await initialized;

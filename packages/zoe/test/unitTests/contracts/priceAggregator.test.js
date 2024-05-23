@@ -12,11 +12,11 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { TimeMath } from '@agoric/time';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import { fakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { start } from '../../../src/contracts/priceAggregator.js';
@@ -62,7 +62,7 @@ const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
- * @property {MakeFakePriceOracle} makeFakePriceOracle
+ * @property {MakeFakePriceOracle} fakePriceOracle
  * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
@@ -98,7 +98,7 @@ const test = unknownTest;
 test.before('setup aggregator and oracles', async t => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
-  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { admin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(admin);
 
   // Pack the contracts.
@@ -124,7 +124,7 @@ test.before('setup aggregator and oracles', async t => {
   /**
    *  @type {MakeFakePriceOracle}
    */
-  const makeFakePriceOracle = async (valueOut = 0n) => {
+  const fakePriceOracle = async (valueOut = 0n) => {
     /** @type {OracleHandler} */
     const oracleHandler = Far('OracleHandler', {
       async onQuery({ increment }, _fee) {
@@ -161,7 +161,7 @@ test.before('setup aggregator and oracles', async t => {
    */
   const makeMedianAggregator = async (unitValueIn = 1n) => {
     // ??? why do we need the Far here and not in VaultFactory tests?
-    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const marshaller = Far('fake marshaller', { ...fakeMarshaller() });
     const storageRoot = makeMockChainStorageRoot();
 
     const timer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
@@ -184,11 +184,11 @@ test.before('setup aggregator and oracles', async t => {
     );
     return { ...aggregator, mockStorageRoot: storageRoot };
   };
-  Object.assign(t.context, { zoe, makeFakePriceOracle, makeMedianAggregator });
+  Object.assign(t.context, { zoe, fakePriceOracle, makeMedianAggregator });
 });
 
 test('median aggregator', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
   const {
@@ -205,10 +205,10 @@ test('median aggregator', async t => {
     rawQuoteIssuer
   );
 
-  const price1000 = await makeFakePriceOracle(1000n);
-  const price1300 = await makeFakePriceOracle(1300n);
-  const price800 = await makeFakePriceOracle(800n);
-  const pricePush = await makeFakePriceOracle();
+  const price1000 = await fakePriceOracle(1000n);
+  const price1300 = await fakePriceOracle(1300n);
+  const price800 = await fakePriceOracle(800n);
+  const pricePush = await fakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
@@ -351,7 +351,7 @@ test('median aggregator', async t => {
 });
 
 test('median aggregator - push only', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
   const {
@@ -368,7 +368,7 @@ test('median aggregator - push only', async t => {
     rawQuoteIssuer
   );
 
-  const pricePush = await makeFakePriceOracle();
+  const pricePush = await fakePriceOracle();
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const notifier = E(pa).makeQuoteNotifier(unitAmountIn, brandOut);
@@ -586,7 +586,7 @@ test('oracle continuing invitation', async t => {
 });
 
 test('quoteAtTime', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const userTimer = buildManualTimer(() => {}, 0n, { eventLoopIteration });
   const manualTS = ts =>
@@ -605,9 +605,9 @@ test('quoteAtTime', async t => {
     rawQuoteIssuer
   );
 
-  const price1000 = await makeFakePriceOracle(1000n);
-  const price1300 = await makeFakePriceOracle(1300n);
-  const price800 = await makeFakePriceOracle(800n);
+  const price1000 = await fakePriceOracle(1000n);
+  const price1300 = await fakePriceOracle(1300n);
+  const price800 = await fakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteAtTime = E(pa).quoteAtTime(
@@ -704,7 +704,7 @@ test('quoteAtTime', async t => {
 });
 
 test('quoteWhen', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
 
@@ -720,9 +720,9 @@ test('quoteWhen', async t => {
     rawQuoteIssuer
   );
 
-  const price1000 = await makeFakePriceOracle(1000n);
-  const price1300 = await makeFakePriceOracle(1300n);
-  const price800 = await makeFakePriceOracle(800n);
+  const price1000 = await fakePriceOracle(1000n);
+  const price1300 = await fakePriceOracle(1300n);
+  const price800 = await fakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const quoteWhenGTE = E(pa).quoteWhenGTE(
@@ -816,7 +816,7 @@ test('quoteWhen', async t => {
 });
 
 test('mutableQuoteWhen no replacement', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
 
@@ -831,9 +831,9 @@ test('mutableQuoteWhen no replacement', async t => {
     rawQuoteIssuer
   );
 
-  const price1000 = await makeFakePriceOracle(1000n);
-  const price1300 = await makeFakePriceOracle(1300n);
-  const price800 = await makeFakePriceOracle(800n);
+  const price1000 = await fakePriceOracle(1000n);
+  const price1300 = await fakePriceOracle(1300n);
+  const price800 = await fakePriceOracle(800n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -934,7 +934,7 @@ test('mutableQuoteWhen no replacement', async t => {
 });
 
 test('mutableQuoteWhen with update', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
 
@@ -950,7 +950,7 @@ test('mutableQuoteWhen with update', async t => {
     rawQuoteIssuer
   );
 
-  const price1200 = await makeFakePriceOracle(1200n);
+  const price1200 = await fakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -1004,7 +1004,7 @@ test('mutableQuoteWhen with update', async t => {
 });
 
 test('cancel mutableQuoteWhen', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { fakePriceOracle, zoe } = t.context;
 
   const aggregator = await t.context.makeMedianAggregator();
 
@@ -1014,7 +1014,7 @@ test('cancel mutableQuoteWhen', async t => {
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
 
-  const price1200 = await makeFakePriceOracle(1200n);
+  const price1200 = await fakePriceOracle(1200n);
   const pa = E(aggregator.publicFacet).getPriceAuthority();
 
   const mutableQuoteWhenGTE = E(pa).mutableQuoteWhenGTE(
@@ -1048,11 +1048,11 @@ test('storage keys', async t => {
 });
 
 test('storage', async t => {
-  const { zoe, makeFakePriceOracle, makeMedianAggregator } = t.context;
+  const { zoe, fakePriceOracle, makeMedianAggregator } = t.context;
   const aggregator = await makeMedianAggregator(1n);
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const price1000 = await makeFakePriceOracle(1000n);
+  const price1000 = await fakePriceOracle(1000n);
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
   });

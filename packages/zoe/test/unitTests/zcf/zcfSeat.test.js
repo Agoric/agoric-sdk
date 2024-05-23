@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { setup } from '../setupBasicMints.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -19,7 +19,7 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   const setJig = jig => {
     testJig = jig;
   };
-  const { admin: fakeVatAdminSvc, vatAdminState } = makeFakeVatAdmin(setJig);
+  const { admin: fakeVatAdminSvc, vatAdminState } = fakeVatAdmin(setJig);
   const zoe = makeZoeForTest(fakeVatAdminSvc);
 
   // pack the contract

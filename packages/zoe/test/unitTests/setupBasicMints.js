@@ -1,7 +1,7 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 export const setup = () => {
   const moolaKit = makeIssuerKit('moola');
@@ -19,7 +19,7 @@ export const setup = () => {
     brands.init(k, allIssuerKits[k].brand);
   }
 
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   /** @type {(brand: Brand<'nat'>) => (value: bigint) => Amount<'nat'>} */

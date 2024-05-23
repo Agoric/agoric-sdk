@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { objectMap, allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import { fakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { GOVERNANCE_STORAGE_KEY } from '@agoric/governance/src/contractHelper.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
@@ -56,7 +56,7 @@ export const makeDefaultParams = (invitation, timerBrand) =>
     TimerBrand: timerBrand,
   });
 
-export const makeFakeAuctioneer = () => {
+export const fakeAuctioneer = () => {
   const state = { step: 0, final: false, capturedPrices: false };
   const startRounds = [];
 
@@ -101,7 +101,7 @@ export const makeGovernancePublisherFromFakes = () => {
 
   return makeStoredPublisherKit(
     storageRoot,
-    makeFakeMarshaller(),
+    fakeMarshaller(),
     GOVERNANCE_STORAGE_KEY,
   );
 };

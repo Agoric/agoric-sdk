@@ -2,7 +2,7 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 import { makeLiveSlots } from '../../src/liveslots.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
 import { buildSyscall } from '../liveslots-helpers.js';
@@ -40,7 +40,7 @@ const bBazFooBarClu = { baz, foo, bar, clu }; // add alphabetic middle
 test('kind upgrade from single', t => {
   const fakeStore = new Map();
   // note: relaxDurabilityRules defaults to true in fake tools
-  const vs1 = makeFakeVirtualStuff({ relaxDurabilityRules: false, fakeStore });
+  const vs1 = fakeVirtualStuff({ relaxDurabilityRules: false, fakeStore });
   const { vom: vom1, cm: cm1 } = vs1;
   const baggage1 = cm1.provideBaggage();
   const kh1 = vom1.makeKindHandle('single');
@@ -51,7 +51,7 @@ test('kind upgrade from single', t => {
 
   // Simulate upgrade by starting from the non-empty kvStore.
   const clonedStore = new Map(fakeStore);
-  const vs2 = makeFakeVirtualStuff({
+  const vs2 = fakeVirtualStuff({
     relaxDurabilityRules: false,
     fakeStore: clonedStore,
   });
@@ -67,7 +67,7 @@ test('kind upgrade from single', t => {
 
 test('kind upgrade from multi', t => {
   const fakeStore = new Map();
-  const vs1 = makeFakeVirtualStuff({ relaxDurabilityRules: false, fakeStore });
+  const vs1 = fakeVirtualStuff({ relaxDurabilityRules: false, fakeStore });
   const { vom: vom1, cm: cm1 } = vs1;
   const baggage1 = cm1.provideBaggage();
   const kh1 = vom1.makeKindHandle('FooBarClu');
@@ -79,7 +79,7 @@ test('kind upgrade from multi', t => {
   const trial = (behaviors, err) => {
     // Simulate upgrade by starting from the non-empty kvStore.
     const clonedStore = new Map(fakeStore);
-    const vs2 = makeFakeVirtualStuff({
+    const vs2 = fakeVirtualStuff({
       relaxDurabilityRules: false,
       fakeStore: clonedStore,
     });

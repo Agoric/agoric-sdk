@@ -3,8 +3,8 @@ import test from 'ava';
 
 import { kser, kslot } from '@agoric/kmarshal';
 import {
-  makeFakeVirtualObjectManager,
-  makeFakeVirtualStuff,
+  fakeVirtualObjectManager,
+  fakeVirtualStuff,
 } from '../../tools/fakeVirtualSupport.js';
 
 import { vstr } from '../util.js';
@@ -82,7 +82,7 @@ function zotVal(arbitrary, name, tag, count) {
 
 test('multifaceted virtual objects', t => {
   const log = [];
-  const { defineKindMulti, flushStateCache } = makeFakeVirtualObjectManager({
+  const { defineKindMulti, flushStateCache } = fakeVirtualObjectManager({
     log,
   });
 
@@ -157,7 +157,7 @@ test('multifaceted virtual objects', t => {
 });
 
 test('single-faceted object definition fails with faceted behavior', t => {
-  const { defineKind } = makeFakeVirtualObjectManager();
+  const { defineKind } = fakeVirtualObjectManager();
   // prettier-ignore
   t.throws(
     () => defineKind('multithing', null, { facetA: {}, facetB: {} }),
@@ -166,7 +166,7 @@ test('single-faceted object definition fails with faceted behavior', t => {
 });
 
 test('multi-faceted object definition fails with unfaceted behavior', t => {
-  const { defineKindMulti } = makeFakeVirtualObjectManager();
+  const { defineKindMulti } = fakeVirtualObjectManager();
   // prettier-ignore
   t.throws(
     () => defineKindMulti('singlething', null, { op: () => {} }),
@@ -177,7 +177,7 @@ test('multi-faceted object definition fails with unfaceted behavior', t => {
 // prettier-ignore
 test('virtual object operations', t => {
   const log = [];
-  const { defineKind, flushStateCache, dumpStore } = makeFakeVirtualObjectManager({ log });
+  const { defineKind, flushStateCache, dumpStore } = fakeVirtualObjectManager({ log });
 
   const makeThing = defineKind('thing', initThing, thingBehavior);
   const tid = 'o+v2';
@@ -437,10 +437,9 @@ test('virtual object operations', t => {
 
 test('symbol named methods', t => {
   const log = [];
-  const { defineKind, flushStateCache, dumpStore } =
-    makeFakeVirtualObjectManager({
-      log,
-    });
+  const { defineKind, flushStateCache, dumpStore } = fakeVirtualObjectManager({
+    log,
+  });
 
   const IncSym = Symbol.for('incsym');
 
@@ -517,7 +516,7 @@ test('symbol named methods', t => {
 });
 
 test('virtual object cycles using the finish function', t => {
-  const { vom } = makeFakeVirtualStuff();
+  const { vom } = fakeVirtualStuff();
   const { defineKind } = vom;
 
   const makeOtherThing = defineKind(
@@ -552,7 +551,7 @@ test('virtual object cycles using the finish function', t => {
 });
 
 test('durable kind IDs cannot be reused', t => {
-  const { vom } = makeFakeVirtualStuff();
+  const { vom } = fakeVirtualStuff();
   const { makeKindHandle, defineDurableKind } = vom;
 
   const kindHandle = makeKindHandle('testkind');
@@ -564,7 +563,7 @@ test('durable kind IDs cannot be reused', t => {
 
 test('durable kind IDs can be reanimated', t => {
   const log = [];
-  const { vom, vrm, cm, fakeStuff } = makeFakeVirtualStuff({
+  const { vom, vrm, cm, fakeStuff } = fakeVirtualStuff({
     log,
   });
   const { makeKindHandle, defineDurableKind, flushStateCache } = vom;
@@ -635,7 +634,7 @@ test('durable kind IDs can be reanimated', t => {
 
 test('virtual object gc', t => {
   const log = [];
-  const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ log });
+  const { vom, vrm, fakeStuff } = fakeVirtualStuff({ log });
   const { defineKind, flushStateCache } = vom;
   const { setExportStatus, deleteVirtualObject, isVirtualObjectReachable } =
     vrm;
@@ -1101,7 +1100,7 @@ test('virtual object gc', t => {
 });
 
 test('weak store operations', t => {
-  const { vom, cm } = makeFakeVirtualStuff();
+  const { vom, cm } = fakeVirtualStuff();
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
 
@@ -1148,7 +1147,7 @@ test('virtualized weak collection operations', t => {
   // collections
 
   const { VirtualObjectAwareWeakMap, VirtualObjectAwareWeakSet, defineKind } =
-    makeFakeVirtualObjectManager();
+    fakeVirtualObjectManager();
 
   const makeThing = defineKind('thing', initThing, thingBehavior);
   const makeZot = defineKind('zot', initZot, zotBehavior);

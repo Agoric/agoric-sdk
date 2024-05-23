@@ -11,7 +11,7 @@ import { mustMatch } from '@agoric/store';
 import { makeFeeDistributor, meta } from '../src/feeDistributor.js';
 
 /** @param {Issuer} feeIssuer */
-const makeFakeFeeDepositFacetKit = feeIssuer => {
+const fakeFeeDepositFacetKit = feeIssuer => {
   const depositPayments = [];
 
   const feeDepositFacet = {
@@ -28,7 +28,7 @@ const makeFakeFeeDepositFacetKit = feeIssuer => {
   return { feeDepositFacet, getPayments };
 };
 
-const makeFakeFeeProducer = (makeEmptyPayment = () => {}) => {
+const fakeFeeProducer = (makeEmptyPayment = () => {}) => {
   const feePayments = [];
   return Far('feeCollector', {
     collectFees: () => feePayments.shift() || makeEmptyPayment(),
@@ -68,11 +68,11 @@ const assertPaymentArray = async (
 const makeScenario = async t => {
   const { brands, moolaIssuer: issuer, moolaMint: stableMint } = setup();
   const brand = brands.get('moola');
-  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
+  const { feeDepositFacet, getPayments } = fakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
     stableMint.mintPayment(AmountMath.makeEmpty(brand));
-  const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
-  const amm = makeFakeFeeProducer(makeEmptyPayment);
+  const vaultFactory = fakeFeeProducer(makeEmptyPayment);
+  const amm = fakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
   const { publicFacet, creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,
@@ -158,7 +158,7 @@ test('setKeywordShares', async t => {
   );
 
   const { feeDepositFacet: deposit2, getPayments: getPayments2 } =
-    makeFakeFeeDepositFacetKit(issuer);
+    fakeFeeDepositFacetKit(issuer);
   const rewardsDestination =
     creatorFacet.makeDepositFacetDestination(feeDepositFacet);
   const reserveDestination = creatorFacet.makeDepositFacetDestination(deposit2);
@@ -191,11 +191,11 @@ test('setKeywordShares', async t => {
 test('fee distribution, leftovers', async t => {
   const { brands, moolaIssuer: issuer, moolaMint: stableMint } = setup();
   const brand = brands.get('moola');
-  const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
+  const { feeDepositFacet, getPayments } = fakeFeeDepositFacetKit(issuer);
   const makeEmptyPayment = () =>
     stableMint.mintPayment(AmountMath.makeEmpty(brand));
-  const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
-  const amm = makeFakeFeeProducer(makeEmptyPayment);
+  const vaultFactory = fakeFeeProducer(makeEmptyPayment);
+  const amm = fakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
   const { creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,

@@ -8,7 +8,7 @@ import { makeLiveSlots } from '../../src/liveslots.js';
 import { buildSyscall } from '../liveslots-helpers.js';
 import { makeStartVat, makeMessage } from '../util.js';
 import { makeMockGC } from '../mock-gc.js';
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 function makeGenericRemotable(typeName) {
   return Far(typeName, {
@@ -29,7 +29,7 @@ const behavior = {
 // enforced, both during initialization and subsequent state changes
 
 test('constrain state shape', t => {
-  const { vom } = makeFakeVirtualStuff();
+  const { vom } = fakeVirtualStuff();
   const { defineKind } = vom;
   const any = { value: M.any() };
   const number = { value: M.number() };
@@ -94,7 +94,7 @@ test('constrain state shape', t => {
 
 test('durable state shape', t => {
   // note: relaxDurabilityRules defaults to true in fake tools
-  const { vom } = makeFakeVirtualStuff({ relaxDurabilityRules: false });
+  const { vom } = fakeVirtualStuff({ relaxDurabilityRules: false });
   const { makeKindHandle, defineDurableKind } = vom;
 
   const make = (which, stateShape) => {

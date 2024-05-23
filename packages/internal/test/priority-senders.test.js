@@ -1,13 +1,13 @@
 // @ts-check
 import test from 'ava';
 
-import { makeFakeStorageKit } from '../src/storage-test-utils.js';
+import { fakeStorageKit } from '../src/storage-test-utils.js';
 import { HIGH_PRIORITY_SENDERS } from '../src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '../src/priority-senders.js';
 import { eventLoopIteration as writesSettled } from '../src/testing-utils.js';
 
 test('basic', async t => {
-  const storage = makeFakeStorageKit(HIGH_PRIORITY_SENDERS, {
+  const storage = fakeStorageKit(HIGH_PRIORITY_SENDERS, {
     sequence: false,
   });
   const manager = makePrioritySendersManager(storage.rootNode);
@@ -40,7 +40,7 @@ test('basic', async t => {
 });
 
 test('errors', async t => {
-  const storage = makeFakeStorageKit(HIGH_PRIORITY_SENDERS, {
+  const storage = fakeStorageKit(HIGH_PRIORITY_SENDERS, {
     sequence: false,
   });
   const manager = makePrioritySendersManager(storage.rootNode);
@@ -60,7 +60,7 @@ test('errors', async t => {
 });
 
 test('normalization', async t => {
-  const storage = makeFakeStorageKit(HIGH_PRIORITY_SENDERS, {
+  const storage = fakeStorageKit(HIGH_PRIORITY_SENDERS, {
     sequence: false,
   });
   const manager = makePrioritySendersManager(storage.rootNode);

@@ -8,7 +8,7 @@ import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E } from '@endo/eventual-send';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
@@ -20,7 +20,7 @@ const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
@@ -148,7 +148,7 @@ test(`mint and sell opera tickets`, async t => {
   /** @param {bigint} value */
   const moola = value => AmountMath.make(moolaBrand, value);
 
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
@@ -549,7 +549,7 @@ test(`mint and sell opera tickets`, async t => {
 //
 test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);

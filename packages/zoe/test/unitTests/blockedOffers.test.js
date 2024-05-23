@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { setup } from './setupBasicMints.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import {
   depositToSeat,
   withdrawFromSeat,
@@ -22,7 +22,7 @@ const contractRoot = `${dirname}/zcf/zcfTesterContract.js`;
 const setupContract = async (moolaIssuer, bucksIssuer) => {
   /** @type {ZCF} */
   let zcf;
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin(jig => {
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin(jig => {
     zcf = jig.zcf;
   });
   const zoe = makeZoeForTest(fakeVatAdmin);

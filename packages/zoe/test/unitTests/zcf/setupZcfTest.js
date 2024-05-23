@@ -5,7 +5,7 @@ import { assert } from '@agoric/assert';
 import path from 'path';
 
 import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -24,7 +24,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
 
   const setZCF = jig => (zcf = jig.zcf);
   // The contract provides the `zcf` via `setTestJig` upon `start`.
-  const fakeVatAdmin = makeFakeVatAdmin(setZCF);
+  const fakeVatAdmin = fakeVatAdmin(setZCF);
   const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest(
     fakeVatAdmin.admin,
   );

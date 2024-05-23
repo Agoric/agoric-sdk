@@ -12,7 +12,7 @@ import { withAmountUtils } from '../supports.js';
 
 export const mockBrand = Far('brand');
 
-const makeFakeQuote = (amountIn, amountOut) => {
+const fakeQuote = (amountIn, amountOut) => {
   return { quoteAmount: { value: [{ amountIn, amountOut }] } };
 };
 
@@ -22,7 +22,7 @@ const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 test('normalizedCollRatio grows with coll margin', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const quote = makeFakeQuote(minted.make(5n), collateral.make(20n));
+  const quote = fakeQuote(minted.make(5n), collateral.make(20n));
   const compoundedInterest = makeRatioFromAmounts(
     minted.make(1n),
     collateral.make(1n),
@@ -54,7 +54,7 @@ test('normalizedCollRatio grows with coll margin', t => {
 test('CollRatio grows with interest', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const quote = makeFakeQuote(minted.make(5n), collateral.make(20n));
+  const quote = fakeQuote(minted.make(5n), collateral.make(20n));
   const lowInterest = makeRatioFromAmounts(
     minted.make(1n),
     collateral.make(1n),
@@ -75,10 +75,10 @@ test('CollRatio grows with interest', t => {
 test('CollRatio grows with price', t => {
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const lowQuote = makeFakeQuote(minted.make(5n), collateral.make(20n));
+  const lowQuote = fakeQuote(minted.make(5n), collateral.make(20n));
   /** @type {PriceQuote} */
   // @ts-expect-error fake for tests.
-  const highQuote = makeFakeQuote(minted.make(15n), collateral.make(20n));
+  const highQuote = fakeQuote(minted.make(15n), collateral.make(20n));
 
   const compoundedInterest = makeRatioFromAmounts(
     minted.make(12n),

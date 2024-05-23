@@ -69,7 +69,7 @@ function makeHandler() {
   });
 }
 
-function makeFakeTimer(initialVal) {
+function fakeTimer(initialVal) {
   let fakeTime = initialVal;
   return Far('fake timer', {
     getLastPolled() {
@@ -83,7 +83,7 @@ function makeFakeTimer(initialVal) {
 
 test('Timer schedule single event', t => {
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(1n);
+  const fakeTimer = fakeTimer(1n);
   const lastPolled = fakeTimer.getLastPolled;
   const poll = curryPollFn(fakeSO, [], schedule, lastPolled, _ => {});
   t.falsy(poll(1n)); // false when nothing is woken
@@ -97,7 +97,7 @@ test('Timer schedule single event', t => {
 
 test('Timer schedule multiple events', t => {
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(1);
+  const fakeTimer = fakeTimer(1);
   const lastPolled = fakeTimer.getLastPolled;
   const poll = curryPollFn(fakeSO, [], schedule, lastPolled, _ => {});
   t.falsy(poll(1n)); // false when nothing is woken
@@ -117,7 +117,7 @@ test('Timer schedule multiple events', t => {
 test('Timer schedule repeated event first', t => {
   const repeaterIndex = 0;
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(1n);
+  const fakeTimer = fakeTimer(1n);
   const lastPolled = fakeTimer.getLastPolled;
   const repeater = { startTime: 3n, interval: 4n };
   const poll = curryPollFn(fakeSO, [repeater], schedule, lastPolled, _ => {});
@@ -138,7 +138,7 @@ test('multiMap remove repeater key', t => {
   const repeaterIndex = 0;
   const scheduleTime = 3n;
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(1);
+  const fakeTimer = fakeTimer(1);
   const lastPolled = fakeTimer.getLastPolled;
   const repeater = { startTime: 2n, interval: 4n };
   const poll = curryPollFn(fakeSO, [repeater], schedule, lastPolled, _ => {});
@@ -151,7 +151,7 @@ test('multiMap remove repeater key', t => {
 test('Timer schedule repeated event, repeatedly', t => {
   const repeaterIndex = 0;
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(4n);
+  const fakeTimer = fakeTimer(4n);
   const lastPolled = fakeTimer.getLastPolled;
   const repeater = { startTime: 6n, interval: 3n };
   const poll = curryPollFn(fakeSO, [repeater], schedule, lastPolled, _ => {});
@@ -179,7 +179,7 @@ test('Timer schedule multiple repeaters', t => {
   const repeaterIndex1 = 1;
   const repeaterIndex2 = 2;
   const schedule = makeTimerMap();
-  const fakeTimer = makeFakeTimer(4);
+  const fakeTimer = fakeTimer(4);
   const lastPolled = fakeTimer.getLastPolled;
   const repeater0 = { startTime: 6n, interval: 3n };
   const repeater1 = { startTime: 7n, interval: 5n };

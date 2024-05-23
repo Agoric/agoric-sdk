@@ -182,7 +182,7 @@ const makeScenario = () => {
   const { delegations, startTime } = configStaking;
 
   // TODO: when we write to chainStorage, test it.
-  //   const { rootNode } = makeFakeStorageKit('mockChainStorageRoot');
+  //   const { rootNode } = fakeStorageKit('mockChainStorageRoot');
 
   const storageNode = Far('StorageNode', {}) as unknown as StorageNode;
 

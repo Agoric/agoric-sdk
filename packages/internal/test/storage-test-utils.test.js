@@ -5,14 +5,14 @@ import { makeMarshal } from '@endo/marshal';
 
 import {
   defaultMarshaller,
-  makeFakeStorageKit,
+  fakeStorageKit,
   slotStringUnserialize,
 } from '../src/storage-test-utils.js';
 
-test('makeFakeStorageKit', async t => {
+test('fakeStorageKit', async t => {
   const rootPath = 'root';
   const opts = { sequence: false };
-  const { rootNode, messages, toStorage } = makeFakeStorageKit(rootPath, opts);
+  const { rootNode, messages, toStorage } = fakeStorageKit(rootPath, opts);
   t.is(rootNode.getPath(), rootPath);
   const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
@@ -190,9 +190,9 @@ test('makeFakeStorageKit', async t => {
   );
 });
 
-test('makeFakeStorageKit sequence data', async t => {
+test('fakeStorageKit sequence data', async t => {
   const rootPath = 'root';
-  const { rootNode, messages } = makeFakeStorageKit(rootPath, {
+  const { rootNode, messages } = fakeStorageKit(rootPath, {
     sequence: true,
   });
 

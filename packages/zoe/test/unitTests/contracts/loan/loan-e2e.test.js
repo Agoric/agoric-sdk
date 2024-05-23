@@ -9,7 +9,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 
 import { checkDetails, checkPayout } from './helpers.js';
 import { setup } from '../../setupBasicMints.js';
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 
@@ -56,7 +56,7 @@ test('loan - lend - exit before borrow', async t => {
 
   const timer = buildManualTimer(t.log);
 
-  const priceAuthority = await makeFakePriceAuthority({
+  const priceAuthority = await fakePriceAuthority({
     priceList: [],
     timer,
     actualBrandIn: collateralKit.brand,

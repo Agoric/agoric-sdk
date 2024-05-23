@@ -12,7 +12,7 @@ import {
   assertPayoutDeposit,
   assertPayoutAmount,
 } from '../../zoeTestHelpers.js';
-import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -21,7 +21,7 @@ const pricedCallSpread = `${dirname}/../../../src/contracts/callSpread/pricedCal
 const simpleExchange = `${dirname}/../../../src/contracts/simpleExchange.js`;
 
 const makeTestPriceAuthority = (brands, priceList, timer) =>
-  makeFakePriceAuthority({
+  fakePriceAuthority({
     actualBrandIn: brands.get('simoleans'),
     actualBrandOut: brands.get('moola'),
     priceList,

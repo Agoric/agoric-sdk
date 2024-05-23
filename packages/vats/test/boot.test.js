@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
 import { E } from '@endo/far';
 
@@ -83,7 +83,7 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
   /** @type {undefined | import('../src/types.js').BridgeHandler} */
   let handler;
   const { produce, consume } = makePromiseSpace(t.log);
-  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { admin, vatAdminState } = fakeVatAdmin();
   const vatPowers = vatAdminState.getVatPowers();
 
   const prepare = async () => {

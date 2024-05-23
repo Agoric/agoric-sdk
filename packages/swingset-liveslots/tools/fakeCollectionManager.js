@@ -1,6 +1,6 @@
 import { makeCollectionManager } from '../src/collectionManager.js';
 
-export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
+export function fakeCollectionManager(vrm, fakeStuff, _options = {}) {
   const {
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,

@@ -1,6 +1,6 @@
 import { buildBridge } from '@agoric/swingset-vat';
 import { BridgeId, VBankAccount } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -95,7 +95,7 @@ function exportStorage(
 }
 
 export async function initEmulatedChain(config, configPath) {
-  const chainStorage = makeFakeStorageKit('swingset-runner');
+  const chainStorage = fakeStorageKit('swingset-runner');
   let lastNonce = 0n;
 
   // cribbed from packages/vats/test/bootstrapTests/support.js

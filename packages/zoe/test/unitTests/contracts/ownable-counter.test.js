@@ -7,14 +7,14 @@ import { E } from '@endo/eventual-send';
 import { GET_METHOD_NAMES } from '@endo/marshal';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/ownable-counter.js`;
 
 test('zoe - ownable-counter contract', async t => {
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();

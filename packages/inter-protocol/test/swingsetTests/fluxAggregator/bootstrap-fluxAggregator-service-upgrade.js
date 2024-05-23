@@ -4,10 +4,10 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { makeNameHubKit } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -21,10 +21,10 @@ const inKit = makeIssuerKit('bucks');
 const outKit = makeIssuerKit('moola');
 
 export const buildRootObject = async () => {
-  const storageKit = makeFakeStorageKit('fluxAggregatorUpgradeTest');
+  const storageKit = fakeStorageKit('fluxAggregatorUpgradeTest');
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
   const timer = buildManualTimer();
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const marshaller = fakeBoard().getReadonlyMarshaller();
 
   /** @type {PromiseKit<ZoeService>} */
   const { promise: zoe, ...zoePK } = makePromiseKit();

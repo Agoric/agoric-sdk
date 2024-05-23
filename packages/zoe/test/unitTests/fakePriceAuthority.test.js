@@ -8,7 +8,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 
 import { setup } from './setupBasicMints.js';
-import { makeFakePriceAuthority } from '../../tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '../../tools/fakePriceAuthority.js';
 import {
   getAmountOut,
   getTimestamp,
@@ -20,7 +20,7 @@ import { assertAmountsEqual } from '../zoeTestHelpers.js';
 const { coerceTimestampRecord } = TimeMath;
 
 const makeTestPriceAuthority = (brands, priceList, timer) =>
-  makeFakePriceAuthority({
+  fakePriceAuthority({
     actualBrandIn: brands.get('moola'),
     actualBrandOut: brands.get('bucks'),
     priceList,

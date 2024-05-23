@@ -7,14 +7,14 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/two-invitations.js`;
 
 test('plural invitation details', async t => {
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
   const invitationIssuer = await E(zoe).getInvitationIssuer();
 

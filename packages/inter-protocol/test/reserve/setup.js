@@ -1,7 +1,7 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -49,7 +49,7 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
   installPuppetGovernance(zoe, spaces.installation.produce);
   const mockChainStorage = makeMockChainStorageRoot();
   produce.chainStorage.resolve(mockChainStorage);
-  produce.board.resolve(makeFakeBoard());
+  produce.board.resolve(fakeBoard());
 
   return { produce, consume, ...spaces, mockChainStorage };
 };

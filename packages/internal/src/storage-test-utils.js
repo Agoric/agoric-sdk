@@ -96,7 +96,7 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
  * @param {string} rootPath
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
  */
-export const makeFakeStorageKit = (rootPath, rootOptions) => {
+export const fakeStorageKit = (rootPath, rootOptions) => {
   const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {TotalMap<string, string>} */
   const data = new Map();
@@ -204,8 +204,8 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     toStorage,
   };
 };
-harden(makeFakeStorageKit);
-/** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */
+harden(fakeStorageKit);
+/** @typedef {ReturnType< typeof fakeStorageKit>} FakeStorageKit */
 
 /**
  * @typedef MockChainStorageRootMethods
@@ -220,7 +220,7 @@ harden(makeFakeStorageKit);
 
 /** @returns {MockChainStorageRoot} */
 export const makeMockChainStorageRoot = () => {
-  const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
+  const { rootNode, data } = fakeStorageKit('mockChainStorageRoot');
   return Far('mockChainStorage', {
     ...bindAllMethods(rootNode),
     /**

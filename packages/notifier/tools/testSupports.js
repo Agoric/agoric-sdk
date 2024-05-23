@@ -11,7 +11,7 @@ export { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
  * @param {string} path
  * @param {IterationObserver<unknown>} [publication]
  */
-export const makeFakeStorage = (path, publication) => {
+export const fakeStorage = (path, publication) => {
   let setValueCalls = 0;
   const fullPath = `publish.${path}`;
   const storeKey = harden({
@@ -35,10 +35,10 @@ export const makeFakeStorage = (path, publication) => {
   });
   return storage;
 };
-harden(makeFakeStorage);
+harden(fakeStorage);
 
-export const makeFakeMarshaller = () =>
+export const fakeMarshaller = () =>
   makeMarshal(undefined, undefined, {
     marshalSaveError: () => {},
   });
-harden(makeFakeMarshaller);
+harden(fakeMarshaller);

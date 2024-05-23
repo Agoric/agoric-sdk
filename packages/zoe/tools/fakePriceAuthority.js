@@ -41,7 +41,7 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @param {FakePriceAuthorityOptions} options
  * @returns {Promise<PriceAuthority>}
  */
-export async function makeFakePriceAuthority(options) {
+export async function fakePriceAuthority(options) {
   const {
     actualBrandIn,
     actualBrandOut,

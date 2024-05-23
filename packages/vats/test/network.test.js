@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
-import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
+import { fakeIbcBridge } from '../tools/fake-bridge.js';
 
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 
@@ -93,7 +93,7 @@ test('network - ibc', async t => {
   const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
   const events = subscribeEach(pinnedHistoryTopic)[Symbol.asyncIterator]();
 
-  const ibcBridge = makeFakeIbcBridge(
+  const ibcBridge = fakeIbcBridge(
     zone,
     obj => {
       const { method, type: _, ...params } = obj;

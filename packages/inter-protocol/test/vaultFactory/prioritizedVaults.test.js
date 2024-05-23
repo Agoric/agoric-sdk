@@ -13,7 +13,7 @@ import {
 } from '../../src/vaultFactory/prioritizedVaults.js';
 import {
   makeCompoundedInterestProvider,
-  makeFakeVault,
+  fakeVault,
 } from './interestSupport.js';
 
 /** @import {Vault} from '../../src/vaultFactory/vault.js' */
@@ -39,20 +39,20 @@ const makeCollector = () => {
   };
 };
 
-const makeFakeQuote = (amountIn, amountOut) => {
+const fakeQuote = (amountIn, amountOut) => {
   return { quoteAmount: { value: [{ amountIn, amountOut }] } };
 };
 
 test('add to vault', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
   const vaults = makePrioritizedVaults(store);
-  const fakeVault = makeFakeVault('id-fakeVaultKit', make(130n));
+  const fakeVault = fakeVault('id-fakeVaultKit', make(130n));
   vaults.addVault('id-fakeVaultKit', fakeVault);
   const collector = makeCollector();
   const crKey = {
     margin: makeRatioFromAmounts(make(105n), make(100n)),
     interest: makeRatioFromAmounts(make(110n), make(100n)),
-    quote: makeFakeQuote(make(110n), makeAssets(100n)),
+    quote: fakeQuote(make(110n), makeAssets(100n)),
   };
   const vaultsToLiquidate = vaults.removeVaultsBelow(crKey);
   for (const entry of vaultsToLiquidate.entries()) {
@@ -67,8 +67,8 @@ test('updates', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
   const vaults = makePrioritizedVaults(store);
   // CR of .4 and .8
-  const fakeVault1 = makeFakeVault('id1-fakeVaultKit', make(40n));
-  const fakeVault2 = makeFakeVault('id2-fakeVaultKit', make(80n));
+  const fakeVault1 = fakeVault('id1-fakeVaultKit', make(40n));
+  const fakeVault2 = fakeVault('id2-fakeVaultKit', make(80n));
 
   vaults.addVault('id-fakeVault1', fakeVault1);
   vaults.addVault('id-fakeVault2', fakeVault2);
@@ -76,7 +76,7 @@ test('updates', async t => {
   const crKey = {
     margin: makeRatioFromAmounts(make(150n), make(100n)),
     interest: makeRatioFromAmounts(make(110n), make(100n)),
-    quote: makeFakeQuote(make(250n), makeAssets(100n)),
+    quote: fakeQuote(make(250n), makeAssets(100n)),
   };
   const vaultsToLiquidate = vaults.removeVaultsBelow(crKey);
   const collector = makeCollector();
@@ -89,13 +89,13 @@ test('update changes ratio', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
   const vaults = makePrioritizedVaults(store);
 
-  // default collateral of makeFakeVaultKit
+  // default collateral of fakeVaultKit
   const defaultCollateral = make(100n);
 
   const fakeVault1InitialDebt = make(20n);
 
   const fakeVaultID1 = 'id-fakeVault1';
-  const fakeVault1 = makeFakeVault(fakeVaultID1, fakeVault1InitialDebt);
+  const fakeVault1 = fakeVault(fakeVaultID1, fakeVault1InitialDebt);
   vaults.addVault(fakeVaultID1, fakeVault1);
   t.true(
     vaults.hasVaultByAttributes(
@@ -115,7 +115,7 @@ test('update changes ratio', async t => {
   );
 
   const fakeVaultID2 = 'id-fakeVault2';
-  const fakeVault2 = makeFakeVault(fakeVaultID2, make(80n));
+  const fakeVault2 = fakeVault(fakeVaultID2, make(80n));
   vaults.addVault(fakeVaultID2, fakeVault2);
 
   t.deepEqual(Array.from(Array.from(vaults.entries()).map(([k, _v]) => k)), [
@@ -141,7 +141,7 @@ test('update changes ratio', async t => {
   const collateralization = {
     margin: makeRatioFromAmounts(make(100n), make(90n)),
     interest: makeRatioFromAmounts(make(100n), make(100n)),
-    quote: makeFakeQuote(make(100n), makeAssets(100n)),
+    quote: fakeQuote(make(100n), makeAssets(100n)),
   };
 
   const vaultsRemoved = vaults.removeVaultsBelow(collateralization);
@@ -158,15 +158,15 @@ test('removals', async t => {
 
   const fakeVaultID1 = 'id-fakeVault1';
   // Add fakes 1,2,3
-  vaults.addVault(fakeVaultID1, makeFakeVault(fakeVaultID1, make(150n)));
-  vaults.addVault('id-fakeVault2', makeFakeVault('id-fakeVault2', make(130n)));
-  vaults.addVault('id-fakeVault3', makeFakeVault('id-fakeVault3', make(140n)));
+  vaults.addVault(fakeVaultID1, fakeVault(fakeVaultID1, make(150n)));
+  vaults.addVault('id-fakeVault2', fakeVault('id-fakeVault2', make(130n)));
+  vaults.addVault('id-fakeVault3', fakeVault('id-fakeVault3', make(140n)));
 
   // remove fake 3
   vaults.removeVaultByAttributes(
     // @ts-expect-error cast
     make(140n),
-    make(100n), // default collateral of makeFakeVaultKit
+    make(100n), // default collateral of fakeVaultKit
     'id-fakeVault3',
   );
   t.deepEqual(vaults.highestRatio(), percent(150), 'should be 150');
@@ -175,7 +175,7 @@ test('removals', async t => {
   vaults.removeVaultByAttributes(
     // @ts-expect-error cast
     make(150n),
-    make(100n), // default collateral of makeFakeVaultKit
+    make(100n), // default collateral of fakeVaultKit
     fakeVaultID1,
   );
   t.deepEqual(vaults.highestRatio(), percent(130), 'should be 130');
@@ -201,8 +201,8 @@ test('stable ordering as interest accrues', async t => {
   // day 0
   // v1: 10 / 100
   // v2: 20 / 100 HIGHEST
-  const v1 = makeFakeVault(fakeVaultID1, make(10n), undefined, m);
-  const v2 = makeFakeVault('id-fakeVault2', make(20n), undefined, m);
+  const v1 = fakeVault(fakeVaultID1, make(10n), undefined, m);
+  const v2 = fakeVault('id-fakeVault2', make(20n), undefined, m);
   vaults.addVault(fakeVaultID1, v1);
   vaults.addVault('id-fakeVault2', v2);
   // ordering
@@ -217,7 +217,7 @@ test('stable ordering as interest accrues', async t => {
   // v2: 40 / 100 (first)
   // v3: 30 / 100 (second)
   m.chargeHundredPercentInterest();
-  const v3 = makeFakeVault('id-fakeVault3', make(30n), undefined, m);
+  const v3 = fakeVault('id-fakeVault3', make(30n), undefined, m);
   vaults.addVault('id-fakeVault3', v3);
   t.is(v1.getCurrentDebt().value, 20n);
   t.is(v2.getCurrentDebt().value, 40n);

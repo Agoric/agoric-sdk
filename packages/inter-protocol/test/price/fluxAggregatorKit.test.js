@@ -8,7 +8,7 @@ import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-util
 import { subscribeEach } from '@agoric/notifier';
 import {
   eventLoopIteration,
-  makeFakeMarshaller,
+  fakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
@@ -40,7 +40,7 @@ const makeContext = async () => {
     const zcfTestKit = await setupZCFTest(undefined, terms);
 
     // ??? why do we need the Far here and not in VaultFactory tests?
-    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const marshaller = Far('fake marshaller', { ...fakeMarshaller() });
     const mockStorageRoot = makeMockChainStorageRoot();
     const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
 

@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 // Assert that the VOM does not allow confusion between objects and
 // their prototypes to allow an attack.
@@ -15,7 +15,7 @@ function attack2(mut1, immut2) {
 }
 
 test('forbid cross-facet prototype attack', t => {
-  const vom = makeFakeVirtualObjectManager();
+  const vom = fakeVirtualObjectManager();
   const init = () => ({ value: 0 });
   const behavior = {
     mutable: {

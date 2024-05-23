@@ -26,7 +26,7 @@ export const makeCompoundedInterestProvider = brand => {
  * @returns {Vault & { setDebt: (Amount) => void }}
  */
 
-export const makeFakeVault = (
+export const fakeVault = (
   vaultId,
   initDebt,
   initCollateral = AmountMath.make(initDebt.brand, 100n),

@@ -21,4 +21,4 @@ export const withAmountUtils = kit => {
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
 
-export { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+export { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';

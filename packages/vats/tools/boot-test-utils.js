@@ -1,7 +1,4 @@
-import {
-  makeFakeVatAdmin,
-  zcfBundleCap,
-} from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { fakeVatAdmin, zcfBundleCap } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -85,7 +82,7 @@ export const makePopulatedFakeVatAdmin = () => {
 
   const fakeCapToName = new Map(); // cap -> name
   const fakeNameToCap = new Map(); // name -> cap
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   for (const name of Object.getOwnPropertyNames(vatRoots)) {
     // These don't have real bundles (just a buildRootObject
     // function), but fakeVatAdmin wants to see a bundle.endoZipBase64

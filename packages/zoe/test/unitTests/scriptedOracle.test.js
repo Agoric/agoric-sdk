@@ -9,7 +9,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
 
 import { assert } from '@agoric/assert';
-import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 import buildManualTimer from '../../tools/manualTimer.js';
@@ -41,7 +41,7 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { admin, vatAdminState } = fakeVatAdmin();
     const zoe = makeZoeForTest(admin);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);

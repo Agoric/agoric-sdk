@@ -11,7 +11,7 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
@@ -255,7 +255,7 @@ export const makeSwingsetTestKit = async (
   bundleDir = 'bundles',
   {
     configSpecifier = undefined as string | undefined,
-    storage = makeFakeStorageKit('bootstrapTests'),
+    storage = fakeStorageKit('bootstrapTests'),
     verbose = false,
     slogFile = undefined as string | undefined,
     profileVats = [] as string[],

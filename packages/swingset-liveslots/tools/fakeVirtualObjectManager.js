@@ -6,12 +6,12 @@ import { makeVirtualObjectManager } from '../src/virtualObjectManager.js';
 // virtual object manager is embedded in, i.e., the kernel and the rest of
 // liveslots.  In particular, this module can be (and is, and is intended to be)
 // used for unit tests for the virtual object manager itself.  What you get back
-// from `makeFakeVirtualObjectManager` can't be used to program as if you were
+// from `fakeVirtualObjectManager` can't be used to program as if you were
 // running in a vat because the rest of the vat environment is not present, but
 // it *will* execute virtual object manager operations in the same way that the
 // real one will because underneath it *is* the real one.
 
-export function makeFakeVirtualObjectManager(vrm, fakeStuff) {
+export function fakeVirtualObjectManager(vrm, fakeStuff) {
   const {
     initializeKindHandleKind,
     defineKind,

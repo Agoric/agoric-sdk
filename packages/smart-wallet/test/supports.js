@@ -13,7 +13,7 @@ import {
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { fakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
@@ -62,7 +62,7 @@ export const subscriptionKey = subscription => {
 };
 
 /** @returns {import('@agoric/vats').BridgeManager} */
-const makeFakeBridgeManager = () =>
+const fakeBridgeManager = () =>
   // @ts-expect-error XXX generics puzzle: could be instantiated with a different subtype of constraint
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
@@ -129,14 +129,14 @@ export const makeMockTestSpace = async log => {
 
   const bldKit = makeIssuerKit('BLD');
   produce.bldIssuerKit.resolve(bldKit);
-  produce.bridgeManager.resolve(makeFakeBridgeManager());
+  produce.bridgeManager.resolve(fakeBridgeManager());
 
   const storageRoot = makeMockChainStorageRoot();
   produce.chainStorage.resolve(storageRoot);
 
   produce.testFirstAnchorKit.resolve(makeIssuerKit('AUSD', 'nat'));
 
-  const fakeBankKit = makeFakeBankKit([]);
+  const fakeBankKit = fakeBankKit([]);
 
   produce.bankManager.resolve(
     Promise.resolve(

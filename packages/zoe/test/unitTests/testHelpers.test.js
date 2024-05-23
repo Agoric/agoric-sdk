@@ -4,7 +4,7 @@ import { assertAmountsEqual } from '../zoeTestHelpers.js';
 import { setup } from './setupBasicMints.js';
 import { setupNonFungible } from './setupNonFungibleMints.js';
 
-function makeFakeT() {
+function fakeT() {
   let error;
   return harden({
     // Fake successful passing assertions to prompt backup `t.fail(...)`.
@@ -20,7 +20,7 @@ function makeFakeT() {
 test('assertAmountsEqual - Nat dup', async t => {
   const { moola } = setup();
 
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   await assertAmountsEqual(fakeT, moola(0n), moola(0n));
   t.falsy(fakeT.getError());
 });
@@ -31,7 +31,7 @@ test('assertAmountsEqual - Nat manual', async t => {
     moolaKit: { brand: moolaBrand },
   } = setup();
 
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   await assertAmountsEqual(
     fakeT,
     moola(0n),
@@ -42,7 +42,7 @@ test('assertAmountsEqual - Nat manual', async t => {
 
 test('assertAmountsEqual - false Nat', async t => {
   const { moola } = setup();
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
 
   const resultP = assertAmountsEqual(fakeT, moola(0n), moola(1n));
   const message = 'Values must match: got "[0n]", expected "[1n]"';
@@ -55,7 +55,7 @@ test('assertAmountsEqual - Set', async t => {
 
   const shinyHat = createRpgItem('hat', 'shiny');
   const shinyAmount = rpgItems(shinyHat);
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   await assertAmountsEqual(fakeT, shinyAmount, shinyAmount);
   t.falsy(fakeT.getError());
 });
@@ -65,7 +65,7 @@ test('assertAmountsEqual - Nat vs. Set', async t => {
 
   const shinyHat = createRpgItem('hat', 'shiny');
   const shinyAmount = rpgItems(shinyHat);
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   const resultP = assertAmountsEqual(
     fakeT,
     shinyAmount,
@@ -86,7 +86,7 @@ test('assertAmountsEqual - false Set', async t => {
   const shinyAmount = rpgItems(shinyHat);
   const sparklyHat = createRpgItem('hat', 'sparkly');
   const sparklyAmount = rpgItems(sparklyHat);
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   const resultP = assertAmountsEqual(fakeT, shinyAmount, sparklyAmount);
   const message =
     // TODO The pattern is here only as a temporary measure to tolerate
@@ -100,7 +100,7 @@ test('assertAmountsEqual - StrSet dupe', async t => {
   const { cryptoCats } = setupNonFungible();
 
   const felix = cryptoCats(harden(['Felix']));
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   await assertAmountsEqual(fakeT, felix, felix);
   t.falsy(fakeT.getError());
 });
@@ -110,7 +110,7 @@ test('assertAmountsEqual - StrSet copy', async t => {
 
   const felix = cryptoCats(harden(['Felix']));
   const felixAgain = cryptoCats(harden(['Felix']));
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   await assertAmountsEqual(fakeT, felix, felixAgain);
   t.falsy(fakeT.getError());
 });
@@ -120,7 +120,7 @@ test('assertAmountsEqual - false StrSet', async t => {
 
   const felix = cryptoCats(harden(['Felix']));
   const sylvester = cryptoCats(harden(['Sylvester']));
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   const resultP = assertAmountsEqual(fakeT, felix, sylvester);
   const message = 'Values must match: got ["Felix"], expected ["Sylvester"]';
   t.is(fakeT.getError(), message);
@@ -129,7 +129,7 @@ test('assertAmountsEqual - false StrSet', async t => {
 
 test('assertAmountsEqual - brand mismatch', async t => {
   const { moola, bucks } = setup();
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   const resultP = assertAmountsEqual(fakeT, moola(0n), bucks(0n));
   const message =
     'Brands must match: got [object Alleged: moola brand], expected [object Alleged: bucks brand]';
@@ -141,7 +141,7 @@ test('assertAmountsEqual - both mismatch', async t => {
   const { moola } = setup();
   const { cryptoCats } = setupNonFungible();
 
-  const fakeT = makeFakeT();
+  const fakeT = fakeT();
   const resultP = assertAmountsEqual(
     fakeT,
     moola(0n),

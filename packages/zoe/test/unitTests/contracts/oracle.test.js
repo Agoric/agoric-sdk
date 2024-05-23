@@ -9,7 +9,7 @@ import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
@@ -31,7 +31,7 @@ test.before(
   /** @param {ExecutionContext} ot */ async ot => {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const { admin, vatAdminState } = makeFakeVatAdmin();
+    const { admin, vatAdminState } = fakeVatAdmin();
     const zoe = makeZoeForTest(admin);
 
     // Pack the contract.

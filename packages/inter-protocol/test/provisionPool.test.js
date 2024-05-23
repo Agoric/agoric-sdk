@@ -12,8 +12,8 @@ import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { buildRootObject as buildBankRoot } from '@agoric/vats/src/vat-bank.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
@@ -66,7 +66,7 @@ const makeTestContext = async () => {
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
 
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const marshaller = fakeBoard().getReadonlyMarshaller();
 
   const storageRoot = makeMockChainStorageRoot();
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(
@@ -136,10 +136,7 @@ const tools = context => {
   const { zoe, anchor, installs, storageRoot } = context;
   // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
-  const { assetPublication, bank: poolBank } = makeFakeBankKit([
-    minted,
-    anchor,
-  ]);
+  const { assetPublication, bank: poolBank } = fakeBankKit([minted, anchor]);
 
   // Each driver needs its own to avoid state pollution between tests
   context.mockChainStorage = makeMockChainStorageRoot();
@@ -153,7 +150,7 @@ const tools = context => {
         feeMintAccess,
         initialPoserInvitation,
         storageNode: storageRoot.makeChildNode(name),
-        marshaller: makeFakeBoard().getReadonlyMarshaller(),
+        marshaller: fakeBoard().getReadonlyMarshaller(),
       },
     );
   };
@@ -211,7 +208,7 @@ test('provisionPool trades provided assets for IST', async t => {
       poolBank,
       initialPoserInvitation,
       storageNode: storageRoot.makeChildNode('provisionPool'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: fakeBoard().getReadonlyMarshaller(),
     },
   );
 
@@ -457,7 +454,7 @@ test('provisionPool revives old wallets', async t => {
       poolBank,
       initialPoserInvitation,
       storageNode: storageRoot.makeChildNode('provisionPool'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: fakeBoard().getReadonlyMarshaller(),
     },
   );
   const creatorFacet = E(facets.creatorFacet).getLimitedCreatorFacet();
@@ -566,7 +563,7 @@ test('provisionPool publishes metricsOverride promptly', async t => {
       poolBank,
       initialPoserInvitation,
       storageNode: storageRoot.makeChildNode('provisionPool'),
-      marshaller: makeFakeBoard().getReadonlyMarshaller(),
+      marshaller: fakeBoard().getReadonlyMarshaller(),
       metricsOverride: {
         totalMintedConverted: minted.make(20_000_000n),
         totalMintedProvided: minted.make(750_000n),

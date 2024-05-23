@@ -5,7 +5,7 @@ import './set-debug-label-instances.js';
 import { passStyleOf } from '@endo/far';
 
 // this samples it
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 // all tests in this file will be run with DEBUG='label-instances'
 import { parseVatSlot } from '../../src/parseVatSlots.js';
 
@@ -16,7 +16,7 @@ const behavior = {};
 const facets = { foo: {}, bar: {} };
 
 test('representatives with label-instances', t => {
-  const { fakeStuff, vom } = makeFakeVirtualStuff();
+  const { fakeStuff, vom } = fakeVirtualStuff();
   const { getSlotForVal } = fakeStuff;
   const makeThing = vom.defineKind('thing', init, behavior);
   const thing1 = makeThing();
@@ -33,7 +33,7 @@ test('representatives with label-instances', t => {
 });
 
 test('facets with label-instances', t => {
-  const { fakeStuff, vom } = makeFakeVirtualStuff();
+  const { fakeStuff, vom } = fakeVirtualStuff();
   const { getSlotForVal } = fakeStuff;
   const makeThings = vom.defineKindMulti('thing', init, facets);
   const thing1 = makeThings();

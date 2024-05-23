@@ -19,7 +19,7 @@ import {
   makeAutoswapInstance,
 } from './helpers.js';
 
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import { fakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 
 import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
@@ -48,7 +48,7 @@ const setupBorrow = async (
   const mmr = makeRatio(150n, loanKit.brand);
   const priceList = [2, 1, 1, 1];
 
-  const priceAuthority = await makeFakePriceAuthority({
+  const priceAuthority = await fakePriceAuthority({
     actualBrandIn: collateralKit.brand,
     actualBrandOut: loanKit.brand,
     priceList,

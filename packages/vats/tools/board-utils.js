@@ -86,7 +86,7 @@ harden(makeAgoricNamesRemotesFromFakeStorage);
  * @param {string} [options.prefix]
  * @param {number} [options.crcDigits]
  */
-export const makeFakeBoard = (initSequence = 0, options = {}) => {
+export const fakeBoard = (initSequence = 0, options = {}) => {
   const make = prepareBoardKit(makeScalarBigMapStore('baggage'));
   return make(initSequence, options).board;
 };

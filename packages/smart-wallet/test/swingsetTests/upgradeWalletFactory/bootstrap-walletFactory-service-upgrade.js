@@ -2,11 +2,11 @@
 import { Fail } from '@agoric/assert';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { fakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { fakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { fakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -20,11 +20,11 @@ const walletAddr = 'agoric1whatever';
 const moolaKit = makeIssuerKit('moola');
 
 export const buildRootObject = async () => {
-  const { bank, addAsset } = makeFakeBankKit([]);
-  const storageKit = makeFakeStorageKit('walletFactoryUpgradeTest');
+  const { bank, addAsset } = fakeBankKit([]);
+  const storageKit = fakeStorageKit('walletFactoryUpgradeTest');
   const statusPath = `walletFactoryUpgradeTest.${walletAddr}`;
   const currentPath = `${statusPath}.current`;
-  const board = makeFakeBoard();
+  const board = fakeBoard();
   const { agoricNames } = await makeAgoricNamesAccess();
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
 

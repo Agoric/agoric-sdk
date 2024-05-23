@@ -13,8 +13,8 @@ import {
 } from '../src/index.js';
 import {
   eventLoopIteration,
-  makeFakeStorage,
-  makeFakeMarshaller,
+  fakeStorage,
+  fakeMarshaller,
 } from '../tools/testSupports.js';
 
 import { jsonPairs } from './marshal-corpus.js';
@@ -25,7 +25,7 @@ test('stored subscription', async t => {
   const initialValue = 'first value';
   const { publication: pubStorage, subscription: subStorage } =
     makeSubscriptionKit();
-  const storage = makeFakeStorage('publish.foo.bar', pubStorage);
+  const storage = fakeStorage('publish.foo.bar', pubStorage);
   const { subscription, publication } = makeSubscriptionKit();
   publication.updateState(initialValue);
   const storesub = makeStoredSubscription(subscription, storage);
@@ -81,16 +81,12 @@ test('stored subscriber', async t => {
   const initialValue = 'first value';
   const { publication: pubStorage, subscription: subStorage } =
     makeSubscriptionKit();
-  const storage = makeFakeStorage('publish.foo.bar', pubStorage);
+  const storage = fakeStorage('publish.foo.bar', pubStorage);
 
   const { publisher, subscriber } = makePublishKit();
 
   publisher.publish(initialValue);
-  const storesub = makeStoredSubscriber(
-    subscriber,
-    storage,
-    makeFakeMarshaller(),
-  );
+  const storesub = makeStoredSubscriber(subscriber, storage, fakeMarshaller());
 
   t.deepEqual(await E(storesub).getStoreKey(), await E(storage).getStoreKey());
   const unserializer = E(storesub).getUnserializer();
@@ -141,14 +137,14 @@ test('stored subscriber', async t => {
 test('stored subscriber with setValue failure', async t => {
   const initialValue = 'first value';
 
-  const storage = makeFakeStorage('publish.foo.bar', {
+  const storage = fakeStorage('publish.foo.bar', {
     // @ts-expect-error faulty publication param to fail setValue
     updateState: null,
   });
 
   const { publisher, subscriber } = makePublishKit();
 
-  makeStoredSubscriber(subscriber, storage, makeFakeMarshaller());
+  makeStoredSubscriber(subscriber, storage, fakeMarshaller());
 
   t.is(storage.countSetValueCalls(), 0);
   publisher.publish(initialValue); // fails setValue
@@ -169,8 +165,8 @@ test.failing('stored subscriber with subscriber failure', async t => {
 });
 
 test('StoredPublisher', async t => {
-  const storageNode = makeFakeStorage('publish.foo.bar');
-  const marshaller = makeFakeMarshaller();
+  const storageNode = fakeStorage('publish.foo.bar');
+  const marshaller = fakeMarshaller();
 
   const { subscriber } = makeStoredPublishKit(storageNode, marshaller);
 

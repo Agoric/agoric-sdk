@@ -3,11 +3,11 @@
 // This file produces the globalThis.VatData property outside of a running
 // SwingSet so that it can be used by '@agoric/vat-data' (which only *consumes*
 // `globalThis.VatData`) in code under test.
-import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
+import { fakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;
 
-/** @type {ReturnType<makeFakeVirtualStuff>} */
+/** @type {ReturnType<fakeVirtualStuff>} */
 let fakeVomKit;
 
 globalThis.VatData = harden({
@@ -46,7 +46,7 @@ export const reincarnate = (options = {}) => {
     fvk.vrm.flushIDCounters();
   }
 
-  fakeVomKit = makeFakeVirtualStuff({
+  fakeVomKit = fakeVirtualStuff({
     ...options,
     fakeStore,
     WeakMap,

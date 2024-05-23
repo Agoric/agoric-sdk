@@ -1,10 +1,10 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
-import { makeFakeVirtualStuff } from '../tools/fakeVirtualSupport.js';
+import { fakeVirtualStuff } from '../tools/fakeVirtualSupport.js';
 
 async function runDurabilityCheckTest(t, relaxDurabilityRules) {
-  const { vom, cm } = makeFakeVirtualStuff({
+  const { vom, cm } = fakeVirtualStuff({
     relaxDurabilityRules,
   });
   const strict = !relaxDurabilityRules;

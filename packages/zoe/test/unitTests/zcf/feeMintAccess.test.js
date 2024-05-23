@@ -8,14 +8,14 @@ import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
 
 import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { fakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/registerFeeMintContract.js`;
 
 test(`feeMintAccess`, async t => {
-  const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
+  const { admin: fakeVatAdmin, vatAdminState } = fakeVatAdmin();
   const { zoeService: zoe, feeMintAccess } = makeZoeKitForTest(fakeVatAdmin);
   const bundle = await bundleSource(contractRoot);
   vatAdminState.installBundle('b1-registerfee', bundle);

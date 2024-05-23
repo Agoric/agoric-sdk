@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
+import { fakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 test('weakMap vref handling', t => {
   const log = [];
@@ -9,7 +9,7 @@ test('weakMap vref handling', t => {
     VirtualObjectAwareWeakSet,
     registerEntry,
     deleteEntry,
-  } = makeFakeVirtualObjectManager({ log });
+  } = fakeVirtualObjectManager({ log });
 
   function addCListEntry(slot, val) {
     registerEntry(slot, val);
