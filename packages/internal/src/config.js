@@ -14,7 +14,7 @@
 /**
  * Event source ids used by the bridge device.
  */
-export const BridgeId = {
+export const BridgeId = /** @type {const} */ ({
   BANK: 'bank',
   CORE: 'core',
   DIBC: 'dibc',
@@ -24,8 +24,9 @@ export const BridgeId = {
   VLOCALCHAIN: 'vlocalchain',
   VTRANSFER: 'vtransfer',
   WALLET: 'wallet',
-};
+});
 harden(BridgeId);
+/** @typedef {(typeof BridgeId)[keyof typeof BridgeId]} BridgeIdValue */
 
 export const CosmosInitKeyToBridgeId = {
   vbankPort: BridgeId.BANK,

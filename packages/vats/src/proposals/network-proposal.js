@@ -20,7 +20,7 @@ const NUM_IBC_PORTS_PER_CLIENT = 3;
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
+ * @param {ERef<import('../types.js').ScopedBridgeManager<'dibc'>>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   /** @type {Promise<void>[]} */
@@ -130,6 +130,8 @@ export const setupNetworkProtocols = async (
   const allocator = await portAllocatorP;
 
   const bridgeManager = await bridgeManagerP;
+  /** @type {import('../types.js').ScopedBridgeManager<'dibc'> | undefined} */
+  // @ts-expect-error XXX EProxy
   const dibcBridgeManager =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 

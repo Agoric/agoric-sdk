@@ -372,7 +372,9 @@ type ChainBootstrapSpaceT = {
   provisionWalletBridgeManager:
     | import('../types.js').ScopedBridgeManager
     | undefined;
-  storageBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
+  storageBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'storage'>
+    | undefined;
   /**
    * Convienence function for starting a contract (ungoverned) and saving its
    * facets (including adminFacet)

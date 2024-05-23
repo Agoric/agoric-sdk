@@ -2,6 +2,7 @@ import type { Bytes } from '@agoric/network';
 import type { PromiseVow } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
 import type { ERef } from '@endo/far';
+import type { BridgeIdValue } from '@agoric/internal';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
@@ -96,7 +97,13 @@ export type BridgeHandler = {
 };
 
 /** An object which handles messages for a specific bridge */
-export type ScopedBridgeManager = Guarded<{
+export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
+  /**
+   * Optional bridge ID getter. Not part of the production bridge vat but
+   * available in fake bridges as a means for test reflection and for the type
+   * system to hang the bridgeId
+   */
+  getBridgeId?: () => BridgeId;
   toBridge: (obj: any) => Promise<any>;
   fromBridge: (obj: any) => PromiseVow<void>;
   initHandler: (handler: ERef<BridgeHandler>) => void;
@@ -105,10 +112,10 @@ export type ScopedBridgeManager = Guarded<{
 
 /** The object to manage this bridge */
 export type BridgeManager = {
-  register: (
-    bridgeId: string,
+  register: <BridgeId extends BridgeIdValue>(
+    bridgeId: BridgeId,
     handler?: ERef<BridgeHandler | undefined>,
-  ) => ScopedBridgeManager;
+  ) => ScopedBridgeManager<BridgeId>;
 };
 
 export type IBCPortID = string;

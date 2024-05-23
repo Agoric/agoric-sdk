@@ -52,7 +52,7 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
 
 /**
  * @typedef {Pick<
- *   import('./types.js').ScopedBridgeManager,
+ *   import('./types.js').ScopedBridgeManager<any>,
  *   'fromBridge' | 'toBridge'
  * >} BridgeChannel
  */
@@ -863,7 +863,9 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP]
+     * @param {ERef<
+     *   import('./types.js').ScopedBridgeManager<'bank'> | undefined
+     * >} [bankBridgeManagerP]
      *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
      *   supplied (such as on sim-chain), we just use local purses.
      * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
@@ -880,7 +882,7 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         'denomToAddressUpdater',
       );
 
-      /** @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr] */
+      /** @param {ERef<import('./types.js').ScopedBridgeManager<'bank'>>} [bankBridgeMgr] */
       async function getBankChannel(bankBridgeMgr) {
         // We do the logic here if the bridge manager is available.  Otherwise,
         // the bank is not "remote" (such as on sim-chain), so we just use

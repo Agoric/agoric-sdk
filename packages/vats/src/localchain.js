@@ -13,14 +13,14 @@ const { Fail } = assert;
 
 /**
  * @typedef {{
- *   system: ScopedBridgeManager;
+ *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bank: Bank;
  * }} AccountPowers
  */
 
 /**
  * @typedef {{
- *   system: ScopedBridgeManager;
+ *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
  * }} LocalChainPowers
  */

@@ -6,7 +6,7 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
  * @param {BootstrapPowers & {
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
- *     localchainBridgeManager: import('../types').ScopedBridgeManager;
+ *     localchainBridgeManager: import('../types').ScopedBridgeManager<'vlocalchain'>;
  *   };
  *   produce: {
  *     localchain: Producer<any>;
@@ -51,9 +51,11 @@ export const setupLocalChainVat = async (
 
   localchainVat.reset();
   localchainVat.resolve(vats.localchain);
-  /** @type {import('../types').ScopedBridgeManager} */
+  /** @type {import('../types').ScopedBridgeManager<'vlocalchain'>} */
   let scopedManager;
   try {
+    /** @type {import('../types.js').ScopedBridgeManager<'vlocalchain'>} */
+    // @ts-expect-error XXX EProxy
     scopedManager = await E(bridgeManager).register(BRIDGE_ID.VLOCALCHAIN);
     localchainBridgeManager.reset();
     localchainBridgeManager.resolve(scopedManager);
