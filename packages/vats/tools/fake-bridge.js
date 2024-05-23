@@ -2,6 +2,8 @@ import { Fail } from '@agoric/assert';
 import { makeTracer, VBankAccount } from '@agoric/internal';
 import assert from 'node:assert/strict';
 import { E } from '@endo/far';
+import { makeWhen } from '@agoric/vow/src/when.js';
+import { Nat } from '@endo/nat';
 
 /**
  * @import {MsgDelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
@@ -9,6 +11,8 @@ import { E } from '@endo/far';
  * @import {Remote} from '@agoric/vow';
  */
 const trace = makeTracer('FakeBridge', false);
+
+const when = makeWhen();
 
 /** @typedef {{ [address: string]: { [denom: string]: bigint } }} Balances */
 
@@ -98,8 +102,7 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
-      await E(hndlr).fromBridge(obj);
-      return E(hndlr).fromBridge(obj);
+      return when(E(hndlr).fromBridge(obj));
     },
     initHandler: h => {
       if (hndlr) throw Error('already init');
@@ -107,6 +110,7 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
     },
     setHandler: h => {
       if (!hndlr) throw Error('must init first');
+      trace('fromBridge', obj);
       hndlr = h;
     },
   });
@@ -115,10 +119,9 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} onToBridge
- * @param {(handler, obj) => Promise<void>} onFromBridge
  * @returns {ScopedBridgeManager<'dibc'>}
  */
-export const makeFakeIbcBridge = (zone, onToBridge, onFromBridge) => {
+export const makeFakeIbcBridge = (zone, onToBridge) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   return zone.exo('Fake IBC Bridge Manager', undefined, {
@@ -135,8 +138,7 @@ export const makeFakeIbcBridge = (zone, onToBridge, onFromBridge) => {
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
-      await onFromBridge(hndlr, obj);
-      return E(hndlr).fromBridge(obj);
+      return when(E(hndlr).fromBridge(obj));
     },
     initHandler: h => {
       if (hndlr) throw Error('already init');
@@ -152,14 +154,9 @@ export const makeFakeIbcBridge = (zone, onToBridge, onFromBridge) => {
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} [onToBridge]
- * @param {(handler, obj) => ERef<void>} [onFromBridge]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
-export const makeFakeLocalchainBridge = (
-  zone,
-  onToBridge = () => {},
-  onFromBridge = () => {},
-) => {
+export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
@@ -205,8 +202,7 @@ export const makeFakeLocalchainBridge = (
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
-      await onFromBridge(hndlr, obj);
-      return E(hndlr).fromBridge(obj);
+      return when(E(hndlr).fromBridge(obj));
     },
     initHandler: h => {
       if (hndlr) throw Error('already init');

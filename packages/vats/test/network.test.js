@@ -93,14 +93,10 @@ test('network - ibc', async t => {
   const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
   const events = subscribeEach(pinnedHistoryTopic)[Symbol.asyncIterator]();
 
-  const ibcBridge = makeFakeIbcBridge(
-    zone,
-    obj => {
-      const { method, type: _, ...params } = obj;
-      publisher.publish([method, params]);
-    },
-    (target, obj) => when(E(target).fromBridge(obj)),
-  );
+  const ibcBridge = makeFakeIbcBridge(zone, obj => {
+    const { method, type: _, ...params } = obj;
+    publisher.publish([method, params]);
+  });
 
   await registerNetworkProtocols(
     { network: networkVat, ibc: ibcVat, provisioning: undefined },
