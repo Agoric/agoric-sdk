@@ -80,9 +80,10 @@ export const spawnRetentiveVatSequence = async ({
     for (let i = 0; i < chunkCount; i += 1) {
       // Make a new vat, replacing a previous vat if present.
       const oldVat = vat;
+      const snapshotStream = oldVat?.makeSnapshotStream();
       vat = await makeRetentiveVat({
         ...xsnapOptions,
-        snapshotStream: oldVat?.makeSnapshotStream(),
+        snapshotStream,
       });
       await oldVat?.close();
 
@@ -93,7 +94,7 @@ export const spawnRetentiveVatSequence = async ({
       } catch (err) {
         throw Error(`Error with ${label}`, { cause: err });
       }
-      await afterCommand?.(vat);
+      await afterCommand?.(vat, snapshotStream);
     }
   } finally {
     await vat?.close();
@@ -112,7 +113,7 @@ harden(spawnRetentiveVatSequence);
  * @returns {Promise<void>}
  */
 const main = async ({ chunkCount, chunkSize, idleDuration, xsnapOptions }) => {
-  const afterCommand = async _vat => {
+  const afterCommand = async (_vat, _snapshotStream) => {
     const { promise, resolve } = makePromiseKit();
     setTimeout(resolve, idleDuration);
     return promise;
