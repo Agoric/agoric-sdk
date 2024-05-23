@@ -57,7 +57,7 @@ test('provideAssetSubscription - MapStore insertion order preserved', async t =>
 });
 
 test('communication', async t => {
-  t.plan(32);
+  t.plan(31);
   const baggage = provideBaggage('communication');
   const bankVat = E(buildRootObject)(null, null, baggage);
 
@@ -201,8 +201,7 @@ test('communication', async t => {
   const updateRecord = await E(notifier).getUpdateSince();
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
   const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
-  t.assert(bankHandler);
-  // @ts-expect-error banHandler does not resolve to undefined
+  assert(bankHandler);
   await E(bankHandler).fromBridge(obj);
 
   // Wait for new balance.

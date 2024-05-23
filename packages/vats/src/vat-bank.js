@@ -52,8 +52,8 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
 
 /**
  * @typedef {Pick<
- *   import('./types.js').ScopedBridgeManager<any>,
- *   'fromBridge' | 'toBridge'
+ *   import('./types.js').ScopedBridgeManager<'bank'>,
+ *   'getBridgeId' | 'fromBridge' | 'toBridge'
  * >} BridgeChannel
  */
 
@@ -199,7 +199,6 @@ const prepareBankChannelHandler = zone =>
                 if (addressToUpdater.has(address)) {
                   updater = addressToUpdater.get(address);
                 }
-                // console.info('bank balance update', update);
               } catch (e) {
                 console.error('Unregistered denom in', update, e);
               }
@@ -882,25 +881,27 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         'denomToAddressUpdater',
       );
 
-      /** @param {ERef<import('./types.js').ScopedBridgeManager<'bank'>>} [bankBridgeMgr] */
-      async function getBankChannel(bankBridgeMgr) {
+      async function getBankChannel() {
         // We do the logic here if the bridge manager is available.  Otherwise,
         // the bank is not "remote" (such as on sim-chain), so we just use
         // immediate purses instead of virtual ones.
-        if (!bankBridgeMgr) {
+        if (!bankBridgeManager) {
+          console.warn(
+            'no bank bridge manager, using immediate purses instead of virtual ones',
+          );
           return undefined;
         }
 
         // We need to synchronise with the remote bank.
         const handler = makeBankChannelHandler(denomToAddressUpdater);
-        await E(bankBridgeMgr).initHandler(handler);
+        await E(bankBridgeManager).initHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return makeBridgeChannelAttenuator({ target: bankBridgeMgr });
+        return makeBridgeChannelAttenuator({ target: bankBridgeManager });
       }
 
       const [bankChannel, nameAdmin] = await Promise.all([
-        getBankChannel(bankBridgeManager),
+        getBankChannel(),
         nameAdminP,
       ]);
       return makeBankManager({
