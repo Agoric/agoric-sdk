@@ -8,6 +8,11 @@ import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
+/**
+ * @import {Remote} from '@agoric/vow';
+ * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ */
+
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
   const root = fakeVomKit.cm.provideBaggage();
@@ -58,10 +63,10 @@ test('communication', async t => {
 
   const zone = makeDurableZone(baggage);
 
-  /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
+  /** @type {undefined | Remote<BridgeHandler>} */
   let bankHandler;
 
-  /** @type {import('../src/types.js').ScopedBridgeManager<'bank'>} */
+  /** @type {ScopedBridgeManager<'bank'>} */
   const bankBridgeMgr = zone.exo('fakeBankBridgeManager', undefined, {
     async fromBridge(obj) {
       t.is(typeof obj, 'string');

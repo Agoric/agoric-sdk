@@ -1,5 +1,5 @@
 import type { Bytes } from '@agoric/network';
-import type { PromiseVow } from '@agoric/vow';
+import type { PromiseVow, Remote } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
 import type { ERef } from '@endo/far';
 import type { BridgeIdValue } from '@agoric/internal';
@@ -106,15 +106,15 @@ export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
   getBridgeId?: () => BridgeId;
   toBridge: (obj: any) => Promise<any>;
   fromBridge: (obj: any) => PromiseVow<void>;
-  initHandler: (handler: ERef<BridgeHandler>) => void;
-  setHandler: (handler: ERef<BridgeHandler>) => void;
+  initHandler: (handler: Remote<BridgeHandler>) => void;
+  setHandler: (handler: Remote<BridgeHandler>) => void;
 }>;
 
 /** The object to manage this bridge */
 export type BridgeManager = {
   register: <BridgeId extends BridgeIdValue>(
     bridgeId: BridgeId,
-    handler?: ERef<BridgeHandler | undefined>,
+    handler?: Remote<BridgeHandler | undefined>,
   ) => ScopedBridgeManager<BridgeId>;
 };
 
