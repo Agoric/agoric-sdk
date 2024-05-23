@@ -3,7 +3,9 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-/** @param {Pick<IssuerKit, 'brand' | 'issuer'>[]} issuerKits */
+/**
+ * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer'>[]} issuerKits
+ */
 export const makeFakeBankKit = issuerKits => {
   /** @type {MapStore<Brand, Issuer>} */
   const issuers = makeScalarMapStore();

@@ -113,7 +113,7 @@ export const publishInterchainAssetFromBank = async (
   });
 
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
+  const kit = /** @type {IssuerKit<'nat'>} */ ({ mint, issuer, brand });
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 

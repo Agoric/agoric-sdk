@@ -449,8 +449,6 @@ export const prepareProvisionPoolKit = (
    * @param {ERef<StorageNode>} opts.storageNode
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
-    /** @type {Purse<'nat'>} */
-    // @ts-expect-error vbank purse is close enough for our use.
     const fundPurse = await E(poolBank).getPurse(poolBrand);
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 

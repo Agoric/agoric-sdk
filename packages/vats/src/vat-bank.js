@@ -349,11 +349,10 @@ const prepareAssetSubscription = zone => {
 };
 
 /**
- * @template {AssetKind} [K=AssetKind]
  * @typedef {object} AssetIssuerKit
- * @property {Mint<K>} [mint]
- * @property {Issuer<K>} issuer
- * @property {Brand<K>} brand
+ * @property {Mint<'nat'>} [mint]
+ * @property {Issuer<'nat'>} issuer
+ * @property {Brand<'nat'>} brand
  */
 
 const BaseIssuerKitShape = harden({
@@ -368,7 +367,7 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
 /**
  * @typedef {AssetIssuerKit & {
  *   denom: string;
- *   escrowPurse?: RemotableObject & ERef<Purse>;
+ *   escrowPurse?: RemotableObject & ERef<Purse<'nat'>>;
  * }} AssetRecord
  */
 
@@ -686,8 +685,8 @@ const prepareBankManager = (
        * @param {string} denom lower-level denomination string
        * @param {string} issuerName
        * @param {string} proposedName
-       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer
-       *   kit (mint, brand, issuer)
+       * @param {AssetIssuerKit & { payment?: ERef<Payment<'nat'>> }} kit ERTP
+       *   issuer kit (mint, brand, issuer)
        */
       async addAsset(denom, issuerName, proposedName, kit) {
         const {

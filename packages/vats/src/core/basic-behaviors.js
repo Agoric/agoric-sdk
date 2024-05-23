@@ -653,7 +653,9 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand });
+  const bldKit = /** @type {IssuerKit<'nat'>} */ (
+    harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand })
+  );
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
