@@ -134,10 +134,10 @@ const makeRemoteChainFacade = name => {
  *
  * @param {{
  *   zone: Zone;
- *   timerService: Remote<TimerService>;
+ *   timerService: Remote<TimerService> | null;
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<OrchestrationService> | null;
  *   localchain: Remote<LocalChain>;
  * }} powers
  */
