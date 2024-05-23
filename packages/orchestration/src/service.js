@@ -12,6 +12,7 @@ import {
 
 /**
  * @import { Zone } from '@agoric/base-zone';
+ * @import {Remote} from '@agoric/internal';
  * @import { Port, PortAllocator } from '@agoric/network';
  * @import { IBCConnectionID } from '@agoric/vats';
  * @import { ICQConnection, IcaAccount, ICQConnectionKit } from './types.js';
@@ -21,7 +22,7 @@ const { Fail, bare } = assert;
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {ERef<PortAllocator>} portAllocator
+ * @property {Remote<PortAllocator>} portAllocator
  */
 
 /**

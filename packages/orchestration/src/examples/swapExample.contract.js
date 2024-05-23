@@ -10,7 +10,7 @@ import { orcUtils } from '../utils/orc.js';
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {ERef} from '@endo/far'
+ * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  * @import {Zone} from '@agoric/zone';
  */
@@ -40,10 +40,10 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
- * localchain: ERef<LocalChain>;
- * orchestrationService: ERef<OrchestrationService>;
- * storageNode: ERef<StorageNode>;
- * timerService: ERef<TimerService>;
+ * localchain: Remote<LocalChain>;
+ * orchestrationService: Remote<OrchestrationService>;
+ * storageNode: Remote<StorageNode>;
+ * timerService: Remote<TimerService>;
  * zone: Zone;
  * }} privateArgs
  */
