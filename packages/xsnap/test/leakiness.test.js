@@ -81,10 +81,10 @@ const testRetention = async (t, xsnapOptions) => {
   );
 };
 
-test.serial.failing('snapshot GC with pipes', testRetention, {
+test.serial('snapshot GC with pipes', testRetention, {
   snapshotUseFs: false,
 });
 
-test.serial.failing('snapshot GC with temp files', testRetention, {
+test.serial('snapshot GC with temp files', testRetention, {
   snapshotUseFs: true,
 });

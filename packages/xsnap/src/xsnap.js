@@ -77,6 +77,7 @@ const safeHintFromDescription = description =>
  * @property {Record<string, string>} [env]
  */
 export async function xsnap(options) {
+  let { snapshotStream } = options;
   const {
     os,
     spawn,
@@ -86,7 +87,6 @@ export async function xsnap(options) {
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
-    snapshotStream,
     snapshotDescription = snapshotStream && 'unknown',
     snapshotUseFs = false,
     stdout = 'ignore',
@@ -117,7 +117,11 @@ export async function xsnap(options) {
     });
 
     const afterSpawn = async () => {};
-    const cleanup = async () => fs.unlink(snapPath);
+    const cleanup = async () => {
+      // @ts-expect-error this frees snapshotStream; it won't be used again
+      snapshotStream = null;
+      return fs.unlink(snapPath);
+    };
 
     try {
       const tmpSnap = await fs.open(snapPath, 'w');
@@ -141,7 +145,11 @@ export async function xsnap(options) {
   const makeLoadSnapshotHandlerWithPipe = async () => {
     let done = Promise.resolve();
 
-    const cleanup = async () => done;
+    const cleanup = async () => {
+      await done;
+      // @ts-expect-error this frees snapshotStream; it won't be used again
+      snapshotStream = null;
+    };
 
     /** @param {Writable} loadSnapshotsStream */
     const afterSpawn = async loadSnapshotsStream => {
