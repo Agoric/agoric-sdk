@@ -76,6 +76,7 @@ const safeHintFromDescription = description =>
  * @property {Record<string, string>} [env]
  */
 export async function xsnap(options) {
+  let { snapshotStream } = options;
   const {
     os,
     spawn,
@@ -85,7 +86,6 @@ export async function xsnap(options) {
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
-    snapshotStream,
     snapshotDescription = snapshotStream && 'unknown',
     snapshotUseFs = false,
     stdout = 'ignore',
@@ -116,7 +116,10 @@ export async function xsnap(options) {
     });
 
     const afterSpawn = async () => {};
-    const cleanup = async () => fs.unlink(snapPath);
+    const cleanup = async () => {
+      snapshotStream = null;
+      return fs.unlink(snapPath);
+    };
 
     try {
       // eslint-disable-next-line @jessie.js/no-nested-await
@@ -144,7 +147,10 @@ export async function xsnap(options) {
   const makeLoadSnapshotHandlerWithPipe = async () => {
     let done = Promise.resolve();
 
-    const cleanup = async () => done;
+    const cleanup = async () => {
+      await done;
+      snapshotStream = null;
+    };
 
     /** @param {Writable} loadSnapshotsStream */
     const afterSpawn = async loadSnapshotsStream => {
