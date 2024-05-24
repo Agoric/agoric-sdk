@@ -149,3 +149,89 @@ test('start', async t => {
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
 });
+
+test('send using arbitrary chain info', async t => {
+  t.log('bootstrap');
+  const issuerKit = makeIssuerKit('IST');
+  const stable = withAmountUtils(issuerKit);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+
+  const zone = makeHeapZone();
+  const bankManager = await buildBankVatRoot(
+    undefined,
+    undefined,
+    zone.mapStore('bankManager'),
+  ).makeBankManager();
+
+  await E(bankManager).addAsset('uist', 'IST', 'Inter Stable Token', issuerKit);
+
+  const storage = makeFakeStorageKit('mockChainStorageRoot', {
+    sequence: false,
+  });
+
+  const board = makeFakeBoard();
+  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+    makeNameHubKit();
+  const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log);
+
+  t.log('orchestration coreEval');
+  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
+  const localchainBridge = makeFakeLocalchainBridge(zone);
+  const localchain = makeLocalChain({
+    bankManager,
+    system: localchainBridge,
+  });
+
+  const orchestrationService = mockOrchestrationService();
+
+  const contractName = 'sendAnywhere';
+  t.log('contract coreEval', contractName);
+  // TODO fix name
+  const contractFile2 = `${dirname}/../../src/examples/${contractName}.contract.js`;
+  type StartFn2 =
+    typeof import('@agoric/orchestration/src/examples/sendAnywhere.contract.js').start;
+
+  const installation: Installation<StartFn2> =
+    await bundleAndInstall(contractFile2);
+
+  const privateArgs = {
+    localchain,
+    orchestrationService,
+    storageNode: E(storage.rootNode).makeChildNode(contractName),
+    timerService: null as any,
+    board,
+    agoricNames,
+  };
+
+  const { instance, creatorFacet } = await E(zoe).startInstance(
+    installation,
+    { Stable: stable.issuer },
+    {},
+    privateArgs,
+  );
+
+  const chainInfo = {
+    ...agoricPeerInfo.osmosis,
+    ...chainRegistryInfo.celestia,
+  } as CosmosChainInfo;
+  await E(creatorFacet).addChain(chainInfo);
+
+  t.log('do offer');
+  const publicFacet = await E(zoe).getPublicFacet(instance);
+  const inv = E(publicFacet).makeSendInvitation();
+
+  const amt = await E(zoe).getInvitationDetails(inv);
+  t.is(amt.description, 'send');
+
+  const anAmt = stable.make(20n);
+  const Send = stable.mint.mintPayment(anAmt);
+  const dest = { destAddr: 'agoric1valopsfufu', chainKey: 0 };
+  const userSeat = await E(zoe).offer(
+    inv,
+    { give: { Send: anAmt } },
+    { Send },
+    dest,
+  );
+  const result = await E(userSeat).getOfferResult();
+  t.is(result, undefined);
+});
