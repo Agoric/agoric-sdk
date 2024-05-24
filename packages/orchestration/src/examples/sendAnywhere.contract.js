@@ -5,8 +5,10 @@ import { E } from '@endo/far';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 
 import { AmountShape } from '@agoric/ertp';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { makeOrchestrationFacade } from '../facade.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 const { entries } = Object;
 const { Fail } = assert;
@@ -15,11 +17,12 @@ const { Fail } = assert;
  * @import {Baggage} from '@agoric/vat-data';
  * @import {CosmosChainInfo} from '../cosmos-api';
  * @import {MapStore} from '@agoric/store';
- * @import {TimerService} from '@agoric/time';
+ * @import {TimerService, TimerBrand} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
  * @import {NameHub, Board} from '@agoric/vats';
+ * @import { Remote } from '@agoric/vow';
  */
 
 /**
@@ -39,13 +42,31 @@ const SingleAmountRecord = M.recordOf(M.string(), AmountShape, {
 
 /**
  * @param {ZCF} zcf
- * @param {OrchestrationPowers} privateArgs
+ * @param {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ *   agoricChainInfo: Pick<CosmosChainInfo, 'chainId' | 'connections'>;
+ *   timerService: TimerService;
+ *   timerBrand: TimerBrand;
+ * }} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
   /** @type {MapStore<number, CosmosChainInfo>} */
   const chains = zone.mapStore('chains');
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    privateArgs.marshaller,
+  );
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    baggage,
+    makeRecorderKit,
+    zcf,
+    privateArgs.timerService,
+    privateArgs.timerBrand,
+    privateArgs.agoricChainInfo,
+  );
 
   const { orchestrate } = makeOrchestrationFacade({
     zcf,
@@ -54,7 +75,25 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   const { localchain } = privateArgs;
-  const contractAccountP = E(localchain).makeAccount();
+  const lowLevelAccountP = E(localchain).makeAccount();
+  const [lowLevelAccount, address] = await Promise.all([
+    lowLevelAccountP,
+    E(lowLevelAccountP).getAddress(),
+  ]);
+  const { holder: contractAccount } = makeLocalChainAccountKit({
+    account: lowLevelAccount,
+    address,
+    storageNode: await privateArgs.storageNode, // TODO: Remote
+  });
+
+  const findBrandInVBank = async brand => {
+    const assets = await E(
+      E(privateArgs.agoricNames).lookup('vbankAsset'),
+    ).values();
+    const it = assets.find(a => a.brand === brand);
+    it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
+    return it;
+  };
 
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
@@ -67,13 +106,24 @@ export const start = async (zcf, privateArgs, baggage) => {
         harden({ chainKey: M.scalar(), destAddr: M.string() }),
       );
       const { chainKey, destAddr } = offerArgs;
-      const chain = chains.get(chainKey);
       const { give } = seat.getProposal();
       entries(give).length > 0 || Fail`empty give`;
       const [[kw, amt]] = entries(give);
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-      await E(contractAccountP).deposit(await pmtP, amt);
-      await E(contractAccountP).transfer(amt, chain, destAddr);
+      const { chainId } = chains.get(chainKey);
+      await E(contractAccount).deposit(await pmtP, amt);
+      const { denom } = await findBrandInVBank(amt.brand);
+      const { value } = amt;
+      // TODO: fix transfer to not depend on a global
+      // chainId registry? #8879
+      await E(contractAccount).transfer(
+        { denom, value },
+        {
+          address: destAddr,
+          addressEncoding: 'bech32',
+          chainId,
+        },
+      );
     },
   );
 

@@ -126,7 +126,7 @@ test('start', async t => {
   makePromiseSpaceForNameHub(nameAdmin, subSpaceLog);
 
   const info = {
-    ...agoricPeerInfo.osmosis,
+    ...agoricPeerInfo[0],
     ...chainRegistryInfo.celestia,
   } as CosmosChainInfo;
   await nameAdmin.update('celestia', info);
@@ -190,6 +190,17 @@ test('send using arbitrary chain info', async t => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
   const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log);
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'uist',
+    /** @type {AssetInfo} */ harden({
+      brand: stable.brand,
+      issuer: stable.issuer,
+      issuerName: 'IST',
+      denom: 'uist',
+      proposedName: 'IST',
+      displayInfo: { IOU: true },
+    }),
+  );
 
   t.log('orchestration coreEval');
   const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
@@ -211,25 +222,35 @@ test('send using arbitrary chain info', async t => {
   const installation: Installation<StartFn2> =
     await bundleAndInstall(contractFile2);
 
-  const privateArgs = {
-    localchain,
-    orchestrationService,
-    storageNode: E(storage.rootNode).makeChildNode(contractName),
-    timerService: null as any,
-    board,
-    agoricNames,
-  };
-
   const { instance, creatorFacet } = await E(zoe).startInstance(
     installation,
     { Stable: stable.issuer },
     {},
-    privateArgs,
+    {
+      localchain,
+      orchestrationService,
+      storageNode: E(storage.rootNode).makeChildNode(contractName),
+      timerService: null as any,
+      board,
+      agoricNames,
+      agoricChainInfo: { connections: zone.mapStore('AC@@TODO') } as any,
+      timerBrand: zone.exo('TB', undefined, {}) as any,
+      marshaller: await E(board).getPublishingMarshaller(),
+    },
   );
 
   const chainInfo = {
-    ...agoricPeerInfo.osmosis,
+    ...agoricPeerInfo[0],
     ...chainRegistryInfo.celestia,
+    allowedMessages: [],
+    allowedQueries: [],
+    chainId: 'may24',
+    connections: zone.mapStore('may24 connections'),
+    ibcHooksEnabled: false,
+    icaEnabled: false,
+    icqEnabled: false,
+    pfmEnabled: false,
+    stakingTokens: [{ denom: 'umay' }],
   } as CosmosChainInfo;
   await E(creatorFacet).addChain(chainInfo);
 
