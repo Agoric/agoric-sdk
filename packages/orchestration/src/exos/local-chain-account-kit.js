@@ -212,7 +212,7 @@ export const prepareLocalChainAccountKit = (
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
           // TODO #8879 chainInfo and #9063 well-known chains
-          const { transferChannel } = agoricChainInfo.connections.get(
+          const { transferChannel } = await E(agoricChainInfo.connections).get(
             destination.chainId,
           );
 
