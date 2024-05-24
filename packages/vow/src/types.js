@@ -5,10 +5,10 @@ export {};
  * @import {RemotableBrand} from '@endo/eventual-send'
  * @import {CopyTagged} from '@endo/pass-style'
  * @import {RemotableObject} from '@endo/pass-style';
- * @import {PromiseVow, Remote} from '@agoric/vow';
+ * @import {IsPrimitive, Remote} from '@agoric/internal';
+ * @import {PromiseVow} from '@agoric/vow';
  * @import {prepareVowTools} from './tools.js'
  */
-/** @typedef {(...args: any[]) => any} Callable */
 
 /**
  * @template T
@@ -22,29 +22,6 @@ export {};
  */
 
 /**
- * @template T
- * @typedef {(
- *   T extends bigint ? true :
- *   T extends boolean ? true :
- *   T extends null ? true :
- *   T extends number ? true :
- *   T extends string ? true :
- *   T extends symbol ? true :
- *   T extends undefined ? true :
- *   false
- * )} IsPrimitive Whether T is a primitive type.
- */
-
-/**
- * @template T
- * @typedef {(
- *   IsPrimitive<T> extends true ? T :
- *   T extends Callable ? never :
- *   { [P in keyof T as T[P] extends Callable ? never : P]: DataOnly<T[P]> }
- * )} DataOnly Recursively extract the non-callable properties of T.
- */
-
-/**
  * Follow the chain of vow shortening to the end, returning the final value.
  * This is used within E, so we must narrow the type to its remote form.
  * @template T
@@ -55,16 +32,6 @@ export {};
  *   T extends RemotableBrand<infer Local, infer Primary> ? Local & T :
  *   T
  * )} Unwrap
- */
-
-/**
- * A type that accepts both near and marshalled references that were
- * returned from `Remotable` or `Far`.
- * @template Primary The type of the primary reference.
- * @template [Local=DataOnly<Primary>] The local properties of the object.
- * @typedef {Primary | RemotableBrand<Local, Primary>} Remote A type that
- * doesn't assume its parameter is local, but is satisfied with both local
- * and remote references.
  */
 
 /**

@@ -1,4 +1,5 @@
 import { StorageNodeShape } from '@agoric/internal';
+import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -10,7 +11,7 @@ import { orcUtils } from '../utils/orc.js';
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {ERef} from '@endo/far'
+ * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  * @import {Zone} from '@agoric/zone';
  */
@@ -18,10 +19,10 @@ import { orcUtils } from '../utils/orc.js';
 /** @type {ContractMeta} */
 export const meta = {
   privateArgsShape: {
-    localchain: M.any(),
-    orchestrationService: M.any(),
+    localchain: M.remotable('localchain'),
+    orchestrationService: M.or(M.remotable('orchestration'), null),
     storageNode: StorageNodeShape,
-    timerService: M.any(),
+    timerService: M.or(TimerServiceShape, null),
     zone: M.any(),
   },
   upgradability: 'canUpgrade',
@@ -40,10 +41,10 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
- * localchain: ERef<LocalChain>;
- * orchestrationService: ERef<OrchestrationService>;
- * storageNode: ERef<StorageNode>;
- * timerService: ERef<TimerService>;
+ * localchain: Remote<LocalChain>;
+ * orchestrationService: Remote<OrchestrationService> | null;
+ * storageNode: Remote<StorageNode>;
+ * timerService: Remote<TimerService> | null;
  * zone: Zone;
  * }} privateArgs
  */

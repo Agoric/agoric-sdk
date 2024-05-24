@@ -1,8 +1,7 @@
+import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { PromiseVow, Remote } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
-import type { ERef } from '@endo/far';
-import type { BridgeIdValue } from '@agoric/internal';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>

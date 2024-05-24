@@ -6,7 +6,7 @@ import { E } from '@endo/far';
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {ERef} from '@endo/far';
+ * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
  * @import {Chain, ChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
  */
@@ -15,7 +15,7 @@ import { E } from '@endo/far';
 const anyVal = null;
 
 /**
- * @param {ERef<LocalChain>} localchain
+ * @param {Remote<LocalChain>} localchain
  * @returns {Chain}
  */
 const makeLocalChainFacade = localchain => {
@@ -134,11 +134,11 @@ const makeRemoteChainFacade = name => {
  *
  * @param {{
  *   zone: Zone;
- *   timerService: ERef<TimerService>;
+ *   timerService: Remote<TimerService> | null;
  *   zcf: ZCF;
- *   storageNode: ERef<StorageNode>;
- *   orchestrationService: ERef<OrchestrationService>;
- *   localchain: ERef<LocalChain>;
+ *   storageNode: Remote<StorageNode>;
+ *   orchestrationService: Remote<OrchestrationService> | null;
+ *   localchain: Remote<LocalChain>;
  * }} powers
  */
 export const makeOrchestrationFacade = ({

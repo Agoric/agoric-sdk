@@ -3,6 +3,7 @@
  */
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { TimerServiceShape } from '@agoric/time';
 import { V as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -22,8 +23,8 @@ export const meta = harden({
   privateArgsShape: {
     orchestration: M.remotable('orchestration'),
     storageNode: StorageNodeShape,
-    marshaller: M.remotable('Marshaller'),
-    timer: M.remotable('TimerService'),
+    marshaller: M.remotable('marshaller'),
+    timer: TimerServiceShape,
   },
 });
 export const privateArgsShape = meta.privateArgsShape;

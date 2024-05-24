@@ -9,7 +9,7 @@ import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
 /**
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  */
 
