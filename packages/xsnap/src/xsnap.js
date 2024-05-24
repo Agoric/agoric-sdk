@@ -109,7 +109,6 @@ export async function xsnap(options) {
   const ptmpName = fs.tmpName && promisify(fs.tmpName);
 
   const makeLoadSnapshotHandlerWithFS = async sourceBytes => {
-    assert(sourceBytes);
     const snapPath = await ptmpName({
       template: `load-snapshot-${safeHintFromDescription(
         snapshotDescription,
@@ -140,11 +139,8 @@ export async function xsnap(options) {
 
     const cleanup = async () => done;
 
-    /** @param {Writable} loadSnapshotsStream */
-    const afterSpawn = async loadSnapshotsStream => {
-      assert(sourceBytes);
-      const destStream = loadSnapshotsStream;
-
+    /** @param {Writable} destStream */
+    const afterSpawn = async destStream => {
       const sourceStream = Readable.from(sourceBytes);
       sourceStream.pipe(destStream, { end: false });
 
