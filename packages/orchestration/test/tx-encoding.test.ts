@@ -7,6 +7,10 @@ import {
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
+import bundleSource from '@endo/bundle-source';
+import { importBundle } from '@endo/import-bundle';
+import { createRequire } from 'node:module';
+
 import { tryDecodeResponse } from '../src/exos/stakingAccountKit.js';
 
 const test = anyTest;
@@ -92,4 +96,20 @@ test('MsgWithdrawDelegatorRewardResponse encoding', t => {
     'ElEKPy9jb3Ntb3MuZGlzdHJpYnV0aW9uLnYxYmV0YTEuTXNnV2l0aGRy' +
       'YXdEZWxlZ2F0b3JSZXdhcmRSZXNwb25zZRIOCgwKBXVhdG9tEgMyMDA=',
   );
+});
+
+const nodeRequire = createRequire(import.meta.url);
+
+test('compartment use of Decimal', async t => {
+  const bundle = await bundleSource(nodeRequire.resolve('./decimalFun.js'));
+
+  const { fun } = await importBundle(bundle);
+  t.deepEqual(fun(), 'something');
+});
+
+test('compartment use of getDelegations() response', async t => {
+  const bundle = await bundleSource(nodeRequire.resolve('./delegationFun.js'));
+
+  const { plz } = await importBundle(bundle);
+  t.deepEqual(plz(), 'whatever');
 });
