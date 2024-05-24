@@ -47,7 +47,7 @@ const HolderI = M.interface('holder', {
   makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
   makeCloseAccountInvitation: M.call().returns(M.promise()),
   makeTransferAccountInvitation: M.call().returns(M.promise()),
-  deposit: M.callWhen(PaymentShape).returns(AmountShape),
+  deposit: M.callWhen(PaymentShape).optional(M.pattern()).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   transfer: M.call(AmountArgShape, ChainAddressShape)
     .optional(IBCTransferOptionsShape)
