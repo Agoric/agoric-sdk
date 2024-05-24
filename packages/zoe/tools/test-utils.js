@@ -17,6 +17,8 @@ export const withAmountUtils = kit => {
     /** @param {number} n */
     units: n =>
       AmountMath.make(kit.brand, BigInt(Math.round(n * 10 ** decimalPlaces))),
+    /** The intact Exo remotable */
+    issuerKit: kit,
   };
 };
 /** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */

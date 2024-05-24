@@ -837,6 +837,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           // When there is a purse deposit into it
           if (registry.has(brand)) {
             const purse = E(bank).getPurse(brand);
+            // @ts-expect-error narrow assetKind to 'nat'
             return E(purse).deposit(payment);
           } else if (invitationBrand === brand) {
             // @ts-expect-error narrow assetKind to 'set'

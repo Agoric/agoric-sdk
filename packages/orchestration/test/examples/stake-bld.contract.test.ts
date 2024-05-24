@@ -96,7 +96,6 @@ test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
 
   t.log('withdraw 1 bld from account');
   const withdrawResp = await E(account).withdraw(oneHundredStakeAmt);
-  // @ts-expect-error Argument of type 'Payment' is not assignable to parameter of type 'ERef<Payment<"nat", Key>>'.
   const withdrawAmt = await stake.issuer.getAmountOf(withdrawResp);
   t.true(AmountMath.isEqual(withdrawAmt, oneHundredStakeAmt), 'withdraw');
 

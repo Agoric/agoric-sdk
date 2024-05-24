@@ -390,7 +390,7 @@ type ChainBootstrapSpaceT = {
     GovernanceFacetKit<any> & { label: string }
   >;
   /** Used only for testing. Should not appear in any production proposals. */
-  testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
+  testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
   walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: GovernanceFacetKit<

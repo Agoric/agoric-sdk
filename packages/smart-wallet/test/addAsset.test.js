@@ -2,14 +2,14 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
+import { makeCopyBag } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
@@ -24,11 +24,7 @@ const test = anyTest;
 
 test.before(async t => {
   const withBankManager = async () => {
-    const noBridge = undefined;
-    const baggage = makeScalarMapStore('baggage');
-    const bankManager = E(
-      buildBankVatRoot(undefined, undefined, baggage),
-    ).makeBankManager(noBridge);
+    const { bankManager } = await makeFakeBankManagerKit();
     const noop = () => {};
     const space0 = await makeMockTestSpace(noop);
     space0.produce.bankManager.reset();

@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { AmountShape, PaymentShape } from '@agoric/ertp';
+import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
 
 const { Fail } = assert;
 
@@ -27,6 +27,7 @@ const { Fail } = assert;
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(M.string()),
+  getBalance: M.callWhen(BrandShape).returns(AmountShape),
   deposit: M.callWhen(PaymentShape).optional(M.pattern()).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
@@ -46,6 +47,12 @@ const prepareLocalChainAccount = zone =>
       // Information that the account creator needs.
       async getAddress() {
         return this.state.address;
+      },
+      /** @param {Brand<'nat'>} brand */
+      async getBalance(brand) {
+        const { bank } = this.state;
+        const purse = E(bank).getPurse(brand);
+        return E(purse).getCurrentAmount();
       },
       /**
        * Deposit a payment into the bank purse that matches the alleged brand.
@@ -68,7 +75,7 @@ const prepareLocalChainAccount = zone =>
        * Withdraw a payment from the account's bank purse of the amount's brand.
        *
        * @param {Amount<'nat'>} amount
-       * @returns {Promise<Payment>} payment
+       * @returns {Promise<Payment<'nat'>>} payment
        */
       async withdraw(amount) {
         const { bank } = this.state;
