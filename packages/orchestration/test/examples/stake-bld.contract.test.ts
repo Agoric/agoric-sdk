@@ -1,16 +1,10 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+
+import { AmountMath } from '@agoric/ertp';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeFakeLocalchainBridge } from '../supports.js';
+import { commonSetup } from '../supports.js';
 
 const { keys } = Object;
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -19,40 +13,7 @@ const contractFile = `${dirname}/../../src/examples/stakeBld.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/stakeBld.contract.js').start;
 
-const bootstrap = async (t, { issuerKit }) => {
-  t.log('bootstrap vat dependencies');
-  const zone = makeHeapZone();
-  const bankManager = await buildBankVatRoot(
-    undefined,
-    undefined,
-    zone.mapStore('bankManager'),
-  ).makeBankManager();
-  await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', issuerKit);
-
-  const localchainBridge = makeFakeLocalchainBridge(zone);
-  const localchain = prepareLocalChainTools(
-    zone.subZone('localchain'),
-  ).makeLocalChain({
-    bankManager,
-    system: localchainBridge,
-  });
-  const timer = buildManualTimer(t.log);
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
-  const storage = makeFakeStorageKit('mockChainStorageRoot', {
-    sequence: false,
-  });
-  return {
-    timer,
-    localchain,
-    marshaller,
-    storage,
-  };
-};
-
-const coreEval = async (
-  t,
-  { timer, localchain, marshaller, storage, stake },
-) => {
+const coreEval = async (t, { timer, localchain, marshaller, storage, bld }) => {
   t.log('install stakeBld contract');
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
@@ -60,7 +21,7 @@ const coreEval = async (
 
   const { publicFacet } = await E(zoe).startInstance(
     installation,
-    { In: stake.issuer },
+    { In: bld.issuer },
     {},
     {
       localchain,
@@ -74,72 +35,70 @@ const coreEval = async (
 };
 
 test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
-  const issuerKit = makeIssuerKit('BLD');
-  const stake = withAmountUtils(issuerKit);
-
-  const bootstrapSpace = await bootstrap(t, { issuerKit });
-  const { publicFacet } = await coreEval(t, { ...bootstrapSpace, stake });
+  const {
+    bootstrap,
+    brands: { bld },
+    utils,
+  } = await commonSetup(t);
+  const { publicFacet } = await coreEval(t, { ...bootstrap, bld });
 
   t.log('make a LocalChainAccount');
   const account = await E(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
   t.regex(await E(account).getAddress(), /agoric1/);
 
-  const oneHundredStakeAmt = stake.make(1_000_000_000n);
-  const oneHundredStakePmt = issuerKit.mint.mintPayment(oneHundredStakeAmt);
+  // XXX not observed by vat-bank
+  const oneHundredStakePmt = bld.issuerKit.mint.mintPayment(bld.units(100));
 
   t.log('deposit 100 bld to account');
   const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, oneHundredStakeAmt), 'deposit');
+  t.true(AmountMath.isEqual(depositResp, bld.units(100)), 'deposit');
 
   // TODO validate balance, .getBalance()
 
-  t.log('withdraw 1 bld from account');
-  const withdrawResp = await E(account).withdraw(oneHundredStakeAmt);
-  const withdrawAmt = await stake.issuer.getAmountOf(withdrawResp);
-  t.true(AmountMath.isEqual(withdrawAmt, oneHundredStakeAmt), 'withdraw');
+  t.log('withdraw bld from account');
+  const withdrawResp = await E(account).withdraw(bld.units(100));
+  const withdrawAmt = await bld.issuer.getAmountOf(withdrawResp);
+  t.true(AmountMath.isEqual(withdrawAmt, bld.units(100)), 'withdraw');
 
-  t.log('cannot withdraw more than balance');
   await t.throwsAsync(
-    () => E(account).withdraw(oneHundredStakeAmt),
-    {
-      message: /Withdrawal of {.*} failed/,
-    },
+    () => E(account).withdraw(bld.units(100)),
+    undefined, // fake bank error messages don't match production
     'cannot withdraw more than balance',
   );
 });
 
 test('stakeBld contract - makeStakeBldInvitation', async t => {
-  const issuerKit = makeIssuerKit('BLD');
-  const stake = withAmountUtils(issuerKit);
-
-  const bootstrapSpace = await bootstrap(t, { issuerKit });
-  const { publicFacet, zoe } = await coreEval(t, { ...bootstrapSpace, stake });
+  const {
+    bootstrap,
+    brands: { bld },
+  } = await commonSetup(t);
+  const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
 
   t.log('call makeStakeBldInvitation');
   const inv = await E(publicFacet).makeStakeBldInvitation();
 
-  const hundred = stake.make(1_000_000_000n);
+  const hundred = bld.make(1_000_000_000n);
 
   t.log('make an offer for an account');
   // Want empty until (at least) #9087
   const userSeat = await E(zoe).offer(
     inv,
     { give: { In: hundred } },
-    { In: stake.mint.mintPayment(hundred) },
+    { In: bld.mint.mintPayment(hundred) },
   );
   const { invitationMakers } = await E(userSeat).getOfferResult();
   t.truthy(invitationMakers, 'received continuing invitation');
 
   t.log('make Delegate offer using invitationMakers');
   const delegateInv = await E(invitationMakers).Delegate('agoric1validator1', {
-    brand: stake.brand,
+    brand: bld.brand,
     value: 1_000_000_000n,
   });
   const delegateOffer = await E(zoe).offer(
     delegateInv,
     { give: { In: hundred } },
-    { In: stake.mint.mintPayment(hundred) },
+    { In: bld.mint.mintPayment(hundred) },
   );
   const res = await E(delegateOffer).getOfferResult();
   t.deepEqual(res, {});
@@ -154,13 +113,12 @@ test('stakeBld contract - makeStakeBldInvitation', async t => {
 });
 
 test('stakeBld contract - makeAccountInvitationMaker', async t => {
-  const issuerKit = makeIssuerKit('BLD');
-  const stake = withAmountUtils(issuerKit);
+  const {
+    bootstrap,
+    brands: { bld },
+  } = await commonSetup(t);
+  const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
 
-  const bootstrapSpace = await bootstrap(t, { issuerKit });
-  const { publicFacet, zoe } = await coreEval(t, { ...bootstrapSpace, stake });
-
-  t.log('call makeAcountInvitationMaker');
   const inv = await E(publicFacet).makeAcountInvitationMaker();
 
   const userSeat = await E(zoe).offer(inv);
