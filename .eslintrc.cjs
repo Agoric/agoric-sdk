@@ -125,6 +125,23 @@ module.exports = {
       },
     },
     {
+      files: ['packages/orchestration/**/*.{ts,js}'],
+      rules: {
+        'import/order': [
+          'error',
+          {
+            alphabetize: {
+              order: 'asc',
+              orderImportKind: 'desc',
+              caseInsensitive: true,
+            },
+            // presrve airbnb-base default
+            groups: [['builtin', 'external', 'internal']],
+          },
+        ],
+      },
+    },
+    {
       // These tests use EV() instead of E(), which are easy to confuse.
       // Help by erroring when E() packages are imported.
       files: ['packages/boot/test/**/*.test.*'],
