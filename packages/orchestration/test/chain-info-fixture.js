@@ -1,33 +1,40 @@
-/** @import {CosmosChainInfo} from '../src/cosmos-api'; */
+/** @import {CosmosChainInfo, IBCConnectionInfo} from '../src/cosmos-api'; */
 
-/** @type {Record<string, Pick<CosmosChainInfo, 'ibcConnectionInfo' | 'chainId'>>} */
-export const agoricPeerInfo = {
-  osmosis: {
+/** @type {IBCConnectionInfo[]} */
+export const agoricPeerInfo = [
+  {
     // agd query ibc connection connections |
     // jq '.connections | .[] | select(.id == "connection-1")
-    ibcConnectionInfo: {
-      id: 'connection-1',
-      client_id: '07-tendermint-1',
-      versions: [
-        {
-          identifier: '1',
-          features: ['ORDER_ORDERED', 'ORDER_UNORDERED'],
-        },
-      ],
-      state: 'OPEN', // query returns STATE_OPEN
-      counterparty: {
-        client_id: '07-tendermint-2109',
-        connection_id: 'connection-1649',
-        prefix: {
-          key_prefix: 'aWJj',
-        },
+
+    id: 'connection-1',
+    client_id: '07-tendermint-1',
+    versions: [
+      {
+        identifier: '1',
+        features: ['ORDER_ORDERED', 'ORDER_UNORDERED'],
       },
-      delay_period: 0n,
+    ],
+    state: 3, // STATE_OPEN
+    counterparty: {
+      client_id: '07-tendermint-2109',
+      connection_id: 'connection-1649',
+      prefix: {
+        key_prefix: 'aWJj',
+      },
     },
-    // agd query ibc client state 07-tendermint-1
-    chainId: 'osmosis-1',
+    delay_period: 0n,
+    transferChannel: {
+      counterPartyChannelId: 'channel-1',
+      counterPartyPortId: 'transfer',
+      version: 'ics20-1',
+
+      channelId: 'channel-0',
+      portId: 'transfer',
+      ordering: 1, // ORDER_UNORDERED
+      state: 3, // STATE_OPEN
+    },
   },
-};
+];
 
 export const chainRegistryInfo = {
   celestia: {
@@ -38,5 +45,9 @@ export const chainRegistryInfo = {
         denom: 'utia',
       },
     ],
+  },
+  osmosis: {
+    // also: agd query ibc client state 07-tendermint-1
+    chainId: 'osmosis-1',
   },
 };
