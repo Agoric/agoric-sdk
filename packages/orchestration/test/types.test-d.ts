@@ -7,7 +7,7 @@ import { typedJson } from '@agoric/cosmic-proto';
 import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ChainAddress, CosmosValidatorAddress } from '../src/types.js';
-import type { LocalchainAccountKit } from '../src/exos/localchainAccountKit.js';
+import type { LocalChainAccountKit } from '../src/exos/local-chain-account-kit.js';
 
 const validatorAddr = {
   chainId: 'agoric3',
@@ -30,7 +30,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 }
 
 {
-  const lcak: LocalchainAccountKit = null as any;
+  const lcak: LocalChainAccountKit = null as any;
   const lca = lcak.helper.owned();
   const results = await lca.executeTx([
     typedJson('/cosmos.staking.v1beta1.MsgDelegate', {

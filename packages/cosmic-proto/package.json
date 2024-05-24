@@ -64,6 +64,14 @@
       "types": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.d.ts",
       "default": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.js"
     },
+    "./ibc/core/channel/v1/channel.js": {
+      "types": "./dist/codegen/ibc/core/channel/v1/channel.d.ts",
+      "default": "./dist/codegen/ibc/core/channel/v1/channel.js"
+    },
+    "./ibc/core/connection/v1/connection.js": {
+      "types": "./dist/codegen/ibc/core/connection/v1/connection.d.ts",
+      "default": "./dist/codegen/ibc/core/connection/v1/connection.js"
+    },
     "./icq/*.js": {
       "types": "./dist/codegen/icq/*.d.ts",
       "default": "./dist/codegen/icq/v1/*.js"

@@ -1,5 +1,4 @@
 /** @file ChainAccount exo */
-
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';

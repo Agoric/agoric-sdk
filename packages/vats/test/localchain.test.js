@@ -46,9 +46,7 @@ const makeTestContext = async _t => {
   /** @param {LocalChainPowers} powers */
   const makeLocalChain = async powers => {
     const zone = makeDurableZone(provideBaggage('localchain'));
-    return prepareLocalChainTools(zone.subZone('localchain')).makeLocalChain(
-      powers,
-    );
+    return prepareLocalChainTools(zone).makeLocalChain(powers);
   };
 
   const localchain = await makeLocalChain({
@@ -94,7 +92,7 @@ test('localchain - deposit and withdraw', async t => {
         t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccount');
 
         const address = await E(lca).getAddress();
-        t.is(address, 'agoric1fakeBridgeAddress');
+        t.is(address, 'agoric1fakeLCAAddress');
         contractsLca = lca;
       },
       deposit: async () => {

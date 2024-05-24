@@ -27,7 +27,7 @@ const makeLocalChainFacade = localchain => {
         allowedMessages: [],
         allowedQueries: [],
         chainId: 'agoric-3',
-        ibcConnectionInfo: anyVal,
+        connections: anyVal,
         ibcHooksEnabled: true,
         icaEnabled: true,
         icqEnabled: true,

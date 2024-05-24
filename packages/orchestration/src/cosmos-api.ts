@@ -11,6 +11,14 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type {
+  Order,
+  State as IBCChannelState,
+} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
@@ -29,25 +37,37 @@ export type CosmosValidatorAddress = ChainAddress & {
   addressEncoding: 'bech32';
 };
 
+/** Represents an IBC Connection between two chains, which can contain multiple Channels. */
+export type IBCConnectionInfo = {
+  id: IBCConnectionID; // e.g. connection-0
+  client_id: string; // '07-tendermint-0'
+  state: IBCConnectionState;
+  counterparty: {
+    client_id: string;
+    connection_id: IBCConnectionID;
+    prefix: {
+      key_prefix: string;
+    };
+  };
+  versions: { identifier: string; features: string[] }[];
+  delay_period: bigint;
+  transferChannel: {
+    portId: string;
+    channelId: IBCChannelID;
+    counterPartyPortId: string;
+    counterPartyChannelId: IBCChannelID;
+    ordering: Order;
+    state: IBCChannelState;
+    version: string; // e.eg. 'ics20-1'
+  };
+};
+
 /**
  * Info for a Cosmos-based chain.
  */
 export type CosmosChainInfo = {
   chainId: string;
-  ibcConnectionInfo: {
-    id: string; // e.g. connection-0
-    client_id: string; // '07-tendermint-0'
-    state: 'OPEN' | 'TRYOPEN' | 'INIT' | 'CLOSED';
-    counterparty: {
-      client_id: string;
-      connection_id: string;
-      prefix: {
-        key_prefix: string;
-      };
-    };
-    versions: { identifier: string; features: string[] }[];
-    delay_period: bigint;
-  };
+  connections: MapStore<string, IBCConnectionInfo>; // chainId or wellKnownName
   icaEnabled: boolean;
   icqEnabled: boolean;
   pfmEnabled: boolean;
@@ -196,4 +216,10 @@ export interface IcaAccount {
 
 export type LiquidStakingMethods = {
   liquidStake: (amount: AmountArg) => Promise<void>;
+};
+
+export type IBCMsgTransferOptions = {
+  timeoutHeight?: MsgTransfer['timeoutHeight'];
+  timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
+  memo?: string;
 };
