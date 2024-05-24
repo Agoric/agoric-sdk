@@ -77,7 +77,6 @@ const safeHintFromDescription = description =>
  * @property {Record<string, string>} [env]
  */
 export async function xsnap(options) {
-  let { snapshotStream } = options;
   const {
     os,
     spawn,
@@ -87,6 +86,7 @@ export async function xsnap(options) {
     debug = false,
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
+    snapshotStream,
     snapshotDescription = snapshotStream && 'unknown',
     snapshotUseFs = false,
     stdout = 'ignore',
@@ -108,8 +108,8 @@ export async function xsnap(options) {
   /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
   const ptmpName = fs.tmpName && promisify(fs.tmpName);
 
-  const makeLoadSnapshotHandlerWithFS = async () => {
-    assert(snapshotStream);
+  const makeLoadSnapshotHandlerWithFS = async sourceBytes => {
+    assert(sourceBytes);
     const snapPath = await ptmpName({
       template: `load-snapshot-${safeHintFromDescription(
         snapshotDescription,
@@ -117,18 +117,11 @@ export async function xsnap(options) {
     });
 
     const afterSpawn = async () => {};
-    const cleanup = async () => {
-      // @ts-expect-error this frees snapshotStream; it won't be used again
-      snapshotStream = null;
-      return fs.unlink(snapPath);
-    };
+    const cleanup = async () => fs.unlink(snapPath);
 
     try {
       const tmpSnap = await fs.open(snapPath, 'w');
-      await tmpSnap.writeFile(
-        // @ts-expect-error incorrect typings, does support AsyncIterable
-        snapshotStream,
-      );
+      await tmpSnap.writeFile(sourceBytes);
       await tmpSnap.close();
     } catch (e) {
       await cleanup();
@@ -142,21 +135,17 @@ export async function xsnap(options) {
     });
   };
 
-  const makeLoadSnapshotHandlerWithPipe = async () => {
+  const makeLoadSnapshotHandlerWithPipe = async sourceBytes => {
     let done = Promise.resolve();
 
-    const cleanup = async () => {
-      await done;
-      // @ts-expect-error this frees snapshotStream; it won't be used again
-      snapshotStream = null;
-    };
+    const cleanup = async () => done;
 
     /** @param {Writable} loadSnapshotsStream */
     const afterSpawn = async loadSnapshotsStream => {
-      assert(snapshotStream);
+      assert(sourceBytes);
       const destStream = loadSnapshotsStream;
 
-      const sourceStream = Readable.from(snapshotStream);
+      const sourceStream = Readable.from(sourceBytes);
       sourceStream.pipe(destStream, { end: false });
 
       done = finished(sourceStream);
@@ -187,7 +176,7 @@ export async function xsnap(options) {
   let loadSnapshotHandler = await (snapshotStream &&
     (snapshotUseFs
       ? makeLoadSnapshotHandlerWithFS
-      : makeLoadSnapshotHandlerWithPipe)());
+      : makeLoadSnapshotHandlerWithPipe)(snapshotStream));
 
   let args = [name];
 
