@@ -10,8 +10,8 @@ import type {
   NatAmount,
   Payment,
 } from '@agoric/ertp/src/types.js';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
+import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { IBCMsgTransferOptions, KnownChains } from './types.js';
 
 /**

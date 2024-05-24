@@ -1,12 +1,12 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';

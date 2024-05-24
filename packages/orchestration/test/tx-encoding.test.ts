@@ -1,11 +1,10 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { tryDecodeResponse } from '../src/exos/stakingAccountKit.js';
 

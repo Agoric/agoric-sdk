@@ -1,5 +1,5 @@
-import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Far } from '@endo/far';
 import { prepareOrchestrationTools } from './service.js';
 
 /** @import { OrchestrationPowers } from './service.js' */

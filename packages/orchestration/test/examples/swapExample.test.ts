@@ -1,14 +1,13 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import { makeIssuerKit } from '@agoric/ertp';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeHeapZone } from '@agoric/zone';
+import { E } from '@endo/far';
+import path from 'path';
 import { makeFakeLocalchainBridge } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

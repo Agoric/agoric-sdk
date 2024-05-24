@@ -1,12 +1,12 @@
-import test from '@endo/ses-ava/prepare-endo.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import type { RequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { decodeBase64 } from '@endo/base64';
-import type { RequestQueryJson } from '@agoric/cosmic-proto';
+import test from '@endo/ses-ava/prepare-endo.js';
 import {
   makeTxPacket,
   parseTxPacket,

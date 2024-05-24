@@ -1,4 +1,9 @@
 /** @file Use-object for the owner of a staking account */
+import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import {
+  QueryBalanceRequest,
+  QueryBalanceResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
@@ -10,10 +15,6 @@ import {
   MsgUndelegate,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
-} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
@@ -22,7 +23,6 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   AmountArgShape,
   ChainAddressShape,

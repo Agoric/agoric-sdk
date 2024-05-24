@@ -1,12 +1,12 @@
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { atob, decodeBase64, encodeBase64 } from '@endo/base64';
+import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
 import {
   CosmosQuery,
   CosmosResponse,
 } from '@agoric/cosmic-proto/icq/v1/packet.js';
-import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
+import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
+import { atob, decodeBase64, encodeBase64 } from '@endo/base64';
 
 /**
  * @import {AnyJson, RequestQueryJson, Base64Any} from '@agoric/cosmic-proto';

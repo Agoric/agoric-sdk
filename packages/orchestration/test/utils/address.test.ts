@@ -1,5 +1,5 @@
-import test from '@endo/ses-ava/prepare-endo.js';
 import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import test from '@endo/ses-ava/prepare-endo.js';
 import {
   makeICAChannelAddress,
   makeICQChannelAddress,

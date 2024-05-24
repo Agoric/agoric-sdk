@@ -1,5 +1,5 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
+import type { AnyJson } from '@agoric/cosmic-proto';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
   MsgBeginRedelegateResponse,
@@ -7,14 +7,14 @@ import {
   MsgDelegateResponse,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import type { TimestampRecord, TimestampValue } from '@agoric/time';
-import type { AnyJson } from '@agoric/cosmic-proto';
 import {
   prepareStakingAccountKit,
   encodeTxResponse,

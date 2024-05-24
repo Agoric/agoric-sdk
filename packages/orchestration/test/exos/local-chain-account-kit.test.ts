@@ -1,20 +1,20 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { M, makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
-import { makeFakeLocalchainBridge } from '../supports.js';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
-import { prepareMockChainInfo } from '../../src/utils/mockChainInfo.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
+import { prepareMockChainInfo } from '../../src/utils/mockChainInfo.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
+import { makeFakeLocalchainBridge } from '../supports.js';
 
 test('localChainAccountKit - transfer', async t => {
   const bootstrap = async () => {

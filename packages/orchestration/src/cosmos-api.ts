@@ -5,20 +5,20 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import type { Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
-import type { Port } from '@agoric/network';
-import type {
-  LocalIbcAddress,
-  RemoteIbcAddress,
-} from '@agoric/vats/tools/ibc-utils.js';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type {
   Order,
   State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type { Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
+import type { Port } from '@agoric/network';
 import { MapStore } from '@agoric/store';
+import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type {
+  LocalIbcAddress,
+  RemoteIbcAddress,
+} from '@agoric/vats/tools/ibc-utils.js';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
