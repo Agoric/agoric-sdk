@@ -60,13 +60,21 @@ jobs:
       # Due to ambient types, certain build orders (from the dependency graph)
       # may break the type resolution. Run this in the PR to find out before
       # attempting to merge to master. This takes about 1min locally and since
-      # this job is about 30s in CI doing it here doesn't add to wall wait
-      # for CI resolution.
-      # We prepack only because full pack removes the declarations, relying on ambient
-      # resolution in the repo filesystem which will not be available when the packages
-      # are pulled from npm.
-      - name: Pack packages
-        run: yarn lerna run --reject-cycles --concurrency 1 prepack
+      # this job is about 30s in CI doing it here doesn't add to wall wait for
+      # CI resolution.
+      #
+      # We prepack only because full pack removes the declarations, relying on
+      # ambient resolution in the repo filesystem which will not be available
+      # when the packages are pulled from npm.
+      #
+      # After that test, we postpack to avoid putting the prepack artifacts in
+      # the cache maintained by restore-node, since they are not .gitignored and
+      # thus will fail restore-node's check for a clean repo when the cache is
+      # restored.
+      - name: Pack packages without ambient type resolution
+        run: |
+          yarn lerna run --reject-cycles --concurrency 1 prepack
+          yarn lerna run postpack
 
   ##################
   # Lint tests
