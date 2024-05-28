@@ -26,14 +26,15 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
    * well as accommodate the lack of complex keys.
    *
    * @type {WeakMapStore<
-   *   import('./types').ScopedBridgeManager,
+   *   import('./types').ScopedBridgeManager<any>,
    *   MapStore<string, ReturnType<typeof makeBridgeTargetKit>>
    * >}
    */
   const managerToKits = zone.weakMapStore('managerToHandler');
   return Far('TransferVat', {
     /**
-     * @param {import('./types').ScopedBridgeManager} manager
+     * @template {import('@agoric/internal').BridgeIdValue} T
+     * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} [inboundType]
      */
     provideBridgeTargetKit(manager, inboundType = 'IBC_EVENT') {
