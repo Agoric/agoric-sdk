@@ -441,7 +441,7 @@ export function buildRootObject(vatPowers) {
             },
           );
           if (notYetEnabled) {
-            E(otherSide).dappApproved(dappOrigin);
+            await E(otherSide).dappApproved(dappOrigin);
           }
         };
 

@@ -588,8 +588,8 @@ export function makeWalletRoot({
    * @param {string} id
    * @param {ERef<UserSeat>} seat
    */
-  async function subscribeToUpdates(id, seat) {
-    E(E(seat).getExitSubscriber())
+  function subscribeToUpdates(id, seat) {
+    return E(E(seat).getExitSubscriber())
       .subscribeAfter()
       .then(update => updateOrResubscribe(id, seat, update));
   }
@@ -1178,7 +1178,7 @@ export function makeWalletRoot({
           status: 'cancel',
         });
         idToOffer.set(id, cancelledOffer);
-        updateInboxState(id, cancelledOffer);
+        return updateInboxState(id, cancelledOffer);
       })
       .catch(e => console.error(`Cannot cancel offer ${id}:`, e));
 
@@ -1230,7 +1230,7 @@ export function makeWalletRoot({
         .hasExited()
         .then(exited => {
           if (!exited) {
-            subscribeToUpdates(id, seat);
+            return subscribeToUpdates(id, seat);
           }
         });
 
