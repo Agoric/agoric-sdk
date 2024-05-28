@@ -7,7 +7,7 @@ import { BridgeId as BRIDGE_ID, VTRANSFER_IBC_EVENT } from '@agoric/internal';
  *   consume: {
  *     loadCriticalVat: VatLoader<any>;
  *     bridgeManager: import('../types').BridgeManager;
- *     vtransferBridgeManager: import('../types').ScopedBridgeManager;
+ *     vtransferBridgeManager: import('../types').ScopedBridgeManager<'vtransfer'>;
  *   };
  *   produce: {
  *     transferMiddleware: Producer<any>;

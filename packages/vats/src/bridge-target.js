@@ -137,7 +137,8 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
       targetRegistry: TargetRegistryI,
     },
     /**
-     * @param {import('./types').ScopedBridgeManager} manager
+     * @template {import('@agoric/internal').BridgeIdValue} T
+     * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} inboundEventType
      */
     (manager, inboundEventType) => ({
