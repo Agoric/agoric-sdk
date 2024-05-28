@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /**
  * @file pure types types, no runtime, ignored by Ava
  */
