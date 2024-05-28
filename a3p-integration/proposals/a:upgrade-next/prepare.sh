@@ -20,7 +20,7 @@ printISTBalance gov1
 
 badInvitationOffer=$(mktemp)
 cat > "$badInvitationOffer" << 'EOF'
-{"body":"#{\"method\":\"executeOffer\",\"offer\":{\"id\":\"bad-invitation-15\",\"invitationSpec\":{\"callPipe\":[[\"badMethodName\"]],\"instancePath\":[\"reserve\"],\"source\":\"agoricContract\"},\"proposal\":{\"give\":{\"Collateral\":{\"brand\":\"$0.Alleged: IST brand\",\"value\":\"+15000\"}}}}}","slots":["board0257"]}
+{"body":"#{\"method\":\"executeOffer\",\"offer\":{\"id\":\"bad-invitation-16\",\"invitationSpec\":{\"callPipe\":[[\"badMethodName\"]],\"instancePath\":[\"reserve\"],\"source\":\"agoricContract\"},\"proposal\":{\"give\":{\"Collateral\":{\"brand\":\"$0.Alleged: IST brand\",\"value\":\"+15000\"}}}}}","slots":["board0257"]}
 EOF
 
 PATH=/usr/src/agoric-sdk/node_modules/.bin:$PATH
