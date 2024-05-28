@@ -160,7 +160,6 @@
       "compile": false
     },
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ]
   }

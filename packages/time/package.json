@@ -45,7 +45,6 @@
       "@endo/init/debug.js"
     ],
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ]
   },

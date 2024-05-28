@@ -41,7 +41,6 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
