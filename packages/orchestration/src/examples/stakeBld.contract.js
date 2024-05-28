@@ -70,7 +70,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     'StakeBld',
     M.interface('StakeBldI', {
       makeAccount: M.callWhen().returns(M.remotable('LocalChainAccountHolder')),
-      makeAcountInvitationMaker: M.callWhen().returns(InvitationShape),
+      makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
       makeStakeBldInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
@@ -103,7 +103,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         const { holder } = await makeLocalAccountKit();
         return holder;
       },
-      makeAcountInvitationMaker() {
+      makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(async seat => {
           seat.exit();

@@ -119,7 +119,7 @@ test('stakeBld contract - makeAccountInvitationMaker', async t => {
   } = await commonSetup(t);
   const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
 
-  const inv = await E(publicFacet).makeAcountInvitationMaker();
+  const inv = await E(publicFacet).makeAccountInvitationMaker();
 
   const userSeat = await E(zoe).offer(inv);
   const offerResult = await E(userSeat).getOfferResult();

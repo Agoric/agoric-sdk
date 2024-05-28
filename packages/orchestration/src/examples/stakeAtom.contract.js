@@ -97,7 +97,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     'StakeAtom',
     M.interface('StakeAtomI', {
       makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
-      makeAcountInvitationMaker: M.callWhen().returns(InvitationShape),
+      makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
     }),
     {
       async makeAccount() {
@@ -105,7 +105,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         const { account } = await makeAccountKit();
         return account;
       },
-      makeAcountInvitationMaker() {
+      makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {
