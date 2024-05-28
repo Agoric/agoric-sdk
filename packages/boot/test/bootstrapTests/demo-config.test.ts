@@ -149,6 +149,7 @@ test('vtransfer', async t => {
   );
 
   const target = 'agoric1vtransfertest';
+  const packet = 'thisIsPacket';
 
   // 0 interceptors for target
 
@@ -168,38 +169,38 @@ test('vtransfer', async t => {
   // 1 interceptors for target
 
   // Tap into VTRANSFER_IBC_EVENT messages
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/test-vtransfer.js'),
+  const testVtransferProposal = buildProposal(
+    '@agoric/builders/scripts/vats/test-vtransfer.js',
   );
+  await evalProposal(testVtransferProposal);
 
   // simulate a Golang upcall with arbitrary payload
-  await EV(vtransferBridgeManager).fromBridge({
-    target,
-    type: 'VTRANSFER_IBC_EVENT',
+  const expectedAckData = {
     event: 'writeAcknowledgement',
-    packet: 'thisIsPacket',
-  });
+    packet,
+    target,
+    type: VTRANSFER_IBC_EVENT,
+  };
+
+  await EV(vtransferBridgeManager).fromBridge(expectedAckData);
 
   // verify the ackMethod outbound
   const messages = getOutboundMessages(BridgeId.VTRANSFER);
   t.deepEqual(messages, [
     {
-      target: 'agoric1vtransfertest',
+      target,
       type: 'BRIDGE_TARGET_REGISTER',
     },
     {
-      ack: 'eyJldmVudCI6IndyaXRlQWNrbm93bGVkZ2VtZW50IiwicGFja2V0IjoidGhpc0lzUGFja2V0IiwidGFyZ2V0IjoiYWdvcmljMXZ0cmFuc2ZlcnRlc3QiLCJ0eXBlIjoiVlRSQU5TRkVSX0lCQ19FVkVOVCJ9',
+      ack: btoa(JSON.stringify(expectedAckData)),
       method: 'receiveExecuted',
-      packet: 'thisIsPacket',
+      packet,
       type: 'IBC_METHOD',
     },
   ]);
-  t.deepEqual(JSON.parse(atob(messages[1].ack)), {
-    event: 'writeAcknowledgement',
-    packet: 'thisIsPacket',
-    target: 'agoric1vtransfertest',
-    type: 'VTRANSFER_IBC_EVENT',
-  });
 
-  // TODO test adding an interceptor for the same target, which should fail
+  // test adding an interceptor for the same target, which should fail
+  await t.throwsAsync(() => evalProposal(testVtransferProposal), {
+    message: /Target.*already registered/,
+  });
 });
