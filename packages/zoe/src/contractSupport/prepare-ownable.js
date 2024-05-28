@@ -19,7 +19,7 @@ const TransferProposalShape = M.splitRecord({
 
 /**
  * Prepare a kind that wraps an 'ownable' object with a `makeTransferInvitation`
- * ability and delegates to the underlying object methods specified the an
+ * ability and delegates to the underlying object methods specified in an
  * allowlist of method names.
  *
  * @template {(string | symbol)[]} MN Method names
