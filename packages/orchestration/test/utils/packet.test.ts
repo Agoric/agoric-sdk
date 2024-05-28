@@ -6,7 +6,6 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { decodeBase64 } from '@endo/base64';
-import type { RequestQueryJson } from '@agoric/cosmic-proto';
 import {
   makeTxPacket,
   parseTxPacket,
@@ -103,7 +102,7 @@ test('makeQueryPacket', t => {
         }),
       ).finish(),
     }),
-  ) as RequestQueryJson;
+  );
   t.is(
     makeQueryPacket([mockQuery]),
     '{"data":"CjoKFAoLY29zbW9zMXRlc3QSBXVhdG9tEiIvY29zbW9zLmJhbmsudjFiZXRhMS5RdWVyeS9CYWxhbmNl","memo":""}',

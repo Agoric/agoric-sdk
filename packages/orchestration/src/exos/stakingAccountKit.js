@@ -38,7 +38,6 @@ export const maxClockSkew = 10n * 60n;
  * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Baggage} from '@agoric/swingset-liveslots';
- * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import { Delegation } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TimerService} from '@agoric/time';
@@ -84,13 +83,6 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
 const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
-
-// UNTIL https://github.com/cosmology-tech/telescope/issues/605
-/**
- * @param {Any} x
- * @returns {AnyJson}
- */
-const toAnyJSON = x => /** @type {AnyJson} */ (Any.toJSON(x));
 
 export const encodeTxResponse = (response, toProtoMsg) => {
   const protoMsg = toProtoMsg(response);
@@ -304,7 +296,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
           const { chainAddress } = this.state;
 
           const result = await E(helper.owned()).executeEncodedTx([
-            toAnyJSON(
+            Any.toJSON(
               MsgDelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
                 validatorAddress: validator.address,
@@ -328,7 +320,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
 
           // NOTE: response, including completionTime, is currently discarded.
           await E(helper.owned()).executeEncodedTx([
-            toAnyJSON(
+            Any.toJSON(
               MsgBeginRedelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
                 validatorSrcAddress: srcValidator.address,
@@ -352,7 +344,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
             validatorAddress: validator.address,
           });
           const account = helper.owned();
-          const result = await E(account).executeEncodedTx([toAnyJSON(msg)]);
+          const result = await E(account).executeEncodedTx([Any.toJSON(msg)]);
           const response = tryDecodeResponse(
             result,
             MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
@@ -400,7 +392,7 @@ export const prepareStakingAccountKit = (baggage, makeRecorderKit, zcf) => {
 
           const result = await E(helper.owned()).executeEncodedTx(
             delegations.map(d =>
-              toAnyJSON(
+              Any.toJSON(
                 MsgUndelegate.toProtoMsg({
                   delegatorAddress: chainAddress.address,
                   validatorAddress: d.validatorAddress,
