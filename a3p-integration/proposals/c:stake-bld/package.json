@@ -13,7 +13,7 @@
     "@agoric/synthetic-chain": "^0.1.0",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@endo/errors": "^1.1.0",
+    "@endo/errors": "^1.2.2",
     "@endo/far": "^1.0.4",
     "@endo/init": "^1.0.4",
     "agoric": "0.21.2-dev-5676146.0",
