@@ -30,6 +30,8 @@ export const BridgeId = /** @type {const} */ ({
 harden(BridgeId);
 /** @typedef {(typeof BridgeId)[keyof typeof BridgeId]} BridgeIdValue */
 
+export const VTRANSFER_IBC_EVENT = 'VTRANSFER_IBC_EVENT';
+
 export const CosmosInitKeyToBridgeId = {
   vbankPort: BridgeId.BANK,
   vibcPort: BridgeId.DIBC,

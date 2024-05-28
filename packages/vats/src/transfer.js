@@ -1,15 +1,15 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
 import { TargetAppI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
- * @import {PureData} from '@endo/pass-style'
  */
 
-const { Fail } = assert;
+const { Fail, bare } = assert;
 
 const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
 
@@ -49,12 +49,12 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
         async upcall(obj) {
           const { isActiveTap, targetHost, tap } = this.state;
 
-          obj.type === 'VTRANSFER_IBC_EVENT' ||
-            Fail`Invalid upcall argument type ${obj.type}; expected VTRANSFER_IBC_EVENT`;
+          obj.type === VTRANSFER_IBC_EVENT ||
+            Fail`Invalid upcall argument type ${obj.type}; expected ${bare(VTRANSFER_IBC_EVENT)}`;
 
           // First, call our target contract listener.
           // A VTransfer active interceptor can return a write acknowledgement
-          /** @type {import('@agoric/vow').Vow<PureData>} */
+          /** @type {import('@agoric/vow').Vow<unknown>} */
           let retP = watch(E(tap).upcall(obj));
 
           // See if the upcall result needs special handling.
