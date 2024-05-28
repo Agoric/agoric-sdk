@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -42,7 +41,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     });
     const alicePayments = { Asset: moolaPayment };
 
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
     const invitation = await E(publicFacet).makeThrowingInvitation();
     const seat = await E(zoe).offer(invitation, proposal, alicePayments);
 
@@ -52,7 +51,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         () => assert(false, ' expected outcome to fail'),
         e => log(`outcome correctly resolves to broken: ${e}`),
       );
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
     const moolaPayout = await E(seat).getPayout('Asset');
     const simoleanPayout = await E(seat).getPayout('Price');
 
@@ -60,7 +59,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     await E(simoleanPurseP).deposit(simoleanPayout);
     await showPurseBalance(moolaPurseP, 'aliceMoolaPurse', log);
     await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
 
     // zoe should still be able to make new vats.
     const { publicFacet: publicFacet2 } = await E(zoe).startInstance(
@@ -87,9 +86,9 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(newPurse).deposit(swapMoolaPayout);
     E(simoleanPurseP).deposit(swapSimoleanPayout);
 
-    showPurseBalance(newPurse, 'new Purse', log);
-    showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
-    logCounter(log, publicFacet);
+    await showPurseBalance(newPurse, 'new Purse', log);
+    await showPurseBalance(simoleanPurseP, 'aliceSimoleanPurse', log);
+    await logCounter(log, publicFacet);
   };
 
   const doThrowInApiCall = async () => {
@@ -124,7 +123,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => {
-          E(invitationIssuer)
+          return E(invitationIssuer)
             .isLive(o)
             .then(val => {
               swapInvitationTwo = o;
@@ -133,7 +132,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
         },
         e => assert(false, X`expected outcome not to resolve yet ${e}`),
       );
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
 
     E(publicFacet)
       .throwSomething()
@@ -141,10 +140,10 @@ const build = async (log, zoe, issuers, payments, installations) => {
         () => assert(false, 'expecting this to throw'),
         e => log(`throwingAPI should throw ${e}`),
       );
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
 
     // These should not resolve at this point, the funds are still escrowed
-    E(swapSeat)
+    void E(swapSeat)
       .getPayouts()
       .then(async swapPayout => {
         const moolaSwapPayout = await swapPayout.Asset;
@@ -157,7 +156,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       });
 
     // show that the contract is still responsive.
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
 
     // zoe should still be able to make new vats.
     const { publicFacet: publicFacet2 } = await E(zoe).startInstance(
@@ -178,7 +177,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       swapTwoProposal,
       aliceSwapTwoPayments,
     );
-    logCounter(log, publicFacet);
+    await logCounter(log, publicFacet);
 
     E(swapSeatTwo)
       .getOfferResult()

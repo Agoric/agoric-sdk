@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -618,7 +617,7 @@ test('quoteAtTime', async t => {
 
   /** @type {PriceQuote | undefined} */
   let priceQuote;
-  t.notThrowsAsync(quoteAtTime.then(result => (priceQuote = result)));
+  await t.notThrowsAsync(quoteAtTime.then(result => (priceQuote = result)));
 
   /** @type {PromiseRecord<PriceQuote>} */
   const userQuotePK = makePromiseKit();
@@ -637,7 +636,9 @@ test('quoteAtTime', async t => {
 
   /** @type {PriceQuote | undefined} */
   let userPriceQuote;
-  t.notThrowsAsync(quoteAtUserTime.then(result => (userPriceQuote = result)));
+  await t.notThrowsAsync(
+    quoteAtUserTime.then(result => (userPriceQuote = result)),
+  );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
@@ -732,7 +733,9 @@ test('quoteWhen', async t => {
 
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
-  t.notThrowsAsync(quoteWhenGTE.then(result => (abovePriceQuote = result)));
+  await t.notThrowsAsync(
+    quoteWhenGTE.then(result => (abovePriceQuote = result)),
+  );
   const quoteWhenLTE = E(pa).quoteWhenLTE(
     AmountMath.make(brandIn, 29n),
     AmountMath.make(brandOut, 974n * 29n),
@@ -740,7 +743,9 @@ test('quoteWhen', async t => {
 
   /** @type {PriceQuote | undefined} */
   let belowPriceQuote;
-  t.notThrowsAsync(quoteWhenLTE.then(result => (belowPriceQuote = result)));
+  await t.notThrowsAsync(
+    quoteWhenLTE.then(result => (belowPriceQuote = result)),
+  );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
@@ -844,7 +849,9 @@ test('mutableQuoteWhen no replacement', async t => {
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
   const abovePriceQuoteP = E(mutableQuoteWhenGTE).getPromise();
-  t.notThrowsAsync(abovePriceQuoteP.then(result => (abovePriceQuote = result)));
+  await t.notThrowsAsync(
+    abovePriceQuoteP.then(result => (abovePriceQuote = result)),
+  );
 
   const mutableQuoteWhenLTE = E(pa).mutableQuoteWhenLTE(
     AmountMath.make(brandIn, 29n),
@@ -854,7 +861,9 @@ test('mutableQuoteWhen no replacement', async t => {
   /** @type {PriceQuote | undefined} */
   let belowPriceQuote;
   const belowPriceQuoteP = E(mutableQuoteWhenLTE).getPromise();
-  t.notThrowsAsync(belowPriceQuoteP.then(result => (belowPriceQuote = result)));
+  await t.notThrowsAsync(
+    belowPriceQuoteP.then(result => (belowPriceQuote = result)),
+  );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
     increment: 10n,
@@ -961,7 +970,9 @@ test('mutableQuoteWhen with update', async t => {
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
   const abovePriceQuoteP = E(mutableQuoteWhenGTE).getPromise();
-  t.notThrowsAsync(abovePriceQuoteP.then(result => (abovePriceQuote = result)));
+  await t.notThrowsAsync(
+    abovePriceQuoteP.then(result => (abovePriceQuote = result)),
+  );
 
   await E(aggregator.creatorFacet).initOracle(price1200.instance, {
     increment: 10n,

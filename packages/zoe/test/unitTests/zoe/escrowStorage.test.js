@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
@@ -97,13 +96,17 @@ test('provideEscrowStorage', async t => {
     Money: payout.Money,
   });
 
-  Object.entries(initialAllocation).forEach(([keyword, amount]) => {
-    assertAmountsEqual(t, amount, initialAllocation2[keyword]);
-  });
+  await Promise.all(
+    Object.entries(initialAllocation).map(([keyword, amount]) =>
+      assertAmountsEqual(t, amount, initialAllocation2[keyword]),
+    ),
+  );
 
-  Object.entries(initialAllocation2).forEach(([keyword, amount]) => {
-    assertAmountsEqual(t, amount, initialAllocation[keyword]);
-  });
+  await Promise.all(
+    Object.entries(initialAllocation2).map(([keyword, amount]) =>
+      assertAmountsEqual(t, amount, initialAllocation[keyword]),
+    ),
+  );
 });
 
 const setupPurses = async createPurse => {

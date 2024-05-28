@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
@@ -42,8 +41,8 @@ test('priceAuthority quoteAtTime', async t => {
   const done = E(priceAuthority)
     .quoteAtTime(toTS(2n), moola(5n), bucksBrand)
     .then(async quote => {
-      assertAmountsEqual(t, moola(5n), getAmountIn(quote));
-      assertAmountsEqual(t, bucks(55n * 5n), getAmountOut(quote));
+      await assertAmountsEqual(t, moola(5n), getAmountIn(quote));
+      await assertAmountsEqual(t, bucks(55n * 5n), getAmountOut(quote));
       t.deepEqual(toTS(2n), getTimestamp(quote));
     });
 
@@ -89,8 +88,8 @@ test('priceAuthority quoteWanted', async t => {
   const quote = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
   const quoteAmount = quote.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteAmount.timestamp);
-  assertAmountsEqual(t, bucks(400n), quoteAmount.amountOut);
-  assertAmountsEqual(t, moola(20n), quoteAmount.amountIn);
+  await assertAmountsEqual(t, bucks(400n), quoteAmount.amountOut);
+  await assertAmountsEqual(t, moola(20n), quoteAmount.amountIn);
 });
 
 test('priceAuthority paired quotes', async t => {
@@ -112,14 +111,14 @@ test('priceAuthority paired quotes', async t => {
   const quoteOut = await E(priceAuthority).quoteWanted(moolaBrand, bucks(400n));
   const quoteOutAmount = quoteOut.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteOutAmount.timestamp);
-  assertAmountsEqual(t, bucks(400n), quoteOutAmount.amountOut);
-  assertAmountsEqual(t, moola(20n), quoteOutAmount.amountIn);
+  await assertAmountsEqual(t, bucks(400n), quoteOutAmount.amountOut);
+  await assertAmountsEqual(t, moola(20n), quoteOutAmount.amountIn);
 
   const quoteIn = await E(priceAuthority).quoteGiven(moola(22n), bucksBrand);
   const quoteInAmount = quoteIn.quoteAmount.value[0];
   t.deepEqual(toTS(1n), quoteInAmount.timestamp);
-  assertAmountsEqual(t, bucks(20n * 22n), quoteInAmount.amountOut);
-  assertAmountsEqual(t, moola(22n), quoteInAmount.amountIn);
+  await assertAmountsEqual(t, bucks(20n * 22n), quoteInAmount.amountOut);
+  await assertAmountsEqual(t, moola(22n), quoteInAmount.amountIn);
 });
 
 test('priceAuthority quoteWhenGTE', async t => {
@@ -132,14 +131,14 @@ test('priceAuthority quoteWhenGTE', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  await E(priceAuthority)
     .quoteWhenGTE(moola(1n), bucks(40n))
-    .then(quote => {
+    .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.deepEqual(toTS(4n), manualTimer.getCurrentTimestamp());
       t.deepEqual(toTS(4n), quoteInAmount.timestamp);
-      assertAmountsEqual(t, bucks(40n), quoteInAmount.amountOut);
-      assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
+      await assertAmountsEqual(t, bucks(40n), quoteInAmount.amountOut);
+      await assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -159,14 +158,14 @@ test('priceAuthority quoteWhenLT', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  await E(priceAuthority)
     .quoteWhenLT(moola(1n), bucks(30n))
-    .then(quote => {
+    .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.deepEqual(toTS(3n), manualTimer.getCurrentTimestamp());
       t.deepEqual(toTS(3n), quoteInAmount.timestamp);
-      assertAmountsEqual(t, bucks(29n), quoteInAmount.amountOut);
-      assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
+      await assertAmountsEqual(t, bucks(29n), quoteInAmount.amountOut);
+      await assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -185,14 +184,14 @@ test('priceAuthority quoteWhenGT', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  await E(priceAuthority)
     .quoteWhenGT(moola(1n), bucks(40n))
-    .then(quote => {
+    .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.deepEqual(toTS(3n), manualTimer.getCurrentTimestamp());
       t.deepEqual(toTS(3n), quoteInAmount.timestamp);
-      assertAmountsEqual(t, bucks(41n), quoteInAmount.amountOut);
-      assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
+      await assertAmountsEqual(t, bucks(41n), quoteInAmount.amountOut);
+      await assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();
@@ -211,14 +210,14 @@ test('priceAuthority quoteWhenLTE', async t => {
     manualTimer,
   );
 
-  E(priceAuthority)
+  await E(priceAuthority)
     .quoteWhenLTE(moola(1n), bucks(25n))
-    .then(quote => {
+    .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
       t.deepEqual(toTS(4n), quoteInAmount.timestamp);
       t.deepEqual(toTS(4n), manualTimer.getCurrentTimestamp());
-      assertAmountsEqual(t, bucks(25n), quoteInAmount.amountOut);
-      assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
+      await assertAmountsEqual(t, bucks(25n), quoteInAmount.amountOut);
+      await assertAmountsEqual(t, moola(1n), quoteInAmount.amountIn);
     });
 
   await E(manualTimer).tick();

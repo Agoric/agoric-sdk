@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -218,7 +217,7 @@ test('zoe - non-fungible atomicSwap', async t => {
 
         const seat = await E(zoe).offer(firstInvitation, proposal, payments);
 
-        seat
+        void seat
           .getPayout('Asset')
           .then(payment => ccPurse.deposit(payment))
           .then(amountDeposited =>
@@ -229,7 +228,7 @@ test('zoe - non-fungible atomicSwap', async t => {
             ),
           );
 
-        seat
+        void seat
           .getPayout('Price')
           .then(payment => rpgPurse.deposit(payment))
           .then(amountDeposited =>
@@ -442,7 +441,7 @@ test('zoe - atomicSwap like-for-like', async t => {
   );
 
   // Alice didn't get any of what Alice put in
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     await moolaIssuer.getAmountOf(aliceAssetPayout),
     moola(0n),

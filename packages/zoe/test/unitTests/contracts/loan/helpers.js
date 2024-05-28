@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'path';
@@ -80,7 +79,7 @@ export const checkPayouts = async (
       const kit = kitKeywordRecord[keyword];
       const amount = await kit.issuer.getAmountOf(paymentP);
       const expected = expectedKeywordRecord[keyword];
-      assertAmountsEqual(t, amount, expected);
+      await assertAmountsEqual(t, amount, expected);
       t.truthy(
         AmountMath.isEqual(amount, expected),
         `amount value: ${amount.value}, expected value: ${expected.value}, message: ${message}`,
