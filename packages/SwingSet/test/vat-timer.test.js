@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -876,7 +875,7 @@ test('notifier in future', async t => {
   // getUpdateSince(undefined) before 'start' waits until start
   const p1 = n.getUpdateSince(undefined);
   let done1;
-  p1.then(res => (done1 = res));
+  void p1.then(res => (done1 = res));
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 125n);
 
@@ -890,7 +889,7 @@ test('notifier in future', async t => {
   // fast handler turnaround waits for the next event
   const p2 = n.getUpdateSince(done1.updateCount);
   let done2;
-  p2.then(res => (done2 = res));
+  void p2.then(res => (done2 = res));
   await waitUntilQuiescent();
   // notifier waits when updateCount matches
   t.deepEqual(done2, undefined);
@@ -906,7 +905,7 @@ test('notifier in future', async t => {
   state.now = 150n;
   const p3 = n.getUpdateSince(done2.updateCount);
   let done3;
-  p3.then(res => (done3 = res));
+  void p3.then(res => (done3 = res));
   await waitUntilQuiescent();
   // fires immediately
   t.deepEqual(done3, { value: toTS(145n), updateCount: 3n });
@@ -916,7 +915,7 @@ test('notifier in future', async t => {
   state.now = 180n; // missed 155 and 165
   const p4 = n.getUpdateSince(done3.updateCount);
   let done4;
-  p4.then(res => (done4 = res));
+  void p4.then(res => (done4 = res));
   await waitUntilQuiescent();
   t.deepEqual(done4, { value: toTS(175n), updateCount: 6n });
   t.is(state.currentWakeup, undefined);
@@ -932,14 +931,14 @@ test('notifier from now', async t => {
   let done1;
   const n = ts.makeNotifier(toRT(0n), toRT(10n));
   const p1 = n.getUpdateSince(undefined);
-  p1.then(res => (done1 = res));
+  void p1.then(res => (done1 = res));
   await waitUntilQuiescent();
   t.deepEqual(done1, { value: toTS(100n), updateCount: 1n });
 
   // but doesn't fire forever
   const p2 = n.getUpdateSince(done1.updateCount);
   let done2;
-  p2.then(res => (done2 = res));
+  void p2.then(res => (done2 = res));
   await waitUntilQuiescent();
   t.deepEqual(done2, undefined);
   t.is(state.currentWakeup, 110n);
@@ -957,7 +956,7 @@ test('notifier from now', async t => {
 
   const p3 = n.getUpdateSince(done1.updateCount);
   let done3;
-  p3.then(res => (done3 = res));
+  void p3.then(res => (done3 = res));
   await waitUntilQuiescent();
   t.deepEqual(done3, undefined);
   // still waiting
@@ -1081,7 +1080,7 @@ test('iterator', async t => {
   const iter = n[Symbol.asyncIterator]();
   const p1 = iter.next();
   let done1;
-  p1.then(res => (done1 = res));
+  void p1.then(res => (done1 = res));
   await waitUntilQuiescent();
   t.is(state.currentWakeup, 125n);
   t.deepEqual(done1, undefined);
@@ -1100,7 +1099,7 @@ test('iterator', async t => {
   // fast turnaround will wait for next event
   const p2 = iter.next();
   let done2;
-  p2.then(res => (done2 = res));
+  void p2.then(res => (done2 = res));
   await waitUntilQuiescent();
   t.deepEqual(done2, undefined);
   t.is(state.currentWakeup, 135n);
@@ -1112,7 +1111,7 @@ test('iterator', async t => {
   t.is(state.currentWakeup, undefined);
   const p3 = iter.next(); // before state.now changes
   let done3;
-  p3.then(res => (done3 = res));
+  void p3.then(res => (done3 = res));
   await waitUntilQuiescent();
   t.deepEqual(done3, undefined);
   t.is(state.currentWakeup, 145n); // waits for next event
@@ -1127,7 +1126,7 @@ test('iterator', async t => {
   state.now = 160n; // before next()
   const p4 = iter.next(); // missed 155
   let done4;
-  p4.then(res => (done4 = res));
+  void p4.then(res => (done4 = res));
   await waitUntilQuiescent();
   t.deepEqual(done4, { value: toTS(155n), done: false });
   t.is(state.currentWakeup, undefined);
@@ -1136,7 +1135,7 @@ test('iterator', async t => {
   state.now = 180n; // before next()
   const p5 = iter.next(); // missed 165 and 175
   let done5;
-  p5.then(res => (done5 = res));
+  void p5.then(res => (done5 = res));
   await waitUntilQuiescent();
   t.deepEqual(done5, { value: toTS(175n), done: false });
   t.is(state.currentWakeup, undefined);
