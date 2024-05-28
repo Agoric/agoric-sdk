@@ -204,8 +204,6 @@ export interface IcaAccount {
    * Close the remote account
    */
   close: () => Promise<void>;
-  /* transfer account to new holder */
-  prepareTransfer: () => Promise<Invitation>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
