@@ -1,5 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
