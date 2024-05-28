@@ -91,7 +91,7 @@ harden(parseTxPacket);
  * decoded using the corresponding Query*Response objects.
  * Error strings seem to be plain text and do not need decoding.
  * @param {string} response
- * @returns {Base64Any<ResponseQuery>[]}
+ * @returns {JsonSafe<ResponseQuery>[]}
  * @throws {Error} if error key is detected in response string, or result key is not found
  */
 export function parseQueryPacket(response) {
@@ -101,6 +101,8 @@ export function parseQueryPacket(response) {
   return harden(
     responses.map(resp => ({
       ...resp,
+      height: String(resp.index),
+      index: String(resp.index),
       key: encodeBase64(resp.key),
       value: encodeBase64(resp.value),
     })),
