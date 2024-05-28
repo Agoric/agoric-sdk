@@ -1,14 +1,13 @@
 // @ts-check
-/// <reference path="./types.js" />
-import { Fail } from '@agoric/assert';
+import { details, Fail } from '@agoric/assert';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
+import { isObject } from '@endo/pass-style';
 
 /**
  * @import {Bytes} from './types.js';
  */
 
 /** @typedef {Bytes | Buffer | Uint8Array | Iterable<number>} ByteSource */
-const { details: X } = assert;
 
 /**
  * This function is a coercer instead of an asserter because in a future where
@@ -18,20 +17,20 @@ const { details: X } = assert;
  * @param {unknown} specimen
  * @returns {ByteSource}
  */
-export function coerceToData(specimen) {
+export function coerceToByteSource(specimen) {
   if (typeof specimen === 'string') {
     return specimen;
   }
 
-  assert.typeof(specimen, 'object');
+  isObject(specimen) ||
+    assert.fail(details`non-object ${specimen} is not a ByteSource`, TypeError);
 
-  if (specimen == null) {
-    throw assert.fail(X`specimen ${specimen} is nullish`, TypeError);
-  }
-
-  if (!(Symbol.iterator in specimen)) {
-    throw assert.fail(X`specimen ${specimen} is not iterable`, TypeError);
-  }
+  const obj = /** @type {{}} */ (specimen);
+  typeof obj[Symbol.iterator] === 'function' ||
+    assert.fail(
+      details`non-iterable ${specimen} is not a ByteSource`,
+      TypeError,
+    );
 
   // Good enough... it's iterable and can be converted later.
   return /** @type {ByteSource} */ (specimen);
@@ -88,7 +87,7 @@ export function bytesToString(bytes) {
  * @param {ByteSource} byteSource
  * @returns {string} base64 encoding
  */
-export function dataToBase64(byteSource) {
+export function byteSourceToBase64(byteSource) {
   const bytes = coerceToByteArray(byteSource);
   return encodeBase64(bytes);
 }
