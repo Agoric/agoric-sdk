@@ -3,6 +3,8 @@ import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 
 const { Fail, quote: q } = assert;
 
+/** @import {Amplify} from '@endo/exo'; */
+
 /**
  * @template [U=any]
  * @typedef {object} RevocableMakerKit
@@ -94,6 +96,7 @@ export const prepareRevocableMakerKit = (
 
   const revocableKindName = `${uKindName}_caretaker`;
 
+  /** @type {Amplify<any>} */
   let amplifier;
 
   const makeRevocableKit = zone.exoClassKit(
