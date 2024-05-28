@@ -1,20 +1,20 @@
 {
-    "private": true,
-    "agoricSyntheticChain": {
-        "fromTag": "latest"
-    },
-    "scripts": {
-        "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
-        "build:sdk": "make -C ../packages/deployment docker-build-sdk",
-        "build:submissions": "scripts/build-all-submissions.sh",
-        "build:synthetic-chain": "yarn synthetic-chain build",
-        "test": "yarn synthetic-chain test",
-        "doctor": "yarn synthetic-chain doctor"
-    },
-    "dependencies": {
-        "@agoric/synthetic-chain": "^0.1.0",
-        "@types/better-sqlite3": "^7.6.9"
-    },
-    "packageManager": "yarn@4.1.1",
-    "license": "Apache-2.0"
+  "private": true,
+  "agoricSyntheticChain": {
+    "fromTag": "use-upgrade-14"
+  },
+  "scripts": {
+    "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
+    "build:sdk": "make -C ../packages/deployment docker-build-sdk",
+    "build:submissions": "scripts/build-all-submissions.sh",
+    "build:synthetic-chain": "yarn synthetic-chain build",
+    "test": "yarn synthetic-chain test",
+    "doctor": "yarn synthetic-chain doctor"
+  },
+  "dependencies": {
+    "@agoric/synthetic-chain": "^0.1.0",
+    "@types/better-sqlite3": "^7.6.9"
+  },
+  "packageManager": "yarn@4.1.1",
+  "license": "Apache-2.0"
 }
