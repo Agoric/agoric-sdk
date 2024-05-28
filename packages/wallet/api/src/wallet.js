@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the vat launched by the spawner in the ../deploy.js script.
@@ -173,7 +172,7 @@ export function buildRootObject(vatPowers) {
         await approve();
         const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
         const { notifier, updater } = makeNotifierKit();
-        observeIteration(makeApprovedNotifier(pursesNotifier), updater);
+        void observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
       },
       async getCacheCoordinator() {
@@ -202,7 +201,7 @@ export function buildRootObject(vatPowers) {
           }));
         };
 
-        observeIteration(makeApprovedNotifier(offerNotifier), {
+        void observeIteration(makeApprovedNotifier(offerNotifier), {
           updateState(offers) {
             updater.updateState(filteredOffers(offers));
           },
@@ -441,7 +440,7 @@ export function buildRootObject(vatPowers) {
             },
           );
           if (notYetEnabled) {
-            E(otherSide).dappApproved(dappOrigin);
+            await E(otherSide).dappApproved(dappOrigin);
           }
         };
 

@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* global process setTimeout */
 import chalk from 'chalk';
 import { createHash } from 'crypto';

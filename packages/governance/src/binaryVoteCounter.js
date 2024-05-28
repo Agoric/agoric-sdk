@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
@@ -114,7 +113,7 @@ const makeBinaryVoteCounter = (
         outcome: 'fail',
         reason: 'No quorum',
       };
-      E(publisher).publish(voteOutcome);
+      void E(publisher).publish(voteOutcome);
       return;
     }
 
@@ -127,7 +126,7 @@ const makeBinaryVoteCounter = (
     }
 
     // XXX if we should distinguish ties, publish should be called in if above
-    E.when(outcomePromise.promise, position => {
+    void E.when(outcomePromise.promise, position => {
       /** @type {OutcomeRecord} */
       const voteOutcome = {
         question: details.questionHandle,
