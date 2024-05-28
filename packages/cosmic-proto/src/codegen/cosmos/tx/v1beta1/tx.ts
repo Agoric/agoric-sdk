@@ -12,6 +12,7 @@ import {
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** Tx is the standard type used for broadcasting transactions. */
 export interface Tx {
   /** body is the processable content of the transaction */
@@ -513,7 +514,7 @@ export const Tx = {
         : [],
     };
   },
-  toJSON(message: Tx): unknown {
+  toJSON(message: Tx): JsonSafe<Tx> {
     const obj: any = {};
     message.body !== undefined &&
       (obj.body = message.body ? TxBody.toJSON(message.body) : undefined);
@@ -617,7 +618,7 @@ export const TxRaw = {
         : [],
     };
   },
-  toJSON(message: TxRaw): unknown {
+  toJSON(message: TxRaw): JsonSafe<TxRaw> {
     const obj: any = {};
     message.bodyBytes !== undefined &&
       (obj.bodyBytes = base64FromBytes(
@@ -727,7 +728,7 @@ export const SignDoc = {
         : BigInt(0),
     };
   },
-  toJSON(message: SignDoc): unknown {
+  toJSON(message: SignDoc): JsonSafe<SignDoc> {
     const obj: any = {};
     message.bodyBytes !== undefined &&
       (obj.bodyBytes = base64FromBytes(
@@ -855,7 +856,7 @@ export const SignDocDirectAux = {
       tip: isSet(object.tip) ? Tip.fromJSON(object.tip) : undefined,
     };
   },
-  toJSON(message: SignDocDirectAux): unknown {
+  toJSON(message: SignDocDirectAux): JsonSafe<SignDocDirectAux> {
     const obj: any = {};
     message.bodyBytes !== undefined &&
       (obj.bodyBytes = base64FromBytes(
@@ -992,7 +993,7 @@ export const TxBody = {
         : [],
     };
   },
-  toJSON(message: TxBody): unknown {
+  toJSON(message: TxBody): JsonSafe<TxBody> {
     const obj: any = {};
     if (message.messages) {
       obj.messages = message.messages.map(e => (e ? Any.toJSON(e) : undefined));
@@ -1102,7 +1103,7 @@ export const AuthInfo = {
       tip: isSet(object.tip) ? Tip.fromJSON(object.tip) : undefined,
     };
   },
-  toJSON(message: AuthInfo): unknown {
+  toJSON(message: AuthInfo): JsonSafe<AuthInfo> {
     const obj: any = {};
     if (message.signerInfos) {
       obj.signerInfos = message.signerInfos.map(e =>
@@ -1205,7 +1206,7 @@ export const SignerInfo = {
         : BigInt(0),
     };
   },
-  toJSON(message: SignerInfo): unknown {
+  toJSON(message: SignerInfo): JsonSafe<SignerInfo> {
     const obj: any = {};
     message.publicKey !== undefined &&
       (obj.publicKey = message.publicKey
@@ -1299,7 +1300,7 @@ export const ModeInfo = {
         : undefined,
     };
   },
-  toJSON(message: ModeInfo): unknown {
+  toJSON(message: ModeInfo): JsonSafe<ModeInfo> {
     const obj: any = {};
     message.single !== undefined &&
       (obj.single = message.single
@@ -1375,7 +1376,7 @@ export const ModeInfo_Single = {
       mode: isSet(object.mode) ? signModeFromJSON(object.mode) : -1,
     };
   },
-  toJSON(message: ModeInfo_Single): unknown {
+  toJSON(message: ModeInfo_Single): JsonSafe<ModeInfo_Single> {
     const obj: any = {};
     message.mode !== undefined && (obj.mode = signModeToJSON(message.mode));
     return obj;
@@ -1452,7 +1453,7 @@ export const ModeInfo_Multi = {
         : [],
     };
   },
-  toJSON(message: ModeInfo_Multi): unknown {
+  toJSON(message: ModeInfo_Multi): JsonSafe<ModeInfo_Multi> {
     const obj: any = {};
     message.bitarray !== undefined &&
       (obj.bitarray = message.bitarray
@@ -1557,7 +1558,7 @@ export const Fee = {
       granter: isSet(object.granter) ? String(object.granter) : '',
     };
   },
-  toJSON(message: Fee): unknown {
+  toJSON(message: Fee): JsonSafe<Fee> {
     const obj: any = {};
     if (message.amount) {
       obj.amount = message.amount.map(e => (e ? Coin.toJSON(e) : undefined));
@@ -1643,7 +1644,7 @@ export const Tip = {
       tipper: isSet(object.tipper) ? String(object.tipper) : '',
     };
   },
-  toJSON(message: Tip): unknown {
+  toJSON(message: Tip): JsonSafe<Tip> {
     const obj: any = {};
     if (message.amount) {
       obj.amount = message.amount.map(e => (e ? Coin.toJSON(e) : undefined));
@@ -1740,7 +1741,7 @@ export const AuxSignerData = {
       sig: isSet(object.sig) ? bytesFromBase64(object.sig) : new Uint8Array(),
     };
   },
-  toJSON(message: AuxSignerData): unknown {
+  toJSON(message: AuxSignerData): JsonSafe<AuxSignerData> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.signDoc !== undefined &&

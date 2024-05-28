@@ -5,6 +5,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * PageRequest is to be embedded in gRPC request messages for efficient
  * pagination. Ex:
@@ -178,7 +179,7 @@ export const PageRequest = {
       reverse: isSet(object.reverse) ? Boolean(object.reverse) : false,
     };
   },
-  toJSON(message: PageRequest): unknown {
+  toJSON(message: PageRequest): JsonSafe<PageRequest> {
     const obj: any = {};
     message.key !== undefined &&
       (obj.key = base64FromBytes(
@@ -269,7 +270,7 @@ export const PageResponse = {
       total: isSet(object.total) ? BigInt(object.total.toString()) : BigInt(0),
     };
   },
-  toJSON(message: PageResponse): unknown {
+  toJSON(message: PageResponse): JsonSafe<PageResponse> {
     const obj: any = {};
     message.nextKey !== undefined &&
       (obj.nextKey = base64FromBytes(

@@ -13,6 +13,7 @@ import {
 } from './types.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the group module's genesis state. */
 export interface GenesisState {
   /**
@@ -171,7 +172,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.groupSeq !== undefined &&
       (obj.groupSeq = (message.groupSeq || BigInt(0)).toString());

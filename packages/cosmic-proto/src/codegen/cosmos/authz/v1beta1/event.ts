@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** EventGrant is emitted on Msg/Grant */
 export interface EventGrant {
   /** Msg type URL for which an autorization is granted */
@@ -94,7 +95,7 @@ export const EventGrant = {
       grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
-  toJSON(message: EventGrant): unknown {
+  toJSON(message: EventGrant): JsonSafe<EventGrant> {
     const obj: any = {};
     message.msgTypeUrl !== undefined && (obj.msgTypeUrl = message.msgTypeUrl);
     message.granter !== undefined && (obj.granter = message.granter);
@@ -176,7 +177,7 @@ export const EventRevoke = {
       grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
-  toJSON(message: EventRevoke): unknown {
+  toJSON(message: EventRevoke): JsonSafe<EventRevoke> {
     const obj: any = {};
     message.msgTypeUrl !== undefined && (obj.msgTypeUrl = message.msgTypeUrl);
     message.granter !== undefined && (obj.granter = message.granter);

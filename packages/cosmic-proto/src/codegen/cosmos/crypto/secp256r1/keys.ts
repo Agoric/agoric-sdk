@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** PubKey defines a secp256r1 ECDSA public key. */
 export interface PubKey {
   /**
@@ -69,7 +70,7 @@ export const PubKey = {
       key: isSet(object.key) ? bytesFromBase64(object.key) : new Uint8Array(),
     };
   },
-  toJSON(message: PubKey): unknown {
+  toJSON(message: PubKey): JsonSafe<PubKey> {
     const obj: any = {};
     message.key !== undefined &&
       (obj.key = base64FromBytes(
@@ -136,7 +137,7 @@ export const PrivKey = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: PrivKey): unknown {
+  toJSON(message: PrivKey): JsonSafe<PrivKey> {
     const obj: any = {};
     message.secret !== undefined &&
       (obj.secret = base64FromBytes(

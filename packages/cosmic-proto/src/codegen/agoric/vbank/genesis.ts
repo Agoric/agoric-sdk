@@ -2,6 +2,7 @@
 import { Params, ParamsSDKType, State, StateSDKType } from './vbank.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** The initial and exported module state. */
 export interface GenesisState {
   /** parms defines all the parameters of the module. */
@@ -65,7 +66,7 @@ export const GenesisState = {
       state: isSet(object.state) ? State.fromJSON(object.state) : undefined,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);

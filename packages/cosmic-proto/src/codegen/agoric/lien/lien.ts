@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 /** Lien contains the lien state of a particular account. */
 export interface Lien {
   /** coins holds the amount liened */
@@ -72,7 +73,7 @@ export const Lien = {
         : [],
     };
   },
-  toJSON(message: Lien): unknown {
+  toJSON(message: Lien): JsonSafe<Lien> {
     const obj: any = {};
     if (message.coins) {
       obj.coins = message.coins.map(e => (e ? Coin.toJSON(e) : undefined));

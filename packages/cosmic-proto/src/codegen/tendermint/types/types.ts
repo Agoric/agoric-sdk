@@ -12,6 +12,7 @@ import {
   fromTimestamp,
   fromJsonTimestamp,
 } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** BlockIdFlag indicates which BlcokID the signature is for */
 export enum BlockIDFlag {
   BLOCK_ID_FLAG_UNKNOWN = 0,
@@ -404,7 +405,7 @@ export const PartSetHeader = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: PartSetHeader): unknown {
+  toJSON(message: PartSetHeader): JsonSafe<PartSetHeader> {
     const obj: any = {};
     message.total !== undefined && (obj.total = Math.round(message.total));
     message.hash !== undefined &&
@@ -489,7 +490,7 @@ export const Part = {
       proof: isSet(object.proof) ? Proof.fromJSON(object.proof) : undefined,
     };
   },
-  toJSON(message: Part): unknown {
+  toJSON(message: Part): JsonSafe<Part> {
     const obj: any = {};
     message.index !== undefined && (obj.index = Math.round(message.index));
     message.bytes !== undefined &&
@@ -577,7 +578,7 @@ export const BlockID = {
         : undefined,
     };
   },
-  toJSON(message: BlockID): unknown {
+  toJSON(message: BlockID): JsonSafe<BlockID> {
     const obj: any = {};
     message.hash !== undefined &&
       (obj.hash = base64FromBytes(
@@ -783,7 +784,7 @@ export const Header = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: Header): unknown {
+  toJSON(message: Header): JsonSafe<Header> {
     const obj: any = {};
     message.version !== undefined &&
       (obj.version = message.version
@@ -930,7 +931,7 @@ export const Data = {
         : [],
     };
   },
-  toJSON(message: Data): unknown {
+  toJSON(message: Data): JsonSafe<Data> {
     const obj: any = {};
     if (message.txs) {
       obj.txs = message.txs.map(e =>
@@ -1071,7 +1072,7 @@ export const Vote = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: Vote): unknown {
+  toJSON(message: Vote): JsonSafe<Vote> {
     const obj: any = {};
     message.type !== undefined &&
       (obj.type = signedMsgTypeToJSON(message.type));
@@ -1198,7 +1199,7 @@ export const Commit = {
         : [],
     };
   },
-  toJSON(message: Commit): unknown {
+  toJSON(message: Commit): JsonSafe<Commit> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
@@ -1320,7 +1321,7 @@ export const CommitSig = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: CommitSig): unknown {
+  toJSON(message: CommitSig): JsonSafe<CommitSig> {
     const obj: any = {};
     message.blockIdFlag !== undefined &&
       (obj.blockIdFlag = blockIDFlagToJSON(message.blockIdFlag));
@@ -1459,7 +1460,7 @@ export const Proposal = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: Proposal): unknown {
+  toJSON(message: Proposal): JsonSafe<Proposal> {
     const obj: any = {};
     message.type !== undefined &&
       (obj.type = signedMsgTypeToJSON(message.type));
@@ -1557,7 +1558,7 @@ export const SignedHeader = {
       commit: isSet(object.commit) ? Commit.fromJSON(object.commit) : undefined,
     };
   },
-  toJSON(message: SignedHeader): unknown {
+  toJSON(message: SignedHeader): JsonSafe<SignedHeader> {
     const obj: any = {};
     message.header !== undefined &&
       (obj.header = message.header ? Header.toJSON(message.header) : undefined);
@@ -1647,7 +1648,7 @@ export const LightBlock = {
         : undefined,
     };
   },
-  toJSON(message: LightBlock): unknown {
+  toJSON(message: LightBlock): JsonSafe<LightBlock> {
     const obj: any = {};
     message.signedHeader !== undefined &&
       (obj.signedHeader = message.signedHeader
@@ -1753,7 +1754,7 @@ export const BlockMeta = {
         : BigInt(0),
     };
   },
-  toJSON(message: BlockMeta): unknown {
+  toJSON(message: BlockMeta): JsonSafe<BlockMeta> {
     const obj: any = {};
     message.blockId !== undefined &&
       (obj.blockId = message.blockId
@@ -1859,7 +1860,7 @@ export const TxProof = {
       proof: isSet(object.proof) ? Proof.fromJSON(object.proof) : undefined,
     };
   },
-  toJSON(message: TxProof): unknown {
+  toJSON(message: TxProof): JsonSafe<TxProof> {
     const obj: any = {};
     message.rootHash !== undefined &&
       (obj.rootHash = base64FromBytes(

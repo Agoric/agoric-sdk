@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** Params defines the set of on-chain interchain query parameters. */
 export interface Params {
   /** host_enabled enables or disables the host submodule. */
@@ -68,7 +69,7 @@ export const Params = {
         : [],
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.hostEnabled !== undefined &&
       (obj.hostEnabled = message.hostEnabled);

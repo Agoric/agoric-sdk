@@ -6,6 +6,7 @@ import {
 } from '../../../../cosmos/upgrade/v1beta1/upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.
@@ -246,7 +247,7 @@ export const IdentifiedClientState = {
         : undefined,
     };
   },
-  toJSON(message: IdentifiedClientState): unknown {
+  toJSON(message: IdentifiedClientState): JsonSafe<IdentifiedClientState> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.clientState !== undefined &&
@@ -329,7 +330,9 @@ export const ConsensusStateWithHeight = {
         : undefined,
     };
   },
-  toJSON(message: ConsensusStateWithHeight): unknown {
+  toJSON(
+    message: ConsensusStateWithHeight,
+  ): JsonSafe<ConsensusStateWithHeight> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = message.height ? Height.toJSON(message.height) : undefined);
@@ -426,7 +429,7 @@ export const ClientConsensusStates = {
         : [],
     };
   },
-  toJSON(message: ClientConsensusStates): unknown {
+  toJSON(message: ClientConsensusStates): JsonSafe<ClientConsensusStates> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.consensusStates) {
@@ -531,7 +534,7 @@ export const ClientUpdateProposal = {
         : '',
     };
   },
-  toJSON(message: ClientUpdateProposal): unknown {
+  toJSON(message: ClientUpdateProposal): JsonSafe<ClientUpdateProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -632,7 +635,7 @@ export const UpgradeProposal = {
         : undefined,
     };
   },
-  toJSON(message: UpgradeProposal): unknown {
+  toJSON(message: UpgradeProposal): JsonSafe<UpgradeProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -724,7 +727,7 @@ export const Height = {
         : BigInt(0),
     };
   },
-  toJSON(message: Height): unknown {
+  toJSON(message: Height): JsonSafe<Height> {
     const obj: any = {};
     message.revisionNumber !== undefined &&
       (obj.revisionNumber = (message.revisionNumber || BigInt(0)).toString());
@@ -798,7 +801,7 @@ export const Params = {
         : [],
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     if (message.allowedClients) {
       obj.allowedClients = message.allowedClients.map(e => e);

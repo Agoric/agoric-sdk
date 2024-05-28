@@ -11,6 +11,7 @@ import {
 } from './types.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** EventCreateGroup is an event emitted when a group is created. */
 export interface EventCreateGroup {
   /** group_id is the unique ID of the group. */
@@ -197,7 +198,7 @@ export const EventCreateGroup = {
         : BigInt(0),
     };
   },
-  toJSON(message: EventCreateGroup): unknown {
+  toJSON(message: EventCreateGroup): JsonSafe<EventCreateGroup> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -265,7 +266,7 @@ export const EventUpdateGroup = {
         : BigInt(0),
     };
   },
-  toJSON(message: EventUpdateGroup): unknown {
+  toJSON(message: EventUpdateGroup): JsonSafe<EventUpdateGroup> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -334,7 +335,7 @@ export const EventCreateGroupPolicy = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: EventCreateGroupPolicy): unknown {
+  toJSON(message: EventCreateGroupPolicy): JsonSafe<EventCreateGroupPolicy> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
@@ -401,7 +402,7 @@ export const EventUpdateGroupPolicy = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: EventUpdateGroupPolicy): unknown {
+  toJSON(message: EventUpdateGroupPolicy): JsonSafe<EventUpdateGroupPolicy> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
@@ -470,7 +471,7 @@ export const EventSubmitProposal = {
         : BigInt(0),
     };
   },
-  toJSON(message: EventSubmitProposal): unknown {
+  toJSON(message: EventSubmitProposal): JsonSafe<EventSubmitProposal> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -541,7 +542,7 @@ export const EventWithdrawProposal = {
         : BigInt(0),
     };
   },
-  toJSON(message: EventWithdrawProposal): unknown {
+  toJSON(message: EventWithdrawProposal): JsonSafe<EventWithdrawProposal> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -609,7 +610,7 @@ export const EventVote = {
         : BigInt(0),
     };
   },
-  toJSON(message: EventVote): unknown {
+  toJSON(message: EventVote): JsonSafe<EventVote> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -695,7 +696,7 @@ export const EventExec = {
       logs: isSet(object.logs) ? String(object.logs) : '',
     };
   },
-  toJSON(message: EventExec): unknown {
+  toJSON(message: EventExec): JsonSafe<EventExec> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -776,7 +777,7 @@ export const EventLeaveGroup = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: EventLeaveGroup): unknown {
+  toJSON(message: EventLeaveGroup): JsonSafe<EventLeaveGroup> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -870,7 +871,7 @@ export const EventProposalPruned = {
         : undefined,
     };
   },
-  toJSON(message: EventProposalPruned): unknown {
+  toJSON(message: EventProposalPruned): JsonSafe<EventProposalPruned> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());

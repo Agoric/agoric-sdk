@@ -10,6 +10,7 @@ import {
 } from './feegrant.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * MsgGrantAllowance adds permission for Grantee to spend up to Allowance
  * of fees from the account of Granter.
@@ -131,7 +132,7 @@ export const MsgGrantAllowance = {
         : undefined,
     };
   },
-  toJSON(message: MsgGrantAllowance): unknown {
+  toJSON(message: MsgGrantAllowance): JsonSafe<MsgGrantAllowance> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
@@ -196,7 +197,7 @@ export const MsgGrantAllowanceResponse = {
   fromJSON(_: any): MsgGrantAllowanceResponse {
     return {};
   },
-  toJSON(_: MsgGrantAllowanceResponse): unknown {
+  toJSON(_: MsgGrantAllowanceResponse): JsonSafe<MsgGrantAllowanceResponse> {
     const obj: any = {};
     return obj;
   },
@@ -273,7 +274,7 @@ export const MsgRevokeAllowance = {
       grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
-  toJSON(message: MsgRevokeAllowance): unknown {
+  toJSON(message: MsgRevokeAllowance): JsonSafe<MsgRevokeAllowance> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
@@ -330,7 +331,7 @@ export const MsgRevokeAllowanceResponse = {
   fromJSON(_: any): MsgRevokeAllowanceResponse {
     return {};
   },
-  toJSON(_: MsgRevokeAllowanceResponse): unknown {
+  toJSON(_: MsgRevokeAllowanceResponse): JsonSafe<MsgRevokeAllowanceResponse> {
     const obj: any = {};
     return obj;
   },

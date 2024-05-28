@@ -8,6 +8,7 @@ import {
 import { Grant, GrantSDKType } from './feegrant.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** QueryAllowanceRequest is the request type for the Query/Allowance RPC method. */
 export interface QueryAllowanceRequest {
   /** granter is the address of the user granting an allowance of their funds. */
@@ -165,7 +166,7 @@ export const QueryAllowanceRequest = {
       grantee: isSet(object.grantee) ? String(object.grantee) : '',
     };
   },
-  toJSON(message: QueryAllowanceRequest): unknown {
+  toJSON(message: QueryAllowanceRequest): JsonSafe<QueryAllowanceRequest> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
@@ -234,7 +235,7 @@ export const QueryAllowanceResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryAllowanceResponse): unknown {
+  toJSON(message: QueryAllowanceResponse): JsonSafe<QueryAllowanceResponse> {
     const obj: any = {};
     message.allowance !== undefined &&
       (obj.allowance = message.allowance
@@ -317,7 +318,7 @@ export const QueryAllowancesRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryAllowancesRequest): unknown {
+  toJSON(message: QueryAllowancesRequest): JsonSafe<QueryAllowancesRequest> {
     const obj: any = {};
     message.grantee !== undefined && (obj.grantee = message.grantee);
     message.pagination !== undefined &&
@@ -407,7 +408,7 @@ export const QueryAllowancesResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryAllowancesResponse): unknown {
+  toJSON(message: QueryAllowancesResponse): JsonSafe<QueryAllowancesResponse> {
     const obj: any = {};
     if (message.allowances) {
       obj.allowances = message.allowances.map(e =>
@@ -503,7 +504,9 @@ export const QueryAllowancesByGranterRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryAllowancesByGranterRequest): unknown {
+  toJSON(
+    message: QueryAllowancesByGranterRequest,
+  ): JsonSafe<QueryAllowancesByGranterRequest> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.pagination !== undefined &&
@@ -597,7 +600,9 @@ export const QueryAllowancesByGranterResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryAllowancesByGranterResponse): unknown {
+  toJSON(
+    message: QueryAllowancesByGranterResponse,
+  ): JsonSafe<QueryAllowancesByGranterResponse> {
     const obj: any = {};
     if (message.allowances) {
       obj.allowances = message.allowances.map(e =>

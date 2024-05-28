@@ -2,6 +2,7 @@
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * BaseAccount defines a base account type. It contains all the necessary fields
  * for basic account functionality. Any custom account type should extend this
@@ -136,7 +137,7 @@ export const BaseAccount = {
         : BigInt(0),
     };
   },
-  toJSON(message: BaseAccount): unknown {
+  toJSON(message: BaseAccount): JsonSafe<BaseAccount> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.pubKey !== undefined &&
@@ -240,7 +241,7 @@ export const ModuleAccount = {
         : [],
     };
   },
-  toJSON(message: ModuleAccount): unknown {
+  toJSON(message: ModuleAccount): JsonSafe<ModuleAccount> {
     const obj: any = {};
     message.baseAccount !== undefined &&
       (obj.baseAccount = message.baseAccount
@@ -358,7 +359,7 @@ export const Params = {
         : BigInt(0),
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.maxMemoCharacters !== undefined &&
       (obj.maxMemoCharacters = (

@@ -6,6 +6,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * Type defines a classification of message issued from a controller chain to its associated interchain accounts
  * host
@@ -132,7 +133,9 @@ export const InterchainAccountPacketData = {
       memo: isSet(object.memo) ? String(object.memo) : '',
     };
   },
-  toJSON(message: InterchainAccountPacketData): unknown {
+  toJSON(
+    message: InterchainAccountPacketData,
+  ): JsonSafe<InterchainAccountPacketData> {
     const obj: any = {};
     message.type !== undefined && (obj.type = typeToJSON(message.type));
     message.data !== undefined &&
@@ -210,7 +213,7 @@ export const CosmosTx = {
         : [],
     };
   },
-  toJSON(message: CosmosTx): unknown {
+  toJSON(message: CosmosTx): JsonSafe<CosmosTx> {
     const obj: any = {};
     if (message.messages) {
       obj.messages = message.messages.map(e => (e ? Any.toJSON(e) : undefined));

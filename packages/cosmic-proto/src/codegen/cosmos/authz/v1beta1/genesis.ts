@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { GrantAuthorization, GrantAuthorizationSDKType } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the authz module's genesis state. */
 export interface GenesisState {
   authorization: GrantAuthorization[];
@@ -56,7 +57,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.authorization) {
       obj.authorization = message.authorization.map(e =>

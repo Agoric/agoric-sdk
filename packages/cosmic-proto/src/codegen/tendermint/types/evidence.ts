@@ -9,6 +9,7 @@ import {
   fromTimestamp,
   fromJsonTimestamp,
 } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 export interface Evidence {
   duplicateVoteEvidence?: DuplicateVoteEvidence;
   lightClientAttackEvidence?: LightClientAttackEvidence;
@@ -134,7 +135,7 @@ export const Evidence = {
         : undefined,
     };
   },
-  toJSON(message: Evidence): unknown {
+  toJSON(message: Evidence): JsonSafe<Evidence> {
     const obj: any = {};
     message.duplicateVoteEvidence !== undefined &&
       (obj.duplicateVoteEvidence = message.duplicateVoteEvidence
@@ -260,7 +261,7 @@ export const DuplicateVoteEvidence = {
         : undefined,
     };
   },
-  toJSON(message: DuplicateVoteEvidence): unknown {
+  toJSON(message: DuplicateVoteEvidence): JsonSafe<DuplicateVoteEvidence> {
     const obj: any = {};
     message.voteA !== undefined &&
       (obj.voteA = message.voteA ? Vote.toJSON(message.voteA) : undefined);
@@ -404,7 +405,9 @@ export const LightClientAttackEvidence = {
         : undefined,
     };
   },
-  toJSON(message: LightClientAttackEvidence): unknown {
+  toJSON(
+    message: LightClientAttackEvidence,
+  ): JsonSafe<LightClientAttackEvidence> {
     const obj: any = {};
     message.conflictingBlock !== undefined &&
       (obj.conflictingBlock = message.conflictingBlock
@@ -506,7 +509,7 @@ export const EvidenceList = {
         : [],
     };
   },
-  toJSON(message: EvidenceList): unknown {
+  toJSON(message: EvidenceList): JsonSafe<EvidenceList> {
     const obj: any = {};
     if (message.evidence) {
       obj.evidence = message.evidence.map(e =>

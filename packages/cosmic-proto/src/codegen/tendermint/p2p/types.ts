@@ -9,6 +9,7 @@ import {
   fromTimestamp,
   fromJsonTimestamp,
 } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 export interface ProtocolVersion {
   p2p: bigint;
   block: bigint;
@@ -144,7 +145,7 @@ export const ProtocolVersion = {
       app: isSet(object.app) ? BigInt(object.app.toString()) : BigInt(0),
     };
   },
-  toJSON(message: ProtocolVersion): unknown {
+  toJSON(message: ProtocolVersion): JsonSafe<ProtocolVersion> {
     const obj: any = {};
     message.p2p !== undefined &&
       (obj.p2p = (message.p2p || BigInt(0)).toString());
@@ -290,7 +291,7 @@ export const NodeInfo = {
         : undefined,
     };
   },
-  toJSON(message: NodeInfo): unknown {
+  toJSON(message: NodeInfo): JsonSafe<NodeInfo> {
     const obj: any = {};
     message.protocolVersion !== undefined &&
       (obj.protocolVersion = message.protocolVersion
@@ -389,7 +390,7 @@ export const NodeInfoOther = {
       rpcAddress: isSet(object.rpcAddress) ? String(object.rpcAddress) : '',
     };
   },
-  toJSON(message: NodeInfoOther): unknown {
+  toJSON(message: NodeInfoOther): JsonSafe<NodeInfoOther> {
     const obj: any = {};
     message.txIndex !== undefined && (obj.txIndex = message.txIndex);
     message.rpcAddress !== undefined && (obj.rpcAddress = message.rpcAddress);
@@ -480,7 +481,7 @@ export const PeerInfo = {
         : undefined,
     };
   },
-  toJSON(message: PeerInfo): unknown {
+  toJSON(message: PeerInfo): JsonSafe<PeerInfo> {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     if (message.addressInfo) {
@@ -594,7 +595,7 @@ export const PeerAddressInfo = {
         : 0,
     };
   },
-  toJSON(message: PeerAddressInfo): unknown {
+  toJSON(message: PeerAddressInfo): JsonSafe<PeerAddressInfo> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.lastDialSuccess !== undefined &&

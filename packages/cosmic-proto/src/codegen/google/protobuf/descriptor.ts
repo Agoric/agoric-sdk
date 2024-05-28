@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 export enum FieldDescriptorProto_Type {
   /**
@@ -1446,7 +1447,7 @@ export const FileDescriptorSet = {
         : [],
     };
   },
-  toJSON(message: FileDescriptorSet): unknown {
+  toJSON(message: FileDescriptorSet): JsonSafe<FileDescriptorSet> {
     const obj: any = {};
     if (message.file) {
       obj.file = message.file.map(e =>
@@ -1656,7 +1657,7 @@ export const FileDescriptorProto = {
       syntax: isSet(object.syntax) ? String(object.syntax) : '',
     };
   },
-  toJSON(message: FileDescriptorProto): unknown {
+  toJSON(message: FileDescriptorProto): JsonSafe<FileDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.package !== undefined && (obj.package = message.package);
@@ -1906,7 +1907,7 @@ export const DescriptorProto = {
         : [],
     };
   },
-  toJSON(message: DescriptorProto): unknown {
+  toJSON(message: DescriptorProto): JsonSafe<DescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.field) {
@@ -2076,7 +2077,9 @@ export const DescriptorProto_ExtensionRange = {
         : undefined,
     };
   },
-  toJSON(message: DescriptorProto_ExtensionRange): unknown {
+  toJSON(
+    message: DescriptorProto_ExtensionRange,
+  ): JsonSafe<DescriptorProto_ExtensionRange> {
     const obj: any = {};
     message.start !== undefined && (obj.start = Math.round(message.start));
     message.end !== undefined && (obj.end = Math.round(message.end));
@@ -2165,7 +2168,9 @@ export const DescriptorProto_ReservedRange = {
       end: isSet(object.end) ? Number(object.end) : 0,
     };
   },
-  toJSON(message: DescriptorProto_ReservedRange): unknown {
+  toJSON(
+    message: DescriptorProto_ReservedRange,
+  ): JsonSafe<DescriptorProto_ReservedRange> {
     const obj: any = {};
     message.start !== undefined && (obj.start = Math.round(message.start));
     message.end !== undefined && (obj.end = Math.round(message.end));
@@ -2244,7 +2249,7 @@ export const ExtensionRangeOptions = {
         : [],
     };
   },
-  toJSON(message: ExtensionRangeOptions): unknown {
+  toJSON(message: ExtensionRangeOptions): JsonSafe<ExtensionRangeOptions> {
     const obj: any = {};
     if (message.uninterpretedOption) {
       obj.uninterpretedOption = message.uninterpretedOption.map(e =>
@@ -2398,7 +2403,7 @@ export const FieldDescriptorProto = {
         : undefined,
     };
   },
-  toJSON(message: FieldDescriptorProto): unknown {
+  toJSON(message: FieldDescriptorProto): JsonSafe<FieldDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.number !== undefined && (obj.number = Math.round(message.number));
@@ -2501,7 +2506,7 @@ export const OneofDescriptorProto = {
         : undefined,
     };
   },
-  toJSON(message: OneofDescriptorProto): unknown {
+  toJSON(message: OneofDescriptorProto): JsonSafe<OneofDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.options !== undefined &&
@@ -2626,7 +2631,7 @@ export const EnumDescriptorProto = {
         : [],
     };
   },
-  toJSON(message: EnumDescriptorProto): unknown {
+  toJSON(message: EnumDescriptorProto): JsonSafe<EnumDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.value) {
@@ -2733,7 +2738,9 @@ export const EnumDescriptorProto_EnumReservedRange = {
       end: isSet(object.end) ? Number(object.end) : 0,
     };
   },
-  toJSON(message: EnumDescriptorProto_EnumReservedRange): unknown {
+  toJSON(
+    message: EnumDescriptorProto_EnumReservedRange,
+  ): JsonSafe<EnumDescriptorProto_EnumReservedRange> {
     const obj: any = {};
     message.start !== undefined && (obj.start = Math.round(message.start));
     message.end !== undefined && (obj.end = Math.round(message.end));
@@ -2827,7 +2834,9 @@ export const EnumValueDescriptorProto = {
         : undefined,
     };
   },
-  toJSON(message: EnumValueDescriptorProto): unknown {
+  toJSON(
+    message: EnumValueDescriptorProto,
+  ): JsonSafe<EnumValueDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.number !== undefined && (obj.number = Math.round(message.number));
@@ -2930,7 +2939,7 @@ export const ServiceDescriptorProto = {
         : undefined,
     };
   },
-  toJSON(message: ServiceDescriptorProto): unknown {
+  toJSON(message: ServiceDescriptorProto): JsonSafe<ServiceDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     if (message.method) {
@@ -3060,7 +3069,7 @@ export const MethodDescriptorProto = {
         : false,
     };
   },
-  toJSON(message: MethodDescriptorProto): unknown {
+  toJSON(message: MethodDescriptorProto): JsonSafe<MethodDescriptorProto> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.inputType !== undefined && (obj.inputType = message.inputType);
@@ -3336,7 +3345,7 @@ export const FileOptions = {
         : [],
     };
   },
-  toJSON(message: FileOptions): unknown {
+  toJSON(message: FileOptions): JsonSafe<FileOptions> {
     const obj: any = {};
     message.javaPackage !== undefined &&
       (obj.javaPackage = message.javaPackage);
@@ -3508,7 +3517,7 @@ export const MessageOptions = {
         : [],
     };
   },
-  toJSON(message: MessageOptions): unknown {
+  toJSON(message: MessageOptions): JsonSafe<MessageOptions> {
     const obj: any = {};
     message.messageSetWireFormat !== undefined &&
       (obj.messageSetWireFormat = message.messageSetWireFormat);
@@ -3648,7 +3657,7 @@ export const FieldOptions = {
         : [],
     };
   },
-  toJSON(message: FieldOptions): unknown {
+  toJSON(message: FieldOptions): JsonSafe<FieldOptions> {
     const obj: any = {};
     message.ctype !== undefined &&
       (obj.ctype = fieldOptions_CTypeToJSON(message.ctype));
@@ -3739,7 +3748,7 @@ export const OneofOptions = {
         : [],
     };
   },
-  toJSON(message: OneofOptions): unknown {
+  toJSON(message: OneofOptions): JsonSafe<OneofOptions> {
     const obj: any = {};
     if (message.uninterpretedOption) {
       obj.uninterpretedOption = message.uninterpretedOption.map(e =>
@@ -3832,7 +3841,7 @@ export const EnumOptions = {
         : [],
     };
   },
-  toJSON(message: EnumOptions): unknown {
+  toJSON(message: EnumOptions): JsonSafe<EnumOptions> {
     const obj: any = {};
     message.allowAlias !== undefined && (obj.allowAlias = message.allowAlias);
     message.deprecated !== undefined && (obj.deprecated = message.deprecated);
@@ -3921,7 +3930,7 @@ export const EnumValueOptions = {
         : [],
     };
   },
-  toJSON(message: EnumValueOptions): unknown {
+  toJSON(message: EnumValueOptions): JsonSafe<EnumValueOptions> {
     const obj: any = {};
     message.deprecated !== undefined && (obj.deprecated = message.deprecated);
     if (message.uninterpretedOption) {
@@ -4008,7 +4017,7 @@ export const ServiceOptions = {
         : [],
     };
   },
-  toJSON(message: ServiceOptions): unknown {
+  toJSON(message: ServiceOptions): JsonSafe<ServiceOptions> {
     const obj: any = {};
     message.deprecated !== undefined && (obj.deprecated = message.deprecated);
     if (message.uninterpretedOption) {
@@ -4105,7 +4114,7 @@ export const MethodOptions = {
         : [],
     };
   },
-  toJSON(message: MethodOptions): unknown {
+  toJSON(message: MethodOptions): JsonSafe<MethodOptions> {
     const obj: any = {};
     message.deprecated !== undefined && (obj.deprecated = message.deprecated);
     message.idempotencyLevel !== undefined &&
@@ -4251,7 +4260,7 @@ export const UninterpretedOption = {
         : '',
     };
   },
-  toJSON(message: UninterpretedOption): unknown {
+  toJSON(message: UninterpretedOption): JsonSafe<UninterpretedOption> {
     const obj: any = {};
     if (message.name) {
       obj.name = message.name.map(e =>
@@ -4365,7 +4374,9 @@ export const UninterpretedOption_NamePart = {
         : false,
     };
   },
-  toJSON(message: UninterpretedOption_NamePart): unknown {
+  toJSON(
+    message: UninterpretedOption_NamePart,
+  ): JsonSafe<UninterpretedOption_NamePart> {
     const obj: any = {};
     message.namePart !== undefined && (obj.namePart = message.namePart);
     message.isExtension !== undefined &&
@@ -4440,7 +4451,7 @@ export const SourceCodeInfo = {
         : [],
     };
   },
-  toJSON(message: SourceCodeInfo): unknown {
+  toJSON(message: SourceCodeInfo): JsonSafe<SourceCodeInfo> {
     const obj: any = {};
     if (message.location) {
       obj.location = message.location.map(e =>
@@ -4572,7 +4583,7 @@ export const SourceCodeInfo_Location = {
         : [],
     };
   },
-  toJSON(message: SourceCodeInfo_Location): unknown {
+  toJSON(message: SourceCodeInfo_Location): JsonSafe<SourceCodeInfo_Location> {
     const obj: any = {};
     if (message.path) {
       obj.path = message.path.map(e => Math.round(e));
@@ -4672,7 +4683,7 @@ export const GeneratedCodeInfo = {
         : [],
     };
   },
-  toJSON(message: GeneratedCodeInfo): unknown {
+  toJSON(message: GeneratedCodeInfo): JsonSafe<GeneratedCodeInfo> {
     const obj: any = {};
     if (message.annotation) {
       obj.annotation = message.annotation.map(e =>
@@ -4781,7 +4792,9 @@ export const GeneratedCodeInfo_Annotation = {
       end: isSet(object.end) ? Number(object.end) : 0,
     };
   },
-  toJSON(message: GeneratedCodeInfo_Annotation): unknown {
+  toJSON(
+    message: GeneratedCodeInfo_Annotation,
+  ): JsonSafe<GeneratedCodeInfo_Annotation> {
     const obj: any = {};
     if (message.path) {
       obj.path = message.path.map(e => Math.round(e));

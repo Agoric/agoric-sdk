@@ -15,6 +15,7 @@ import {
   fromTimestamp,
   fromJsonTimestamp,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 import { Decimal } from '@cosmjs/math';
 /** MsgCreateValidator defines a SDK message for creating a new validator. */
 export interface MsgCreateValidator {
@@ -330,7 +331,7 @@ export const MsgCreateValidator = {
       value: isSet(object.value) ? Coin.fromJSON(object.value) : undefined,
     };
   },
-  toJSON(message: MsgCreateValidator): unknown {
+  toJSON(message: MsgCreateValidator): JsonSafe<MsgCreateValidator> {
     const obj: any = {};
     message.description !== undefined &&
       (obj.description = message.description
@@ -420,7 +421,7 @@ export const MsgCreateValidatorResponse = {
   fromJSON(_: any): MsgCreateValidatorResponse {
     return {};
   },
-  toJSON(_: MsgCreateValidatorResponse): unknown {
+  toJSON(_: MsgCreateValidatorResponse): JsonSafe<MsgCreateValidatorResponse> {
     const obj: any = {};
     return obj;
   },
@@ -526,7 +527,7 @@ export const MsgEditValidator = {
         : '',
     };
   },
-  toJSON(message: MsgEditValidator): unknown {
+  toJSON(message: MsgEditValidator): JsonSafe<MsgEditValidator> {
     const obj: any = {};
     message.description !== undefined &&
       (obj.description = message.description
@@ -596,7 +597,7 @@ export const MsgEditValidatorResponse = {
   fromJSON(_: any): MsgEditValidatorResponse {
     return {};
   },
-  toJSON(_: MsgEditValidatorResponse): unknown {
+  toJSON(_: MsgEditValidatorResponse): JsonSafe<MsgEditValidatorResponse> {
     const obj: any = {};
     return obj;
   },
@@ -680,7 +681,7 @@ export const MsgDelegate = {
       amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
     };
   },
-  toJSON(message: MsgDelegate): unknown {
+  toJSON(message: MsgDelegate): JsonSafe<MsgDelegate> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -745,7 +746,7 @@ export const MsgDelegateResponse = {
   fromJSON(_: any): MsgDelegateResponse {
     return {};
   },
-  toJSON(_: MsgDelegateResponse): unknown {
+  toJSON(_: MsgDelegateResponse): JsonSafe<MsgDelegateResponse> {
     const obj: any = {};
     return obj;
   },
@@ -838,7 +839,7 @@ export const MsgBeginRedelegate = {
       amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
     };
   },
-  toJSON(message: MsgBeginRedelegate): unknown {
+  toJSON(message: MsgBeginRedelegate): JsonSafe<MsgBeginRedelegate> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -923,7 +924,9 @@ export const MsgBeginRedelegateResponse = {
         : undefined,
     };
   },
-  toJSON(message: MsgBeginRedelegateResponse): unknown {
+  toJSON(
+    message: MsgBeginRedelegateResponse,
+  ): JsonSafe<MsgBeginRedelegateResponse> {
     const obj: any = {};
     message.completionTime !== undefined &&
       (obj.completionTime = message.completionTime.toISOString());
@@ -1012,7 +1015,7 @@ export const MsgUndelegate = {
       amount: isSet(object.amount) ? Coin.fromJSON(object.amount) : undefined,
     };
   },
-  toJSON(message: MsgUndelegate): unknown {
+  toJSON(message: MsgUndelegate): JsonSafe<MsgUndelegate> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -1094,7 +1097,7 @@ export const MsgUndelegateResponse = {
         : undefined,
     };
   },
-  toJSON(message: MsgUndelegateResponse): unknown {
+  toJSON(message: MsgUndelegateResponse): JsonSafe<MsgUndelegateResponse> {
     const obj: any = {};
     message.completionTime !== undefined &&
       (obj.completionTime = message.completionTime.toISOString());
@@ -1190,7 +1193,9 @@ export const MsgCancelUnbondingDelegation = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgCancelUnbondingDelegation): unknown {
+  toJSON(
+    message: MsgCancelUnbondingDelegation,
+  ): JsonSafe<MsgCancelUnbondingDelegation> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -1267,7 +1272,9 @@ export const MsgCancelUnbondingDelegationResponse = {
   fromJSON(_: any): MsgCancelUnbondingDelegationResponse {
     return {};
   },
-  toJSON(_: MsgCancelUnbondingDelegationResponse): unknown {
+  toJSON(
+    _: MsgCancelUnbondingDelegationResponse,
+  ): JsonSafe<MsgCancelUnbondingDelegationResponse> {
     const obj: any = {};
     return obj;
   },

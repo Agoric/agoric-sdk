@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Params, ParamsSDKType, Egress, EgressSDKType } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
@@ -103,7 +104,7 @@ export const QueryParamsRequest = {
   fromJSON(_: any): QueryParamsRequest {
     return {};
   },
-  toJSON(_: QueryParamsRequest): unknown {
+  toJSON(_: QueryParamsRequest): JsonSafe<QueryParamsRequest> {
     const obj: any = {};
     return obj;
   },
@@ -166,7 +167,7 @@ export const QueryParamsResponse = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: QueryParamsResponse): unknown {
+  toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
@@ -237,7 +238,7 @@ export const QueryEgressRequest = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: QueryEgressRequest): unknown {
+  toJSON(message: QueryEgressRequest): JsonSafe<QueryEgressRequest> {
     const obj: any = {};
     message.peer !== undefined &&
       (obj.peer = base64FromBytes(
@@ -305,7 +306,7 @@ export const QueryEgressResponse = {
       egress: isSet(object.egress) ? Egress.fromJSON(object.egress) : undefined,
     };
   },
-  toJSON(message: QueryEgressResponse): unknown {
+  toJSON(message: QueryEgressResponse): JsonSafe<QueryEgressResponse> {
     const obj: any = {};
     message.egress !== undefined &&
       (obj.egress = message.egress ? Egress.toJSON(message.egress) : undefined);
@@ -376,7 +377,7 @@ export const QueryMailboxRequest = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: QueryMailboxRequest): unknown {
+  toJSON(message: QueryMailboxRequest): JsonSafe<QueryMailboxRequest> {
     const obj: any = {};
     message.peer !== undefined &&
       (obj.peer = base64FromBytes(
@@ -444,7 +445,7 @@ export const QueryMailboxResponse = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: QueryMailboxResponse): unknown {
+  toJSON(message: QueryMailboxResponse): JsonSafe<QueryMailboxResponse> {
     const obj: any = {};
     message.value !== undefined && (obj.value = message.value);
     return obj;

@@ -13,6 +13,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc client submodule's genesis state. */
 export interface GenesisState {
   /** client states with their corresponding identifiers */
@@ -181,7 +182,7 @@ export const GenesisState = {
         : BigInt(0),
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.clients) {
       obj.clients = message.clients.map(e =>
@@ -299,7 +300,7 @@ export const GenesisMetadata = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: GenesisMetadata): unknown {
+  toJSON(message: GenesisMetadata): JsonSafe<GenesisMetadata> {
     const obj: any = {};
     message.key !== undefined &&
       (obj.key = base64FromBytes(
@@ -384,7 +385,9 @@ export const IdentifiedGenesisMetadata = {
         : [],
     };
   },
-  toJSON(message: IdentifiedGenesisMetadata): unknown {
+  toJSON(
+    message: IdentifiedGenesisMetadata,
+  ): JsonSafe<IdentifiedGenesisMetadata> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.clientMetadata) {

@@ -16,6 +16,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given governance proposal. */
 export enum VoteOption {
   /** VOTE_OPTION_UNSPECIFIED - VOTE_OPTION_UNSPECIFIED defines a no-op vote option. */
@@ -406,7 +407,7 @@ export const WeightedVoteOption = {
       weight: isSet(object.weight) ? String(object.weight) : '',
     };
   },
-  toJSON(message: WeightedVoteOption): unknown {
+  toJSON(message: WeightedVoteOption): JsonSafe<WeightedVoteOption> {
     const obj: any = {};
     message.option !== undefined &&
       (obj.option = voteOptionToJSON(message.option));
@@ -480,7 +481,7 @@ export const TextProposal = {
       description: isSet(object.description) ? String(object.description) : '',
     };
   },
-  toJSON(message: TextProposal): unknown {
+  toJSON(message: TextProposal): JsonSafe<TextProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -565,7 +566,7 @@ export const Deposit = {
         : [],
     };
   },
-  toJSON(message: Deposit): unknown {
+  toJSON(message: Deposit): JsonSafe<Deposit> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -743,7 +744,7 @@ export const Proposal = {
         : undefined,
     };
   },
-  toJSON(message: Proposal): unknown {
+  toJSON(message: Proposal): JsonSafe<Proposal> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -871,7 +872,7 @@ export const TallyResult = {
       noWithVeto: isSet(object.noWithVeto) ? String(object.noWithVeto) : '',
     };
   },
-  toJSON(message: TallyResult): unknown {
+  toJSON(message: TallyResult): JsonSafe<TallyResult> {
     const obj: any = {};
     message.yes !== undefined && (obj.yes = message.yes);
     message.abstain !== undefined && (obj.abstain = message.abstain);
@@ -969,7 +970,7 @@ export const Vote = {
         : [],
     };
   },
-  toJSON(message: Vote): unknown {
+  toJSON(message: Vote): JsonSafe<Vote> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -1064,7 +1065,7 @@ export const DepositParams = {
         : undefined,
     };
   },
-  toJSON(message: DepositParams): unknown {
+  toJSON(message: DepositParams): JsonSafe<DepositParams> {
     const obj: any = {};
     if (message.minDeposit) {
       obj.minDeposit = message.minDeposit.map(e =>
@@ -1142,7 +1143,7 @@ export const VotingParams = {
         : undefined,
     };
   },
-  toJSON(message: VotingParams): unknown {
+  toJSON(message: VotingParams): JsonSafe<VotingParams> {
     const obj: any = {};
     message.votingPeriod !== undefined &&
       (obj.votingPeriod = message.votingPeriod
@@ -1232,7 +1233,7 @@ export const TallyParams = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: TallyParams): unknown {
+  toJSON(message: TallyParams): JsonSafe<TallyParams> {
     const obj: any = {};
     message.quorum !== undefined &&
       (obj.quorum = base64FromBytes(

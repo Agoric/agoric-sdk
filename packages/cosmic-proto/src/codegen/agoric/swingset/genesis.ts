@@ -2,6 +2,7 @@
 import { Params, ParamsSDKType, State, StateSDKType } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** The initial or exported state. */
 export interface GenesisState {
   params: Params;
@@ -93,7 +94,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
@@ -187,7 +188,9 @@ export const SwingStoreExportDataEntry = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: SwingStoreExportDataEntry): unknown {
+  toJSON(
+    message: SwingStoreExportDataEntry,
+  ): JsonSafe<SwingStoreExportDataEntry> {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);

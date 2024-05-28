@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** Data is the vstorage node data. */
 export interface Data {
   value: string;
@@ -70,7 +71,7 @@ export const Data = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: Data): unknown {
+  toJSON(message: Data): JsonSafe<Data> {
     const obj: any = {};
     message.value !== undefined && (obj.value = message.value);
     return obj;
@@ -134,7 +135,7 @@ export const Children = {
         : [],
     };
   },
-  toJSON(message: Children): unknown {
+  toJSON(message: Children): JsonSafe<Children> {
     const obj: any = {};
     if (message.children) {
       obj.children = message.children.map(e => e);
