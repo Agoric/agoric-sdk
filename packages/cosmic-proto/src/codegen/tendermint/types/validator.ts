@@ -2,6 +2,7 @@
 import { PublicKey, PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 export interface ValidatorSet {
   validators: Validator[];
   proposer?: Validator;
@@ -105,7 +106,7 @@ export const ValidatorSet = {
         : BigInt(0),
     };
   },
-  toJSON(message: ValidatorSet): unknown {
+  toJSON(message: ValidatorSet): JsonSafe<ValidatorSet> {
     const obj: any = {};
     if (message.validators) {
       obj.validators = message.validators.map(e =>
@@ -222,7 +223,7 @@ export const Validator = {
         : BigInt(0),
     };
   },
-  toJSON(message: Validator): unknown {
+  toJSON(message: Validator): JsonSafe<Validator> {
     const obj: any = {};
     message.address !== undefined &&
       (obj.address = base64FromBytes(
@@ -321,7 +322,7 @@ export const SimpleValidator = {
         : BigInt(0),
     };
   },
-  toJSON(message: SimpleValidator): unknown {
+  toJSON(message: SimpleValidator): JsonSafe<SimpleValidator> {
     const obj: any = {};
     message.pubKey !== undefined &&
       (obj.pubKey = message.pubKey

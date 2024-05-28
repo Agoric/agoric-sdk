@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** MsgDeliverInbound defines an SDK message for delivering an eventual send */
 export interface MsgDeliverInbound {
   messages: string[];
@@ -230,7 +231,7 @@ export const MsgDeliverInbound = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MsgDeliverInbound): unknown {
+  toJSON(message: MsgDeliverInbound): JsonSafe<MsgDeliverInbound> {
     const obj: any = {};
     if (message.messages) {
       obj.messages = message.messages.map(e => e);
@@ -306,7 +307,7 @@ export const MsgDeliverInboundResponse = {
   fromJSON(_: any): MsgDeliverInboundResponse {
     return {};
   },
-  toJSON(_: MsgDeliverInboundResponse): unknown {
+  toJSON(_: MsgDeliverInboundResponse): JsonSafe<MsgDeliverInboundResponse> {
     const obj: any = {};
     return obj;
   },
@@ -382,7 +383,7 @@ export const MsgWalletAction = {
       action: isSet(object.action) ? String(object.action) : '',
     };
   },
-  toJSON(message: MsgWalletAction): unknown {
+  toJSON(message: MsgWalletAction): JsonSafe<MsgWalletAction> {
     const obj: any = {};
     message.owner !== undefined &&
       (obj.owner = base64FromBytes(
@@ -442,7 +443,7 @@ export const MsgWalletActionResponse = {
   fromJSON(_: any): MsgWalletActionResponse {
     return {};
   },
-  toJSON(_: MsgWalletActionResponse): unknown {
+  toJSON(_: MsgWalletActionResponse): JsonSafe<MsgWalletActionResponse> {
     const obj: any = {};
     return obj;
   },
@@ -519,7 +520,7 @@ export const MsgWalletSpendAction = {
       spendAction: isSet(object.spendAction) ? String(object.spendAction) : '',
     };
   },
-  toJSON(message: MsgWalletSpendAction): unknown {
+  toJSON(message: MsgWalletSpendAction): JsonSafe<MsgWalletSpendAction> {
     const obj: any = {};
     message.owner !== undefined &&
       (obj.owner = base64FromBytes(
@@ -580,7 +581,9 @@ export const MsgWalletSpendActionResponse = {
   fromJSON(_: any): MsgWalletSpendActionResponse {
     return {};
   },
-  toJSON(_: MsgWalletSpendActionResponse): unknown {
+  toJSON(
+    _: MsgWalletSpendActionResponse,
+  ): JsonSafe<MsgWalletSpendActionResponse> {
     const obj: any = {};
     return obj;
   },
@@ -676,7 +679,7 @@ export const MsgProvision = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MsgProvision): unknown {
+  toJSON(message: MsgProvision): JsonSafe<MsgProvision> {
     const obj: any = {};
     message.nickname !== undefined && (obj.nickname = message.nickname);
     message.address !== undefined &&
@@ -747,7 +750,7 @@ export const MsgProvisionResponse = {
   fromJSON(_: any): MsgProvisionResponse {
     return {};
   },
-  toJSON(_: MsgProvisionResponse): unknown {
+  toJSON(_: MsgProvisionResponse): JsonSafe<MsgProvisionResponse> {
     const obj: any = {};
     return obj;
   },
@@ -837,7 +840,7 @@ export const MsgInstallBundle = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgInstallBundle): unknown {
+  toJSON(message: MsgInstallBundle): JsonSafe<MsgInstallBundle> {
     const obj: any = {};
     message.bundle !== undefined && (obj.bundle = message.bundle);
     message.submitter !== undefined &&
@@ -912,7 +915,7 @@ export const MsgInstallBundleResponse = {
   fromJSON(_: any): MsgInstallBundleResponse {
     return {};
   },
-  toJSON(_: MsgInstallBundleResponse): unknown {
+  toJSON(_: MsgInstallBundleResponse): JsonSafe<MsgInstallBundleResponse> {
     const obj: any = {};
     return obj;
   },

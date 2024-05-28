@@ -8,6 +8,7 @@ import {
   isSet,
   fromJsonTimestamp,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** Plan specifies information about a planned upgrade and when it should occur. */
 export interface Plan {
   /**
@@ -224,7 +225,7 @@ export const Plan = {
         : undefined,
     };
   },
-  toJSON(message: Plan): unknown {
+  toJSON(message: Plan): JsonSafe<Plan> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.time !== undefined && (obj.time = message.time.toISOString());
@@ -325,7 +326,7 @@ export const SoftwareUpgradeProposal = {
       plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
     };
   },
-  toJSON(message: SoftwareUpgradeProposal): unknown {
+  toJSON(message: SoftwareUpgradeProposal): JsonSafe<SoftwareUpgradeProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -414,7 +415,9 @@ export const CancelSoftwareUpgradeProposal = {
       description: isSet(object.description) ? String(object.description) : '',
     };
   },
-  toJSON(message: CancelSoftwareUpgradeProposal): unknown {
+  toJSON(
+    message: CancelSoftwareUpgradeProposal,
+  ): JsonSafe<CancelSoftwareUpgradeProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -495,7 +498,7 @@ export const ModuleVersion = {
         : BigInt(0),
     };
   },
-  toJSON(message: ModuleVersion): unknown {
+  toJSON(message: ModuleVersion): JsonSafe<ModuleVersion> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.version !== undefined &&

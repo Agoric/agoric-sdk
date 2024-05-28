@@ -6,6 +6,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a channel is in one of the following states:
  * CLOSED, INIT, TRYOPEN, OPEN or UNINITIALIZED.
@@ -411,7 +412,7 @@ export const Channel = {
       version: isSet(object.version) ? String(object.version) : '',
     };
   },
-  toJSON(message: Channel): unknown {
+  toJSON(message: Channel): JsonSafe<Channel> {
     const obj: any = {};
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.ordering !== undefined &&
@@ -547,7 +548,7 @@ export const IdentifiedChannel = {
       channelId: isSet(object.channelId) ? String(object.channelId) : '',
     };
   },
-  toJSON(message: IdentifiedChannel): unknown {
+  toJSON(message: IdentifiedChannel): JsonSafe<IdentifiedChannel> {
     const obj: any = {};
     message.state !== undefined && (obj.state = stateToJSON(message.state));
     message.ordering !== undefined &&
@@ -640,7 +641,7 @@ export const Counterparty = {
       channelId: isSet(object.channelId) ? String(object.channelId) : '',
     };
   },
-  toJSON(message: Counterparty): unknown {
+  toJSON(message: Counterparty): JsonSafe<Counterparty> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
@@ -774,7 +775,7 @@ export const Packet = {
         : BigInt(0),
     };
   },
-  toJSON(message: Packet): unknown {
+  toJSON(message: Packet): JsonSafe<Packet> {
     const obj: any = {};
     message.sequence !== undefined &&
       (obj.sequence = (message.sequence || BigInt(0)).toString());
@@ -900,7 +901,7 @@ export const PacketState = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: PacketState): unknown {
+  toJSON(message: PacketState): JsonSafe<PacketState> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
@@ -993,7 +994,7 @@ export const PacketId = {
         : BigInt(0),
     };
   },
-  toJSON(message: PacketId): unknown {
+  toJSON(message: PacketId): JsonSafe<PacketId> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
@@ -1071,7 +1072,7 @@ export const Acknowledgement = {
       error: isSet(object.error) ? String(object.error) : undefined,
     };
   },
-  toJSON(message: Acknowledgement): unknown {
+  toJSON(message: Acknowledgement): JsonSafe<Acknowledgement> {
     const obj: any = {};
     message.result !== undefined &&
       (obj.result =

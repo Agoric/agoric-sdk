@@ -13,6 +13,7 @@ import {
 } from './staking.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the staking module's genesis state. */
 export interface GenesisState {
   /** params defines all the paramaters of related to deposit. */
@@ -185,7 +186,7 @@ export const GenesisState = {
       exported: isSet(object.exported) ? Boolean(object.exported) : false,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
@@ -319,7 +320,7 @@ export const LastValidatorPower = {
       power: isSet(object.power) ? BigInt(object.power.toString()) : BigInt(0),
     };
   },
-  toJSON(message: LastValidatorPower): unknown {
+  toJSON(message: LastValidatorPower): JsonSafe<LastValidatorPower> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.power !== undefined &&

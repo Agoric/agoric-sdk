@@ -5,6 +5,7 @@ import {
 } from '../../v1/packet.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
+import { JsonSafe } from '../../../../../json-safe.js';
 /** MsgRegisterInterchainAccount defines the payload for Msg/MsgRegisterInterchainAccount */
 export interface MsgRegisterInterchainAccount {
   owner: string;
@@ -128,7 +129,9 @@ export const MsgRegisterInterchainAccount = {
       version: isSet(object.version) ? String(object.version) : '',
     };
   },
-  toJSON(message: MsgRegisterInterchainAccount): unknown {
+  toJSON(
+    message: MsgRegisterInterchainAccount,
+  ): JsonSafe<MsgRegisterInterchainAccount> {
     const obj: any = {};
     message.owner !== undefined && (obj.owner = message.owner);
     message.connectionId !== undefined &&
@@ -206,7 +209,9 @@ export const MsgRegisterInterchainAccountResponse = {
       channelId: isSet(object.channelId) ? String(object.channelId) : '',
     };
   },
-  toJSON(message: MsgRegisterInterchainAccountResponse): unknown {
+  toJSON(
+    message: MsgRegisterInterchainAccountResponse,
+  ): JsonSafe<MsgRegisterInterchainAccountResponse> {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
     return obj;
@@ -311,7 +316,7 @@ export const MsgSendTx = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgSendTx): unknown {
+  toJSON(message: MsgSendTx): JsonSafe<MsgSendTx> {
     const obj: any = {};
     message.owner !== undefined && (obj.owner = message.owner);
     message.connectionId !== undefined &&
@@ -393,7 +398,7 @@ export const MsgSendTxResponse = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgSendTxResponse): unknown {
+  toJSON(message: MsgSendTxResponse): JsonSafe<MsgSendTxResponse> {
     const obj: any = {};
     message.sequence !== undefined &&
       (obj.sequence = (message.sequence || BigInt(0)).toString());

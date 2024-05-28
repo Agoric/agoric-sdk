@@ -6,6 +6,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.
@@ -129,7 +130,7 @@ export const MerkleRoot = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MerkleRoot): unknown {
+  toJSON(message: MerkleRoot): JsonSafe<MerkleRoot> {
     const obj: any = {};
     message.hash !== undefined &&
       (obj.hash = base64FromBytes(
@@ -196,7 +197,7 @@ export const MerklePrefix = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MerklePrefix): unknown {
+  toJSON(message: MerklePrefix): JsonSafe<MerklePrefix> {
     const obj: any = {};
     message.keyPrefix !== undefined &&
       (obj.keyPrefix = base64FromBytes(
@@ -263,7 +264,7 @@ export const MerklePath = {
         : [],
     };
   },
-  toJSON(message: MerklePath): unknown {
+  toJSON(message: MerklePath): JsonSafe<MerklePath> {
     const obj: any = {};
     if (message.keyPath) {
       obj.keyPath = message.keyPath.map(e => e);
@@ -331,7 +332,7 @@ export const MerkleProof = {
         : [],
     };
   },
-  toJSON(message: MerkleProof): unknown {
+  toJSON(message: MerkleProof): JsonSafe<MerkleProof> {
     const obj: any = {};
     if (message.proofs) {
       obj.proofs = message.proofs.map(e =>

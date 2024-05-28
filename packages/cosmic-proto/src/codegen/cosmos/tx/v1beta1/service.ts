@@ -18,6 +18,7 @@ import { BlockID, BlockIDSDKType } from '../../../tendermint/types/types.js';
 import { Block, BlockSDKType } from '../../../tendermint/types/block.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** OrderBy defines the sorting order */
 export enum OrderBy {
   /** ORDER_BY_UNSPECIFIED - ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case. */
@@ -447,7 +448,7 @@ export const GetTxsEventRequest = {
       limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
     };
   },
-  toJSON(message: GetTxsEventRequest): unknown {
+  toJSON(message: GetTxsEventRequest): JsonSafe<GetTxsEventRequest> {
     const obj: any = {};
     if (message.events) {
       obj.events = message.events.map(e => e);
@@ -572,7 +573,7 @@ export const GetTxsEventResponse = {
       total: isSet(object.total) ? BigInt(object.total.toString()) : BigInt(0),
     };
   },
-  toJSON(message: GetTxsEventResponse): unknown {
+  toJSON(message: GetTxsEventResponse): JsonSafe<GetTxsEventResponse> {
     const obj: any = {};
     if (message.txs) {
       obj.txs = message.txs.map(e => (e ? Tx.toJSON(e) : undefined));
@@ -674,7 +675,7 @@ export const BroadcastTxRequest = {
       mode: isSet(object.mode) ? broadcastModeFromJSON(object.mode) : -1,
     };
   },
-  toJSON(message: BroadcastTxRequest): unknown {
+  toJSON(message: BroadcastTxRequest): JsonSafe<BroadcastTxRequest> {
     const obj: any = {};
     message.txBytes !== undefined &&
       (obj.txBytes = base64FromBytes(
@@ -747,7 +748,7 @@ export const BroadcastTxResponse = {
         : undefined,
     };
   },
-  toJSON(message: BroadcastTxResponse): unknown {
+  toJSON(message: BroadcastTxResponse): JsonSafe<BroadcastTxResponse> {
     const obj: any = {};
     message.txResponse !== undefined &&
       (obj.txResponse = message.txResponse
@@ -825,7 +826,7 @@ export const SimulateRequest = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: SimulateRequest): unknown {
+  toJSON(message: SimulateRequest): JsonSafe<SimulateRequest> {
     const obj: any = {};
     message.tx !== undefined &&
       (obj.tx = message.tx ? Tx.toJSON(message.tx) : undefined);
@@ -906,7 +907,7 @@ export const SimulateResponse = {
       result: isSet(object.result) ? Result.fromJSON(object.result) : undefined,
     };
   },
-  toJSON(message: SimulateResponse): unknown {
+  toJSON(message: SimulateResponse): JsonSafe<SimulateResponse> {
     const obj: any = {};
     message.gasInfo !== undefined &&
       (obj.gasInfo = message.gasInfo
@@ -980,7 +981,7 @@ export const GetTxRequest = {
       hash: isSet(object.hash) ? String(object.hash) : '',
     };
   },
-  toJSON(message: GetTxRequest): unknown {
+  toJSON(message: GetTxRequest): JsonSafe<GetTxRequest> {
     const obj: any = {};
     message.hash !== undefined && (obj.hash = message.hash);
     return obj;
@@ -1052,7 +1053,7 @@ export const GetTxResponse = {
         : undefined,
     };
   },
-  toJSON(message: GetTxResponse): unknown {
+  toJSON(message: GetTxResponse): JsonSafe<GetTxResponse> {
     const obj: any = {};
     message.tx !== undefined &&
       (obj.tx = message.tx ? Tx.toJSON(message.tx) : undefined);
@@ -1141,7 +1142,7 @@ export const GetBlockWithTxsRequest = {
         : undefined,
     };
   },
-  toJSON(message: GetBlockWithTxsRequest): unknown {
+  toJSON(message: GetBlockWithTxsRequest): JsonSafe<GetBlockWithTxsRequest> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
@@ -1253,7 +1254,7 @@ export const GetBlockWithTxsResponse = {
         : undefined,
     };
   },
-  toJSON(message: GetBlockWithTxsResponse): unknown {
+  toJSON(message: GetBlockWithTxsResponse): JsonSafe<GetBlockWithTxsResponse> {
     const obj: any = {};
     if (message.txs) {
       obj.txs = message.txs.map(e => (e ? Tx.toJSON(e) : undefined));

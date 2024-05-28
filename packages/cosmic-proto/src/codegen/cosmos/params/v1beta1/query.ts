@@ -2,6 +2,7 @@
 import { ParamChange, ParamChangeSDKType } from './params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** QueryParamsRequest is request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {
   /** subspace defines the module to query the parameter for. */
@@ -145,7 +146,7 @@ export const QueryParamsRequest = {
       key: isSet(object.key) ? String(object.key) : '',
     };
   },
-  toJSON(message: QueryParamsRequest): unknown {
+  toJSON(message: QueryParamsRequest): JsonSafe<QueryParamsRequest> {
     const obj: any = {};
     message.subspace !== undefined && (obj.subspace = message.subspace);
     message.key !== undefined && (obj.key = message.key);
@@ -214,7 +215,7 @@ export const QueryParamsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryParamsResponse): unknown {
+  toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
     message.param !== undefined &&
       (obj.param = message.param
@@ -275,7 +276,7 @@ export const QuerySubspacesRequest = {
   fromJSON(_: any): QuerySubspacesRequest {
     return {};
   },
-  toJSON(_: QuerySubspacesRequest): unknown {
+  toJSON(_: QuerySubspacesRequest): JsonSafe<QuerySubspacesRequest> {
     const obj: any = {};
     return obj;
   },
@@ -340,7 +341,7 @@ export const QuerySubspacesResponse = {
         : [],
     };
   },
-  toJSON(message: QuerySubspacesResponse): unknown {
+  toJSON(message: QuerySubspacesResponse): JsonSafe<QuerySubspacesResponse> {
     const obj: any = {};
     if (message.subspaces) {
       obj.subspaces = message.subspaces.map(e =>
@@ -421,7 +422,7 @@ export const Subspace = {
         : [],
     };
   },
-  toJSON(message: Subspace): unknown {
+  toJSON(message: Subspace): JsonSafe<Subspace> {
     const obj: any = {};
     message.subspace !== undefined && (obj.subspace = message.subspace);
     if (message.keys) {

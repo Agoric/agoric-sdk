@@ -2,6 +2,7 @@
 import { Packet, PacketSDKType } from '../../ibc/core/channel/v1/channel.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
 export interface MsgSendPacket {
   packet: Packet;
@@ -73,7 +74,7 @@ export const MsgSendPacket = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MsgSendPacket): unknown {
+  toJSON(message: MsgSendPacket): JsonSafe<MsgSendPacket> {
     const obj: any = {};
     message.packet !== undefined &&
       (obj.packet = message.packet ? Packet.toJSON(message.packet) : undefined);
@@ -137,7 +138,7 @@ export const MsgSendPacketResponse = {
   fromJSON(_: any): MsgSendPacketResponse {
     return {};
   },
-  toJSON(_: MsgSendPacketResponse): unknown {
+  toJSON(_: MsgSendPacketResponse): JsonSafe<MsgSendPacketResponse> {
     const obj: any = {};
     return obj;
   },

@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Grant, GrantSDKType } from './feegrant.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState contains a set of fee allowances, persisted from the store */
 export interface GenesisState {
   allowances: Grant[];
@@ -54,7 +55,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.allowances) {
       obj.allowances = message.allowances.map(e =>

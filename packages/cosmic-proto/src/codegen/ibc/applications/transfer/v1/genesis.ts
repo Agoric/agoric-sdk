@@ -7,6 +7,7 @@ import {
 } from './transfer.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc-transfer genesis state */
 export interface GenesisState {
   portId: string;
@@ -80,7 +81,7 @@ export const GenesisState = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
     if (message.denomTraces) {

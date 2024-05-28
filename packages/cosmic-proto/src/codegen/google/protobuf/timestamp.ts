@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /**
  * A Timestamp represents a point in time independent of any time zone or local
  * calendar, encoded as a count of seconds and fractions of seconds at
@@ -241,7 +242,7 @@ export const Timestamp = {
       nanos: isSet(object.nanos) ? Number(object.nanos) : 0,
     };
   },
-  toJSON(message: Timestamp): unknown {
+  toJSON(message: Timestamp): JsonSafe<Timestamp> {
     const obj: any = {};
     message.seconds !== undefined &&
       (obj.seconds = (message.seconds || BigInt(0)).toString());

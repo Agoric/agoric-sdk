@@ -3,6 +3,7 @@ import { Params, ParamsSDKType, Metadata, MetadataSDKType } from './bank.js';
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the bank module's genesis state. */
 export interface GenesisState {
   /** params defines all the paramaters of the module. */
@@ -119,7 +120,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
@@ -218,7 +219,7 @@ export const Balance = {
         : [],
     };
   },
-  toJSON(message: Balance): unknown {
+  toJSON(message: Balance): JsonSafe<Balance> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     if (message.coins) {

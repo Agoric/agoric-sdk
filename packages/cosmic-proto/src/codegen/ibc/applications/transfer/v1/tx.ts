@@ -3,6 +3,7 @@ import { Coin, CoinSDKType } from '../../../../cosmos/base/v1beta1/coin.js';
 import { Height, HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * MsgTransfer defines a msg to transfer fungible tokens (i.e Coins) between
  * ICS20 enabled chains. See ICS Spec here:
@@ -165,7 +166,7 @@ export const MsgTransfer = {
       memo: isSet(object.memo) ? String(object.memo) : '',
     };
   },
-  toJSON(message: MsgTransfer): unknown {
+  toJSON(message: MsgTransfer): JsonSafe<MsgTransfer> {
     const obj: any = {};
     message.sourcePort !== undefined && (obj.sourcePort = message.sourcePort);
     message.sourceChannel !== undefined &&
@@ -263,7 +264,7 @@ export const MsgTransferResponse = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgTransferResponse): unknown {
+  toJSON(message: MsgTransferResponse): JsonSafe<MsgTransferResponse> {
     const obj: any = {};
     message.sequence !== undefined &&
       (obj.sequence = (message.sequence || BigInt(0)).toString());

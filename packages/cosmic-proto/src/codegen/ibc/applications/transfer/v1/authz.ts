@@ -2,6 +2,7 @@
 import { Coin, CoinSDKType } from '../../../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /** Allocation defines the spend limit for a particular port and channel */
 export interface Allocation {
   /** the port on which the packet will be sent */
@@ -114,7 +115,7 @@ export const Allocation = {
         : [],
     };
   },
-  toJSON(message: Allocation): unknown {
+  toJSON(message: Allocation): JsonSafe<Allocation> {
     const obj: any = {};
     message.sourcePort !== undefined && (obj.sourcePort = message.sourcePort);
     message.sourceChannel !== undefined &&
@@ -199,7 +200,7 @@ export const TransferAuthorization = {
         : [],
     };
   },
-  toJSON(message: TransferAuthorization): unknown {
+  toJSON(message: TransferAuthorization): JsonSafe<TransferAuthorization> {
     const obj: any = {};
     if (message.allocations) {
       obj.allocations = message.allocations.map(e =>

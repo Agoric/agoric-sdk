@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
+import { JsonSafe } from '../../../../../json-safe.js';
 /**
  * Params defines the set of on-chain interchain accounts parameters.
  * The following parameters may be used to disable the controller submodule.
@@ -61,7 +62,7 @@ export const Params = {
         : false,
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.controllerEnabled !== undefined &&
       (obj.controllerEnabled = message.controllerEnabled);

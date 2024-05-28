@@ -15,6 +15,7 @@ import {
 } from './gov.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the gov module's genesis state. */
 export interface GenesisState {
   /** starting_proposal_id is the ID of the starting proposal. */
@@ -156,7 +157,7 @@ export const GenesisState = {
         : undefined,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.startingProposalId !== undefined &&
       (obj.startingProposalId = (

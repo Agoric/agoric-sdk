@@ -10,6 +10,7 @@ import {
 import { EvidenceList, EvidenceListSDKType } from './evidence.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 export interface Block {
   header: Header;
   data: Data;
@@ -93,7 +94,7 @@ export const Block = {
         : undefined,
     };
   },
-  toJSON(message: Block): unknown {
+  toJSON(message: Block): JsonSafe<Block> {
     const obj: any = {};
     message.header !== undefined &&
       (obj.header = message.header ? Header.toJSON(message.header) : undefined);

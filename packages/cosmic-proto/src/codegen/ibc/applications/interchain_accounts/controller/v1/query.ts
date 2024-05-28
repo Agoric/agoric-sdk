@@ -2,6 +2,7 @@
 import { Params, ParamsSDKType } from './controller.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
+import { JsonSafe } from '../../../../../json-safe.js';
 /** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
 export interface QueryInterchainAccountRequest {
   owner: string;
@@ -102,7 +103,9 @@ export const QueryInterchainAccountRequest = {
         : '',
     };
   },
-  toJSON(message: QueryInterchainAccountRequest): unknown {
+  toJSON(
+    message: QueryInterchainAccountRequest,
+  ): JsonSafe<QueryInterchainAccountRequest> {
     const obj: any = {};
     message.owner !== undefined && (obj.owner = message.owner);
     message.connectionId !== undefined &&
@@ -178,7 +181,9 @@ export const QueryInterchainAccountResponse = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: QueryInterchainAccountResponse): unknown {
+  toJSON(
+    message: QueryInterchainAccountResponse,
+  ): JsonSafe<QueryInterchainAccountResponse> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
@@ -241,7 +246,7 @@ export const QueryParamsRequest = {
   fromJSON(_: any): QueryParamsRequest {
     return {};
   },
-  toJSON(_: QueryParamsRequest): unknown {
+  toJSON(_: QueryParamsRequest): JsonSafe<QueryParamsRequest> {
     const obj: any = {};
     return obj;
   },
@@ -306,7 +311,7 @@ export const QueryParamsResponse = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: QueryParamsResponse): unknown {
+  toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);

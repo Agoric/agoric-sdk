@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 export interface BitArray {
   bits: bigint;
   elems: bigint[];
@@ -71,7 +72,7 @@ export const BitArray = {
         : [],
     };
   },
-  toJSON(message: BitArray): unknown {
+  toJSON(message: BitArray): JsonSafe<BitArray> {
     const obj: any = {};
     message.bits !== undefined &&
       (obj.bits = (message.bits || BigInt(0)).toString());

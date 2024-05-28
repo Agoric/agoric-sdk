@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
@@ -67,7 +68,7 @@ export const SendAuthorization = {
         : [],
     };
   },
-  toJSON(message: SendAuthorization): unknown {
+  toJSON(message: SendAuthorization): JsonSafe<SendAuthorization> {
     const obj: any = {};
     if (message.spendLimit) {
       obj.spendLimit = message.spendLimit.map(e =>

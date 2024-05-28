@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
@@ -105,7 +106,7 @@ export const DenomTrace = {
       baseDenom: isSet(object.baseDenom) ? String(object.baseDenom) : '',
     };
   },
-  toJSON(message: DenomTrace): unknown {
+  toJSON(message: DenomTrace): JsonSafe<DenomTrace> {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.baseDenom !== undefined && (obj.baseDenom = message.baseDenom);
@@ -181,7 +182,7 @@ export const Params = {
         : false,
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.sendEnabled !== undefined &&
       (obj.sendEnabled = message.sendEnabled);
