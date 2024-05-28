@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
@@ -80,7 +79,7 @@ test('change a param', async t => {
     await E(publicFacet).getSubscription(),
   );
   const update1 = await notifier.getUpdateSince();
-  publicFacet.getGovernedParams();
+
   // This value isn't available synchronously and we don't have access here to the param manager to await its finish
   // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   // t.is(
@@ -108,7 +107,7 @@ test('change a param', async t => {
     },
   });
 
-  E(governorFacets.creatorFacet).changeParams(paramChangesSpec);
+  void E(governorFacets.creatorFacet).changeParams(paramChangesSpec);
 
   const update2 = await notifier.getUpdateSince(update1.updateCount);
   t.like(update2, {

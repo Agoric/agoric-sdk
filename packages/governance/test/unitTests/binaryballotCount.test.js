@@ -1,5 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
@@ -151,7 +149,7 @@ test('binary tied', async t => {
   const bobSeat = makeHandle('Voter');
 
   const positions = aliceTemplate.getDetails().positions;
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]]);
   await E(creatorFacet).submitVote(bobSeat, [positions[1]]);
   closeFacet.closeVoting();
   const outcome = await E(publicFacet).getOutcome();
@@ -299,7 +297,7 @@ test('binary contested', async t => {
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 2);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
   await E(creatorFacet).submitVote(bobSeat, [positions[1]], 47n);
   closeFacet.closeVoting();
 
@@ -339,8 +337,8 @@ test('binary revote', async t => {
   const positions = template.getDetails().positions;
   t.deepEqual(positions.length, 2);
 
-  E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
-  E(creatorFacet).submitVote(bobSeat, [positions[1]], 47n);
+  void E(creatorFacet).submitVote(aliceSeat, [positions[0]], 23n);
+  void E(creatorFacet).submitVote(bobSeat, [positions[1]], 47n);
   await E(creatorFacet).submitVote(bobSeat, [positions[1]], 15n);
   closeFacet.closeVoting();
 
