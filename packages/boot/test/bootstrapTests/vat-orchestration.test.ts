@@ -1,7 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
-import type { AnyJson } from '@agoric/cosmic-proto';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -39,7 +38,7 @@ const delegateMsgSuccess = Any.toJSON(
     validatorAddress: 'cosmosvaloper1test',
     amount: { denom: 'uatom', amount: '10' },
   }),
-) as AnyJson;
+);
 const balanceQuery = toRequestQueryJson(
   QueryBalanceRequest.toProtoMsg({
     address: 'cosmos1test',
@@ -181,7 +180,7 @@ test('ICA connection can send msg with proto3', async t => {
       validatorAddress: 'cosmosvaloper1fail',
       amount: { denom: 'uatom', amount: '10' },
     }),
-  ) as AnyJson;
+  );
 
   await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgFailure]), {
     message: 'ABCI code: 5: error handling packet: see events for details',

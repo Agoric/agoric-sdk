@@ -10,8 +10,8 @@ import { ConnectionHandlerI } from '../typeGuards.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
- * @import {Base64Any, RequestQueryJson} from '@agoric/cosmic-proto';
- * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -83,8 +83,8 @@ export const prepareICQConnectionKit = zone =>
           );
         },
         /**
-         * @param {RequestQueryJson[]} msgs
-         * @returns {Promise<Base64Any<ResponseQuery>[]>}
+         * @param {JsonSafe<RequestQuery>[]} msgs
+         * @returns {Promise<JsonSafe<ResponseQuery>[]>}
          * @throws {Error} if packet fails to send or an error is returned
          */
         query(msgs) {
