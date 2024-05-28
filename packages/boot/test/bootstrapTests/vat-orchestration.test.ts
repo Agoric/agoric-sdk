@@ -225,7 +225,7 @@ test('Query connection can send a query', async t => {
 
     const [result] = await EV(queryConnection).query([balanceQuery]);
     t.is(result.code, 0);
-    t.is(typeof result.height, 'bigint');
+    t.is(result.height, '0'); // bigint
     t.deepEqual(QueryBalanceResponse.decode(decodeBase64(result.key)), {
       balance: {
         amount: '0',
