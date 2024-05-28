@@ -59,6 +59,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   async function makeLocalAccountKit() {
     const account = await E(privateArgs.localchain).makeAccount();
     const address = await E(account).getAddress();
+    // XXX 'address' is implied by 'account'; use an async maker that get the value itself
     return makeLocalChainAccountKit({
       account,
       address,

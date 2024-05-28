@@ -103,9 +103,6 @@ test('makeStakeBldInvitation', async t => {
   t.deepEqual(res, {});
   t.log('Successfully delegated');
 
-  await t.throwsAsync(() => E(invitationMakers).TransferAccount(), {
-    message: 'not yet implemented',
-  });
   await t.throwsAsync(() => E(invitationMakers).CloseAccount(), {
     message: 'not yet implemented',
   });
