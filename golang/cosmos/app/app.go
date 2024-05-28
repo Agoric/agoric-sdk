@@ -698,12 +698,15 @@ func NewAgoricApp(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	// NOTE: capability module's beginblocker must come before any modules using capabilities (e.g. IBC)
 	app.mm.SetOrderBeginBlockers(
+		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
 		// upgrades should be run first
 		upgradetypes.ModuleName,
 		capabilitytypes.ModuleName,
+		// params influence many other modules, so it should be near the top.
 		paramstypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
+		// ibc apps are grouped together
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
@@ -726,10 +729,10 @@ func NewAgoricApp(
 		vbank.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		// Cosmos-SDK modules appear roughly used by simapp and gaiad.
+		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		// vibc is an Agoric-specific IBC app, so group it here with other IBC apps.ß
+		// vibc is an Agoric-specific IBC app, so group it here with other IBC apps.
 		vibc.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
@@ -785,9 +788,11 @@ func NewAgoricApp(
 		genutiltypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		// Agoric-specific modules go last since they may rely on other SDK modules.
 		vstorage.ModuleName,
 		vbank.ModuleName,
 		vibc.ModuleName,
+		vtransfer.ModuleName,
 		swingset.ModuleName,
 	}
 

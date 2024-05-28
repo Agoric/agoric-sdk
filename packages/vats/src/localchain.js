@@ -34,7 +34,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
   monitorTransfers: M.callWhen(M.remotable('TransferTap')).returns(
-    M.remotable('Unregistrar'),
+    M.remotable('TargetRegistration'),
   ),
 });
 

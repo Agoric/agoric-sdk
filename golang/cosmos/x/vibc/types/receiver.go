@@ -84,9 +84,9 @@ func (r rawAcknowledgement) Success() bool {
 }
 
 // Receive implements vm.PortHandler.  It unmarshals the string as JSON text
-// representing an IBC portMessage.  If the resulting type is "IBC_METHOD" it
-// dispatches on method ("sendPacket"/"receiveExecuted"/etc.) and calls the
-// corresponding method of the wrapped ReceiverImpl.
+// representing an IBC portMessage object.  If the resulting type is
+// "IBC_METHOD" it dispatches on method ("sendPacket"/"receiveExecuted"/etc.)
+// and calls the corresponding method of the wrapped ReceiverImpl.
 //
 // Otherwise, it requires the wrapped ReceiverImpl to be a vm.PortHandler
 // and delegates to the Receive method of that PortHandler.
