@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
@@ -1639,7 +1638,7 @@ test('stamps from dateNow', async t => {
   await E(wallet).addPayment(pmt1);
   const { value: val1a, updateCount: count1a } =
     await E(paymentNotifier).getUpdateSince(count0);
-  E(wallet).addPayment(pmt4);
+  void E(wallet).addPayment(pmt4);
   const { value: val1, updateCount: count1 } =
     await E(paymentNotifier).getUpdateSince(count1a);
 
