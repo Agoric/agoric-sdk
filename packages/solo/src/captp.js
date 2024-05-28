@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E, makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
 
