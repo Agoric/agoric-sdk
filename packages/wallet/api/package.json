@@ -51,7 +51,6 @@
   "homepage": "https://github.com/Agoric/agoric#readme",
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [

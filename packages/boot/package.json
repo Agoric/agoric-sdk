@@ -77,7 +77,6 @@
       "ts": "module"
     },
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "nodeArguments": [

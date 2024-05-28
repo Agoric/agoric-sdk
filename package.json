@@ -67,7 +67,6 @@
   },
   "ava": {
     "files": [
-      "packages/*/test/**/test-*.*",
       "packages/*/test/**/*.test.*"
     ],
     "timeout": "30m"
