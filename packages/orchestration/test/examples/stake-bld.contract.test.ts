@@ -34,7 +34,7 @@ const coreEval = async (t, { timer, localchain, marshaller, storage, bld }) => {
   return { publicFacet, zoe };
 };
 
-test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
+test('makeAccount, deposit, withdraw', async t => {
   const {
     bootstrap,
     brands: { bld },
@@ -68,7 +68,7 @@ test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
   );
 });
 
-test('stakeBld contract - makeStakeBldInvitation', async t => {
+test('makeStakeBldInvitation', async t => {
   const {
     bootstrap,
     brands: { bld },
@@ -112,7 +112,7 @@ test('stakeBld contract - makeStakeBldInvitation', async t => {
   });
 });
 
-test('stakeBld contract - makeAccountInvitationMaker', async t => {
+test('makeAccountInvitationMaker', async t => {
   const {
     bootstrap,
     brands: { bld },
