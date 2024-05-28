@@ -10,7 +10,7 @@ import type {
   TransferMiddleware,
   TransferVat,
 } from '@agoric/vats/src/vat-transfer.js';
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { keyArrayEqual, makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const { keys } = Object;
@@ -144,8 +144,7 @@ test('vtransfer', async t => {
       type: 'VTRANSFER_OTHER',
     }),
     {
-      message:
-        'Invalid inbound event type "VTRANSFER_OTHER"; expected "VTRANSFER_IBC_EVENT"',
+      message: `Invalid inbound event type "VTRANSFER_OTHER"; expected "${VTRANSFER_IBC_EVENT}"`,
     },
   );
 
@@ -157,7 +156,7 @@ test('vtransfer', async t => {
   await t.throwsAsync(
     EV(vtransferBridgeManager).fromBridge({
       target,
-      type: 'VTRANSFER_IBC_EVENT',
+      type: VTRANSFER_IBC_EVENT,
       event: 'echo',
     }),
     {

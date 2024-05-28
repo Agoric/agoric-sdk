@@ -10,7 +10,7 @@ const { Fail } = assert;
 /**
  * @typedef {object} TargetApp an object representing the app that receives
  *   upcalls from the low-level TargetHost
- * @property {(obj: PureData) => Promise<PureData>} upcall receive data from the
+ * @property {(obj: any) => Promise<any>} upcall receive data from the
  *   TargetHost, and return a data result
  */
 // TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
@@ -21,8 +21,8 @@ export const TargetAppI = M.interface('TargetApp', {
 /**
  * @typedef {object} TargetHost an object representing the host that receives
  *   downcalls from the high-level TargetApp
- * @property {(obj: PureData) => Promise<PureData>} downcall send data to the
- *   TargetHost, which returns a data result
+ * @property {(obj: any) => Promise<any>} downcall send data to the TargetHost,
+ *   which returns a data result
  */
 // TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
 export const TargetHostI = M.interface('TargetHost', {

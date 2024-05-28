@@ -1,6 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { BridgeId as BRIDGE_ID, VTRANSFER_IBC_EVENT } from '@agoric/internal';
 
 /**
  * @param {BootstrapPowers & {
@@ -50,7 +50,7 @@ export const setupTransferMiddleware = async (
   transferVat.reset();
   transferVat.resolve(vats.transfer);
   const provideKit = mgr =>
-    E(vats.transfer).provideBridgeTargetKit(mgr, 'VTRANSFER_IBC_EVENT');
+    E(vats.transfer).provideBridgeTargetKit(mgr, VTRANSFER_IBC_EVENT);
   /** @type {Awaited<ReturnType<typeof provideKit>>} */
   let kit;
   try {
