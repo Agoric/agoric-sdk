@@ -12,6 +12,7 @@ import {
   ChainAddressShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
+import { maxClockSkew } from '../utils/cosmos.js';
 import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
 
 /**
@@ -44,6 +45,7 @@ const { Fail } = assert;
 const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+  undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
   deposit: M.callWhen(PaymentShape).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   transfer: M.call(AmountArgShape, ChainAddressShape)
@@ -84,6 +86,9 @@ export const prepareLocalChainAccountKit = (
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.callWhen(M.string(), AmountShape).returns(InvitationShape),
+        Undelegate: M.callWhen(M.string(), AmountShape).returns(
+          InvitationShape,
+        ),
         CloseAccount: M.call().returns(M.promise()),
       }),
     },
@@ -117,6 +122,20 @@ export const prepareLocalChainAccountKit = (
             seat.exit();
             return this.facets.holder.delegate(validatorAddress, ertpAmount);
           }, 'Delegate');
+        },
+
+        /**
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         */
+        async Undelegate(validatorAddress, ertpAmount) {
+          trace('Undelegate', validatorAddress, ertpAmount);
+
+          return zcf.makeInvitation(async seat => {
+            // TODO should it allow delegating more BLD?
+            seat.exit();
+            return this.facets.holder.undelegate(validatorAddress, ertpAmount);
+          }, 'Undelegate');
         },
         CloseAccount() {
           throw Error('not yet implemented');
@@ -157,6 +176,37 @@ export const prepareLocalChainAccountKit = (
           ]);
           trace('got result', result);
           return result;
+        },
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         * @returns {Promise<void>}
+         */
+        async undelegate(validatorAddress, ertpAmount) {
+          // TODO #9211 lookup denom from brand
+          const amount = {
+            amount: String(ertpAmount.value),
+            denom: 'ubld',
+          };
+          const { account: lca } = this.state;
+          trace('lca', lca);
+          const delegatorAddress = await E(lca).getAddress();
+          trace('delegatorAddress', delegatorAddress);
+          const [response] = await E(lca).executeTx([
+            typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
+              amount,
+              validatorAddress,
+              delegatorAddress,
+            }),
+          ]);
+          trace('undelegate response', response);
+          const { completionTime } = response;
+
+          await E(timerService).wakeAt(
+            // TODO clean up date handling once we have real data
+            dateInSeconds(new Date(completionTime)) + maxClockSkew,
+          );
         },
         /**
          * Starting a transfer revokes the account holder. The associated updater
