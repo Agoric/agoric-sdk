@@ -53,6 +53,7 @@ const HolderI = M.interface('holder', {
     .optional(IBCTransferOptionsShape)
     .returns(M.promise()),
   getAddress: M.call().returns(M.string()),
+  executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -193,6 +194,11 @@ export const prepareLocalChainAccountKit = (
         /** @type {LocalChainAccount['withdraw']} */
         async withdraw(amount) {
           return E(this.facets.helper.owned()).withdraw(amount);
+        },
+        /** @type {LocalChainAccount['executeTx']} */
+        async executeTx(messages) {
+          // @ts-expect-error subtype
+          return E(this.state.account).executeTx(messages);
         },
         /**
          * @returns {ChainAddress['address']}

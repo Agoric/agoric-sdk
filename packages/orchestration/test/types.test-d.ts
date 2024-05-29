@@ -30,8 +30,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
 {
   const lcak: LocalChainAccountKit = null as any;
-  const lca = lcak.helper.owned();
-  const results = await lca.executeTx([
+  const results = await lcak.holder.executeTx([
     typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
       amount: {
         amount: '1',
