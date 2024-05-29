@@ -48,7 +48,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const agoricChainInfo = prepareMockChainInfo(zone);
 
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    baggage,
+    zone,
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
