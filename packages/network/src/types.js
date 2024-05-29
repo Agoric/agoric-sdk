@@ -4,7 +4,7 @@
 export {};
 
 /**
- * @import {RemotableObject} from '@endo/pass-style';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {PromiseVow, Remote} from '@agoric/vow';
  */
 

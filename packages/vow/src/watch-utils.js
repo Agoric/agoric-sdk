@@ -6,7 +6,7 @@ import { M } from '@endo/patterns';
  * @import {MapStore} from '@agoric/store/src/types.js'
  * @import { Zone } from '@agoric/base-zone'
  * @import { Watch } from './watch.js'
- * @import {Specimen, VowKit} from './types.js'
+ * @import {VowKit} from './types.js'
  */
 
 const VowShape = M.tagged(
@@ -52,11 +52,11 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
     {
       utils: {
         /**
-         * @template [T=any]
-         * @param {Specimen<T>[]} vows
+         * @param {unknown[]} vows
          */
         all(vows) {
           const { nextId: id, idToVowState } = this.state;
+          /** @type {VowKit<any[]>} */
           const kit = makeVowKit();
 
           // Preserve the order of the vow results.

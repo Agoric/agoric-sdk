@@ -132,16 +132,18 @@ export const prepareWatch = (
   );
 
   /**
-   * @template [T=unknown]
+   * @template [T=any]
    * @template [TResult1=T]
-   * @template [TResult2=T]
-   * @template [C=unknown] watcher context
+   * @template [TResult2=never]
+   * @template [C=any] watcher context
    * @param {ERef<T | Vow<T>>} specimenP
    * @param {Watcher<T, TResult1, TResult2>} [watcher]
    * @param {C} [watcherContext]
    */
   const watch = (specimenP, watcher, watcherContext) => {
-    /** @type {VowKit<TResult1 | TResult2>} */
+    /** @typedef {Exclude<TResult1, void> | Exclude<TResult2, void>} Voidless */
+    /** @typedef {Voidless extends never ? TResult1 : Voidless} Narrowest */
+    /** @type {VowKit<Narrowest>} */
     const { resolver, vow } = makeVowKit();
 
     // Create a promise watcher to track vows, retrying upon rejection as
