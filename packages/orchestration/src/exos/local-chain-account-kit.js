@@ -3,7 +3,7 @@ import { NonNullish } from '@agoric/assert';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import {
@@ -17,7 +17,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, CosmosChainInfo} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
- * @import {Baggage} from '@agoric/vat-data';
+ * @import {Zone} from '@agoric/zone';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  * @import {TimestampHelper} from '../utils/time.js';
  */
@@ -60,7 +60,7 @@ const PUBLIC_TOPICS = {
 };
 
 /**
- * @param {Baggage} baggage
+ * @param {import('@agoric/zone').Zone} zone
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  * @param {TimerService} timerService
@@ -68,7 +68,7 @@ const PUBLIC_TOPICS = {
  * @param {AgoricChainInfo} agoricChainInfo
  */
 export const prepareLocalChainAccountKit = (
-  baggage,
+  zone,
   makeRecorderKit,
   zcf,
   timerService,
@@ -79,8 +79,7 @@ export const prepareLocalChainAccountKit = (
   /**
    * Make an object wrapping an LCA with Zoe interfaces.
    */
-  const makeLocalChainAccountKit = prepareExoClassKit(
-    baggage,
+  const makeLocalChainAccountKit = zone.exoClassKit(
     'LCA Kit',
     {
       holder: HolderI,

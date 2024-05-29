@@ -1,8 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
@@ -16,18 +14,18 @@ test('transfer', async t => {
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
   const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
 
   t.log('exo setup - prepareLocalChainAccountKit');
-  const baggage = makeScalarBigMapStore<string, unknown>('baggage', {
-    durable: true,
-  });
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    rootZone.mapStore('recorder'),
+    marshaller,
+  );
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    baggage,
+    rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
@@ -44,7 +42,7 @@ test('transfer', async t => {
   const { holder: account } = makeLocalChainAccountKit({
     account: lca,
     address,
-    storageNode: makeMockChainStorageRoot().makeChildNode('lcaKit'),
+    storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
 
   t.truthy(account, 'account is returned');
