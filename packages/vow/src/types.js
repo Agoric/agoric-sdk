@@ -68,31 +68,17 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {{
- *   vow: Vow<T>,
- *   resolver: VowResolver<T>,
- *   promise: Promise<T>
- * }} VowPromiseKit
- */
-
-/**
- * @template [T=any]
  * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} VowResolver
  */
 
 /**
  * @template [T=any]
  * @template [TResult1=T]
- * @template [TResult2=T]
+ * @template [TResult2=never]
  * @template [C=any] watcher context
  * @typedef {object} Watcher
  * @property {(value: T, context?: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
- */
-
-/**
- * @template [T=any]
- * @typedef {ERef<T | Vow<T>>} Specimen
  */
 
 /** @typedef {ReturnType<typeof prepareVowTools>} VowTools */
