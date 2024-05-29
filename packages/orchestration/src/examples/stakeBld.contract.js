@@ -75,6 +75,9 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeStakeBldInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
+      /**
+       * Invitation to make an account, initialized with the give's BLD
+       */
       makeStakeBldInvitation() {
         return zcf.makeInvitation(
           async seat => {
@@ -104,6 +107,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         const { holder } = await makeLocalAccountKit();
         return holder;
       },
+      /**
+       * Invitation to make an account, without any funds
+       */
       makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(async seat => {
