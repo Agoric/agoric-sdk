@@ -8,17 +8,16 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { getInterfaceOf } from '@endo/marshal';
-import { prepareVowTools } from '@agoric/vow/vat.js';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
+import { prepareTransferTools } from '../src/transfer.js';
 import { makeFakeBankManagerKit } from '../tools/bank-utils.js';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '../tools/fake-bridge.js';
-import { prepareTransferTools } from '../src/transfer.js';
-import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 
 /**
  * @import {LocalChainAccount, LocalChainPowers} from '../src/localchain.js';
@@ -35,26 +34,6 @@ const provideBaggage = key => {
   return zone.mapStore(`${key} baggage`);
 };
 
-/**
- * @param {import('@agoric/zone').Zone} zone
- * @param {ScopedBridgeManager<'vtransfer'>} transferBridge
- * @returns {import('../src/transfer').TransferMiddleware}
- */
-const makeTransferMiddleware = (zone, transferBridge) => {
-  const { makeTransferMiddleware: inner } = prepareTransferTools(
-    zone.subZone('tools'),
-    prepareVowTools(zone.subZone('vows')),
-  );
-
-  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
-    zone.subZone('bridge-target'),
-  );
-  const { targetHost: transferHost, targetRegistry: transferRegistry } =
-    makeBridgeTargetKit(transferBridge, VTRANSFER_IBC_EVENT);
-
-  return inner(transferHost, transferRegistry);
-};
-
 const makeTestContext = async _t => {
   const issuerKits = ['BLD', 'BEAN'].map(x =>
     makeIssuerKit(x, AssetKind.NAT, harden({ decimalPlaces: 6 })),
@@ -67,10 +46,10 @@ const makeTestContext = async _t => {
 
   const transferZone = makeDurableZone(provideBaggage('transfer'));
   const transferBridge = makeFakeTransferBridge(transferZone.subZone('bridge'));
-  const transferMiddleware = makeTransferMiddleware(
+  const transferMiddleware = prepareTransferTools(
     transferZone,
-    transferBridge,
-  );
+    prepareVowTools(transferZone.subZone('vows')),
+  ).transferMiddlewareForBridgeType(transferBridge, VTRANSFER_IBC_EVENT);
 
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     balances: {

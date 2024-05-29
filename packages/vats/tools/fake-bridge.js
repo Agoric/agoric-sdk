@@ -1,3 +1,4 @@
+// @ts-check
 import { assert, Fail } from '@agoric/assert';
 import { makeTracer, VBankAccount } from '@agoric/internal';
 import { E } from '@endo/far';

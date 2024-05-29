@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
-import { TargetAppI } from './bridge-target.js';
+import { prepareBridgeTargetModule, TargetAppI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
@@ -201,6 +201,24 @@ export const prepareTransferTools = (zone, vowTools) => {
     makeTransferInterceptor,
   );
 
-  return harden({ makeTransferMiddleware });
+  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
+    zone.subZone('bridge-target'),
+  );
+
+  /**
+   * @template {import('@agoric/internal').BridgeIdValue} T
+   * @param {import('./types.js').ScopedBridgeManager<T>} transferBridge
+   * @param {string} messageType
+   */
+  const transferMiddlewareForBridgeType = (transferBridge, messageType) => {
+    const { targetHost, targetRegistry } = makeBridgeTargetKit(
+      transferBridge,
+      messageType,
+    );
+
+    return makeTransferMiddleware(targetHost, targetRegistry);
+  };
+
+  return harden({ makeTransferMiddleware, transferMiddlewareForBridgeType });
 };
 harden(prepareTransferTools);
