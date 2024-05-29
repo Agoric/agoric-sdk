@@ -129,7 +129,6 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
         Undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(
           InvitationShape,
         ),
-        CloseAccount: M.callWhen().returns(InvitationShape),
         TransferAccount: M.callWhen().returns(InvitationShape),
       }),
     },
@@ -232,9 +231,6 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
             seat.exit();
             return this.facets.holder.undelegate(delegations);
           }, 'Undelegate');
-        },
-        CloseAccount() {
-          throw Error('not yet implemented');
         },
         /**
          * Starting a transfer revokes the account holder. The associated updater

@@ -137,7 +137,6 @@ const makeScenario = () => {
         return doMessage(msgs[0]);
       },
       executeTx: () => Fail`mock`,
-      close: () => Fail`mock`,
       deposit: () => Fail`mock`,
       getPurse: () => Fail`mock`,
       prepareTransfer: () => Fail`mock`,
