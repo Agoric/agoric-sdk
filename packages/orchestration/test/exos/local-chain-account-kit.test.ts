@@ -1,56 +1,22 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+
+import { AmountMath } from '@agoric/ertp';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { M, makeScalarBigMapStore } from '@agoric/vat-data';
-import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
-import { makeFakeLocalchainBridge } from '../supports.js';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
-import { prepareMockChainInfo } from '../../src/utils/mockChainInfo.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
+import { prepareMockChainInfo } from '../../src/utils/mockChainInfo.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
+import { commonSetup } from '../supports.js';
 
-test('localChainAccountKit - transfer', async t => {
-  const bootstrap = async () => {
-    const zone = makeHeapZone();
-    const issuerKit = makeIssuerKit('BLD');
-    const stake = withAmountUtils(issuerKit);
+test('transfer', async t => {
+  const { bootstrap, brands, utils } = await commonSetup(t);
 
-    const bankManager = await buildBankVatRoot(
-      undefined,
-      undefined,
-      zone.mapStore('bankManager'),
-    ).makeBankManager();
+  const { bld: stake } = brands;
 
-    await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', issuerKit);
-    const localchainBridge = makeFakeLocalchainBridge(zone);
-    const localchain = prepareLocalChainTools(
-      zone.subZone('localchain'),
-    ).makeLocalChain({
-      bankManager,
-      system: localchainBridge,
-    });
-    const timer = buildZoeManualTimer(t.log);
-    const marshaller = makeFakeBoard().getReadonlyMarshaller();
-
-    return {
-      timer,
-      localchain,
-      marshaller,
-      stake,
-      issuerKit,
-      rootZone: zone,
-    };
-  };
-
-  const { timer, localchain, stake, marshaller, issuerKit, rootZone } =
-    await bootstrap();
+  const { timer, localchain, marshaller, rootZone } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
   const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
@@ -84,13 +50,11 @@ test('localChainAccountKit - transfer', async t => {
   t.truthy(account, 'account is returned');
   t.regex(await E(account).getAddress(), /agoric1/);
 
-  const oneHundredStakeAmt = stake.make(1_000_000_000n);
-  const oneHundredStakePmt = issuerKit.mint.mintPayment(oneHundredStakeAmt);
-  const oneStakeAmt = stake.make(1_000_000n);
+  const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
   const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, oneHundredStakeAmt), 'deposit');
+  t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
 
   const destination: ChainAddress = {
     chainId: 'cosmoslocal',
@@ -100,7 +64,7 @@ test('localChainAccountKit - transfer', async t => {
 
   // TODO #9211, support ERTP amounts
   t.log('ERTP Amounts not yet supported for AmountArg');
-  await t.throwsAsync(() => E(account).transfer(oneStakeAmt, destination), {
+  await t.throwsAsync(() => E(account).transfer(stake.units(1), destination), {
     message: 'ERTP Amounts not yet supported',
   });
 
