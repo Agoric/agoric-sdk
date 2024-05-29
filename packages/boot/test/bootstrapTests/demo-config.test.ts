@@ -135,7 +135,7 @@ test('vtransfer', async t => {
   t.truthy(transferMiddleware);
   const vtransferBridgeManager = (await EV.vat('bootstrap').consumeItem(
     'vtransferBridgeManager',
-  )) as ScopedBridgeManager;
+  )) as ScopedBridgeManager<'vtransfer'>;
   t.truthy(vtransferBridgeManager);
 
   // only VTRANSFER_IBC_EVENT is supported by vtransferBridgeManager

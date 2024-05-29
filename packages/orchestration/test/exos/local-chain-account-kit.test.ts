@@ -3,10 +3,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
+import { commonSetup } from '../supports.js';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
-import { commonSetup } from '../supports.js';
 import { wellKnownChainInfo } from '../../src/chain-info.js';
 
 const agoricChainInfo = wellKnownChainInfo.agoric;
