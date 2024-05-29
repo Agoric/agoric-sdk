@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /**
  * App includes the protocol and software version for the application.
  * This information is included in ResponseInfo. The App.Protocol can be
@@ -94,7 +95,7 @@ export const App = {
       software: isSet(object.software) ? String(object.software) : '',
     };
   },
-  toJSON(message: App): unknown {
+  toJSON(message: App): JsonSafe<App> {
     const obj: any = {};
     message.protocol !== undefined &&
       (obj.protocol = (message.protocol || BigInt(0)).toString());
@@ -170,7 +171,7 @@ export const Consensus = {
       app: isSet(object.app) ? BigInt(object.app.toString()) : BigInt(0),
     };
   },
-  toJSON(message: Consensus): unknown {
+  toJSON(message: Consensus): JsonSafe<Consensus> {
     const obj: any = {};
     message.block !== undefined &&
       (obj.block = (message.block || BigInt(0)).toString());

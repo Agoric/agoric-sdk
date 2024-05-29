@@ -9,7 +9,7 @@ import {
 import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
 
 /**
- * @import {AnyJson, RequestQueryJson, Base64Any} from '@agoric/cosmic-proto';
+ * @import {AnyJson, JsonSafe} from '@agoric/cosmic-proto';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {InterchainAccountPacketData} from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
  * @import {InterchainQueryPacketData} from '@agoric/cosmic-proto/icq/v1/packet.js';
@@ -34,7 +34,7 @@ export function makeTxPacket(msgs, opts) {
   ).finish();
 
   return JSON.stringify(
-    /** @type {Base64Any<InterchainAccountPacketData>} */ ({
+    /** @type {JsonSafe<InterchainAccountPacketData>} */ ({
       type: PacketType.TYPE_EXECUTE_TX,
       data: encodeBase64(bytes),
       memo: '',
@@ -47,7 +47,7 @@ harden(makeTxPacket);
  * Makes an IBC query packet from an array of query messages. Expects the `data` of each message
  * to be base64 encoded bytes.
  * Skips checks for malformed messages in favor of interface guards.
- * @param {RequestQueryJson[]} msgs
+ * @param {JsonSafe<RequestQuery>[]} msgs
  * @returns {string} stringified InterchainQueryPacketData
  * @throws {Error} if malformed messages are provided
  */
@@ -59,7 +59,7 @@ export function makeQueryPacket(msgs) {
   ).finish();
 
   return JSON.stringify(
-    /** @type {Base64Any<InterchainQueryPacketData>} */ ({
+    /** @type {JsonSafe<InterchainQueryPacketData>} */ ({
       data: encodeBase64(bytes),
       memo: '',
     }),
@@ -91,7 +91,7 @@ harden(parseTxPacket);
  * decoded using the corresponding Query*Response objects.
  * Error strings seem to be plain text and do not need decoding.
  * @param {string} response
- * @returns {Base64Any<ResponseQuery>[]}
+ * @returns {JsonSafe<ResponseQuery>[]}
  * @throws {Error} if error key is detected in response string, or result key is not found
  */
 export function parseQueryPacket(response) {
@@ -101,6 +101,8 @@ export function parseQueryPacket(response) {
   return harden(
     responses.map(resp => ({
       ...resp,
+      height: String(resp.index),
+      index: String(resp.index),
       key: encodeBase64(resp.key),
       value: encodeBase64(resp.value),
     })),

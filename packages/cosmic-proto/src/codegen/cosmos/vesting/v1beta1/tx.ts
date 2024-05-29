@@ -3,6 +3,7 @@ import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { Period, PeriodSDKType } from './vesting.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
@@ -315,7 +316,7 @@ export const MsgCreateVestingAccount = {
       delayed: isSet(object.delayed) ? Boolean(object.delayed) : false,
     };
   },
-  toJSON(message: MsgCreateVestingAccount): unknown {
+  toJSON(message: MsgCreateVestingAccount): JsonSafe<MsgCreateVestingAccount> {
     const obj: any = {};
     message.fromAddress !== undefined &&
       (obj.fromAddress = message.fromAddress);
@@ -393,7 +394,9 @@ export const MsgCreateVestingAccountResponse = {
   fromJSON(_: any): MsgCreateVestingAccountResponse {
     return {};
   },
-  toJSON(_: MsgCreateVestingAccountResponse): unknown {
+  toJSON(
+    _: MsgCreateVestingAccountResponse,
+  ): JsonSafe<MsgCreateVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
@@ -480,7 +483,9 @@ export const MsgCreatePermanentLockedAccount = {
         : [],
     };
   },
-  toJSON(message: MsgCreatePermanentLockedAccount): unknown {
+  toJSON(
+    message: MsgCreatePermanentLockedAccount,
+  ): JsonSafe<MsgCreatePermanentLockedAccount> {
     const obj: any = {};
     message.fromAddress !== undefined &&
       (obj.fromAddress = message.fromAddress);
@@ -550,7 +555,9 @@ export const MsgCreatePermanentLockedAccountResponse = {
   fromJSON(_: any): MsgCreatePermanentLockedAccountResponse {
     return {};
   },
-  toJSON(_: MsgCreatePermanentLockedAccountResponse): unknown {
+  toJSON(
+    _: MsgCreatePermanentLockedAccountResponse,
+  ): JsonSafe<MsgCreatePermanentLockedAccountResponse> {
     const obj: any = {};
     return obj;
   },
@@ -656,7 +663,9 @@ export const MsgCreatePeriodicVestingAccount = {
       merge: isSet(object.merge) ? Boolean(object.merge) : false,
     };
   },
-  toJSON(message: MsgCreatePeriodicVestingAccount): unknown {
+  toJSON(
+    message: MsgCreatePeriodicVestingAccount,
+  ): JsonSafe<MsgCreatePeriodicVestingAccount> {
     const obj: any = {};
     message.fromAddress !== undefined &&
       (obj.fromAddress = message.fromAddress);
@@ -737,7 +746,9 @@ export const MsgCreatePeriodicVestingAccountResponse = {
   fromJSON(_: any): MsgCreatePeriodicVestingAccountResponse {
     return {};
   },
-  toJSON(_: MsgCreatePeriodicVestingAccountResponse): unknown {
+  toJSON(
+    _: MsgCreatePeriodicVestingAccountResponse,
+  ): JsonSafe<MsgCreatePeriodicVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
@@ -853,7 +864,9 @@ export const MsgCreateClawbackVestingAccount = {
       merge: isSet(object.merge) ? Boolean(object.merge) : false,
     };
   },
-  toJSON(message: MsgCreateClawbackVestingAccount): unknown {
+  toJSON(
+    message: MsgCreateClawbackVestingAccount,
+  ): JsonSafe<MsgCreateClawbackVestingAccount> {
     const obj: any = {};
     message.fromAddress !== undefined &&
       (obj.fromAddress = message.fromAddress);
@@ -943,7 +956,9 @@ export const MsgCreateClawbackVestingAccountResponse = {
   fromJSON(_: any): MsgCreateClawbackVestingAccountResponse {
     return {};
   },
-  toJSON(_: MsgCreateClawbackVestingAccountResponse): unknown {
+  toJSON(
+    _: MsgCreateClawbackVestingAccountResponse,
+  ): JsonSafe<MsgCreateClawbackVestingAccountResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1028,7 +1043,7 @@ export const MsgClawback = {
       destAddress: isSet(object.destAddress) ? String(object.destAddress) : '',
     };
   },
-  toJSON(message: MsgClawback): unknown {
+  toJSON(message: MsgClawback): JsonSafe<MsgClawback> {
     const obj: any = {};
     message.funderAddress !== undefined &&
       (obj.funderAddress = message.funderAddress);
@@ -1089,7 +1104,7 @@ export const MsgClawbackResponse = {
   fromJSON(_: any): MsgClawbackResponse {
     return {};
   },
-  toJSON(_: MsgClawbackResponse): unknown {
+  toJSON(_: MsgClawbackResponse): JsonSafe<MsgClawbackResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1149,7 +1164,7 @@ export const MsgReturnGrants = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: MsgReturnGrants): unknown {
+  toJSON(message: MsgReturnGrants): JsonSafe<MsgReturnGrants> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
@@ -1204,7 +1219,7 @@ export const MsgReturnGrantsResponse = {
   fromJSON(_: any): MsgReturnGrantsResponse {
     return {};
   },
-  toJSON(_: MsgReturnGrantsResponse): unknown {
+  toJSON(_: MsgReturnGrantsResponse): JsonSafe<MsgReturnGrantsResponse> {
     const obj: any = {};
     return obj;
   },

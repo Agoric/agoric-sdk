@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../binary.js';
 import { isSet } from '../helpers.js';
+import { JsonSafe } from '../json-safe.js';
 export enum ScalarType {
   SCALAR_TYPE_UNSPECIFIED = 0,
   SCALAR_TYPE_STRING = 1,
@@ -167,7 +168,7 @@ export const InterfaceDescriptor = {
       description: isSet(object.description) ? String(object.description) : '',
     };
   },
-  toJSON(message: InterfaceDescriptor): unknown {
+  toJSON(message: InterfaceDescriptor): JsonSafe<InterfaceDescriptor> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined &&
@@ -259,7 +260,7 @@ export const ScalarDescriptor = {
         : [],
     };
   },
-  toJSON(message: ScalarDescriptor): unknown {
+  toJSON(message: ScalarDescriptor): JsonSafe<ScalarDescriptor> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined &&

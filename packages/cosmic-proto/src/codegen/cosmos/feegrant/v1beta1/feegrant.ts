@@ -13,6 +13,7 @@ import {
   isSet,
   fromJsonTimestamp,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * BasicAllowance implements Allowance with a one-time grant of coins
  * that optionally expires. The grantee can use up to SpendLimit to cover fees.
@@ -192,7 +193,7 @@ export const BasicAllowance = {
         : undefined,
     };
   },
-  toJSON(message: BasicAllowance): unknown {
+  toJSON(message: BasicAllowance): JsonSafe<BasicAllowance> {
     const obj: any = {};
     if (message.spendLimit) {
       obj.spendLimit = message.spendLimit.map(e =>
@@ -311,7 +312,7 @@ export const PeriodicAllowance = {
         : undefined,
     };
   },
-  toJSON(message: PeriodicAllowance): unknown {
+  toJSON(message: PeriodicAllowance): JsonSafe<PeriodicAllowance> {
     const obj: any = {};
     message.basic !== undefined &&
       (obj.basic = message.basic
@@ -424,7 +425,7 @@ export const AllowedMsgAllowance = {
         : [],
     };
   },
-  toJSON(message: AllowedMsgAllowance): unknown {
+  toJSON(message: AllowedMsgAllowance): JsonSafe<AllowedMsgAllowance> {
     const obj: any = {};
     message.allowance !== undefined &&
       (obj.allowance = message.allowance
@@ -516,7 +517,7 @@ export const Grant = {
         : undefined,
     };
   },
-  toJSON(message: Grant): unknown {
+  toJSON(message: Grant): JsonSafe<Grant> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);

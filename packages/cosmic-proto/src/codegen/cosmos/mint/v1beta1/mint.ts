@@ -2,6 +2,7 @@
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '@cosmjs/math';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** Minter represents the minting state. */
 export interface Minter {
   /** current annual inflation rate */
@@ -105,7 +106,7 @@ export const Minter = {
         : '',
     };
   },
-  toJSON(message: Minter): unknown {
+  toJSON(message: Minter): JsonSafe<Minter> {
     const obj: any = {};
     message.inflation !== undefined && (obj.inflation = message.inflation);
     message.annualProvisions !== undefined &&
@@ -238,7 +239,7 @@ export const Params = {
         : BigInt(0),
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.mintDenom !== undefined && (obj.mintDenom = message.mintDenom);
     message.inflationRateChange !== undefined &&

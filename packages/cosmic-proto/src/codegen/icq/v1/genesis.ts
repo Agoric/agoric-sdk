@@ -2,6 +2,7 @@
 import { Params, ParamsSDKType } from './icq.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** GenesisState defines the interchain query genesis state */
 export interface GenesisState {
   hostPort: string;
@@ -63,7 +64,7 @@ export const GenesisState = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.hostPort !== undefined && (obj.hostPort = message.hostPort);
     message.params !== undefined &&

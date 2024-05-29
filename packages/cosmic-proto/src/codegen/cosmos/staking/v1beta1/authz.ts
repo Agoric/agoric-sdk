@@ -2,6 +2,7 @@
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * AuthorizationType defines the type of staking module authorization type
  *
@@ -191,7 +192,7 @@ export const StakeAuthorization = {
         : -1,
     };
   },
-  toJSON(message: StakeAuthorization): unknown {
+  toJSON(message: StakeAuthorization): JsonSafe<StakeAuthorization> {
     const obj: any = {};
     message.maxTokens !== undefined &&
       (obj.maxTokens = message.maxTokens
@@ -285,7 +286,9 @@ export const StakeAuthorization_Validators = {
         : [],
     };
   },
-  toJSON(message: StakeAuthorization_Validators): unknown {
+  toJSON(
+    message: StakeAuthorization_Validators,
+  ): JsonSafe<StakeAuthorization_Validators> {
     const obj: any = {};
     if (message.address) {
       obj.address = message.address.map(e => e);

@@ -3,6 +3,7 @@ import { BaseAccount, BaseAccountSDKType } from '../../auth/v1beta1/auth.js';
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * BaseVestingAccount implements the VestingAccount interface. It contains all
  * the necessary fields needed for any vesting account implementation.
@@ -262,7 +263,7 @@ export const BaseVestingAccount = {
         : BigInt(0),
     };
   },
-  toJSON(message: BaseVestingAccount): unknown {
+  toJSON(message: BaseVestingAccount): JsonSafe<BaseVestingAccount> {
     const obj: any = {};
     message.baseAccount !== undefined &&
       (obj.baseAccount = message.baseAccount
@@ -384,7 +385,9 @@ export const ContinuousVestingAccount = {
         : BigInt(0),
     };
   },
-  toJSON(message: ContinuousVestingAccount): unknown {
+  toJSON(
+    message: ContinuousVestingAccount,
+  ): JsonSafe<ContinuousVestingAccount> {
     const obj: any = {};
     message.baseVestingAccount !== undefined &&
       (obj.baseVestingAccount = message.baseVestingAccount
@@ -476,7 +479,7 @@ export const DelayedVestingAccount = {
         : undefined,
     };
   },
-  toJSON(message: DelayedVestingAccount): unknown {
+  toJSON(message: DelayedVestingAccount): JsonSafe<DelayedVestingAccount> {
     const obj: any = {};
     message.baseVestingAccount !== undefined &&
       (obj.baseVestingAccount = message.baseVestingAccount
@@ -557,7 +560,7 @@ export const Period = {
         : [],
     };
   },
-  toJSON(message: Period): unknown {
+  toJSON(message: Period): JsonSafe<Period> {
     const obj: any = {};
     message.length !== undefined &&
       (obj.length = (message.length || BigInt(0)).toString());
@@ -660,7 +663,7 @@ export const PeriodicVestingAccount = {
         : [],
     };
   },
-  toJSON(message: PeriodicVestingAccount): unknown {
+  toJSON(message: PeriodicVestingAccount): JsonSafe<PeriodicVestingAccount> {
     const obj: any = {};
     message.baseVestingAccount !== undefined &&
       (obj.baseVestingAccount = message.baseVestingAccount
@@ -757,7 +760,7 @@ export const PermanentLockedAccount = {
         : undefined,
     };
   },
-  toJSON(message: PermanentLockedAccount): unknown {
+  toJSON(message: PermanentLockedAccount): JsonSafe<PermanentLockedAccount> {
     const obj: any = {};
     message.baseVestingAccount !== undefined &&
       (obj.baseVestingAccount = message.baseVestingAccount
@@ -879,7 +882,7 @@ export const ClawbackVestingAccount = {
         : [],
     };
   },
-  toJSON(message: ClawbackVestingAccount): unknown {
+  toJSON(message: ClawbackVestingAccount): JsonSafe<ClawbackVestingAccount> {
     const obj: any = {};
     message.baseVestingAccount !== undefined &&
       (obj.baseVestingAccount = message.baseVestingAccount

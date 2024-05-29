@@ -20,6 +20,7 @@ import {
   fromTimestamp,
   fromJsonTimestamp,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * GenericAuthorization gives the grantee unrestricted permissions to execute
  * the provided method on behalf of the granter's account.
@@ -170,7 +171,7 @@ export const GenericAuthorization = {
       msg: isSet(object.msg) ? String(object.msg) : '',
     };
   },
-  toJSON(message: GenericAuthorization): unknown {
+  toJSON(message: GenericAuthorization): JsonSafe<GenericAuthorization> {
     const obj: any = {};
     message.msg !== undefined && (obj.msg = message.msg);
     return obj;
@@ -252,7 +253,7 @@ export const Grant = {
         : undefined,
     };
   },
-  toJSON(message: Grant): unknown {
+  toJSON(message: Grant): JsonSafe<Grant> {
     const obj: any = {};
     message.authorization !== undefined &&
       (obj.authorization = message.authorization
@@ -362,7 +363,7 @@ export const GrantAuthorization = {
         : undefined,
     };
   },
-  toJSON(message: GrantAuthorization): unknown {
+  toJSON(message: GrantAuthorization): JsonSafe<GrantAuthorization> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
@@ -439,7 +440,7 @@ export const GrantQueueItem = {
         : [],
     };
   },
-  toJSON(message: GrantQueueItem): unknown {
+  toJSON(message: GrantQueueItem): JsonSafe<GrantQueueItem> {
     const obj: any = {};
     if (message.msgTypeUrls) {
       obj.msgTypeUrls = message.msgTypeUrls.map(e => e);

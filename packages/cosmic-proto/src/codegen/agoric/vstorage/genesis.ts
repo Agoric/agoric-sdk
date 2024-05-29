@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /** The initial or exported state. */
 export interface GenesisState {
@@ -78,7 +79,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.data) {
       obj.data = message.data.map(e => (e ? DataEntry.toJSON(e) : undefined));
@@ -152,7 +153,7 @@ export const DataEntry = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: DataEntry): unknown {
+  toJSON(message: DataEntry): JsonSafe<DataEntry> {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.value !== undefined && (obj.value = message.value);

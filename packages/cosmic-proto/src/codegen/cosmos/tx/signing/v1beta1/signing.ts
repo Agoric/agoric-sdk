@@ -5,6 +5,7 @@ import {
 } from '../../../crypto/multisig/v1beta1/multisig.js';
 import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { JsonSafe } from '../../../../json-safe.js';
 import {
   isSet,
   bytesFromBase64,
@@ -251,7 +252,7 @@ export const SignatureDescriptors = {
         : [],
     };
   },
-  toJSON(message: SignatureDescriptors): unknown {
+  toJSON(message: SignatureDescriptors): JsonSafe<SignatureDescriptors> {
     const obj: any = {};
     if (message.signatures) {
       obj.signatures = message.signatures.map(e =>
@@ -351,7 +352,7 @@ export const SignatureDescriptor = {
         : BigInt(0),
     };
   },
-  toJSON(message: SignatureDescriptor): unknown {
+  toJSON(message: SignatureDescriptor): JsonSafe<SignatureDescriptor> {
     const obj: any = {};
     message.publicKey !== undefined &&
       (obj.publicKey = message.publicKey
@@ -460,7 +461,9 @@ export const SignatureDescriptor_Data = {
         : undefined,
     };
   },
-  toJSON(message: SignatureDescriptor_Data): unknown {
+  toJSON(
+    message: SignatureDescriptor_Data,
+  ): JsonSafe<SignatureDescriptor_Data> {
     const obj: any = {};
     message.single !== undefined &&
       (obj.single = message.single
@@ -555,7 +558,9 @@ export const SignatureDescriptor_Data_Single = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: SignatureDescriptor_Data_Single): unknown {
+  toJSON(
+    message: SignatureDescriptor_Data_Single,
+  ): JsonSafe<SignatureDescriptor_Data_Single> {
     const obj: any = {};
     message.mode !== undefined && (obj.mode = signModeToJSON(message.mode));
     message.signature !== undefined &&
@@ -650,7 +655,9 @@ export const SignatureDescriptor_Data_Multi = {
         : [],
     };
   },
-  toJSON(message: SignatureDescriptor_Data_Multi): unknown {
+  toJSON(
+    message: SignatureDescriptor_Data_Multi,
+  ): JsonSafe<SignatureDescriptor_Data_Multi> {
     const obj: any = {};
     message.bitarray !== undefined &&
       (obj.bitarray = message.bitarray

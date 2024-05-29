@@ -1,5 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
+import { JsonSafe } from '../../../../json-safe.js';
 import { isSet } from '../../../../helpers.js';
 /** ConfigRequest defines the request structure for the Config gRPC query. */
 export interface ConfigRequest {}
@@ -50,7 +51,7 @@ export const ConfigRequest = {
   fromJSON(_: any): ConfigRequest {
     return {};
   },
-  toJSON(_: ConfigRequest): unknown {
+  toJSON(_: ConfigRequest): JsonSafe<ConfigRequest> {
     const obj: any = {};
     return obj;
   },
@@ -112,7 +113,7 @@ export const ConfigResponse = {
         : '',
     };
   },
-  toJSON(message: ConfigResponse): unknown {
+  toJSON(message: ConfigResponse): JsonSafe<ConfigResponse> {
     const obj: any = {};
     message.minimumGasPrice !== undefined &&
       (obj.minimumGasPrice = message.minimumGasPrice);

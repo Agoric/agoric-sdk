@@ -1,6 +1,7 @@
 import type {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
+  QueryBalanceRequestProtoMsg,
 } from './codegen/cosmos/bank/v1beta1/query.js';
 import type {
   MsgSend,
@@ -10,19 +11,19 @@ import type {
   MsgDelegate,
   MsgDelegateResponse,
 } from './codegen/cosmos/staking/v1beta1/tx.js';
-import { RequestQuery } from './codegen/tendermint/abci/types.js';
 import type { Any } from './codegen/google/protobuf/any.js';
 import {
   MsgTransfer,
   MsgTransferResponse,
 } from './codegen/ibc/applications/transfer/v1/tx.js';
+import type { JsonSafe } from './codegen/index.js';
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
 
 /**
- * The result of Any.toJSON(). The type in cosms-types says it returns
- * `unknown` but it's actually this. The `value` string is a base64 encoding of
- * the bytes array.
+ * The result of Any.toJSON(). Exported at top level as a convenience
+ * for a very common import.
  */
-export type AnyJson = { typeUrl: string; value: string };
+export type AnyJson = JsonSafe<Any>;
 
 // TODO codegen this by modifying Telescope
 export type Proto3Shape = {
@@ -73,35 +74,6 @@ export const typedJson = <T extends keyof Proto3Shape>(
   } as TypedJson<T>;
 };
 
-// TODO make codegen toJSON() return these instead of unknown
-/**
- * Proto Any with arrays encoded as base64
- */
-export type Base64Any<T> = {
-  [Prop in keyof T]: T[Prop] extends Uint8Array ? string : T[Prop];
-};
-
-// TODO make codegen toJSON() return these instead of unknown
-// https://github.com/cosmology-tech/telescope/issues/605
-/**
- * Mimics behavor of .toJSON(), converting Uint8Array to base64 strings
- * and bigints to strings
- */
-export type JsonSafe<T> = {
-  [Prop in keyof T]: T[Prop] extends Uint8Array
-    ? string
-    : T[Prop] extends bigint
-      ? string
-      : T[Prop];
-};
-
-/**
- * The result of RequestQuery.toJSON(). The type in cosms-types says it returns
- * `unknown` but it's actually this. The Uint8Array fields are base64 encoded, while
- * bigint fields are strings.
- */
-export type RequestQueryJson = JsonSafe<RequestQuery>;
-
 const QUERY_REQ_TYPEURL_RE =
   /^\/(?<serviceName>\w+(?:\.\w+)*)\.Query(?<methodName>\w+)Request$/;
 
@@ -119,13 +91,13 @@ export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
 type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
 
 export const toRequestQueryJson = (
-  any: Any,
+  msg: QueryBalanceRequestProtoMsg,
   opts: RequestQueryOpts = {},
-): RequestQueryJson =>
+) =>
   RequestQuery.toJSON(
     RequestQuery.fromPartial({
-      path: typeUrlToGrpcPath(any.typeUrl),
-      data: any.value,
+      path: typeUrlToGrpcPath(msg.typeUrl),
+      data: msg.value,
       ...opts,
     }),
-  ) as RequestQueryJson;
+  );

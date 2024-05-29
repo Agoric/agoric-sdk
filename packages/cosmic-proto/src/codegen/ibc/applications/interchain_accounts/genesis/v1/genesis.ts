@@ -5,6 +5,7 @@ import { Params as Params2 } from '../../host/v1/host.js';
 import { ParamsSDKType as Params2SDKType } from '../../host/v1/host.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
+import { JsonSafe } from '../../../../../json-safe.js';
 /** GenesisState defines the interchain accounts genesis state */
 export interface GenesisState {
   controllerGenesisState: ControllerGenesisState;
@@ -158,7 +159,7 @@ export const GenesisState = {
         : undefined,
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.controllerGenesisState !== undefined &&
       (obj.controllerGenesisState = message.controllerGenesisState
@@ -277,7 +278,7 @@ export const ControllerGenesisState = {
         : undefined,
     };
   },
-  toJSON(message: ControllerGenesisState): unknown {
+  toJSON(message: ControllerGenesisState): JsonSafe<ControllerGenesisState> {
     const obj: any = {};
     if (message.activeChannels) {
       obj.activeChannels = message.activeChannels.map(e =>
@@ -410,7 +411,7 @@ export const HostGenesisState = {
         : undefined,
     };
   },
-  toJSON(message: HostGenesisState): unknown {
+  toJSON(message: HostGenesisState): JsonSafe<HostGenesisState> {
     const obj: any = {};
     if (message.activeChannels) {
       obj.activeChannels = message.activeChannels.map(e =>
@@ -529,7 +530,7 @@ export const ActiveChannel = {
         : false,
     };
   },
-  toJSON(message: ActiveChannel): unknown {
+  toJSON(message: ActiveChannel): JsonSafe<ActiveChannel> {
     const obj: any = {};
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);
@@ -623,7 +624,9 @@ export const RegisteredInterchainAccount = {
         : '',
     };
   },
-  toJSON(message: RegisteredInterchainAccount): unknown {
+  toJSON(
+    message: RegisteredInterchainAccount,
+  ): JsonSafe<RegisteredInterchainAccount> {
     const obj: any = {};
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);

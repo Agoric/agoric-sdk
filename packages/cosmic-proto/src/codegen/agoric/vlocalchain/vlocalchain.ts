@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Any, AnySDKType } from '../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending
@@ -105,7 +106,7 @@ export const CosmosTx = {
         : [],
     };
   },
-  toJSON(message: CosmosTx): unknown {
+  toJSON(message: CosmosTx): JsonSafe<CosmosTx> {
     const obj: any = {};
     if (message.messages) {
       obj.messages = message.messages.map(e => (e ? Any.toJSON(e) : undefined));
@@ -187,7 +188,7 @@ export const QueryRequest = {
       replyType: isSet(object.replyType) ? String(object.replyType) : '',
     };
   },
-  toJSON(message: QueryRequest): unknown {
+  toJSON(message: QueryRequest): JsonSafe<QueryRequest> {
     const obj: any = {};
     message.fullMethod !== undefined && (obj.fullMethod = message.fullMethod);
     message.request !== undefined &&
@@ -275,7 +276,7 @@ export const QueryResponse = {
       error: isSet(object.error) ? String(object.error) : '',
     };
   },
-  toJSON(message: QueryResponse): unknown {
+  toJSON(message: QueryResponse): JsonSafe<QueryResponse> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
@@ -351,7 +352,7 @@ export const QueryResponses = {
         : [],
     };
   },
-  toJSON(message: QueryResponses): unknown {
+  toJSON(message: QueryResponses): JsonSafe<QueryResponses> {
     const obj: any = {};
     if (message.responses) {
       obj.responses = message.responses.map(e =>

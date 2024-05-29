@@ -8,6 +8,7 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '@cosmjs/math';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** Params defines the set of params for the distribution module. */
 export interface Params {
   communityTax: string;
@@ -364,7 +365,7 @@ export const Params = {
         : false,
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.communityTax !== undefined &&
       (obj.communityTax = message.communityTax);
@@ -453,7 +454,9 @@ export const ValidatorHistoricalRewards = {
         : 0,
     };
   },
-  toJSON(message: ValidatorHistoricalRewards): unknown {
+  toJSON(
+    message: ValidatorHistoricalRewards,
+  ): JsonSafe<ValidatorHistoricalRewards> {
     const obj: any = {};
     if (message.cumulativeRewardRatio) {
       obj.cumulativeRewardRatio = message.cumulativeRewardRatio.map(e =>
@@ -546,7 +549,7 @@ export const ValidatorCurrentRewards = {
         : BigInt(0),
     };
   },
-  toJSON(message: ValidatorCurrentRewards): unknown {
+  toJSON(message: ValidatorCurrentRewards): JsonSafe<ValidatorCurrentRewards> {
     const obj: any = {};
     if (message.rewards) {
       obj.rewards = message.rewards.map(e =>
@@ -631,7 +634,9 @@ export const ValidatorAccumulatedCommission = {
         : [],
     };
   },
-  toJSON(message: ValidatorAccumulatedCommission): unknown {
+  toJSON(
+    message: ValidatorAccumulatedCommission,
+  ): JsonSafe<ValidatorAccumulatedCommission> {
     const obj: any = {};
     if (message.commission) {
       obj.commission = message.commission.map(e =>
@@ -711,7 +716,9 @@ export const ValidatorOutstandingRewards = {
         : [],
     };
   },
-  toJSON(message: ValidatorOutstandingRewards): unknown {
+  toJSON(
+    message: ValidatorOutstandingRewards,
+  ): JsonSafe<ValidatorOutstandingRewards> {
     const obj: any = {};
     if (message.rewards) {
       obj.rewards = message.rewards.map(e =>
@@ -803,7 +810,7 @@ export const ValidatorSlashEvent = {
       fraction: isSet(object.fraction) ? String(object.fraction) : '',
     };
   },
-  toJSON(message: ValidatorSlashEvent): unknown {
+  toJSON(message: ValidatorSlashEvent): JsonSafe<ValidatorSlashEvent> {
     const obj: any = {};
     message.validatorPeriod !== undefined &&
       (obj.validatorPeriod = (message.validatorPeriod || BigInt(0)).toString());
@@ -880,7 +887,7 @@ export const ValidatorSlashEvents = {
         : [],
     };
   },
-  toJSON(message: ValidatorSlashEvents): unknown {
+  toJSON(message: ValidatorSlashEvents): JsonSafe<ValidatorSlashEvents> {
     const obj: any = {};
     if (message.validatorSlashEvents) {
       obj.validatorSlashEvents = message.validatorSlashEvents.map(e =>
@@ -953,7 +960,7 @@ export const FeePool = {
         : [],
     };
   },
-  toJSON(message: FeePool): unknown {
+  toJSON(message: FeePool): JsonSafe<FeePool> {
     const obj: any = {};
     if (message.communityPool) {
       obj.communityPool = message.communityPool.map(e =>
@@ -1052,7 +1059,9 @@ export const CommunityPoolSpendProposal = {
         : [],
     };
   },
-  toJSON(message: CommunityPoolSpendProposal): unknown {
+  toJSON(
+    message: CommunityPoolSpendProposal,
+  ): JsonSafe<CommunityPoolSpendProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -1156,7 +1165,7 @@ export const DelegatorStartingInfo = {
         : BigInt(0),
     };
   },
-  toJSON(message: DelegatorStartingInfo): unknown {
+  toJSON(message: DelegatorStartingInfo): JsonSafe<DelegatorStartingInfo> {
     const obj: any = {};
     message.previousPeriod !== undefined &&
       (obj.previousPeriod = (message.previousPeriod || BigInt(0)).toString());
@@ -1245,7 +1254,9 @@ export const DelegationDelegatorReward = {
         : [],
     };
   },
-  toJSON(message: DelegationDelegatorReward): unknown {
+  toJSON(
+    message: DelegationDelegatorReward,
+  ): JsonSafe<DelegationDelegatorReward> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -1357,7 +1368,9 @@ export const CommunityPoolSpendProposalWithDeposit = {
       deposit: isSet(object.deposit) ? String(object.deposit) : '',
     };
   },
-  toJSON(message: CommunityPoolSpendProposalWithDeposit): unknown {
+  toJSON(
+    message: CommunityPoolSpendProposalWithDeposit,
+  ): JsonSafe<CommunityPoolSpendProposalWithDeposit> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&

@@ -3,6 +3,7 @@ import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '@cosmjs/math';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** The module governance/configuration parameters. */
 export interface Params {
   /**
@@ -130,7 +131,7 @@ export const Params = {
         : BigInt(0),
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.rewardEpochDurationBlocks !== undefined &&
       (obj.rewardEpochDurationBlocks = (
@@ -243,7 +244,7 @@ export const State = {
         : BigInt(0),
     };
   },
-  toJSON(message: State): unknown {
+  toJSON(message: State): JsonSafe<State> {
     const obj: any = {};
     if (message.rewardPool) {
       obj.rewardPool = message.rewardPool.map(e =>

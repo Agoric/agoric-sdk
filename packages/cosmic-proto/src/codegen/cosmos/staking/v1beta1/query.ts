@@ -23,6 +23,7 @@ import {
 } from './staking.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** QueryValidatorsRequest is request type for Query/Validators RPC method. */
 export interface QueryValidatorsRequest {
   /** status enables to query for validators matching a given status. */
@@ -590,7 +591,7 @@ export const QueryValidatorsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorsRequest): unknown {
+  toJSON(message: QueryValidatorsRequest): JsonSafe<QueryValidatorsRequest> {
     const obj: any = {};
     message.status !== undefined && (obj.status = message.status);
     message.pagination !== undefined &&
@@ -680,7 +681,7 @@ export const QueryValidatorsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorsResponse): unknown {
+  toJSON(message: QueryValidatorsResponse): JsonSafe<QueryValidatorsResponse> {
     const obj: any = {};
     if (message.validators) {
       obj.validators = message.validators.map(e =>
@@ -768,7 +769,7 @@ export const QueryValidatorRequest = {
         : '',
     };
   },
-  toJSON(message: QueryValidatorRequest): unknown {
+  toJSON(message: QueryValidatorRequest): JsonSafe<QueryValidatorRequest> {
     const obj: any = {};
     message.validatorAddr !== undefined &&
       (obj.validatorAddr = message.validatorAddr);
@@ -836,7 +837,7 @@ export const QueryValidatorResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorResponse): unknown {
+  toJSON(message: QueryValidatorResponse): JsonSafe<QueryValidatorResponse> {
     const obj: any = {};
     message.validator !== undefined &&
       (obj.validator = message.validator
@@ -921,7 +922,9 @@ export const QueryValidatorDelegationsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorDelegationsRequest): unknown {
+  toJSON(
+    message: QueryValidatorDelegationsRequest,
+  ): JsonSafe<QueryValidatorDelegationsRequest> {
     const obj: any = {};
     message.validatorAddr !== undefined &&
       (obj.validatorAddr = message.validatorAddr);
@@ -1020,7 +1023,9 @@ export const QueryValidatorDelegationsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorDelegationsResponse): unknown {
+  toJSON(
+    message: QueryValidatorDelegationsResponse,
+  ): JsonSafe<QueryValidatorDelegationsResponse> {
     const obj: any = {};
     if (message.delegationResponses) {
       obj.delegationResponses = message.delegationResponses.map(e =>
@@ -1119,7 +1124,9 @@ export const QueryValidatorUnbondingDelegationsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorUnbondingDelegationsRequest): unknown {
+  toJSON(
+    message: QueryValidatorUnbondingDelegationsRequest,
+  ): JsonSafe<QueryValidatorUnbondingDelegationsRequest> {
     const obj: any = {};
     message.validatorAddr !== undefined &&
       (obj.validatorAddr = message.validatorAddr);
@@ -1219,7 +1226,9 @@ export const QueryValidatorUnbondingDelegationsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryValidatorUnbondingDelegationsResponse): unknown {
+  toJSON(
+    message: QueryValidatorUnbondingDelegationsResponse,
+  ): JsonSafe<QueryValidatorUnbondingDelegationsResponse> {
     const obj: any = {};
     if (message.unbondingResponses) {
       obj.unbondingResponses = message.unbondingResponses.map(e =>
@@ -1320,7 +1329,7 @@ export const QueryDelegationRequest = {
         : '',
     };
   },
-  toJSON(message: QueryDelegationRequest): unknown {
+  toJSON(message: QueryDelegationRequest): JsonSafe<QueryDelegationRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -1399,7 +1408,7 @@ export const QueryDelegationResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegationResponse): unknown {
+  toJSON(message: QueryDelegationResponse): JsonSafe<QueryDelegationResponse> {
     const obj: any = {};
     message.delegationResponse !== undefined &&
       (obj.delegationResponse = message.delegationResponse
@@ -1489,7 +1498,9 @@ export const QueryUnbondingDelegationRequest = {
         : '',
     };
   },
-  toJSON(message: QueryUnbondingDelegationRequest): unknown {
+  toJSON(
+    message: QueryUnbondingDelegationRequest,
+  ): JsonSafe<QueryUnbondingDelegationRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -1569,7 +1580,9 @@ export const QueryUnbondingDelegationResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryUnbondingDelegationResponse): unknown {
+  toJSON(
+    message: QueryUnbondingDelegationResponse,
+  ): JsonSafe<QueryUnbondingDelegationResponse> {
     const obj: any = {};
     message.unbond !== undefined &&
       (obj.unbond = message.unbond
@@ -1658,7 +1671,9 @@ export const QueryDelegatorDelegationsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorDelegationsRequest): unknown {
+  toJSON(
+    message: QueryDelegatorDelegationsRequest,
+  ): JsonSafe<QueryDelegatorDelegationsRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -1757,7 +1772,9 @@ export const QueryDelegatorDelegationsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorDelegationsResponse): unknown {
+  toJSON(
+    message: QueryDelegatorDelegationsResponse,
+  ): JsonSafe<QueryDelegatorDelegationsResponse> {
     const obj: any = {};
     if (message.delegationResponses) {
       obj.delegationResponses = message.delegationResponses.map(e =>
@@ -1856,7 +1873,9 @@ export const QueryDelegatorUnbondingDelegationsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorUnbondingDelegationsRequest): unknown {
+  toJSON(
+    message: QueryDelegatorUnbondingDelegationsRequest,
+  ): JsonSafe<QueryDelegatorUnbondingDelegationsRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -1956,7 +1975,9 @@ export const QueryDelegatorUnbondingDelegationsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorUnbondingDelegationsResponse): unknown {
+  toJSON(
+    message: QueryDelegatorUnbondingDelegationsResponse,
+  ): JsonSafe<QueryDelegatorUnbondingDelegationsResponse> {
     const obj: any = {};
     if (message.unbondingResponses) {
       obj.unbondingResponses = message.unbondingResponses.map(e =>
@@ -2077,7 +2098,9 @@ export const QueryRedelegationsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryRedelegationsRequest): unknown {
+  toJSON(
+    message: QueryRedelegationsRequest,
+  ): JsonSafe<QueryRedelegationsRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -2182,7 +2205,9 @@ export const QueryRedelegationsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryRedelegationsResponse): unknown {
+  toJSON(
+    message: QueryRedelegationsResponse,
+  ): JsonSafe<QueryRedelegationsResponse> {
     const obj: any = {};
     if (message.redelegationResponses) {
       obj.redelegationResponses = message.redelegationResponses.map(e =>
@@ -2282,7 +2307,9 @@ export const QueryDelegatorValidatorsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorValidatorsRequest): unknown {
+  toJSON(
+    message: QueryDelegatorValidatorsRequest,
+  ): JsonSafe<QueryDelegatorValidatorsRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -2377,7 +2404,9 @@ export const QueryDelegatorValidatorsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorValidatorsResponse): unknown {
+  toJSON(
+    message: QueryDelegatorValidatorsResponse,
+  ): JsonSafe<QueryDelegatorValidatorsResponse> {
     const obj: any = {};
     if (message.validators) {
       obj.validators = message.validators.map(e =>
@@ -2475,7 +2504,9 @@ export const QueryDelegatorValidatorRequest = {
         : '',
     };
   },
-  toJSON(message: QueryDelegatorValidatorRequest): unknown {
+  toJSON(
+    message: QueryDelegatorValidatorRequest,
+  ): JsonSafe<QueryDelegatorValidatorRequest> {
     const obj: any = {};
     message.delegatorAddr !== undefined &&
       (obj.delegatorAddr = message.delegatorAddr);
@@ -2552,7 +2583,9 @@ export const QueryDelegatorValidatorResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryDelegatorValidatorResponse): unknown {
+  toJSON(
+    message: QueryDelegatorValidatorResponse,
+  ): JsonSafe<QueryDelegatorValidatorResponse> {
     const obj: any = {};
     message.validator !== undefined &&
       (obj.validator = message.validator
@@ -2631,7 +2664,9 @@ export const QueryHistoricalInfoRequest = {
         : BigInt(0),
     };
   },
-  toJSON(message: QueryHistoricalInfoRequest): unknown {
+  toJSON(
+    message: QueryHistoricalInfoRequest,
+  ): JsonSafe<QueryHistoricalInfoRequest> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
@@ -2708,7 +2743,9 @@ export const QueryHistoricalInfoResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryHistoricalInfoResponse): unknown {
+  toJSON(
+    message: QueryHistoricalInfoResponse,
+  ): JsonSafe<QueryHistoricalInfoResponse> {
     const obj: any = {};
     message.hist !== undefined &&
       (obj.hist = message.hist
@@ -2772,7 +2809,7 @@ export const QueryPoolRequest = {
   fromJSON(_: any): QueryPoolRequest {
     return {};
   },
-  toJSON(_: QueryPoolRequest): unknown {
+  toJSON(_: QueryPoolRequest): JsonSafe<QueryPoolRequest> {
     const obj: any = {};
     return obj;
   },
@@ -2832,7 +2869,7 @@ export const QueryPoolResponse = {
       pool: isSet(object.pool) ? Pool.fromJSON(object.pool) : undefined,
     };
   },
-  toJSON(message: QueryPoolResponse): unknown {
+  toJSON(message: QueryPoolResponse): JsonSafe<QueryPoolResponse> {
     const obj: any = {};
     message.pool !== undefined &&
       (obj.pool = message.pool ? Pool.toJSON(message.pool) : undefined);
@@ -2891,7 +2928,7 @@ export const QueryParamsRequest = {
   fromJSON(_: any): QueryParamsRequest {
     return {};
   },
-  toJSON(_: QueryParamsRequest): unknown {
+  toJSON(_: QueryParamsRequest): JsonSafe<QueryParamsRequest> {
     const obj: any = {};
     return obj;
   },
@@ -2954,7 +2991,7 @@ export const QueryParamsResponse = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: QueryParamsResponse): unknown {
+  toJSON(message: QueryParamsResponse): JsonSafe<QueryParamsResponse> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
