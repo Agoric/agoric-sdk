@@ -44,7 +44,12 @@ const { Fail } = assert;
 const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
+  makeUndelegateInvitation: M.call(M.string(), AmountShape).returns(
+    M.promise(),
+  ),
   makeCloseAccountInvitation: M.call().returns(M.promise()),
+  delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+  undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
   deposit: M.callWhen(PaymentShape).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   transfer: M.call(AmountArgShape, ChainAddressShape)
@@ -85,6 +90,7 @@ export const prepareLocalChainAccountKit = (
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
         Delegate: HolderI.payload.methodGuards.makeDelegateInvitation,
+        Undelegate: HolderI.payload.methodGuards.makeUndelegateInvitation,
         CloseAccount: HolderI.payload.methodGuards.makeCloseAccountInvitation,
       }),
     },
@@ -111,6 +117,12 @@ export const prepareLocalChainAccountKit = (
             amount,
           );
         },
+        Undelegate(validatorAddress, amount) {
+          return this.facets.holder.makeUndelegateInvitation(
+            validatorAddress,
+            amount,
+          );
+        },
         CloseAccount() {
           return this.facets.holder.makeCloseAccountInvitation();
         },
@@ -131,32 +143,79 @@ export const prepareLocalChainAccountKit = (
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
-        async makeDelegateInvitation(validatorAddress, ertpAmount) {
-          trace('makeDelegateInvitation', validatorAddress, ertpAmount);
-
+        async delegate(validatorAddress, ertpAmount) {
           // TODO #9211 lookup denom from brand
           const amount = {
             amount: String(ertpAmount.value),
             denom: 'ubld',
           };
+          const { account: lca } = this.state;
+          trace('lca', lca);
+          const delegatorAddress = await E(lca).getAddress();
+          trace('delegatorAddress', delegatorAddress);
+          const [result] = await E(lca).executeTx([
+            typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
+              amount,
+              validatorAddress,
+              delegatorAddress,
+            }),
+          ]);
+          trace('got result', result);
+          return result;
+        },
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         */
+        async makeDelegateInvitation(validatorAddress, ertpAmount) {
+          trace('makeDelegateInvitation', validatorAddress, ertpAmount);
 
           return zcf.makeInvitation(async seat => {
             // TODO should it allow delegating more BLD?
             seat.exit();
-            const { account: lca } = this.state;
-            trace('lca', lca);
-            const delegatorAddress = await E(lca).getAddress();
-            trace('delegatorAddress', delegatorAddress);
-            const [result] = await E(lca).executeTx([
-              typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
-                amount,
-                validatorAddress,
-                delegatorAddress,
-              }),
-            ]);
-            trace('got result', result);
-            return result;
+            return this.facets.holder.delegate(validatorAddress, ertpAmount);
           }, 'Delegate');
+        },
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         */
+        async undelegate(validatorAddress, ertpAmount) {
+          // TODO #9211 lookup denom from brand
+          const amount = {
+            amount: String(ertpAmount.value),
+            denom: 'ubld',
+          };
+          const { account: lca } = this.state;
+          trace('lca', lca);
+          const delegatorAddress = await E(lca).getAddress();
+          trace('delegatorAddress', delegatorAddress);
+          const [result] = await E(lca).executeTx([
+            typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
+              amount,
+              validatorAddress,
+              delegatorAddress,
+            }),
+          ]);
+          trace('got result', result);
+          return result;
+        },
+
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         */
+        async makeUndelegateInvitation(validatorAddress, ertpAmount) {
+          trace('makeUndelegateInvitation', validatorAddress, ertpAmount);
+
+          return zcf.makeInvitation(async seat => {
+            // TODO should it allow delegating more BLD?
+            seat.exit();
+            return this.facets.holder.undelegate(validatorAddress, ertpAmount);
+          }, 'Undelegate');
         },
         makeCloseAccountInvitation() {
           throw Error('not yet implemented');

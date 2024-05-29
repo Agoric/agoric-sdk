@@ -77,6 +77,56 @@ test('deposit, withdraw', async t => {
   );
 });
 
+test('delegate, undelegate', async t => {
+  const { bootstrap, brands, utils } = await commonSetup(t);
+
+  const { bld } = brands;
+
+  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+
+  t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
+  const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
+
+  t.log('exo setup - prepareLocalChainAccountKit');
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    rootZone.mapStore('recorder'),
+    marshaller,
+  );
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    rootZone,
+    makeRecorderKit,
+    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
+    Far('MockZCF', {}),
+    timer,
+    timer.getTimerBrand(),
+    agoricChainInfo,
+  );
+
+  t.log('request account from vat-localchain');
+  const lca = await E(localchain).makeAccount();
+  const address = await E(lca).getAddress();
+
+  t.log('make a LocalChainAccountKit');
+  const { holder: account } = makeLocalChainAccountKit({
+    account: lca,
+    address,
+    storageNode: storage.rootNode.makeChildNode('lcaKit'),
+  });
+
+  t.regex(await E(account).getAddress(), /agoric1/);
+
+  await E(account).deposit(await utils.pourPayment(bld.units(100)));
+
+  const validatorAddress = 'agoric1validator1';
+
+  // Because the bridge is fake,
+  // 1. these succeed even if funds aren't available
+  // 2. there are no return values
+  // 3. there are no side-effects such as assets being locked
+  await E(account).delegate(validatorAddress, bld.units(999));
+  await E(account).undelegate(validatorAddress, bld.units(999));
+});
+
 test('transfer', async t => {
   const { bootstrap, brands, utils } = await commonSetup(t);
 
