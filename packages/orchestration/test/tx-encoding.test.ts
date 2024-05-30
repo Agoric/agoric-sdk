@@ -7,7 +7,7 @@ import {
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
-import { tryDecodeResponse } from '../src/exos/stakingAccountKit.js';
+import { tryDecodeResponse } from '../src/utils/cosmos.js';
 
 const test = anyTest;
 

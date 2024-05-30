@@ -1,4 +1,9 @@
 /** @file Use-object for the owner of a staking account */
+import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import {
+  QueryBalanceRequest,
+  QueryBalanceResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
@@ -10,19 +15,14 @@ import {
   MsgUndelegate,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
-} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { decodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -30,12 +30,14 @@ import {
   CoinShape,
   DelegationShape,
 } from '../typeGuards.js';
-
-/** maximum clock skew, in seconds, for unbonding time reported from other chain */
-export const maxClockSkew = 10n * 60n;
+import {
+  encodeTxResponse,
+  maxClockSkew,
+  tryDecodeResponse,
+} from '../utils/cosmos.js';
 
 /**
- * @import {AmountArg, IcaAccount, ChainAddress, ChainAmount, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -84,14 +86,6 @@ const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
 
-export const encodeTxResponse = (response, toProtoMsg) => {
-  const protoMsg = toProtoMsg(response);
-  const any1 = Any.fromPartial(protoMsg);
-  const any2 = Any.fromPartial({ value: Any.encode(any1).finish() });
-  const ackStr = encodeBase64(Any.encode(any2).finish());
-  return ackStr;
-};
-
 export const trivialDelegateResponse = encodeTxResponse(
   {},
   MsgDelegateResponse.toProtoMsg,
@@ -100,23 +94,6 @@ export const trivialDelegateResponse = encodeTxResponse(
 const expect = (actual, expected, message) => {
   if (actual !== expected) {
     console.log(message, { actual, expected });
-  }
-};
-
-/**
- * @template T
- * @param {string} ackStr
- * @param {(p: {typeUrl: string, value: Uint8Array}) => T} fromProtoMsg
- */
-export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
-  try {
-    const any = Any.decode(decodeBase64(ackStr));
-    const protoMsg = Any.decode(any.value);
-
-    const msg = fromProtoMsg(protoMsg);
-    return msg;
-  } catch (cause) {
-    throw assert.error(`bad response: ${ackStr}`, undefined, { cause });
   }
 };
 

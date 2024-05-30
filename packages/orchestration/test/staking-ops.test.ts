@@ -18,10 +18,9 @@ import type { AnyJson } from '@agoric/cosmic-proto';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   prepareStakingAccountKit,
-  encodeTxResponse,
   trivialDelegateResponse,
 } from '../src/exos/stakingAccountKit.js';
-
+import { encodeTxResponse } from '../src/utils/cosmos.js';
 import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 
 const { Fail } = assert;
