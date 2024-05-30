@@ -31,7 +31,7 @@ import {
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {ManualTimer} from '../../../tools/manualTimer.js';
+ * @import {ZoeManualTimer} from '../../../tools/manualTimer.js';
  */
 
 /**
@@ -44,7 +44,7 @@ import {
  * Type to refine the `timer` term used in tests
  *
  * @param {ZCF<{
- * timer: ManualTimer,
+ * timer: ZoeManualTimer,
  * POLL_INTERVAL: bigint,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,

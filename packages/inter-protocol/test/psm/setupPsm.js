@@ -22,7 +22,7 @@ import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
 
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
@@ -65,7 +65,7 @@ export const setupPsmBootstrap = async (
 /**
  * @param {any} t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
- * @param {ManualTimer} [timer]
+ * @param {ZoeManualTimer} [timer]
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsm = async (

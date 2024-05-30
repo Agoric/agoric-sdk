@@ -20,7 +20,7 @@ import {
   voteForOpenQuestion,
 } from './contexts.js';
 
-/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
 
 /**
  * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>> & {
@@ -275,7 +275,7 @@ test.serial('admin price', async t => {
 
   // Verify price result
 
-  const manualTimer = /** @type {Promise<ManualTimer>} */ (
+  const manualTimer = /** @type {Promise<ZoeManualTimer>} */ (
     t.context.consume.chainTimerService
   );
   const timerBrand = await E(manualTimer).getTimerBrand();
@@ -500,7 +500,7 @@ test.serial('govern oracles list', async t => {
   }
 
   const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  /** @type {ERef<ManualTimer>} */
+  /** @type {ERef<ZoeManualTimer>} */
   // @ts-expect-error cast mock
   const timer = t.context.consume.chainTimerService;
 

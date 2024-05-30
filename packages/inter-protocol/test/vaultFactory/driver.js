@@ -580,13 +580,11 @@ export const makeAuctioneerDriver = async t => {
     auctioneerKit,
     advanceTimerByStartFrequency: async () => {
       trace('advanceTimerByStartFrequency');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency));
       await eventLoopIteration();
     },
     induceTimequake: async () => {
       trace('induceTimequake');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency) * 10n);
       await eventLoopIteration();
     },
