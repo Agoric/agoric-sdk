@@ -121,7 +121,7 @@ export interface TimerServiceI {
     cancelToken?: CancelToken,
   ) => TimestampRecord;
   /**
-   * Create and return a promise that will resolve after the absolte
+   * Create and return a promise that will resolve after the absolute
    * time has passed.
    */
   wakeAt: (
