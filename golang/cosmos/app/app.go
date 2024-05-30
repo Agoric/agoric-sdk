@@ -791,7 +791,7 @@ func NewAgoricApp(
 	for name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			upgrade15Handler(app, name),
+			upgrade16Handler(app, name),
 		)
 	}
 
@@ -831,8 +831,8 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"agoric-upgrade-15":     true,
-	"agorictest-upgrade-15": true,
+	"agoric-upgrade-16":     true,
+	"agorictest-upgrade-16": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
@@ -844,8 +844,8 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-// upgrade15Handler performs standard upgrade actions plus custom actions for upgrade-15.
-func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade16Handler performs standard upgrade actions plus custom actions for upgrade-16.
+func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
@@ -857,10 +857,7 @@ func upgrade15Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// Upgrade ZCF only
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/upgrade-zcf.js"),
-				// Upgrade walletFactory
-				vm.CoreProposalStepForModules("@agoric/vats/scripts/build-wallet-factory2-upgrade.js"),
+				// Empty for now
 			}
 		}
 
