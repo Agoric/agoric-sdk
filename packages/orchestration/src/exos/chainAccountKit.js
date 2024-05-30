@@ -4,7 +4,6 @@ import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { PaymentShape, PurseShape } from '@agoric/ertp';
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { findAddressField } from '../utils/address.js';
 import {
   ConnectionHandlerI,
@@ -41,7 +40,6 @@ export const ChainAccountI = M.interface('ChainAccount', {
   close: M.callWhen().returns(M.undefined()),
   deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   getPurse: M.callWhen().returns(PurseShape),
-  prepareTransfer: M.callWhen().returns(InvitationShape),
 });
 
 /**
@@ -141,11 +139,6 @@ export const prepareChainAccountKit = zone =>
          */
         async getPurse(brand) {
           console.log('getPurse got', brand);
-          throw new Error('not yet implemented');
-        },
-
-        /* transfer account to new holder */
-        async prepareTransfer() {
           throw new Error('not yet implemented');
         },
       },

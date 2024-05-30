@@ -6,7 +6,6 @@ import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
 
-const { keys } = Object;
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractFile = `${dirname}/../../src/examples/stakeBld.contract.js`;
@@ -34,7 +33,7 @@ const coreEval = async (t, { timer, localchain, marshaller, storage, bld }) => {
   return { publicFacet, zoe };
 };
 
-test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
+test('makeAccount, deposit, withdraw', async t => {
   const {
     bootstrap,
     brands: { bld },
@@ -47,11 +46,10 @@ test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
   t.truthy(account, 'account is returned');
   t.regex(await E(account).getAddress(), /agoric1/);
 
-  // XXX not observed by vat-bank
-  const oneHundredStakePmt = bld.issuerKit.mint.mintPayment(bld.units(100));
-
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(oneHundredStakePmt);
+  const depositResp = await E(account).deposit(
+    await utils.pourPayment(bld.units(100)),
+  );
   t.true(AmountMath.isEqual(depositResp, bld.units(100)), 'deposit');
 
   // TODO validate balance, .getBalance()
@@ -68,10 +66,11 @@ test('stakeBld contract - makeAccount, deposit, withdraw', async t => {
   );
 });
 
-test('stakeBld contract - makeStakeBldInvitation', async t => {
+test('makeStakeBldInvitation', async t => {
   const {
     bootstrap,
     brands: { bld },
+    utils,
   } = await commonSetup(t);
   const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
 
@@ -85,7 +84,7 @@ test('stakeBld contract - makeStakeBldInvitation', async t => {
   const userSeat = await E(zoe).offer(
     inv,
     { give: { In: hundred } },
-    { In: bld.mint.mintPayment(hundred) },
+    { In: utils.pourPayment(hundred) },
   );
   const { invitationMakers } = await E(userSeat).getOfferResult();
   t.truthy(invitationMakers, 'received continuing invitation');
@@ -98,28 +97,25 @@ test('stakeBld contract - makeStakeBldInvitation', async t => {
   const delegateOffer = await E(zoe).offer(
     delegateInv,
     { give: { In: hundred } },
-    { In: bld.mint.mintPayment(hundred) },
+    { In: utils.pourPayment(hundred) },
   );
   const res = await E(delegateOffer).getOfferResult();
   t.deepEqual(res, {});
   t.log('Successfully delegated');
 
-  await t.throwsAsync(() => E(invitationMakers).TransferAccount(), {
-    message: 'not yet implemented',
-  });
   await t.throwsAsync(() => E(invitationMakers).CloseAccount(), {
     message: 'not yet implemented',
   });
 });
 
-test('stakeBld contract - makeAccountInvitationMaker', async t => {
+test('makeAccountInvitationMaker', async t => {
   const {
     bootstrap,
     brands: { bld },
   } = await commonSetup(t);
   const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
 
-  const inv = await E(publicFacet).makeAcountInvitationMaker();
+  const inv = await E(publicFacet).makeAccountInvitationMaker();
 
   const userSeat = await E(zoe).offer(inv);
   const offerResult = await E(userSeat).getOfferResult();

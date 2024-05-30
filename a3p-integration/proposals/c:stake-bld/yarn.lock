@@ -967,12 +967,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/env-options@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@endo/env-options@npm:1.1.4"
+  checksum: 10c0/8816c8fe1332a6f3366e7e4849b000d757fcd181eac011ed8363ccc4e66dfa2f2d975f8d5cbfb3844f3e327c5391e77ee7e234a59a21744c74c945f683b56df1
+  languageName: node
+  linkType: hard
+
 "@endo/errors@npm:^1.1.0":
   version: 1.1.0
   resolution: "@endo/errors@npm:1.1.0"
   dependencies:
     ses: "npm:^1.3.0"
   checksum: 10c0/3c909f5d76c9d1c0545f72c3e9d5ddb81518f85ea40b3093af01fac828e12fb1f689ba026898f89c5d29e634df7e0e055a1486c47ce939a890c21f2100ecc086
+  languageName: node
+  linkType: hard
+
+"@endo/errors@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "@endo/errors@npm:1.2.2"
+  dependencies:
+    ses: "npm:^1.5.0"
+  checksum: 10c0/d90baaf803b17130b83fbc562e253504a6a05e4843d63536e74578503f6bd937fdba3464c4d8eeb9df16b795639cd9c4aad143520525f9e54aa3e91dc5184c17
   languageName: node
   linkType: hard
 
@@ -4570,7 +4586,7 @@ __metadata:
     "@agoric/synthetic-chain": "npm:^0.1.0"
     "@cosmjs/stargate": "npm:^0.32.3"
     "@cosmjs/tendermint-rpc": "npm:^0.32.3"
-    "@endo/errors": "npm:^1.1.0"
+    "@endo/errors": "npm:^1.2.2"
     "@endo/far": "npm:^1.0.4"
     "@endo/init": "npm:^1.0.4"
     agoric: "npm:0.21.2-dev-5676146.0"
@@ -4670,6 +4686,15 @@ __metadata:
   dependencies:
     "@endo/env-options": "npm:^1.1.1"
   checksum: 10c0/a1385c91a23677de3b91ffa93a8f08134b6657f93c3002b2269c961e28c19deeeadce4ae30a7bcc177a312268fa8d21de2aa5acfc4370055c17dd8c53885ffa4
+  languageName: node
+  linkType: hard
+
+"ses@npm:^1.5.0":
+  version: 1.5.0
+  resolution: "ses@npm:1.5.0"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.4"
+  checksum: 10c0/bd5e230ff07abe84632ff212a5dce5163d979ab0ae657c4ac0ee2748aea9f587d83c75639d0058def62eae6dde55c0ae9652f33aecc5e0fe538c89ce54bffcdc
   languageName: node
   linkType: hard
 
