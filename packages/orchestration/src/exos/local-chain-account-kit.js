@@ -5,13 +5,14 @@ import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
   ChainAddressShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
-import { makeTimestampHelper } from '../utils/time.js';
+import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
@@ -42,8 +43,7 @@ const { Fail } = assert;
 
 const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  makeDelegateInvitation: M.call(M.string(), AmountShape).returns(M.promise()),
-  makeCloseAccountInvitation: M.call().returns(M.promise()),
+  delegate: M.call(M.string(), AmountShape).returns(M.promise()),
   deposit: M.callWhen(PaymentShape).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   transfer: M.call(AmountArgShape, ChainAddressShape)
@@ -83,8 +83,8 @@ export const prepareLocalChainAccountKit = (
     {
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: HolderI.payload.methodGuards.makeDelegateInvitation,
-        CloseAccount: HolderI.payload.methodGuards.makeCloseAccountInvitation,
+        Delegate: M.callWhen(M.string(), AmountShape).returns(InvitationShape),
+        CloseAccount: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -104,14 +104,22 @@ export const prepareLocalChainAccountKit = (
     },
     {
       invitationMakers: {
-        Delegate(validatorAddress, amount) {
-          return this.facets.holder.makeDelegateInvitation(
-            validatorAddress,
-            amount,
-          );
+        /**
+         *
+         * @param {string} validatorAddress
+         * @param {Amount<'nat'>} ertpAmount
+         */
+        async Delegate(validatorAddress, ertpAmount) {
+          trace('Delegate', validatorAddress, ertpAmount);
+
+          return zcf.makeInvitation(async seat => {
+            // TODO should it allow delegating more BLD?
+            seat.exit();
+            return this.facets.holder.delegate(validatorAddress, ertpAmount);
+          }, 'Delegate');
         },
         CloseAccount() {
-          return this.facets.holder.makeCloseAccountInvitation();
+          throw Error('not yet implemented');
         },
       },
       holder: {
@@ -130,35 +138,25 @@ export const prepareLocalChainAccountKit = (
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
-        async makeDelegateInvitation(validatorAddress, ertpAmount) {
-          trace('makeDelegateInvitation', validatorAddress, ertpAmount);
-
+        async delegate(validatorAddress, ertpAmount) {
           // TODO #9211 lookup denom from brand
           const amount = {
             amount: String(ertpAmount.value),
             denom: 'ubld',
           };
-
-          return zcf.makeInvitation(async seat => {
-            // TODO should it allow delegating more BLD?
-            seat.exit();
-            const { account: lca } = this.state;
-            trace('lca', lca);
-            const delegatorAddress = await E(lca).getAddress();
-            trace('delegatorAddress', delegatorAddress);
-            const [result] = await E(lca).executeTx([
-              typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
-                amount,
-                validatorAddress,
-                delegatorAddress,
-              }),
-            ]);
-            trace('got result', result);
-            return result;
-          }, 'Delegate');
-        },
-        makeCloseAccountInvitation() {
-          throw Error('not yet implemented');
+          const { account: lca } = this.state;
+          trace('lca', lca);
+          const delegatorAddress = await E(lca).getAddress();
+          trace('delegatorAddress', delegatorAddress);
+          const [result] = await E(lca).executeTx([
+            typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
+              amount,
+              validatorAddress,
+              delegatorAddress,
+            }),
+          ]);
+          trace('got result', result);
+          return result;
         },
         /**
          * Starting a transfer revokes the account holder. The associated updater
