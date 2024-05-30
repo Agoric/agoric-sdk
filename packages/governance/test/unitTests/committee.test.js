@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -83,7 +83,7 @@ test('committee-open question:one', async t => {
       maxChoices: 1,
       maxWinners: 1,
       closingRule: {
-        timer: buildManualTimer(t.log),
+        timer: buildZoeManualTimer(t.log),
         deadline: 2n,
       },
       quorumRule: QuorumRule.MAJORITY,
@@ -139,7 +139,7 @@ test('committee-open question:mixed, with snapshot', async t => {
     mockChainStorageRoot,
   } = await setupContract();
 
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const positions = [harden({ text: 'because' }), harden({ text: 'why not?' })];
   const questionSpec = coerceQuestionSpec(
     harden({

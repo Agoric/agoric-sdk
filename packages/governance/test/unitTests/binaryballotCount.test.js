@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { Far } from '@endo/marshal';
 import { makeStoredPublishKit } from '@agoric/notifier';
@@ -40,7 +40,7 @@ const PARAM_CHANGE_ISSUE = harden({
 });
 
 const FAKE_CLOSING_RULE = {
-  timer: buildManualTimer(console.log),
+  timer: buildZoeManualTimer(console.log),
   deadline: 3n,
 };
 

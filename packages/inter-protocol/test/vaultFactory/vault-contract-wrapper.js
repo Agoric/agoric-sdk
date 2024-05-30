@@ -17,7 +17,7 @@ import {
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -63,7 +63,7 @@ export async function start(zcf, privateArgs, baggage) {
 
   const { subscriber: assetSubscriber } = makePublishKit();
 
-  const timer = buildManualTimer(console.log, 0n, { timeStep: DAY });
+  const timer = buildZoeManualTimer(console.log, 0n, { timeStep: DAY });
   const options = {
     actualBrandIn: collateralBrand,
     actualBrandOut: stableBrand,

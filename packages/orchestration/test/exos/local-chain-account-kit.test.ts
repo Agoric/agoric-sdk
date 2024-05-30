@@ -7,7 +7,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
 import { makeFakeLocalchainBridge } from '../supports.js';
@@ -36,7 +36,7 @@ test('localChainAccountKit - transfer', async t => {
       bankManager,
       system: localchainBridge,
     });
-    const timer = buildManualTimer(t.log);
+    const timer = buildZoeManualTimer(t.log);
     const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
     return {

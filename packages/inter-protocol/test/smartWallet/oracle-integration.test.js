@@ -6,7 +6,7 @@ import { zip } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { TimeMath } from '@agoric/time';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
 import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
@@ -20,7 +20,7 @@ import {
   voteForOpenQuestion,
 } from './contexts.js';
 
-/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
 
 /**
  * @typedef {Awaited<ReturnType<typeof makeDefaultTestContext>> & {
@@ -64,7 +64,7 @@ const makeTestSpace = async (log, bundleCache) => {
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 
-  const timer = buildManualTimer(log);
+  const timer = buildZoeManualTimer(log);
   space.produce.chainTimerService.resolve(timer);
 
   /** @type {import('@agoric/inter-protocol/src/proposals/price-feed-proposal.js').PriceFeedOptions} */
@@ -275,7 +275,7 @@ test.serial('admin price', async t => {
 
   // Verify price result
 
-  const manualTimer = /** @type {Promise<ManualTimer>} */ (
+  const manualTimer = /** @type {Promise<ZoeManualTimer>} */ (
     t.context.consume.chainTimerService
   );
   const timerBrand = await E(manualTimer).getTimerBrand();
@@ -500,7 +500,7 @@ test.serial('govern oracles list', async t => {
   }
 
   const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  /** @type {ERef<ManualTimer>} */
+  /** @type {ERef<ZoeManualTimer>} */
   // @ts-expect-error cast mock
   const timer = t.context.consume.chainTimerService;
 

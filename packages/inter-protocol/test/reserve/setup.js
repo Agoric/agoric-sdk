@@ -1,4 +1,4 @@
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -14,7 +14,7 @@ import {
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
-/** @import {ManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
@@ -25,7 +25,7 @@ const faucetRoot = './test/vaultFactory/faucet.js';
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {any} t
- * @param {ManualTimer | undefined} timer
+ * @param {ZoeManualTimer | undefined} timer
  * @param {FarZoeKit} farZoeKit
  */
 const setupReserveBootstrap = async (t, timer, farZoeKit) => {
@@ -67,12 +67,12 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
  *
  * @param {import('ava').ExecutionContext<unknown>} t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
- * @param {ManualTimer} [timer]
+ * @param {ZoeManualTimer} [timer]
  */
 export const setupReserveServices = async (
   t,
   electorateTerms,
-  timer = buildManualTimer(t.log),
+  timer = buildZoeManualTimer(t.log),
 ) => {
   const farZoeKit = await setUpZoeForTest({ feeIssuerConfig });
   const { feeMintAccessP, zoe } = farZoeKit;

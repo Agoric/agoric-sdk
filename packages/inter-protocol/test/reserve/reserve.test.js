@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
@@ -52,7 +52,7 @@ test('reserve add collateral', async t => {
   const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
 
   const { zoe, reserve } = await setupReserveServices(
     t,
@@ -83,7 +83,7 @@ test('check allocations', async t => {
   const moola = value => AmountMath.make(moolaKit.brand, value);
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
 
   const { zoe, reserve, space } = await setupReserveServices(
     t,
@@ -129,7 +129,7 @@ test('check allocations', async t => {
 test('reserve track shortfall', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
 
   const { reserve, space, zoe } = await setupReserveServices(
     t,
@@ -187,7 +187,7 @@ test('reserve track shortfall', async t => {
 test('reserve burn IST, with snapshot', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
 
   const {
     zoe,
@@ -270,7 +270,7 @@ test('reserve burn IST, with snapshot', async t => {
 test('storage keys', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
 
   const { reserve } = await setupReserveServices(t, electorateTerms, timer);
 
