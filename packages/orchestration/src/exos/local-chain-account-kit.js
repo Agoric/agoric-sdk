@@ -19,7 +19,6 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService, TimerBrand} from '@agoric/time';
- * @import {TimestampHelper} from '../utils/time.js';
  */
 
 // partial until #8879

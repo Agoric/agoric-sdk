@@ -35,6 +35,7 @@ import {
   maxClockSkew,
   tryDecodeResponse,
 } from '../utils/cosmos.js';
+import { dateInSeconds } from '../utils/time.js';
 
 /**
  * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
@@ -384,9 +385,8 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
           );
           trace('undelegate response', response);
           const { completionTime } = response;
-          const endTime = BigInt(completionTime.getTime() / 1000);
 
-          await E(timer).wakeAt(endTime + maxClockSkew);
+          await E(timer).wakeAt(dateInSeconds(completionTime) + maxClockSkew);
         },
       },
     },
