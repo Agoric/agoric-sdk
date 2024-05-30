@@ -72,7 +72,11 @@ const nolog = (..._args) => {};
  * @returns {ZoeManualTimer}
  */
 
-const buildZoeManualTimer = (log = nolog, startValue = 0n, options = {}) => {
+export const buildZoeManualTimer = (
+  log = nolog,
+  startValue = 0n,
+  options = {},
+) => {
   const { timeStep = 1n, eventLoopIteration, ...buildOptions } = options;
   const optSuffix = msg => (msg ? `: ${msg}` : '');
   const callbacks = {
@@ -127,4 +131,5 @@ const buildZoeManualTimer = (log = nolog, startValue = 0n, options = {}) => {
 };
 harden(buildZoeManualTimer);
 
+// Default export is for backwards compatibility
 export default buildZoeManualTimer;

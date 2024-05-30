@@ -8,7 +8,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
@@ -97,7 +97,7 @@ const defaultParamValues = debt =>
  *   rates: any;
  *   run: IssuerKit & AmountUtils;
  *   stableInitialLiquidity: Amount<'nat'>;
- *   timer: ReturnType<typeof buildManualTimer>;
+ *   timer: ReturnType<typeof buildZoeManualTimer>;
  *   zoe: ZoeService;
  * }} DriverContext
  */
@@ -211,7 +211,7 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {Amount} priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 

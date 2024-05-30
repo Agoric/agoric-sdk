@@ -14,7 +14,7 @@ import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 
@@ -67,7 +67,7 @@ export const setupBootstrap = async (t, optTimer) => {
 
   await produceDiagnostics(space);
 
-  const timer = optTimer || buildManualTimer(t.log);
+  const timer = optTimer || buildZoeManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeFakeBoard());

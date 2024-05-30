@@ -1,5 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import {
   makeTimestampHelper,
@@ -8,7 +8,7 @@ import {
 } from '../../src/utils/time.js';
 
 test('makeTimestampHelper - getCurrentTimestamp', async t => {
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const timerBrand = timer.getTimerBrand();
   t.is(timer.getCurrentTimestamp().absValue, 0n, 'current time is 0n');
 

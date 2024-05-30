@@ -6,7 +6,7 @@ import { zip } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { TimeMath } from '@agoric/time';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
 import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
@@ -64,7 +64,7 @@ const makeTestSpace = async (log, bundleCache) => {
   const space = psmVatRoot.getPromiseSpace();
   await eventLoopIteration();
 
-  const timer = buildManualTimer(log);
+  const timer = buildZoeManualTimer(log);
   space.produce.chainTimerService.resolve(timer);
 
   /** @type {import('@agoric/inter-protocol/src/proposals/price-feed-proposal.js').PriceFeedOptions} */

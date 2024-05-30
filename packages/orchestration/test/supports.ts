@@ -5,7 +5,7 @@ import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
@@ -38,7 +38,7 @@ export const commonSetup = async t => {
     bankManager,
     system: localchainBridge,
   });
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
     sequence: false,

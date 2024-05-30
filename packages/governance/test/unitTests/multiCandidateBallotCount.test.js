@@ -6,7 +6,7 @@ import {
 } from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import {
   ChoiceMethod,
@@ -32,7 +32,7 @@ const MUTTON = harden({ text: 'Mutton' });
 const GOAT = harden({ text: 'Goat' });
 
 const FAKE_CLOSING_RULE = {
-  timer: buildManualTimer(console.log),
+  timer: buildZoeManualTimer(console.log),
   deadline: 3n,
 };
 

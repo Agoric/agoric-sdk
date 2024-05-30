@@ -5,7 +5,7 @@ import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
@@ -31,7 +31,7 @@ const charterRoot = './src/econCommitteeCharter.js'; // package relative
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsmBootstrap = async (
-  timer = buildManualTimer(console.log),
+  timer = buildZoeManualTimer(console.log),
   farZoeKit,
 ) => {
   const { zoe: wrappedZoe, feeMintAccessP } = await (farZoeKit ||
@@ -71,7 +71,7 @@ export const setupPsmBootstrap = async (
 export const setupPsm = async (
   t,
   electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
-  timer = buildManualTimer(t.log),
+  timer = buildZoeManualTimer(t.log),
   farZoeKit,
 ) => {
   const knut = withAmountUtils(makeIssuerKit('KNUT'));

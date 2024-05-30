@@ -1,6 +1,6 @@
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -280,7 +280,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     'zcf',
   );
   const installations = await installContracts(zoe, cb);
-  const timer = buildManualTimer(log);
+  const timer = buildZoeManualTimer(log);
   const voterCreator = E(vats.voter).build(zoe);
   const firstElectorateTerms = {
     committeeName: 'TwentyCommittee',

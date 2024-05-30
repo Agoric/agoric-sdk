@@ -4,7 +4,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { setupPsm } from './setupPsm.js';
@@ -16,7 +16,7 @@ test.before(async t => {
 
 test('psm block offers w/Governance', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const timer = buildZoeManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { knut, zoe, psm, committeeCreator, governor, installs } =
     await setupPsm(t, electorateTerms, timer);
@@ -59,7 +59,7 @@ test('psm block offers w/Governance', async t => {
 
 test('psm block offers w/charter', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const timer = buildZoeManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { knut, zoe, psm, committeeCreator, econCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
@@ -114,7 +114,7 @@ test('psm block offers w/charter', async t => {
 
 test('psm block offers w/charter via invitationMakers', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const timer = buildZoeManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { knut, zoe, psm, committeeCreator, econCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
@@ -168,7 +168,7 @@ test('psm block offers w/charter via invitationMakers', async t => {
 
 test('replace electorate of Economic Committee', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
-  const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
+  const timer = buildZoeManualTimer(t.log, 0n, { eventLoopIteration });
 
   const { zoe, governor, installs } = await setupPsm(t, electorateTerms, timer);
 

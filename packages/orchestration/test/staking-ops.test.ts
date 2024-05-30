@@ -10,7 +10,7 @@ import {
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
@@ -187,7 +187,7 @@ const makeScenario = () => {
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
-  const timer = buildManualTimer(undefined, time.parse(startTime), {
+  const timer = buildZoeManualTimer(undefined, time.parse(startTime), {
     timeStep: TICK,
     eventLoopIteration,
   });

@@ -12,7 +12,7 @@ import {
 } from '@agoric/notifier/tools/testSupports.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
@@ -44,7 +44,7 @@ const makeContext = async () => {
     const mockStorageRoot = makeMockChainStorageRoot();
     const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
 
-    const manualTimer = buildManualTimer(() => {});
+    const manualTimer = buildZoeManualTimer(() => {});
     const timerBrand = manualTimer.getTimerBrand();
     const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
 

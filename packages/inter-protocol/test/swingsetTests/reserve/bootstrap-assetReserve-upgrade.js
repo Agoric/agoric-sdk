@@ -7,7 +7,7 @@ import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -22,7 +22,7 @@ const moola = withAmountUtils(makeIssuerKit('moola'));
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('assetReserveUpgradeTest');
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
-  const timer = buildManualTimer();
+  const timer = buildZoeManualTimer();
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();

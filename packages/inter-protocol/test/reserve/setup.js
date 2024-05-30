@@ -1,4 +1,4 @@
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -72,7 +72,7 @@ const setupReserveBootstrap = async (t, timer, farZoeKit) => {
 export const setupReserveServices = async (
   t,
   electorateTerms,
-  timer = buildManualTimer(t.log),
+  timer = buildZoeManualTimer(t.log),
 ) => {
   const farZoeKit = await setUpZoeForTest({ feeIssuerConfig });
   const { feeMintAccessP, zoe } = farZoeKit;

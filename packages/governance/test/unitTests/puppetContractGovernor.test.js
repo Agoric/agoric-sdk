@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -38,7 +38,7 @@ const governedTerms = {
 
 test('multiple params bad change', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -65,7 +65,7 @@ test('multiple params bad change', async t => {
 
 test('change a param', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, getFakeInvitation } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -125,7 +125,7 @@ test('change a param', async t => {
 
 test('set offer Filter directly', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -142,7 +142,7 @@ test('set offer Filter directly', async t => {
 
 test('call API directly', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -166,7 +166,7 @@ test('call API directly', async t => {
 test('add issuerKeywordRecord', async t => {
   const zoe = await makeZoeForTest();
   const issuerKit = makeIssuerKit('Food', AssetKind.COPY_BAG);
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),

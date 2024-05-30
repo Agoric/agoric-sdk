@@ -9,7 +9,7 @@ import { mustMatch } from '@agoric/store';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -28,7 +28,7 @@ const secondGive = anchor.units(3);
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');
-  const timer = buildManualTimer();
+  const timer = buildZoeManualTimer();
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
 
   const { promise: committeeCreator, ...ccPK } = makePromiseKit();
