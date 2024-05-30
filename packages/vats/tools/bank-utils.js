@@ -22,11 +22,11 @@ export const makeFakeBankKit = issuerKits => {
   const purses = makeScalarMapStore();
 
   // XXX setup purses without publishing
-  issuerKits.forEach(kit => issuers.init(kit.brand, kit.issuer));
-  issuerKits.forEach(kit => {
+  for (const kit of issuerKits) {
     assert(kit.issuer);
+    issuers.init(kit.brand, kit.issuer);
     purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());
-  });
+  }
 
   /**
    * @type {SubscriptionRecord<

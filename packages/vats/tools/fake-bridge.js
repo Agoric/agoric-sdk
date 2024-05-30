@@ -5,7 +5,8 @@ import { makeWhen } from '@agoric/vow/src/when.js';
 import { Nat } from '@endo/nat';
 
 /**
- * @import {MsgDelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {MsgDelegateResponse, MsgUndelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
  */
@@ -189,7 +190,13 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
                 };
               }
               case '/cosmos.staking.v1beta1.MsgDelegate': {
-                return /** @type {MsgDelegateResponse} */ {};
+                return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
+              }
+              case '/cosmos.staking.v1beta1.MsgUndelegate': {
+                // @ts-expect-error XXX JsonSafe doesn't handle Date
+                return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
+                  completionTime: new Date().toJSON(),
+                });
               }
               // returns one empty object per message unless specified
               default:

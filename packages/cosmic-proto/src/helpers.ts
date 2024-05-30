@@ -10,6 +10,8 @@ import type {
 import type {
   MsgDelegate,
   MsgDelegateResponse,
+  MsgUndelegate,
+  MsgUndelegateResponse,
 } from './codegen/cosmos/staking/v1beta1/tx.js';
 import type { Any } from './codegen/google/protobuf/any.js';
 import {
@@ -33,6 +35,8 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
   '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
+  '/cosmos.staking.v1beta1.MsgUndelegate': MsgUndelegate;
+  '/cosmos.staking.v1beta1.MsgUndelegateResponse': MsgUndelegateResponse;
   '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
   '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
 };
@@ -43,6 +47,7 @@ type ResponseMap = {
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': '/cosmos.bank.v1beta1.QueryAllBalancesResponse';
   '/cosmos.staking.v1beta1.MsgDelegate': '/cosmos.staking.v1beta1.MsgDelegateResponse';
   '/ibc.applications.transfer.v1.MsgTransfer': '/ibc.applications.transfer.v1.MsgTransferResponse';
+  '/cosmos.staking.v1beta1.MsgUndelegate': '/cosmos.staking.v1beta1.MsgUndelegateResponse';
 };
 
 /**
