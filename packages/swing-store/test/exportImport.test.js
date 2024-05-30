@@ -220,15 +220,16 @@ async function testExportImport(
     await ssOut.hostStorage.commit();
   }
 
+  // the exporter may be broken (the swingstore may be incomplete), but that is
+  // signaled during `getArtifactNames()`, not during construction (which must
+  // finish quickly, without scanning the whole DB)
+  const exporter = makeSwingStoreExporter(dbDir, { artifactMode: exportMode });
+
   const incomplete = 'incomplete archival transcript: 3 vs 12';
-  function doExport() {
-    return makeSwingStoreExporter(dbDir, { artifactMode: exportMode });
-  }
   if (failureMode === 'export') {
-    await t.throws(doExport, { message: incomplete });
+    await t.throws(() => exporter.getArtifactNames(), { message: incomplete });
     return;
   }
-  const exporter = doExport();
 
   const exportData = [];
   for await (const elem of exporter.getExportData()) {
