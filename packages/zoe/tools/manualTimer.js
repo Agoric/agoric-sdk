@@ -118,15 +118,10 @@ export const buildZoeManualTimer = (
     }
   };
 
-  const setWakeup = (when, handler, cancelToken) => {
-    return timerService.setWakeup(when, handler, cancelToken);
-  };
-
   return Far('ManualTimer', {
     ...bindAllMethods(timerService),
     tick,
     tickN,
-    setWakeup,
   });
 };
 harden(buildZoeManualTimer);
