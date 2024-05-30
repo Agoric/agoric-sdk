@@ -14,6 +14,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { Fail, q } from '@agoric/assert';
 import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
@@ -193,6 +194,9 @@ export const initiateSwingStoreExport = (
     abortIfStopped();
     startedKit.resolve();
     log?.(`Starting DB export at block height ${savedBlockHeight}`);
+    // Let the `started` event be sent before proceeding with blocking processing:
+    // `getArtifactNames` may block the agent for a while.
+    await waitUntilQuiescent();
 
     /** @type {StateSyncManifest} */
     const manifest = {
