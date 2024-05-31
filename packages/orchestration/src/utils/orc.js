@@ -19,8 +19,10 @@ export const orcUtils = {
   },
   /**
    * SwapExact or SwapMaxSlippage, with optional AfterAction
-   * @param { (SwapExact | SwapMaxSlippage) &
-  (AfterAction | Record<string, never>)} _args
+   *
+   * @param {(SwapExact | SwapMaxSlippage) &
+   *   (AfterAction | Record<string, never>)} _args
+   *
    * @returns {TransferMsg}
    */
   makeOsmosisSwap(_args) {

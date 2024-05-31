@@ -13,10 +13,10 @@ import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
 
 const trace = makeTracer('StakeAtom');
 /**
- * @import { Baggage } from '@agoric/vat-data';
- * @import { IBCConnectionID } from '@agoric/vats';
- * @import { TimerService } from '@agoric/time';
- * @import { ICQConnection, OrchestrationService } from '../types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {TimerService} from '@agoric/time';
+ * @import {ICQConnection, OrchestrationService} from '../types.js';
  */
 
 export const meta = harden({
@@ -31,20 +31,19 @@ export const privateArgsShape = meta.privateArgsShape;
 
 /**
  * @typedef {{
- *  hostConnectionId: IBCConnectionID;
- *  controllerConnectionId: IBCConnectionID;
- *  bondDenom: string;
+ *   hostConnectionId: IBCConnectionID;
+ *   controllerConnectionId: IBCConnectionID;
+ *   bondDenom: string;
  * }} StakeAtomTerms
  */
 
 /**
- *
  * @param {ZCF<StakeAtomTerms>} zcf
  * @param {{
- *  orchestration: OrchestrationService;
- *  storageNode: StorageNode;
- *  marshaller: Marshaller;
- *  timer: TimerService;
+ *   orchestration: OrchestrationService;
+ *   storageNode: StorageNode;
+ *   marshaller: Marshaller;
+ *   timer: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage
  */

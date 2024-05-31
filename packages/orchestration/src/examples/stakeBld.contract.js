@@ -19,7 +19,6 @@ import { prepareMockChainInfo } from '../utils/mockChainInfo.js';
 const trace = makeTracer('StakeBld');
 
 /**
- *
  * @param {ZCF} zcf
  * @param {{
  *   localchain: import('@agoric/vats/src/localchain.js').LocalChain;
@@ -28,7 +27,7 @@ const trace = makeTracer('StakeBld');
  *   timerService: TimerService;
  *   timerBrand: TimerBrand;
  * }} privateArgs
- * @param {import("@agoric/vat-data").Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const BLD = zcf.getTerms().brands.In;

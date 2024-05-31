@@ -13,19 +13,19 @@ import {
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
- * @import { Zone } from '@agoric/base-zone';
- * @import { Connection, Port } from '@agoric/network';
- * @import { Remote } from '@agoric/vow';
- * @import { AnyJson } from '@agoric/cosmic-proto';
- * @import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
- * @import { LocalIbcAddress, RemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
- * @import { ChainAddress } from '../types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Connection, Port} from '@agoric/network';
+ * @import {Remote} from '@agoric/vow';
+ * @import {AnyJson} from '@agoric/cosmic-proto';
+ * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {ChainAddress} from '../types.js';
  */
 
 const { Fail } = assert;
 const trace = makeTracer('ChainAccountKit');
 
-/** @typedef {'UNPARSABLE_CHAIN_ADDRESS'}  UnparsableChainAddress */
+/** @typedef {'UNPARSABLE_CHAIN_ADDRESS'} UnparsableChainAddress */
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const ChainAccountI = M.interface('ChainAccount', {
@@ -103,10 +103,13 @@ export const prepareChainAccountKit = zone =>
           throw new Error('not yet implemented');
         },
         /**
-         * Submit a transaction on behalf of the remote account for execution on the remote chain.
+         * Submit a transaction on behalf of the remote account for execution on
+         * the remote chain.
+         *
          * @param {AnyJson[]} msgs
          * @param {Omit<TxBody, 'messages'>} [opts]
-         * @returns {Promise<string>} - base64 encoded bytes string. Can be decoded using the corresponding `Msg*Response` object.
+         * @returns {Promise<string>} - base64 encoded bytes string. Can be
+         *   decoded using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
          */
         executeEncodedTx(msgs, opts) {
@@ -135,6 +138,7 @@ export const prepareChainAccountKit = zone =>
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account
+         *
          * @param {Brand} brand
          */
         async getPurse(brand) {

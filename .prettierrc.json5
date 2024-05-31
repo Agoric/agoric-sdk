@@ -6,6 +6,7 @@
       files: [
         'packages/ERTP/**/*.js',
         'packages/inter-protocol/**/*.js',
+        'packages/orchestration/**/*.js',
         'packages/store/**/*.js',
         'packages/vats/**/*.js',
       ],

@@ -11,11 +11,11 @@ import {
 } from './utils/address.js';
 
 /**
- * @import { Zone } from '@agoric/base-zone';
+ * @import {Zone} from '@agoric/base-zone';
  * @import {Remote} from '@agoric/internal';
- * @import { Port, PortAllocator } from '@agoric/network';
- * @import { IBCConnectionID } from '@agoric/vats';
- * @import { ICQConnection, IcaAccount, ICQConnectionKit } from './types.js';
+ * @import {Port, PortAllocator} from '@agoric/network';
+ * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {ICQConnection, IcaAccount, ICQConnectionKit} from './types.js';
  */
 
 const { Fail, bare } = assert;
@@ -37,7 +37,7 @@ const { Fail, bare } = assert;
  */
 
 /**
- * @typedef {MapStore<IBCConnectionID,ICQConnectionKit>} ICQConnectionStore
+ * @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore
  */
 
 /**
@@ -59,7 +59,7 @@ export const OrchestrationI = M.interface('Orchestration', {
   ),
 });
 
-/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore } } OrchestrationState */
+/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore }} OrchestrationState */
 
 /**
  * @param {Zone} zone
@@ -109,10 +109,9 @@ const prepareOrchestrationKit = (
       },
       public: {
         /**
-         * @param {IBCConnectionID} hostConnectionId
-         *   the counterparty connection_id
-         * @param {IBCConnectionID} controllerConnectionId
-         *   self connection_id
+         * @param {IBCConnectionID} hostConnectionId the counterparty
+         *   connection_id
+         * @param {IBCConnectionID} controllerConnectionId self connection_id
          * @returns {Promise<IcaAccount>}
          */
         async makeAccount(hostConnectionId, controllerConnectionId) {
