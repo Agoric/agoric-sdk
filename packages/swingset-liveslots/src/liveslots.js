@@ -1,11 +1,7 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import {
-  Remotable,
-  passStyleOf,
-  getInterfaceOf,
-  makeMarshal,
-} from '@endo/marshal';
+import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
+import { passStyleOf } from '@endo/pass-style';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -1337,6 +1333,7 @@ function build(
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
+      passStyleOf,
     },
   });
 
