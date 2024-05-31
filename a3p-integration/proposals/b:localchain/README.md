@@ -1,5 +1,6 @@
-CoreEvalProposal to install vat-localchain
+# CoreEvalProposal to install vat-localchain
 
-The `submission` for the proposal is automatically generated during `yarn build`
-in `a3p-integration` using the code in agoric-sdk through
-`script/generate-a3p-submissions.sh`. and `script/generate-a3p-submission.sh`
+The `submission` for this proposal is automatically generated during `yarn build`
+in [a3p-integration](../..) using the code in agoric-sdk through
+[build-all-submissions.sh](../../scripts/build-all-submissions.sh) and
+[build-submission.sh](../../scripts/build-submission.sh).
