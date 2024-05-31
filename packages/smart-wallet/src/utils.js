@@ -29,7 +29,10 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
    */
   const invitationsReceived = new Map();
 
-  /** @param {import('./smartWallet.js').UpdateRecord | {}} updateRecord newer than previous */
+  /**
+   * @param {import('./smartWallet.js').UpdateRecord | {}} updateRecord newer
+   *   than previous
+   */
   const update = updateRecord => {
     if (!('updated' in updateRecord)) {
       return;
@@ -133,7 +136,8 @@ export const assertHasData = async follower => {
 /**
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord} [subscribers]
+ * @param {import('./types.js').PublicSubscribers
+ *   | import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

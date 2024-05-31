@@ -8,6 +8,7 @@
         'packages/inter-protocol/**/*.js',
         'packages/orchestration/**/*.js',
         'packages/store/**/*.js',
+        'packages/smart-wallet/**/*.js',
         'packages/vats/**/*.js',
       ],
       options: {

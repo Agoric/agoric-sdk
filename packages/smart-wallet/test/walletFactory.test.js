@@ -11,7 +11,11 @@ import {
   topicPath,
 } from './supports.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const mockAddress1 = 'mockAddress1';
