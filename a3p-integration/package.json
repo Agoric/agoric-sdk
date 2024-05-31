@@ -1,7 +1,7 @@
 {
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-upgrade-14"
+    "fromTag": "latest"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
