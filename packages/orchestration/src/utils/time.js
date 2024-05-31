@@ -16,11 +16,13 @@ export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 export function makeTimestampHelper(timer, timerBrand) {
   return harden({
     /**
-     * Takes the current time from ChainTimerService and adds a relative
-     * time to determine a timeout timestamp in nanoseconds.
-     * Useful for {@link MsgTransfer.timeoutTimestamp}.
+     * Takes the current time from ChainTimerService and adds a relative time to
+     * determine a timeout timestamp in nanoseconds. Useful for
+     * {@link MsgTransfer.timeoutTimestamp}.
+     *
      * @param {RelativeTimeRecord} [relativeTime] defaults to 5 minutes
-     * @returns {Promise<bigint>} Timeout timestamp in absolute nanoseconds since unix epoch
+     * @returns {Promise<bigint>} Timeout timestamp in absolute nanoseconds
+     *   since unix epoch
      */
     async getTimeoutTimestampNS(relativeTime) {
       const currentTime = await E(timer).getCurrentTimestamp();
@@ -38,8 +40,8 @@ export function makeTimestampHelper(timer, timerBrand) {
 /** @typedef {Awaited<ReturnType<typeof makeTimestampHelper>>} TimestampHelper */
 
 /**
- * Convert a Date from a Cosmos message, which has millisecond precision,
- * to a BigInt for number of seconds since epoch, for use in a timer.
+ * Convert a Date from a Cosmos message, which has millisecond precision, to a
+ * BigInt for number of seconds since epoch, for use in a timer.
  *
  * @param {Date} date
  * @returns {bigint}

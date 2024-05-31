@@ -2,13 +2,21 @@ import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
-/** @import { StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract' */
+/** @import {StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract' */
 
 const trace = makeTracer('StartStakeAtom', true);
 
 /**
- * @param {BootstrapPowers & { installation: {consume: {stakeAtom: Installation<import('../examples/stakeAtom.contract.js').start>}}}} powers
- * @param {{options: StakeAtomTerms }} options
+ * @param {BootstrapPowers & {
+ *   installation: {
+ *     consume: {
+ *       stakeAtom: Installation<
+ *         import('../examples/stakeAtom.contract.js').start
+ *       >;
+ *     };
+ *   };
+ * }} powers
+ * @param {{ options: StakeAtomTerms }} options
  */
 export const startStakeAtom = async (
   {

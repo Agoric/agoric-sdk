@@ -6,7 +6,6 @@ import { decodeBase64, encodeBase64 } from '@endo/base64';
 export const maxClockSkew = 10n * 60n;
 
 /**
- *
  * @param {unknown} response
  * @param {(msg: any) => Any} toProtoMsg
  * @returns {string}
@@ -22,7 +21,7 @@ export const encodeTxResponse = (response, toProtoMsg) => {
 /**
  * @template T
  * @param {string} ackStr
- * @param {(p: {typeUrl: string, value: Uint8Array}) => T} fromProtoMsg
+ * @param {(p: { typeUrl: string; value: Uint8Array }) => T} fromProtoMsg
  */
 export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
   try {

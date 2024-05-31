@@ -13,9 +13,9 @@ import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/conne
  */
 
 /**
- * currently keyed by ChainId, as this is what we have
- * available in ChainAddress to determine the correct IBCChannelID's
- * for a .transfer() msg.
+ * currently keyed by ChainId, as this is what we have available in ChainAddress
+ * to determine the correct IBCChannelID's for a .transfer() msg.
+ *
  * @type {Record<string, IBCConnectionInfo>}
  */
 const connectionEntries = harden({

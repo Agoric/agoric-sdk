@@ -110,7 +110,6 @@ export const prepareLocalChainAccountKit = (
     {
       invitationMakers: {
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
@@ -153,7 +152,6 @@ export const prepareLocalChainAccountKit = (
           });
         },
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
@@ -178,7 +176,6 @@ export const prepareLocalChainAccountKit = (
           return result;
         },
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          * @returns {Promise<void>}
@@ -209,8 +206,9 @@ export const prepareLocalChainAccountKit = (
           );
         },
         /**
-         * Starting a transfer revokes the account holder. The associated updater
-         * will get a special notification that the account is being transferred.
+         * Starting a transfer revokes the account holder. The associated
+         * updater will get a special notification that the account is being
+         * transferred.
          */
         /** @type {LocalChainAccount['deposit']} */
         async deposit(payment, optAmountShape) {
@@ -232,9 +230,12 @@ export const prepareLocalChainAccountKit = (
           return NonNullish(this.state.address, 'Chain address not available.');
         },
         /**
-         * @param {AmountArg} amount an ERTP {@link Amount} or a {@link DenomAmount}
+         * @param {AmountArg} amount an ERTP {@link Amount} or a
+         *   {@link DenomAmount}
          * @param {ChainAddress} destination
-         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or timeoutTimestamp are not supplied, a default timeoutTimestamp will be set for 5 minutes in the future
+         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
+         *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
+         *   be set for 5 minutes in the future
          * @returns {Promise<void>}
          */
         async transfer(amount, destination, opts) {
