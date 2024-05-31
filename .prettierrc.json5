@@ -4,10 +4,10 @@
     {
       // opt into prettier-plugin-jsdoc
       files: [
-        'packages/ERTP/**/*.{js,ts}',
-        'packages/inter-protocol/**/*.{js,ts}',
-        'packages/store/**/*.{js,ts}',
-        'packages/vats/**/*.{js,ts}',
+        'packages/ERTP/**/*.js',
+        'packages/inter-protocol/**/*.js',
+        'packages/store/**/*.js',
+        'packages/vats/**/*.js',
       ],
       options: {
         plugins: ['prettier-plugin-jsdoc'],
