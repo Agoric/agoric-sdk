@@ -1,46 +1,41 @@
 // @ts-check
 
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/far';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
 
 import {
   parse,
-  unparse,
-  prepareEchoConnectionKit,
-  prepareRouter,
   prepareLoopbackProtocolHandler,
   prepareNetworkProtocol,
-  preparePortAllocator,
+  prepareRouter,
+  unparse,
 } from '../src/index.js';
-import { prepareProtocolHandler } from './fakes.js';
+import { fakeNetworkEchoStuff } from './fakes.js';
 
 /**
+ * @import {Zone} from '@agoric/zone';
  * @import {ListenHandler} from '../src/types.js';
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
-const provideBaggage = key => {
+/**
+ * @param {string} key
+ * @returns {Zone}
+ */
+const provideDurableZone = key => {
   const root = fakeVomKit.cm.provideBaggage();
   const zone = makeDurableZone(root);
-  return zone.mapStore(`${key} baggage`);
+  return zone.subZone(key);
 };
 
 test('handled protocol', async t => {
-  const zone = makeDurableZone(provideBaggage('network-handled-protocol'));
-  const powers = prepareVowTools(zone);
-  const { makeVowKit, when } = powers;
-  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
-  const makeProtocolHandler = prepareProtocolHandler(
-    zone,
-    makeEchoConnectionHandler,
-    powers,
-  );
-  const protocol = makeNetworkProtocol(makeProtocolHandler());
+  const zone = provideDurableZone('network-handled-protocol');
+
+  const { protocol, makeVowKit, when } = fakeNetworkEchoStuff(zone);
 
   const port = await when(protocol.bindPort('/ibc/*/ordered'));
 
@@ -82,21 +77,8 @@ test('handled protocol', async t => {
 });
 
 test('verify port allocation', async t => {
-  const zone = makeDurableZone(
-    provideBaggage('network-verify-port-allocation'),
-  );
-  const powers = prepareVowTools(zone);
-  const { when } = powers;
-  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
-  const makeProtocolHandler = prepareProtocolHandler(
-    zone,
-    makeEchoConnectionHandler,
-    powers,
-  );
-  const protocol = makeNetworkProtocol(makeProtocolHandler());
-  const makePortAllocator = preparePortAllocator(zone, powers);
-  const portAllocator = makePortAllocator({ protocol });
+  const zone = provideDurableZone('network-verify-port-allocation');
+  const { portAllocator, when } = fakeNetworkEchoStuff(zone);
 
   const ibcPort = await when(portAllocator.allocateCustomIBCPort());
   t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
@@ -140,17 +122,10 @@ test('verify port allocation', async t => {
 });
 
 test('protocol connection listen', async t => {
-  const zone = makeDurableZone(provideBaggage('network-protocol-connection'));
-  const powers = prepareVowTools(zone);
-  const { makeVowKit, when } = powers;
-  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
-  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
-  const makeProtocolHandler = prepareProtocolHandler(
-    zone,
-    makeEchoConnectionHandler,
-    powers,
-  );
-  const protocol = makeNetworkProtocol(makeProtocolHandler());
+  const zone = provideDurableZone('network-protocol-connection');
+
+  const { makeEchoConnectionHandler, protocol, makeVowKit, when } =
+    fakeNetworkEchoStuff(zone);
 
   const port = await when(
     protocol.bindPort('/net/ordered/ordered/some-portname'),
@@ -282,7 +257,8 @@ test('protocol connection listen', async t => {
 });
 
 test('loopback protocol', async t => {
-  const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
+  const zone = provideDurableZone('network-loopback-protocol');
+
   const powers = prepareVowTools(zone);
   const { makeVowKit, when } = powers;
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
@@ -363,7 +339,7 @@ test('loopback protocol', async t => {
 });
 
 test('routing', async t => {
-  const zone = makeDurableZone(provideBaggage('network-loopback-protocol'));
+  const zone = provideDurableZone('network-loopback-protocol');
   const makeRouter = prepareRouter(zone);
   const router = makeRouter();
   t.deepEqual(router.getRoutes('/if/local'), [], 'get routes matches none');

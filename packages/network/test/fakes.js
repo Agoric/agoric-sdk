@@ -1,7 +1,16 @@
 // @ts-check
+import { prepareVowTools } from '@agoric/vow';
 import assert from 'node:assert/strict';
+import {
+  prepareEchoConnectionKit,
+  prepareNetworkProtocol,
+  preparePortAllocator,
+} from '../src/index.js';
 
-/** @import {ListenHandler, MakeEchoConnectionKit} from '../src/index.js'; */
+/**
+ * @import {Zone} from '@agoric/zone';
+ * @import {ListenHandler, MakeEchoConnectionKit} from '../src/index.js';
+ */
 
 // eslint-disable-next-line no-constant-condition
 const log = false ? console.log : () => {};
@@ -88,4 +97,33 @@ export const prepareProtocolHandler = (
   );
 
   return makeProtocolHandler;
+};
+
+/**
+ *
+ * @param {Zone} zone
+ */
+export const fakeNetworkEchoStuff = zone => {
+  const powers = prepareVowTools(zone);
+  const { makeVowKit, when } = powers;
+
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
+  const makeProtocolHandler = prepareProtocolHandler(
+    zone,
+    makeEchoConnectionHandler,
+    powers,
+  );
+  const protocol = makeNetworkProtocol(makeProtocolHandler());
+
+  const makePortAllocator = preparePortAllocator(zone, powers);
+  const portAllocator = makePortAllocator({ protocol });
+
+  return {
+    makeEchoConnectionHandler,
+    makeVowKit,
+    portAllocator,
+    protocol,
+    when,
+  };
 };
