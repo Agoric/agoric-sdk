@@ -363,12 +363,6 @@ harden(buildZoe);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
- *   <<<<<<< HEAD
- *
- * @typedef {ERef<
- *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
- *   ======= > > > > > > > ab5c460791 (fixup separate typedefs)
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
