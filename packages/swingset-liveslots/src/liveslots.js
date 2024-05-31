@@ -2,6 +2,7 @@
 import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
 import { passStyleOf } from '@endo/pass-style';
+import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -1319,7 +1320,7 @@ function build(
     syscall.dropImports([slot]);
   }
 
-  const vatGlobals = harden({
+  const vatGlobals = {
     VatData: {
       defineKind: vom.defineKind,
       defineKindMulti: vom.defineKindMulti,
@@ -1333,9 +1334,10 @@ function build(
       makeScalarBigWeakMapStore: collectionManager.makeScalarBigWeakMapStore,
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
-      passStyleOf,
     },
-  });
+    [PassStyleOfEndowmentSymbol]: passStyleOf,
+  };
+  harden(vatGlobals);
 
   const inescapableGlobalProperties = harden({
     WeakMap: vom.VirtualObjectAwareWeakMap,

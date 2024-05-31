@@ -97,7 +97,8 @@ async function testForExpectedGlobals(t, workerType) {
     'VatData.makeScalarBigWeakMapStore: function',
     'VatData.makeScalarBigSetStore: function',
     'VatData.makeScalarBigWeakSetStore: function',
-    'VatData.passStyleOf: function',
+    'global has passStyleOf: true',
+    'global passStyleOf is special: true',
   ]);
 }
 
