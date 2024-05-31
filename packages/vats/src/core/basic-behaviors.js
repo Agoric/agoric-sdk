@@ -50,6 +50,7 @@ const bootMsgEx = {
  */
 
 /** @typedef {MapStore<string, CreateVatResults>} VatStore */
+/** @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat */
 
 /**
  * @param {BootstrapPowers & {}} powers
@@ -331,8 +332,6 @@ harden(produceStartGovernedUpgradable);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
  * }} powers
- *
- * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
@@ -364,10 +363,6 @@ harden(buildZoe);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
- *
- * @typedef {ERef<
- *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
