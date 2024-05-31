@@ -42,6 +42,8 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
+/** @import {OfferId, OfferStatus} from './offers.js'; */
+
 const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SmrtWlt');
@@ -112,12 +114,12 @@ const trace = makeTracer('SmrtWlt');
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
  *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[OfferId, import('./offers.js').OfferStatus]>,
+ *   liveOffers: Array<[OfferId, OfferStatus]>,
  * }} CurrentWalletRecord
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ * @typedef {{ updated: 'offerStatus', status: OfferStatus }
  *   | { updated: 'balance'; currentAmount: Amount }
  *   | { updated: 'walletAction'; status: { error: string } }
  * } UpdateRecord Record of an update to the state of this wallet.
@@ -177,7 +179,7 @@ const trace = makeTracer('SmrtWlt');
  *   purseBalances: MapStore<Purse, Amount>,
  *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
  *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<OfferId, import('./offers.js').OfferStatus>,
+ *   liveOffers: MapStore<OfferId, OfferStatus>,
  *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
  *   liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>,
  * }>} ImmutableState
@@ -706,7 +708,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           void helper.watchPurse(invitationPurse);
         },
 
-        /** @param {import('./offers.js').OfferStatus} offerStatus */
+        /** @param {OfferStatus} offerStatus */
         updateStatus(offerStatus) {
           const { state, facets } = this;
           facets.helper.logWalletInfo('offerStatus', offerStatus);
