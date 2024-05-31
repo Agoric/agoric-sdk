@@ -86,6 +86,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  *
  * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)} VatLoader2
  *
+ *
  * @typedef {{
  *   network: ERef<NetworkVat>;
  *   ibc: ERef<IBCVat>;
