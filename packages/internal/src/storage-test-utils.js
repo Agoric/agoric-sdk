@@ -15,11 +15,13 @@ const { Fail } = assert;
 const trace = makeTracer('StorTU', false);
 
 /**
- * A map corresponding with a total function such that `get(key)`
- * is assumed to always succeed.
+ * A map corresponding with a total function such that `get(key)` is assumed to
+ * always succeed.
  *
  * @template K, V
- * @typedef {{[k in Exclude<keyof Map<K, V>, 'get'>]: Map<K, V>[k]} & {get: (key: K) => V}} TotalMap
+ * @typedef {{ [k in Exclude<keyof Map<K, V>, 'get'>]: Map<K, V>[k] } & {
+ *   get: (key: K) => V;
+ * }} TotalMap
  */
 /**
  * @template T
@@ -27,8 +29,8 @@ const trace = makeTracer('StorTU', false);
  */
 
 /**
- * A convertSlotToVal function that produces basic Remotables. Assumes
- * that all slots are Remotables (i.e. none are Promises).
+ * A convertSlotToVal function that produces basic Remotables. Assumes that all
+ * slots are Remotables (i.e. none are Promises).
  *
  * @param {string} _slotId
  * @param {string} iface
@@ -37,34 +39,34 @@ export const slotToRemotable = (_slotId, iface = 'Remotable') =>
   Remotable(iface);
 
 /**
- * A basic marshaller whose unserializer produces Remotables. It can
- * only serialize plain data, not Remotables.
+ * A basic marshaller whose unserializer produces Remotables. It can only
+ * serialize plain data, not Remotables.
  */
 export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
   serializeBodyFormat: 'smallcaps',
 });
 
 /**
- * A deserializer which produces slot strings instead of Remotables,
- * so if `a = Far('iface')`, and serializing `{ a }` into `capData`
- * assigned it slot `board123`, then `slotStringUnserialize(capData)`
- * would produce `{ a: 'board123' }`.
+ * A deserializer which produces slot strings instead of Remotables, so if `a =
+ * Far('iface')`, and serializing `{ a }` into `capData` assigned it slot
+ * `board123`, then `slotStringUnserialize(capData)` would produce `{ a:
+ * 'board123' }`.
  *
  * This may be useful for display purposes.
  *
  * Limitations:
- *  * it cannot handle Symbols (registered or well-known)
- *  * it can handle BigInts, but serialized data that contains a
- *     particular unusual string will be unserialized into a BigInt by
- *     mistake
- *  * it cannot handle Promises, NaN, +/- Infinity, undefined, or
- *    other non-JSONable JavaScript values
+ *
+ * - it cannot handle Symbols (registered or well-known)
+ * - it can handle BigInts, but serialized data that contains a particular unusual
+ *   string will be unserialized into a BigInt by mistake
+ * - it cannot handle Promises, NaN, +/- Infinity, undefined, or other
+ *   non-JSONable JavaScript values
  */
 const makeSlotStringUnserialize = () => {
-  /** @type { (slot: string, iface: string) => any } */
+  /** @type {(slot: string, iface: string) => any} */
   const identitySlotToValFn = (slot, _) => Far('unk', { toJSON: () => slot });
   const { fromCapData } = makeMarshal(undefined, identitySlotToValFn);
-  /** @type { (capData: any) => any } */
+  /** @type {(capData: any) => any} */
   const unserialize = capData =>
     JSON.parse(
       JSON.stringify(fromCapData(capData), (_, val) => {
@@ -89,9 +91,9 @@ const makeSlotStringUnserialize = () => {
 export const slotStringUnserialize = makeSlotStringUnserialize();
 
 /**
- * For testing, creates a chainStorage root node over an in-memory map
- * and exposes both the map and the sequence of received messages.
- * The `sequence` option defaults to true.
+ * For testing, creates a chainStorage root node over an in-memory map and
+ * exposes both the map and the sequence of received messages. The `sequence`
+ * option defaults to true.
  *
  * @param {string} rootPath
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
@@ -205,15 +207,19 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   };
 };
 harden(makeFakeStorageKit);
-/** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */
+/** @typedef {ReturnType<typeof makeFakeStorageKit>} FakeStorageKit */
 
 /**
  * @typedef MockChainStorageRootMethods
- * @property {(path: string, marshaller?: Marshaller, index?: number) => unknown} getBody
- * Defaults to deserializing slot references into plain Remotable
- * objects having the specified interface name (as from `Far(iface)`),
- * but can accept a different marshaller for producing Remotables
- * that e.g. embed the slot string in their iface name.
+ * @property {(
+ *   path: string,
+ *   marshaller?: Marshaller,
+ *   index?: number,
+ * ) => unknown} getBody
+ *   Defaults to deserializing slot references into plain Remotable objects having
+ *   the specified interface name (as from `Far(iface)`), but can accept a
+ *   different marshaller for producing Remotables that e.g. embed the slot
+ *   string in their iface name.
  * @property {() => string[]} keys
  */
 /** @typedef {StorageNode & MockChainStorageRootMethods} MockChainStorageRoot */
@@ -224,10 +230,10 @@ export const makeMockChainStorageRoot = () => {
   return Far('mockChainStorage', {
     ...bindAllMethods(rootNode),
     /**
-     * Defaults to deserializing slot references into plain Remotable
-     * objects having the specified interface name (as from `Far(iface)`),
-     * but can accept a different marshaller for producing Remotables
-     * that e.g. embed the slot string in their iface name.
+     * Defaults to deserializing slot references into plain Remotable objects
+     * having the specified interface name (as from `Far(iface)`), but can
+     * accept a different marshaller for producing Remotables that e.g. embed
+     * the slot string in their iface name.
      *
      * @param {string} path
      * @param {Marshaller} marshaller
@@ -236,7 +242,11 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller, index = -1) => {
       data.size || Fail`no data in storage`;
-      /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>['fromCapData']} */
+      /**
+       * @type {ReturnType<
+       *   typeof import('@endo/marshal').makeMarshal
+       * >['fromCapData']}
+       */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(data, path, fromCapData, index);

@@ -44,7 +44,7 @@ test('makeMeasureSeconds', async t => {
 });
 
 test('assertAllDefined', t => {
-  /** @type {{ s: string, m: string | undefined, u?: string}} */
+  /** @type {{ s: string; m: string | undefined; u?: string }} */
   const obj = { s: 'defined', m: 'maybe' };
   assertAllDefined(obj);
   // typecheck
@@ -118,7 +118,7 @@ test('forever', async t => {
 /**
  * @template T
  * @param {AsyncIterable<T>} stream
- * @param {Array<T>} output
+ * @param {T[]} output
  * @param {number} [maxItems]
  */
 const consumeStreamInto = async (stream, output, maxItems) => {
