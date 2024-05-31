@@ -111,12 +111,6 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
-  if (artifactMode !== 'debug') {
-    // throw early if this DB will not be able to create all the desired artifacts
-    const internal = { snapStore, bundleStore, transcriptStore };
-    assertComplete(internal, artifactMode);
-  }
-
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -165,14 +159,24 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     yield* bundleStore.getExportRecords();
   }
 
-  /**
-   * @returns {AsyncIterableIterator<string>}
-   * @yields {string}
-   */
-  async function* getArtifactNames() {
+  /** @yields {string} */
+  async function* artifactNames() {
     yield* snapStore.getArtifactNames(artifactMode);
     yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
+  }
+  harden(artifactNames);
+
+  /**
+   * @returns {AsyncIterableIterator<string>}
+   */
+  function getArtifactNames() {
+    if (artifactMode !== 'debug') {
+      // throw if this DB will not be able to yield all the desired artifacts
+      const internal = { snapStore, bundleStore, transcriptStore };
+      assertComplete(internal, artifactMode);
+    }
+    return artifactNames();
   }
 
   /**
