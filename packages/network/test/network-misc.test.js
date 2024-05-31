@@ -16,99 +16,11 @@ import {
   prepareNetworkProtocol,
   preparePortAllocator,
 } from '../src/index.js';
+import { prepareProtocolHandler } from './fakes.js';
 
 /**
  * @import {ListenHandler} from '../src/types.js';
  */
-
-// eslint-disable-next-line no-constant-condition
-const log = false ? console.log : () => {};
-
-/**
- * @param {import('@agoric/zone').Zone} zone
- * @param {import('ava').ExecutionContext} t
- * @param {ReturnType<prepareEchoConnectionKit>} makeEchoConnectionHandler
- * @param {*} powers
- */
-const prepareProtocolHandler = (
-  zone,
-  t,
-  makeEchoConnectionHandler,
-  { when },
-) => {
-  const makeProtocolHandler = zone.exoClass(
-    'ProtocolHandler',
-    undefined,
-    () => {
-      return {
-        /** @type {ListenHandler | undefined } */
-        l: undefined,
-        lp: undefined,
-        nonce: 0,
-      };
-    },
-    {
-      async onInstantiate(_port, _localAddr, _remote, _protocol) {
-        return '';
-      },
-      async onCreate(_protocol, _impl) {
-        log('created', _protocol, _impl);
-      },
-      async generatePortID() {
-        this.state.nonce += 1;
-        return `port-${this.state.nonce}`;
-      },
-      async onBind(port, localAddr) {
-        t.assert(port, `port is supplied to onBind`);
-        t.assert(localAddr, `local address is supplied to onBind`);
-      },
-      async onConnect(port, localAddr, remoteAddr) {
-        t.assert(port, `port is tracked in onConnect`);
-        t.assert(localAddr, `local address is supplied to onConnect`);
-        t.assert(remoteAddr, `remote address is supplied to onConnect`);
-        if (!this.state.lp) {
-          return { handler: makeEchoConnectionHandler().handler };
-        }
-        assert(this.state.l);
-        const ch = await when(
-          this.state.l.onAccept(
-            this.state.lp,
-            localAddr,
-            remoteAddr,
-            this.state.l,
-          ),
-        );
-        return { localAddr, handler: ch };
-      },
-      async onListen(port, localAddr, listenHandler) {
-        t.assert(port, `port is tracked in onListen`);
-        t.assert(localAddr, `local address is supplied to onListen`);
-        t.assert(listenHandler, `listen handler is tracked in onListen`);
-        this.state.lp = port;
-        this.state.l = listenHandler;
-        log('listening', port.getLocalAddress(), listenHandler);
-      },
-      async onListenRemove(port, localAddr, listenHandler) {
-        t.assert(port, `port is tracked in onListen`);
-        t.assert(localAddr, `local address is supplied to onListen`);
-        t.is(
-          listenHandler,
-          this.state.lp && this.state.l,
-          `listenHandler is tracked in onListenRemove`,
-        );
-        this.state.lp = undefined;
-        log('port done listening', port.getLocalAddress());
-      },
-      async onRevoke(port, localAddr) {
-        t.assert(port, `port is tracked in onRevoke`);
-        t.assert(localAddr, `local address is supplied to onRevoke`);
-        log('port done revoking', port.getLocalAddress());
-      },
-    },
-  );
-
-  return makeProtocolHandler;
-};
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
@@ -125,7 +37,6 @@ test('handled protocol', async t => {
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
     zone,
-    t,
     makeEchoConnectionHandler,
     powers,
   );
@@ -180,7 +91,6 @@ test('verify port allocation', async t => {
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
     zone,
-    t,
     makeEchoConnectionHandler,
     powers,
   );
@@ -237,7 +147,6 @@ test('protocol connection listen', async t => {
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
     zone,
-    t,
     makeEchoConnectionHandler,
     powers,
   );
