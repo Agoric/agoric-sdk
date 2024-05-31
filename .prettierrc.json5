@@ -12,7 +12,6 @@
       options: {
         plugins: ['prettier-plugin-jsdoc'],
         jsdocAddDefaultToDescription: false,
-        jsdocParser: true,
         jsdocCapitalizeDescription: false,
         tsdoc: true,
       },
