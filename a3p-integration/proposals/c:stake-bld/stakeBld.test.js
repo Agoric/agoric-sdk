@@ -70,6 +70,6 @@ test('basic', async t => {
   t.is(postDelegation.length, 2, 'new delegation now');
   t.like(postDelegation[1], {
     balance: { amount: '10', denom: 'ubld' },
-    // omit 'delegation' because it has 'delgatorAddress' which is different every test run
+    // omit 'delegation' because it has 'delegatorAddress' which is different every test run
   });
 });
