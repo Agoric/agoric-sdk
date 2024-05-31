@@ -29,7 +29,7 @@ test('start', async t => {
     {},
     {
       localchain: bootstrap.localchain,
-      orchestrationService: null as any,
+      orchestrationService: bootstrap.orchestration,
       storageNode: bootstrap.storage.rootNode,
       timerService: bootstrap.timer,
       zone: bootstrap.rootZone,

@@ -243,10 +243,12 @@ export const prepareLocalChainAccountKit = (
           // TODO #9211 lookup denom from brand
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
+          destination.chainId in agoricChainInfo.connections ||
+            Fail`Unknown chain ${destination.chainId}`;
+
           // TODO #8879 chainInfo and #9063 well-known chains
-          const { transferChannel } = agoricChainInfo.connections.get(
-            destination.chainId,
-          );
+          const { transferChannel } =
+            agoricChainInfo.connections[destination.chainId];
 
           await null;
           // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`

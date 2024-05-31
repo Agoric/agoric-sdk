@@ -1,6 +1,7 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
@@ -42,9 +43,9 @@ export const makeNatAmountShape = (brand, min) =>
  * @param {ZCF} zcf
  * @param {{
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService> | null;
+ *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
- *   timerService: Remote<TimerService> | null;
+ *   timerService: Remote<TimerService>;
  *   zone: Zone;
  * }} privateArgs
  */

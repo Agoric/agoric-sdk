@@ -63,16 +63,14 @@ export const prepareChainAccountKit = zone =>
      * @param {string} requestedRemoteAddress
      */
     (port, requestedRemoteAddress) =>
-      /** @type {State} */ (
-        harden({
-          port,
-          connection: undefined,
-          requestedRemoteAddress,
-          remoteAddress: undefined,
-          chainAddress: undefined,
-          localAddress: undefined,
-        })
-      ),
+      /** @type {State} */ ({
+        port,
+        connection: undefined,
+        requestedRemoteAddress,
+        remoteAddress: undefined,
+        chainAddress: undefined,
+        localAddress: undefined,
+      }),
     {
       account: {
         /**

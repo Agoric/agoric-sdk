@@ -9,6 +9,8 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
+import { fakeNetworkEchoStuff } from './network-fakes.js';
+import { prepareOrchestrationTools } from '../src/service.js';
 
 export { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
 
@@ -43,12 +45,21 @@ export const commonSetup = async t => {
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
     sequence: false,
   });
+
+  const { makeOrchestrationKit } = prepareOrchestrationTools(
+    rootZone.subZone('orchestration'),
+  );
+
+  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
+  const { public: orchestration } = makeOrchestrationKit({ portAllocator });
+
   return {
     bootstrap: {
       bankManager,
       timer,
       localchain,
       marshaller,
+      orchestration,
       rootZone,
       storage,
     },

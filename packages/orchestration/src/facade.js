@@ -8,7 +8,7 @@ import { E } from '@endo/far';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, KnownChains, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
 /** @type {any} */
@@ -54,78 +54,36 @@ const makeLocalChainFacade = localchain => {
 /**
  * @template {string} C
  * @param {C} name
- * @returns {Chain}
+ * @param {object} io
+ * @param {Remote<OrchestrationService>} io.orchestration
+ * @returns {Chain<C>}
  */
-const makeRemoteChainFacade = name => {
-  const chainInfo = {
+const makeRemoteChainFacade = (name, { orchestration }) => {
+  const chainInfo = /** @type {CosmosChainInfo} */ ({
     allegedName: name,
     chainId: 'fixme',
-  };
+    connections: {},
+    icaEnabled: true,
+    icqEnabled: true,
+    pfmEnabled: true,
+    ibcHooksEnabled: true,
+    allowedMessages: [],
+    allowedQueries: [],
+  });
   return {
-    /** @returns {Promise<ChainInfo>} */
-    getChainInfo: async () => anyVal,
+    getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<C>>} */
     makeAccount: async () => {
       console.log('makeAccount for', name);
-      // @ts-expect-error fake yet
-      return {
-        delegate(validator, amount) {
-          console.log('delegate got', validator, amount);
-          return Promise.resolve();
-        },
-        deposit(payment) {
-          console.log('deposit got', payment);
-          return Promise.resolve();
-        },
-        getAddress() {
-          return {
-            chainId: chainInfo.chainId,
-            address: 'an address!',
-            addressEncoding: 'bech32',
-          };
-        },
-        getBalance(_denom) {
-          console.error('getBalance not yet implemented');
-          return Promise.resolve({ denom: 'fixme', value: 0n });
-        },
-        getBalances() {
-          throw new Error('not yet implemented');
-        },
-        getDelegations() {
-          console.error('getDelegations not yet implemented');
-          return [];
-        },
-        getRedelegations() {
-          throw new Error('not yet implemented');
-        },
-        getUnbondingDelegations() {
-          throw new Error('not yet implemented');
-        },
-        liquidStake() {
-          console.error('liquidStake not yet implemented');
-          return 0n;
-        },
-        send(toAccount, amount) {
-          console.log('send got', toAccount, amount);
-          return Promise.resolve();
-        },
-        transfer(amount, destination, memo) {
-          console.log('transfer got', amount, destination, memo);
-          return Promise.resolve();
-        },
-        transferSteps(amount, msg) {
-          console.log('transferSteps got', amount, msg);
-          return Promise.resolve();
-        },
-        undelegate(validator, amount) {
-          console.log('undelegate got', validator, amount);
-          return Promise.resolve();
-        },
-        withdraw(amount) {
-          console.log('withdraw got', amount);
-          return Promise.resolve();
-        },
-      };
+
+      // FIXME look up real values
+      const hostConnectionId = 'connection-1';
+      const controllerConnectionId = 'connection-2';
+
+      return E(orchestration).makeAccount(
+        hostConnectionId,
+        controllerConnectionId,
+      );
     },
   };
 };
@@ -133,10 +91,10 @@ const makeRemoteChainFacade = name => {
 /**
  * @param {{
  *   zone: Zone;
- *   timerService: Remote<TimerService> | null;
+ *   timerService: Remote<TimerService>;
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
- *   orchestrationService: Remote<OrchestrationService> | null;
+ *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
  * }} powers
  */
@@ -172,7 +130,10 @@ export const makeOrchestrationFacade = ({
           if (name === 'agoric') {
             return makeLocalChainFacade(localchain);
           }
-          return makeRemoteChainFacade(name);
+
+          return makeRemoteChainFacade(name, {
+            orchestration: orchestrationService,
+          });
         },
         makeLocalAccount() {
           return E(localchain).makeAccount();

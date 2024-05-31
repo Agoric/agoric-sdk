@@ -67,7 +67,7 @@ export type IBCConnectionInfo = {
  */
 export type CosmosChainInfo = {
   chainId: string;
-  connections: MapStore<string, IBCConnectionInfo>; // chainId or wellKnownName
+  connections: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
   icaEnabled: boolean;
   icqEnabled: boolean;
   pfmEnabled: boolean;
