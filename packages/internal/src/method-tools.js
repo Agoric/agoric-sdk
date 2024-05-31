@@ -2,7 +2,8 @@
 import { isObject } from '@endo/marshal';
 
 /**
- * @file method-tools use dynamic property lookup, which is not Jessie-compatible
+ * @file method-tools use dynamic property lookup, which is not
+ *   Jessie-compatible
  */
 
 const { getPrototypeOf, create, fromEntries, getOwnPropertyDescriptors } =
@@ -12,8 +13,8 @@ const { ownKeys, apply } = Reflect;
 /**
  * Prioritize symbols as earlier than strings.
  *
- * @param {string|symbol} a
- * @param {string|symbol} b
+ * @param {string | symbol} a
+ * @param {string | symbol} b
  * @returns {-1 | 0 | 1}
  */
 const compareStringified = (a, b) => {
@@ -77,22 +78,22 @@ export const getStringMethodNames = val =>
 /**
  * TODO This function exists only to ease the
  * https://github.com/Agoric/agoric-sdk/pull/5970 transition, from all methods
- * being own properties to methods being inherited from a common prototype.
- * This transition breaks two patterns used in prior code: autobinding,
- * and enumerating methods by enumerating own properties. For both, the
- * preferred repairs are
- *    * autobinding: Replace, for example,
- *      `foo(obj.method)` with `foo(arg => `obj.method(arg))`. IOW, stop relying
- *      on expressions like `obj.method` to extract a method still bound to the
- *      state of `obj` because, for virtual and durable objects,
- *      they no longer will after #5970.
- *    * method enumeration: Replace, for example
- *      `Reflect.ownKeys(obj)` with `getMethodNames(obj)`.
+ * being own properties to methods being inherited from a common prototype. This
+ * transition breaks two patterns used in prior code: autobinding, and
+ * enumerating methods by enumerating own properties. For both, the preferred
+ * repairs are
+ *
+ * - autobinding: Replace, for example, `foo(obj.method)` with `foo(arg =>
+ *   `obj.method(arg))`. IOW, stop relying on expressions like `obj.method`to
+ *   extract a method still bound to the state of`obj` because, for virtual and
+ *   durable objects, they no longer will after #5970.
+ * - method enumeration: Replace, for example `Reflect.ownKeys(obj)` with
+ *   `getMethodNames(obj)`.
  *
  * Once all problematic cases have been converted in this manner, this
  * `bindAllMethods` hack can and TODO should be deleted. However, we currently
- * have no reliable static way to track down and fix all autobinding sites.
- * For those objects that have not yet been fully repaired by the above two
+ * have no reliable static way to track down and fix all autobinding sites. For
+ * those objects that have not yet been fully repaired by the above two
  * techniques, `bindAllMethods` creates an object that acts much like the
  * pre-#5970 objects, with all their methods as instance-bound own properties.
  * It does this by making a new object inheriting from `obj` where the new

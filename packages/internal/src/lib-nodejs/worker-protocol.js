@@ -6,11 +6,10 @@ import { Transform } from 'stream';
 
 export function arrayEncoderStream() {
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
-   * @param {*} object
+   * @param {any} object
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(object, encoding, callback) {
     if (!Array.isArray(object)) {
@@ -30,11 +29,10 @@ export function arrayEncoderStream() {
 
 export function arrayDecoderStream() {
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} buf
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(buf, encoding, callback) {
     let err;
