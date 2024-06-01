@@ -107,8 +107,8 @@ test('forward to fake zoe', async t => {
       },
       target: {
         sourceSpec: new URL('vat-target.js', import.meta.url).pathname,
-        // creationOptions: { managerType: 'xs-worker' },
-        creationOptions: { managerType: 'local' },
+        // avoid V8's GC nondeterminism, only needed on the target vat
+        creationOptions: { managerType: 'xs-worker' },
       },
       zoe: {
         sourceSpec: new URL('vat-fake-zoe.js', import.meta.url).pathname,
