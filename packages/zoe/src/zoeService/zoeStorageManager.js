@@ -453,6 +453,10 @@ export const makeZoeStorageManager = (
         installBundleID(bundleID, bundleLabel) {
           return installationStorage.installBundleID(bundleID, bundleLabel);
         },
+        // TODO(8686) Remove this method once empty payments have been dropped from escrow
+        provideLocalPurse(issuer, brand) {
+          return escrowStorage.provideLocalPurse(issuer, brand);
+        },
       },
       makeOfferAccess: {
         getAssetKindByBrand: issuerStorage.getAssetKindByBrand,

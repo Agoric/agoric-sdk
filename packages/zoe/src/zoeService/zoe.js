@@ -19,6 +19,9 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
+import { AmountMath, BrandShape, IssuerShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
+import { getCopySetKeys } from '@endo/patterns';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -31,6 +34,8 @@ import { ZoeServiceI } from '../typeGuards.js';
 /** @import {Baggage} from '@agoric/vat-data' */
 
 const { Fail } = assert;
+
+const trace = makeTracer('ZOE');
 
 /**
  * Create a durable instance of Zoe.
@@ -177,6 +182,9 @@ const makeDurableZoeKit = ({
 
   const ZoeConfigI = M.interface('ZoeConfigFacet', {
     updateZcfBundleId: M.call(M.string()).returns(),
+    releaseEmptyPayments: M.call(IssuerShape, BrandShape, M.number()).returns(
+      M.promise(),
+    ),
   });
 
   const zoeConfigFacet = prepareExo(zoeBaggage, 'ZoeConfigFacet', ZoeConfigI, {
@@ -192,6 +200,31 @@ const makeDurableZoeKit = ({
           throw e;
         },
       );
+    },
+    // TODO(8686) Remove this method once empty payments have been dropped
+    async releaseEmptyPayments(issuer, brand, max) {
+      const purse = dataAccess.provideLocalPurse(issuer, brand);
+      const recoverySet = purse.getRecoverySet();
+
+      await null;
+      trace(`${brand} recoverySet has ${recoverySet.payload.length} payments`);
+      let count = 0;
+      for (const p of getCopySetKeys(recoverySet)) {
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        const amount = await issuer.getAmountOf(p);
+        if (AmountMath.isEmpty(amount, brand)) {
+          purse.deposit(p);
+          count += 1;
+          if (count >= max) {
+            trace(`released ${count} empty payments`);
+            return;
+          }
+        }
+      }
+      const finalCount = dataAccess
+        .provideLocalPurse(issuer, brand)
+        .getRecoverySet().payload.length;
+      trace(`released ${count} empty payments. ${finalCount} remain`);
     },
   });
 
