@@ -3,11 +3,14 @@ import { Fail, b, q } from '@endo/errors';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';
 
-const { fromEntries, defineProperties } = Object;
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ */
+
+const { fromEntries, defineProperties, assign } = Object;
 
 /**
  * @param {LogStore} log
@@ -201,6 +204,58 @@ export const makeReplayMembrane = (
     }
   };
 
+  // //////////////// Eventual Send ////////////////////////////////////////////
+
+  const guestHandler = harden({
+    applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
+      if (optVerb === undefined) {
+        throw Fail`guest eventual call not yet supported: ${guestTarget}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+      } else {
+        throw Fail`guest eventual send not yet supported: ${guestTarget}.${b(optVerb)}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+      }
+    },
+    applyFunction(guestTarget, guestArgs, guestReturnedP) {
+      return guestHandler.applyMethod(
+        guestTarget,
+        undefined,
+        guestArgs,
+        guestReturnedP,
+      );
+    },
+    get(guestTarget, prop, guestReturnedP) {
+      throw Fail`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
+    },
+  });
+
+  const makeGuestPresence = (iface, methodEntries) => {
+    let guestPresence;
+    void new HandledPromise((_res, _rej, resolveWithPresence) => {
+      guestPresence = resolveWithPresence(guestHandler);
+    }); // no unfulfilledHandler
+    if (typeof guestPresence !== 'object') {
+      throw Fail`presence expected to be object ${guestPresence}`;
+    }
+    assign(guestPresence, fromEntries(methodEntries));
+    const result = Remotable(iface, undefined, guestPresence);
+    result === guestPresence ||
+      Fail`Remotable expected to make presence in place: ${guestPresence} vs ${result}`;
+    return result;
+  };
+
+  /**
+   * @returns {PromiseKit<any>}
+   */
+  const makeGuestPromiseKit = () => {
+    let resolve;
+    let reject;
+    const promise = new HandledPromise((res, rej, _resPres) => {
+      resolve = res;
+      reject = rej;
+    }, guestHandler);
+    // @ts-expect-error TS cannot infer that it is a PromiseKit
+    return harden({ promise, resolve, reject });
+  };
+
   // //////////////// Converters ///////////////////////////////////////////////
 
   const makeGuestForHostRemotable = hRem => {
@@ -246,9 +301,7 @@ export const makeReplayMembrane = (
         name,
         makeGuestMethod(name),
       ]);
-      // TODO in order to support E *well*,
-      // use HandledPromise to make gRem a remote presence for hRem
-      gRem = Remotable(guestIface, undefined, fromEntries(guestMethods));
+      gRem = makeGuestPresence(guestIface, guestMethods);
     }
     // See note at the top of the function to see why clearing the `hRem`
     // variable is safe, and what invariant the above code needs to maintain so
@@ -258,11 +311,21 @@ export const makeReplayMembrane = (
   };
   harden(makeGuestForHostRemotable);
 
-  const makeGuestForHostVow = hVow => {
-    // TODO in order to support E *well*,
-    // use HandledPromise to make `promise` a handled promise for hVow
-    const { promise, resolve, reject } = makePromiseKit();
-    guestPromiseMap.set(promise, harden({ resolve, reject }));
+  /**
+   * @param {Vow} hVow
+   * @param {Promise} [promiseKey]
+   *   If provided, use this promise as the key in the guestPromiseMap
+   *   rather than the returned promise. This only happens when the
+   *   promiseKey ends up forwarded to the returned promise anyway, so
+   *   associating it with this resolve/reject pair is not incorrect.
+   *   It is needed when `promiseKey` is also entered into the bijection
+   *   paired with hVow.
+   * @returns {Promise}
+   */
+  const makeGuestForHostVow = (hVow, promiseKey = undefined) => {
+    const { promise, resolve, reject } = makeGuestPromiseKit();
+    promiseKey ??= promise;
+    guestPromiseMap.set(promiseKey, harden({ resolve, reject }));
 
     watchWake(hVow);
 
@@ -286,7 +349,7 @@ export const makeReplayMembrane = (
       hVow,
       async hostFulfillment => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doFulfill', hVow, hostFulfillment]);
           log.pushEntry(entry);
@@ -301,7 +364,7 @@ export const makeReplayMembrane = (
       },
       async hostReason => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doReject', hVow, hostReason]);
           log.pushEntry(entry);
