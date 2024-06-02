@@ -12,6 +12,7 @@ import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js'
 import * as farExports from '@endo/far';
 import { E, Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
+import { computeSourceMapLocation } from '@endo/import-bundle/source-map-node.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
@@ -47,7 +48,10 @@ export const bridgeCoreEval = async allPowers => {
   /** @param {BundleCap} bundleCap */
   const evaluateBundleCap = async bundleCap => {
     const bundle = await D(bundleCap).getBundle();
-    const imported = await importBundle(bundle, { endowments });
+    const imported = await importBundle(bundle, {
+      endowments,
+      sourceMapLocation,
+    });
     return imported;
   };
   harden(evaluateBundleCap);
