@@ -26,21 +26,21 @@ import (
 // OnTimeoutPacket)—intercepted by vtransfer.
 //
 // 4. ICS4Wrapper packet initiation methods (SendPacket, WriteAcknowledgement
-// and GetAppVersion)—delegated to vibc.
+// and GetAppVersion)—delegated by vtransfer to vibc.
 
 var _ porttypes.Middleware = (*IBCMiddleware)(nil)
 
 // IBCMiddleware implements the ICS26 callbacks for the middleware given the
-// keeper and the underlying ibc-go application.
+// underlying IBCModule and the keeper.
 type IBCMiddleware struct {
-	app             porttypes.IBCModule
+	ibcModule       porttypes.IBCModule
 	vtransferKeeper keeper.Keeper
 }
 
-// NewIBCMiddleware creates a new IBCMiddleware given the keeper and underlying application
-func NewIBCMiddleware(app porttypes.IBCModule, vtransferKeeper keeper.Keeper) IBCMiddleware {
+// NewIBCMiddleware creates a new IBCMiddleware given the underlying IBCModule and keeper.
+func NewIBCMiddleware(ibcModule porttypes.IBCModule, vtransferKeeper keeper.Keeper) IBCMiddleware {
 	return IBCMiddleware{
-		app:             app,
+		ibcModule:       ibcModule,
 		vtransferKeeper: vtransferKeeper,
 	}
 }
@@ -48,7 +48,7 @@ func NewIBCMiddleware(app porttypes.IBCModule, vtransferKeeper keeper.Keeper) IB
 ///////////////////////////////////
 // The following channel handshake events are all directly forwarded to the
 // wrapped IBCModule.  They are not performed in the context of a packet, and so
-// do not need to be intercepted by the async VM.
+// do not need to be intercepted.
 
 // OnChanCloseInit implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenInit(
@@ -61,7 +61,7 @@ func (im IBCMiddleware) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return im.app.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
+	return im.ibcModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
 }
 
 // OnChanOpenTry implements the IBCModule interface.
@@ -75,7 +75,7 @@ func (im IBCMiddleware) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	return im.app.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
+	return im.ibcModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
 }
 
 // OnChanOpenAck implements the IBCModule interface.
@@ -86,7 +86,7 @@ func (im IBCMiddleware) OnChanOpenAck(
 	counterpartyChannelID string,
 	counterpartyVersion string,
 ) error {
-	return im.app.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
+	return im.ibcModule.OnChanOpenAck(ctx, portID, channelID, counterpartyChannelID, counterpartyVersion)
 }
 
 // OnChanOpenConfirm implements the IBCModule interface.
@@ -95,7 +95,7 @@ func (im IBCMiddleware) OnChanOpenConfirm(
 	portID,
 	channelID string,
 ) error {
-	return im.app.OnChanOpenConfirm(ctx, portID, channelID)
+	return im.ibcModule.OnChanOpenConfirm(ctx, portID, channelID)
 }
 
 // OnChanCloseInit implements the IBCModule interface.
@@ -104,7 +104,7 @@ func (im IBCMiddleware) OnChanCloseInit(
 	portID,
 	channelID string,
 ) error {
-	return im.app.OnChanCloseInit(ctx, portID, channelID)
+	return im.ibcModule.OnChanCloseInit(ctx, portID, channelID)
 }
 
 // OnChanCloseConfirm implements the IBCModule interface.
@@ -113,7 +113,7 @@ func (im IBCMiddleware) OnChanCloseConfirm(
 	portID,
 	channelID string,
 ) error {
-	return im.app.OnChanCloseConfirm(ctx, portID, channelID)
+	return im.ibcModule.OnChanCloseConfirm(ctx, portID, channelID)
 }
 
 ///////////////////////////////////
@@ -128,7 +128,7 @@ func (im IBCMiddleware) OnRecvPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
-	return im.vtransferKeeper.InterceptOnRecvPacket(ctx, im.app, packet, relayer)
+	return im.vtransferKeeper.InterceptOnRecvPacket(ctx, im.ibcModule, packet, relayer)
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface.
@@ -138,7 +138,7 @@ func (im IBCMiddleware) OnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.app, packet, acknowledgement, relayer)
+	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.ibcModule, packet, acknowledgement, relayer)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
@@ -147,10 +147,13 @@ func (im IBCMiddleware) OnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	return im.vtransferKeeper.InterceptOnTimeoutPacket(ctx, im.app, packet, relayer)
+	return im.vtransferKeeper.InterceptOnTimeoutPacket(ctx, im.ibcModule, packet, relayer)
 }
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface.
+// Unlike implementations of IBCModule interface methods, implementations of
+// ICS4 Wrapper interface methods do not pass along the wrapped IBC module
+// because they support packet initiation.
 func (im IBCMiddleware) WriteAcknowledgement(
 	ctx sdk.Context,
 	chanCap *capabilitytypes.Capability,
