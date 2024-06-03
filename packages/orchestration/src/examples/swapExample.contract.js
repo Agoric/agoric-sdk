@@ -14,6 +14,7 @@ import { orcUtils } from '../utils/orc.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
+ * @import {Baggage} from '@agoric/vat-data'
  * @import {Zone} from '@agoric/zone';
  */
 
@@ -24,7 +25,6 @@ export const meta = {
     orchestrationService: M.or(M.remotable('orchestration'), null),
     storageNode: StorageNodeShape,
     timerService: M.or(TimerServiceShape, null),
-    zone: M.any(),
   },
   upgradability: 'canUpgrade',
 };
@@ -46,13 +46,15 @@ export const makeNatAmountShape = (brand, min) =>
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
- *   zone: Zone;
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { brands } = zcf.getTerms();
 
-  const { localchain, orchestrationService, storageNode, timerService, zone } =
+  const zone = makeDurableZone(baggage);
+
+  const { localchain, orchestrationService, storageNode, timerService } =
     privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({

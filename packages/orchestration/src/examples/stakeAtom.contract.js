@@ -1,6 +1,7 @@
 /**
  * @file Example contract that uses orchestration
  */
+// TODO rename to "stakeIca" or something else that conveys is parameterized nature
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
@@ -20,6 +21,11 @@ const trace = makeTracer('StakeAtom');
  */
 
 export const meta = harden({
+  customTermsShape: {
+    hostConnectionId: M.string(),
+    controllerConnectionId: M.string(),
+    bondDenom: M.string(),
+  },
   privateArgsShape: {
     orchestration: M.remotable('orchestration'),
     storageNode: StorageNodeShape,
@@ -68,7 +74,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       hostConnectionId,
       controllerConnectionId,
     );
-    // #9212 TODO do not fail if host does not have `async-icq` module;
+    // TODO https://github.com/Agoric/agoric-sdk/issues/9326
+    // Should not fail if host does not have `async-icq` module;
     // communicate to OrchestrationAccount that it can't send queries
     const icqConnection = await E(orchestration).provideICQConnection(
       controllerConnectionId,

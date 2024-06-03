@@ -61,14 +61,12 @@ export const prepareICQConnectionKit = zone =>
      * @param {Port} port
      */
     port =>
-      /** @type {ICQConnectionKitState} */ (
-        harden({
-          port,
-          connection: undefined,
-          remoteAddress: undefined,
-          localAddress: undefined,
-        })
-      ),
+      /** @type {ICQConnectionKitState} */ ({
+        port,
+        connection: undefined,
+        remoteAddress: undefined,
+        localAddress: undefined,
+      }),
     {
       connection: {
         getLocalAddress() {

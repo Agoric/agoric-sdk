@@ -30,6 +30,8 @@ const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const ChainAccountI = M.interface('ChainAccount', {
   getAddress: M.call().returns(ChainAddressShape),
+  getBalance: M.callWhen(M.string()).returns(M.any()),
+  getBalances: M.callWhen().returns(M.any()),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -73,14 +75,20 @@ export const prepareChainAccountKit = zone =>
       }),
     {
       account: {
-        /**
-         * @returns {ChainAddress}
-         */
+        /** @returns {ChainAddress} */
         getAddress() {
           return NonNullish(
             this.state.chainAddress,
             'ICA channel creation acknowledgement not yet received.',
           );
+        },
+        getBalance(_denom) {
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+          throw new Error('not yet implemented');
+        },
+        getBalances() {
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+          throw new Error('not yet implemented');
         },
         getLocalAddress() {
           return NonNullish(
@@ -119,9 +127,7 @@ export const prepareChainAccountKit = zone =>
             ack => parseTxPacket(ack),
           );
         },
-        /**
-         * Close the remote account
-         */
+        /** Close the remote account */
         async close() {
           /// XXX what should the behavior be here? and `onClose`?
           // - retrieve assets?
@@ -132,7 +138,9 @@ export const prepareChainAccountKit = zone =>
         },
         async deposit(payment) {
           console.log('deposit got', payment);
-          throw new Error('not yet implemented');
+          console.error(
+            'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
+          );
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account

@@ -1,6 +1,7 @@
 /** @file Orchestration service */
 
 import { E } from '@endo/far';
+import { prepareStakingAccountKit } from './exos/stakingAccountKit.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -34,6 +35,8 @@ const makeLocalChainFacade = localchain => {
         pfmEnabled: true,
       };
     },
+
+    // @ts-expect-error FIXME promise resolution through membrane
     async makeAccount() {
       const account = await E(localchain).makeAccount();
 
@@ -41,6 +44,30 @@ const makeLocalChainFacade = localchain => {
         deposit(payment) {
           console.log('deposit got', payment);
           return E(account).deposit(payment);
+        },
+        async getAddress() {
+          const addressStr = await E(account).getAddress();
+          return {
+            address: addressStr,
+            chainId: 'agoric-3',
+            addressEncoding: 'bech32',
+          };
+        },
+        getBalance(_denom) {
+          // FIXME map denom to Brand
+          const brand = /** @type {any} */ (null);
+          return E(account).getBalance(brand);
+        },
+        getBalances() {
+          throw new Error('not yet implemented');
+        },
+        send(toAccount, amount) {
+          // FIXME implement
+          console.log('send got', toAccount, amount);
+        },
+        transfer(amount, destination, opts) {
+          // FIXME implement
+          console.log('transfer got', amount, destination, opts);
         },
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
@@ -56,9 +83,12 @@ const makeLocalChainFacade = localchain => {
  * @param {C} name
  * @param {object} io
  * @param {Remote<OrchestrationService>} io.orchestration
+ * @param {Remote<TimerService>} io.timer
+ * @param {ZCF} io.zcf
+ * @param {Zone} io.zone
  * @returns {Chain<C>}
  */
-const makeRemoteChainFacade = (name, { orchestration }) => {
+const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
   const chainInfo = /** @type {CosmosChainInfo} */ ({
     allegedName: name,
     chainId: 'fixme',
@@ -70,6 +100,13 @@ const makeRemoteChainFacade = (name, { orchestration }) => {
     allowedMessages: [],
     allowedQueries: [],
   });
+  const makeRecorderKit = () => anyVal;
+  const makeStakingAccountKit = prepareStakingAccountKit(
+    zone.subZone(name),
+    makeRecorderKit,
+    zcf,
+  );
+
   return {
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<C>>} */
@@ -80,10 +117,22 @@ const makeRemoteChainFacade = (name, { orchestration }) => {
       const hostConnectionId = 'connection-1';
       const controllerConnectionId = 'connection-2';
 
-      return E(orchestration).makeAccount(
+      const icaAccount = await E(orchestration).makeAccount(
         hostConnectionId,
         controllerConnectionId,
       );
+
+      const address = await E(icaAccount).getAddress();
+
+      // FIXME look up real values
+      const bondDenom = name;
+      // @ts-expect-error FIXME promise resolution through membrane
+      return makeStakingAccountKit(address, bondDenom, {
+        account: icaAccount,
+        storageNode: anyVal,
+        icqConnection: anyVal,
+        timer,
+      }).holder;
     },
   };
 };
@@ -133,6 +182,9 @@ export const makeOrchestrationFacade = ({
 
           return makeRemoteChainFacade(name, {
             orchestration: orchestrationService,
+            timer: timerService,
+            zcf,
+            zone,
           });
         },
         makeLocalAccount() {

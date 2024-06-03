@@ -16,7 +16,7 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { AmountShape } from '@agoric/ertp';
+import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -38,10 +38,11 @@ import {
 import { dateInSeconds } from '../utils/time.js';
 
 /**
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
  * @import {Zone} from '@agoric/zone';
  */
@@ -61,15 +62,18 @@ const { Fail } = assert;
  *   chainAddress: ChainAddress;
  *   icqConnection: ICQConnection;
  *   bondDenom: string;
- *   timer: TimerService;
+ *   timer: Remote<TimerService>;
  * }} State
  */
 
+/** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
+  getBalances: M.callWhen().optional(M.string()).returns(M.arrayOf(CoinShape)),
   delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
+  deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   redelegate: M.callWhen(
     ChainAddressShape,
     ChainAddressShape,
@@ -138,9 +142,9 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
      * @param {string} bondDenom e.g. 'uatom'
      * @param {object} io
      * @param {IcaAccount} io.account
-     * @param {StorageNode} io.storageNode
+     * @param {Remote<StorageNode>} io.storageNode
      * @param {ICQConnection} io.icqConnection
-     * @param {TimerService} io.timer
+     * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
     (chainAddress, bondDenom, io) => {
@@ -221,9 +225,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
             return this.facets.holder.withdrawReward(validator);
           }, 'WithdrawReward');
         },
-        /**
-         * @param {Delegation[]} delegations
-         */
+        /** @param {Delegation[]} delegations */
         Undelegate(delegations) {
           trace('Undelegate', delegations);
 
@@ -284,6 +286,13 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
           ]);
 
           expect(result, trivialDelegateResponse, 'MsgDelegateResponse');
+        },
+        async deposit(payment) {
+          const { helper } = this.facets;
+          return E(helper.owned()).deposit(payment);
+        },
+        async getBalances() {
+          throw Error('not yet implemented');
         },
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
@@ -361,9 +370,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
           throw assert.error('Not implemented');
         },
 
-        /**
-         * @param {Delegation[]} delegations
-         */
+        /** @param {Delegation[]} delegations */
         async undelegate(delegations) {
           trace('undelegate', delegations);
           const { helper } = this.facets;
