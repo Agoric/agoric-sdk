@@ -404,11 +404,26 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
               }),
             ),
           ]);
-          const { delegationResponses, pagination } =
-            QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
-          if (pagination) {
-            console.error('pagination not implemented', pagination);
-          }
+
+          // TODO https://github.com/Agoric/agoric-sdk/issues/9408
+          // const { delegationResponses, pagination } =
+          //   QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
+          // if (pagination) {
+          //   console.error('pagination not implemented', pagination);
+          // }
+          const delegationResponses = [
+            {
+              delegation: {
+                shares: String(100),
+                delegatorAddress: chainAddress.address,
+                validatorAddress: 'TODO@@@',
+              },
+            },
+          ];
+          console.warn(
+            'working around #9408 with arbitrary delegation query response',
+            delegationResponses,
+          );
           return delegationResponses.map(d => d.delegation);
         },
 
