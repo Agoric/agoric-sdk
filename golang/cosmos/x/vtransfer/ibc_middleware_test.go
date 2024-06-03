@@ -52,7 +52,7 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 type TestingAppMaker func() (ibctesting.TestingApp, map[string]json.RawMessage)
 
 // Each instance has unique IBC genesis state with deterministic
-// client/connection/channel sequence numbers
+// client/connection/channel initial sequence numbers
 // (respectively, X000/X010/X050 where X is the zero-based
 // instance number plus one, such that instance 0 uses
 // 1000/1010/1050, instance 1 uses 2000/2010/2050, etc.).
@@ -118,11 +118,14 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 		}`))
 		var result strings.Builder
 		clientSeq, connectionSeq, channelSeq := computeSequences(instance)
-		t.Execute(&result, map[string]any{
+		err := t.Execute(&result, map[string]any{
 			"nextClientSequence":     clientSeq,
 			"nextConnectionSequence": connectionSeq,
 			"nextChannelSequence":    channelSeq,
 		})
+		if err != nil {
+			panic(err)
+		}
 		genesisState["ibc"] = json.RawMessage(result.String())
 		return appd, genesisState
 	}
@@ -132,6 +135,8 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationTestSuite))
 }
 
+// SetupTest initializes an IntegrationTestSuite with two similar chains, a
+// shared coordinator, and a query client that happens to point at chainA.
 func (s *IntegrationTestSuite) SetupTest() {
 	s.coordinator = ibctesting.NewCoordinator(s.T(), 0)
 
@@ -139,9 +144,8 @@ func (s *IntegrationTestSuite) SetupTest() {
 	for i := 0; i < 2; i++ {
 		ibctesting.DefaultTestingAppInit = SetupAgoricTestingApp(i)
 
-		// create a chain with the temporary coordinator that we'll later override
 		chainID := ibctesting.GetChainID(i)
-		chain := ibctesting.NewTestChain(s.T(), ibctesting.NewCoordinator(s.T(), 0), chainID)
+		chain := ibctesting.NewTestChain(s.T(), s.coordinator, chainID)
 
 		balance := banktypes.Balance{
 			Address: chain.SenderAccount.GetAddress().String(),
@@ -170,7 +174,6 @@ func (s *IntegrationTestSuite) SetupTest() {
 			Time:    s.coordinator.CurrentTime.UTC(),
 		}
 
-		chain.Coordinator = s.coordinator
 		s.coordinator.CommitBlock(chain)
 
 		chains[chainID] = chain
@@ -214,42 +217,31 @@ func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
 	return path
 }
 
-func (s *IntegrationTestSuite) SetupContract() *ibctesting.Path {
-	path := ibctesting.NewPath(s.chainA, s.chainB)
-	_, _, channelASeq := computeSequences(0)
-	_, _, channelBSeq := computeSequences(1)
-	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq)
-	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq)
-	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
-	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
-	path.EndpointA.ChannelConfig.Version = "ics20-1"
-	path.EndpointB.ChannelConfig.Version = "ics20-1"
+func (s *IntegrationTestSuite) assertActionQueue(chain *ibctesting.TestChain, expectedRecords []swingsettypes.InboundQueueRecord) {
+	actualRecords, err := swingsettesting.GetActionQueueRecords(
+		s.T(),
+		chain.GetContext(),
+		s.GetApp(chain).SwingSetKeeper,
+	)
+	s.Require().NoError(err)
 
-	s.coordinator.Setup(path)
-
-	s.coordinator.CommitBlock(s.chainA, s.chainB)
-
-	return path
-}
-
-func (s *IntegrationTestSuite) checkQueue(records []string, expected []swingsettypes.InboundQueueRecord) {
-	exLen := len(expected)
-	recLen := len(records)
+	exLen := len(expectedRecords)
+	recLen := len(actualRecords)
 	maxLen := exLen
 	if recLen > maxLen {
 		maxLen = recLen
 	}
 	for i := 0; i < maxLen; i++ {
 		if i >= recLen {
-			s.Fail("expected record", "%d: %q", i, expected[i])
+			s.Fail("expected record", "%d: %q", i, expectedRecords[i])
 			continue
 		} else if i >= exLen {
-			s.Fail("unexpected record", "%d: %v", i, records[i])
+			s.Fail("unexpected record", "%d: %v", i, actualRecords[i])
 			continue
 		}
-		expi := expected[i]
+		expi := expectedRecords[i]
 		var reci swingsettypes.InboundQueueRecord
-		err := json.Unmarshal([]byte(records[i]), &reci)
+		err := json.Unmarshal([]byte(actualRecords[i]), &reci)
 		s.Require().NoError(err)
 
 		if expi.Context.TxHash == "" {
@@ -262,7 +254,7 @@ func (s *IntegrationTestSuite) checkQueue(records []string, expected []swingsett
 		expbz, err := json.Marshal(expi)
 		s.Require().NoError(err)
 
-		s.Equal(string(expbz), records[i])
+		s.Equal(string(expbz), actualRecords[i])
 	}
 }
 
@@ -310,6 +302,23 @@ func (s *IntegrationTestSuite) TransferFromSourceChain(
 	return packet, nil
 }
 
+func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr sdk.AccAddress, denom, amount string) {
+	app := s.GetApp(chain)
+	tokenAmt, ok := sdk.NewIntFromString(amount)
+	s.Require().True(ok)
+	intAmt, err := strconv.ParseInt(amount, 10, 64)
+	s.Require().NoError(err)
+	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdk.NewInt(intAmt))))
+	err = app.BankKeeper.MintCoins(chain.GetContext(), ibctransfertypes.ModuleName, coins)
+	s.Require().NoError(err)
+	err = app.BankKeeper.SendCoinsFromModuleToAccount(chain.GetContext(), ibctransfertypes.ModuleName, addr, coins)
+	s.Require().NoError(err)
+
+	// Verify success.
+	balances := app.BankKeeper.GetAllBalances(chain.GetContext(), addr)
+	s.Require().Equal(coins[0], balances[1])
+}
+
 // TestTransferFromAgdToAgd relays an IBC transfer initiated from a chain A to a
 // chain B, and relays the chain B's resulting acknowledgement in return. It
 // verifies that the source and destination accounts' bridge targets are called
@@ -335,21 +344,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 		s.RegisterBridgeTarget(s.chainA, transferData.Sender)
 		s.RegisterBridgeTarget(s.chainB, transferData.Receiver)
 
-		tokenAmt, ok := sdk.NewIntFromString(transferData.Amount)
-		s.Require().True(ok)
-
-		// Whale up the sender account with the amount to be transferred.
-		amount, err := strconv.ParseInt(transferData.Amount, 10, 64)
-		s.Require().NoError(err)
-		coins := sdk.NewCoins(sdk.NewCoin(transferData.Denom, tokenAmt.Mul(sdk.NewInt(amount))))
-		err = s.GetApp(s.chainA).BankKeeper.MintCoins(s.chainA.GetContext(), ibctransfertypes.ModuleName, coins)
-		s.Require().NoError(err)
-		err = s.GetApp(s.chainA).BankKeeper.SendCoinsFromModuleToAccount(s.chainA.GetContext(), ibctransfertypes.ModuleName, s.chainA.SenderAccount.GetAddress(), coins)
-		s.Require().NoError(err)
-
-		// Ensure we have the coins we need
-		balances := s.GetApp(s.chainA).BankKeeper.GetAllBalances(s.chainA.GetContext(), s.chainA.SenderAccount.GetAddress())
-		s.Require().Equal(coins[0], balances[1])
+		s.mintToAddress(s.chainA, s.chainA.SenderAccount.GetAddress(), transferData.Denom, transferData.Amount)
 
 		// Initiate the transfer
 		packet, err := s.TransferFromSourceChain(s.chainA, transferData, path.EndpointA, path.EndpointB)
@@ -373,26 +368,14 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 		contractAck := channeltypes.NewResultAcknowledgement([]byte{5})
 
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
+
 		{
-			records, err := swingsettesting.GetActionQueueRecords(
-				s.T(),
-				s.chainA.GetContext(),
-				s.GetApp(s.chainA).SwingSetKeeper,
-			)
-			s.Require().NoError(err)
-			expected := []swingsettypes.InboundQueueRecord{}
-			s.checkQueue(records, expected)
+			expectedRecords := []swingsettypes.InboundQueueRecord{}
+			s.assertActionQueue(s.chainA, expectedRecords)
 		}
 
 		{
-			records, err := swingsettesting.GetActionQueueRecords(
-				s.T(),
-				s.chainB.GetContext(),
-				s.GetApp(s.chainB).SwingSetKeeper,
-			)
-			s.Require().NoError(err)
-
-			expected := []swingsettypes.InboundQueueRecord{
+			expectedRecords := []swingsettypes.InboundQueueRecord{
 				{
 					Action: &vibckeeper.WriteAcknowledgementEvent{
 						ActionHeader: &vm.ActionHeader{
@@ -413,7 +396,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 				},
 			}
 
-			s.checkQueue(records, expected)
+			s.assertActionQueue(s.chainB, expectedRecords)
 
 			// write out a different acknowledgement from the "contract", one block later.
 			s.coordinator.CommitBlock(s.chainB)
@@ -437,13 +420,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 		s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 		{
-			records, err := swingsettesting.GetActionQueueRecords(
-				s.T(),
-				s.chainA.GetContext(),
-				s.GetApp(s.chainA).SwingSetKeeper,
-			)
-			s.Require().NoError(err)
-			expected := []swingsettypes.InboundQueueRecord{
+			expectedRecords := []swingsettypes.InboundQueueRecord{
 				{
 					Action: &vibckeeper.WriteAcknowledgementEvent{
 						ActionHeader: &vm.ActionHeader{
@@ -465,7 +442,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 				},
 			}
 
-			s.checkQueue(records, expected)
+			s.assertActionQueue(s.chainA, expectedRecords)
 		}
 	})
 }

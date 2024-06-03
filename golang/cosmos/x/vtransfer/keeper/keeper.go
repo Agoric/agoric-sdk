@@ -27,13 +27,13 @@ var _ porttypes.ICS4Wrapper = (*Keeper)(nil)
 var _ vibctypes.ReceiverImpl = (*Keeper)(nil)
 var _ vm.PortHandler = (*Keeper)(nil)
 
-// "targeted addresses" is logically a set and physically a collection of
+// "watched addresses" is logically a set and physically a collection of
 // KVStore entries in which each key is a concatenation of a fixed prefix and
 // the address, and its corresponding value is a non-empty but otherwise irrelevant
 // sentinel.
 const (
-	targetedStoreKeyPrefix = "tgt/"
-	targetedSentinel       = "y"
+	watchedAddressStoreKeyPrefix = "watchedAddress/"
+	watchedAddressSentinel       = "y"
 )
 
 // Keeper handles the interceptions from the vtransfer IBC middleware, passing
@@ -62,7 +62,7 @@ func NewKeeper(
 	scopedTransferKeeper capabilitykeeper.ScopedKeeper,
 	pushAction vm.ActionPusher,
 ) Keeper {
-	wrappedPushAction := WrapActionPusher(pushAction)
+	wrappedPushAction := wrapActionPusher(pushAction)
 
 	// This vibcKeeper is used to send notifications from the vtransfer middleware
 	// to the VM.
@@ -78,9 +78,9 @@ func NewKeeper(
 	}
 }
 
-// WrapActionPusher wraps an ActionPusher to prefix the action type with
+// wrapActionPusher wraps an ActionPusher to prefix the action type with
 // "VTRANSFER_".
-func WrapActionPusher(pusher vm.ActionPusher) vm.ActionPusher {
+func wrapActionPusher(pusher vm.ActionPusher) vm.ActionPusher {
 	return func(ctx sdk.Context, action vm.Action) error {
 		action = vm.PopulateAction(ctx, action)
 
@@ -101,12 +101,12 @@ func (k Keeper) GetReceiverImpl() vibctypes.ReceiverImpl {
 	return k
 }
 
-// InterceptOnRecvPacket runs the app and eventually acknowledges a packet.
+// InterceptOnRecvPacket runs the ibcModule and eventually acknowledges a packet.
 // Many error acknowledgments are sent synchronously, but most cases instead return nil
 // to tell the IBC system that acknowledgment is async (i.e., that WriteAcknowledgement
 // will be called later, after the VM has dealt with the packet).
-func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, app porttypes.IBCModule, packet channeltypes.Packet, relayer sdk.AccAddress) ibcexported.Acknowledgement {
-	ack := app.OnRecvPacket(ctx, packet, relayer)
+func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCModule, packet channeltypes.Packet, relayer sdk.AccAddress) ibcexported.Acknowledgement {
+	ack := ibcModule.OnRecvPacket(ctx, packet, relayer)
 
 	if ack == nil {
 		// Already declared to be an async ack.
@@ -131,49 +131,55 @@ func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, app porttypes.IBCModule, 
 // targeted account, and if so, delegates to the VM.
 func (k Keeper) InterceptOnAcknowledgementPacket(
 	ctx sdk.Context,
-	app porttypes.IBCModule,
+	ibcModule porttypes.IBCModule,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	// Always pass the acknowledgement to the wrapped IBC module.
-	firstErr := app.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	// Pass every acknowledgement to the wrapped IBC module.
+	modErr := ibcModule.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
 
+	// If the sender is not a targeted account, we're done.
 	sender, _, err := k.parseTransfer(ctx, packet)
 	if err != nil || sender == "" {
-		return firstErr
+		return modErr
 	}
 
-	// Trigger VM to inspect the reply packet, regardless of errors in the app.
-	err = k.vibcKeeper.TriggerOnAcknowledgementPacket(ctx, sender, packet, acknowledgement, relayer)
-	if firstErr == nil {
-		return err
+	// Trigger VM, regardless of errors in the ibcModule.
+	vmErr := k.vibcKeeper.TriggerOnAcknowledgementPacket(ctx, sender, packet, acknowledgement, relayer)
+
+	// Any error from the VM is trumped by one from the wrapped IBC module.
+	if modErr != nil {
+		return modErr
 	}
-	return firstErr
+	return vmErr
 }
 
 // InterceptOnTimeoutPacket checks to see if the packet sender is a targeted
 // account, and if so, delegates to the VM.
 func (k Keeper) InterceptOnTimeoutPacket(
 	ctx sdk.Context,
-	app porttypes.IBCModule,
+	ibcModule porttypes.IBCModule,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// Always trigger the wrapped IBC module.
-	firstErr := app.OnTimeoutPacket(ctx, packet, relayer)
+	// Pass every timeout to the wrapped IBC module.
+	modErr := ibcModule.OnTimeoutPacket(ctx, packet, relayer)
 
+	// If the sender is not a targeted account, we're done.
 	sender, _, err := k.parseTransfer(ctx, packet)
 	if err != nil || sender == "" {
-		return firstErr
+		return modErr
 	}
 
-	// Trigger VM to inspect the reply packet, regardless of errors in the app.
-	err = k.vibcKeeper.TriggerOnTimeoutPacket(ctx, sender, packet, relayer)
-	if firstErr == nil {
-		return err
+	// Trigger VM, regardless of errors in the app.
+	vmErr := k.vibcKeeper.TriggerOnTimeoutPacket(ctx, sender, packet, relayer)
+
+	// Any error from the VM is trumped by one from the wrapped IBC module.
+	if modErr != nil {
+		return modErr
 	}
-	return firstErr
+	return vmErr
 }
 
 // InterceptWriteAcknowledgement checks to see if the packet's receiver is a
@@ -194,14 +200,7 @@ func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabili
 	return nil
 }
 
-func targetedAccount(store storetypes.KVStore, addr string) string {
-	if store.Has([]byte(addr)) {
-		return addr
-	}
-	return ""
-}
-
-// Check the packet to see if the sender or receiver is a targeted account.
+// parseTransfer checks if a packet's sender and/or receiver are targeted accounts.
 func (k Keeper) parseTransfer(ctx sdk.Context, packet ibcexported.PacketI) (string, string, error) {
 	var transferData transfertypes.FungibleTokenPacketData
 	err := k.cdc.UnmarshalJSON(packet.GetData(), &transferData)
@@ -209,11 +208,48 @@ func (k Keeper) parseTransfer(ctx sdk.Context, packet ibcexported.PacketI) (stri
 		return "", "", err
 	}
 
-	store := prefix.NewStore(ctx.KVStore(k.key), []byte(targetedStoreKeyPrefix))
-
-	sender := targetedAccount(store, transferData.Sender)
-	receiver := targetedAccount(store, transferData.Receiver)
+	var sender string
+	var receiver string
+	prefixStore := prefix.NewStore(
+		ctx.KVStore(k.key),
+		[]byte(watchedAddressStoreKeyPrefix),
+	)
+	if prefixStore.Has([]byte(transferData.Sender)) {
+		sender = transferData.Sender
+	}
+	if prefixStore.Has([]byte(transferData.Receiver)) {
+		receiver = transferData.Receiver
+	}
 	return sender, receiver, nil
+}
+
+// GetWatchedAdresses returns the watched addresses from the keeper as a slice
+// of account addresses.
+func (k Keeper) GetWatchedAddresses(ctx sdk.Context) ([]sdk.AccAddress, error) {
+	addresses := make([]sdk.AccAddress, 0)
+	prefixStore := prefix.NewStore(ctx.KVStore(k.key), []byte(watchedAddressStoreKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(prefixStore, []byte{})
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		addr, err := sdk.AccAddressFromBech32(string(iterator.Key()))
+		if err != nil {
+			return nil, err
+		}
+		addresses = append(addresses, addr)
+	}
+	return addresses, nil
+}
+
+// SetWatchedAddresses sets the watched addresses in the keeper from a slice of
+// SDK account addresses.
+func (k Keeper) SetWatchedAddresses(ctx sdk.Context, addresses []sdk.AccAddress) {
+	prefixStore := prefix.NewStore(
+		ctx.KVStore(k.key),
+		[]byte(watchedAddressStoreKeyPrefix),
+	)
+	for _, addr := range addresses {
+		prefixStore.Set([]byte(addr.String()), []byte(watchedAddressSentinel))
+	}
 }
 
 type registrationAction struct {
@@ -229,12 +265,15 @@ func (k Keeper) Receive(cctx context.Context, jsonRequest string) (jsonReply str
 		return "", err
 	}
 
-	store := prefix.NewStore(ctx.KVStore(k.key), []byte(targetedStoreKeyPrefix))
+	prefixStore := prefix.NewStore(
+		ctx.KVStore(k.key),
+		[]byte(watchedAddressStoreKeyPrefix),
+	)
 	switch msg.Type {
 	case "BRIDGE_TARGET_REGISTER":
-		store.Set([]byte(msg.Target), []byte(targetedSentinel))
+		prefixStore.Set([]byte(msg.Target), []byte(watchedAddressSentinel))
 	case "BRIDGE_TARGET_UNREGISTER":
-		store.Delete([]byte(msg.Target))
+		prefixStore.Delete([]byte(msg.Target))
 	default:
 		return "", sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown action type: %s", msg.Type)
 	}
