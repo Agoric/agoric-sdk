@@ -50,16 +50,8 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
     /**
      * Create a middleware for exposing IBC messages to and from the underlying
      * vtransfer port as data with embedded `action` ocaps where safe.
-     *
-     * @param {Pick<
-     *   ReturnType<typeof makeBridgeTargetKit>,
-     *   'targetHost' | 'targetRegistry'
-     * >} kit
      */
-    makeTransferMiddleware(kit) {
-      const { targetHost, targetRegistry } = kit;
-      return makeTransferMiddleware(targetHost, targetRegistry);
-    },
+    makeTransferMiddleware,
   });
 };
 

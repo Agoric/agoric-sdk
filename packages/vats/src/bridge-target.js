@@ -3,30 +3,33 @@ import { M } from '@endo/patterns';
 
 import { BridgeHandlerI } from './bridge.js';
 
-/** @import {PureData} from '@endo/pass-style'; */
+/**
+ * @typedef {any} MostlyPureData ideally should be PureData, but that type is
+ *   too restrictive to work out-of-the-box.
+ */
 
 const { Fail } = assert;
 
 /**
  * @typedef {object} TargetApp an object representing the app that receives
- *   upcalls from the low-level TargetHost
- * @property {(obj: any) => Promise<any>} upcall receive data from the
- *   TargetHost, and return a data result
+ *   upcalls from the low-level TargetHost on the other side of a bridge
+ * @property {(obj: MostlyPureData) => Promise<MostlyPureData>} receiveUpcall
+ *   receive data from the TargetHost, and return a data result
  */
 // TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
 export const TargetAppI = M.interface('TargetApp', {
-  upcall: M.callWhen(M.any()).returns(M.any()),
+  receiveUpcall: M.callWhen(M.any()).returns(M.any()),
 });
 
 /**
  * @typedef {object} TargetHost an object representing the host that receives
- *   downcalls from the high-level TargetApp
- * @property {(obj: any) => Promise<any>} downcall send data to the TargetHost,
- *   which returns a data result
+ *   downcalls from the high-level TargetApp over a bridge
+ * @property {(obj: MostlyPureData) => Promise<MostlyPureData>} sendDowncall
+ *   send data to the TargetHost, which returns a data result
  */
 // TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
 export const TargetHostI = M.interface('TargetHost', {
-  downcall: M.callWhen(M.any()).returns(M.any()),
+  sendDowncall: M.callWhen(M.any()).returns(M.any()),
 });
 
 /**
@@ -108,15 +111,15 @@ export const prepareTargetRegistration = zone =>
 
 /**
  * A BridgeTargetKit is associated with a ScopedBridgeManager (essentially a
- * specific named channel on a bridge, cf. @link{./bridge.js}) and a particular
+ * specific named channel on a bridge, cf. {@link ./bridge.js}) and a particular
  * inbound event type. It consists of three facets:
  *
  * - `targetHost` has a `downcall` method for sending outbound messages via the
  *   bridge to the VM host.
  * - `targetRegistry` has `register`, `reregister` and `unregister` methods to
- *   register/reregister/unregister the "app" with a "target" corresponding to
- *   an address on the targetHost. Each target may be associated with at most
- *   one app at any given time, and registration and unregistration each send a
+ *   register/reregister/unregister an "app" with a "target" corresponding to an
+ *   address on the targetHost. Each target may be associated with at most one
+ *   app at any given time, and registration and unregistration each send a
  *   message to the targetHost of the state change (of type
  *   "BRIDGE_TARGET_REGISTER" and "BRIDGE_TARGET_UNREGISTER", respectively).
  *   `reregister` is a method that atomically redirects the target to a new
@@ -159,11 +162,11 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           target || Fail`Missing target property in ${obj}`;
 
           const app = targetToApp.get(target);
-          return E(app).upcall(obj);
+          return E(app).receiveUpcall(obj);
         },
       },
       targetHost: {
-        async downcall(obj) {
+        async sendDowncall(obj) {
           const { manager } = this.state;
           return E(manager).toBridge(obj);
         },
@@ -184,13 +187,12 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           !targetToApp.has(target) || Fail`Target ${target} already registered`;
 
           targetToApp.init(target, app);
-          await E(targetHost).downcall({
+          await E(targetHost).sendDowncall({
             type: 'BRIDGE_TARGET_REGISTER',
             target,
           });
 
-          const r = makeTargetRegistration(target, this.facets.targetRegistry);
-          return r;
+          return makeTargetRegistration(target, this.facets.targetRegistry);
         },
         /**
          * Update the app that handles messages for a target.
@@ -201,7 +203,8 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
          */
         async reregister(target, app) {
           const { targetToApp } = this.state;
-          !targetToApp.has(target) || Fail`This target is already unregistered`;
+          targetToApp.has(target) ||
+            Fail`Target ${target} is already unregistered`;
 
           targetToApp.set(target, app);
         },
@@ -215,9 +218,9 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
         async unregister(target) {
           const { targetHost } = this.facets;
           const { targetToApp } = this.state;
-          !targetToApp.has(target) || Fail`This target is already deleted`;
+          targetToApp.has(target) || Fail`Target ${target} is already deleted`;
           targetToApp.delete(target);
-          await E(targetHost).downcall({
+          await E(targetHost).sendDowncall({
             type: 'BRIDGE_TARGET_UNREGISTER',
             target,
           });
