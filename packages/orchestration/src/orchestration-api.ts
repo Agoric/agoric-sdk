@@ -12,7 +12,7 @@ import type {
 } from '@agoric/ertp/src/types.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
-import type { IBCMsgTransferOptions, KnownChains } from './types.js';
+import type { ChainInfo, IBCMsgTransferOptions, KnownChains } from './types.js';
 
 /**
  * A denom that designates a path to a token type on some blockchain.
