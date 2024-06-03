@@ -175,11 +175,12 @@ test('vtransfer', async t => {
   await evalProposal(testVtransferProposal);
 
   // simulate a Golang upcall with arbitrary payload
+  // note that property order matters!
   const expectedAckData = {
+    type: VTRANSFER_IBC_EVENT,
     event: 'writeAcknowledgement',
     packet,
     target,
-    type: VTRANSFER_IBC_EVENT,
   };
 
   await EV(vtransferBridgeManager).fromBridge(expectedAckData);
