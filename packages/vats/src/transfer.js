@@ -11,6 +11,10 @@ import { prepareBridgeTargetModule, TargetAppI } from './bridge-target.js';
 
 const { Fail, bare } = assert;
 
+/**
+ * The least possibly restrictive guard for a `watch` watcher's `onFulfilled` or
+ * `onRejected` reaction
+ */
 const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
 
 /**
@@ -46,7 +50,7 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
     }),
     {
       public: {
-        async upcall(obj) {
+        async receiveUpcall(obj) {
           const { isActiveTap, targetHost, tap } = this.state;
 
           obj.type === VTRANSFER_IBC_EVENT ||
@@ -55,7 +59,7 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
           // First, call our target contract listener.
           // A VTransfer active interceptor can return a write acknowledgement
           /** @type {import('@agoric/vow').Vow<unknown>} */
-          let retP = watch(E(tap).upcall(obj));
+          let retP = watch(E(tap).receiveUpcall(obj));
 
           // See if the upcall result needs special handling.
           if (obj.event === 'writeAcknowledgement') {
@@ -71,7 +75,7 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
             } else {
               // This is a passive tap, so forward the ack without intervention.
               ackMethodData.ack = obj.acknowledgement;
-              retP = watch(E(targetHost).downcall(ackMethodData));
+              retP = watch(E(targetHost).sendDowncall(ackMethodData));
             }
             retP = watch(retP, this.facets.sendErrorWatcher, { ackMethodData });
           }
@@ -98,7 +102,7 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
           // Encode the tap's ack and write it out.
           const ack = byteSourceToBase64(coerceToByteSource(rawAck));
           ackMethodData = { ...ackMethodData, ack };
-          return E(this.state.targetHost).downcall(ackMethodData);
+          return E(this.state.targetHost).sendDowncall(ackMethodData);
         },
       },
       /**
@@ -110,7 +114,7 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
           console.error(`Error sending ack:`, error);
           const rawAck = JSON.stringify({ error: error.message });
           ackMethodData = { ...ackMethodData, ack: byteSourceToBase64(rawAck) };
-          return E(this.state.targetHost).downcall(ackMethodData);
+          return E(this.state.targetHost).sendDowncall(ackMethodData);
         },
       },
       /** `watch` callback for logging errors in the upcall handling. */
@@ -122,7 +126,15 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
     },
   );
 
-  /** @param {Parameters<typeof makeTransferInterceptorKit>} args */
+  /**
+   * A TransferInterceptor wraps a TargetApp that is specialized for handling
+   * asynchronous callbacks from the IBC transfer protocol as implemented by
+   * `x/vtransfer`. By using this interceptor, the TargetApp is prevented from
+   * sending messages which may violate the transfer protocol directly to the
+   * `targetHost`.
+   *
+   * @param {Parameters<typeof makeTransferInterceptorKit>} args
+   */
   const makeTransferInterceptor = (...args) =>
     makeTransferInterceptorKit(...args).public;
   return makeTransferInterceptor;
@@ -142,6 +154,13 @@ const TransferMiddlewareI = M.interface('TransferMiddleware', {
 });
 
 /**
+ * @callback RegisterTap
+ * @param {string} target String identifying the bridge target.
+ * @param {ERef<import('./bridge-target.js').TargetApp>} tap The "application
+ *   tap" to register for the target.
+ */
+
+/**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<typeof prepareTransferInterceptor>} makeTransferInterceptor
  */
@@ -150,15 +169,21 @@ const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
     'TransferMiddleware',
     TransferMiddlewareI,
     /**
-     * @param {ERef<import('./bridge-target.js').TargetHost>} targetHost
-     * @param {ERef<import('./bridge-target.js').TargetRegistry>} targetRegistry
+     * The TransferMiddleware attenuates a `targetHost` and `targetRegistry` by
+     * wrapping TargetApps with a TransferInterceptor.
+     *
+     * @param {object} arg0
+     * @param {ERef<import('./bridge-target.js').TargetHost>} arg0.targetHost
+     * @param {ERef<import('./bridge-target.js').TargetRegistry>} arg0.targetRegistry
      */
-    (targetHost, targetRegistry) => ({ targetHost, targetRegistry }),
+    ({ targetHost, targetRegistry }) => ({ targetHost, targetRegistry }),
     {
       /**
-       * @param {string} target String identifying the bridge target.
-       * @param {ERef<import('./bridge-target.js').TargetApp>} tap The
-       *   "application tap" to register for the target.
+       * Register a tap to intercept the vtransfer target account address
+       * messages, without granting that tap the ability to delay or interfere
+       * with the underlying IBC transfer protocol.ß
+       *
+       * @type {RegisterTap}
        */
       async registerTap(target, tap) {
         const { targetHost, targetRegistry } = this.state;
@@ -168,6 +193,12 @@ const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
         const interceptor = makeTransferInterceptor(targetHost, tap);
         return E(targetRegistry).register(target, interceptor);
       },
+      /**
+       * Similar to `registerTap`, but allows the tap to inject async
+       * ßacknowledgements in the IBC transfer protocol.
+       *
+       * @type {RegisterTap}
+       */
       async registerActiveTap(target, tap) {
         const { targetHost, targetRegistry } = this.state;
 
@@ -196,29 +227,15 @@ const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
  */
 export const prepareTransferTools = (zone, vowTools) => {
   const makeTransferInterceptor = prepareTransferInterceptor(zone, vowTools);
+  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
+    zone.subZone('bridge-target'),
+  );
+
   const makeTransferMiddleware = prepareTransferMiddleware(
     zone,
     makeTransferInterceptor,
   );
 
-  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
-    zone.subZone('bridge-target'),
-  );
-
-  /**
-   * @template {import('@agoric/internal').BridgeIdValue} T
-   * @param {import('./types.js').ScopedBridgeManager<T>} transferBridge
-   * @param {string} messageType
-   */
-  const transferMiddlewareForBridgeType = (transferBridge, messageType) => {
-    const { targetHost, targetRegistry } = makeBridgeTargetKit(
-      transferBridge,
-      messageType,
-    );
-
-    return makeTransferMiddleware(targetHost, targetRegistry);
-  };
-
-  return harden({ makeTransferMiddleware, transferMiddlewareForBridgeType });
+  return harden({ makeTransferMiddleware, makeBridgeTargetKit });
 };
 harden(prepareTransferTools);

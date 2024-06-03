@@ -46,10 +46,13 @@ const makeTestContext = async _t => {
 
   const transferZone = makeDurableZone(provideBaggage('transfer'));
   const transferBridge = makeFakeTransferBridge(transferZone.subZone('bridge'));
-  const transferMiddleware = prepareTransferTools(
+  const transferTools = prepareTransferTools(
     transferZone,
     prepareVowTools(transferZone.subZone('vows')),
-  ).transferMiddlewareForBridgeType(transferBridge, VTRANSFER_IBC_EVENT);
+  );
+  const transferMiddleware = transferTools.makeTransferMiddleware(
+    transferTools.makeBridgeTargetKit(transferBridge, VTRANSFER_IBC_EVENT),
+  );
 
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     balances: {

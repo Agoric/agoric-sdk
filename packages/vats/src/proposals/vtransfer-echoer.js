@@ -20,11 +20,9 @@ export const echoVtransfer = async (
   // a tap that simply returns what it received
   const tap = makeExo('echoer', undefined, {
     // ack value must be stringlike
-    upcall: async param => JSON.stringify(param),
+    receiveUpcall: async param => JSON.stringify(param),
   });
 
-  // TODO put something in promise space to unregister this one and register again
-  // or maybe put all imperative stuff into promise space
   await E(transferMiddleware).registerActiveTap(target, tap);
 
   console.warn('=== vtransfer echoer registered');
