@@ -13,10 +13,12 @@ import type {
   StakingAccountQueries,
 } from './types.js';
 
+export type ChainInfo = CosmosChainInfo | EthChainInfo;
+
 // TODO generate this automatically with a build script drawing on data sources such as https://github.com/cosmos/chain-registry
 
 // XXX methods ad-hoc and not fully accurate
-export type KnownChains = {
+export type KnownChains = Record<string, { info: ChainInfo; methods?: {} }> & {
   stride: {
     info: CosmosChainInfo;
     methods: IcaAccount &
@@ -60,5 +62,3 @@ export type KnownChains = {
       StakingAccountQueries;
   };
 };
-
-export type ChainInfo = CosmosChainInfo | EthChainInfo;
