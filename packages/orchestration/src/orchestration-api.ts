@@ -88,6 +88,8 @@ export interface Orchestrator {
   // E.g. an Osmosis delegate that looks Cosmos-y or no different from an Ethereum delegate
   getChain: <C extends keyof KnownChains>(chainName: C) => Promise<Chain<C>>;
 
+  makeChain: (info: ChainInfo) => Promise<Chain<any>>;
+
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
    * For a denom, return information about a denom including the equivalent
