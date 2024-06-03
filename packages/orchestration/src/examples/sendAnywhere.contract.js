@@ -21,6 +21,7 @@ const { Fail } = assert;
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ERef} from '@endo/far'
  * @import {OrchestrationService} from '../service.js';
+ * @import {Chain} from '../orchestration-api.js';
  * @import {NameHub, Board} from '@agoric/vats';
  * @import { Remote } from '@agoric/vow';
  */
@@ -52,7 +53,7 @@ const SingleAmountRecord = M.recordOf(M.string(), AmountShape, {
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
-  /** @type {MapStore<number, CosmosChainInfo>} */
+  /** @type {MapStore<number, { chain: Chain, chainInfo: CosmosChainInfo}>} */
   const chains = zone.mapStore('chains');
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -106,11 +107,12 @@ export const start = async (zcf, privateArgs, baggage) => {
         harden({ chainKey: M.scalar(), destAddr: M.string() }),
       );
       const { chainKey, destAddr } = offerArgs;
+      const { chainInfo, chain } = chains.get(chainKey);
       const { give } = seat.getProposal();
       entries(give).length > 0 || Fail`empty give`;
       const [[kw, amt]] = entries(give);
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-      const { chainId } = chains.get(chainKey);
+      const { chainId } = chainInfo;
       await E(contractAccount).deposit(await pmtP, amt);
       const { denom } = await findBrandInVBank(amt.brand);
       const { value } = amt;
@@ -144,17 +146,31 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   );
 
+  const addChain = orchestrate(
+    'sendIt',
+    { zcf },
+    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
+    async (orch, { zcf }, _seat, offerArgs) => {
+      const { chainInfo } = offerArgs;
+      const chain = await orch.makeChain(chainInfo);
+      const chainKey = chains.getSize();
+      chains.init(chainKey, harden({ chainInfo, chain }));
+      return chainKey;
+    },
+  );
+
   const creatorFacet = zone.exo(
     'Send CF',
     M.interface('Send CF', {
       addChain: M.call(CosmosChainInfoShape).returns(M.scalar()),
     }),
     {
-      /** @param {CosmosChainInfo} chainInfo */
+      /**
+       * @param {CosmosChainInfo} chainInfo
+       * TODO: support other kinds of chain
+       */
       addChain(chainInfo) {
-        const chainKey = chains.getSize();
-        chains.init(chainKey, chainInfo);
-        return chainKey;
+        return addChain(undefined, { chainInfo });
       },
     },
   );
