@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/keeper"
@@ -36,6 +37,9 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		return
 	}
 
+	// We need jsonpb for its access to the global registry.
+	marshaller := jsonpb.Marshaler{EmitDefaults: true, OrigName: false}
+
 	switch msg.Type {
 	case "VLOCALCHAIN_ALLOCATE_ADDRESS":
 		addr := h.keeper.AllocateAddress(cctx)
@@ -55,9 +59,6 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		if err != nil {
 			return
 		}
-
-		// We need jsonpb for its access to the global registry.
-		marshaller := jsonpb.Marshaler{EmitDefaults: true, OrigName: false}
 
 		var s string
 		resps := make([]json.RawMessage, len(qms))
@@ -97,8 +98,17 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 			return
 		}
 
+		var s string
+		respJSON := make([]json.RawMessage, len(resps))
+		for i, resp := range resps {
+			if s, err = marshaller.MarshalToString(resp.(proto.Message)); err != nil {
+				return
+			}
+			respJSON[i] = []byte(s)
+		}
+
 		var bz []byte
-		if bz, err = json.Marshal(resps); err != nil {
+		if bz, err = json.Marshal(respJSON); err != nil {
 			return
 		}
 		ret = string(bz)

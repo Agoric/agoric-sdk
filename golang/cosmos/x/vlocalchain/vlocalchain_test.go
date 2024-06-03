@@ -427,8 +427,8 @@ func TestExecuteTx(t *testing.T) {
 			t.Fatalf("expected 1 response, got %d", len(resp))
 		}
 		
-		if _, ok := resp[0]["completion_time"]; !ok {
-			t.Error("expected 'completion_time' field in response")
+		if _, ok := resp[0]["completionTime"]; !ok {
+			t.Error("expected 'completionTime' field in response")
 		}
 	})
 }
