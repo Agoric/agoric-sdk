@@ -405,8 +405,8 @@ func TestExecuteTx(t *testing.T) {
 	t.Run("MsgUndelegate", func(t *testing.T) {
 		// create a new message
 		msg := `{"type":"VLOCALCHAIN_EXECUTE_TX","address":"` + addr +
-			`","messages":[{"@type":"/cosmos.staking.v1beta1.MsgUndelegate","delegator_address":"` +
-			addr + `","validator_address":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj","amount":{"denom":"stake","amount":"100"}}]}`
+			`","messages":[{"@type":"/cosmos.staking.v1beta1.MsgUndelegate","delegatorAddress":"` +
+			addr + `","validatorAddress":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj","amount":{"denom":"stake","amount":"100"}}]}`
 
 		ret, err := handler.Receive(cctx, msg)
 		if err != nil {
@@ -427,8 +427,8 @@ func TestExecuteTx(t *testing.T) {
 			t.Fatalf("expected 1 response, got %d", len(resp))
 		}
 		
-		if _, ok := resp[0]["completion_time"]; !ok {
-			t.Error("expected 'completion_time' field in response")
+		if _, ok := resp[0]["completionTime"]; !ok {
+			t.Error("expected 'completionTime' field in response")
 		}
 	})
 }
