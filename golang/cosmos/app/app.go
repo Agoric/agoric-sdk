@@ -863,7 +863,7 @@ func NewAgoricApp(
 	for name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			unreleasedUpgradeHandler(app, name),
+			upgrade16Handler(app, name),
 		)
 	}
 
@@ -908,8 +908,8 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"UNRELEASED_UPGRADE":      true,
-	"UNRELEASED_TEST_UPGRADE": true,
+	"agoric-upgrade-16":     true,
+	"agorictest-upgrade-16": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
@@ -921,8 +921,8 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade16Handler performs standard upgrade actions plus custom actions for upgrade-16.
+func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
@@ -934,31 +934,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// Upgrade ZCF only
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgrade-zcf.js"),
-
-				// upgrade the provisioning vat
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
-				// Enable low-level Orchestration.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/init-network.js",
-					"@agoric/builders/scripts/vats/init-localchain.js",
-					"@agoric/builders/scripts/vats/init-transfer.js",
-				),
-				// Add new vats for price feeds. The existing ones will be retired shortly.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/updateAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStkAtomPriceFeed.js",
-				),
-				// Add new auction contract. The old one will be retired shortly.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
-				// upgrade vaultFactory.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeVaults.js"),
-				// upgrade scaledPriceAuthorities.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeScaledPriceAuthorities.js"),
+				// Empty for now
 			}
 		}
 
