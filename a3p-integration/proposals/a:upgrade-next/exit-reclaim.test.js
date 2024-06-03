@@ -3,7 +3,7 @@ import { $ } from 'execa';
 import { execFileSync } from 'node:child_process';
 import { makeAgd, waitForBlock } from './synthetic-chain-excerpt.js';
 
-const offerId = 'bad-invitation-15'; // cf. prepare.sh
+const offerId = 'bad-invitation-16'; // cf. prepare.sh
 const from = 'gov1';
 
 test('exitOffer tool reclaims stuck payment', async t => {

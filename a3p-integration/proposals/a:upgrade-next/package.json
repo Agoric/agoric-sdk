@@ -6,9 +6,7 @@
     "upgradeInfo": {
       "coreProposals": []
     },
-    "sdk-generate": [
-      "vats/probe-zcf-bundle.js probe-submission"
-    ],
+    "sdk-generate": [],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
