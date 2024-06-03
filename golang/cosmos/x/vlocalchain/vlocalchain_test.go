@@ -405,8 +405,8 @@ func TestExecuteTx(t *testing.T) {
 	t.Run("MsgUndelegate", func(t *testing.T) {
 		// create a new message
 		msg := `{"type":"VLOCALCHAIN_EXECUTE_TX","address":"` + addr +
-			`","messages":[{"@type":"/cosmos.staking.v1beta1.MsgUndelegate","delegator_address":"` +
-			addr + `","validator_address":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj","amount":{"denom":"stake","amount":"100"}}]}`
+			`","messages":[{"@type":"/cosmos.staking.v1beta1.MsgUndelegate","delegatorAddress":"` +
+			addr + `","validatorAddress":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj","amount":{"denom":"stake","amount":"100"}}]}`
 
 		ret, err := handler.Receive(cctx, msg)
 		if err != nil {
