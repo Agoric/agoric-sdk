@@ -5,6 +5,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { mustMatch } from '@endo/patterns';
 import { prepareStakingAccountKit } from './exos/stakingAccountKit.js';
 import { CosmosChainInfoShape } from './typeGuards.js';
+import { prepareLocalChainAccountKit } from './exos/local-chain-account-kit.js';
 
 const { Fail } = assert;
 
@@ -207,6 +208,19 @@ export const makeOrchestrationFacade = ({
   const marshaller = E(board).getReadonlyMarshaller();
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
+  // TODO: add generic chains here
+  const agoricChainInfo = zone.mapStore('peers');
+
+  const timerBrand = zone.exo('TimerBrand', undefined, {}); // @@@ how to get it sync?
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    baggage,
+    makeRecorderKit,
+    zcf,
+    timerService, // TODO: Remote
+    timerBrand,
+    agoricChainInfo,
+  );
+
   const makeStakingAccountKit = prepareStakingAccountKit(
     zone,
     makeRecorderKit,
@@ -225,13 +239,16 @@ export const makeOrchestrationFacade = ({
     orchestrate(durableName, ctx, fn) {
       /** @type {Orchestrator} */
       const orc = {
-        async getChain(name) {
-          if (name === 'agoric') {
-            return makeLocalChainFacade(localchain);
-          }
-          const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, name);
+        /**
+         * @param {ChainInfo} chainInfo
+         * @param transferChannel
+         */
+        async makeChain(chainInfo) {
+          // TODO: handle other kinds of chains.
           mustMatch(chainInfo, CosmosChainInfoShape);
-          // TODO: match chainInfo against shape/pattern
+
+          agoricChainInfo.init(chainInfo.chainId, chainInfo);
+
           return makeRemoteChainFacade(
             chainInfo,
             {
@@ -242,8 +259,25 @@ export const makeOrchestrationFacade = ({
             { makeStakingAccountKit },
           );
         },
-        makeLocalAccount() {
+        async getChain(name) {
+          if (name === 'agoric') {
+            return makeLocalChainFacade(localchain);
+          }
+          const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, name);
+          // TODO: memoize so that getChain(x) === getChain(x)
+          return orc.makeChain(chainInfo);
+        },
+        async makeLocalAccount() {
           return E(localchain).makeAccount();
+        },
+        // TODO: fix name; add to orchestration-api
+        async makeNiceAccountKit(localAccount) {
+          const address = await E(localAccount).getAddress();
+          return makeLocalChainAccountKit({
+            account: localAccount,
+            address,
+            storageNode: await storageNode, // TODO: Remote
+          });
         },
         getBrandInfo: anyVal,
         asAmount: anyVal,
