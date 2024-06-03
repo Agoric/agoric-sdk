@@ -57,7 +57,7 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		}
 
 		// We need jsonpb for its access to the global registry.
-		marshaller := jsonpb.Marshaler{EmitDefaults: true, OrigName: true}
+		marshaller := jsonpb.Marshaler{EmitDefaults: true, OrigName: false}
 
 		var s string
 		resps := make([]json.RawMessage, len(qms))

@@ -303,11 +303,11 @@ func TestQuery(t *testing.T) {
 		}
 
 		// Check the field names and values
-		if unbond["delegator_address"] != firstAddr {
-			t.Errorf("expected delegator_address %s, got %v", firstAddr, unbond["delegator_address"])
+		if unbond["delegatorAddress"] != firstAddr {
+			t.Errorf("expected delegatorAddress %s, got %v", firstAddr, unbond["delegator_address"])
 		}
-		if unbond["validator_address"] != "cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj" {
-			t.Errorf("expected validator_address cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj, got %v", unbond["validator_address"])
+		if unbond["validatorAddress"] != "cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj" {
+			t.Errorf("expected validatorAddress cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj, got %v", unbond["validator_address"])
 		}
 
 		entries, ok := unbond["entries"].([]interface{})
@@ -318,14 +318,14 @@ func TestQuery(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected unbonding delegation entry to be a map, got %v", entries[0])
 		}
-		if entry["creation_height"] != "100" {
-			t.Errorf("expected creation_height \"100\", got %v", entry["creation_height"])
+		if entry["creationHeight"] != "100" {
+			t.Errorf("expected creationHeight \"100\", got %v", entry["creation_height"])
 		}
 		if entry["balance"] != "500" {
 			t.Errorf("expected balance \"500\", got %v", entry["balance"])
 		}
-		if _, ok := entry["completion_time"]; !ok {
-			t.Error("expected completion_time field in the response")
+		if _, ok := entry["completionTime"]; !ok {
+			t.Error("expected completionTime field in the response")
 		}
 	})
 }
