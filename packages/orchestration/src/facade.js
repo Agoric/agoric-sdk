@@ -15,6 +15,19 @@ import { prepareStakingAccountKit } from './exos/stakingAccountKit.js';
 /** @type {any} */
 const anyVal = null;
 
+// FIXME should be configurable
+const mockLocalChainInfo = {
+  allegedName: 'agoric',
+  allowedMessages: [],
+  allowedQueries: [],
+  chainId: 'agoriclocal',
+  connections: anyVal,
+  ibcHooksEnabled: true,
+  icaEnabled: true,
+  icqEnabled: true,
+  pfmEnabled: true,
+};
+
 /**
  * @param {Remote<LocalChain>} localchain
  * @returns {Chain}
@@ -23,17 +36,7 @@ const makeLocalChainFacade = localchain => {
   return {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
-      return {
-        allegedName: 'agoric',
-        allowedMessages: [],
-        allowedQueries: [],
-        chainId: 'agoric-3',
-        connections: anyVal,
-        ibcHooksEnabled: true,
-        icaEnabled: true,
-        icqEnabled: true,
-        pfmEnabled: true,
-      };
+      return mockLocalChainInfo;
     },
 
     // @ts-expect-error FIXME promise resolution through membrane
@@ -49,7 +52,7 @@ const makeLocalChainFacade = localchain => {
           const addressStr = await E(account).getAddress();
           return {
             address: addressStr,
-            chainId: 'agoric-3',
+            chainId: mockLocalChainInfo.chainId,
             addressEncoding: 'bech32',
           };
         },
