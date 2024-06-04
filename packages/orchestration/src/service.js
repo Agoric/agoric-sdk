@@ -15,6 +15,7 @@ import {
  * @import {Remote} from '@agoric/internal';
  * @import {Port, PortAllocator} from '@agoric/network';
  * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit} from './types.js';
  */
 
@@ -104,7 +105,7 @@ const prepareOrchestrationKit = (
         },
         async allocateICQControllerPort() {
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return E(portAllocator).allocateICAControllerPort();
+          return E(portAllocator).allocateICQControllerPort();
         },
       },
       public: {
@@ -168,10 +169,13 @@ const prepareOrchestrationKit = (
     },
   );
 
-/** @param {Zone} zone */
-export const prepareOrchestrationTools = zone => {
+/**
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
+ */
+export const prepareOrchestrationTools = (zone, vowTools) => {
   const makeChainAccountKit = prepareChainAccountKit(zone);
-  const makeICQConnectionKit = prepareICQConnectionKit(zone);
+  const makeICQConnectionKit = prepareICQConnectionKit(zone, vowTools);
   const makeOrchestrationKit = prepareOrchestrationKit(
     zone,
     makeChainAccountKit,
