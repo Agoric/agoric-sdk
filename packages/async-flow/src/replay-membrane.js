@@ -313,19 +313,11 @@ export const makeReplayMembrane = (
 
   /**
    * @param {Vow} hVow
-   * @param {Promise} [promiseKey]
-   *   If provided, use this promise as the key in the guestPromiseMap
-   *   rather than the returned promise. This only happens when the
-   *   promiseKey ends up forwarded to the returned promise anyway, so
-   *   associating it with this resolve/reject pair is not incorrect.
-   *   It is needed when `promiseKey` is also entered into the bijection
-   *   paired with hVow.
    * @returns {Promise}
    */
-  const makeGuestForHostVow = (hVow, promiseKey = undefined) => {
+  const makeGuestForHostVow = hVow => {
     const { promise, resolve, reject } = makeGuestPromiseKit();
-    promiseKey ??= promise;
-    guestPromiseMap.set(promiseKey, harden({ resolve, reject }));
+    guestPromiseMap.set(promise, harden({ resolve, reject }));
 
     watchWake(hVow);
 
@@ -349,7 +341,7 @@ export const makeReplayMembrane = (
       hVow,
       async hostFulfillment => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doFulfill', hVow, hostFulfillment]);
           log.pushEntry(entry);
@@ -364,7 +356,7 @@ export const makeReplayMembrane = (
       },
       async hostReason => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
+        if (!stopped && guestPromiseMap.get(promise) !== 'settled') {
           /** @type {LogEntry} */
           const entry = harden(['doReject', hVow, hostReason]);
           log.pushEntry(entry);
