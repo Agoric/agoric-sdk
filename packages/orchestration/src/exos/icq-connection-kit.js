@@ -1,7 +1,7 @@
 /** @file ICQConnection Exo */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { ConnectionHandlerI } from '../typeGuards.js';
@@ -9,7 +9,7 @@ import { ConnectionHandlerI } from '../typeGuards.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote, VowTools} from '@agoric/vow';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -27,6 +27,12 @@ export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   query: M.call(M.arrayOf(ICQMsgShape)).returns(M.promise()),
+});
+
+const HandleQueryWatcherI = M.interface('HandleQueryWatcher', {
+  onFulfilled: M.call(M.string())
+    .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+    .returns(M.arrayOf(M.record())),
 });
 
 /**
@@ -52,11 +58,16 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  * sending queries and handling connection events.
  *
  * @param {Zone} zone
+ * @param {VowTools} vowTools
  */
-export const prepareICQConnectionKit = zone =>
+export const prepareICQConnectionKit = (zone, { watch, when }) =>
   zone.exoClassKit(
     'ICQConnectionKit',
-    { connection: ICQConnectionI, connectionHandler: ConnectionHandlerI },
+    {
+      connection: ICQConnectionI,
+      handleQueryWatcher: HandleQueryWatcherI,
+      connectionHandler: ConnectionHandlerI,
+    },
     /**
      * @param {Port} port
      */
@@ -89,12 +100,17 @@ export const prepareICQConnectionKit = zone =>
         query(msgs) {
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
-          return E.when(
-            E(connection).send(makeQueryPacket(msgs)),
-            // if parseTxPacket cannot find a `result` key, it throws
-            ack => parseQueryPacket(ack),
+          return when(
+            watch(
+              E(connection).send(makeQueryPacket(msgs)),
+              this.facets.handleQueryWatcher,
+            ),
           );
         },
+      },
+      handleQueryWatcher: {
+        /** @param {string} ack packet acknowledgement string */
+        onFulfilled: ack => parseQueryPacket(ack),
       },
       connectionHandler: {
         /**
