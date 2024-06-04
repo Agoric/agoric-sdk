@@ -193,7 +193,6 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
                 return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
               }
               case '/cosmos.staking.v1beta1.MsgUndelegate': {
-                // @ts-expect-error XXX JsonSafe doesn't handle Date
                 return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
                   completionTime: new Date().toJSON(),
                 });
