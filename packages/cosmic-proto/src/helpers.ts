@@ -1,4 +1,8 @@
 import type {
+  Bech32PrefixRequest,
+  Bech32PrefixResponse,
+} from './codegen/cosmos/auth/v1beta1/query.js';
+import type {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
   QueryBalanceRequestProtoMsg,
@@ -39,15 +43,8 @@ export type Proto3Shape = {
   '/cosmos.staking.v1beta1.MsgUndelegateResponse': MsgUndelegateResponse;
   '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
   '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
-};
-
-// Often s/Request$/Response/ but not always
-type ResponseMap = {
-  '/cosmos.bank.v1beta1.MsgSend': '/cosmos.bank.v1beta1.MsgSendResponse';
-  '/cosmos.bank.v1beta1.QueryAllBalancesRequest': '/cosmos.bank.v1beta1.QueryAllBalancesResponse';
-  '/cosmos.staking.v1beta1.MsgDelegate': '/cosmos.staking.v1beta1.MsgDelegateResponse';
-  '/ibc.applications.transfer.v1.MsgTransfer': '/ibc.applications.transfer.v1.MsgTransferResponse';
-  '/cosmos.staking.v1beta1.MsgUndelegate': '/cosmos.staking.v1beta1.MsgUndelegateResponse';
+  '/cosmos.auth.v1beta1.Bech32PrefixRequest': Bech32PrefixRequest;
+  '/cosmos.auth.v1beta1.Bech32PrefixResponse': Bech32PrefixResponse;
 };
 
 /**
@@ -64,10 +61,20 @@ export type TypedJson<T extends unknown | keyof Proto3Shape = unknown> =
       }
     : { '@type': string };
 
+/** General pattern for Request that has a corresponding Response */
+type RequestTypeUrl<Base extends string> = `/${Base}Request`;
+/** Pattern specific to Msg sends, in which "Msg" without "Response" implies it's a request */
+type TxMessageTypeUrl<
+  Package extends string,
+  Name extends Capitalize<string>,
+> = `/${Package}.Msg${Name}`;
+
 export type ResponseTo<T extends TypedJson> =
-  T['@type'] extends keyof ResponseMap
-    ? TypedJson<ResponseMap[T['@type']]>
-    : TypedJson;
+  T['@type'] extends RequestTypeUrl<infer Base>
+    ? TypedJson<`/${Base}Response`>
+    : T['@type'] extends TxMessageTypeUrl<infer Package, infer Name>
+      ? TypedJson<`/${Package}.Msg${Name}Response`>
+      : TypedJson;
 
 export const typedJson = <T extends keyof Proto3Shape>(
   typeStr: T,
