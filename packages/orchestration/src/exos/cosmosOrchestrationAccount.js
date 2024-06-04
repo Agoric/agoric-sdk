@@ -47,17 +47,17 @@ import { dateInSeconds } from '../utils/time.js';
  * @import {Zone} from '@agoric/zone';
  */
 
-const trace = makeTracer('StakingAccountHolder');
+const trace = makeTracer('ComosOrchestrationAccountHolder');
 
 const { Fail } = assert;
 /**
- * @typedef {object} StakingAccountNotification
+ * @typedef {object} ComosOrchestrationAccountNotification
  * @property {ChainAddress} chainAddress
  */
 
 /**
  * @typedef {{
- *   topicKit: RecorderKit<StakingAccountNotification>;
+ *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
  *   icqConnection: ICQConnection;
@@ -423,4 +423,27 @@ export const prepareCosmosOrchestrationAccountKit = (
  *   ReturnType<typeof prepareCosmosOrchestrationAccountKit>
  * >} CosmosOrchestrationAccountKit
  */
-/** @typedef {CosmosOrchestrationAccountKit['holder']} StakingAccounHolder */
+
+/**
+ * @param {Zone} zone
+ * @param {MakeRecorderKit} makeRecorderKit
+ * @param {ZCF} zcf
+ * @returns {(
+ *   ...args: Parameters<
+ *     ReturnType<typeof prepareCosmosOrchestrationAccountKit>
+ *   >
+ * ) => CosmosOrchestrationAccountKit['holder']}
+ */
+export const prepareCosmosOrchestrationAccount = (
+  zone,
+  makeRecorderKit,
+  zcf,
+) => {
+  const makeKit = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
+  return (...args) => makeKit(...args).holder;
+};
+/** @typedef {CosmosOrchestrationAccountKit['holder']} CosmosOrchestrationAccount */

@@ -1,7 +1,7 @@
 /** @file Orchestration service */
 
 import { E } from '@endo/far';
-import { prepareCosmosOrchestrationAccountKit } from './exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -104,12 +104,11 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
     allowedQueries: [],
   });
   const makeRecorderKit = () => anyVal;
-  const makeCosmosOrchestrationAccountKit =
-    prepareCosmosOrchestrationAccountKit(
-      zone.subZone(name),
-      makeRecorderKit,
-      zcf,
-    );
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    zone.subZone(name),
+    makeRecorderKit,
+    zcf,
+  );
 
   return {
     getChainInfo: async () => chainInfo,
@@ -130,13 +129,13 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
 
       // FIXME look up real values
       const bondDenom = name;
-      // @ts-expect-error FIXME promise resolution through membrane
-      return makeCosmosOrchestrationAccountKit(address, bondDenom, {
+      // @ts-expect-error FIXME missing methods
+      return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
         storageNode: anyVal,
         icqConnection: anyVal,
         timer,
-      }).holder;
+      });
     },
   };
 };
