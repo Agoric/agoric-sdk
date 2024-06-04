@@ -42,10 +42,10 @@ export const ExportManifestFileName = 'export-manifest.json';
  */
 export const getEffectiveArtifactMode = artifactMode => {
   switch (artifactMode) {
+    case undefined:
     case 'none':
     case 'operational':
       return 'operational';
-    case undefined:
     case 'replay':
       return 'replay';
     case 'archival':
@@ -296,11 +296,8 @@ export const main = async (
 
   const stateDir =
     processValue.getFlag('state-dir') ||
-    // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos)
-    `${processValue.getFlag(
-      'home',
-      `${homedir}/.ag-chain-cosmos`,
-    )}/data/agoric`;
+    // We try to find the actual cosmos state directory (default=~/.agoric)
+    `${processValue.getFlag('home', `${homedir}/.agoric`)}/data/agoric`;
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {

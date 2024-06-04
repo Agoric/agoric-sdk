@@ -6,6 +6,7 @@
     "checkJs": true,
     "strict": false,
     "strictNullChecks": true,
+    "noEmit": true,
     "noImplicitThis": true
   }
 }
