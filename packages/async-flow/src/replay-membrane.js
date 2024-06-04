@@ -1,5 +1,5 @@
 /* eslint-disable no-use-before-define */
-import { Fail, b, q } from '@endo/errors';
+import { Fail, X, b, makeError, q } from '@endo/errors';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
@@ -33,6 +33,9 @@ export const makeReplayMembrane = (
   const guestPromiseMap = new WeakMap();
 
   let stopped = false;
+
+  const PanicTag = (template, ...args) =>
+    panic(makeError(X(template, ...args)));
 
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
 
@@ -199,7 +202,7 @@ export const makeReplayMembrane = (
       default: {
         // @ts-expect-error TS correctly knows this case would be outside
         // the type. But that's what we want to check.
-        throw Fail`unexpected outcome kind ${q(outcome.kind)}`;
+        throw PanicTag`unexpected outcome kind ${q(outcome.kind)}`;
       }
     }
   };
@@ -209,9 +212,9 @@ export const makeReplayMembrane = (
   const guestHandler = harden({
     applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
       if (optVerb === undefined) {
-        throw Fail`guest eventual call not yet supported: ${guestTarget}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+        throw PanicTag`guest eventual call not yet supported: ${guestTarget}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
       } else {
-        throw Fail`guest eventual send not yet supported: ${guestTarget}.${b(optVerb)}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+        throw PanicTag`guest eventual send not yet supported: ${guestTarget}.${b(optVerb)}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
       }
     },
     applyFunction(guestTarget, guestArgs, guestReturnedP) {
@@ -223,7 +226,7 @@ export const makeReplayMembrane = (
       );
     },
     get(guestTarget, prop, guestReturnedP) {
-      throw Fail`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
+      throw PanicTag`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
     },
   });
 

@@ -56,10 +56,12 @@ const testFirstPlay = async (t, zone) => {
   const guestPingee = mem.hostToGuest(pingee);
   t.deepEqual(log.dump(), []);
 
-  t.throwsAsync(() => E(guestPingee).ping(), {
+  await t.throwsAsync(() => E(guestPingee).ping(), {
     message:
-      'guest eventual send not yet supported: "[Alleged: Pingee guest wrapper]".ping([]) -> "[Promise]"',
+      'panic over "[Error: guest eventual send not yet supported: \\"[Alleged: Pingee guest wrapper]\\".ping([]) -> \\"[Promise]\\"]"',
   });
+
+  t.deepEqual(log.dump(), []);
 };
 
 test.serial('test heap replay-membrane settlement', async t => {
