@@ -112,8 +112,6 @@ const makeRemoteChainFacade = (
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
-      console.log('makeAccount for', name);
-
       // FIXME look up real values
       const hostConnectionId = 'connection-1';
       const controllerConnectionId = 'connection-2';
@@ -125,8 +123,12 @@ const makeRemoteChainFacade = (
 
       const address = await E(icaAccount).getAddress();
 
-      // FIXME look up real values
-      const bondDenom = name;
+      const [{ denom: bondDenom }] = chainInfo.stakingTokens || [
+        {
+          denom: null,
+        },
+      ];
+      assert(bondDenom, 'missing bondDenom');
       // @ts-expect-error XXX dynamic method availability
       return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
