@@ -1,6 +1,7 @@
 import { expectType } from 'tsd';
 import { typedJson } from '../src/helpers.js';
 import type { ResponseTo } from '../src/helpers.ts';
+import type { JsonSafe } from '../src/codegen/json-safe.js';
 
 // MsgSend
 {
@@ -29,4 +30,13 @@ import type { ResponseTo } from '../src/helpers.ts';
   // @ts-expect-error invalid value for response
   response['@type'] = '/cosmos.bank.v1beta1.QueryAllBalancesRequest';
   response.balances = [{ denom: 'ucosm', amount: '1' }];
+}
+
+// JsonSafe
+{
+  const response: TypedJson<'/cosmos.staking.v1beta1.MsgUndelegateResponse'> =
+    null as any;
+  expectType<Date>(response.completionTime);
+  const responseJson: JsonSafe<typeof response> = null as any;
+  expectType<string>(responseJson.completionTime);
 }
