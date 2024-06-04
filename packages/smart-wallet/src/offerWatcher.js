@@ -12,8 +12,12 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
 
-/** @import {OfferSpec} from "./offers.js" */
-/** @import {PromiseWatcher} from '@agoric/swingset-liveslots' */
+/**
+ * @import {OfferSpec} from "./offers.js";
+ * @import {ContinuingOfferResult} from "./types.js";
+ * @import {Passable} from '@endo/pass-style';
+ * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ */
 
 /**
  * @template {any} T
@@ -22,7 +26,7 @@ import { UNPUBLISHED_RESULT } from './offers.js';
 
 /**
  * @typedef {{
- *   resultWatcher: OfferPromiseWatcher<unknown>;
+ *   resultWatcher: OfferPromiseWatcher<Passable>;
  *   numWantsWatcher: OfferPromiseWatcher<number>;
  *   paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>;
  * }} OutcomeWatchers
@@ -156,7 +160,7 @@ export const prepareOfferWatcher = baggage => {
           );
         },
 
-        /** @param {unknown} result */
+        /** @param {Passable | ContinuingOfferResult} result */
         publishResult(result) {
           const { state, facets } = this;
 
@@ -182,7 +186,6 @@ export const prepareOfferWatcher = baggage => {
                   state.invitationAmount,
                   // @ts-expect-error narrowed by passStyle
                   result.invitationMakers,
-                  // @ts-expect-error narrowed by passStyle
                   result.publicSubscribers,
                 );
               }

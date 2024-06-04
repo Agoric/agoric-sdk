@@ -29,6 +29,11 @@ export type InvitationMakers = Record<
 
 export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
 
+export interface ContinuingOfferResult {
+  invitationMakers: InvitationMakers;
+  publicSubscribers: PublicSubscribers;
+}
+
 export type Cell<T> = {
   get: () => T;
   set(val: T): void;
