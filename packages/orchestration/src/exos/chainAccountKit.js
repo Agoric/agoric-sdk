@@ -37,7 +37,6 @@ export const ChainAccountI = M.interface('ChainAccount', {
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
     .optional(M.record())
     .returns(M.promise()),
-  close: M.callWhen().returns(M.undefined()),
   deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   getPurse: M.callWhen().returns(PurseShape),
 });
@@ -117,17 +116,6 @@ export const prepareChainAccountKit = zone =>
             // if parseTxPacket cannot find a `result` key, it throws
             ack => parseTxPacket(ack),
           );
-        },
-        /**
-         * Close the remote account
-         */
-        async close() {
-          /// XXX what should the behavior be here? and `onClose`?
-          // - retrieve assets?
-          // - revoke the port?
-          const { connection } = this.state;
-          if (!connection) throw Fail`connection not available`;
-          await E(connection).close();
         },
         async deposit(payment) {
           console.log('deposit got', payment);

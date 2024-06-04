@@ -89,7 +89,6 @@ export const prepareLocalChainAccountKit = (
         Undelegate: M.callWhen(M.string(), AmountShape).returns(
           InvitationShape,
         ),
-        CloseAccount: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -136,9 +135,6 @@ export const prepareLocalChainAccountKit = (
             seat.exit();
             return this.facets.holder.undelegate(validatorAddress, ertpAmount);
           }, 'Undelegate');
-        },
-        CloseAccount() {
-          throw Error('not yet implemented');
         },
       },
       holder: {

@@ -102,10 +102,6 @@ test('makeStakeBldInvitation', async t => {
   const res = await E(delegateOffer).getOfferResult();
   t.deepEqual(res, {});
   t.log('Successfully delegated');
-
-  await t.throwsAsync(() => E(invitationMakers).CloseAccount(), {
-    message: 'not yet implemented',
-  });
 });
 
 test('makeAccountInvitationMaker', async t => {

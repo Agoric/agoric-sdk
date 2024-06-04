@@ -200,10 +200,6 @@ export interface IcaAccount {
   deposit: (payment: Payment) => Promise<void>;
   /** get Purse for a brand to .withdraw() a Payment from the account */
   getPurse: (brand: Brand) => Promise<Purse>;
-  /**
-   * Close the remote account
-   */
-  close: () => Promise<void>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
