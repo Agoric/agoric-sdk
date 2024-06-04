@@ -68,9 +68,7 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
       handleQueryWatcher: HandleQueryWatcherI,
       connectionHandler: ConnectionHandlerI,
     },
-    /**
-     * @param {Port} port
-     */
+    /** @param {Port} port */
     port =>
       /** @type {ICQConnectionKitState} */ ({
         port,
@@ -110,7 +108,9 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
       },
       handleQueryWatcher: {
         /** @param {string} ack packet acknowledgement string */
-        onFulfilled: ack => parseQueryPacket(ack),
+        onFulfilled(ack) {
+          return parseQueryPacket(ack);
+        },
       },
       connectionHandler: {
         /**
