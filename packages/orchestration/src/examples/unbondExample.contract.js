@@ -15,10 +15,10 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @param {ZCF} zcf
  * @param {{
- * localchain: Remote<LocalChain>;
- * orchestrationService: Remote<OrchestrationService>;
- * storageNode: Remote<StorageNode>;
- * timerService: Remote<TimerService>;
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<OrchestrationService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Baggage} baggage
  */

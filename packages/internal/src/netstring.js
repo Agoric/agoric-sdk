@@ -20,11 +20,10 @@ export function encode(data) {
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
@@ -44,11 +43,11 @@ export function netstringEncoderStream() {
 }
 
 /**
- *
  * @param {Buffer} data containing zero or more netstrings and maybe some
- * leftover bytes
+ *   leftover bytes
  * @param {number} [optMaxChunkSize]
- * @returns {{ leftover: Buffer, payloads: Buffer[] }} zero or more decoded Buffers, one per netstring,
+ * @returns {{ leftover: Buffer; payloads: Buffer[] }} zero or more decoded
+ *   Buffers, one per netstring,
  */
 export function decode(data, optMaxChunkSize) {
   // TODO: it would be more efficient to accumulate pending data in an array,
@@ -85,19 +84,17 @@ export function decode(data, optMaxChunkSize) {
 }
 
 /**
- *
- * @param {number} [optMaxChunkSize ]
+ * @param {number} [optMaxChunkSize]
  * @returns {Transform}
  */
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
   /**
-   *
-   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
-   * @param {*} callback
+   * @param {any} callback
+   * @this {{ push: (b: Buffer) => void }}
    */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {

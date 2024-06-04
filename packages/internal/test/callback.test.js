@@ -5,7 +5,7 @@ import { Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
 
-/** @import { Callback, SyncCallback } from '../src/types.js' */
+/** @import {Callback, SyncCallback} from '../src/types.js' */
 
 test('near function callbacks', t => {
   /**
@@ -124,7 +124,6 @@ test('far method callbacks', async t => {
   const m2 = Symbol.for('m2');
   const o = Far('MyObject', {
     /**
-     *
      * @param {number} a
      * @param {number} b
      * @param {string} c
@@ -135,7 +134,6 @@ test('far method callbacks', async t => {
     },
 
     /**
-     *
      * @param {number} a
      * @param {number} b
      * @param {string} c

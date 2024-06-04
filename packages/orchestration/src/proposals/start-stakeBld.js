@@ -6,7 +6,15 @@ import { E } from '@endo/far';
 const trace = makeTracer('StartStakeBld', true);
 
 /**
- * @param {BootstrapPowers & {installation: {consume: {stakeBld: Installation<import('../../src/examples/stakeBld.contract.js').start>}}}} powers
+ * @param {BootstrapPowers & {
+ *   installation: {
+ *     consume: {
+ *       stakeBld: Installation<
+ *         import('../../src/examples/stakeBld.contract.js').start
+ *       >;
+ *     };
+ *   };
+ * }} powers
  */
 export const startStakeBld = async ({
   consume: {
@@ -39,7 +47,11 @@ export const startStakeBld = async ({
     chainTimerServiceP.then(ts => E(ts).getTimerBrand()),
   ]);
 
-  /** @type {StartUpgradableOpts<import('../../src/examples/stakeBld.contract.js').start>} */
+  /**
+   * @type {StartUpgradableOpts<
+   *   import('../../src/examples/stakeBld.contract.js').start
+   * >}
+   */
   const startOpts = {
     label: 'stakeBld',
     installation: stakeBld,

@@ -56,12 +56,12 @@ const { Fail } = assert;
 
 /**
  * @typedef {{
- *  topicKit: RecorderKit<StakingAccountNotification>;
- *  account: IcaAccount;
- *  chainAddress: ChainAddress;
- *  icqConnection: ICQConnection;
- *  bondDenom: string;
- *  timer: TimerService;
+ *   topicKit: RecorderKit<StakingAccountNotification>;
+ *   account: IcaAccount;
+ *   chainAddress: ChainAddress;
+ *   icqConnection: ICQConnection;
+ *   bondDenom: string;
+ *   timer: TimerService;
  * }} State
  */
 
@@ -98,7 +98,7 @@ const expect = (actual, expected, message) => {
   }
 };
 
-/** @type {(c: { denom: string, amount: string }) => DenomAmount} */
+/** @type {(c: { denom: string; amount: string }) => DenomAmount} */
 const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
@@ -184,7 +184,6 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
       },
       invitationMakers: {
         /**
-         *
          * @param {CosmosValidatorAddress} validator
          * @param {Amount<'nat'>} amount
          */
@@ -237,8 +236,9 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
           throw Error('not yet implemented');
         },
         /**
-         * Starting a transfer revokes the account holder. The associated updater
-         * will get a special notification that the account is being transferred.
+         * Starting a transfer revokes the account holder. The associated
+         * updater will get a special notification that the account is being
+         * transferred.
          */
         TransferAccount() {
           throw Error('not yet implemented');
@@ -264,6 +264,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
         },
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
+         *
          * @param {CosmosValidatorAddress} validator
          * @param {AmountArg} amount
          */
@@ -286,6 +287,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
         },
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
+         *
          * @param {CosmosValidatorAddress} srcValidator
          * @param {CosmosValidatorAddress} dstValidator
          * @param {AmountArg} amount
@@ -397,7 +399,7 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
   const typeCheck = () => {
     /** @type {any} */
     const arg = null;
-    /** @satisfies { StakingAccountActions } */
+    /** @satisfies {StakingAccountActions} */
     // eslint-disable-next-line no-unused-vars
     const kit = makeStakingAccountKit(arg, arg, arg).holder;
   };

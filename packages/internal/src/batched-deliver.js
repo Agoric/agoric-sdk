@@ -9,7 +9,10 @@ export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
 /**
  * @param {DeliverMessages} deliver
- * @param {{ clearTimeout: import('node:timers').clearTimeout, setTimeout: import('node:timers').setTimeout }} io
+ * @param {{
+ *   clearTimeout: import('node:timers').clearTimeout;
+ *   setTimeout: import('node:timers').setTimeout;
+ * }} io
  * @param {number} batchTimeoutMs
  */
 export function makeBatchedDeliver(

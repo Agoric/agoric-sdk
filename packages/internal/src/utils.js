@@ -12,13 +12,13 @@ const { quote: q, Fail } = assert;
 
 export const BASIS_POINTS = 10_000n;
 
-/** @import { ERef } from '@endo/far' */
+/** @import {ERef} from '@endo/far' */
 
 /**
  * @template T
- * @typedef {{[KeyType in keyof T]: T[KeyType]} & {}} Simplify
- * flatten the type output to improve type hints shown in editors
- * https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
+ * @typedef {{ [KeyType in keyof T]: T[KeyType] } & {}} Simplify flatten the
+ *   type output to improve type hints shown in editors
+ *   https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
  */
 
 /**
@@ -27,19 +27,24 @@ export const BASIS_POINTS = 10_000n;
 
 /**
  * @template {{}} T
- * @typedef {{ [K in keyof T]: T[K] extends Callable ? T[K] : DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ * @typedef {{
+ *   [K in keyof T]: T[K] extends Callable ? T[K] : DeeplyAwaited<T[K]>;
+ * }} DeeplyAwaitedObject
  */
 
 /**
  * @template T
- * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? Simplify<DeeplyAwaitedObject<T>> : Awaited<T>} DeeplyAwaited
+ * @typedef {T extends PromiseLike<any>
+ *     ? Awaited<T>
+ *     : T extends {}
+ *       ? Simplify<DeeplyAwaitedObject<T>>
+ *       : Awaited<T>} DeeplyAwaited
  */
 
 /**
  * A more constrained version of {deeplyFulfilled} for type safety until
- * https://github.com/endojs/endo/issues/1257
- * Useful in starting contracts that need all terms to be fulfilled
- * in order to be durable.
+ * https://github.com/endojs/endo/issues/1257 Useful in starting contracts that
+ * need all terms to be fulfilled in order to be durable.
  *
  * @type {<T extends {}>(unfulfilledTerms: T) => Promise<DeeplyAwaited<T>>}
  */
@@ -54,7 +59,9 @@ export const deeplyFulfilledObject = async obj => {
  * and report the result in seconds to match our telemetry standard.
  *
  * @param {typeof import('perf_hooks').performance.now} currentTimeMillisec
- * @returns {<T>(fn: () => Promise<T>) => Promise<{ result: T, duration: number }>}
+ * @returns {<T>(
+ *   fn: () => Promise<T>,
+ * ) => Promise<{ result: T; duration: number }>}
  */
 export const makeMeasureSeconds = currentTimeMillisec => {
   /** @param {() => any} fn */
@@ -92,7 +99,7 @@ export const PromiseAllOrErrors = async items => {
 /**
  * @type {<T>(
  *   trier: () => Promise<T>,
- *  finalizer: (error?: unknown) => Promise<void>,
+ *   finalizer: (error?: unknown) => Promise<void>,
  * ) => Promise<T>}
  */
 export const aggregateTryFinally = async (trier, finalizer) =>
@@ -109,7 +116,7 @@ export const aggregateTryFinally = async (trier, finalizer) =>
 
 /**
  * @template {Record<string, unknown>} T
- * @typedef {{[P in keyof T]: Exclude<T[P], undefined>;}} AllDefined
+ * @typedef {{ [P in keyof T]: Exclude<T[P], undefined> }} AllDefined
  */
 
 /**
@@ -118,8 +125,8 @@ export const aggregateTryFinally = async (trier, finalizer) =>
  *
  * @template {Record<string, unknown>} T
  * @param {T} obj
- * @throws if any value in the object entries is not defined
  * @returns {asserts obj is AllDefined<T>}
+ * @throws if any value in the object entries is not defined
  */
 export const assertAllDefined = obj => {
   const missing = [];
@@ -143,10 +150,9 @@ export const forever = asyncGenerate(() => notDone);
 
 /**
  * @template T
- * @param {() => T} produce
- * The value of `await produce()` is used for its truthiness vs falsiness.
- * IOW, it is coerced to a boolean so the caller need not bother doing this
- * themselves.
+ * @param {() => T} produce The value of `await produce()` is used for its
+ *   truthiness vs falsiness. IOW, it is coerced to a boolean so the caller need
+ *   not bother doing this themselves.
  * @returns {AsyncIterable<Awaited<T>>}
  */
 export const whileTrue = produce =>
@@ -163,10 +169,9 @@ export const whileTrue = produce =>
 
 /**
  * @template T
- * @param {() => T} produce
- * The value of `await produce()` is used for its truthiness vs falsiness.
- * IOW, it is coerced to a boolean so the caller need not bother doing this
- * themselves.
+ * @param {() => T} produce The value of `await produce()` is used for its
+ *   truthiness vs falsiness. IOW, it is coerced to a boolean so the caller need
+ *   not bother doing this themselves.
  * @returns {AsyncIterable<Awaited<T>>}
  */
 export const untilTrue = produce =>
@@ -184,10 +189,14 @@ export const untilTrue = produce =>
     });
   });
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+/** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
 
-/** @type { <T extends Record<string, ERef<any>>>(obj: T) => Promise<{ [K in keyof T]: Awaited<T[K]>}> } */
+/**
+ * @type {<T extends Record<string, ERef<any>>>(
+ *   obj: T,
+ * ) => Promise<{ [K in keyof T]: Awaited<T[K]> }>}
+ */
 export const allValues = async obj => {
   const resolved = await Promise.all(values(obj));
   // @ts-expect-error cast
@@ -195,9 +204,9 @@ export const allValues = async obj => {
 };
 
 /**
- * A tee implementation where all readers are synchronized with each other.
- * They all consume the source stream in lockstep, and any one returning or
- * throwing early will affect the others.
+ * A tee implementation where all readers are synchronized with each other. They
+ * all consume the source stream in lockstep, and any one returning or throwing
+ * early will affect the others.
  *
  * @template [T=unknown]
  * @param {AsyncIterator<T, void, void>} sourceStream
@@ -207,7 +216,11 @@ export const synchronizedTee = (sourceStream, readerCount) => {
   /** @type {IteratorReturnResult<void> | undefined} */
   let doneResult;
 
-  /** @typedef {IteratorResult<(value: PromiseLike<IteratorResult<T>>) => void>} QueuePayload */
+  /**
+   * @typedef {IteratorResult<
+   *   (value: PromiseLike<IteratorResult<T>>) => void
+   * >} QueuePayload
+   */
   /** @type {import('@endo/stream').AsyncQueue<QueuePayload>[]} */
   const queues = [];
 
@@ -267,13 +280,21 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     /** @type {AsyncGenerator<T, void, void>} */
     const reader = harden({
       async next() {
-        /** @type {import('@endo/promise-kit').PromiseKit<IteratorResult<T>>} */
+        /**
+         * @type {import('@endo/promise-kit').PromiseKit<
+         *   IteratorResult<T>
+         * >}
+         */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: false });
         return promise;
       },
       async return() {
-        /** @type {import('@endo/promise-kit').PromiseKit<IteratorResult<T>>} */
+        /**
+         * @type {import('@endo/promise-kit').PromiseKit<
+         *   IteratorResult<T>
+         * >}
+         */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: true });
         return promise;

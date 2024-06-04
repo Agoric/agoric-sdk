@@ -41,11 +41,11 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
- * localchain: Remote<LocalChain>;
- * orchestrationService: Remote<OrchestrationService> | null;
- * storageNode: Remote<StorageNode>;
- * timerService: Remote<TimerService> | null;
- * zone: Zone;
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<OrchestrationService> | null;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService> | null;
+ *   zone: Zone;
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
@@ -64,7 +64,12 @@ export const start = async (zcf, privateArgs) => {
   });
 
   /** deprecated historical example */
-  /** @type {OfferHandler<unknown, {staked: Amount<'nat'>, validator: CosmosValidatorAddress}>} */
+  /**
+   * @type {OfferHandler<
+   *   unknown,
+   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
+   * >}
+   */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf },

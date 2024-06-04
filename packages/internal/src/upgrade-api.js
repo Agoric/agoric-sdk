@@ -6,13 +6,13 @@ import { M, matches } from '@endo/patterns';
 const { isFrozen } = Object;
 
 /**
- * An Error-like object for use as the rejection reason of promises
- * abandoned by upgrade.
+ * An Error-like object for use as the rejection reason of promises abandoned by
+ * upgrade.
  *
  * @typedef {{
- *   name: 'vatUpgraded',
- *   upgradeMessage: string,
- *   incarnationNumber: number
+ *   name: 'vatUpgraded';
+ *   upgradeMessage: string;
+ *   incarnationNumber: number;
  * }} UpgradeDisconnection
  */
 
@@ -39,9 +39,9 @@ export const makeUpgradeDisconnection = (upgradeMessage, toIncarnationNumber) =>
 harden(makeUpgradeDisconnection);
 
 /**
- * @param {any} reason
- *   If `reason` is not frozen, it cannot be an UpgradeDisconnection,
- *   so returns false without even checking against the shape.
+ * @param {any} reason If `reason` is not frozen, it cannot be an
+ *   UpgradeDisconnection, so returns false without even checking against the
+ *   shape.
  * @returns {reason is UpgradeDisconnection}
  */
 export const isUpgradeDisconnection = reason =>

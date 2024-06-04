@@ -131,7 +131,6 @@ const makeRemoteChainFacade = name => {
 };
 
 /**
- *
  * @param {{
  *   zone: Zone;
  *   timerService: Remote<TimerService> | null;

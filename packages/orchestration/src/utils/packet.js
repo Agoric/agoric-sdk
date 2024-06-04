@@ -16,9 +16,10 @@ import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interc
  */
 
 /**
- * Makes an IBC transaction packet from an array of messages. Expects the `value` of each message
- * to be base64 encoded bytes.
- * Skips checks for malformed messages in favor of interface guards.
+ * Makes an IBC transaction packet from an array of messages. Expects the
+ * `value` of each message to be base64 encoded bytes. Skips checks for
+ * malformed messages in favor of interface guards.
+ *
  * @param {AnyJson[]} msgs
  * @param {Partial<Omit<TxBody, 'messages'>>} [opts]
  * @returns {string} stringified InterchainAccountPacketData
@@ -44,9 +45,10 @@ export function makeTxPacket(msgs, opts) {
 harden(makeTxPacket);
 
 /**
- * Makes an IBC query packet from an array of query messages. Expects the `data` of each message
- * to be base64 encoded bytes.
- * Skips checks for malformed messages in favor of interface guards.
+ * Makes an IBC query packet from an array of query messages. Expects the `data`
+ * of each message to be base64 encoded bytes. Skips checks for malformed
+ * messages in favor of interface guards.
+ *
  * @param {JsonSafe<RequestQuery>[]} msgs
  * @returns {string} stringified InterchainQueryPacketData
  * @throws {Error} if malformed messages are provided
@@ -68,13 +70,15 @@ export function makeQueryPacket(msgs) {
 harden(makeQueryPacket);
 
 /**
- * Looks for a result or error key in the response string, and returns
- * a Base64Bytes string. This string can be decoded using the corresponding
- * Msg*Response object.
- * Error strings seem to be plain text and do not need decoding.
+ * Looks for a result or error key in the response string, and returns a
+ * Base64Bytes string. This string can be decoded using the corresponding
+ * Msg*Response object. Error strings seem to be plain text and do not need
+ * decoding.
+ *
  * @param {string} response
  * @returns {string} - base64 encoded bytes string
- * @throws {Error} if error key is detected in response string, or result key is not found
+ * @throws {Error} if error key is detected in response string, or result key is
+ *   not found
  */
 export function parseTxPacket(response) {
   const { result, error } = JSON.parse(response);
@@ -86,13 +90,15 @@ harden(parseTxPacket);
 
 /**
  * Looks for a result or error key in the response string. If a result is found,
- * `responses` is decoded via `CosmosResponse`. The `key` and `value` fields on the
- * resulting entries are base64 encoded for inter-vat communication. These can be
- * decoded using the corresponding Query*Response objects.
- * Error strings seem to be plain text and do not need decoding.
+ * `responses` is decoded via `CosmosResponse`. The `key` and `value` fields on
+ * the resulting entries are base64 encoded for inter-vat communication. These
+ * can be decoded using the corresponding Query*Response objects. Error strings
+ * seem to be plain text and do not need decoding.
+ *
  * @param {string} response
  * @returns {JsonSafe<ResponseQuery>[]}
- * @throws {Error} if error key is detected in response string, or result key is not found
+ * @throws {Error} if error key is detected in response string, or result key is
+ *   not found
  */
 export function parseQueryPacket(response) {
   const result = parseTxPacket(response);

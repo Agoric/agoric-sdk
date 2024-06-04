@@ -22,9 +22,9 @@ import { UNPUBLISHED_RESULT } from './offers.js';
 
 /**
  * @typedef {{
- * resultWatcher: OfferPromiseWatcher<unknown>,
- * numWantsWatcher: OfferPromiseWatcher<number>,
- * paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>,
+ *   resultWatcher: OfferPromiseWatcher<unknown>;
+ *   numWantsWatcher: OfferPromiseWatcher<number>;
+ *   paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>;
  * }} OutcomeWatchers
  */
 
@@ -108,9 +108,8 @@ export const prepareOfferWatcher = baggage => {
     'OfferWatcher',
     offerWatcherGuard,
     /**
-     *
-     * @param {*} walletHelper
-     * @param {*} deposit
+     * @param {any} walletHelper
+     * @param {any} deposit
      * @param {OfferSpec} offerSpec
      * @param {string} address
      * @param {Amount<'set'>} invitationAmount
@@ -137,9 +136,9 @@ export const prepareOfferWatcher = baggage => {
         },
         /**
          * @param {string} offerId
-         * @param {Amount<"set">} invitationAmount
+         * @param {Amount<'set'>} invitationAmount
          * @param {import('./types.js').InvitationMakers} invitationMakers
-         * @param {import("./types.js").PublicSubscribers} publicSubscribers
+         * @param {import('./types.js').PublicSubscribers} publicSubscribers
          */
         onNewContinuingOffer(
           offerId,
@@ -196,8 +195,9 @@ export const prepareOfferWatcher = baggage => {
         },
         /**
          * Called when the offer result promise rejects. The other two watchers
-         * are waiting for particular values out of Zoe but they settle at the same time
-         * and don't need their own error handling.
+         * are waiting for particular values out of Zoe but they settle at the
+         * same time and don't need their own error handling.
+         *
          * @param {Error} err
          */
         handleError(err) {
@@ -226,9 +226,11 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ payouts: amounts });
         },
         /**
-         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         * If promise disconnected, watch again. Or if there's an Error, handle
+         * it.
          *
-         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -248,9 +250,11 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.publishResult(result);
         },
         /**
-         * If promise disconnected, watch again. Or if there's an Error, handle it.
+         * If promise disconnected, watch again. Or if there's an Error, handle
+         * it.
          *
-         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
@@ -277,7 +281,8 @@ export const prepareOfferWatcher = baggage => {
          * and getPayouts() settle the same (they await the same promise and
          * then synchronously return a local value).
          *
-         * @param {Error | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
