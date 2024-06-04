@@ -1,7 +1,11 @@
 /** @file Orchestration service */
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import { wellKnownChainInfo } from './chain-info.js';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
+import { CosmosChainInfoShape } from './typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -82,27 +86,21 @@ const makeLocalChainFacade = localchain => {
 };
 
 /**
- * @template {string} C
- * @param {C} name
+ * @template {CosmosChainInfo} CCI
+ * @param {CCI} chainInfo
  * @param {object} io
  * @param {Remote<OrchestrationService>} io.orchestration
  * @param {Remote<TimerService>} io.timer
  * @param {ZCF} io.zcf
  * @param {Zone} io.zone
- * @returns {Chain<C>}
+ * @returns {Chain<any>}
  */
-const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
-  const chainInfo = /** @type {CosmosChainInfo} */ ({
-    allegedName: name,
-    chainId: 'fixme',
-    connections: {},
-    icaEnabled: true,
-    icqEnabled: true,
-    pfmEnabled: true,
-    ibcHooksEnabled: true,
-    allowedMessages: [],
-    allowedQueries: [],
-  });
+const makeRemoteChainFacade = (
+  chainInfo,
+  { orchestration, timer, zcf, zone },
+) => {
+  const name = chainInfo.chainId;
+
   const makeRecorderKit = () => anyVal;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone.subZone(name),
@@ -112,7 +110,7 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
 
   return {
     getChainInfo: async () => chainInfo,
-    /** @returns {Promise<OrchestrationAccount<C>>} */
+    /** @returns {Promise<OrchestrationAccount<any>>} */
     makeAccount: async () => {
       console.log('makeAccount for', name);
 
@@ -165,12 +163,33 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
   });
 
+  const chainInfos = makeScalarBigMapStore('chainInfos', {
+    keyShape: M.string(),
+    valueShape: CosmosChainInfoShape,
+  });
+
   return {
+    /**
+     * Register a new chain in a heap store. The name will override a name in
+     * well known chain names.
+     *
+     * This registration will not surve a reincarnation of the vat so if the
+     * chain is not yet in the well known names at that point, it will have to
+     * be registered again. In an unchanged contract `start` the call will
+     * happen again naturally.
+     *
+     * @param {string} name
+     * @param {ChainInfo} chainInfo
+     */
+    registerChain(name, chainInfo) {
+      chainInfos.init(name, chainInfo);
+    },
     /**
      * @template Context
      * @template {any[]} Args
-     * @param {string} durableName
-     * @param {Context} ctx
+     * @param {string} durableName - the orchestration flow identity in the zone
+     *   (to resume across upgrades)
+     * @param {Context} ctx - values to pass through the async flow membrane
      * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
      * @returns {(...args: Args) => Promise<unknown>}
      */
@@ -182,7 +201,9 @@ export const makeOrchestrationFacade = ({
             return makeLocalChainFacade(localchain);
           }
 
-          return makeRemoteChainFacade(name, {
+          const chainInfo = chainInfos.get(name);
+
+          return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,
             timer: timerService,
             zcf,
