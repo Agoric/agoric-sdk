@@ -68,6 +68,11 @@ const { Fail } = assert;
 
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  asContinuingOffer: M.call().returns({
+    publicSubscribers: M.any(),
+    invitationMakers: M.any(),
+    holder: M.any(),
+  }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
@@ -251,6 +256,14 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
+        asContinuingOffer() {
+          const { holder, invitationMakers } = this.facets;
+          return harden({
+            publicSubscribers: holder.getPublicTopics(),
+            invitationMakers,
+            holder,
+          });
+        },
         getPublicTopics() {
           const { topicKit } = this.state;
           return harden({

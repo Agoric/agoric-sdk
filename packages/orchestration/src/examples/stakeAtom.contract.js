@@ -8,7 +8,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
-import { prepareCosmosOrchestrationAccountKit } from '../exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
 
 const trace = makeTracer('StakeAtom');
 /**
@@ -61,8 +61,11 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const makeCosmosOrchestrationAccountKit =
-    prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
 
   async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
@@ -77,21 +80,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
-    const { holder, invitationMakers } = makeCosmosOrchestrationAccountKit(
-      accountAddress,
-      bondDenom,
-      {
-        account,
-        storageNode,
-        icqConnection,
-        timer,
-      },
-    );
-    return {
-      publicSubscribers: holder.getPublicTopics(),
-      invitationMakers,
-      account: holder,
-    };
+    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    });
+    return holder;
   }
 
   const publicFacet = zone.exo(
@@ -103,15 +98,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       async makeAccount() {
         trace('makeAccount');
-        const { account } = await makeAccountKit();
-        return account;
+        return makeAccountKit();
       },
       makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {
             seat.exit();
-            return makeAccountKit();
+            const holder = await makeAccountKit();
+            return holder.asContinuingOffer();
           },
           'wantStakingAccount',
           undefined,
