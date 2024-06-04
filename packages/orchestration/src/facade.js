@@ -19,7 +19,8 @@ import { CosmosChainInfoShape } from './typeGuards.js';
 /** @type {any} */
 const anyVal = null;
 
-// FIXME should be configurable
+// FIXME look up real values
+// UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
 const mockLocalChainInfo = {
   allegedName: 'agoric',
   allowedMessages: [],
@@ -43,36 +44,41 @@ const makeLocalChainFacade = localchain => {
       return mockLocalChainInfo;
     },
 
-    // @ts-expect-error FIXME promise resolution through membrane
     async makeAccount() {
       const account = await E(localchain).makeAccount();
 
       return {
-        deposit(payment) {
+        async deposit(payment) {
           console.log('deposit got', payment);
-          return E(account).deposit(payment);
+          await E(account).deposit(payment);
         },
-        async getAddress() {
-          const addressStr = await E(account).getAddress();
+        getAddress() {
+          const addressStr = account.getAddress();
           return {
             address: addressStr,
             chainId: mockLocalChainInfo.chainId,
             addressEncoding: 'bech32',
           };
         },
-        getBalance(_denom) {
-          // FIXME map denom to Brand
-          const brand = /** @type {any} */ (null);
-          return E(account).getBalance(brand);
+        async getBalance(denomArg) {
+          // FIXME look up real values
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
+          const [brand, denom] =
+            typeof denomArg === 'string'
+              ? [/** @type {any} */ (null), denomArg]
+              : [denomArg, 'FIXME'];
+
+          const natAmount = await account.getBalance(brand);
+          return harden({ denom, value: natAmount.value });
         },
         getBalances() {
           throw new Error('not yet implemented');
         },
-        send(toAccount, amount) {
+        async send(toAccount, amount) {
           // FIXME implement
           console.log('send got', toAccount, amount);
         },
-        transfer(amount, destination, opts) {
+        async transfer(amount, destination, opts) {
           // FIXME implement
           console.log('transfer got', amount, destination, opts);
         },
@@ -113,6 +119,7 @@ const makeRemoteChainFacade = (
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
       // FIXME look up real values
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
       const hostConnectionId = 'connection-1';
       const controllerConnectionId = 'connection-2';
 

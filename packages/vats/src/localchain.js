@@ -45,7 +45,7 @@ const prepareLocalChainAccount = zone =>
     (address, powers) => ({ address, ...powers, reserved: undefined }),
     {
       // Information that the account creator needs.
-      async getAddress() {
+      getAddress() {
         return this.state.address;
       },
       /** @param {Brand<'nat'>} brand */
