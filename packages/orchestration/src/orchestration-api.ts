@@ -170,7 +170,7 @@ export interface OrchestrationAccountI {
    * deposit payment from zoe to the account. For remote accounts,
    * an IBC Transfer will be executed to transfer funds there.
    */
-  deposit: (payment: Payment) => Promise<void>;
+  deposit: (payment: Payment<'nat'>) => Promise<void>;
 }
 
 /**

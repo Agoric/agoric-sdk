@@ -1,15 +1,15 @@
 /** @file ChainAccount exo */
 import { NonNullish } from '@agoric/assert';
+import { PurseShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-import { PaymentShape, PurseShape } from '@agoric/ertp';
-import { findAddressField } from '../utils/address.js';
 import {
-  ConnectionHandlerI,
   ChainAddressShape,
+  ConnectionHandlerI,
   Proto3Shape,
 } from '../typeGuards.js';
+import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
@@ -30,6 +30,8 @@ const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const ChainAccountI = M.interface('ChainAccount', {
   getAddress: M.call().returns(ChainAddressShape),
+  getBalance: M.callWhen(M.string()).returns(M.any()),
+  getBalances: M.callWhen().returns(M.any()),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -38,7 +40,6 @@ export const ChainAccountI = M.interface('ChainAccount', {
     .optional(M.record())
     .returns(M.promise()),
   close: M.callWhen().returns(M.undefined()),
-  deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   getPurse: M.callWhen().returns(PurseShape),
 });
 
@@ -63,26 +64,30 @@ export const prepareChainAccountKit = zone =>
      * @param {string} requestedRemoteAddress
      */
     (port, requestedRemoteAddress) =>
-      /** @type {State} */ (
-        harden({
-          port,
-          connection: undefined,
-          requestedRemoteAddress,
-          remoteAddress: undefined,
-          chainAddress: undefined,
-          localAddress: undefined,
-        })
-      ),
+      /** @type {State} */ ({
+        port,
+        connection: undefined,
+        requestedRemoteAddress,
+        remoteAddress: undefined,
+        chainAddress: undefined,
+        localAddress: undefined,
+      }),
     {
       account: {
-        /**
-         * @returns {ChainAddress}
-         */
+        /** @returns {ChainAddress} */
         getAddress() {
           return NonNullish(
             this.state.chainAddress,
             'ICA channel creation acknowledgement not yet received.',
           );
+        },
+        getBalance(_denom) {
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+          throw new Error('not yet implemented');
+        },
+        getBalances() {
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+          throw new Error('not yet implemented');
         },
         getLocalAddress() {
           return NonNullish(
@@ -121,9 +126,7 @@ export const prepareChainAccountKit = zone =>
             ack => parseTxPacket(ack),
           );
         },
-        /**
-         * Close the remote account
-         */
+        /** Close the remote account */
         async close() {
           /// XXX what should the behavior be here? and `onClose`?
           // - retrieve assets?
@@ -131,10 +134,6 @@ export const prepareChainAccountKit = zone =>
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
           await E(connection).close();
-        },
-        async deposit(payment) {
-          console.log('deposit got', payment);
-          throw new Error('not yet implemented');
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account

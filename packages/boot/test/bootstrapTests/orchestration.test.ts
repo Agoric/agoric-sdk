@@ -62,7 +62,7 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance();
+  const queryRes = await EV(account).getBalance('uatom');
   t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
 
   const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');

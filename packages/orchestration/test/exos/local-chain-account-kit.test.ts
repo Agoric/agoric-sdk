@@ -17,7 +17,7 @@ test('deposit, withdraw', async t => {
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
+  const agoricChainInfo = prepareMockChainInfo();
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -85,7 +85,7 @@ test('delegate, undelegate', async t => {
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
+  const agoricChainInfo = prepareMockChainInfo();
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -136,7 +136,7 @@ test('transfer', async t => {
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo(rootZone.subZone('chainInfo'));
+  const agoricChainInfo = prepareMockChainInfo();
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -207,7 +207,7 @@ test('transfer', async t => {
   await t.throwsAsync(
     () => E(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
     {
-      message: /not found(.*)fakenet/,
+      message: /Unknown chain "fakenet"/,
     },
     'cannot create transfer msg with unknown chainId',
   );

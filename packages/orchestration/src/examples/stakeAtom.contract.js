@@ -1,6 +1,5 @@
-/**
- * @file Example contract that uses orchestration
- */
+/** @file Example contract that uses orchestration */
+// TODO rename to "stakeIca" or something else that conveys is parameterized nature
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
@@ -9,7 +8,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
-import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
 
 const trace = makeTracer('StakeAtom');
 /**
@@ -20,6 +19,11 @@ const trace = makeTracer('StakeAtom');
  */
 
 export const meta = harden({
+  customTermsShape: {
+    hostConnectionId: M.string(),
+    controllerConnectionId: M.string(),
+    bondDenom: M.string(),
+  },
   privateArgsShape: {
     orchestration: M.remotable('orchestration'),
     storageNode: StorageNodeShape,
@@ -57,7 +61,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const makeStakingAccountKit = prepareStakingAccountKit(
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
     makeRecorderKit,
     zcf,
@@ -68,28 +72,21 @@ export const start = async (zcf, privateArgs, baggage) => {
       hostConnectionId,
       controllerConnectionId,
     );
-    // #9212 TODO do not fail if host does not have `async-icq` module;
+    // TODO https://github.com/Agoric/agoric-sdk/issues/9326
+    // Should not fail if host does not have `async-icq` module;
     // communicate to OrchestrationAccount that it can't send queries
     const icqConnection = await E(orchestration).provideICQConnection(
       controllerConnectionId,
     );
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
-    const { holder, invitationMakers } = makeStakingAccountKit(
-      accountAddress,
-      bondDenom,
-      {
-        account,
-        storageNode,
-        icqConnection,
-        timer,
-      },
-    );
-    return {
-      publicSubscribers: holder.getPublicTopics(),
-      invitationMakers,
-      account: holder,
-    };
+    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    });
+    return holder;
   }
 
   const publicFacet = zone.exo(
@@ -101,15 +98,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       async makeAccount() {
         trace('makeAccount');
-        const { account } = await makeAccountKit();
-        return account;
+        return makeAccountKit();
       },
       makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
           async seat => {
             seat.exit();
-            return makeAccountKit();
+            const holder = await makeAccountKit();
+            return holder.asContinuingOffer();
           },
           'wantStakingAccount',
           undefined,

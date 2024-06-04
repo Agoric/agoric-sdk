@@ -44,7 +44,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // Mocked until #8879
   // Would expect this to be instantiated elsewhere, and passed in as a reference
-  const agoricChainInfo = prepareMockChainInfo(zone);
+  const agoricChainInfo = prepareMockChainInfo();
 
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     zone,

@@ -1,6 +1,7 @@
 /** @file Orchestration service */
 
 import { E } from '@endo/far';
+import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -8,11 +9,24 @@ import { E } from '@endo/far';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, KnownChains, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
 /** @type {any} */
 const anyVal = null;
+
+// FIXME should be configurable
+const mockLocalChainInfo = {
+  allegedName: 'agoric',
+  allowedMessages: [],
+  allowedQueries: [],
+  chainId: 'agoriclocal',
+  connections: anyVal,
+  ibcHooksEnabled: true,
+  icaEnabled: true,
+  icqEnabled: true,
+  pfmEnabled: true,
+};
 
 /**
  * @param {Remote<LocalChain>} localchain
@@ -22,18 +36,10 @@ const makeLocalChainFacade = localchain => {
   return {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
-      return {
-        allegedName: 'agoric',
-        allowedMessages: [],
-        allowedQueries: [],
-        chainId: 'agoric-3',
-        connections: anyVal,
-        ibcHooksEnabled: true,
-        icaEnabled: true,
-        icqEnabled: true,
-        pfmEnabled: true,
-      };
+      return mockLocalChainInfo;
     },
+
+    // @ts-expect-error FIXME promise resolution through membrane
     async makeAccount() {
       const account = await E(localchain).makeAccount();
 
@@ -41,6 +47,30 @@ const makeLocalChainFacade = localchain => {
         deposit(payment) {
           console.log('deposit got', payment);
           return E(account).deposit(payment);
+        },
+        async getAddress() {
+          const addressStr = await E(account).getAddress();
+          return {
+            address: addressStr,
+            chainId: mockLocalChainInfo.chainId,
+            addressEncoding: 'bech32',
+          };
+        },
+        getBalance(_denom) {
+          // FIXME map denom to Brand
+          const brand = /** @type {any} */ (null);
+          return E(account).getBalance(brand);
+        },
+        getBalances() {
+          throw new Error('not yet implemented');
+        },
+        send(toAccount, amount) {
+          // FIXME implement
+          console.log('send got', toAccount, amount);
+        },
+        transfer(amount, destination, opts) {
+          // FIXME implement
+          console.log('transfer got', amount, destination, opts);
         },
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
@@ -54,78 +84,57 @@ const makeLocalChainFacade = localchain => {
 /**
  * @template {string} C
  * @param {C} name
- * @returns {Chain}
+ * @param {object} io
+ * @param {Remote<OrchestrationService>} io.orchestration
+ * @param {Remote<TimerService>} io.timer
+ * @param {ZCF} io.zcf
+ * @param {Zone} io.zone
+ * @returns {Chain<C>}
  */
-const makeRemoteChainFacade = name => {
-  const chainInfo = {
+const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
+  const chainInfo = /** @type {CosmosChainInfo} */ ({
     allegedName: name,
     chainId: 'fixme',
-  };
+    connections: {},
+    icaEnabled: true,
+    icqEnabled: true,
+    pfmEnabled: true,
+    ibcHooksEnabled: true,
+    allowedMessages: [],
+    allowedQueries: [],
+  });
+  const makeRecorderKit = () => anyVal;
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    zone.subZone(name),
+    makeRecorderKit,
+    zcf,
+  );
+
   return {
-    /** @returns {Promise<ChainInfo>} */
-    getChainInfo: async () => anyVal,
+    getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<C>>} */
     makeAccount: async () => {
       console.log('makeAccount for', name);
-      // @ts-expect-error fake yet
-      return {
-        delegate(validator, amount) {
-          console.log('delegate got', validator, amount);
-          return Promise.resolve();
-        },
-        deposit(payment) {
-          console.log('deposit got', payment);
-          return Promise.resolve();
-        },
-        getAddress() {
-          return {
-            chainId: chainInfo.chainId,
-            address: 'an address!',
-            addressEncoding: 'bech32',
-          };
-        },
-        getBalance(_denom) {
-          console.error('getBalance not yet implemented');
-          return Promise.resolve({ denom: 'fixme', value: 0n });
-        },
-        getBalances() {
-          throw new Error('not yet implemented');
-        },
-        getDelegations() {
-          console.error('getDelegations not yet implemented');
-          return [];
-        },
-        getRedelegations() {
-          throw new Error('not yet implemented');
-        },
-        getUnbondingDelegations() {
-          throw new Error('not yet implemented');
-        },
-        liquidStake() {
-          console.error('liquidStake not yet implemented');
-          return 0n;
-        },
-        send(toAccount, amount) {
-          console.log('send got', toAccount, amount);
-          return Promise.resolve();
-        },
-        transfer(amount, destination, memo) {
-          console.log('transfer got', amount, destination, memo);
-          return Promise.resolve();
-        },
-        transferSteps(amount, msg) {
-          console.log('transferSteps got', amount, msg);
-          return Promise.resolve();
-        },
-        undelegate(validator, amount) {
-          console.log('undelegate got', validator, amount);
-          return Promise.resolve();
-        },
-        withdraw(amount) {
-          console.log('withdraw got', amount);
-          return Promise.resolve();
-        },
-      };
+
+      // FIXME look up real values
+      const hostConnectionId = 'connection-1';
+      const controllerConnectionId = 'connection-2';
+
+      const icaAccount = await E(orchestration).makeAccount(
+        hostConnectionId,
+        controllerConnectionId,
+      );
+
+      const address = await E(icaAccount).getAddress();
+
+      // FIXME look up real values
+      const bondDenom = name;
+      return makeCosmosOrchestrationAccount(address, bondDenom, {
+        account: icaAccount,
+        storageNode: anyVal,
+        icqConnection: anyVal,
+        timer,
+      });
     },
   };
 };
@@ -133,10 +142,10 @@ const makeRemoteChainFacade = name => {
 /**
  * @param {{
  *   zone: Zone;
- *   timerService: Remote<TimerService> | null;
+ *   timerService: Remote<TimerService>;
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
- *   orchestrationService: Remote<OrchestrationService> | null;
+ *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
  * }} powers
  */
@@ -172,7 +181,13 @@ export const makeOrchestrationFacade = ({
           if (name === 'agoric') {
             return makeLocalChainFacade(localchain);
           }
-          return makeRemoteChainFacade(name);
+
+          return makeRemoteChainFacade(name, {
+            orchestration: orchestrationService,
+            timer: timerService,
+            zcf,
+            zone,
+          });
         },
         makeLocalAccount() {
           return E(localchain).makeAccount();

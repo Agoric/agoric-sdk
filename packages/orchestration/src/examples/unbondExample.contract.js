@@ -1,6 +1,6 @@
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeOrchestrationFacade } from '../facade.js';
 
 /**
@@ -49,19 +49,21 @@ export const start = async (zcf, privateArgs, baggage) => {
       const celestia = await orch.getChain('celestia');
       const celestiaAccount = await celestia.makeAccount();
 
-      const delegations = await celestiaAccount.getDelegations();
-      // wait for the undelegations to be complete (may take weeks)
-      await celestiaAccount.undelegate(delegations);
+      // TODO implement these
+      // const delegations = await celestiaAccount.getDelegations();
+      // // wait for the undelegations to be complete (may take weeks)
+      // await celestiaAccount.undelegate(delegations);
 
       // ??? should this be synchronous? depends on how names are resolved.
       const stride = await orch.getChain('stride');
       const strideAccount = await stride.makeAccount();
 
       // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-      const tiaAmt = await celestiaAccount.getBalance('TIA');
-      await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
+      // const tiaAmt = await celestiaAccount.getBalance('TIA');
+      // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
-      await strideAccount.liquidStake(tiaAmt);
+      // await strideAccount.liquidStake(tiaAmt);
+      console.log(celestiaAccount, strideAccount);
     },
   );
 

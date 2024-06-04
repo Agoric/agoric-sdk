@@ -68,19 +68,11 @@ const connectionEntries = harden({
 });
 
 /**
- * @param {Zone} zone
  * @returns {Pick<CosmosChainInfo, 'connections' | 'chainId'>}
  */
-export const prepareMockChainInfo = zone => {
-  const agoricConnections =
-    /** @type {import('@agoric/store').MapStore<string, IBCConnectionInfo>} */ (
-      zone.mapStore('ibcConnections')
-    );
-
-  agoricConnections.addAll(Object.entries(connectionEntries));
-
+export const prepareMockChainInfo = () => {
   return harden({
     chainId: 'agoriclocal',
-    connections: agoricConnections,
+    connections: connectionEntries,
   });
 };
