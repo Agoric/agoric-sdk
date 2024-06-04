@@ -44,7 +44,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/capability"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrclient "github.com/cosmos/cosmos-sdk/x/distribution/client"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
@@ -871,12 +870,12 @@ func NewAgoricApp(
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
+				vibc.ModuleName,               // Agoric added vibc
 				vlocalchain.ModuleName,        // Agoric added vlocalchain
 				vtransfer.ModuleName,          // Agoric added vtransfer
 			},
 			Deleted: []string{
-				crisistypes.ModuleName, // The SDK discontinued the crisis module in v0.51.0
-				"lien",                 // Agoric removed the lien module
+				"lien", // Agoric removed the lien module
 			},
 		}
 
