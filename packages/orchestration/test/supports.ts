@@ -51,10 +51,13 @@ export const commonSetup = async t => {
   );
 
   const transferBridge = makeFakeTransferBridge(rootZone);
-  const transferMiddleware = prepareTransferTools(
+  const { makeTransferMiddleware, makeBridgeTargetKit } = prepareTransferTools(
     rootZone.subZone('transfer'),
     prepareVowTools(rootZone.subZone('vows')),
-  ).transferMiddlewareForBridgeType(transferBridge, VTRANSFER_IBC_EVENT);
+  );
+  const transferMiddleware = makeTransferMiddleware(
+    makeBridgeTargetKit(transferBridge, VTRANSFER_IBC_EVENT),
+  );
 
   const localchainBridge = makeFakeLocalchainBridge(rootZone);
   const localchain = prepareLocalChainTools(
