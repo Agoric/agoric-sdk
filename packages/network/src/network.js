@@ -1289,6 +1289,7 @@ export const prepareEchoConnectionKit = zone => {
 
   return makeEchoConnectionKit;
 };
+/** @typedef {ReturnType<typeof prepareEchoConnectionKit>} MakeEchoConnectionKit */
 
 /**
  * Create a protocol handler that just connects to itself.
