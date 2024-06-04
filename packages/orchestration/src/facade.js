@@ -13,7 +13,7 @@ import { CosmosChainInfoShape } from './typeGuards.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, KnownChains, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
 /** @type {any} */
@@ -93,7 +93,7 @@ const makeLocalChainFacade = localchain => {
  * @param {Remote<TimerService>} io.timer
  * @param {ZCF} io.zcf
  * @param {Zone} io.zone
- * @returns {Chain<any>}
+ * @returns {Chain<CCI>}
  */
 const makeRemoteChainFacade = (
   chainInfo,
@@ -110,7 +110,7 @@ const makeRemoteChainFacade = (
 
   return {
     getChainInfo: async () => chainInfo,
-    /** @returns {Promise<OrchestrationAccount<any>>} */
+    /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
       console.log('makeAccount for', name);
 
@@ -127,6 +127,7 @@ const makeRemoteChainFacade = (
 
       // FIXME look up real values
       const bondDenom = name;
+      // @ts-expect-error XXX dynamic method availability
       return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
         storageNode: anyVal,
@@ -201,7 +202,12 @@ export const makeOrchestrationFacade = ({
             return makeLocalChainFacade(localchain);
           }
 
-          const chainInfo = chainInfos.get(name);
+          // TODO look up well known realistically https://github.com/Agoric/agoric-sdk/issues/9063
+          const chainInfo = chainInfos.has(name)
+            ? chainInfos.get(name)
+            : // @ts-expect-error may be undefined
+              wellKnownChainInfo[name];
+          assert(chainInfo, `unknown chain ${name}`);
 
           return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,

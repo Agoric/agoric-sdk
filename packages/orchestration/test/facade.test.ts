@@ -42,7 +42,7 @@ test('chain info', async t => {
     return orc.getChain('mock');
   });
 
-  const result = (await handle()) as Chain<'mock'>;
+  const result = (await handle()) as Chain<any>;
   t.deepEqual(await result.getChainInfo(), mockChainInfo);
 });
 

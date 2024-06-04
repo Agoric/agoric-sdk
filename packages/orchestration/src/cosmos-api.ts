@@ -224,3 +224,15 @@ export type IBCMsgTransferOptions = {
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
 };
+
+export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
+  (CCI extends {
+    icaEnabled: true;
+  }
+    ? IcaAccount
+    : {}) &
+    CCI extends {
+    stakingTokens: {};
+  }
+    ? StakingAccountActions
+    : {};
