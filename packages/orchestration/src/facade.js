@@ -129,7 +129,6 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
 
       // FIXME look up real values
       const bondDenom = name;
-      // @ts-expect-error FIXME missing methods
       return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
         storageNode: anyVal,

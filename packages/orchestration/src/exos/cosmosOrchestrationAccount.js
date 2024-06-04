@@ -16,7 +16,7 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { AmountShape, PaymentShape } from '@agoric/ertp';
+import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -27,7 +27,6 @@ import {
   AmountArgShape,
   ChainAddressShape,
   ChainAmountShape,
-  CoinShape,
   DelegationShape,
 } from '../typeGuards.js';
 import {
@@ -35,10 +34,11 @@ import {
   maxClockSkew,
   tryDecodeResponse,
 } from '../utils/cosmos.js';
+import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { dateInSeconds } from '../utils/time.js';
 
 /**
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -68,17 +68,14 @@ const { Fail } = assert;
 
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...orchestrationAccountMethods,
   asContinuingOffer: M.call().returns({
     publicSubscribers: M.any(),
     invitationMakers: M.any(),
     holder: M.any(),
   }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  getAddress: M.call().returns(ChainAddressShape),
-  getBalance: M.callWhen().optional(M.string()).returns(CoinShape),
-  getBalances: M.callWhen().optional(M.string()).returns(M.arrayOf(CoinShape)),
   delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
-  deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   redelegate: M.callWhen(
     ChainAddressShape,
     ChainAddressShape,
@@ -359,12 +356,12 @@ export const prepareCosmosOrchestrationAccountKit = (
           return harden(coins.map(toDenomAmount));
         },
         /**
-         * @param {DenomAmount['denom']} [denom] - defaults to bondDenom
+         * @param {DenomArg} denom
          * @returns {Promise<DenomAmount>}
          */
         async getBalance(denom) {
-          const { chainAddress, icqConnection, bondDenom } = this.state;
-          denom ||= bondDenom;
+          const { chainAddress, icqConnection } = this.state;
+          // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
 
           const [result] = await E(icqConnection).query([
@@ -381,6 +378,21 @@ export const prepareCosmosOrchestrationAccountKit = (
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
+        },
+
+        send(toAccount, amount) {
+          console.log('send got', toAccount, amount);
+          throw Error('not yet implemented');
+        },
+
+        transfer(amount, msg) {
+          console.log('transferSteps got', amount, msg);
+          throw Error('not yet implemented');
+        },
+
+        transferSteps(amount, msg) {
+          console.log('transferSteps got', amount, msg);
+          throw Error('not yet implemented');
         },
 
         withdrawRewards() {
