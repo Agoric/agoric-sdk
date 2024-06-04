@@ -405,16 +405,6 @@ export const prepareCosmosOrchestrationAccountKit = (
     },
   );
 
-  /** check holder facet against StakingAccountActions interface. */
-  // eslint-disable-next-line no-unused-vars
-  const typeCheck = () => {
-    /** @type {any} */
-    const arg = null;
-    /** @satisfies {StakingAccountActions} */
-    // eslint-disable-next-line no-unused-vars
-    const kit = makeCosmosOrchestrationAccountKit(arg, arg, arg).holder;
-  };
-
   return makeCosmosOrchestrationAccountKit;
 };
 
