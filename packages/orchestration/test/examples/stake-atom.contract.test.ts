@@ -13,11 +13,13 @@ const contractFile = `${dirname}/../../src/examples/stakeAtom.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/stakeAtom.contract.js').start;
 
-const coreEval = async (
-  t,
-  { orchestration, timer, marshaller, storage, bld },
-) => {
-  t.log('install stakeAtom contract');
+const startContract = async ({
+  orchestration,
+  timer,
+  marshaller,
+  storage,
+  bld,
+}) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
@@ -46,7 +48,7 @@ test('makeAccount, deposit, withdraw', async t => {
     brands: { ist },
     utils,
   } = await commonSetup(t);
-  const { publicFacet } = await coreEval(t, { ...bootstrap, bld: ist });
+  const { publicFacet } = await startContract({ ...bootstrap, bld: ist });
 
   t.log('make an ICA account');
   const account = await E(publicFacet).makeAccount();
