@@ -302,8 +302,10 @@ export const prepareCosmosOrchestrationAccountKit = (
           expect(result, trivialDelegateResponse, 'MsgDelegateResponse');
         },
         async deposit(payment) {
-          const { helper } = this.facets;
-          return E(helper.owned()).deposit(payment);
+          trace('deposit', payment);
+          console.error(
+            'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
+          );
         },
         async getBalances() {
           throw Error('not yet implemented');

@@ -196,8 +196,6 @@ export interface IcaAccount {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
-  /** deposit payment from zoe to the account*/
-  deposit: (payment: Payment) => Promise<void>;
   /** get Purse for a brand to .withdraw() a Payment from the account */
   getPurse: (brand: Brand) => Promise<Purse>;
   /**

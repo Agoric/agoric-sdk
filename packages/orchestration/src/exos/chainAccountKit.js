@@ -1,15 +1,15 @@
 /** @file ChainAccount exo */
 import { NonNullish } from '@agoric/assert';
+import { PurseShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-import { PaymentShape, PurseShape } from '@agoric/ertp';
-import { findAddressField } from '../utils/address.js';
 import {
-  ConnectionHandlerI,
   ChainAddressShape,
+  ConnectionHandlerI,
   Proto3Shape,
 } from '../typeGuards.js';
+import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
@@ -40,7 +40,6 @@ export const ChainAccountI = M.interface('ChainAccount', {
     .optional(M.record())
     .returns(M.promise()),
   close: M.callWhen().returns(M.undefined()),
-  deposit: M.callWhen(PaymentShape).returns(M.undefined()),
   getPurse: M.callWhen().returns(PurseShape),
 });
 
@@ -135,12 +134,6 @@ export const prepareChainAccountKit = zone =>
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
           await E(connection).close();
-        },
-        async deposit(payment) {
-          console.log('deposit got', payment);
-          console.error(
-            'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
-          );
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account
