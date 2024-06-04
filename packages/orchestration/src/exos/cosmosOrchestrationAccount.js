@@ -110,8 +110,12 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
-export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
-  const makeStakingAccountKit = zone.exoClassKit(
+export const prepareCosmosOrchestrationAccountKit = (
+  zone,
+  makeRecorderKit,
+  zcf,
+) => {
+  const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Staking Account Holder',
     {
       helper: M.interface('helper', {
@@ -408,11 +412,15 @@ export const prepareStakingAccountKit = (zone, makeRecorderKit, zcf) => {
     const arg = null;
     /** @satisfies {StakingAccountActions} */
     // eslint-disable-next-line no-unused-vars
-    const kit = makeStakingAccountKit(arg, arg, arg).holder;
+    const kit = makeCosmosOrchestrationAccountKit(arg, arg, arg).holder;
   };
 
-  return makeStakingAccountKit;
+  return makeCosmosOrchestrationAccountKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareStakingAccountKit>>} StakingAccountKit */
-/** @typedef {StakingAccountKit['holder']} StakingAccounHolder */
+/**
+ * @typedef {ReturnType<
+ *   ReturnType<typeof prepareCosmosOrchestrationAccountKit>
+ * >} CosmosOrchestrationAccountKit
+ */
+/** @typedef {CosmosOrchestrationAccountKit['holder']} StakingAccounHolder */

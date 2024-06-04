@@ -1,6 +1,4 @@
-/**
- * @file Example contract that uses orchestration
- */
+/** @file Example contract that uses orchestration */
 // TODO rename to "stakeIca" or something else that conveys is parameterized nature
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
@@ -10,7 +8,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
-import { prepareStakingAccountKit } from '../exos/stakingAccountKit.js';
+import { prepareCosmosOrchestrationAccountKit } from '../exos/cosmosOrchestrationAccount.js';
 
 const trace = makeTracer('StakeAtom');
 /**
@@ -63,11 +61,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const makeStakingAccountKit = prepareStakingAccountKit(
-    zone,
-    makeRecorderKit,
-    zcf,
-  );
+  const makeCosmosOrchestrationAccountKit =
+    prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
 
   async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
@@ -82,7 +77,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
-    const { holder, invitationMakers } = makeStakingAccountKit(
+    const { holder, invitationMakers } = makeCosmosOrchestrationAccountKit(
       accountAddress,
       bondDenom,
       {
