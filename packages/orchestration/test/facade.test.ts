@@ -26,6 +26,7 @@ test('chain info', async t => {
   const { zcf } = await setupZCFTest();
 
   const { registerChain, orchestrate } = makeOrchestrationFacade({
+    agoricNames: bootstrap.agoricNames,
     localchain: bootstrap.localchain,
     orchestrationService: bootstrap.orchestration,
     storageNode: bootstrap.storage.rootNode,
@@ -54,6 +55,7 @@ test('contract upgrade', async t => {
   // Register once
   {
     const { registerChain } = makeOrchestrationFacade({
+      agoricNames: bootstrap.agoricNames,
       localchain: bootstrap.localchain,
       orchestrationService: bootstrap.orchestration,
       storageNode: bootstrap.storage.rootNode,
@@ -72,6 +74,7 @@ test('contract upgrade', async t => {
   // Simulate running again in a new incarnation with the same zone
   {
     const { registerChain } = makeOrchestrationFacade({
+      agoricNames: bootstrap.agoricNames,
       localchain: bootstrap.localchain,
       orchestrationService: bootstrap.orchestration,
       storageNode: bootstrap.storage.rootNode,

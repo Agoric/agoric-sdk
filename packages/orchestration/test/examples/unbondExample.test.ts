@@ -26,6 +26,7 @@ test('start', async t => {
     { Stable: ist.issuer },
     {},
     {
+      agoricNames: bootstrap.agoricNames,
       localchain: bootstrap.localchain,
       orchestrationService: bootstrap.orchestration,
       storageNode: bootstrap.storage.rootNode,

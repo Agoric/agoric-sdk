@@ -3,11 +3,11 @@
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { wellKnownChainInfo } from './chain-info.js';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 import { CosmosChainInfoShape } from './typeGuards.js';
 
 /**
+ * @import {NameHub} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -18,6 +18,10 @@ import { CosmosChainInfoShape } from './typeGuards.js';
 
 /** @type {any} */
 const anyVal = null;
+
+// TODO define key hierarchy in shared constants
+/** agoricNames key for ChainInfo hub */
+export const CHAIN_KEY = 'chain';
 
 // FIXME look up real values
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
@@ -153,6 +157,7 @@ const makeRemoteChainFacade = (
  *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
+ *   agoricNames: Remote<NameHub>;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -162,6 +167,7 @@ export const makeOrchestrationFacade = ({
   storageNode,
   orchestrationService,
   localchain,
+  agoricNames,
 }) => {
   console.log('makeOrchestrationFacade got', {
     zone,
@@ -175,6 +181,22 @@ export const makeOrchestrationFacade = ({
     keyShape: M.string(),
     valueShape: CosmosChainInfoShape,
   });
+
+  /**
+   * @param {string} name
+   * @returns {Promise<CosmosChainInfo>}
+   */
+  const getChainInfo = async name => {
+    // Either from registerChain or memoized remote lookup()
+    if (chainInfos.has(name)) {
+      return chainInfos.get(name);
+    }
+
+    const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, name);
+    assert(chainInfo, `unknown chain ${name}`);
+    chainInfos.init(name, chainInfo);
+    return chainInfo;
+  };
 
   return {
     /**
@@ -209,12 +231,7 @@ export const makeOrchestrationFacade = ({
             return makeLocalChainFacade(localchain);
           }
 
-          // TODO look up well known realistically https://github.com/Agoric/agoric-sdk/issues/9063
-          const chainInfo = chainInfos.has(name)
-            ? chainInfos.get(name)
-            : // @ts-expect-error may be undefined
-              wellKnownChainInfo[name];
-          assert(chainInfo, `unknown chain ${name}`);
+          const chainInfo = await getChainInfo(name);
 
           return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,

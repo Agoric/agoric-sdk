@@ -15,12 +15,13 @@ import { orcUtils } from '../utils/orc.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  * @import {Baggage} from '@agoric/vat-data'
- * @import {Zone} from '@agoric/zone';
+ * @import {NameHub} from '@agoric/vats';
  */
 
 /** @type {ContractMeta} */
 export const meta = {
   privateArgsShape: {
+    agoricNames: M.remotable('agoricNames'),
     localchain: M.remotable('localchain'),
     orchestrationService: M.or(M.remotable('orchestration'), null),
     storageNode: StorageNodeShape,
@@ -42,6 +43,7 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
+ *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
@@ -54,16 +56,22 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const zone = makeDurableZone(baggage);
 
-  const { localchain, orchestrationService, storageNode, timerService } =
-    privateArgs;
+  const {
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
+    timerService,
+  } = privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
-    zone,
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
     timerService,
     zcf,
-    localchain,
-    storageNode,
-    orchestrationService,
+    zone,
   });
 
   /** deprecated historical example */

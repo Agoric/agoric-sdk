@@ -8,6 +8,7 @@ import { makeOrchestrationFacade } from '../facade.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  */
@@ -15,6 +16,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 /**
  * @param {ZCF} zcf
  * @param {{
+ *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
@@ -23,17 +25,23 @@ import { makeOrchestrationFacade } from '../facade.js';
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { localchain, orchestrationService, storageNode, timerService } =
-    privateArgs;
+  const {
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
+    timerService,
+  } = privateArgs;
   const zone = makeDurableZone(baggage);
 
   const { orchestrate } = makeOrchestrationFacade({
+    agoricNames,
     localchain,
-    zone,
+    orchestrationService,
+    storageNode,
     timerService,
     zcf,
-    storageNode,
-    orchestrationService,
+    zone,
   });
 
   /** @type {OfferHandler} */
