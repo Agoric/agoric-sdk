@@ -106,7 +106,7 @@ export const prepareZcMint = (
         // committed atomically, but it is not a disaster if they are
         // not. If we minted only, no one would ever get those
         // invisibly-minted assets.
-        E(zoeMint).mintAndEscrow(totalToMint);
+        void E(zoeMint).mintAndEscrow(totalToMint);
         reallocator.reallocate(zcfSeat, allocationPlusGains);
         return zcfSeat;
       },
@@ -143,7 +143,7 @@ export const prepareZcMint = (
         // not. If we only commit the allocationMinusLosses no one would
         // ever get the unburned assets.
         reallocator.reallocate(zcfSeat, allocationMinusLosses);
-        E(zoeMint).withdrawAndBurn(totalToBurn);
+        void E(zoeMint).withdrawAndBurn(totalToBurn);
       },
     },
   );
