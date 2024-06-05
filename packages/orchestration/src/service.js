@@ -244,7 +244,7 @@ const prepareOrchestrationKit = (
  * @param {VowTools} vowTools
  */
 export const prepareOrchestrationTools = (zone, vowTools) => {
-  const makeChainAccountKit = prepareChainAccountKit(zone);
+  const makeChainAccountKit = prepareChainAccountKit(zone, vowTools);
   const makeICQConnectionKit = prepareICQConnectionKit(zone, vowTools);
   const makeOrchestrationKit = prepareOrchestrationKit(
     zone,

@@ -4,7 +4,9 @@ import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { QueryBalanceRequest } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { matches } from '@endo/patterns';
 import { commonSetup } from './supports.js';
+import { ChainAddressShape } from '../src/typeGuards.js';
 
 test('makeICQConnection returns an ICQConnection', async t => {
   const {
@@ -89,17 +91,32 @@ test('makeAccount returns a ChainAccount', async t => {
     'remote address contains version and encoding in version string',
   );
 
+  t.true(matches(chainAddr, ChainAddressShape));
+  t.regex(
+    chainAddr.address,
+    /UNPARSABLE_CHAIN_ADDRESS/,
+    'TODO use mocked ibc connection instead of echo connection',
+  );
+
+  const delegateMsg = Any.toJSON(
+    MsgDelegate.toProtoMsg({
+      delegatorAddress: 'cosmos1test',
+      validatorAddress: 'cosmosvaloper1test',
+      amount: { denom: 'uatom', amount: '10' },
+    }),
+  );
   await t.throwsAsync(
-    E(account).executeEncodedTx([
-      Any.toJSON(
-        MsgDelegate.toProtoMsg({
-          delegatorAddress: 'cosmos1test',
-          validatorAddress: 'cosmosvaloper1test',
-          amount: { denom: 'uatom', amount: '10' },
-        }),
-      ),
-    ]),
+    E(account).executeEncodedTx([delegateMsg]),
     { message: /"type":1(.*)"data":"(.*)"memo":""/ },
     'TODO do not use echo connection',
+  );
+
+  await E(account).close();
+  await t.throwsAsync(
+    E(account).executeEncodedTx([delegateMsg]),
+    {
+      message: 'Connection closed',
+    },
+    'cannot execute transaction if connection is closed',
   );
 });
