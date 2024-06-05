@@ -77,6 +77,11 @@ export type CosmosChainInfo = {
    */
   allowedMessages: TypeUrl[];
   allowedQueries: TypeUrl[];
+
+  /**
+   * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
+   */
+  stakingTokens?: Array<{ denom: string }>;
 };
 
 export interface StakingAccountQueries {
@@ -219,3 +224,15 @@ export type IBCMsgTransferOptions = {
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
 };
+
+export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
+  (CCI extends {
+    icaEnabled: true;
+  }
+    ? IcaAccount
+    : {}) &
+    CCI extends {
+    stakingTokens: {};
+  }
+    ? StakingAccountActions
+    : {};

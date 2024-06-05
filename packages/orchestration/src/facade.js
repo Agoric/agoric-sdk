@@ -1,7 +1,11 @@
 /** @file Orchestration service */
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import { wellKnownChainInfo } from './chain-info.js';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
+import { CosmosChainInfoShape } from './typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -9,13 +13,14 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, KnownChains, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
 /** @type {any} */
 const anyVal = null;
 
-// FIXME should be configurable
+// FIXME look up real values
+// UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
 const mockLocalChainInfo = {
   allegedName: 'agoric',
   allowedMessages: [],
@@ -39,36 +44,41 @@ const makeLocalChainFacade = localchain => {
       return mockLocalChainInfo;
     },
 
-    // @ts-expect-error FIXME promise resolution through membrane
     async makeAccount() {
       const account = await E(localchain).makeAccount();
 
       return {
-        deposit(payment) {
+        async deposit(payment) {
           console.log('deposit got', payment);
-          return E(account).deposit(payment);
+          await E(account).deposit(payment);
         },
-        async getAddress() {
-          const addressStr = await E(account).getAddress();
+        getAddress() {
+          const addressStr = account.getAddress();
           return {
             address: addressStr,
             chainId: mockLocalChainInfo.chainId,
             addressEncoding: 'bech32',
           };
         },
-        getBalance(_denom) {
-          // FIXME map denom to Brand
-          const brand = /** @type {any} */ (null);
-          return E(account).getBalance(brand);
+        async getBalance(denomArg) {
+          // FIXME look up real values
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
+          const [brand, denom] =
+            typeof denomArg === 'string'
+              ? [/** @type {any} */ (null), denomArg]
+              : [denomArg, 'FIXME'];
+
+          const natAmount = await account.getBalance(brand);
+          return harden({ denom, value: natAmount.value });
         },
         getBalances() {
           throw new Error('not yet implemented');
         },
-        send(toAccount, amount) {
+        async send(toAccount, amount) {
           // FIXME implement
           console.log('send got', toAccount, amount);
         },
-        transfer(amount, destination, opts) {
+        async transfer(amount, destination, opts) {
           // FIXME implement
           console.log('transfer got', amount, destination, opts);
         },
@@ -82,27 +92,21 @@ const makeLocalChainFacade = localchain => {
 };
 
 /**
- * @template {string} C
- * @param {C} name
+ * @template {CosmosChainInfo} CCI
+ * @param {CCI} chainInfo
  * @param {object} io
  * @param {Remote<OrchestrationService>} io.orchestration
  * @param {Remote<TimerService>} io.timer
  * @param {ZCF} io.zcf
  * @param {Zone} io.zone
- * @returns {Chain<C>}
+ * @returns {Chain<CCI>}
  */
-const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
-  const chainInfo = /** @type {CosmosChainInfo} */ ({
-    allegedName: name,
-    chainId: 'fixme',
-    connections: {},
-    icaEnabled: true,
-    icqEnabled: true,
-    pfmEnabled: true,
-    ibcHooksEnabled: true,
-    allowedMessages: [],
-    allowedQueries: [],
-  });
+const makeRemoteChainFacade = (
+  chainInfo,
+  { orchestration, timer, zcf, zone },
+) => {
+  const name = chainInfo.chainId;
+
   const makeRecorderKit = () => anyVal;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone.subZone(name),
@@ -112,11 +116,10 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
 
   return {
     getChainInfo: async () => chainInfo,
-    /** @returns {Promise<OrchestrationAccount<C>>} */
+    /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
-      console.log('makeAccount for', name);
-
       // FIXME look up real values
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
       const hostConnectionId = 'connection-1';
       const controllerConnectionId = 'connection-2';
 
@@ -127,8 +130,13 @@ const makeRemoteChainFacade = (name, { orchestration, timer, zcf, zone }) => {
 
       const address = await E(icaAccount).getAddress();
 
-      // FIXME look up real values
-      const bondDenom = name;
+      const [{ denom: bondDenom }] = chainInfo.stakingTokens || [
+        {
+          denom: null,
+        },
+      ];
+      assert(bondDenom, 'missing bondDenom');
+      // @ts-expect-error XXX dynamic method availability
       return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
         storageNode: anyVal,
@@ -165,12 +173,33 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
   });
 
+  const chainInfos = makeScalarBigMapStore('chainInfos', {
+    keyShape: M.string(),
+    valueShape: CosmosChainInfoShape,
+  });
+
   return {
+    /**
+     * Register a new chain in a heap store. The name will override a name in
+     * well known chain names.
+     *
+     * This registration will not surve a reincarnation of the vat so if the
+     * chain is not yet in the well known names at that point, it will have to
+     * be registered again. In an unchanged contract `start` the call will
+     * happen again naturally.
+     *
+     * @param {string} name
+     * @param {ChainInfo} chainInfo
+     */
+    registerChain(name, chainInfo) {
+      chainInfos.init(name, chainInfo);
+    },
     /**
      * @template Context
      * @template {any[]} Args
-     * @param {string} durableName
-     * @param {Context} ctx
+     * @param {string} durableName - the orchestration flow identity in the zone
+     *   (to resume across upgrades)
+     * @param {Context} ctx - values to pass through the async flow membrane
      * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
      * @returns {(...args: Args) => Promise<unknown>}
      */
@@ -182,7 +211,14 @@ export const makeOrchestrationFacade = ({
             return makeLocalChainFacade(localchain);
           }
 
-          return makeRemoteChainFacade(name, {
+          // TODO look up well known realistically https://github.com/Agoric/agoric-sdk/issues/9063
+          const chainInfo = chainInfos.has(name)
+            ? chainInfos.get(name)
+            : // @ts-expect-error may be undefined
+              wellKnownChainInfo[name];
+          assert(chainInfo, `unknown chain ${name}`);
+
+          return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,
             timer: timerService,
             zcf,
