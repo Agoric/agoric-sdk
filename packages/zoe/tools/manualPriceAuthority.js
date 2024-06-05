@@ -92,7 +92,7 @@ export function makeManualPriceAuthority(options) {
     setPrice: newPrice => {
       currentPrice = newPrice;
       updater.updateState(currentPrice);
-      fireTriggers(createQuote);
+      void fireTriggers(createQuote);
     },
     disable: () => {
       disabled = true;
