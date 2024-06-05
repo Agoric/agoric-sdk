@@ -19,18 +19,15 @@ export const mockChainInfo: CosmosChainInfo = harden({
 });
 
 test('chain info', async t => {
-  const { bootstrap } = await commonSetup(t);
+  const { bootstrap, facadeServices } = await commonSetup(t);
 
   const zone = bootstrap.rootZone;
 
   const { zcf } = await setupZCFTest();
 
   const { registerChain, orchestrate } = makeOrchestrationFacade({
-    agoricNames: bootstrap.agoricNames,
-    localchain: bootstrap.localchain,
-    orchestrationService: bootstrap.orchestration,
+    ...facadeServices,
     storageNode: bootstrap.storage.rootNode,
-    timerService: bootstrap.timer,
     zcf,
     zone,
   });
@@ -46,7 +43,7 @@ test('chain info', async t => {
 });
 
 test('contract upgrade', async t => {
-  const { bootstrap } = await commonSetup(t);
+  const { bootstrap, facadeServices } = await commonSetup(t);
 
   const zone = bootstrap.rootZone;
 
@@ -55,11 +52,8 @@ test('contract upgrade', async t => {
   // Register once
   {
     const { registerChain } = makeOrchestrationFacade({
-      agoricNames: bootstrap.agoricNames,
-      localchain: bootstrap.localchain,
-      orchestrationService: bootstrap.orchestration,
+      ...facadeServices,
       storageNode: bootstrap.storage.rootNode,
-      timerService: bootstrap.timer,
       zcf,
       zone,
     });
@@ -74,11 +68,8 @@ test('contract upgrade', async t => {
   // Simulate running again in a new incarnation with the same zone
   {
     const { registerChain } = makeOrchestrationFacade({
-      agoricNames: bootstrap.agoricNames,
-      localchain: bootstrap.localchain,
-      orchestrationService: bootstrap.orchestration,
+      ...facadeServices,
       storageNode: bootstrap.storage.rootNode,
-      timerService: bootstrap.timer,
       zcf,
       zone,
     });

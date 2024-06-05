@@ -93,6 +93,12 @@ export const commonSetup = async t => {
       storageNode: storage.rootNode,
       timerService: timer,
     },
+    facadeServices: {
+      agoricNames,
+      localchain,
+      orchestrationService: orchestration,
+      timerService: timer,
+    },
     utils: {
       pourPayment,
     },
