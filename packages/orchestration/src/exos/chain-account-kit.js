@@ -2,7 +2,7 @@
 import { NonNullish } from '@agoric/assert';
 import { PurseShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
   ChainAddressShape,
@@ -15,7 +15,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -55,11 +55,22 @@ export const ChainAccountI = M.interface('ChainAccount', {
  * }} State
  */
 
-/** @param {Zone} zone */
-export const prepareChainAccountKit = zone =>
+/**
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
+ */
+export const prepareChainAccountKit = (zone, { watch, when }) =>
   zone.exoClassKit(
     'ChainAccountKit',
-    { account: ChainAccountI, connectionHandler: ConnectionHandlerI },
+    {
+      account: ChainAccountI,
+      connectionHandler: ConnectionHandlerI,
+      handleExecuteEncodedTxWatcher: M.interface('HandleQueryWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+          .returns(M.string()),
+      }),
+    },
     /**
      * @param {string} chainId
      * @param {Port} port
@@ -76,6 +87,12 @@ export const prepareChainAccountKit = zone =>
         localAddress: undefined,
       }),
     {
+      handleExecuteEncodedTxWatcher: {
+        /** @param {string} ack */
+        onFulfilled(ack) {
+          return parseTxPacket(ack);
+        },
+      },
       account: {
         /** @returns {ChainAddress} */
         getAddress() {
@@ -123,20 +140,21 @@ export const prepareChainAccountKit = zone =>
         executeEncodedTx(msgs, opts) {
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
-          return E.when(
-            E(connection).send(makeTxPacket(msgs, opts)),
-            // if parseTxPacket cannot find a `result` key, it throws
-            ack => parseTxPacket(ack),
+          return when(
+            watch(
+              E(connection).send(makeTxPacket(msgs, opts)),
+              this.facets.handleExecuteEncodedTxWatcher,
+            ),
           );
         },
         /** Close the remote account */
-        async close() {
-          // FIXME what should the behavior be here? and `onClose`?
+        close() {
+          /// TODO #9192 what should the behavior be here? and `onClose`?
           // - retrieve assets?
           // - revoke the port?
           const { connection } = this.state;
           if (!connection) throw Fail`connection not available`;
-          await E(connection).close();
+          return when(watch(E(connection).close()));
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account
