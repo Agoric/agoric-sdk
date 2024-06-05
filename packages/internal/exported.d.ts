@@ -15,6 +15,7 @@ import {
 } from './src/lib-chainStorage.js';
 
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _ERef as ERef,
     _Marshaller as Marshaller,

@@ -244,7 +244,8 @@ type ContractStartFnResult<PF, CF> = {
 };
 
 // XXX redef, losing documentation
-type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
+type ContractOf<S extends (...args: any) => any> =
+  import('../zoeService/utils').ContractOf<S>;
 type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
 
 declare const OfferReturn: unique symbol;
