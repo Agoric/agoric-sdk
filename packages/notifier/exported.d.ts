@@ -21,6 +21,7 @@ import {
 } from './src/types.js';
 
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _EachTopic as EachTopic,
     _IterableEachTopic as IterableEachTopic,

@@ -16,6 +16,7 @@ import {
   GovernableStartFn as _GovernableStartFn,
 } from './src/types.js';
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _CommitteeElectoratePublic as CommitteeElectoratePublic,
     _GovernableStartFn as GovernableStartFn,

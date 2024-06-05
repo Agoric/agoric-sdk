@@ -19,6 +19,7 @@ import {
   Purse as _Purse,
 } from './src/types.js';
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _Amount as Amount,
     _Brand as Brand,
