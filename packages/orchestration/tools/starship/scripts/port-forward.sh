@@ -58,7 +58,7 @@ if [[ $num_chains -gt -1 ]]; then
   for i in $(seq 0 $num_chains); do
     # derive chain pod name from chain id
     # https://github.com/cosmology-tech/starship/blob/main/charts/devnet/templates/_helpers.tpl#L56
-    chain=$(yq -r ".chains[$i].name" ${CONFIGFILE} )
+    chain=$(yq -r ".chains[$i].id" ${CONFIGFILE} )
     chain=${chain/_/"-"}
     localrpc=$(yq -r ".chains[$i].ports.rpc" ${CONFIGFILE} )
     localgrpc=$(yq -r ".chains[$i].ports.grpc" ${CONFIGFILE} )
@@ -129,4 +129,3 @@ then
   [[ "$localprometheus" != "null" ]] && color yellow "    prometheus to http://localhost:$localprometheus" && kubectl port-forward service/prometheus-service $localprometheus:$MONITORING_PROMETHEUS_PORT > /dev/null 2>&1 &
   sleep 1
 fi
-
