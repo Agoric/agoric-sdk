@@ -1,6 +1,6 @@
 import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
-import type { PromiseVow, Remote } from '@agoric/vow';
+import type { PromiseVow } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
 
 export type Board = ReturnType<
