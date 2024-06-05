@@ -12,12 +12,17 @@
     "build": "exit 0",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
-    "test": "ava",
+    "test": "ava 'test/**/*.test.*'",
+    "test:e2e": "ava 'tools/starship/test/**/*.e2e.*'",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint .",
-    "lint-fix": "yarn lint:eslint --fix"
+    "lint-fix": "yarn lint:eslint --fix",
+    "setup:e2e": "make -C tools/starship setup-deps setup-kind",
+    "start:e2e": "make -C tools/starship install",
+    "port-forward:e2e": "make -C tools/starship port-forward",
+    "stop:e2e": "make -C tools/starship stop"
   },
   "repository": {
     "type": "git",
@@ -51,17 +56,26 @@
   },
   "devDependencies": {
     "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/crypto": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
+    "@cosmjs/stargate": "^0.32.3",
     "@endo/ses-ava": "^1.2.2",
-    "ava": "^5.3.1"
+    "@types/node": "^20.14.2",
+    "ava": "^5.3.1",
+    "starshipjs": "^2.0.0"
   },
   "ava": {
     "extensions": {
       "js": true,
       "ts": "module"
     },
+    "environmentVariables": {
+      "LOCKDOWN_STACK_FILTERING": "verbose",
+      "LOCKDOWN_OVERRIDE_TAMING": "severe"
+    },
     "files": [
-      "test/**/*.test.*"
+      "test/**/*.test.*",
+      "tools/starship/test/**/*.e2e.*"
     ],
     "nodeArguments": [
       "--loader=tsx",

@@ -1,0 +1,49 @@
+name: Orchestration E2E Tests
+
+on:
+  # for now, only run on-demand
+  workflow_dispatch:
+
+jobs:
+  orchestration-e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18.x']
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          path: ./agoric-sdk
+      - uses: ./agoric-sdk/.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+          path: ./agoric-sdk
+
+      - name: yarn link
+        run: |
+          yarn link-cli ~/bin/agoric
+          echo "/home/runner/bin" >> $GITHUB_PATH
+        working-directory: ./agoric-sdk
+    
+      - name: Install agoric-sdk deps
+        run: yarn install
+        working-directory: ./agoric-sdk
+
+      - name: Build agoric-sdk deps
+        run: yarn build
+        working-directory: ./agoric-sdk
+  
+      - name: Set Up Starship Infrastructure
+        id: starship-infra
+        uses: cosmology-tech/starship-action@0.2.12
+        with:
+          # uses latest published master, until we make the config dynamic and reference a commit hash
+          values: ./agoric-sdk/packages/orchestration/tools/starship/config.ci.yaml
+          port-forward: true
+          version: 0.2.2
+ 
+      - name: Run @agoric/orchestration E2E Tests
+        run: yarn test:e2e
+        working-directory: ./agoric-sdk/packages/orchestration
