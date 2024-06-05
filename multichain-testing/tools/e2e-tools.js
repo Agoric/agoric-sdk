@@ -131,13 +131,12 @@ const installBundle = async (fullPath, opts) => {
  * @param {{
  *   agd: import('./agd-lib.js').Agd;
  *   blockTool: BlockTool;
- *   lcd: import('./ui-kit-goals/makeHttpClient.js').LCD;
+ *   lcd: import('./makeHttpClient.js').LCD;
  *   delay: (ms: number) => Promise<void>;
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
  * }} opts
- * @returns {Promise<import('../test/wallet-tools.js').MockWallet>}
  */
 export const provisionSmartWallet = async (
   address,
@@ -154,6 +153,7 @@ export const provisionSmartWallet = async (
 ) => {
   const { query: q } = makeQueryKit(makeVStorage(lcd));
 
+  // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
     vbankEntries.map(([_denom, info]) => [info.issuerName, info]),
@@ -227,14 +227,14 @@ export const provisionSmartWallet = async (
     }
   }
 
-  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
+  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
   const offers = Far('Offers', {
     executeOffer,
     /** @param {string | number} offerId */
     tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
-  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
+  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
     receive: async payment => {
       const brand = await E(payment).getAllegedBrand();
@@ -589,6 +589,10 @@ export const makeE2ETools = (
     makeQueryTool: () => makeQueryKit(vstorage).query,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
+    /**
+     * @param {string} address
+     * @param {Record<string, bigint>} amount
+     */
     provisionSmartWallet: (address, amount) =>
       provisionSmartWallet(address, amount, { agd, blockTool, lcd, delay }),
   };
