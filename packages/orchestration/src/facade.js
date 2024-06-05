@@ -23,8 +23,6 @@ const anyVal = null;
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
 const mockLocalChainInfo = {
   allegedName: 'agoric',
-  allowedMessages: [],
-  allowedQueries: [],
   chainId: 'agoriclocal',
   connections: anyVal,
   ibcHooksEnabled: true,

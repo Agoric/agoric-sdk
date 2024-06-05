@@ -53,7 +53,5 @@ export const CosmosChainInfoShape = M.splitRecord(
     icqEnabled: M.boolean(),
     pfmEnabled: M.boolean(),
     ibcHooksEnabled: M.boolean(),
-    allowedMessages: M.arrayOf(M.string()),
-    allowedQueries: M.arrayOf(M.string()),
   },
 );

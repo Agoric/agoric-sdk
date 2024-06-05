@@ -15,8 +15,6 @@ export const mockChainInfo: CosmosChainInfo = harden({
   icqEnabled: false,
   pfmEnabled: false,
   ibcHooksEnabled: false,
-  allowedMessages: [],
-  allowedQueries: [],
   stakingTokens: [{ denom: 'umock' }],
 });
 
