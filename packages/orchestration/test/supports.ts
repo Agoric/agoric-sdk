@@ -86,6 +86,13 @@ export const commonSetup = async t => {
       bld,
       ist,
     },
+    commonPrivateArgs: {
+      agoricNames,
+      localchain,
+      orchestrationService: orchestration,
+      storageNode: storage.rootNode,
+      timerService: timer,
+    },
     utils: {
       pourPayment,
     },

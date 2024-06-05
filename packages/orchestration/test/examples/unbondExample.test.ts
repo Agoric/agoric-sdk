@@ -13,8 +13,8 @@ type StartFn =
 
 test('start', async t => {
   const {
-    bootstrap,
     brands: { ist },
+    commonPrivateArgs,
   } = await commonSetup(t);
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
@@ -25,13 +25,7 @@ test('start', async t => {
     installation,
     { Stable: ist.issuer },
     {},
-    {
-      agoricNames: bootstrap.agoricNames,
-      localchain: bootstrap.localchain,
-      orchestrationService: bootstrap.orchestration,
-      storageNode: bootstrap.storage.rootNode,
-      timerService: bootstrap.timer,
-    },
+    commonPrivateArgs,
   );
 
   const inv = E(publicFacet).makeUnbondAndLiquidStakeInvitation();
