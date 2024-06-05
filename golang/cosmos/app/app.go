@@ -182,6 +182,7 @@ var (
 		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
 		vbank.AppModuleBasic{},
+		vtransfer.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -526,6 +527,7 @@ func NewAgoricApp(
 		app.SwingSetKeeper.PushAction,
 	)
 
+	vtransferModule := vtransfer.NewAppModule(app.VtransferKeeper)
 	app.vtransferPort = app.AgdServer.MustRegisterPortHandler("vtransfer",
 		vibc.NewReceiver(app.VtransferKeeper),
 	)
@@ -689,6 +691,7 @@ func NewAgoricApp(
 		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
 		vbankModule,
+		vtransferModule,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -726,6 +729,7 @@ func NewAgoricApp(
 		swingset.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
+		vtransfer.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		// Cosmos-SDK modules appear roughly in the order used by simapp and gaiad.
@@ -733,6 +737,7 @@ func NewAgoricApp(
 		stakingtypes.ModuleName,
 		// vibc is an Agoric-specific IBC app, so group it here with other IBC apps.
 		vibc.ModuleName,
+		vtransfer.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibchost.ModuleName,
 		icatypes.ModuleName,
@@ -870,7 +875,6 @@ func NewAgoricApp(
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM
-				vibc.ModuleName,               // Agoric added vibc
 				vlocalchain.ModuleName,        // Agoric added vlocalchain
 				vtransfer.ModuleName,          // Agoric added vtransfer
 			},
