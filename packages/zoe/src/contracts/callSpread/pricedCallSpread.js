@@ -81,7 +81,7 @@ const start = zcf => {
     'strikePrice2 must be greater than strikePrice1',
   );
 
-  zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
+  void zcf.saveIssuer(zcf.getInvitationIssuer(), 'Options');
 
   // We will create the two options early and allocate them to this seat.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
