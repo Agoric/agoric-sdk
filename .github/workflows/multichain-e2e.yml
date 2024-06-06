@@ -1,0 +1,49 @@
+name: Multichain E2E Tests
+
+on:
+  # for now, only run on-demand
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  multichain-e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18.x']
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          path: ./agoric-sdk
+      - uses: ./agoric-sdk/.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.node-version }}
+          path: ./agoric-sdk
+
+      - name: Enable Corepack
+        run: corepack enable || sudo corepack enable
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Install @agoric/multichain-testing deps
+        run: yarn install
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Lint @agoric/multichain-testing
+        run: yarn lint
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Set Up Starship Infrastructure
+        id: starship-infra
+        uses: cosmology-tech/starship-action@0.2.19
+        with:
+          # uses ghcr.io/agoric/agoric-sdk:dev image (latest master)
+          values: ./agoric-sdk/multichain-testing/config.ci.yaml
+          port-forward: true
+          version: 0.2.2
+          timeout: 30m
+
+      - name: Run @agoric/multichain-testing E2E Tests
+        run: yarn test
+        working-directory: ./agoric-sdk/multichain-testing
