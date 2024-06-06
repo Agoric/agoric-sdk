@@ -7,6 +7,7 @@ import {
   State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import { E } from '@endo/far';
 
 /**
  * @import {CosmosChainInfo, EthChainInfo} from './types.js';
@@ -113,3 +114,20 @@ export const wellKnownChainInfo =
       },
     })
   );
+
+/**
+ * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {(...messages: string[]) => void} log
+ */
+export const registerChainNamespace = async (agoricNamesAdmin, log) => {
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
+
+  const registrationPromises = Object.entries(wellKnownChainInfo).map(
+    async ([name, info]) => {
+      log(`registering chain ${name}`);
+      return E(nameAdmin).update(name, info);
+    },
+  );
+
+  await Promise.all(registrationPromises);
+};

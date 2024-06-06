@@ -2,6 +2,7 @@ import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stake } from '@agoric/internal/src/tokens.js';
 import { E } from '@endo/far';
+import { registerChainNamespace } from '../chain-info.js';
 
 const trace = makeTracer('StartStakeBld', true);
 
@@ -19,6 +20,7 @@ const trace = makeTracer('StartStakeBld', true);
 export const startStakeBld = async ({
   consume: {
     agoricNames: agoricNamesP,
+    agoricNamesAdmin,
     board,
     chainStorage,
     chainTimerService: chainTimerServiceP,
@@ -37,6 +39,9 @@ export const startStakeBld = async ({
 }) => {
   const VSTORAGE_PATH = 'stakeBld';
   trace('startStakeBld');
+
+  // Assumes this is the first proposal to need/provide `chain` namespace
+  await registerChainNamespace(agoricNamesAdmin, trace);
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
 
@@ -80,6 +85,8 @@ export const getManifestForStakeBld = ({ restoreRef }, { installKeys }) => {
     manifest: {
       [startStakeBld.name]: {
         consume: {
+          agoricNames: true,
+          agoricNamesAdmin: true,
           board: true,
           chainStorage: true,
           chainTimerService: true,
