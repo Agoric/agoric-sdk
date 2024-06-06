@@ -19,8 +19,6 @@ export const wellKnownChainInfo =
         icqEnabled: true,
         pfmEnabled: true,
         ibcHooksEnabled: true,
-        allowedMessages: [],
-        allowedQueries: [],
         stakingTokens: [{ denom: 'ustride' }],
       },
       cosmos: {
@@ -30,8 +28,6 @@ export const wellKnownChainInfo =
         icqEnabled: true,
         pfmEnabled: true,
         ibcHooksEnabled: true,
-        allowedMessages: [],
-        allowedQueries: [],
         stakingTokens: [{ denom: 'uatom' }],
       },
       celestia: {
@@ -41,8 +37,6 @@ export const wellKnownChainInfo =
         icqEnabled: true,
         pfmEnabled: true,
         ibcHooksEnabled: true,
-        allowedMessages: [],
-        allowedQueries: [],
         stakingTokens: [{ denom: 'utia' }],
       },
       osmosis: {
@@ -52,8 +46,6 @@ export const wellKnownChainInfo =
         icqEnabled: true,
         pfmEnabled: true,
         ibcHooksEnabled: true,
-        allowedMessages: [],
-        allowedQueries: [],
         stakingTokens: [{ denom: 'uosmo' }],
       },
     })

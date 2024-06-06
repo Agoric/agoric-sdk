@@ -72,11 +72,6 @@ export type CosmosChainInfo = {
   icqEnabled: boolean;
   pfmEnabled: boolean;
   ibcHooksEnabled: boolean;
-  /**
-   *
-   */
-  allowedMessages: TypeUrl[];
-  allowedQueries: TypeUrl[];
 
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117

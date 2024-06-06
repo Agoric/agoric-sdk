@@ -9,8 +9,13 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
+import { makeNameHubKit } from '@agoric/vats';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { fakeNetworkEchoStuff } from './network-fakes.js';
 import { prepareOrchestrationTools } from '../src/service.js';
+import { CHAIN_KEY } from '../src/facade.js';
+import type { CosmosChainInfo } from '../src/cosmos-api.js';
+import { wellKnownChainInfo } from '../src/chain-info.js';
 
 export { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
 
@@ -53,8 +58,21 @@ export const commonSetup = async t => {
   const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
+  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+    makeNameHubKit();
+  const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log, [
+    CHAIN_KEY,
+  ]);
+
+  // Simulate what BLD stakers would have configured
+  for (const [name, info] of Object.entries(wellKnownChainInfo)) {
+    // @ts-expect-error FIXME types
+    spaces.chain.produce[name].resolve(info);
+  }
+
   return {
     bootstrap: {
+      agoricNames,
       bankManager,
       timer,
       localchain,
@@ -67,6 +85,19 @@ export const commonSetup = async t => {
       // TODO consider omitting `issuer` to prevent minting, which the bank can't observe
       bld,
       ist,
+    },
+    commonPrivateArgs: {
+      agoricNames,
+      localchain,
+      orchestrationService: orchestration,
+      storageNode: storage.rootNode,
+      timerService: timer,
+    },
+    facadeServices: {
+      agoricNames,
+      localchain,
+      orchestrationService: orchestration,
+      timerService: timer,
     },
     utils: {
       pourPayment,

@@ -1,5 +1,10 @@
 /**
- * @file Mocked Chain Info object until #8879
+ * @file Mocked Chain Info object
+ *
+ *   Until https://github.com/Agoric/agoric-sdk/issues/8879
+ *
+ *   Generated using
+ *   https://github.com/Agoric/agoric-sdk/compare/pc/ibc-chain-info
  */
 import {
   Order,
@@ -67,9 +72,7 @@ const connectionEntries = harden({
   },
 });
 
-/**
- * @returns {Pick<CosmosChainInfo, 'connections' | 'chainId'>}
- */
+/** @returns {Pick<CosmosChainInfo, 'connections' | 'chainId'>} */
 export const prepareMockChainInfo = () => {
   return harden({
     chainId: 'agoriclocal',
