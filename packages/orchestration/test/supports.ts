@@ -19,12 +19,7 @@ import { makeNameHubKit } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { fakeNetworkEchoStuff } from './network-fakes.js';
 import { prepareOrchestrationTools } from '../src/service.js';
-import { CHAIN_KEY } from '../src/facade.js';
-import type { CosmosChainInfo } from '../src/cosmos-api.js';
-import {
-  registerChainNamespace,
-  wellKnownChainInfo,
-} from '../src/chain-info.js';
+import { registerChainNamespace } from '../src/chain-info.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -38,9 +33,12 @@ export const commonSetup = async t => {
   // To test durability in unit tests, test a particular entity with `relaxDurabilityRules: false`.
   // To test durability integrating multiple vats, use a RunUtils/bootstrap test.
   const rootZone = makeHeapZone();
+
+  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
+    makeNameHubKit();
+
   const bld = withAmountUtils(makeIssuerKit('BLD'));
   const ist = withAmountUtils(makeIssuerKit('IST'));
-
   const { bankManager, pourPayment } = await makeFakeBankManagerKit();
   await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', bld.issuerKit);
   await E(bankManager).addAsset(
@@ -48,6 +46,23 @@ export const commonSetup = async t => {
     'IST',
     'Inter Stable Token',
     ist.issuerKit,
+  );
+  // These mints no longer stay in sync with bankManager.
+  // Use pourPayment() for IST.
+  const { mint: _b, ...bldSansMint } = bld;
+  const { mint: _i, ...istSansMint } = ist;
+  // XXX real bankManager does this. fake should too?
+  await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'uist',
+    /** @type {AssetInfo} */ harden({
+      brand: ist.brand,
+      issuer: ist.issuer,
+      issuerName: 'IST',
+      denom: 'uist',
+      proposedName: 'IST',
+      displayInfo: { IOU: true },
+    }),
   );
 
   const transferBridge = makeFakeTransferBridge(rootZone);
@@ -65,7 +80,10 @@ export const commonSetup = async t => {
   );
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
 
-  const localchainBridge = makeFakeLocalchainBridge(rootZone);
+  const localBrigeMessages = [] as any[];
+  const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
+    localBrigeMessages.push(obj),
+  );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
   ).makeLocalChain({
@@ -86,14 +104,12 @@ export const commonSetup = async t => {
   const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
-  const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
-    makeNameHubKit();
-
   await registerChainNamespace(agoricNamesAdmin, t.log);
 
   return {
     bootstrap: {
       agoricNames,
+      agoricNamesAdmin,
       bankManager,
       timer,
       localchain,
@@ -103,15 +119,15 @@ export const commonSetup = async t => {
       storage,
     },
     brands: {
-      // TODO consider omitting `issuer` to prevent minting, which the bank can't observe
-      bld,
-      ist,
+      bld: bldSansMint,
+      ist: istSansMint,
     },
     commonPrivateArgs: {
       agoricNames,
       localchain,
       orchestrationService: orchestration,
       storageNode: storage.rootNode,
+      marshaller,
       timerService: timer,
     },
     facadeServices: {
@@ -122,6 +138,7 @@ export const commonSetup = async t => {
     },
     utils: {
       pourPayment,
+      inspectLocalBridge: () => harden([...localBrigeMessages]),
     },
   };
 };
