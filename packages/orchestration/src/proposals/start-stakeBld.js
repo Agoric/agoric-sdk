@@ -18,6 +18,7 @@ const trace = makeTracer('StartStakeBld', true);
  */
 export const startStakeBld = async ({
   consume: {
+    agoricNames: agoricNamesP,
     board,
     chainStorage,
     chainTimerService: chainTimerServiceP,
@@ -42,7 +43,8 @@ export const startStakeBld = async ({
   // NB: committee must only publish what it intended to be public
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const [timerService, timerBrand] = await Promise.all([
+  const [agoricNames, timerService, timerBrand] = await Promise.all([
+    agoricNamesP,
     chainTimerServiceP,
     chainTimerServiceP.then(ts => E(ts).getTimerBrand()),
   ]);
@@ -58,6 +60,8 @@ export const startStakeBld = async ({
     issuerKeywordRecord: harden({ In: await stakeIssuer }),
     terms: {},
     privateArgs: {
+      // BEFOREPUSh populate agoricNames with 'agoric' info and test in a3p
+      agoricNames,
       localchain: await localchain,
       timerService,
       timerBrand,

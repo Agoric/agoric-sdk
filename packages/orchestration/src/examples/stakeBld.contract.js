@@ -10,10 +10,13 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
-import { prepareMockChainInfo } from '../utils/mockChainInfo.js';
+import { CHAIN_KEY } from '../facade.js';
 
 /**
+ * @import {NameHub} from '@agoric/vats';
+ * @import {Remote} from '@agoric/internal';
  * @import {TimerBrand, TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  */
 
 const trace = makeTracer('StakeBld');
@@ -21,7 +24,8 @@ const trace = makeTracer('StakeBld');
 /**
  * @param {ZCF} zcf
  * @param {{
- *   localchain: import('@agoric/vats/src/localchain.js').LocalChain;
+ *   agoricNames: Remote<NameHub>;
+ *   localchain: Remote<LocalChain>;
  *   marshaller: Marshaller;
  *   storageNode: StorageNode;
  *   timerService: TimerService;
@@ -42,9 +46,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  // Mocked until #8879
-  // Would expect this to be instantiated elsewhere, and passed in as a reference
-  const agoricChainInfo = prepareMockChainInfo();
+  // FIXME in a second incarnation we can't make a remote call before defining all kinds
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/8879
+  const agoricChainInfo = await E(privateArgs.agoricNames).lookup(
+    CHAIN_KEY,
+    'agoric',
+  );
 
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     zone,
