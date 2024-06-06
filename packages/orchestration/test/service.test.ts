@@ -38,6 +38,12 @@ test('makeICQConnection returns an ICQConnection', async t => {
     'remote address contains icqhost port, unordered ordering, and icq-1 version string',
   );
 
+  const icqConnection2 = await E(orchestration).provideICQConnection(
+    CONTROLLER_CONNECTION_ID,
+  );
+  const localAddr2 = await E(icqConnection2).getLocalAddress();
+  t.is(localAddr, localAddr2, 'provideICQConnection is idempotent');
+
   await t.throwsAsync(
     E(icqConnection).query([
       toRequestQueryJson(

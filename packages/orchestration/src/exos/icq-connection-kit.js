@@ -29,12 +29,6 @@ export const ICQConnectionI = M.interface('ICQConnection', {
   query: M.call(M.arrayOf(ICQMsgShape)).returns(M.promise()),
 });
 
-const HandleQueryWatcherI = M.interface('HandleQueryWatcher', {
-  onFulfilled: M.call(M.string())
-    .optional(M.arrayOf(M.undefined())) // does not need watcherContext
-    .returns(M.arrayOf(M.record())),
-});
-
 /**
  * @typedef {{
  *   port: Port;
@@ -65,8 +59,12 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
     'ICQConnectionKit',
     {
       connection: ICQConnectionI,
-      handleQueryWatcher: HandleQueryWatcherI,
       connectionHandler: ConnectionHandlerI,
+      parseQueryPacketWatcher: M.interface('ParseQueryPacketWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+          .returns(M.arrayOf(M.record())),
+      }),
     },
     /** @param {Port} port */
     port =>
@@ -97,16 +95,18 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
          */
         query(msgs) {
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
           return when(
             watch(
               E(connection).send(makeQueryPacket(msgs)),
-              this.facets.handleQueryWatcher,
+              this.facets.parseQueryPacketWatcher,
             ),
           );
         },
       },
-      handleQueryWatcher: {
+      parseQueryPacketWatcher: {
         /** @param {string} ack packet acknowledgement string */
         onFulfilled(ack) {
           return parseQueryPacket(ack);

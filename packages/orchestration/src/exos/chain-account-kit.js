@@ -65,7 +65,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
     {
       account: ChainAccountI,
       connectionHandler: ConnectionHandlerI,
-      handleExecuteEncodedTxWatcher: M.interface('HandleQueryWatcher', {
+      parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // does not need watcherContext
           .returns(M.string()),
@@ -87,7 +87,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
         localAddress: undefined,
       }),
     {
-      handleExecuteEncodedTxWatcher: {
+      parseTxPacketWatcher: {
         /** @param {string} ack */
         onFulfilled(ack) {
           return parseTxPacket(ack);
@@ -139,11 +139,13 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
          */
         executeEncodedTx(msgs, opts) {
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
           return when(
             watch(
               E(connection).send(makeTxPacket(msgs, opts)),
-              this.facets.handleExecuteEncodedTxWatcher,
+              this.facets.parseTxPacketWatcher,
             ),
           );
         },
@@ -153,6 +155,8 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
           // - retrieve assets?
           // - revoke the port?
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
           return when(watch(E(connection).close()));
         },
