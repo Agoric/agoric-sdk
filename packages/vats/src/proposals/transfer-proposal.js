@@ -29,7 +29,11 @@ export const setupTransferMiddleware = async (
       bridgeManager: bridgeManagerP,
       vtransferBridgeManager: vtransferBridgeManagerP,
     },
-    produce: { transferMiddleware, transferVat, vtransferBridgeManager },
+    produce: {
+      transferMiddleware: produceTransferMiddleware,
+      transferVat: produceTransferVat,
+      vtransferBridgeManager: produceVtransferBridgeManager,
+    },
   },
   options,
 ) => {
@@ -46,39 +50,42 @@ export const setupTransferMiddleware = async (
   };
   // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
+  produceTransferVat.reset();
+  produceTransferVat.resolve(vats.transfer);
 
-  transferVat.reset();
-  transferVat.resolve(vats.transfer);
-  const provideKit = mgr =>
-    E(vats.transfer).provideBridgeTargetKit(mgr, VTRANSFER_IBC_EVENT);
-  /** @type {Awaited<ReturnType<typeof provideKit>>} */
-  let kit;
+  const vtransferID = BRIDGE_ID.VTRANSFER;
+  const provideTransferKit = bridge =>
+    E(vats.transfer).provideBridgeTargetKit(bridge, VTRANSFER_IBC_EVENT);
+  /** @type {Awaited<ReturnType<typeof provideTransferKit>>} */
+  let transferKit;
   try {
-    const m = await E(bridgeManager).register(BRIDGE_ID.VTRANSFER);
-    vtransferBridgeManager.reset();
-    vtransferBridgeManager.resolve(m);
-    kit = await provideKit(m);
-    await E(m).initHandler(kit.bridgeHandler);
-    console.info('Successfully initHandler for', BRIDGE_ID.VTRANSFER);
+    const vtransferBridge = await E(bridgeManager).register(vtransferID);
+    produceVtransferBridgeManager.reset();
+    produceVtransferBridgeManager.resolve(vtransferBridge);
+    transferKit = await provideTransferKit(vtransferBridge);
+    await E(vtransferBridge).initHandler(transferKit.bridgeHandler);
+    console.info('Successfully initHandler for', vtransferID);
   } catch (e) {
     console.error(
       'Failed to initHandler',
-      BRIDGE_ID.VTRANSFER,
+      vtransferID,
       'reason:',
       e,
       'falling back to setHandler',
     );
-    const m = await vtransferBridgeManagerP;
-    kit = await provideKit(m);
-    await E(m).setHandler(kit.bridgeHandler);
-    console.info('Successfully setHandler for', BRIDGE_ID.VTRANSFER);
+    const vtransferBridge = await vtransferBridgeManagerP;
+    transferKit = await provideTransferKit(vtransferBridge);
+    await E(vtransferBridge).setHandler(transferKit.bridgeHandler);
+    console.info('Successfully setHandler for', vtransferID);
   }
 
-  const newTransferMiddleware = await E(vats.transfer).makeTransferMiddleware(
-    kit,
-  );
-  transferMiddleware.reset();
-  transferMiddleware.resolve(newTransferMiddleware);
+  const { targetHost, targetRegistry } = transferKit;
+  const transferMiddleware = await E(vats.transfer).makeTransferMiddleware({
+    targetHost,
+    targetRegistry,
+  });
+  produceTransferMiddleware.reset();
+  produceTransferMiddleware.resolve(transferMiddleware);
 };
 
 export const getManifestForTransfer = (_powers, { transferRef }) => ({
