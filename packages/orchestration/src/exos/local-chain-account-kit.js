@@ -21,6 +21,7 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService, TimerBrand} from '@agoric/time';
+ * @import {ChainHub} from '../utils/chainHub.js';
  */
 
 const trace = makeTracer('LCAH');
@@ -63,7 +64,7 @@ const PUBLIC_TOPICS = {
  * @param {ZCF} zcf
  * @param {TimerService} timerService
  * @param {TimerBrand} timerBrand
- * @param {CosmosChainInfo} agoricChainInfo
+ * @param {ChainHub} chainHub
  */
 export const prepareLocalChainAccountKit = (
   zone,
@@ -71,12 +72,11 @@ export const prepareLocalChainAccountKit = (
   zcf,
   timerService,
   timerBrand,
-  agoricChainInfo,
+  chainHub,
 ) => {
   const timestampHelper = makeTimestampHelper(timerService, timerBrand);
-  /**
-   * Make an object wrapping an LCA with Zoe interfaces.
-   */
+  // TODO: rename to makeLocalOrchestrationAccount or the like to distinguish from lca
+  /** Make an object wrapping an LCA with Zoe interfaces. */
   const makeLocalChainAccountKit = zone.exoClassKit(
     'LCA Kit',
     {
@@ -220,9 +220,7 @@ export const prepareLocalChainAccountKit = (
           // @ts-expect-error subtype
           return E(this.state.account).executeTx(messages);
         },
-        /**
-         * @returns {ChainAddress['address']}
-         */
+        /** @returns {ChainAddress['address']} */
         getAddress() {
           return NonNullish(this.state.address, 'Chain address not available.');
         },
@@ -240,12 +238,12 @@ export const prepareLocalChainAccountKit = (
           // TODO #9211 lookup denom from brand
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
-          destination.chainId in agoricChainInfo.connections ||
-            Fail`Unknown chain ${destination.chainId}`;
-
           // TODO #8879 chainInfo and #9063 well-known chains
-          const { transferChannel } =
-            agoricChainInfo.connections[destination.chainId];
+          const agoricChainInfo = await chainHub.getChainInfo('agoric');
+          const { transferChannel } = await chainHub.getConnectionInfo(
+            agoricChainInfo.chainId,
+            destination.chainId,
+          );
 
           await null;
           // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`

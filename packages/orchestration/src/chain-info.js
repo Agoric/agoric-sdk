@@ -2,11 +2,9 @@
 
 /** @file temporary static lookup of chain info */
 
-import { E } from '@endo/far';
+import { registerChain } from './utils/chainHub.js';
 
-/**
- * @import {CosmosChainInfo, EthChainInfo} from './types.js';
- */
+/** @import {CosmosChainInfo, EthChainInfo} from './types.js'; */
 
 /** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
 
@@ -83,7 +81,7 @@ export const wellKnownChainInfo =
         stakingTokens: [{ denom: 'ustride' }],
       },
       cosmos: {
-        chainId: 'cosmoshub-4',
+        chainId: 'cosmoslocal',
         connections: {},
         icaEnabled: true,
         icqEnabled: true,
@@ -101,7 +99,7 @@ export const wellKnownChainInfo =
         stakingTokens: [{ denom: 'utia' }],
       },
       osmosis: {
-        chainId: 'osmosis-1',
+        chainId: 'osmosislocal',
         connections: {},
         icaEnabled: true,
         icqEnabled: true,
@@ -117,14 +115,8 @@ export const wellKnownChainInfo =
  * @param {(...messages: string[]) => void} log
  */
 export const registerChainNamespace = async (agoricNamesAdmin, log) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
-
-  const registrationPromises = Object.entries(wellKnownChainInfo).map(
-    async ([name, info]) => {
-      log(`registering chain ${name}`);
-      return E(nameAdmin).update(name, info);
-    },
-  );
-
-  await Promise.all(registrationPromises);
+  for await (const [name, info] of Object.entries(wellKnownChainInfo)) {
+    log(`registering agoricNames chain.${name}`);
+    await registerChain(agoricNamesAdmin, name, info);
+  }
 };

@@ -7,9 +7,7 @@ import { commonSetup } from '../supports.js';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
-import { wellKnownChainInfo } from '../../src/chain-info.js';
-
-const agoricChainInfo = wellKnownChainInfo.agoric;
+import { makeChainHub } from '../../src/utils/chainHub.js';
 
 test('deposit, withdraw', async t => {
   const { bootstrap, brands, utils } = await commonSetup(t);
@@ -32,7 +30,7 @@ test('deposit, withdraw', async t => {
     Far('MockZCF', {}),
     timer,
     timer.getTimerBrand(),
-    agoricChainInfo,
+    makeChainHub(bootstrap.agoricNames),
   );
 
   t.log('request account from vat-localchain');
@@ -97,7 +95,7 @@ test('delegate, undelegate', async t => {
     Far('MockZCF', {}),
     timer,
     timer.getTimerBrand(),
-    agoricChainInfo,
+    makeChainHub(bootstrap.agoricNames),
   );
 
   t.log('request account from vat-localchain');
@@ -145,7 +143,7 @@ test('transfer', async t => {
     Far('MockZCF', {}),
     timer,
     timer.getTimerBrand(),
-    agoricChainInfo,
+    makeChainHub(bootstrap.agoricNames),
   );
 
   t.log('request account from vat-localchain');
@@ -201,9 +199,7 @@ test('transfer', async t => {
   };
   await t.throwsAsync(
     () => E(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
-    {
-      message: /Unknown chain "fakenet"/,
-    },
+    { message: /connection not found: agoriclocal<->fakenet/ },
     'cannot create transfer msg with unknown chainId',
   );
 
