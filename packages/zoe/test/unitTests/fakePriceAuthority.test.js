@@ -131,7 +131,7 @@ test('priceAuthority quoteWhenGTE', async t => {
     manualTimer,
   );
 
-  await E(priceAuthority)
+  const result = E(priceAuthority)
     .quoteWhenGTE(moola(1n), bucks(40n))
     .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -146,6 +146,7 @@ test('priceAuthority quoteWhenGTE', async t => {
   await E(manualTimer).tick();
   await E(manualTimer).tick();
   await E(manualTimer).tick();
+  await result;
 });
 
 test('priceAuthority quoteWhenLT', async t => {
@@ -158,7 +159,7 @@ test('priceAuthority quoteWhenLT', async t => {
     manualTimer,
   );
 
-  await E(priceAuthority)
+  const result = E(priceAuthority)
     .quoteWhenLT(moola(1n), bucks(30n))
     .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -172,6 +173,8 @@ test('priceAuthority quoteWhenLT', async t => {
   await E(manualTimer).tick();
   await E(manualTimer).tick();
   await E(manualTimer).tick();
+
+  await result;
 });
 
 test('priceAuthority quoteWhenGT', async t => {
@@ -184,7 +187,7 @@ test('priceAuthority quoteWhenGT', async t => {
     manualTimer,
   );
 
-  await E(priceAuthority)
+  const result = E(priceAuthority)
     .quoteWhenGT(moola(1n), bucks(40n))
     .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -198,6 +201,7 @@ test('priceAuthority quoteWhenGT', async t => {
   await E(manualTimer).tick();
   await E(manualTimer).tick();
   await E(manualTimer).tick();
+  await result;
 });
 
 test('priceAuthority quoteWhenLTE', async t => {
@@ -210,7 +214,7 @@ test('priceAuthority quoteWhenLTE', async t => {
     manualTimer,
   );
 
-  await E(priceAuthority)
+  const result = E(priceAuthority)
     .quoteWhenLTE(moola(1n), bucks(25n))
     .then(async quote => {
       const quoteInAmount = quote.quoteAmount.value[0];
@@ -224,4 +228,5 @@ test('priceAuthority quoteWhenLTE', async t => {
   await E(manualTimer).tick();
   await E(manualTimer).tick();
   await E(manualTimer).tick();
+  await result;
 });
