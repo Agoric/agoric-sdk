@@ -3,9 +3,6 @@ import test from 'ava';
 import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
-  network: { incarnation: 0 },
-  ibc: { incarnation: 0 },
-  localchain: { incarnation: 0 },
   walletFactory: { incarnation: 3 },
   zoe: { incarnation: 1 },
 };
