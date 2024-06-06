@@ -43,7 +43,7 @@ const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(M.promise()),
   undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
-  deposit: M.callWhen(PaymentShape).returns(AmountShape),
+  deposit: M.callWhen(PaymentShape).optional(AmountShape).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   transfer: M.call(AmountArgShape, ChainAddressShape)
     .optional(IBCTransferOptionsShape)
