@@ -31,7 +31,7 @@ export const makeTestContext = async t => {
   }) as Baggage;
   const zone = makeDurableZone(baggage);
 
-  const bundleDir = 'bundles/vaults';
+  const bundleDir = 'bundles/net-ibc-upgrade';
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
