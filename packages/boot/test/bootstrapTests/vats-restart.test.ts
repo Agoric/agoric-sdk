@@ -94,17 +94,6 @@ test.serial('open vault', async t => {
   });
 });
 
-test.serial('run network vat proposal', async t => {
-  const { buildProposal, evalProposal } = t.context;
-
-  t.log('building network proposal');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
-
-  t.pass(); // reached here without throws
-});
-
 test.serial('make IBC callbacks before upgrade', async t => {
   const { EV } = t.context.runUtils;
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');

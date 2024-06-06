@@ -25,9 +25,6 @@ test.serial('stakeAtom - repl-style', async t => {
   } = t.context;
   // TODO move into a vm-config for future agoric-upgrade
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
-  await evalProposal(
     buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
   );
   await evalProposal(
