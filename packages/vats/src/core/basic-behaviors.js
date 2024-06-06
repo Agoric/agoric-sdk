@@ -182,7 +182,7 @@ harden(produceStartUpgradable);
  *   governedParams: Record<string, unknown>;
  *   timer: ERef<import('@agoric/time').TimerService>;
  *   contractGovernor: ERef<Installation>;
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *   committeeCreatorFacet: ERef<CommitteeStartResult['creatorFacet']>;
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
  */
@@ -195,11 +195,9 @@ const startGovernedInstance = async (
     privateArgs,
     label,
   },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
+  { governedParams, timer, contractGovernor, committeeCreatorFacet },
 ) => {
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
+  const poserInvitationP = E(committeeCreatorFacet).getPoserInvitation();
   const [initialPoserInvitation, electorateInvitationAmount] =
     await Promise.all([
       poserInvitationP,
@@ -231,7 +229,6 @@ const startGovernedInstance = async (
     {},
     governorTerms,
     harden({
-      economicCommitteeCreatorFacet,
       governed: {
         ...privateArgs,
         initialPoserInvitation,
@@ -287,7 +284,7 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
+  /** @type {StartGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,
@@ -295,6 +292,7 @@ export const produceStartGovernedUpgradable = async ({
     terms,
     privateArgs,
     label,
+    committeeCreatorFacet = economicCommitteeCreatorFacet, // for backwards compatibility
   }) => {
     const facets = await startGovernedInstance(
       {
@@ -309,7 +307,7 @@ export const produceStartGovernedUpgradable = async ({
         governedParams,
         timer: chainTimerService,
         contractGovernor,
-        economicCommitteeCreatorFacet,
+        committeeCreatorFacet,
       },
     );
     const kit = harden({ ...facets, label });
@@ -317,7 +315,7 @@ export const produceStartGovernedUpgradable = async ({
 
     await E(diagnostics).savePrivateArgs(kit.instance, privateArgs);
     await E(diagnostics).savePrivateArgs(kit.governor, {
-      economicCommitteeCreatorFacet: await economicCommitteeCreatorFacet,
+      committeeCreatorFacet: await committeeCreatorFacet,
     });
 
     return facets;
