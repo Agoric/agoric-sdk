@@ -2,11 +2,6 @@
 
 /** @file temporary static lookup of chain info */
 
-import {
-  Order,
-  State as IBCChannelState,
-} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import { E } from '@endo/far';
 
 /**
@@ -16,6 +11,8 @@ import { E } from '@endo/far';
 /** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
 
 // TODO generate this automatically with a build script drawing on data sources such as https://github.com/cosmos/chain-registry
+
+// XXX inlines the enum values to save the import (entraining cosmic-proto which is megabytes)
 
 export const wellKnownChainInfo =
   /** @satisfies {Record<string, ChainInfo>} */ (
@@ -33,14 +30,14 @@ export const wellKnownChainInfo =
                 key_prefix: '',
               },
             },
-            state: IBCConnectionState.STATE_OPEN,
+            state: 3 /* IBCConnectionState.STATE_OPEN */,
             transferChannel: {
               portId: 'transfer',
               channelId: 'channel-1',
               counterPartyChannelId: 'channel-1',
               counterPartyPortId: 'transfer',
-              ordering: Order.ORDER_UNORDERED,
-              state: IBCChannelState.STATE_OPEN,
+              ordering: 1 /* Order.ORDER_UNORDERED */,
+              state: 3 /* IBCConnectionState.STATE_OPEN */,
               version: 'ics20-1',
             },
             versions: [{ identifier: '', features: ['', ''] }],
@@ -56,14 +53,14 @@ export const wellKnownChainInfo =
                 key_prefix: '',
               },
             },
-            state: IBCConnectionState.STATE_OPEN,
+            state: 3 /* IBCConnectionState.STATE_OPEN */,
             transferChannel: {
               portId: 'transfer',
               channelId: 'channel-0',
               counterPartyChannelId: 'channel-1',
               counterPartyPortId: 'transfer',
-              ordering: Order.ORDER_UNORDERED,
-              state: IBCChannelState.STATE_OPEN,
+              ordering: 1 /* Order.ORDER_UNORDERED */,
+              state: 3 /* IBCConnectionState.STATE_OPEN */,
               version: 'ics20-1',
             },
             versions: [{ identifier: '', features: ['', ''] }],
