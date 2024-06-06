@@ -23,9 +23,6 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  */
 
-// partial until #8879
-/** @typedef {Pick<CosmosChainInfo, 'connections'>} AgoricChainInfo */
-
 const trace = makeTracer('LCAH');
 
 const { Fail } = assert;
@@ -66,7 +63,7 @@ const PUBLIC_TOPICS = {
  * @param {ZCF} zcf
  * @param {TimerService} timerService
  * @param {TimerBrand} timerBrand
- * @param {AgoricChainInfo} agoricChainInfo
+ * @param {CosmosChainInfo} agoricChainInfo
  */
 export const prepareLocalChainAccountKit = (
   zone,

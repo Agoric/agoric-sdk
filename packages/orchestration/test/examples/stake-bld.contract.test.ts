@@ -13,6 +13,7 @@ type StartFn =
   typeof import('@agoric/orchestration/src/examples/stakeBld.contract.js').start;
 
 const startContract = async ({
+  agoricNames,
   timer,
   localchain,
   marshaller,
@@ -28,6 +29,7 @@ const startContract = async ({
     { In: bld.issuer },
     {},
     {
+      agoricNames,
       localchain,
       marshaller,
       storageNode: storage.rootNode,

@@ -5,9 +5,11 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { E, Far } from '@endo/far';
 import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
-import { prepareMockChainInfo } from '../../src/utils/mockChainInfo.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { commonSetup } from '../supports.js';
+import { wellKnownChainInfo } from '../../src/chain-info.js';
+
+const agoricChainInfo = wellKnownChainInfo.agoric;
 
 test('deposit, withdraw', async t => {
   const { bootstrap, brands, utils } = await commonSetup(t);
@@ -17,7 +19,6 @@ test('deposit, withdraw', async t => {
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo();
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -84,9 +85,6 @@ test('delegate, undelegate', async t => {
 
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
 
-  t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo();
-
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('recorder'),
@@ -134,9 +132,6 @@ test('transfer', async t => {
   const { bld: stake } = brands;
 
   const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
-
-  t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
-  const agoricChainInfo = prepareMockChainInfo();
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(

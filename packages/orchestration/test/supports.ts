@@ -15,7 +15,10 @@ import { fakeNetworkEchoStuff } from './network-fakes.js';
 import { prepareOrchestrationTools } from '../src/service.js';
 import { CHAIN_KEY } from '../src/facade.js';
 import type { CosmosChainInfo } from '../src/cosmos-api.js';
-import { wellKnownChainInfo } from '../src/chain-info.js';
+import {
+  registerChainNamespace,
+  wellKnownChainInfo,
+} from '../src/chain-info.js';
 
 export { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
 
@@ -60,15 +63,8 @@ export const commonSetup = async t => {
 
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
-  const spaces = await makeWellKnownSpaces(agoricNamesAdmin, t.log, [
-    CHAIN_KEY,
-  ]);
 
-  // Simulate what BLD stakers would have configured
-  for (const [name, info] of Object.entries(wellKnownChainInfo)) {
-    // @ts-expect-error FIXME types
-    spaces.chain.produce[name].resolve(info);
-  }
+  await registerChainNamespace(agoricNamesAdmin, t.log);
 
   return {
     bootstrap: {
