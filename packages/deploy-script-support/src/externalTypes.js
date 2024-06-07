@@ -10,12 +10,6 @@ export {};
  */
 
 /**
- * @typedef ProposalResult
- * @property {string} sourceSpec
- * @property {[exportedGetManifest: string, ...manifestArgs: any[]]} getManifestCall
- */
-
-/**
  * @typedef {{fileName?: string} & ({ bundleName: string } | { bundleID: string}) } ManifestBundleRef
  */
 
@@ -34,12 +28,12 @@ export {};
  */
 
 /**
- * @callback ProposalBuilder
+ * @callback CoreEvalBuilder
  * @param {{
  *   publishRef: PublishBundleRef,
  *   install: InstallEntrypoint,
  *   wrapInstall?: <T extends InstallEntrypoint>(f: T) => T }
  * } powers
  * @param {...any} args
- * @returns {Promise<ProposalResult>}
+ * @returns {Promise<{sourceSpec: string, getManifestCall: [exportedGetManifest: string, ...manifestArgs: any[]]}>}
  */

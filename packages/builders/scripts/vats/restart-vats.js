@@ -1,6 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async () => {
   // An includelist isn't necessary because the collections are known to be complete (tested in test-vaults-upgrade.js)
   const skip = [

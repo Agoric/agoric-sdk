@@ -5,7 +5,7 @@ import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/propos
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   {
@@ -62,7 +62,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},

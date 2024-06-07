@@ -11,7 +11,7 @@ export const DEFAULT_CONTRACT_TERMS = {
   maxSubmissionValue: 2n ** 256n,
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},

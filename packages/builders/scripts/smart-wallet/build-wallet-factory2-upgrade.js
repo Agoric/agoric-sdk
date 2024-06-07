@@ -7,7 +7,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
  * also prints helpful instructions for copying the files and installing them.
  */
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec:

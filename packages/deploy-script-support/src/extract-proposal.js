@@ -156,7 +156,7 @@ export const extractCoreProposalBundles = async (
           const thisProposalSequence = getSequenceForProposal(key);
           const initPath = findModule(dirname, module);
           const initDir = path.dirname(initPath);
-          /** @type {Record<string, import('./externalTypes.js').ProposalBuilder>} */
+          /** @type {Record<string, import('./externalTypes.js').CoreEvalBuilder>} */
           const ns = await import(initPath);
           const install = (srcSpec, bundlePath) => {
             const absoluteSrc = findModule(initDir, srcSpec);
