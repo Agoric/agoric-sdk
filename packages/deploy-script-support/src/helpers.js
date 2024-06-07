@@ -137,6 +137,7 @@ export const makeHelpers = async (homePromise, endowments) => {
     get getBundlerMaker() {
       return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
     },
+    /** @returns {import('./writeCoreProposal.js').WriteCoreEval} */
     get writeCoreEval() {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,

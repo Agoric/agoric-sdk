@@ -5,7 +5,10 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import { defangAndTrim, mergePermits, stringify } from './code-gen.js';
-import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
+import {
+  makeCoreProposalBehavior,
+  permits as defaultPermits,
+} from './coreProposalBehavior.js';
 
 /**
  * @callback WriteCoreEval write to disk the files needed for a CoreEval (permits, code, and the bundles the code loads)
@@ -50,16 +53,16 @@ export const makeWriteCoreEval = (
     return bundlerCache;
   };
 
-  const mergeProposalPermit = async (proposal, additionalPermits) => {
+  const mergeEvalPermit = async (coreEval, additionalPermits) => {
     const {
       sourceSpec,
       getManifestCall: [manifestGetterName, ...manifestGetterArgs],
-    } = proposal;
+    } = coreEval;
 
-    const proposalNS = await import(pathResolve(sourceSpec));
+    const evalNS = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await proposalNS[manifestGetterName](
+    const { manifest } = await evalNS[manifestGetterName](
       harden({ restoreRef: x => `restoreRef:${x}` }),
       ...manifestGetterArgs,
     );
@@ -76,7 +79,7 @@ export const makeWriteCoreEval = (
       Promise.resolve()
     );
   /** @type {WriteCoreEval} */
-  const writeCoreEval = async (filePrefix, proposalBuilder) => {
+  const writeCoreEval = async (filePrefix, builder) => {
     /**
      *
      * @param {string} entrypoint
@@ -132,16 +135,16 @@ export const makeWriteCoreEval = (
       return harden(ref);
     };
 
-    // Create the proposal structure.
-    const proposal = await deeplyFulfilled(
-      harden(proposalBuilder({ publishRef, install })),
+    // Create the eval structure.
+    const evalParts = await deeplyFulfilled(
+      harden(builder({ publishRef, install })),
     );
-    const { sourceSpec, getManifestCall } = proposal;
+    const { sourceSpec, getManifestCall } = evalParts;
     // console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
-    const { permits: proposalPermit, manifest: customManifest } =
-      await mergeProposalPermit(proposal, permits);
+    const { permits: evalPermits, manifest: customManifest } =
+      await mergeEvalPermit(evalParts, defaultPermits);
 
     // Get an install
     const manifestBundleRef = await publishRef(install(sourceSpec));
@@ -165,21 +168,18 @@ behavior;
 
     const trimmed = defangAndTrim(code);
 
-    const proposalPermitJsonFile = `${filePrefix}-permit.json`;
-    log(`creating ${proposalPermitJsonFile}`);
-    await writeFile(
-      proposalPermitJsonFile,
-      JSON.stringify(proposalPermit, null, 2),
-    );
+    const permitFile = `${filePrefix}-permit.json`;
+    log(`creating ${permitFile}`);
+    await writeFile(permitFile, JSON.stringify(evalPermits, null, 2));
 
-    const proposalJsFile = `${filePrefix}.js`;
-    log(`creating ${proposalJsFile}`);
-    await writeFile(proposalJsFile, trimmed);
+    const codeFile = `${filePrefix}.js`;
+    log(`creating ${codeFile}`);
+    await writeFile(codeFile, trimmed);
 
     const plan = {
       name: filePrefix,
-      script: proposalJsFile,
-      permit: proposalPermitJsonFile,
+      script: codeFile,
+      permit: permitFile,
       bundles,
     };
 
@@ -190,8 +190,8 @@ behavior;
 
     log(`\
 You can now run a governance submission command like:
-  agd tx gov submit-proposal swingset-core-eval ${proposalPermitJsonFile} ${proposalJsFile} \\
-    --title="Enable <something>" --description="Evaluate ${proposalJsFile}" --deposit=1000000ubld \\
+  agd tx gov submit-proposal swingset-core-eval ${permitFile} ${codeFile} \\
+    --title="Enable <something>" --description="Evaluate ${codeFile}" --deposit=1000000ubld \\
     --gas=auto --gas-adjustment=1.2
 Remember to install bundles before submitting the proposal:
   ${cmds.join('\n  ')}
