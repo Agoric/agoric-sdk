@@ -7,7 +7,7 @@ on:
 
 jobs:
   multichain-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core
     strategy:
       matrix:
         node-version: ['18.x']
@@ -21,19 +21,19 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           path: ./agoric-sdk
-    
+
       - name: Enable Corepack
         run: corepack enable || sudo corepack enable
         working-directory: ./agoric-sdk/multichain-testing
-    
+
       - name: Install @agoric/multichain-testing deps
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
-    
+
       - name: Lint @agoric/multichain-testing
         run: yarn lint
         working-directory: ./agoric-sdk/multichain-testing
-        
+
       - name: Set Up Starship Infrastructure
         id: starship-infra
         uses: cosmology-tech/starship-action@0.2.19
@@ -43,6 +43,10 @@ jobs:
           port-forward: true
           version: 0.2.2
           timeout: 30m
+
+      - name: Fund Provision Pool
+        run: make fund-provision-pool
+        working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
         run: yarn test
