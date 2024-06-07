@@ -3,11 +3,7 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
-import {
-  prepareBridgeTargetModule,
-  TargetAppI,
-  AppTransformerI,
-} from './bridge-target.js';
+import { TargetAppI, AppTransformerI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
@@ -260,15 +256,10 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
  */
 export const prepareTransferTools = (zone, vowTools) => {
   const makeTransferInterceptor = prepareTransferInterceptor(zone, vowTools);
-  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
-    zone.subZone('bridge-target'),
-  );
-
   const makeTransferMiddlewareKit = prepareTransferMiddlewareKit(
     zone,
     makeTransferInterceptor,
   );
-
-  return harden({ makeTransferMiddlewareKit, makeBridgeTargetKit });
+  return harden({ makeTransferMiddlewareKit });
 };
 harden(prepareTransferTools);
