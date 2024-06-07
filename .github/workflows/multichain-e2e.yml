@@ -43,9 +43,13 @@ jobs:
           port-forward: true
           version: 0.2.2
           timeout: 30m
+          namespace: agoric-multichain
 
       - name: Fund Provision Pool
-        run: make fund-provision-pool
+        run: |
+          kubectl config set-context --current --namespace=agoric-multichain
+          kubectl get pods
+          make fund-provision-pool
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
