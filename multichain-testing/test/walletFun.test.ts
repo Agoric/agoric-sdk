@@ -1,36 +1,36 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { TestFn, ExecutionContext } from 'ava';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import * as ambientChildProcess from 'node:child_process';
-import * as ambientFsp from 'node:fs/promises';
-import { makeE2ETools } from '../tools/e2e-tools.js';
+import type { TestFn } from 'ava';
 import { generateMnemonic } from '../tools/wallet.js';
+import { commonSetup } from './support.js';
 
-const makeTestContext = async (t: ExecutionContext) => {
-  const bundleCache = await makeNodeBundleCache(
-    'bundles',
-    {},
-    (s) => import(s),
-  );
-  const { writeFile } = ambientFsp;
-  const { execFileSync, execFile } = ambientChildProcess;
-  const tools = await makeE2ETools(t, bundleCache, {
-    execFileSync, // TODO: kubernetes (or fetch?)
-    execFile,
-    fetch,
-    setTimeout,
-    writeFile,
-  });
-  return tools;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof commonSetup>>>;
+
+const KEYS = ['user1'];
+
+const deleteKeys = async (deleteKey: (name: string) => Promise<string>) => {
+  for (const key of KEYS) {
+    try {
+      await deleteKey(key);
+    } catch (_e) {
+      // ignore
+    }
+  }
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+test.before(async (t) => {
+  t.context = await commonSetup(t);
+  const { deleteKey } = t.context;
+  await deleteKeys(deleteKey);
+});
 
-test.before(async (t) => (t.context = await makeTestContext(t)));
+test.after(async (t) => {
+  const { deleteKey } = t.context;
+  await deleteKeys(deleteKey);
+});
 
 test('provision smart wallet', async (t) => {
-  const { addKey, deleteKey, provisionSmartWallet, makeQueryTool } = t.context;
-  const res = await addKey('user1', generateMnemonic());
+  const { addKey, provisionSmartWallet, makeQueryTool } = t.context;
+  const res = await addKey(KEYS[0], generateMnemonic());
 
   const { address } = JSON.parse(res);
   t.log('address', address);
@@ -45,7 +45,4 @@ test('provision smart wallet', async (t) => {
   );
 
   t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
-
-  // TODO consider key creation to test.before/test.after
-  await deleteKey('user1');
 });

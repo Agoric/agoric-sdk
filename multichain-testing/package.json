@@ -40,6 +40,9 @@
     "tsimp": "^2.0.10",
     "typescript": "^5.3.3"
   },
+  "resolutions": {
+    "node-fetch": "2.6.12"
+  },
   "ava": {
     "extensions": {
       "ts": "module"

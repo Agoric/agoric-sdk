@@ -1,0 +1,58 @@
+diff --git a/node_modules/js-yaml/lib/exception.js b/node_modules/js-yaml/lib/exception.js
+index 7f62daa..8d60657 100644
+--- a/node_modules/js-yaml/lib/exception.js
++++ b/node_modules/js-yaml/lib/exception.js
+@@ -26,7 +26,6 @@ function YAMLException(reason, mark) {
+   // Super constructor
+   Error.call(this);
+ 
+-  this.name = 'YAMLException';
+   this.reason = reason;
+   this.mark = mark;
+   this.message = formatError(this, false);
+@@ -37,19 +36,34 @@ function YAMLException(reason, mark) {
+     Error.captureStackTrace(this, this.constructor);
+   } else {
+     // FF, IE 10+ and Safari 6+. Fallback for others
+-    this.stack = (new Error()).stack || '';
++    this.stack = new Error().stack || "";
+   }
+ }
+ 
+-
+-// Inherit from Error
+-YAMLException.prototype = Object.create(Error.prototype);
+-YAMLException.prototype.constructor = YAMLException;
+-
+-
+-YAMLException.prototype.toString = function toString(compact) {
+-  return this.name + ': ' + formatError(this, compact);
+-};
+-
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    toString: {
++      value: function toString(compact) {
++        return this.name + ": " + formatError(this, compact);
++      },
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++  });
++}
++makeErrorish(YAMLException, "YAMLException");
+ 
+ module.exports = YAMLException;

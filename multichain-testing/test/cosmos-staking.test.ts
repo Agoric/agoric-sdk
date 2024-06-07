@@ -1,5 +1,5 @@
-import anyTest, { TestFn } from 'ava';
-
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { TestFn } from 'ava';
 import { createWallet } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
 import { commonSetup } from './support.js';
@@ -7,7 +7,7 @@ import { commonSetup } from './support.js';
 const test = anyTest as TestFn<Record<string, never>>;
 
 test.failing('send a wallet offer to an orchestration contract', async (t) => {
-  const { useChain } = await commonSetup();
+  const { useChain } = await commonSetup(t);
 
   const prefix = useChain('agroic').chain.bech32_prefix;
   const wallet = await createWallet(prefix);

@@ -1,4 +1,5 @@
-import anyTest, { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { TestFn } from 'ava';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';
 import { sleep } from '../../tools/sleep.js';
@@ -7,7 +8,7 @@ import { commonSetup } from '../support.js';
 const test = anyTest as TestFn<Record<string, never>>;
 
 test('create a wallet and get tokens', async (t) => {
-  const { useChain } = await commonSetup();
+  const { useChain } = await commonSetup(t);
 
   const prefix = useChain('osmosis').chain.bech32_prefix;
   const wallet = await createWallet(prefix);
