@@ -185,17 +185,17 @@ export const defaultProposalBuilder = async (
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const tool = await makeInstallCache(homeP, {
     loadBundle: spec => import(spec),
   });
   await Promise.all([
-    writeCoreProposal('gov-econ-committee', opts =>
+    writeCoreEval('gov-econ-committee', opts =>
       // @ts-expect-error XXX makeInstallCache types
       committeeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),
-    writeCoreProposal('gov-amm-vaults-etc', opts =>
+    writeCoreEval('gov-amm-vaults-etc', opts =>
       // @ts-expect-error XXX makeInstallCache types
       mainProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
     ),

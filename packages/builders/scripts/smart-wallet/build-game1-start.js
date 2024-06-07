@@ -28,6 +28,6 @@ export const game1ProposalBuilder = async ({ publishRef, install }) => {
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('start-game1', game1ProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('start-game1', game1ProposalBuilder);
 };

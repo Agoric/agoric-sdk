@@ -13,6 +13,6 @@ export const defaultProposalBuilder = async _powers =>
   });
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('test-localchain', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('test-localchain', defaultProposalBuilder);
 };

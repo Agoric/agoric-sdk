@@ -18,6 +18,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
   });
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('start-stakeBld', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('start-stakeBld', defaultProposalBuilder);
 };

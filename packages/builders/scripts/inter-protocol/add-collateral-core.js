@@ -104,14 +104,14 @@ export const psmProposalBuilder = async (
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   const tool = await makeInstallCache(homeP, {
     loadBundle: spec => import(spec),
   });
 
-  await writeCoreProposal('gov-add-collateral', defaultProposalBuilder);
-  await writeCoreProposal('gov-start-psm', opts =>
+  await writeCoreEval('gov-add-collateral', defaultProposalBuilder);
+  await writeCoreEval('gov-start-psm', opts =>
     // @ts-expect-error XXX makeInstallCache types
     psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
   );

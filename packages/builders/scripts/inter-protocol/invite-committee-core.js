@@ -37,6 +37,6 @@ export const defaultProposalBuilder = async (
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('gov-invite-committee', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('gov-invite-committee', defaultProposalBuilder);
 };

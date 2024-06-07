@@ -20,6 +20,6 @@ export const defaultProposalBuilder = async () => {
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('restart-vats', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('restart-vats', defaultProposalBuilder);
 };

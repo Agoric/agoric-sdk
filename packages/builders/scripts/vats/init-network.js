@@ -14,6 +14,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
   });
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('gov-network', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('gov-network', defaultProposalBuilder);
 };

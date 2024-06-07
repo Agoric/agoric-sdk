@@ -37,7 +37,7 @@ export const starsOraclesProposalBuilder = async powers => {
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('add-STARS', starsVaultProposalBuilder);
-  await writeCoreProposal('add-STARS-oracles', starsOraclesProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('add-STARS', starsVaultProposalBuilder);
+  await writeCoreEval('add-STARS-oracles', starsOraclesProposalBuilder);
 };

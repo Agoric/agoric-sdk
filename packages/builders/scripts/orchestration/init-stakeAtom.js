@@ -29,6 +29,6 @@ export const defaultProposalBuilder = async (
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('start-stakeAtom', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('start-stakeAtom', defaultProposalBuilder);
 };
