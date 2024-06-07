@@ -214,7 +214,7 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
         /**
          * Register a tap to intercept the vtransfer target account address
          * messages, without granting that tap the ability to delay or interfere
-         * with the underlying IBC transfer protocol.ß
+         * with the underlying IBC transfer protocol.
          *
          * @type {RegisterTap}
          */
@@ -225,7 +225,7 @@ const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
         },
         /**
          * Similar to `registerTap`, but allows the tap to inject async
-         * ßacknowledgements in the IBC transfer protocol.
+         * acknowledgements in the IBC transfer protocol.
          *
          * @type {RegisterTap}
          */
