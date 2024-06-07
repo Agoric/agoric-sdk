@@ -473,11 +473,13 @@ test('upgrade vat-vow', async t => {
     promiseFulfilled: ['hello'],
     promiseRejected: ['goodbye', true],
   };
+  const promiseKit = await EV.vat('bootstrap').makePromiseKit();
   const localVows = {
     vowForever: [],
     vowFulfilled: ['hello'],
     vowRejected: ['goodbye', true],
     vowPostUpgrade: [],
+    vowExternalPromise: [promiseKit.promise],
     vowPromiseForever: [undefined, false, true],
   };
   await EV(vowRoot).makeLocalPromiseWatchers(localPromises);
@@ -493,6 +495,10 @@ test('upgrade vat-vow', async t => {
     vowFulfilled: { status: 'fulfilled', value: 'hello' },
     vowRejected: { status: 'rejected', reason: 'goodbye' },
     vowPostUpgrade: {
+      status: 'unsettled',
+      resolver: {},
+    },
+    vowExternalPromise: {
       status: 'unsettled',
       resolver: {},
     },
@@ -512,6 +518,7 @@ test('upgrade vat-vow', async t => {
     vowPostUpgrade: ['bonjour'],
   };
   await EV(vowRoot).resolveVowWatchers(localVowsUpdates);
+  await EV(promiseKit.resolver).resolve('ciao');
   t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
     promiseForever: {
       status: 'rejected',
@@ -530,6 +537,7 @@ test('upgrade vat-vow', async t => {
     vowFulfilled: { status: 'fulfilled', value: 'hello' },
     vowRejected: { status: 'rejected', reason: 'goodbye' },
     vowPostUpgrade: { status: 'fulfilled', value: 'bonjour' },
+    vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
     vowPromiseForever: {
       status: 'rejected',
       reason: {
