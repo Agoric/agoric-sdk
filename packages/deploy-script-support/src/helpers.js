@@ -17,7 +17,7 @@ import { makeSaveIssuer } from './saveIssuer.js';
 import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
-import { makeWriteCoreEval } from './writeCoreProposal.js';
+import { makeWriteCoreEval } from './writeCoreEvalParts.js';
 
 export * from '@agoric/internal/src/node/createBundles.js';
 
@@ -137,7 +137,7 @@ export const makeHelpers = async (homePromise, endowments) => {
     get getBundlerMaker() {
       return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
     },
-    /** @returns {import('./writeCoreProposal.js').WriteCoreEval} */
+    /** @returns {import('./writeCoreEvalParts.js').WriteCoreEval} */
     get writeCoreEval() {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,

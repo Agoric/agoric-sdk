@@ -11,9 +11,10 @@ import {
 } from './coreProposalBehavior.js';
 
 /**
- * @callback WriteCoreEval write to disk the files needed for a CoreEval (permits, code, and the bundles the code loads)
+ * @callback WriteCoreEval write to disk the files needed for a CoreEval (js code to`${filePrefix}.js`, permits to `${filePrefix}-permit.json`, an overall
+ *   summary to `${filePrefix}-plan.json), plus whatever bundles bundles the code loads)
  * see CoreEval in {@link '/golang/cosmos/x/swingset/types/swingset.pb.go'}
- * @param {string} filePrefix - name on disk
+ * @param {string} filePrefix name on disk
  * @param {import('./externalTypes.js').CoreEvalBuilder} builder
  * @returns {Promise<void>}
  */
@@ -59,10 +60,10 @@ export const makeWriteCoreEval = (
       getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = coreEval;
 
-    const evalNS = await import(pathResolve(sourceSpec));
+    const moduleRecord = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await evalNS[manifestGetterName](
+    const { manifest } = await moduleRecord[manifestGetterName](
       harden({ restoreRef: x => `restoreRef:${x}` }),
       ...manifestGetterArgs,
     );
