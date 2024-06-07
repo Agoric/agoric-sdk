@@ -456,12 +456,15 @@ test('upgrade vat-vow', async t => {
 
   const { EV } = await makeScenario(t, { bundles });
 
-  t.log('create initial version');
+  t.log('create initial version, metered');
+  const vatAdmin = await EV.vat('bootstrap').getVatAdmin();
+  const meter = await EV(vatAdmin).createUnlimitedMeter();
   const vowVatConfig = {
     name: 'vow',
     bundleCapName: 'vow',
   };
-  const vowRoot = await EV.vat('bootstrap').createVat(vowVatConfig);
+  const vatOptions = { managerType: 'xs-worker', meter };
+  const vowRoot = await EV.vat('bootstrap').createVat(vowVatConfig, vatOptions);
 
   t.log('test incarnation 0');
   /** @type {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} */

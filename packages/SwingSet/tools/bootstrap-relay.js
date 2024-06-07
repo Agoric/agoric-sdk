@@ -37,10 +37,13 @@ export const buildRootObject = () => {
       return root;
     },
 
-    createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
+    createVat: async (
+      { name, bundleCapName, vatParameters = {} },
+      options = {},
+    ) => {
       const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
-      const options = { vatParameters };
-      const { adminNode, root } = await E(vatAdmin).createVat(bcap, options);
+      const vatOptions = { ...options, vatParameters };
+      const { adminNode, root } = await E(vatAdmin).createVat(bcap, vatOptions);
       vatData.set(name, { adminNode, root });
       return root;
     },
