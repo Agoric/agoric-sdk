@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E, Far } from '@endo/far';
 import { batchVstorageQuery } from './batchQuery.js';
 import { makeClientMarshaller } from './marshalTables.js';
@@ -88,7 +86,7 @@ export const makeWalletView = (addr, { query, vstorage }) => {
      */
     history: async (visitor, minHeight) => {
       const history = vstorage.readHistoryBy(
-        s => query.fromCapData(JSON.parse(s)),
+        (s) => query.fromCapData(JSON.parse(s)),
         `published.wallet.${addr}`,
         minHeight,
       );
@@ -106,11 +104,11 @@ export const makeWalletView = (addr, { query, vstorage }) => {
  */
 export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
   /** @param {['children' | 'data', string][]} paths */
-  const batchQuery = async paths =>
+  const batchQuery = async (paths) =>
     batchVstorageQuery(vstorage, m.fromCapData, paths);
 
   /** @param {string} path */
-  const queryData = async path => {
+  const queryData = async (path) => {
     const [[_p, answer]] = await batchQuery([['data', path]]);
     if (typeof answer === 'string') return answer;
     if (answer.error) throw Error(answer.error);
@@ -118,7 +116,7 @@ export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
   };
 
   /** @param {string} path */
-  const queryChildren = async path => {
+  const queryChildren = async (path) => {
     const [[_p, answer]] = await batchQuery([['children', path]]);
     if (typeof answer === 'string') return answer;
     if (answer.error) throw Error(answer.error);
@@ -140,7 +138,7 @@ export const makeQueryKit = (vstorage, m = makeClientMarshaller()) => {
     fromCapData: m.fromCapData,
     toCapData: m.toCapData,
     // XXX wrong layer? add makeWalletView(query) helper function instead?
-    walletView: addr => makeWalletView(addr, { query, vstorage }),
+    walletView: (addr) => makeWalletView(addr, { query, vstorage }),
   });
 
   return { vstorage, query };

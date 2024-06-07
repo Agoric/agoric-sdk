@@ -1,7 +1,6 @@
-// @ts-check
-
+/** global harden */
+import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Nat } from '@endo/nat';
 import { flags, makeAgd } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
@@ -11,7 +10,7 @@ import { makeVStorage } from './batchQuery.js';
 
 const BLD = '000000ubld';
 
-const makeRunner = execFile => {
+const makeRunner = (execFile) => {
   const $ = (file, ...args) => {
     // console.error(cmd);
 
@@ -25,7 +24,7 @@ const makeRunner = execFile => {
   return $;
 };
 
-export const txAbbr = tx => {
+export const txAbbr = (tx) => {
   // eslint-disable-next-line camelcase
   const { txhash, code, height, gas_used } = tx;
   // eslint-disable-next-line camelcase
@@ -45,7 +44,7 @@ const makeBlockTool = ({ rpc, delay }) => {
       id += 1;
       const data = await rpc
         .execute({ jsonrpc: '2.0', id, method: 'status', params: [] })
-        .catch(_err => {});
+        .catch((_err) => {});
 
       if (!data) throw Error('no data from status');
 
@@ -203,7 +202,7 @@ export const provisionSmartWallet = async (
   });
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
-  const sendAction = async bridgeAction => {
+  const sendAction = async (bridgeAction) => {
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
@@ -231,12 +230,12 @@ export const provisionSmartWallet = async (
   const offers = Far('Offers', {
     executeOffer,
     /** @param {string | number} offerId */
-    tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
+    tryExit: (offerId) => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
-    receive: async payment => {
+    receive: async (payment) => {
       const brand = await E(payment).getAllegedBrand();
       const asset = vbankEntries.find(([_denom, a]) => a.brand === brand);
       if (!asset) throw Error(`unknown brand`);
@@ -274,7 +273,7 @@ export const provisionSmartWallet = async (
   }
 
   async function* purseUpdates(brand) {
-    const brandAssetInfo = Object.values(byName).find(a => a.brand === brand);
+    const brandAssetInfo = Object.values(byName).find((a) => a.brand === brand);
     await null;
     if (brandAssetInfo) {
       yield* vbankAssetBalanceUpdates(brandAssetInfo.denom, brand);
@@ -388,7 +387,7 @@ const runCoreEval = async (
 
   // TODO? double-check that bundles are loaded
 
-  const evalPaths = evals.map(e => [e.permit, e.code]).flat();
+  const evalPaths = evals.map((e) => [e.permit, e.code]).flat();
   t.log(evalPaths);
   console.log('await tx', evalPaths);
   const result = await agd.tx(
@@ -429,7 +428,7 @@ const runCoreEval = async (
  * @param {typeof import('fs/promises').writeFile} io.writeFile
  * @param {(...parts: string[]) => string} [io.join]
  */
-export const makeE2ETools = (
+export const makeE2ETools = async (
   t,
   bundleCache,
   {
@@ -447,7 +446,7 @@ export const makeE2ETools = (
   const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
   const rpc = makeHttpClient(rpcAddress, fetch);
   const lcd = makeAPI(apiAddress, { fetch });
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const explainDelay = (ms, info) => {
     if (typeof info === 'object' && Object.keys(info).length > 0) {
@@ -545,7 +544,7 @@ export const makeE2ETools = (
    *   behavior?: Function;
    * } & ({ builderPath: string } | { entryFile: string })} info
    */
-  const buildAndRunCoreEval = async info => {
+  const buildAndRunCoreEval = async (info) => {
     if ('builderPath' in info) {
       throw Error('@@TODO: agoric run style');
     }

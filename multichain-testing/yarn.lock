@@ -5,6 +5,13 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
+"@agoric/assert@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "@agoric/assert@npm:0.6.0"
+  checksum: 10c0/7892925b4568809b26408a33033af85547b2a9378ddc325c4c44196f0b757ec86dde9a5aef75de44345145b4bad4402b74c71060c47a1e0b9eeaae77bc223748
+  languageName: node
+  linkType: hard
+
 "@agoric/cosmic-proto@npm:0.4.1-dev-08f8549.0":
   version: 0.4.1-dev-08f8549.0
   resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-08f8549.0"
@@ -24,10 +31,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/multichain-testing@workspace:."
   dependencies:
+    "@agoric/assert": "npm:^0.6.0"
     "@agoric/cosmic-proto": "npm:0.4.1-dev-08f8549.0"
     "@cosmjs/crypto": "npm:^0.32.2"
     "@cosmjs/proto-signing": "npm:^0.32.2"
     "@cosmjs/stargate": "npm:^0.32.2"
+    "@endo/far": "npm:^1.1.2"
+    "@endo/nat": "npm:^5.0.7"
+    "@endo/ses-ava": "npm:^1.2.2"
     "@types/eslint": "npm:^8"
     "@types/node": "npm:^20.11.13"
     "@typescript-eslint/eslint-plugin": "npm:^6.20.0"
@@ -252,12 +263,32 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/errors@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "@endo/errors@npm:1.2.2"
+  dependencies:
+    ses: "npm:^1.5.0"
+  checksum: 10c0/d90baaf803b17130b83fbc562e253504a6a05e4843d63536e74578503f6bd937fdba3464c4d8eeb9df16b795639cd9c4aad143520525f9e54aa3e91dc5184c17
+  languageName: node
+  linkType: hard
+
 "@endo/eventual-send@npm:^1.2.2":
   version: 1.2.2
   resolution: "@endo/eventual-send@npm:1.2.2"
   dependencies:
     "@endo/env-options": "npm:^1.1.4"
   checksum: 10c0/d19fcee64b7113e5ff7fc4886d47bc722c4edd49a107f0952760567a4dd31cabd14abd788cc2c0c9d4b907e2c737944a389fd0ab5b0917809ef47a1df6803642
+  languageName: node
+  linkType: hard
+
+"@endo/far@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@endo/far@npm:1.1.2"
+  dependencies:
+    "@endo/errors": "npm:^1.2.2"
+    "@endo/eventual-send": "npm:^1.2.2"
+    "@endo/pass-style": "npm:^1.4.0"
+  checksum: 10c0/11a0fa1a1b8d20e9c467f276710756ca81dd88810cd300d5646f462ca4c097616371017c9f59ce9f05ef8dc2a27e7d28185c23b40da69b6bdf77818e2eb457ea
   languageName: node
   linkType: hard
 
@@ -282,12 +313,45 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@endo/nat@npm:^5.0.7":
+  version: 5.0.7
+  resolution: "@endo/nat@npm:5.0.7"
+  checksum: 10c0/ee7d659a958fa0157767a0aa8a9425c99fe358754d3d1c93f6be169d5d92409427a88d5593da923614b087ad9faf717065ad58c3b4793dfb4049ce59b5bce63a
+  languageName: node
+  linkType: hard
+
+"@endo/pass-style@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@endo/pass-style@npm:1.4.0"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.4"
+    "@endo/errors": "npm:^1.2.2"
+    "@endo/eventual-send": "npm:^1.2.2"
+    "@endo/promise-kit": "npm:^1.1.2"
+    "@fast-check/ava": "npm:^1.1.5"
+  checksum: 10c0/28ef4b4293dbae98b17ba8165dddf80edec4a1b7f94664b09adfb5fcd5927f2a4aa0679081b94876c997d4df559a192ef4ec5e8a9444fe671966488f6e098b50
+  languageName: node
+  linkType: hard
+
 "@endo/promise-kit@npm:^1.1.2":
   version: 1.1.2
   resolution: "@endo/promise-kit@npm:1.1.2"
   dependencies:
     ses: "npm:^1.5.0"
   checksum: 10c0/12bf81d5b3efd77f75c95d4d287a9b46f9f69adc9cb25586d5a25e1d01a5392fe2e268adf5e3f61ef77187f134ffeab9182deb1b9f35598fb14c9a89b38e3a88
+  languageName: node
+  linkType: hard
+
+"@endo/ses-ava@npm:^1.2.2":
+  version: 1.2.2
+  resolution: "@endo/ses-ava@npm:1.2.2"
+  dependencies:
+    "@endo/env-options": "npm:^1.1.4"
+    "@endo/init": "npm:^1.1.2"
+    ses: "npm:^1.5.0"
+  peerDependencies:
+    ava: ^5.3.0 || ^6.1.2
+  checksum: 10c0/62b3747df53d34b986b75d6fd1c25f566448a4e62730afbaa9c4c8e27a7703c267cc6fb233a5e8deb45a68abfa2add048a4b5d4f55fd9790d7b7f0520ab384c4
   languageName: node
   linkType: hard
 
@@ -330,6 +394,17 @@ __metadata:
   version: 8.57.0
   resolution: "@eslint/js@npm:8.57.0"
   checksum: 10c0/9a518bb8625ba3350613903a6d8c622352ab0c6557a59fe6ff6178bf882bf57123f9d92aa826ee8ac3ee74b9c6203fe630e9ee00efb03d753962dcf65ee4bd94
+  languageName: node
+  linkType: hard
+
+"@fast-check/ava@npm:^1.1.5":
+  version: 1.2.1
+  resolution: "@fast-check/ava@npm:1.2.1"
+  dependencies:
+    fast-check: "npm:^3.0.0"
+  peerDependencies:
+    ava: ^4 || ^5 || ^6
+  checksum: 10c0/3800098fd7e8098102544a2f7a595351d063a7ebaeca18ed4901df5ec2679da2330ba8c0db2c820721d4cbb3e23d817ba22fec6d058957930e229f44fa71a684
   languageName: node
   linkType: hard
 
@@ -1662,6 +1737,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"fast-check@npm:^3.0.0":
+  version: 3.19.0
+  resolution: "fast-check@npm:3.19.0"
+  dependencies:
+    pure-rand: "npm:^6.1.0"
+  checksum: 10c0/5a15484d380fb5a3e94ec951c97e59b940ac4f2e1f3f7a05578d67851e5cb5283121bcf08c57e3238bc85899ce691b47ab477a6dd481a6f520e2e7ab4952d1ee
+  languageName: node
+  linkType: hard
+
 "fast-deep-equal@npm:^3.1.1, fast-deep-equal@npm:^3.1.3":
   version: 3.1.3
   resolution: "fast-deep-equal@npm:3.1.3"
@@ -2971,6 +3055,13 @@ __metadata:
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: 10c0/14f76a8206bc3464f794fb2e3d3cc665ae416c01893ad7a02b23766eb07159144ee612ad67af5e84fa4479ccfe67678c4feb126b0485651b302babf66f04f9e9
+  languageName: node
+  linkType: hard
+
+"pure-rand@npm:^6.1.0":
+  version: 6.1.0
+  resolution: "pure-rand@npm:6.1.0"
+  checksum: 10c0/1abe217897bf74dcb3a0c9aba3555fe975023147b48db540aa2faf507aee91c03bf54f6aef0eb2bf59cc259a16d06b28eca37f0dc426d94f4692aeff02fb0e65
   languageName: node
   linkType: hard
 
