@@ -1,7 +1,8 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import test from 'ava';
 
-import { agd, waitForBlock } from '@agoric/synthetic-chain';
+import { agd, evalBundles, waitForBlock } from '@agoric/synthetic-chain';
+
+const SUBMISSION_DIR = 'localchaintest-submission';
 
 const readPublished = async path => {
   const { value } = await agd.query(
@@ -18,7 +19,11 @@ const readPublished = async path => {
   return obj.values[0];
 };
 
+// The testing assertions are in the submission that runs in the core-eval.
+// The test here runs that and confirms the eval made it through all the assertions.
 test(`localchain passes tests`, async t => {
+  await evalBundles(SUBMISSION_DIR);
+
   const nodePath = 'test.localchain';
   const nodeValue = JSON.stringify({ success: true });
 
