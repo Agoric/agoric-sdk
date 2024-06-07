@@ -617,7 +617,13 @@ test('quoteAtTime', async t => {
 
   /** @type {PriceQuote | undefined} */
   let priceQuote;
-  await t.notThrowsAsync(quoteAtTime.then(result => (priceQuote = result)));
+
+  // t.notThrowsAsync() returns a floating promise. We can't await here, because the quote won't be produced until time
+  // ticks on. Save the promises, and ensure they resolve before the test finishes.
+  const results = [];
+  results.push(
+    t.notThrowsAsync(quoteAtTime.then(result => (priceQuote = result))),
+  );
 
   /** @type {PromiseRecord<PriceQuote>} */
   const userQuotePK = makePromiseKit();
@@ -636,8 +642,8 @@ test('quoteAtTime', async t => {
 
   /** @type {PriceQuote | undefined} */
   let userPriceQuote;
-  await t.notThrowsAsync(
-    quoteAtUserTime.then(result => (userPriceQuote = result)),
+  results.push(
+    t.notThrowsAsync(quoteAtUserTime.then(result => (userPriceQuote = result))),
   );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
@@ -702,6 +708,7 @@ test('quoteAtTime', async t => {
   t.deepEqual(timestamp, toTS(7n));
   t.is(amountIn.value, 41n);
   t.is(amountOut.value / 41n, 960n);
+  await Promise.all(results);
 });
 
 test('quoteWhen', async t => {
@@ -733,8 +740,11 @@ test('quoteWhen', async t => {
 
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
-  await t.notThrowsAsync(
-    quoteWhenGTE.then(result => (abovePriceQuote = result)),
+  // t.notThrowsAsync() returns a floating promise. We can't await here, because the quote won't be produced until time
+  // ticks on. Save the promises, and ensure they resolve before the test finishes.
+  const results = [];
+  results.push(
+    t.notThrowsAsync(quoteWhenGTE.then(result => (abovePriceQuote = result))),
   );
   const quoteWhenLTE = E(pa).quoteWhenLTE(
     AmountMath.make(brandIn, 29n),
@@ -743,8 +753,8 @@ test('quoteWhen', async t => {
 
   /** @type {PriceQuote | undefined} */
   let belowPriceQuote;
-  await t.notThrowsAsync(
-    quoteWhenLTE.then(result => (belowPriceQuote = result)),
+  results.push(
+    t.notThrowsAsync(quoteWhenLTE.then(result => (belowPriceQuote = result))),
   );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
@@ -818,6 +828,8 @@ test('quoteWhen', async t => {
   t.deepEqual(belowTimestamp, toTS(6n));
   t.is(belowIn.value, 29n);
   t.is(belowOut.value / 29n, 960n);
+
+  await Promise.all(results);
 });
 
 test('mutableQuoteWhen no replacement', async t => {
@@ -849,8 +861,13 @@ test('mutableQuoteWhen no replacement', async t => {
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
   const abovePriceQuoteP = E(mutableQuoteWhenGTE).getPromise();
-  await t.notThrowsAsync(
-    abovePriceQuoteP.then(result => (abovePriceQuote = result)),
+  // t.notThrowsAsync() returns a floating promise. We can't await here, because the quote won't be produced until time
+  // ticks on. Save the promises, and ensure they resolve before the test finishes.
+  const results = [];
+  results.push(
+    t.notThrowsAsync(
+      abovePriceQuoteP.then(result => (abovePriceQuote = result)),
+    ),
   );
 
   const mutableQuoteWhenLTE = E(pa).mutableQuoteWhenLTE(
@@ -861,8 +878,10 @@ test('mutableQuoteWhen no replacement', async t => {
   /** @type {PriceQuote | undefined} */
   let belowPriceQuote;
   const belowPriceQuoteP = E(mutableQuoteWhenLTE).getPromise();
-  await t.notThrowsAsync(
-    belowPriceQuoteP.then(result => (belowPriceQuote = result)),
+  results.push(
+    t.notThrowsAsync(
+      belowPriceQuoteP.then(result => (belowPriceQuote = result)),
+    ),
   );
 
   await E(aggregator.creatorFacet).initOracle(price1000.instance, {
@@ -940,6 +959,8 @@ test('mutableQuoteWhen no replacement', async t => {
   t.deepEqual(belowTimestamp, TimeMath.coerceTimestampRecord(6n, timerBrand));
   t.is(belowIn.value, 29n);
   t.is(belowOut.value / 29n, 960n);
+
+  await Promise.all(results);
 });
 
 test('mutableQuoteWhen with update', async t => {
@@ -970,7 +991,9 @@ test('mutableQuoteWhen with update', async t => {
   /** @type {PriceQuote | undefined} */
   let abovePriceQuote;
   const abovePriceQuoteP = E(mutableQuoteWhenGTE).getPromise();
-  await t.notThrowsAsync(
+  // t.notThrowsAsync() returns a floating promise. We can't await here, because the quote won't be produced until time
+  // ticks on. Save the promises, and ensure they resolve before the test finishes.
+  const results = t.notThrowsAsync(
     abovePriceQuoteP.then(result => (abovePriceQuote = result)),
   );
 
@@ -1012,6 +1035,7 @@ test('mutableQuoteWhen with update', async t => {
   t.deepEqual(aboveTimestamp, toTS(4n));
   t.is(aboveIn.value, 25n);
   t.is(aboveOut.value / 25n, 1250n);
+  await results;
 });
 
 test('cancel mutableQuoteWhen', async t => {
