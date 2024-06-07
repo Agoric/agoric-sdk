@@ -20,6 +20,7 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, CosmosChainInfo} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
+ * @import {Remote} from '@agoric/internal';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  * @import {ChainHub} from '../utils/chainHub.js';
  */
@@ -62,7 +63,7 @@ const PUBLIC_TOPICS = {
  * @param {Zone} zone
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
- * @param {TimerService} timerService
+ * @param {Remote<TimerService>} timerService
  * @param {ChainHub} chainHub
  */
 export const prepareLocalChainAccountKit = (
