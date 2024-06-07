@@ -1,4 +1,4 @@
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 
 /**
  * @import {PortAllocator} from '@agoric/network';
