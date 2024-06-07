@@ -78,7 +78,7 @@ export const makeZCFZygote = async (
 
   /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
-    E(zoeInstanceAdmin).failAllSeats(reason);
+    void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
@@ -114,7 +114,7 @@ export const makeZCFZygote = async (
     const zcfSeat = seatManager.makeZCFSeat(seatData);
 
     const exiter = makeExiter(seatData.proposal, zcfSeat);
-    E(zoeInstanceAdmin)
+    void E(zoeInstanceAdmin)
       .makeNoEscrowSeat(initialAllocation, proposal, exiter, seatHandle)
       .then(userSeat => userSeatPromiseKit.resolve(userSeat));
 
@@ -326,7 +326,7 @@ export const makeZCFZygote = async (
     },
     // Shutdown the entire vat and give payouts
     shutdown: completion => {
-      E(zoeInstanceAdmin).exitAllSeats(completion);
+      void E(zoeInstanceAdmin).exitAllSeats(completion);
       seatManager.dropAllReferences();
       powers.exitVat(completion);
     },

@@ -127,8 +127,7 @@ const start = zcf => {
       });
       assertBidSeat(zcf, sellSeat, seat);
 
-      // XXX await make function hanging
-      startWakeupTimerIfNeeded();
+      void startWakeupTimerIfNeeded();
 
       bidSeats.push(seat);
       return defaultAcceptanceMsg;

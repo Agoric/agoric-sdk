@@ -169,7 +169,7 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           assertHasNotExited(this, 'Cannot exit seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          void E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,
@@ -190,7 +190,7 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           assertHasNotExited(this, 'Cannot fail seat. Seat has already exited');
 
           state.exiting = true;
-          E.when(
+          void E.when(
             doExit(
               facets.zoeSeatAdmin,
               state.currentAllocation,

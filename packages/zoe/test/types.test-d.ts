@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /**
  * @file uses .ts syntax to be able to declare types (e.g. of kit.creatorFacet as {})
  * because "there is no JavaScript syntax for passing a a type argument"
@@ -93,7 +92,7 @@ const mock = null as any;
 
   // XXX remote method requires E()
   const pf1 = await zoe.getPublicFacet(instance);
-  pf1.getPriceAuthority();
+  void pf1.getPriceAuthority();
   // @ts-expect-error
   pf1.notInPublicFacet;
 
@@ -101,7 +100,7 @@ const mock = null as any;
   rf.getPublicFacet;
 
   const pf2 = await E(zoe).getPublicFacet(instance);
-  pf2.getPriceAuthority();
+  void pf2.getPriceAuthority();
   // @ts-expect-error
   pf2.notInPublicFacet;
 }

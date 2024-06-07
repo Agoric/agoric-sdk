@@ -75,7 +75,7 @@ const start = async zcf => {
           Fail`Oracle required a fee but the query had none`;
         return reply;
       } catch (e) {
-        E(handler).onError(query, e);
+        void E(handler).onError(query, e);
         throw e;
       }
     },
@@ -91,10 +91,10 @@ const start = async zcf => {
             atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
           }
           querySeat.exit();
-          E(handler).onReply(query, reply, requiredFee);
+          void E(handler).onReply(query, reply, requiredFee);
           return reply;
         } catch (e) {
-          E(handler).onError(query, e);
+          void E(handler).onError(query, e);
           throw e;
         }
       };
