@@ -14,7 +14,7 @@ import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js'
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
- * @import {TimerBrand, TimerService} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  */
 
@@ -28,7 +28,6 @@ const trace = makeTracer('StakeBld');
  *   marshaller: Marshaller;
  *   storageNode: StorageNode;
  *   timerService: TimerService;
- *   timerBrand: TimerBrand;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -57,7 +56,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
-    privateArgs.timerBrand,
     agoricChainInfo,
   );
 

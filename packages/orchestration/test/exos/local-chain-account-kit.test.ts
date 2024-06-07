@@ -29,7 +29,6 @@ test('deposit, withdraw', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
-    timer.getTimerBrand(),
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -94,7 +93,6 @@ test('delegate, undelegate', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
-    timer.getTimerBrand(),
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -142,7 +140,6 @@ test('transfer', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
-    timer.getTimerBrand(),
     makeChainHub(bootstrap.agoricNames),
   );
 

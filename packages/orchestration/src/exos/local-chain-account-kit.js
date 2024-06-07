@@ -63,7 +63,6 @@ const PUBLIC_TOPICS = {
  * @param {MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  * @param {TimerService} timerService
- * @param {TimerBrand} timerBrand
  * @param {ChainHub} chainHub
  */
 export const prepareLocalChainAccountKit = (
@@ -71,10 +70,9 @@ export const prepareLocalChainAccountKit = (
   makeRecorderKit,
   zcf,
   timerService,
-  timerBrand,
   chainHub,
 ) => {
-  const timestampHelper = makeTimestampHelper(timerService, timerBrand);
+  const timestampHelper = makeTimestampHelper(timerService);
   // TODO: rename to makeLocalOrchestrationAccount or the like to distinguish from lca
   /** Make an object wrapping an LCA with Zoe interfaces. */
   const makeLocalChainAccountKit = zone.exoClassKit(

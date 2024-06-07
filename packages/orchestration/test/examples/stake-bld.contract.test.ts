@@ -34,7 +34,6 @@ const startContract = async ({
       marshaller,
       storageNode: storage.rootNode,
       timerService: timer,
-      timerBrand: timer.getTimerBrand(),
     },
   );
   return { publicFacet, zoe };

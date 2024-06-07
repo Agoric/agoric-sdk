@@ -3,17 +3,22 @@ import { TimeMath } from '@agoric/time';
 
 /**
  * @import {RelativeTimeRecord, TimerBrand, TimerService} from '@agoric/time';
- * @import {MsgTransfer} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+ * @import {Remote} from '@agoric/internal';
  */
 
 export const SECONDS_PER_MINUTE = 60n;
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 
-/**
- * @param {TimerService} timer
- * @param {TimerBrand} timerBrand
- */
-export function makeTimestampHelper(timer, timerBrand) {
+/** @param {Remote<TimerService>} timer */
+export function makeTimestampHelper(timer) {
+  /** @type {TimerBrand | undefined} */
+  let brandCache;
+  const getBrand = async () => {
+    if (brandCache) return brandCache;
+    brandCache = await E(timer).getTimerBrand();
+    return brandCache;
+  };
+
   return harden({
     /**
      * Takes the current time from ChainTimerService and adds a relative time to
@@ -28,7 +33,10 @@ export function makeTimestampHelper(timer, timerBrand) {
       const currentTime = await E(timer).getCurrentTimestamp();
       const timeout =
         relativeTime ||
-        TimeMath.coerceRelativeTimeRecord(SECONDS_PER_MINUTE * 5n, timerBrand);
+        TimeMath.coerceRelativeTimeRecord(
+          SECONDS_PER_MINUTE * 5n,
+          await getBrand(),
+        );
       return (
         TimeMath.addAbsRel(currentTime, timeout).absValue *
         NANOSECONDS_PER_SECOND
