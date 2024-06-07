@@ -18,10 +18,14 @@
   },
   "packageManager": "yarn@4.1.1",
   "devDependencies": {
+    "@agoric/assert": "^0.6.0",
     "@agoric/cosmic-proto": "0.4.1-dev-08f8549.0",
     "@cosmjs/crypto": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
+    "@endo/far": "^1.1.2",
+    "@endo/nat": "^5.0.7",
+    "@endo/ses-ava": "^1.2.2",
     "@types/eslint": "^8",
     "@types/node": "^20.11.13",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
@@ -54,6 +58,9 @@
   },
   "eslintConfig": {
     "root": true,
+    "env": {
+      "node": true
+    },
     "parser": "@typescript-eslint/parser",
     "plugins": [
       "@typescript-eslint",

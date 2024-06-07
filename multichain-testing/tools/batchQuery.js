@@ -1,4 +1,4 @@
-// @ts-check
+import { assert } from '@agoric/assert';
 import { E } from '@endo/far';
 
 /** @typedef {'children' | 'data'} AgoricChainStoragePathKind */
@@ -8,10 +8,10 @@ import { E } from '@endo/far';
 /**
  * @param {[kind: AgoricChainStoragePathKind, item: string]} path
  */
-export const pathToKey = path => path.join('.');
+export const pathToKey = (path) => path.join('.');
 
 /** @param {string} key */
-export const keyToPath = key => {
+export const keyToPath = (key) => {
   const [kind, ...rest] = key.split('.');
   assert(kind === 'children' || kind === 'data');
   /** @type {[kind: 'children' | 'data', item: string]} */
@@ -36,26 +36,26 @@ async function* mapHistory(f, chunks) {
 /**
  * @param {ERef<import('./makeHttpClient').LCD>} lcd
  */
-export const makeVStorage = lcd => {
+export const makeVStorage = (lcd) => {
   const getJSON = (href, options) => E(lcd).getJSON(href, options);
 
   // height=0 is the same as omitting height and implies the highest block
   const href = (path = 'published', { kind = 'data' } = {}) =>
     `/agoric/vstorage/${kind}/${path}`;
-  const headers = height =>
+  const headers = (height) =>
     height ? { 'x-cosmos-block-height': `${height}` } : undefined;
 
   const readStorage = (
     path = 'published',
     { kind = 'data', height = 0 } = {},
   ) =>
-    getJSON(href(path, { kind }), { headers: headers(height) }).catch(err => {
+    getJSON(href(path, { kind }), { headers: headers(height) }).catch((err) => {
       throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
     });
   const readCell = (path, opts) =>
     readStorage(path, opts)
-      .then(data => data.value)
-      .then(s => (s === '' ? {} : JSON.parse(s)));
+      .then((data) => data.value)
+      .then((s) => (s === '' ? {} : JSON.parse(s)));
 
   /**
    * Read values going back as far as available
@@ -113,7 +113,7 @@ export const makeVStorage = lcd => {
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
 /** @param {string | unknown} d */
-const parseIfJSON = d => {
+const parseIfJSON = (d) => {
   if (typeof d !== 'string') return d;
   try {
     return JSON.parse(d);
@@ -132,7 +132,7 @@ export const batchVstorageQuery = async (vstorage, unmarshal, paths) => {
     vstorage.readStorage(path, { kind }),
   );
 
-  return Promise.all(requests).then(responses =>
+  return Promise.all(requests).then((responses) =>
     responses.map((res, index) => {
       if (paths[index][0] === 'children') {
         return [

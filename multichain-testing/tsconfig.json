@@ -3,5 +3,8 @@
   "include": [
       "tools",
       "test"
-  ]
+  ],
+  "compilerOptions": {
+    "checkJs": false
+  }
 }
