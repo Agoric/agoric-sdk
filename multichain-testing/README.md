@@ -7,7 +7,6 @@ End-to-end testing environment for fully simulated chains, powered by [Starship]
 
 The current commands will read from [`config.yaml`](./config.yaml) to build a multi-chain teting environment. Currently, the image includes `agoric`, `osmosis`, and `cosmos-hub` chains and a hermes relayer between each.
 
-A less-resource intensive version of the configuration is available at [`config.ci.yaml`](./config.ci.yaml) and is currently used for CI tests.
 
 ## Initial Setup
 

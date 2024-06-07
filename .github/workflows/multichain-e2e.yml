@@ -39,7 +39,7 @@ jobs:
         uses: cosmology-tech/starship-action@0.2.19
         with:
           # uses ghcr.io/agoric/agoric-sdk:dev image (latest master)
-          values: ./agoric-sdk/multichain-testing/config.ci.yaml
+          values: ./agoric-sdk/multichain-testing/config.yaml
           port-forward: true
           version: 0.2.2
           timeout: 30m

@@ -10,7 +10,7 @@ type GetConfigFilePathFn = ReturnType<typeof makeGetConfigFile>;
 export const makeSetupRegistry = (getConfigFile: GetConfigFilePathFn) => {
   /**
    * @param {Object} opts
-   * @param {string} [opts.config='../config.ci.yaml'] - The path to the starship configuration file.
+   * @param {string} [opts.config='../config.yaml'] - The path to the starship configuration file.
    * @example
    * ```js
    * const { useChain } = await setupRegistry();
@@ -19,7 +19,7 @@ export const makeSetupRegistry = (getConfigFile: GetConfigFilePathFn) => {
    * await creditFromFaucet('osmo1234');
    * ```
    */
-  const setupRegistry = async ({ config = '../config.ci.yaml' } = {}) => {
+  const setupRegistry = async ({ config = '../config.yaml' } = {}) => {
     ConfigContext.setConfigFile(getConfigFile(config));
     ConfigContext.setRegistry(await useRegistry(ConfigContext.configFile!));
     return { useChain };

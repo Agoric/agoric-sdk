@@ -92,9 +92,7 @@ relayers:
       - gaialocal
 
 explorer:
-  enabled: true
-  ports:
-    rest: 8080
+  enabled: false
 
 registry:
   enabled: true
