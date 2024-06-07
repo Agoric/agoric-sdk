@@ -1,6 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { makeTagged } from '@endo/marshal';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
@@ -466,6 +467,15 @@ test('upgrade vat-vow', async t => {
   const vatOptions = { managerType: 'xs-worker', meter };
   const vowRoot = await EV.vat('bootstrap').createVat(vowVatConfig, vatOptions);
 
+  const makeFakeVowKit = async () => {
+    const internalPromiseKit = await EV.vat('bootstrap').makePromiseKit();
+    const fakeVowV0 = await EV.vat('bootstrap').makeRemotable('fakeVowV0', {
+      shorten: internalPromiseKit.promise,
+    });
+    const fakeVow = makeTagged('Vow', harden({ vowV0: fakeVowV0 }));
+    return harden({ resolver: internalPromiseKit.resolver, vow: fakeVow });
+  };
+
   t.log('test incarnation 0');
   /** @type {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} */
   const localPromises = {
@@ -474,12 +484,14 @@ test('upgrade vat-vow', async t => {
     promiseRejected: ['goodbye', true],
   };
   const promiseKit = await EV.vat('bootstrap').makePromiseKit();
+  const fakeVowKit = await makeFakeVowKit();
   const localVows = {
     vowForever: [],
     vowFulfilled: ['hello'],
     vowRejected: ['goodbye', true],
     vowPostUpgrade: [],
     vowExternalPromise: [promiseKit.promise],
+    vowExternalVow: [fakeVowKit.vow],
     vowPromiseForever: [undefined, false, true],
   };
   await EV(vowRoot).makeLocalPromiseWatchers(localPromises);
@@ -502,6 +514,10 @@ test('upgrade vat-vow', async t => {
       status: 'unsettled',
       resolver: {},
     },
+    vowExternalVow: {
+      status: 'unsettled',
+      resolver: {},
+    },
     vowPromiseForever: {
       status: 'unsettled',
       resolver: {},
@@ -519,6 +535,15 @@ test('upgrade vat-vow', async t => {
   };
   await EV(vowRoot).resolveVowWatchers(localVowsUpdates);
   await EV(promiseKit.resolver).resolve('ciao');
+  t.timeout(10_000);
+  await EV(fakeVowKit.resolver).reject(
+    harden({
+      name: 'vatUpgraded',
+      upgradeMessage: 'vat upgraded',
+      incarnationNumber: 0,
+    }),
+  );
+  t.timeout(600_000); // t.timeout.clear() not yet available in our ava version
   t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
     promiseForever: {
       status: 'rejected',
@@ -538,6 +563,14 @@ test('upgrade vat-vow', async t => {
     vowRejected: { status: 'rejected', reason: 'goodbye' },
     vowPostUpgrade: { status: 'fulfilled', value: 'bonjour' },
     vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
+    vowExternalVow: {
+      status: 'rejected',
+      reason: {
+        name: 'vatUpgraded',
+        upgradeMessage: 'vat upgraded',
+        incarnationNumber: 0,
+      },
+    },
     vowPromiseForever: {
       status: 'rejected',
       reason: {
