@@ -16,7 +16,7 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 
-  const { makeTransferMiddleware } = prepareTransferTools(
+  const { makeTransferMiddlewareKit } = prepareTransferTools(
     zone.subZone('transfer'),
     vowTools,
   );
@@ -36,24 +36,28 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
      * @template {import('@agoric/internal').BridgeIdValue} T
      * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} [inboundType]
+     * @param {import('./bridge-target').AppTransformer} [appTransformer]
      */
-    provideBridgeTargetKit(manager, inboundType = 'IBC_EVENT') {
+    provideBridgeTargetKit(
+      manager,
+      inboundType = 'IBC_EVENT',
+      appTransformer = undefined,
+    ) {
       /** @type {MapStore<string, ReturnType<typeof makeBridgeTargetKit>>} */
       const inboundTypeToKit = provideLazy(managerToKits, manager, () =>
         zone.detached().mapStore('inboundTypeToKit'),
       );
       const kit = provideLazy(inboundTypeToKit, inboundType, () =>
-        makeBridgeTargetKit(manager, inboundType),
+        makeBridgeTargetKit(manager, inboundType, appTransformer),
       );
       return kit;
     },
     /**
-     * Create a middleware for exposing IBC messages to and from the underlying
+     * Create middleware for exposing IBC messages to and from the underlying
      * vtransfer port as data with embedded `action` ocaps where safe.
      */
-    makeTransferMiddleware,
+    makeTransferMiddlewareKit,
   });
 };
 
 /** @typedef {ReturnType<typeof buildRootObject>} TransferVat */
-/** @typedef {ReturnType<TransferVat['makeTransferMiddleware']>} TransferMiddleware */

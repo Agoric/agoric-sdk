@@ -8,7 +8,7 @@ import { BridgeHandlerI } from './bridge.js';
  *   too restrictive to work out-of-the-box.
  */
 
-const { Fail } = assert;
+const { details: X, Fail } = assert;
 
 /**
  * @typedef {object} TargetApp an object representing the app that receives
@@ -33,6 +33,28 @@ export const TargetHostI = M.interface('TargetHost', {
 });
 
 /**
+ * @typedef {object} AppTransformer an object for replacing a TargetApp,
+ *   generally with a wrapper that intercepts its inputs and/or results to
+ *   ensure conformance with a protocol and/or interface (e.g., an active tap
+ *   can encode results of the wrapped TargetApp into an acknowledgement
+ *   message)
+ * @property {(
+ *   app: ERef<TargetApp>,
+ *   targetHost: ERef<TargetHost>,
+ *   ...args: unknown[]
+ * ) => ERef<TargetApp>} wrapApp
+ */
+// TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
+export const AppTransformerI = M.interface('AppTransformer', {
+  wrapApp: M.callWhen(
+    M.await(M.remotable('TargetAppI')),
+    M.await(M.remotable('TargetHostI')),
+  )
+    .rest(M.any())
+    .returns(M.remotable('TargetAppI')),
+});
+
+/**
  * @typedef {object} TargetRegistration is an ExoClass of its own, and each
  *   instance is an attenuation of a BridgeTargetKit `targetRegistry` facet that
  *   has access to internal state thereof but has been scoped down to a single
@@ -54,19 +76,23 @@ export const TargetRegistrationI = M.interface('TargetRegistration', {
  * @property {(
  *   target: string,
  *   targetApp: ERef<TargetApp>,
+ *   args?: unknown[],
  * ) => Promise<TargetRegistration>} register
- * @property {(target: string, targetApp: ERef<TargetApp>) => Promise<void>} reregister
+ * @property {(
+ *   target: string,
+ *   targetApp: ERef<TargetApp>,
+ *   args?: unknown[],
+ * ) => Promise<void>} reregister
  * @property {(target: string) => Promise<void>} unregister
  */
 // TODO unwrap type https://github.com/Agoric/agoric-sdk/issues/9163
 const TargetRegistryI = M.interface('TargetRegistry', {
-  register: M.callWhen(M.string(), M.await(M.remotable('TargetAppI'))).returns(
-    M.remotable('TargetRegistration'),
-  ),
-  reregister: M.callWhen(
-    M.string(),
-    M.await(M.remotable('TargetAppI')),
-  ).returns(),
+  register: M.callWhen(M.string(), M.await(M.remotable('TargetAppI')))
+    .optional(M.array())
+    .returns(M.remotable('TargetRegistration')),
+  reregister: M.callWhen(M.string(), M.await(M.remotable('TargetAppI')))
+    .optional(M.array())
+    .returns(),
   unregister: M.callWhen(M.string()).returns(),
 });
 
@@ -78,11 +104,13 @@ export const prepareTargetRegistration = zone =>
     /**
      * @param {string} target
      * @param {TargetRegistry} registry
+     * @param {unknown[] | null} args
      */
-    (target, registry) => ({
+    (target, registry, args) => ({
       target,
       /** @type {TargetRegistry | null} */
       registry,
+      args,
     }),
     {
       /**
@@ -91,11 +119,15 @@ export const prepareTargetRegistration = zone =>
        * @param {TargetApp} app new app to handle messages for the target
        */
       async updateTargetApp(app) {
-        const { target, registry } = this.state;
+        const { target, registry, args } = this.state;
         if (!registry) {
           throw Fail`Registration for ${target} is already revoked`;
         }
-        return E(registry).reregister(target, app);
+        return E(registry).reregister(
+          target,
+          app,
+          /** @type {unknown[]} */ (args),
+        );
       },
       /** Atomically delete the registration. */
       async revoke() {
@@ -104,6 +136,7 @@ export const prepareTargetRegistration = zone =>
           throw Fail`Registration for ${target} is already revoked`;
         }
         this.state.registry = null;
+        this.state.args = null;
         return E(registry).unregister(target);
       },
     },
@@ -112,18 +145,19 @@ export const prepareTargetRegistration = zone =>
 /**
  * A BridgeTargetKit is associated with a ScopedBridgeManager (essentially a
  * specific named channel on a bridge, cf. {@link ./bridge.js}) and a particular
- * inbound event type. It consists of three facets:
+ * inbound event type and an optional app transformer. It consists of three
+ * facets:
  *
  * - `targetHost` has a `downcall` method for sending outbound messages via the
  *   bridge to the VM host.
  * - `targetRegistry` has `register`, `reregister` and `unregister` methods to
- *   register/reregister/unregister an "app" with a "target" corresponding to an
- *   address on the targetHost. Each target may be associated with at most one
- *   app at any given time, and registration and unregistration each send a
- *   message to the targetHost of the state change (of type
- *   "BRIDGE_TARGET_REGISTER" and "BRIDGE_TARGET_UNREGISTER", respectively).
- *   `reregister` is a method that atomically redirects the target to a new
- *   app.
+ *   register/reregister/unregister an "app" (or rather its transformation) with
+ *   a "target" corresponding to an address on the targetHost. Each target may
+ *   be associated with at most one app at any given time, and registration and
+ *   unregistration each send a message to the targetHost of the state change
+ *   (of type "BRIDGE_TARGET_REGISTER" and "BRIDGE_TARGET_UNREGISTER",
+ *   respectively). `reregister` is a method that atomically redirects the
+ *   target to a new (transformed) app.
  * - `bridgeHandler` has a `fromBridge` method for receiving from the
  *   ScopedBridgeManager inbound messages of the associated event type and
  *   dispatching them to the app registered for their target.
@@ -143,10 +177,12 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
      * @template {import('@agoric/internal').BridgeIdValue} T
      * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} inboundEventType
+     * @param {AppTransformer} [appTransformer]
      */
-    (manager, inboundEventType) => ({
+    (manager, inboundEventType, appTransformer = undefined) => ({
       manager,
       inboundEventType,
+      appTransformer,
       /** @type {MapStore<string, ERef<TargetApp>>} */
       targetToApp: zone.detached().mapStore('targetToApp'),
     }),
@@ -177,36 +213,73 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
          *
          * @param {string} target
          * @param {TargetApp} app
+         * @param {unknown[]} [args]
          * @returns {Promise<TargetRegistration>} power to set or delete the
          *   registration
          */
-        async register(target, app) {
+        async register(target, app, args = []) {
           const { targetHost } = this.facets;
-          const { targetToApp } = this.state;
+          const { appTransformer, targetToApp } = this.state;
 
+          // Because wrapping an app is async, we verify absence of an existing
+          // registration twice (once to avoid the unnecessary invocation and
+          // once inside `init`), but attempt to throw similar errors in both
+          // cases.
           !targetToApp.has(target) || Fail`Target ${target} already registered`;
+          const wrappedApp = await (appTransformer
+            ? E(appTransformer).wrapApp(app, targetHost, ...args)
+            : app);
+          try {
+            targetToApp.init(target, wrappedApp);
+          } catch (cause) {
+            throw assert.error(
+              X`Target ${target} already registered`,
+              undefined,
+              { cause },
+            );
+          }
 
-          targetToApp.init(target, app);
           await E(targetHost).sendDowncall({
             type: 'BRIDGE_TARGET_REGISTER',
             target,
           });
 
-          return makeTargetRegistration(target, this.facets.targetRegistry);
+          return makeTargetRegistration(
+            target,
+            this.facets.targetRegistry,
+            args,
+          );
         },
         /**
          * Update the app that handles messages for a target.
          *
          * @param {string} target
          * @param {TargetApp} app
+         * @param {unknown[]} [args]
          * @returns {Promise<void>}
          */
-        async reregister(target, app) {
-          const { targetToApp } = this.state;
+        async reregister(target, app, args = []) {
+          const { targetHost } = this.facets;
+          const { appTransformer, targetToApp } = this.state;
+
+          // Because wrapping an app is async, we verify absence of an existing
+          // registration twice (once to avoid the unnecessary invocation and
+          // once inside `set`), but attempt to throw similar errors in both
+          // cases.
           targetToApp.has(target) ||
             Fail`Target ${target} is already unregistered`;
-
-          targetToApp.set(target, app);
+          const wrappedApp = await (appTransformer
+            ? E(appTransformer).wrapApp(app, targetHost, ...args)
+            : app);
+          try {
+            targetToApp.set(target, wrappedApp);
+          } catch (cause) {
+            throw assert.error(
+              X`Target ${target} is already unregistered`,
+              undefined,
+              { cause },
+            );
+          }
         },
         /**
          * Unregister the target, bypassing the attenuated `TargetRegistration`

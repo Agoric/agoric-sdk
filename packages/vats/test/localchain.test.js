@@ -50,9 +50,14 @@ const makeTestContext = async _t => {
     transferZone,
     prepareVowTools(transferZone.subZone('vows')),
   );
-  const transferMiddleware = transferTools.makeTransferMiddleware(
-    transferTools.makeBridgeTargetKit(transferBridge, VTRANSFER_IBC_EVENT),
+  const { finisher, interceptorFactory, transferMiddleware } =
+    transferTools.makeTransferMiddlewareKit();
+  const bridgeTargetKit = transferTools.makeBridgeTargetKit(
+    transferBridge,
+    VTRANSFER_IBC_EVENT,
+    interceptorFactory,
   );
+  finisher.useRegistry(bridgeTargetKit.targetRegistry);
 
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     balances: {

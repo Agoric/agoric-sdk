@@ -4,10 +4,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import type { ScopedBridgeManager } from '@agoric/vats';
-import type {
-  TransferMiddleware,
-  TransferVat,
-} from '@agoric/vats/src/vat-transfer.js';
+import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
+import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { BridgeId, VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 

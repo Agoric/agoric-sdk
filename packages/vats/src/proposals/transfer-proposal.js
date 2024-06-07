@@ -53,17 +53,32 @@ export const setupTransferMiddleware = async (
   produceTransferVat.reset();
   produceTransferVat.resolve(vats.transfer);
 
+  // We'll be exporting a TransferMiddleware instance that implements a
+  // vtransfer app registry supporting active and passive "taps" while handling
+  // IBC transfer protocol conformance by configuring its backing
+  // BridgeTargetKit registry to wrap each app with an interceptor.
+  // But a bridge channel scoped to vtransfer might already exist, so we make or
+  // retrieve it as appropriate, then make its intercepting BridgeTargetKit,
+  // and then finally configure the TransferMiddleware with that kit's registry.
+  const { finisher, interceptorFactory, transferMiddleware } = await E(
+    vats.transfer,
+  ).makeTransferMiddlewareKit();
   const vtransferID = BRIDGE_ID.VTRANSFER;
-  const provideTransferKit = bridge =>
-    E(vats.transfer).provideBridgeTargetKit(bridge, VTRANSFER_IBC_EVENT);
-  /** @type {Awaited<ReturnType<typeof provideTransferKit>>} */
-  let transferKit;
+  const provideBridgeTargetKit = bridge =>
+    E(vats.transfer).provideBridgeTargetKit(
+      bridge,
+      VTRANSFER_IBC_EVENT,
+      interceptorFactory,
+    );
+  /** @type {Awaited<ReturnType<typeof provideBridgeTargetKit>>} */
+  let bridgeTargetKit;
   try {
     const vtransferBridge = await E(bridgeManager).register(vtransferID);
     produceVtransferBridgeManager.reset();
     produceVtransferBridgeManager.resolve(vtransferBridge);
-    transferKit = await provideTransferKit(vtransferBridge);
-    await E(vtransferBridge).initHandler(transferKit.bridgeHandler);
+    bridgeTargetKit = await provideBridgeTargetKit(vtransferBridge);
+    await E(finisher).useRegistry(bridgeTargetKit.targetRegistry);
+    await E(vtransferBridge).initHandler(bridgeTargetKit.bridgeHandler);
     console.info('Successfully initHandler for', vtransferID);
   } catch (e) {
     console.error(
@@ -74,16 +89,12 @@ export const setupTransferMiddleware = async (
       'falling back to setHandler',
     );
     const vtransferBridge = await vtransferBridgeManagerP;
-    transferKit = await provideTransferKit(vtransferBridge);
-    await E(vtransferBridge).setHandler(transferKit.bridgeHandler);
+    bridgeTargetKit = await provideBridgeTargetKit(vtransferBridge);
+    await E(finisher).useRegistry(bridgeTargetKit.targetRegistry);
+    await E(vtransferBridge).setHandler(bridgeTargetKit.bridgeHandler);
     console.info('Successfully setHandler for', vtransferID);
   }
 
-  const { targetHost, targetRegistry } = transferKit;
-  const transferMiddleware = await E(vats.transfer).makeTransferMiddleware({
-    targetHost,
-    targetRegistry,
-  });
   produceTransferMiddleware.reset();
   produceTransferMiddleware.resolve(transferMiddleware);
 };
