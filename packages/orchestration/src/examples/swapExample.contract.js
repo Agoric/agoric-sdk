@@ -5,8 +5,11 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { orcUtils } from '../utils/orc.js';
+import { makeChainHub } from '../utils/chainHub.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -25,6 +28,7 @@ export const meta = {
     localchain: M.remotable('localchain'),
     orchestrationService: M.or(M.remotable('orchestration'), null),
     storageNode: StorageNodeShape,
+    marshaller: M.remotable('marshaller'),
     timerService: M.or(TimerServiceShape, null),
   },
   upgradability: 'canUpgrade',
@@ -48,6 +52,7 @@ export const makeNatAmountShape = (brand, min) =>
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
+ *   marshaller: Marshaller;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -62,16 +67,28 @@ export const start = async (zcf, privateArgs, baggage) => {
     orchestrationService,
     storageNode,
     timerService,
+    marshaller,
   } = privateArgs;
 
+  const chainHub = makeChainHub(agoricNames);
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+    timerService,
+    chainHub,
+  );
+
   const { orchestrate } = makeOrchestrationFacade({
-    agoricNames,
     localchain,
     orchestrationService,
     storageNode,
     timerService,
     zcf,
     zone,
+    chainHub,
+    makeLocalChainAccountKit,
   });
 
   /** deprecated historical example */

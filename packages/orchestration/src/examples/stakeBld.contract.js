@@ -10,6 +10,7 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { makeChainHub } from '../utils/chainHub.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -44,19 +45,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  // FIXME in a second incarnation we can't make a remote call before defining all kinds
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/8879
-  const agoricChainInfo = await E(privateArgs.agoricNames).lookup(
-    'chain',
-    'agoric',
-  );
-
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
-    agoricChainInfo,
+    makeChainHub(privateArgs.agoricNames),
   );
 
   async function makeLocalAccountKit() {
