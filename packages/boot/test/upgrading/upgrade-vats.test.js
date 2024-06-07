@@ -445,6 +445,8 @@ test('upgrade vat-priceAuthority', async t => {
   matchRef(t, reincarnatedRegistry.adminFacet, registry.adminFacet);
 });
 
+const dataOnly = obj => JSON.parse(JSON.stringify(obj));
+
 test('upgrade vat-vow', async t => {
   const bundles = {
     vow: {
@@ -464,15 +466,37 @@ test('upgrade vat-vow', async t => {
   t.log('test incarnation 0');
   /** @type {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} */
   const localPromises = {
-    forever: [],
-    fulfilled: ['hello'],
-    rejected: ['goodbye', true],
+    promiseForever: [],
+    promiseFulfilled: ['hello'],
+    promiseRejected: ['goodbye', true],
+  };
+  const localVows = {
+    vowForever: [],
+    vowFulfilled: ['hello'],
+    vowRejected: ['goodbye', true],
+    vowPostUpgrade: [],
+    vowPromiseForever: [undefined, false, true],
   };
   await EV(vowRoot).makeLocalPromiseWatchers(localPromises);
-  t.deepEqual(await EV(vowRoot).getWatcherResults(), {
-    fulfilled: { status: 'fulfilled', value: 'hello' },
-    forever: { status: 'unsettled' },
-    rejected: { status: 'rejected', reason: 'goodbye' },
+  await EV(vowRoot).makeLocalVowWatchers(localVows);
+  t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
+    promiseForever: { status: 'unsettled' },
+    promiseFulfilled: { status: 'fulfilled', value: 'hello' },
+    promiseRejected: { status: 'rejected', reason: 'goodbye' },
+    vowForever: {
+      status: 'unsettled',
+      resolver: {},
+    },
+    vowFulfilled: { status: 'fulfilled', value: 'hello' },
+    vowRejected: { status: 'rejected', reason: 'goodbye' },
+    vowPostUpgrade: {
+      status: 'unsettled',
+      resolver: {},
+    },
+    vowPromiseForever: {
+      status: 'unsettled',
+      resolver: {},
+    },
   });
 
   t.log('restart');
@@ -481,9 +505,12 @@ test('upgrade vat-vow', async t => {
   t.is(incarnationNumber, 1, 'vat must be reincarnated');
 
   t.log('test incarnation 1');
-  t.deepEqual(await EV(vowRoot).getWatcherResults(), {
-    fulfilled: { status: 'fulfilled', value: 'hello' },
-    forever: {
+  const localVowsUpdates = {
+    vowPostUpgrade: ['bonjour'],
+  };
+  await EV(vowRoot).resolveVowWatchers(localVowsUpdates);
+  t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
+    promiseForever: {
       status: 'rejected',
       reason: {
         name: 'vatUpgraded',
@@ -491,6 +518,22 @@ test('upgrade vat-vow', async t => {
         incarnationNumber: 0,
       },
     },
-    rejected: { status: 'rejected', reason: 'goodbye' },
+    promiseFulfilled: { status: 'fulfilled', value: 'hello' },
+    promiseRejected: { status: 'rejected', reason: 'goodbye' },
+    vowForever: {
+      status: 'unsettled',
+      resolver: {},
+    },
+    vowFulfilled: { status: 'fulfilled', value: 'hello' },
+    vowRejected: { status: 'rejected', reason: 'goodbye' },
+    vowPostUpgrade: { status: 'fulfilled', value: 'bonjour' },
+    vowPromiseForever: {
+      status: 'rejected',
+      reason: {
+        name: 'vatUpgraded',
+        upgradeMessage: 'vat upgraded',
+        incarnationNumber: 0,
+      },
+    },
   });
 });
