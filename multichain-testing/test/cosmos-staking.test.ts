@@ -1,69 +1,79 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { createWallet } from '../tools/wallet.js';
+import { generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
 import { commonSetup } from './support.js';
 
-const test = anyTest as TestFn<Record<string, never>>;
+const test = anyTest as TestFn<Awaited<ReturnType<typeof commonSetup>>>;
 
-test.failing('send a wallet offer to an orchestration contract', async (t) => {
-  const { useChain } = await commonSetup(t);
+const KEYS = ['user1'];
 
-  const prefix = useChain('agroic').chain.bech32_prefix;
-  const wallet = await createWallet(prefix);
-  const address = (await wallet.getAccounts())[0].address;
-  t.regex(address, /^agroic1/);
-  t.log('Made temp agoric wallet:', address);
+const deleteKeys = async (deleteKey: (name: string) => Promise<string>) => {
+  for (const key of KEYS) {
+    try {
+      await deleteKey(key);
+    } catch (_e) {
+      // ignore
+    }
+  }
+};
+
+test.before(async (t) => {
+  t.context = await commonSetup(t);
+  const { deleteKey } = t.context;
+  await deleteKeys(deleteKey);
+});
+
+test.after(async (t) => {
+  const { deleteKey } = t.context;
+  await deleteKeys(deleteKey);
+});
+
+test('send a wallet offer to an orchestration contract', async (t) => {
+  const { addKey, provisionSmartWallet, useChain } = await commonSetup(t);
 
   const apiUrl = useChain('cosmoshub').getRestEndpoint();
   const _cosmosQueryClient = makeQueryClient(apiUrl);
   t.log('Made query client');
 
-  t.log('todo: make agoric smart wallet connection');
-  // FIXME SyntaxError: The requested module '@agoric/web-components' does not provide an export named 'agoricConverters'
-  // const connection = await makeSmartWalletConnection({
-  //   apiUrl: useChain('agroic').getRestEndpoint(),
-  //   rpcUrl: useChain('agroic').getRpcEndpoint(),
-  //   chainName: useChain('agroic').chainInfo.chainName,
-  //   aminoSigner: wallet,
-  //   address,
-  // });
+  const res = await addKey(KEYS[0], generateMnemonic());
+  const { address } = JSON.parse(res);
+  const _wallet = await provisionSmartWallet(address, {
+    BLD: 100n,
+    IST: 100n,
+  });
+  t.log('provisioning agoric smart wallet');
 
-  t.log('todo: send faucet funds to smart wallet user');
-  // confirm that faucet: true for agoric works
-  // alternatively, create a wallet w genesis key (useChain('agoric').getGenesisMnemonic()) and send funds from there
+  const agQueryClient = makeQueryClient(useChain('agoric').getRestEndpoint());
+  const { balances } = await agQueryClient.queryBalances(address);
+  t.deepEqual(
+    balances,
+    [
+      { denom: 'ubld', amount: '90000000' },
+      { denom: 'uist', amount: '100250000' },
+    ],
+    'faucet request minus 10 BLD and 0.25 IST wallet provisioning fees',
+  );
+  t.log('smart wallet created with funds');
 
-  t.log('todo: provision smart wallet');
-  // connection.provisionSmartWallet();
-
+  // const doOffer = makeDoOffer(wallet);
   t.log('todo: stake atom makeAcountInvitationMaker offer');
-  // await connection.makeOffer(
-  //   {
+  // const offerId = `makeAccount-${Date.now()}`;
+  // const offerResult = await doOffer({
+  //   id: offerId,
+  //   invitationSpec: {
   //     source: 'agoricContract',
   //     instancePath: ['stakeAtom'],
+  //     // update to `makeAccountInvitationMaker`
   //     callPipe: [['makeAcountInvitationMaker']],
   //   },
-  //   {}, // empty proposal
-  //   { exampleArg: 'foo' },
-  //   ({ status, data }) => {
-  //     if (status === 'error') {
-  //       t.fail(data);
-  //     }
-  //     if (status === 'seated') {
-  //       console.log('Transaction submitted:', data.txn);
-  //       console.log('Offer id:', data.offerId); // persist for continuing inv.
-  //       console.log('Offer status:', data.status);
-  //     }
-  //     if (status === 'refunded') {
-  //       console.log('Offer refunded');
-  //     }
-  //     if (status === 'accepted') {
-  //       console.log('Offer accepted');
-  //     }
-  //   },
-  // );
+  //   proposal: {},
+  // });
 
-  t.log('todo: get chain address from vstorage');
+  // t.log('offerResult', offerResult);
+  // t.truthy(offerResult);
+
+  t.log('todo: get chain address from vstorage or offer result');
   // XXX need to publish address in vstorage, or return in offer result. contract doesn't currently do this
   // for now, we might consider querying cosmos' ports since there aren't many of them.
 
