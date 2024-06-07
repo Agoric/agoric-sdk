@@ -3,7 +3,11 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
-import { prepareBridgeTargetModule, TargetAppI } from './bridge-target.js';
+import {
+  prepareBridgeTargetModule,
+  TargetAppI,
+  AppTransformerI,
+} from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
@@ -21,7 +25,7 @@ const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {import('@agoric/vow').VowTools} vowTools
  */
-export const prepareTransferInterceptor = (zone, vowTools) => {
+const prepareTransferInterceptor = (zone, vowTools) => {
   const { watch } = vowTools;
   const makeTransferInterceptorKit = zone.exoClassKit(
     'TransferInterceptorKit',
@@ -38,20 +42,20 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
       }),
     },
     /**
-     * @param {ERef<TargetHost>} targetHost
      * @param {ERef<TargetApp>} tap
+     * @param {ERef<TargetHost>} targetHost
      * @param {boolean} [isActiveTap] Whether the tap is active (can modify
      *   acknowledgements), or passive (can't cause delays in the middleware).
      */
-    (targetHost, tap, isActiveTap = false) => ({
+    (tap, targetHost, isActiveTap = false) => ({
       isActiveTap,
-      targetHost,
       tap,
+      targetHost,
     }),
     {
       public: {
         async receiveUpcall(obj) {
-          const { isActiveTap, targetHost, tap } = this.state;
+          const { isActiveTap, tap, targetHost } = this.state;
 
           obj.type === VTRANSFER_IBC_EVENT ||
             Fail`Invalid upcall argument type ${obj.type}; expected ${bare(VTRANSFER_IBC_EVENT)}`;
@@ -141,6 +145,13 @@ export const prepareTransferInterceptor = (zone, vowTools) => {
 };
 harden(prepareTransferInterceptor);
 
+const TransferMiddlewareKitFinisherI = M.interface(
+  'TransferMiddlewareKitFinisher',
+  {
+    useRegistry: M.call(M.remotable('TargetRegistry')).returns(),
+  },
+);
+
 const TransferMiddlewareI = M.interface('TransferMiddleware', {
   registerTap: M.callWhen(
     M.string(),
@@ -161,65 +172,84 @@ const TransferMiddlewareI = M.interface('TransferMiddleware', {
  */
 
 /**
+ * A TransferMiddlewareKit has a `transferMiddleware` facet with methods for
+ * registering and unregistering active and passive "taps" in a BridgeTargetKit
+ * registry that must use the `interceptorFactory` facet as its appTransfomer to
+ * enforce IBC transfer protocol conformance. Before registering any taps, the
+ * backing BridgeTargetKit must be set with the `finisher` facet (i.e., the
+ * expected setup pattern is to pass in `interceptorFactory` as the
+ * appTransformer argument when making a BridgeTargetKit and then to invoke
+ * `finisher.useRegistry` with the `targetRegistry` of that BridgeTargetKit
+ * before making further use of the TransferMiddlewareKit or connecting the
+ * BridgeTargetKit to a bridge).
+ *
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {ReturnType<typeof prepareTransferInterceptor>} makeTransferInterceptor
  */
-const prepareTransferMiddleware = (zone, makeTransferInterceptor) =>
-  zone.exoClass(
-    'TransferMiddleware',
-    TransferMiddlewareI,
-    /**
-     * The TransferMiddleware attenuates a `targetHost` and `targetRegistry` by
-     * wrapping TargetApps with a TransferInterceptor.
-     *
-     * @param {object} arg0
-     * @param {ERef<import('./bridge-target.js').TargetHost>} arg0.targetHost
-     * @param {ERef<import('./bridge-target.js').TargetRegistry>} arg0.targetRegistry
-     */
-    ({ targetHost, targetRegistry }) => ({ targetHost, targetRegistry }),
+const prepareTransferMiddlewareKit = (zone, makeTransferInterceptor) =>
+  zone.exoClassKit(
+    'TransferMiddlewareKit',
     {
-      /**
-       * Register a tap to intercept the vtransfer target account address
-       * messages, without granting that tap the ability to delay or interfere
-       * with the underlying IBC transfer protocol.ß
-       *
-       * @type {RegisterTap}
-       */
-      async registerTap(target, tap) {
-        const { targetHost, targetRegistry } = this.state;
-
-        // Wrap the tap so that its upcall results determine how to contact the
-        // targetHost.  Never allow the tap to send to the targetHost directly.
-        const interceptor = makeTransferInterceptor(targetHost, tap);
-        return E(targetRegistry).register(target, interceptor);
+      finisher: TransferMiddlewareKitFinisherI,
+      interceptorFactory: AppTransformerI,
+      transferMiddleware: TransferMiddlewareI,
+    },
+    () => ({
+      /** @type {import('./bridge-target').TargetRegistry | undefined} */
+      targetRegistry: undefined,
+    }),
+    {
+      finisher: {
+        /**
+         * @param {import('./bridge-target').TargetRegistry} registry
+         */
+        useRegistry(registry) {
+          this.state.targetRegistry = registry;
+        },
       },
-      /**
-       * Similar to `registerTap`, but allows the tap to inject async
-       * ßacknowledgements in the IBC transfer protocol.
-       *
-       * @type {RegisterTap}
-       */
-      async registerActiveTap(target, tap) {
-        const { targetHost, targetRegistry } = this.state;
-
-        // Wrap the tap and allow it to modify async acknowledgements.  Never
-        // allow the tap to send to the targetHost directly.
-        const interceptor = makeTransferInterceptor(targetHost, tap, true);
-        return E(targetRegistry).register(target, interceptor);
+      interceptorFactory: {
+        wrapApp: makeTransferInterceptor,
       },
-      /**
-       * Unregister the target.
-       *
-       * @param {string} target String identifying the bridge target to stop
-       *   tapping.
-       */
-      async unregisterTap(target) {
-        const { targetRegistry } = this.state;
-        await E(targetRegistry).unregister(target);
+      transferMiddleware: {
+        /**
+         * Register a tap to intercept the vtransfer target account address
+         * messages, without granting that tap the ability to delay or interfere
+         * with the underlying IBC transfer protocol.ß
+         *
+         * @type {RegisterTap}
+         */
+        async registerTap(target, tap) {
+          const { targetRegistry } = this.state;
+          if (!targetRegistry) throw Fail`Registry not initialized`;
+          return E(targetRegistry).register(target, tap, []);
+        },
+        /**
+         * Similar to `registerTap`, but allows the tap to inject async
+         * ßacknowledgements in the IBC transfer protocol.
+         *
+         * @type {RegisterTap}
+         */
+        async registerActiveTap(target, tap) {
+          const { targetRegistry } = this.state;
+          if (!targetRegistry) throw Fail`Registry not initialized`;
+          return E(targetRegistry).register(target, tap, [true]);
+        },
+        /**
+         * Unregister the target.
+         *
+         * @param {string} target String identifying the bridge target to stop
+         *   tapping.
+         */
+        async unregisterTap(target) {
+          const { targetRegistry } = this.state;
+          if (!targetRegistry) throw Fail`Registry not initialized`;
+          await E(targetRegistry).unregister(target);
+        },
       },
     },
   );
-/** @typedef {ReturnType<ReturnType<typeof prepareTransferMiddleware>>} TransferMiddleware */
+/** @typedef {ReturnType<ReturnType<typeof prepareTransferMiddlewareKit>>} TransferMiddlewareKit */
+/** @typedef {TransferMiddlewareKit['transferMiddleware']} TransferMiddleware */
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
@@ -231,11 +261,11 @@ export const prepareTransferTools = (zone, vowTools) => {
     zone.subZone('bridge-target'),
   );
 
-  const makeTransferMiddleware = prepareTransferMiddleware(
+  const makeTransferMiddlewareKit = prepareTransferMiddlewareKit(
     zone,
     makeTransferInterceptor,
   );
 
-  return harden({ makeTransferMiddleware, makeBridgeTargetKit });
+  return harden({ makeTransferMiddlewareKit, makeBridgeTargetKit });
 };
 harden(prepareTransferTools);

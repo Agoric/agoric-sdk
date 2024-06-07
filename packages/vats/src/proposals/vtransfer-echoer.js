@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     transferMiddleware: import('../vat-transfer.js').TransferMiddleware;
+ *     transferMiddleware: import('../transfer.js').TransferMiddleware;
  *   };
  * }} powers
  * @param {object} options
