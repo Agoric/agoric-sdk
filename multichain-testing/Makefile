@@ -69,17 +69,17 @@ clean-kind:
 PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 
 fund-provision-pool:
-	kubectl exec -it agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
 COIN=1000000000uist
 
 fund-wallet:
-	kubectl exec -it agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
 
 provision-smart-wallet:
-	kubectl exec -it agoriclocal-genesis-0 -c validator -- agd tx swingset provision-one wallet $(ADDR) SMART_WALLET --from faucet -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx swingset provision-one wallet $(ADDR) SMART_WALLET --from faucet -y -b block
 
 # view agoric swingset logs from slog file, until we can set `DEBUG=SwingSet:vat,SwingSet:ls`
 tail-slog:
-	kubectl exec -it agoriclocal-genesis-0 -c validator -- tail -f slog.slog
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- tail -f slog.slog
