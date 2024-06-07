@@ -3,7 +3,17 @@ import assert from 'node:assert';
 
 const { freeze } = Object;
 
-const agdBinary = 'agd';
+const agdBinary = 'kubectl';
+const binaryArgs = [
+  'exec',
+  '-i',
+  'agoriclocal-genesis-0',
+  '-c',
+  'validator',
+  '--tty=false',
+  '--',
+  'agd',
+];
 
 /**
  * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
@@ -53,7 +63,7 @@ export const makeAgd = ({ execFileSync }) => {
      * @param {*} [opts]
      */
     const exec = (args, opts = { encoding: 'utf-8' }) =>
-      execFileSync(agdBinary, args, opts);
+      execFileSync(agdBinary, [...binaryArgs, ...args], opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -144,9 +154,13 @@ export const makeAgd = ({ execFileSync }) => {
         add: (name, mnemonic) => {
           return execFileSync(
             agdBinary,
-            [...keyringArgs, 'keys', 'add', name, '--recover'],
+            [...binaryArgs, ...keyringArgs, 'keys', 'add', name, '--recover'],
             { encoding: 'utf-8', input: mnemonic },
           ).toString();
+        },
+        /** @param {string} name */
+        delete: (name) => {
+          return exec([...keyringArgs, 'keys', 'delete', name, '-y']);
         },
       },
       /**

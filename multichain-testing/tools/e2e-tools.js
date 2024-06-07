@@ -8,6 +8,8 @@ import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { getBundleId } from './bundle-tools.js';
 import { makeVStorage } from './batchQuery.js';
 
+/** @import { EnglishMnemonic } from '@cosmjs/crypto'; */
+
 const BLD = '000000ubld';
 
 const makeRunner = (execFile) => {
@@ -146,7 +148,7 @@ export const provisionSmartWallet = async (
     lcd,
     delay,
     chainId = 'agoriclocal',
-    whale = 'validator',
+    whale = 'faucet',
     progress = console.log,
   },
 ) => {
@@ -594,5 +596,16 @@ export const makeE2ETools = async (
      */
     provisionSmartWallet: (address, amount) =>
       provisionSmartWallet(address, amount, { agd, blockTool, lcd, delay }),
+    /**
+     * @param {string} name
+     * @param {EnglishMnemonic | string} mnemonic
+     */
+    addKey: async (name, mnemonic) =>
+      agd.keys.add(
+        name,
+        Array.isArray(mnemonic) ? mnemonic.join(' ') : mnemonic,
+      ),
+    /** @param {string} name */
+    deleteKey: async (name) => agd.keys.delete(name),
   };
 };
