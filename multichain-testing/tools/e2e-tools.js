@@ -2,6 +2,7 @@
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
+import { makePromiseKit } from '@endo/promise-kit';
 import { flags, makeAgd } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
@@ -608,4 +609,54 @@ export const makeE2ETools = async (
     /** @param {string} name */
     deleteKey: async (name) => agd.keys.delete(name),
   };
+};
+
+/**
+ * Seat-like API from wallet updates
+ *
+ * @param {AsyncGenerator<UpdateRecord>} updates
+ */
+export const seatLike = (updates) => {
+  const sync = {
+    result: makePromiseKit(),
+    /** @type {PromiseKit<AmountKeywordRecord>} */
+    payouts: makePromiseKit(),
+  };
+  (async () => {
+    await null;
+    try {
+      // XXX an error here is somehow and unhandled rejection
+      for await (const update of updates) {
+        if (update.updated !== 'offerStatus') continue;
+        const { result, payouts } = update.status;
+        if ('result' in update.status) sync.result.resolve(result);
+        if ('payouts' in update.status && payouts) {
+          sync.payouts.resolve(payouts);
+          console.debug('paid out', update.status.id);
+          return;
+        }
+      }
+    } catch (reason) {
+      sync.result.reject(reason);
+      sync.payouts.reject(reason);
+      throw reason;
+    }
+  })();
+  return harden({
+    getOfferResult: () => sync.result.promise,
+    getPayoutAmounts: () => sync.payouts.promise,
+  });
+};
+
+/** @param {Awaited<ReturnType<provisionSmartWallet>>} wallet */
+export const makeDoOffer = (wallet) => {
+  const doOffer = async (offer) => {
+    const updates = wallet.offers.executeOffer(offer);
+    const seat = seatLike(updates);
+    const result = await seat.getOfferResult();
+    await seatLike(updates).getPayoutAmounts();
+    return result;
+  };
+
+  return doOffer;
 };

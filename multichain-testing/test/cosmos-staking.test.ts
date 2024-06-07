@@ -3,6 +3,7 @@ import type { TestFn } from 'ava';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
 import { commonSetup } from './support.js';
+import { makeDoOffer } from '../tools/e2e-tools.js';
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof commonSetup>>>;
 
@@ -38,7 +39,7 @@ test('send a wallet offer to an orchestration contract', async (t) => {
 
   const res = await addKey(KEYS[0], generateMnemonic());
   const { address } = JSON.parse(res);
-  const _wallet = await provisionSmartWallet(address, {
+  const wallet = await provisionSmartWallet(address, {
     BLD: 100n,
     IST: 100n,
   });
@@ -56,28 +57,30 @@ test('send a wallet offer to an orchestration contract', async (t) => {
   );
   t.log('smart wallet created with funds');
 
-  // const doOffer = makeDoOffer(wallet);
-  t.log('todo: stake atom makeAcountInvitationMaker offer');
-  // const offerId = `makeAccount-${Date.now()}`;
-  // const offerResult = await doOffer({
-  //   id: offerId,
-  //   invitationSpec: {
-  //     source: 'agoricContract',
-  //     instancePath: ['stakeAtom'],
-  //     // update to `makeAccountInvitationMaker`
-  //     callPipe: [['makeAcountInvitationMaker']],
-  //   },
-  //   proposal: {},
-  // });
+  const doOffer = makeDoOffer(wallet);
+  t.log('stake atom makeAcountInvitationMaker offer');
+  const offerId = `makeAccount-${Date.now()}`;
 
-  // t.log('offerResult', offerResult);
-  // t.truthy(offerResult);
+  // FIXME
+  await t.throwsAsync(
+    doOffer({
+      id: offerId,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['stakeAtom'],
+        // update to `makeAccountInvitationMaker` when docker image published
+        callPipe: [['makeAcountInvitationMaker']],
+      },
+      proposal: {},
+    }),
+  );
 
   t.log('todo: get chain address from vstorage or offer result');
   // XXX need to publish address in vstorage, or return in offer result. contract doesn't currently do this
   // for now, we might consider querying cosmos' ports since there aren't many of them.
 
   t.log('todo: send funds from faucet to ICA');
+  // @cosmosjs/faucet may be broken for ICA addresses
   // useChain('gaia').creditFromFaucet(address);
 
   t.log('todo: Delegate offer with continuing inv');

@@ -25,6 +25,7 @@
     "@cosmjs/stargate": "^0.32.2",
     "@endo/far": "^1.1.2",
     "@endo/nat": "^5.0.7",
+    "@endo/promise-kit": "^1.1.2",
     "@endo/ses-ava": "^1.2.2",
     "@types/eslint": "^8",
     "@types/node": "^20.11.13",
@@ -54,7 +55,10 @@
       "**/*.test.ts"
     ],
     "concurrency": 1,
-    "serial": true
+    "serial": true,
+    "environmentVariables": {
+      "LOCKDOWN_STACK_FILTERING": "verbose"
+    }
   },
   "prettier": {
     "semi": true,

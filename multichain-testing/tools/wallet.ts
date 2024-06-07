@@ -11,5 +11,6 @@ export const createWallet = async (
 ) => {
   return DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
     prefix: bech32Prefix,
+    hdPaths: [{ account: 0, change: 0, addressIndex: 0 }],
   });
 };
