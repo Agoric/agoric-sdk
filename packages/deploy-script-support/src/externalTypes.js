@@ -28,6 +28,16 @@ export {};
  */
 
 /**
+ * @typedef CoreEvalDescriptor
+ * @property {string} sourceSpec import specifier for a module
+ * @property {[manifestGetterName: string, ...manifestGetterArgs: any[]]} getManifestCall
+ *   the name of a function exported by the module and arguments to invoke it
+ *   with in order to get a manifest (a Record that associates functions to be
+ *   invoked and permits defining bootstrap-space powers they will have access
+ *   to, see {@link ../README.md} and {@link runModuleBehaviors})
+ */
+
+/**
  * @callback CoreEvalBuilder
  * @param {{
  *   publishRef: PublishBundleRef,
@@ -35,5 +45,5 @@ export {};
  *   wrapInstall?: <T extends InstallEntrypoint>(f: T) => T }
  * } powers
  * @param {...any} args
- * @returns {Promise<{sourceSpec: string, getManifestCall: [exportedGetManifest: string, ...manifestArgs: any[]]}>}
+ * @returns {Promise<CoreEvalDescriptor>}
  */

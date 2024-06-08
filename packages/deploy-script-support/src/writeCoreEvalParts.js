@@ -11,6 +11,10 @@ import {
 } from './coreProposalBehavior.js';
 
 /**
+ * @import {CoreEvalDescriptor} from './externalTypes.js';
+ */
+
+/**
  * @callback WriteCoreEval write to disk the files needed for a CoreEval (js code to`${filePrefix}.js`, permits to `${filePrefix}-permit.json`, an overall
  *   summary to `${filePrefix}-plan.json), plus whatever bundles bundles the code loads)
  * see CoreEval in {@link '/golang/cosmos/x/swingset/types/swingset.pb.go'}
@@ -54,6 +58,11 @@ export const makeWriteCoreEval = (
     return bundlerCache;
   };
 
+  /**
+   *
+   * @param {CoreEvalDescriptor} coreEval
+   * @param {*} additionalPermits
+   */
   const mergeEvalPermit = async (coreEval, additionalPermits) => {
     const {
       sourceSpec,
