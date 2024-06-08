@@ -16,5 +16,5 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
 
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval('gov-localchain', defaultProposalBuilder);
+  await writeCoreEval('gov', defaultProposalBuilder, import.meta.url);
 };
