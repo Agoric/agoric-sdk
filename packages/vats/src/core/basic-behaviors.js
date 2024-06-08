@@ -182,7 +182,11 @@ harden(produceStartUpgradable);
  *   governedParams: Record<string, unknown>;
  *   timer: ERef<import('@agoric/time').TimerService>;
  *   contractGovernor: ERef<Installation>;
- *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet'];
+ *   governorCustomTerms?: Record<string, unknown>;
+ *   committeeCreatorFacet: ERef<CommitteeStartResult['creatorFacet']>;
+ *   economicCommitteeCreatorFacet?: ERef<
+ *     import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
+ *   >;
  * }} govArgs
  * @returns {Promise<GovernanceFacetKit<SF>>}
  */
@@ -195,11 +199,15 @@ const startGovernedInstance = async (
     privateArgs,
     label,
   },
-  { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
+  { governedParams, timer, contractGovernor, governorCustomTerms, ...rest },
 ) => {
-  const poserInvitationP = E(
-    economicCommitteeCreatorFacet,
-  ).getPoserInvitation();
+  // For backwards compatibility when this function assumed EC
+  const committee =
+    'economicCommitteeCreatorFacet' in rest
+      ? rest.economicCommitteeCreatorFacet
+      : rest.committeeCreatorFacet;
+  assert(committee, 'missing committee creator facet in startGovernedInstance');
+  const poserInvitationP = E(committee).getPoserInvitation();
   const [initialPoserInvitation, electorateInvitationAmount] =
     await Promise.all([
       poserInvitationP,
@@ -224,6 +232,7 @@ const startGovernedInstance = async (
         issuerKeywordRecord,
         label,
       },
+      ...governorCustomTerms,
     }),
   );
   const governorFacets = await E(zoe).startInstance(
@@ -231,7 +240,6 @@ const startGovernedInstance = async (
     {},
     governorTerms,
     harden({
-      economicCommitteeCreatorFacet,
       governed: {
         ...privateArgs,
         initialPoserInvitation,
@@ -287,7 +295,7 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
+  /** @type {StartGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,
@@ -295,6 +303,8 @@ export const produceStartGovernedUpgradable = async ({
     terms,
     privateArgs,
     label,
+    governorCustomTerms,
+    committeeCreatorFacet,
   }) => {
     const facets = await startGovernedInstance(
       {
@@ -309,7 +319,9 @@ export const produceStartGovernedUpgradable = async ({
         governedParams,
         timer: chainTimerService,
         contractGovernor,
-        economicCommitteeCreatorFacet,
+        governorCustomTerms,
+        committeeCreatorFacet,
+        economicCommitteeCreatorFacet, // backwards-compatible name for committeeCreatorFacet
       },
     );
     const kit = harden({ ...facets, label });

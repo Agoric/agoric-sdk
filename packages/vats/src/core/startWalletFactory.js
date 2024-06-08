@@ -94,6 +94,7 @@ export const startWalletFactory = async (
       econCharterKit,
       startUpgradable,
       startGovernedUpgradable,
+      economicCommitteeCreatorFacet,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
@@ -196,6 +197,7 @@ export const startWalletFactory = async (
         value: AmountMath.make(feeBrand, perAccountInitialValue),
       },
     },
+    committeeCreatorFacet: economicCommitteeCreatorFacet,
   });
   provisionPoolStartResult.resolve(ppFacets);
   instanceProduce.provisionPool.resolve(ppFacets.instance);
@@ -273,6 +275,7 @@ export const WALLET_FACTORY_MANIFEST = {
       namesByAddressAdmin: true,
       startUpgradable: true,
       startGovernedUpgradable: true,
+      economicCommitteeCreatorFacet: true,
       econCharterKit: 'psmCharter',
     },
     produce: {

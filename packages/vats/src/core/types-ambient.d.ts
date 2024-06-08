@@ -274,6 +274,11 @@ type WellKnownSpaces = {
   };
 };
 
+type CommitteeStartResult =
+  import('@agoric/zoe/src/zoeService/utils').StartResult<
+    typeof import('@agoric/governance/src/committee.js').start
+  >;
+
 type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
   installation: ERef<Installation<SF>>;
   issuerKeywordRecord?: IssuerKeywordRecord;
@@ -288,6 +293,8 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
     'initialPoserInvitation'
   >;
   label: string;
+  governorCustomTerms?: Record<string, unknown>;
+  committeeCreatorFacet: ERef<CommitteeStartResult['creatorFacet']>;
 };
 
 type StartGovernedUpgradable = <SF extends GovernableStartFn>(
@@ -388,7 +395,12 @@ type ChainBootstrapSpaceT = {
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
   contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
-  /** Convience function for starting contracts governed by the Econ Committee */
+  /**
+   * Convienence function for starting contracts governed by a committeee.
+   *
+   * NB: When the committeeCreatorFacet parameter is omitted, it defaults to the
+   * Economic Committee.
+   */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
