@@ -381,14 +381,15 @@ type ChainBootstrapSpaceT = {
   storageBridgeManager:
     | import('../types.js').ScopedBridgeManager<'storage'>
     | undefined;
+  transferMiddleware: import('../transfer.js').TransferMiddleware;
   /**
-   * Convienence function for starting a contract (ungoverned) and saving its
+   * Convenience function for starting a contract (ungoverned) and saving its
    * facets (including adminFacet)
    */
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
   contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
-  /** Convience function for starting contracts governed by the Econ Committee */
+  /** Convenience function for starting contracts governed by the Econ Committee */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<

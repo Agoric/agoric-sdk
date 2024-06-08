@@ -15,6 +15,7 @@ const { Fail } = assert;
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bank: Bank;
+ *   transfer: import('./transfer.js').TransferMiddleware;
  * }} AccountPowers
  */
 
@@ -22,6 +23,7 @@ const { Fail } = assert;
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bankManager: BankManager;
+ *   transfer: import('./transfer.js').TransferMiddleware;
  * }} LocalChainPowers
  */
 
@@ -31,6 +33,9 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   deposit: M.callWhen(PaymentShape).optional(M.pattern()).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  monitorTransfers: M.callWhen(M.remotable('TransferTap')).returns(
+    M.remotable('TargetRegistration'),
+  ),
 });
 
 /** @param {import('@agoric/base-zone').Zone} zone */
@@ -105,6 +110,10 @@ const prepareLocalChainAccount = zone =>
         };
         return E(system).toBridge(obj);
       },
+      async monitorTransfers(tap) {
+        const { address, transfer } = this.state;
+        return E(transfer).registerTap(address, tap);
+      },
     },
   );
 /**
@@ -139,12 +148,12 @@ const prepareLocalChain = (zone, makeAccount) =>
        * hash and block data hash.
        */
       async makeAccount() {
-        const { system, bankManager } = this.state;
+        const { system, bankManager, transfer } = this.state;
         const address = await E(system).toBridge({
           type: 'VLOCALCHAIN_ALLOCATE_ADDRESS',
         });
         const bank = await E(bankManager).getBankForAddress(address);
-        return makeAccount(address, { system, bank });
+        return makeAccount(address, { system, bank, transfer });
       },
       /**
        * Make a single query to the local chain. Will reject with an error if

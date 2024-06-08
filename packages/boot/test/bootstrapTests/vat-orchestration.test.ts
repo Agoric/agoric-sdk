@@ -55,10 +55,7 @@ test.before(async t => {
       evalProposal,
       runUtils: { EV },
     } = t.context;
-    /** ensure network, ibc, and orchestration are available */
-    await evalProposal(
-      buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-    );
+    /** ensure orchestration is available */
     await evalProposal(
       buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
     );

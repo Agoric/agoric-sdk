@@ -31,7 +31,7 @@ export const makeTestContext = async t => {
   }) as Baggage;
   const zone = makeDurableZone(baggage);
 
-  const bundleDir = 'bundles/vaults';
+  const bundleDir = 'bundles/net-ibc-upgrade';
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
@@ -61,26 +61,8 @@ test.serial('bootstrap produces provisioning vat', async t => {
   t.truthy(provisioning);
 });
 
-test.serial('network vat core eval launches network, ibc vats', async t => {
-  const { controller, buildProposal } = t.context;
+test.serial('bootstrap launches network, ibc vats', async t => {
   const { EV } = t.context.runUtils;
-
-  t.log('building network proposal');
-  const proposal = await buildProposal(
-    '@agoric/builders/scripts/vats/init-network.js',
-  );
-
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('executing', proposal.evals.length, 'core evals');
-  const bridgeMessage = { type: 'CORE_EVAL', evals: proposal.evals };
-  const coreHandler: BridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  await EV(coreHandler).fromBridge(bridgeMessage);
 
   t.log('network proposal executed');
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
@@ -106,8 +88,10 @@ const upgradeVats = async (t, EV, vatsToUpgrade) => {
     await EV.vat('bootstrap').consumeItem('vatUpgradeInfo');
   const vatAdminSvc = await EV.vat('bootstrap').consumeItem('vatAdminSvc');
   for (const vatName of vatsToUpgrade) {
-    const { bundleID } = await EV(vatUpgradeInfo).get(vatName);
-    const bcap = await EV(vatAdminSvc).getBundleCap(bundleID);
+    const { bundleID, bundleName } = await EV(vatUpgradeInfo).get(vatName);
+    const bcap = await (bundleID
+      ? EV(vatAdminSvc).getBundleCap(bundleID)
+      : EV(vatAdminSvc).getNamedBundleCap(bundleName));
     const { adminNode } = await EV(vatStore).get(vatName);
     const result = await EV(adminNode).upgrade(bcap);
     t.log(vatName, result);

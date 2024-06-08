@@ -23,9 +23,13 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
-    configSpecifier: PLATFORM_CONFIG,
-  });
+  const swingsetTestKit = await makeSwingsetTestKit(
+    t.log,
+    'bundles/vats-restart',
+    {
+      configSpecifier: PLATFORM_CONFIG,
+    },
+  );
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -92,17 +96,6 @@ test.serial('open vault', async t => {
     updated: 'offerStatus',
     status: { id: 'open1', numWantsSatisfied: 1 },
   });
-});
-
-test.serial('run network vat proposal', async t => {
-  const { buildProposal, evalProposal } = t.context;
-
-  t.log('building network proposal');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
-
-  t.pass(); // reached here without throws
 });
 
 test.serial('make IBC callbacks before upgrade', async t => {

@@ -1,13 +1,40 @@
 // @ts-check
-/// <reference path="./types.js" />
-import { Fail } from '@agoric/assert';
+import { details, Fail } from '@agoric/assert';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
+import { isObject } from '@endo/pass-style';
 
 /**
  * @import {Bytes} from './types.js';
  */
 
 /** @typedef {Bytes | Buffer | Uint8Array | Iterable<number>} ByteSource */
+
+/**
+ * This function is a coercer instead of an asserter because in a future where
+ * binary data has better support across vats and potentially its own type, we
+ * might allow more `specimen`s than just `ByteSource`.
+ *
+ * @param {unknown} specimen
+ * @returns {ByteSource}
+ */
+export function coerceToByteSource(specimen) {
+  if (typeof specimen === 'string') {
+    return specimen;
+  }
+
+  isObject(specimen) ||
+    assert.fail(details`non-object ${specimen} is not a ByteSource`, TypeError);
+
+  const obj = /** @type {{}} */ (specimen);
+  typeof obj[Symbol.iterator] === 'function' ||
+    assert.fail(
+      details`non-iterable ${specimen} is not a ByteSource`,
+      TypeError,
+    );
+
+  // Good enough... it's iterable and can be converted later.
+  return /** @type {ByteSource} */ (specimen);
+}
 
 /**
  * @param {ByteSource} contents
@@ -60,7 +87,7 @@ export function bytesToString(bytes) {
  * @param {ByteSource} byteSource
  * @returns {string} base64 encoding
  */
-export function dataToBase64(byteSource) {
+export function byteSourceToBase64(byteSource) {
   const bytes = coerceToByteArray(byteSource);
   return encodeBase64(bytes);
 }

@@ -19,6 +19,11 @@ export const prepareVowTools = (zone, powers = {}) => {
   const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
   const watchUtils = makeWatchUtils();
 
+  /**
+   * Vow-tolerant implementation of Promise.all.
+   *
+   * @param {unknown[]} vows
+   */
   const allVows = vows => watchUtils.all(vows);
 
   return harden({ when, watch, makeVowKit, allVows });

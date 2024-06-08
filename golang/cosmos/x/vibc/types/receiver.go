@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	_ vm.PortHandler           = Receiver{}
+	_ vm.PortHandler           = (*Receiver)(nil)
 	_ exported.Acknowledgement = (*rawAcknowledgement)(nil)
 )
 
@@ -83,18 +83,28 @@ func (r rawAcknowledgement) Success() bool {
 	return true
 }
 
-func (ir Receiver) Receive(cctx context.Context, str string) (ret string, err error) {
+// Receive implements vm.PortHandler.  It unmarshals the string as JSON text
+// representing an IBC portMessage object.  If the resulting type is
+// "IBC_METHOD" it dispatches on method ("sendPacket"/"receiveExecuted"/etc.)
+// and calls the corresponding method of the wrapped ReceiverImpl.
+//
+// Otherwise, it requires the wrapped ReceiverImpl to be a vm.PortHandler
+// and delegates to the Receive method of that PortHandler.
+func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply string, err error) {
 	ctx := sdk.UnwrapSDKContext(cctx)
 	impl := ir.impl
 
 	msg := new(portMessage)
-	err = json.Unmarshal([]byte(str), &msg)
+	err = json.Unmarshal([]byte(jsonRequest), &msg)
 	if err != nil {
 		return "", err
 	}
 
 	if msg.Type != "IBC_METHOD" {
-		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"`)
+		if receiver, ok := impl.(vm.PortHandler); ok {
+			return receiver.Receive(cctx, jsonRequest)
+		}
+		return "", fmt.Errorf(`channel handler only accepts messages of "type": "IBC_METHOD"; got %q`, msg.Type)
 	}
 
 	switch msg.Method {
@@ -116,7 +126,7 @@ func (ir Receiver) Receive(cctx context.Context, str string) (ret string, err er
 			packet.Sequence = seq
 			bytes, err := json.Marshal(&packet)
 			if err == nil {
-				ret = string(bytes)
+				jsonReply = string(bytes)
 			}
 		}
 
@@ -153,8 +163,8 @@ func (ir Receiver) Receive(cctx context.Context, str string) (ret string, err er
 		err = fmt.Errorf("unrecognized method %s", msg.Method)
 	}
 
-	if ret == "" && err == nil {
-		ret = "true"
+	if jsonReply == "" && err == nil {
+		jsonReply = "true"
 	}
 	return
 }

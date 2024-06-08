@@ -17,9 +17,11 @@ const vatUpgradeStatus = {
   board: 'covered by test-upgrade-vats: upgrade vat-board',
   bridge: 'covered by test-upgrade-vats: upgrade vat-bridge',
   ibc: 'upgradeable',
+  localchain: 'UNTESTED',
   network: 'upgradeable',
   priceAuthority: 'covered by test-upgrade-vats: upgrade vat-priceAuthority',
   provisioning: 'UNTESTED',
+  transfer: 'UNTESTED',
   zoe: 'tested in @agoric/zoe',
 };
 
@@ -128,8 +130,10 @@ export const restartVats = async ({ consume }, { options }) => {
       console.log('upgrading vat', name);
       const { vatAdminSvc } = consume;
       const info = await consume.vatUpgradeInfo;
-      const { bundleID } = info.get(name);
-      const bcap = await E(vatAdminSvc).getBundleCap(bundleID);
+      const { bundleID, bundleName } = info.get(name);
+      const bcap = await (bundleID
+        ? E(vatAdminSvc).getBundleCap(bundleID)
+        : E(vatAdminSvc).getNamedBundleCap(bundleName));
       await E(adminNode).upgrade(bcap);
     }
     console.log('VAT', name, status);

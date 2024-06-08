@@ -192,6 +192,9 @@ replace (
 	// Pick up an IAVL race fix.
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
+	// Use a version of ibc-go that is compatible with the above forks.
+	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
+
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.

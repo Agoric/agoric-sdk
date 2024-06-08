@@ -7,6 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// Sender makes a request of our associated VM.
+type Sender func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error)
+
 type ControllerAdmissionMsg interface {
 	sdk.Msg
 	CheckAdmissibility(sdk.Context, interface{}) error

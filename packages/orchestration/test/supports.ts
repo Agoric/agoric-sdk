@@ -1,9 +1,15 @@
 import { makeIssuerKit } from '@agoric/ertp';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  makeFakeLocalchainBridge,
+  makeFakeTransferBridge,
+} from '@agoric/vats/tools/fake-bridge.js';
+import { prepareVowTools } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -20,7 +26,10 @@ import {
   wellKnownChainInfo,
 } from '../src/chain-info.js';
 
-export { makeFakeLocalchainBridge } from '@agoric/vats/tools/fake-bridge.js';
+export {
+  makeFakeLocalchainBridge,
+  makeFakeTransferBridge,
+} from '@agoric/vats/tools/fake-bridge.js';
 
 export const commonSetup = async t => {
   t.log('bootstrap vat dependencies');
@@ -41,12 +50,28 @@ export const commonSetup = async t => {
     ist.issuerKit,
   );
 
+  const transferBridge = makeFakeTransferBridge(rootZone);
+  const { makeTransferMiddlewareKit, makeBridgeTargetKit } =
+    prepareTransferTools(
+      rootZone.subZone('transfer'),
+      prepareVowTools(rootZone.subZone('vows')),
+    );
+  const { finisher, interceptorFactory, transferMiddleware } =
+    makeTransferMiddlewareKit();
+  const bridgeTargetKit = makeBridgeTargetKit(
+    transferBridge,
+    VTRANSFER_IBC_EVENT,
+    interceptorFactory,
+  );
+  finisher.useRegistry(bridgeTargetKit.targetRegistry);
+
   const localchainBridge = makeFakeLocalchainBridge(rootZone);
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
   ).makeLocalChain({
     bankManager,
     system: localchainBridge,
+    transfer: transferMiddleware,
   });
   const timer = buildZoeManualTimer(t.log);
   const marshaller = makeFakeBoard().getReadonlyMarshaller();

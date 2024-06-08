@@ -421,7 +421,7 @@ func (k Keeper) GetNoDataValue() []byte {
 	return types.EncodedNoDataValue
 }
 
-func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
+func (k Keeper) GetIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
 	indexEntry := k.GetEntry(ctx, path)
 	if !indexEntry.HasValue() {
 		return sdk.NewInt(0), nil
@@ -435,11 +435,11 @@ func (k Keeper) getIntValue(ctx sdk.Context, path string) (sdkmath.Int, error) {
 }
 
 func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdkmath.Int, error) {
-	head, err := k.getIntValue(ctx, queuePath+".head")
+	head, err := k.GetIntValue(ctx, queuePath+".head")
 	if err != nil {
 		return sdkmath.NewInt(0), err
 	}
-	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	tail, err := k.GetIntValue(ctx, queuePath+".tail")
 	if err != nil {
 		return sdkmath.NewInt(0), err
 	}
@@ -450,12 +450,12 @@ func (k Keeper) GetQueueLength(ctx sdk.Context, queuePath string) (sdkmath.Int, 
 func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) error {
 	// Get the current queue tail, defaulting to zero if its vstorage doesn't exist.
 	// The `tail` is the value of the next index to be inserted
-	tail, err := k.getIntValue(ctx, queuePath+".tail")
+	tail, err := k.GetIntValue(ctx, queuePath+".tail")
 	if err != nil {
 		return err
 	}
 
-	if tail.Equal(MaxSDKInt) {
+	if tail.GTE(MaxSDKInt) {
 		return errors.New(queuePath + " overflow")
 	}
 	nextTail := tail.Add(sdk.NewInt(1))

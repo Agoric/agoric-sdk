@@ -34,14 +34,14 @@ func NewPortHandler(am AppModule, keeper Keeper) portHandler {
 	}
 }
 
-type vbankSingleBalanceUpdate struct {
+type VbankSingleBalanceUpdate struct {
 	Address string `json:"address"`
 	Denom   string `json:"denom"`
 	Amount  string `json:"amount"`
 }
 
 // Make vbankManyBalanceUpdates sortable
-type vbankManyBalanceUpdates []vbankSingleBalanceUpdate
+type vbankManyBalanceUpdates []VbankSingleBalanceUpdate
 
 var _ sort.Interface = vbankManyBalanceUpdates{}
 
@@ -67,7 +67,7 @@ func (vbu vbankManyBalanceUpdates) Swap(i int, j int) {
 	vbu[i], vbu[j] = vbu[j], vbu[i]
 }
 
-type vbankBalanceUpdate struct {
+type VbankBalanceUpdate struct {
 	*vm.ActionHeader `actionType:"VBANK_BALANCE_UPDATE"`
 	Nonce            uint64                  `json:"nonce"`
 	Updated          vbankManyBalanceUpdates `json:"updated"`
@@ -83,9 +83,9 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 	}
 
 	nonce := keeper.GetNextSequence(ctx)
-	event := vbankBalanceUpdate{
+	event := VbankBalanceUpdate{
 		Nonce:   nonce,
-		Updated: make([]vbankSingleBalanceUpdate, 0, nentries),
+		Updated: make([]VbankSingleBalanceUpdate, 0, nentries),
 	}
 
 	// Note that Golang randomises the order of iteration, so we have to sort
@@ -99,7 +99,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 		for _, coin := range coins {
 			// generate an update even when the current balance is zero
 			balance := keeper.GetBalance(ctx, account, coin.Denom)
-			update := vbankSingleBalanceUpdate{
+			update := VbankSingleBalanceUpdate{
 				Address: address,
 				Denom:   coin.Denom,
 				Amount:  balance.Amount.String(),
