@@ -1,9 +1,9 @@
 // @ts-check
 import fs from 'fs';
 import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 
 import { createBundles } from '@agoric/internal/src/node/createBundles.js';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { defangAndTrim, mergePermits, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
@@ -157,7 +157,7 @@ export const makeWriteCoreEval = (
     };
 
     // Create the eval structure.
-    const evalDescriptor = await deeplyFulfilled(
+    const evalDescriptor = await deeplyFulfilledObject(
       harden(builder({ publishRef, install })),
     );
     const { sourceSpec, getManifestCall } = evalDescriptor;
