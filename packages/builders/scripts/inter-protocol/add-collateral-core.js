@@ -110,9 +110,16 @@ export default async (homeP, endowments) => {
     loadBundle: spec => import(spec),
   });
 
-  await writeCoreEval('gov-add-collateral', defaultProposalBuilder);
-  await writeCoreEval('gov-start-psm', opts =>
-    // @ts-expect-error XXX makeInstallCache types
-    psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+  await writeCoreEval(
+    'add-collateral',
+    defaultProposalBuilder,
+    import.meta.url,
+  );
+  await writeCoreEval(
+    'start-psm',
+    opts =>
+      // @ts-expect-error XXX makeInstallCache types
+      psmProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+    import.meta.url,
   );
 };

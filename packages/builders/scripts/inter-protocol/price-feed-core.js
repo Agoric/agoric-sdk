@@ -98,7 +98,7 @@ export const createGov = async (homeP, endowments) => {
       brandIn: lookup(inLookup).catch(() => undefined),
       brandOut: lookup(outLookup).catch(() => undefined),
     });
-  await writeCoreEval('gov-price-feed', proposalBuilder); // gov-price-feed.js gov-price-feed-permit.json
+  await writeCoreEval('gov', proposalBuilder, import.meta.url);
 };
 
 export default createGov;
