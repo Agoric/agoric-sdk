@@ -26,7 +26,10 @@ import {
 /**
  *
  * @param {*} homeP
- * @param {*} endowments
+ * @param {{
+ *   bundleSource: (path: string) => Promise<NodeModule>,
+ *   pathResolve: (path: string) => string,
+ * }} endowments
  * @param {{
  *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>,
  *   getBundleSpec: (...args: *) => Promise<import('./externalTypes.js').ManifestBundleRef>,
@@ -69,10 +72,10 @@ export const makeWriteCoreEval = (
       getManifestCall: [manifestGetterName, ...manifestGetterArgs],
     } = coreEval;
 
-    const moduleRecord = await import(pathResolve(sourceSpec));
+    const moduleNamespace = await import(pathResolve(sourceSpec));
 
     // We only care about the manifest, not any restoreRef calls.
-    const { manifest } = await moduleRecord[manifestGetterName](
+    const { manifest } = await moduleNamespace[manifestGetterName](
       harden({ restoreRef: x => `restoreRef:${x}` }),
       ...manifestGetterArgs,
     );
@@ -146,15 +149,15 @@ export const makeWriteCoreEval = (
     };
 
     // Create the eval structure.
-    const evalParts = await deeplyFulfilled(
+    const evalDescriptor = await deeplyFulfilled(
       harden(builder({ publishRef, install })),
     );
-    const { sourceSpec, getManifestCall } = evalParts;
+    const { sourceSpec, getManifestCall } = evalDescriptor;
     // console.log('created', { filePrefix, sourceSpec, getManifestCall });
 
     // Extract the top-level permit.
     const { permits: evalPermits, manifest: customManifest } =
-      await mergeEvalPermit(evalParts, defaultPermits);
+      await mergeEvalPermit(evalDescriptor, defaultPermits);
 
     // Get an install
     const manifestBundleRef = await publishRef(install(sourceSpec));
