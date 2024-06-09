@@ -91,10 +91,10 @@ export function makeScriptedPriceAuthority(options) {
       currentPrice =
         priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
-      fireTriggers(createQuote);
+      void fireTriggers(createQuote);
     },
   });
-  observeNotifier(notifier, priceObserver);
+  void observeNotifier(notifier, priceObserver);
 
   return priceAuthority;
 }

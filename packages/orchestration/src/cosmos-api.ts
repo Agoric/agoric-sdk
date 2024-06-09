@@ -67,16 +67,16 @@ export type IBCConnectionInfo = {
  */
 export type CosmosChainInfo = {
   chainId: string;
-  connections: MapStore<string, IBCConnectionInfo>; // chainId or wellKnownName
+  connections: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
   icaEnabled: boolean;
   icqEnabled: boolean;
   pfmEnabled: boolean;
   ibcHooksEnabled: boolean;
+
   /**
-   *
+   * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
-  allowedMessages: TypeUrl[];
-  allowedQueries: TypeUrl[];
+  stakingTokens?: Array<{ denom: string }>;
 };
 
 export interface StakingAccountQueries {
@@ -196,8 +196,6 @@ export interface IcaAccount {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
-  /** deposit payment from zoe to the account*/
-  deposit: (payment: Payment) => Promise<void>;
   /** get Purse for a brand to .withdraw() a Payment from the account */
   getPurse: (brand: Brand) => Promise<Purse>;
   /**
@@ -221,3 +219,15 @@ export type IBCMsgTransferOptions = {
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
 };
+
+export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
+  (CCI extends {
+    icaEnabled: true;
+  }
+    ? IcaAccount
+    : {}) &
+    CCI extends {
+    stakingTokens: {};
+  }
+    ? StakingAccountActions
+    : {};

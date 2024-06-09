@@ -4,11 +4,13 @@
 /**
  * @file
  *
- * Some of this config info may make more sense in a particular package. However
- * due to https://github.com/Agoric/agoric-sdk/issues/4620 and our lax package
- * dependency graph, sometimes rational placements cause type resolution errors.
+ *   Some of this config info may make more sense in a particular package. However
+ *   due to https://github.com/Agoric/agoric-sdk/issues/4620 and our lax package
+ *   dependency graph, sometimes rational placements cause type resolution
+ *   errors.
  *
- * So as a work-around some constants that need access from more than one package are placed here.
+ *   So as a work-around some constants that need access from more than one
+ *   package are placed here.
  */
 
 /**
@@ -28,18 +30,20 @@ export const BridgeId = /** @type {const} */ ({
 harden(BridgeId);
 /** @typedef {(typeof BridgeId)[keyof typeof BridgeId]} BridgeIdValue */
 
+export const VTRANSFER_IBC_EVENT = 'VTRANSFER_IBC_EVENT';
+
 export const CosmosInitKeyToBridgeId = {
   vbankPort: BridgeId.BANK,
   vibcPort: BridgeId.DIBC,
 };
 
-export const WalletName = {
+export const WalletName = /** @type {const} */ ({
   depositFacet: 'depositFacet',
-};
+});
 harden(WalletName);
 
 // defined in golang/cosmos/x/vbank
-export const VBankAccount = {
+export const VBankAccount = /** @type {const} */ ({
   reserve: {
     module: 'vbank/reserve',
     address: 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl',
@@ -48,5 +52,5 @@ export const VBankAccount = {
     module: 'vbank/provision',
     address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
   },
-};
+});
 harden(VBankAccount);

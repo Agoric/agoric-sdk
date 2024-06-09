@@ -8,11 +8,15 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { getInterfaceOf } from '@endo/marshal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
+import { prepareTransferTools } from '../src/transfer.js';
 import { makeFakeBankManagerKit } from '../tools/bank-utils.js';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   makeFakeLocalchainBridge,
+  makeFakeTransferBridge,
 } from '../tools/fake-bridge.js';
 
 /**
@@ -40,6 +44,21 @@ const makeTestContext = async _t => {
     makeDurableZone(provideBaggage('localchain')),
   );
 
+  const transferZone = makeDurableZone(provideBaggage('transfer'));
+  const transferBridge = makeFakeTransferBridge(transferZone.subZone('bridge'));
+  const transferTools = prepareTransferTools(
+    transferZone,
+    prepareVowTools(transferZone.subZone('vows')),
+  );
+  const { finisher, interceptorFactory, transferMiddleware } =
+    transferTools.makeTransferMiddlewareKit();
+  const bridgeTargetKit = transferTools.makeBridgeTargetKit(
+    transferBridge,
+    VTRANSFER_IBC_EVENT,
+    interceptorFactory,
+  );
+  finisher.useRegistry(bridgeTargetKit.targetRegistry);
+
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     balances: {
       // agoric1fakeBridgeAddress: { ubld: bld.units(100).value },
@@ -55,6 +74,7 @@ const makeTestContext = async _t => {
   const localchain = await makeLocalChain({
     system: localchainBridge,
     bankManager,
+    transfer: transferMiddleware,
   });
 
   return {

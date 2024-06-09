@@ -23,9 +23,6 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  */
 
-// partial until #8879
-/** @typedef {Pick<CosmosChainInfo, 'connections'>} AgoricChainInfo */
-
 const trace = makeTracer('LCAH');
 
 const { Fail } = assert;
@@ -66,7 +63,7 @@ const PUBLIC_TOPICS = {
  * @param {ZCF} zcf
  * @param {TimerService} timerService
  * @param {TimerBrand} timerBrand
- * @param {AgoricChainInfo} agoricChainInfo
+ * @param {CosmosChainInfo} agoricChainInfo
  */
 export const prepareLocalChainAccountKit = (
   zone,
@@ -110,7 +107,6 @@ export const prepareLocalChainAccountKit = (
     {
       invitationMakers: {
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
@@ -153,7 +149,6 @@ export const prepareLocalChainAccountKit = (
           });
         },
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
@@ -178,7 +173,6 @@ export const prepareLocalChainAccountKit = (
           return result;
         },
         /**
-         *
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          * @returns {Promise<void>}
@@ -209,8 +203,9 @@ export const prepareLocalChainAccountKit = (
           );
         },
         /**
-         * Starting a transfer revokes the account holder. The associated updater
-         * will get a special notification that the account is being transferred.
+         * Starting a transfer revokes the account holder. The associated
+         * updater will get a special notification that the account is being
+         * transferred.
          */
         /** @type {LocalChainAccount['deposit']} */
         async deposit(payment, optAmountShape) {
@@ -232,9 +227,12 @@ export const prepareLocalChainAccountKit = (
           return NonNullish(this.state.address, 'Chain address not available.');
         },
         /**
-         * @param {AmountArg} amount an ERTP {@link Amount} or a {@link DenomAmount}
+         * @param {AmountArg} amount an ERTP {@link Amount} or a
+         *   {@link DenomAmount}
          * @param {ChainAddress} destination
-         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or timeoutTimestamp are not supplied, a default timeoutTimestamp will be set for 5 minutes in the future
+         * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
+         *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
+         *   be set for 5 minutes in the future
          * @returns {Promise<void>}
          */
         async transfer(amount, destination, opts) {
@@ -242,10 +240,12 @@ export const prepareLocalChainAccountKit = (
           // TODO #9211 lookup denom from brand
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
+          destination.chainId in agoricChainInfo.connections ||
+            Fail`Unknown chain ${destination.chainId}`;
+
           // TODO #8879 chainInfo and #9063 well-known chains
-          const { transferChannel } = agoricChainInfo.connections.get(
-            destination.chainId,
-          );
+          const { transferChannel } =
+            agoricChainInfo.connections[destination.chainId];
 
           await null;
           // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`

@@ -147,6 +147,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   latestInterestUpdate: Timestamp;
  * }} AssetState
  *
+ *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
  *   getRecordingPeriod: () => RelativeTime;

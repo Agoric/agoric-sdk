@@ -17,9 +17,9 @@ import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
-  prepareStakingAccountKit,
+  prepareCosmosOrchestrationAccountKit,
   trivialDelegateResponse,
-} from '../src/exos/stakingAccountKit.js';
+} from '../src/exos/cosmosOrchestrationAccount.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
 import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 
@@ -208,7 +208,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   const s = makeScenario();
   const { account, calls, timer } = s;
   const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
-  const make = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
+  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
 
   // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
@@ -232,7 +232,11 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const { account, calls, timer } = s;
   const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
   const aBrand = Far('Token') as Brand<'nat'>;
-  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -297,7 +301,11 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
-  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -323,7 +331,11 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
-  const makeAccountKit = prepareStakingAccountKit(zone, makeRecorderKit, zcf);
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,

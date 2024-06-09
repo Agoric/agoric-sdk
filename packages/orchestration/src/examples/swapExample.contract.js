@@ -1,6 +1,7 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
@@ -13,17 +14,18 @@ import { orcUtils } from '../utils/orc.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {Zone} from '@agoric/zone';
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {NameHub} from '@agoric/vats';
  */
 
 /** @type {ContractMeta} */
 export const meta = {
   privateArgsShape: {
+    agoricNames: M.remotable('agoricNames'),
     localchain: M.remotable('localchain'),
     orchestrationService: M.or(M.remotable('orchestration'), null),
     storageNode: StorageNodeShape,
     timerService: M.or(TimerServiceShape, null),
-    zone: M.any(),
   },
   upgradability: 'canUpgrade',
 };
@@ -41,30 +43,44 @@ export const makeNatAmountShape = (brand, min) =>
 /**
  * @param {ZCF} zcf
  * @param {{
- * localchain: Remote<LocalChain>;
- * orchestrationService: Remote<OrchestrationService> | null;
- * storageNode: Remote<StorageNode>;
- * timerService: Remote<TimerService> | null;
- * zone: Zone;
+ *   agoricNames: Remote<NameHub>;
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<OrchestrationService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { brands } = zcf.getTerms();
 
-  const { localchain, orchestrationService, storageNode, timerService, zone } =
-    privateArgs;
+  const zone = makeDurableZone(baggage);
+
+  const {
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
+    timerService,
+  } = privateArgs;
 
   const { orchestrate } = makeOrchestrationFacade({
-    zone,
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
     timerService,
     zcf,
-    localchain,
-    storageNode,
-    orchestrationService,
+    zone,
   });
 
   /** deprecated historical example */
-  /** @type {OfferHandler<unknown, {staked: Amount<'nat'>, validator: CosmosValidatorAddress}>} */
+  /**
+   * @type {OfferHandler<
+   *   unknown,
+   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
+   * >}
+   */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf },

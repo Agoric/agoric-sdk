@@ -1,8 +1,9 @@
 /**
  * @file fixture for an upgrade of the primary walletFactory contract,
- * packages/smart-wallet/src/walletFactory.js
+ *   packages/smart-wallet/src/walletFactory.js
  *
- * This variant adds a sayHelloUpgrade method to check that upgrade has occurred.
+ *   This variant adds a sayHelloUpgrade method to check that upgrade has
+ *   occurred.
  */
 
 import { M, makeExo, mustMatch } from '@agoric/store';
@@ -27,7 +28,12 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager } = privateArgs;
 
-  /** @type {MapStore<string, import('../../../src/smartWallet.js').SmartWallet>} */
+  /**
+   * @type {MapStore<
+   *   string,
+   *   import('../../../src/smartWallet.js').SmartWallet
+   * >}
+   */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
@@ -38,8 +44,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     }),
     {
       /**
-       *
-       * @param {import('../../../src/types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
+       * @param {import('../../../src/types.js').WalletBridgeMsg} obj validated
+       *   by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);
@@ -99,6 +105,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   /**
    * Holders of this object:
+   *
    * - vat (transitively from holding the wallet factory)
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
@@ -121,13 +128,19 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank.js').Bank>} bank
        * @param {ERef<import('@agoric/vats/src/types.js').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[import('../../../src/smartWallet.js').SmartWallet, boolean]>} wallet
-       *   along with a flag to distinguish between looking up an existing wallet
-       *   and creating a new one.
+       * @returns {Promise<
+       *   [import('../../../src/smartWallet.js').SmartWallet, boolean]
+       * >}
+       *   wallet along with a flag to distinguish between looking up an existing
+       *   wallet and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let makerCalled = false;
-        /** @type {() => Promise<import('../../../src/smartWallet.js').SmartWallet>} */
+        /**
+         * @type {() => Promise<
+         *   import('../../../src/smartWallet.js').SmartWallet
+         * >}
+         */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);

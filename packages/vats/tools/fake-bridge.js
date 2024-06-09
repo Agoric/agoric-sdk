@@ -1,3 +1,4 @@
+// @ts-check
 import { assert, Fail } from '@agoric/assert';
 import { makeTracer, VBankAccount } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -193,7 +194,6 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
                 return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
               }
               case '/cosmos.staking.v1beta1.MsgUndelegate': {
-                // @ts-expect-error XXX JsonSafe doesn't handle Date
                 return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
                   completionTime: new Date().toJSON(),
                 });
@@ -203,6 +203,50 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
                 return {};
             }
           });
+        }
+        default:
+          Fail`unknown type ${type}`;
+      }
+      return undefined;
+    },
+    fromBridge: async obj => {
+      if (!hndlr) throw Error('no handler!');
+      return when(E(hndlr).fromBridge(obj));
+    },
+    initHandler: h => {
+      if (hndlr) throw Error('already init');
+      hndlr = h;
+    },
+    setHandler: h => {
+      if (!hndlr) throw Error('must init first');
+      hndlr = h;
+    },
+  });
+};
+
+/**
+ * @param {import('@agoric/zone').Zone} zone
+ * @param {(obj) => void} [onToBridge]
+ * @returns {ScopedBridgeManager<'vtransfer'>}
+ */
+export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
+  /** @type {Remote<BridgeHandler>} */
+  let hndlr;
+  const registered = zone.setStore('registered');
+  return zone.exo('Fake Transfer Bridge Manager', undefined, {
+    getBridgeId: () => 'vtransfer',
+    toBridge: async obj => {
+      onToBridge(obj);
+      const { type, ...params } = obj;
+      trace('toBridge', type, params);
+      switch (type) {
+        case 'BRIDGE_TARGET_REGISTER': {
+          registered.add(params.target);
+          return undefined;
+        }
+        case 'BRIDGE_TARGET_UNREGISTER': {
+          registered.delete(params.target);
+          return undefined;
         }
         default:
           Fail`unknown type ${type}`;

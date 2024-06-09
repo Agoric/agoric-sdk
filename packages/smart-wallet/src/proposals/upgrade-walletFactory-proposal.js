@@ -14,8 +14,7 @@ const BOARD_AUX = 'boardAux';
 const marshalData = makeMarshal(_val => Fail`data only`);
 
 /**
- * @param { BootstrapPowers } powers
- *
+ * @param {BootstrapPowers} powers
  * @param {object} config
  * @param {{ walletFactoryRef: VatSourceRef & { bundleID: string } }} config.options
  */
@@ -71,7 +70,7 @@ export const upgradeWalletFactory = async (
 harden(upgradeWalletFactory);
 
 /**
- * @param { BootstrapPowers } powers
+ * @param {BootstrapPowers} powers
  */
 export const publishAgoricBrandsDisplayInfo = async ({
   consume: { agoricNames, board, chainStorage },
@@ -98,7 +97,7 @@ export const publishAgoricBrandsDisplayInfo = async ({
 };
 harden(publishAgoricBrandsDisplayInfo);
 
-/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const manifest = {
   [upgradeWalletFactory.name]: {
     // include rationale for closely-held, high authority capabilities

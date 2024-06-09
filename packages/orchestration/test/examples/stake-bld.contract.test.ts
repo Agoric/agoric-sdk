@@ -12,8 +12,14 @@ const contractFile = `${dirname}/../../src/examples/stakeBld.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/stakeBld.contract.js').start;
 
-const coreEval = async (t, { timer, localchain, marshaller, storage, bld }) => {
-  t.log('install stakeBld contract');
+const startContract = async ({
+  agoricNames,
+  timer,
+  localchain,
+  marshaller,
+  storage,
+  bld,
+}) => {
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
@@ -23,6 +29,7 @@ const coreEval = async (t, { timer, localchain, marshaller, storage, bld }) => {
     { In: bld.issuer },
     {},
     {
+      agoricNames,
       localchain,
       marshaller,
       storageNode: storage.rootNode,
@@ -39,7 +46,7 @@ test('makeAccount, deposit, withdraw', async t => {
     brands: { bld },
     utils,
   } = await commonSetup(t);
-  const { publicFacet } = await coreEval(t, { ...bootstrap, bld });
+  const { publicFacet } = await startContract({ ...bootstrap, bld });
 
   t.log('make a LocalChainAccount');
   const account = await E(publicFacet).makeAccount();
@@ -72,7 +79,7 @@ test('makeStakeBldInvitation', async t => {
     brands: { bld },
     utils,
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
+  const { publicFacet, zoe } = await startContract({ ...bootstrap, bld });
 
   t.log('call makeStakeBldInvitation');
   const inv = await E(publicFacet).makeStakeBldInvitation();
@@ -113,7 +120,7 @@ test('makeAccountInvitationMaker', async t => {
     bootstrap,
     brands: { bld },
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await coreEval(t, { ...bootstrap, bld });
+  const { publicFacet, zoe } = await startContract({ ...bootstrap, bld });
 
   const inv = await E(publicFacet).makeAccountInvitationMaker();
 

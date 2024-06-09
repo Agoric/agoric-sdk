@@ -1,6 +1,5 @@
 import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
-import type { PromiseVow, Remote } from '@agoric/vow';
 import type { Guarded } from '@endo/exo';
 
 export type Board = ReturnType<
@@ -92,7 +91,7 @@ export type NamesByAddressAdmin = NameAdmin & {
 /** An object that can receive messages from the bridge device */
 export type BridgeHandler = {
   /** Handle an inbound message */
-  fromBridge: (obj: any) => PromiseVow<void>;
+  fromBridge: (obj: any) => Promise<unknown>;
 };
 
 /** An object which handles messages for a specific bridge */
@@ -103,8 +102,10 @@ export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
    * system to hang the bridgeId
    */
   getBridgeId?: () => BridgeId;
+  /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
-  fromBridge: (obj: any) => PromiseVow<void>;
+  /** Upcall from Golang into the VM */
+  fromBridge: (obj: any) => Promise<unknown>;
   initHandler: (handler: Remote<BridgeHandler>) => void;
   setHandler: (handler: Remote<BridgeHandler>) => void;
 }>;

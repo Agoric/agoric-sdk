@@ -74,7 +74,11 @@ const makeTestContext = async t => {
   const { agoricNames, board, zoe } = bootKit.powers.consume;
   const startAnyContract = async () => {
     const bundle = await bundleCache.load(asset.anyContract, 'automaticRefund');
-    /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
+    /**
+     * @type {Promise<
+     *   Installation<import('../src/walletFactory.js').prepare>
+     * >}
+     */
     const installation = E(zoe).install(bundle);
     return E(zoe).startInstance(installation);
   };
@@ -109,7 +113,12 @@ const makeTestContext = async t => {
         return d;
       }),
     );
-    /** @type {MapStore<Brand, import('../src/smartWallet.js').BrandDescriptor>} */
+    /**
+     * @type {MapStore<
+     *   Brand,
+     *   import('../src/smartWallet.js').BrandDescriptor
+     * >}
+     */
     const store = makeScalarMapStore('registry');
     store.addAll(harden(descriptors.map(d => [d.brand, d])));
     return store;

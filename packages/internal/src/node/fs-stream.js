@@ -2,7 +2,7 @@ import { createWriteStream } from 'node:fs';
 import { open } from 'node:fs/promises';
 
 /**
- * @param {import("fs").ReadStream | import("fs").WriteStream} stream
+ * @param {import('fs').ReadStream | import('fs').WriteStream} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>

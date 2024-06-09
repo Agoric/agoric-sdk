@@ -7,11 +7,11 @@ import {
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
-  // @ts-expect-error expected two arguments
+  // @ts-expect-error intentional
   t.throws(() => makeICAChannelAddress(), {
     message: 'hostConnectionId is required',
   });
-  // @ts-expect-error expected two arguments
+  // @ts-expect-error intentional
   t.throws(() => makeICAChannelAddress('connection-0'), {
     message: 'controllerConnectionId is required',
   });
@@ -74,7 +74,7 @@ test('findAddressField', t => {
 });
 
 test('makeICQChannelAddress', t => {
-  // @ts-expect-error expected 1 argument
+  // @ts-expect-error intentional
   t.throws(() => makeICQChannelAddress(), {
     message: 'controllerConnectionId is required',
   });

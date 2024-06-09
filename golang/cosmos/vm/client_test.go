@@ -11,30 +11,28 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-type Sender func(ctx context.Context, needReply bool, str string) (string, error)
-
 type errorWrapper struct {
 	Error string `json:"error"`
 }
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, Sender) {
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
 	vmClientCodec := vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
-		if str == "shutdown" {
+	sendToNode := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
+		if jsonRequest == "shutdown" {
 			return "", vmClientCodec.Close()
 		}
 
 		msg := vm.Message{
 			Port:       nodePort,
 			NeedsReply: needReply,
-			Data:       str,
+			Data:       jsonRequest,
 		}
 		var reply string
-		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
 		return reply, err
 	}
 
@@ -42,7 +40,7 @@ func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, 
 }
 
 type Fixture struct {
-	SendToNode Sender
+	SendToNode vm.Sender
 	SendToGo   func(port int, msgStr string) string
 	ReplyToGo  func(replyPort int, isError bool, respStr string) int
 }

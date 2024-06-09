@@ -331,11 +331,14 @@ export const makeBridgeManager = async ({
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
+    // @ts-expect-error XXX EProxy
     E(bridgeManager).register(BRIDGE_ID.PROVISION),
   );
   provisionWalletBridgeManager.resolve(
+    // @ts-expect-error XXX EProxy
     E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
   );
+  // @ts-expect-error XXX EProxy
   walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
 };
 harden(makeBridgeManager);

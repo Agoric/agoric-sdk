@@ -236,6 +236,8 @@ github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4 h1:i5IgChQjTyWulV/y5
 github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4/go.mod h1:d7e4h+w7FNBNmE6ysp6duBVuQg67pqMtvsLwpT9ca3E=
 github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1 h1:2jvHI/2d+psWAZy6FQ0vXJCHUtfU3ZbbW+pQFL04arQ=
 github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1/go.mod h1:E45NqnlpxGnpfTWL/xauN7MRwEE28T4Dd4uraToOaKg=
+github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2 h1:vEzy4JaExzlWNHV3ZSVXEVZcRE9loEFUjieE2TXwDdI=
+github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2/go.mod h1:L1xcBjCLIHN7Wd9j6cAQvZertn56pq+eRGFZjRO5bsY=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -380,8 +382,6 @@ github.com/cosmos/iavl v0.19.7 h1:ij32FaEnwxfEurtK0QKDNhTWFnz6NUmrI5gky/WnoY0=
 github.com/cosmos/iavl v0.19.7/go.mod h1:X9PKD3J0iFxdmgNLa7b2LYWdsGd90ToV5cAONApkEPw=
 github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6 v6.1.2 h1:Hz4nkpStoXIHrC77CIEyu2mRiN2qysGEZPFRf0fpv7w=
 github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6 v6.1.2/go.mod h1:Jo934o/sW7fNxuOa/TjCalSalz+1Fd649eLyANaJx8g=
-github.com/cosmos/ibc-go/v6 v6.3.1 h1:/5ur3AsmNW8WuOevfODHlaY5Ze236PBNE3vVo9o3fQA=
-github.com/cosmos/ibc-go/v6 v6.3.1/go.mod h1:Dm14j9s094bGyCEE8W4fD+2t8IneHv+cz+80Mvwjr1w=
 github.com/cosmos/keyring v1.2.0 h1:8C1lBP9xhImmIabyXW4c3vFjjLiBdGCmfLUfeZlV1Yo=
 github.com/cosmos/keyring v1.2.0/go.mod h1:fc+wB5KTk9wQ9sDx0kFXB3A0MaeGHM9AwRStKOQ5vOA=
 github.com/cosmos/ledger-cosmos-go v0.12.4 h1:drvWt+GJP7Aiw550yeb3ON/zsrgW0jgh5saFCr7pDnw=

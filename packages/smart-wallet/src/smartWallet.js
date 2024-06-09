@@ -42,149 +42,176 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
+/** @import {OfferId, OfferStatus} from './offers.js'; */
+
 const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SmrtWlt');
 
 /**
  * @file Smart wallet module
- *
- * @see {@link ../README.md}}
+ * @see {@link ../README.md} }
  */
 
 /** @typedef {number | string} OfferId */
 
 /**
  * @typedef {{
- *   id: OfferId,
- *   invitationSpec: import('./invitations').InvitationSpec,
- *   proposal: Proposal,
- *   offerArgs?: any
+ *   id: OfferId;
+ *   invitationSpec: import('./invitations').InvitationSpec;
+ *   proposal: Proposal;
+ *   offerArgs?: any;
  * }} OfferSpec
  */
 
 /**
  * @typedef {{
- *   logger:  {info: (...args: any[]) => void, error: (...args: any[]) => void},
- *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher,
- *   invitationFromSpec: ERef<Invitation>,
+ *   logger: {
+ *     info: (...args: any[]) => void;
+ *     error: (...args: any[]) => void;
+ *   };
+ *   makeOfferWatcher: import('./offerWatcher.js').MakeOfferWatcher;
+ *   invitationFromSpec: ERef<Invitation>;
  * }} ExecutorPowers
  */
 
 /**
  * @typedef {{
- *   method: 'executeOffer'
- *   offer: OfferSpec,
+ *   method: 'executeOffer';
+ *   offer: OfferSpec;
  * }} ExecuteOfferAction
  */
 
 /**
  * @typedef {{
- *   method: 'tryExitOffer'
- *   offerId: OfferId,
+ *   method: 'tryExitOffer';
+ *   offerId: OfferId;
  * }} TryExitOfferAction
  */
 
 // Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
-/**
- * @typedef { ExecuteOfferAction | TryExitOfferAction } BridgeAction
- */
+/** @typedef {ExecuteOfferAction | TryExitOfferAction} BridgeAction */
 
 /**
- * Purses is an array to support a future requirement of multiple purses per brand.
+ * Purses is an array to support a future requirement of multiple purses per
+ * brand.
  *
- * Each map is encoded as an array of entries because a Map doesn't serialize directly.
- * We also considered having a vstorage key for each offer but for now are sticking with this design.
+ * Each map is encoded as an array of entries because a Map doesn't serialize
+ * directly. We also considered having a vstorage key for each offer but for now
+ * are sticking with this design.
  *
  * Cons
- *    - Reserializes previously written results when a new result is added
- *    - Optimizes reads though writes are on-chain (~100 machines) and reads are off-chain (to 1 machine)
+ *
+ * - Reserializes previously written results when a new result is added
+ * - Optimizes reads though writes are on-chain (~100 machines) and reads are
+ *   off-chain (to 1 machine)
  *
  * Pros
- *    - Reading all offer results happens much more (>100) often than storing a new offer result
- *    - Reserialization and writes are paid in execution gas, whereas reads are not
  *
- * This design should be revisited if ever batch querying across vstorage keys become cheaper or reads be paid.
+ * - Reading all offer results happens much more (>100) often than storing a new
+ *   offer result
+ * - Reserialization and writes are paid in execution gas, whereas reads are not
+ *
+ * This design should be revisited if ever batch querying across vstorage keys
+ * become cheaper or reads be paid.
  *
  * @typedef {{
- *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
- *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
- *   liveOffers: Array<[OfferId, import('./offers.js').OfferStatus]>,
+ *   purses: { brand: Brand; balance: Amount }[];
+ *   offerToUsedInvitation: [offerId: string, usedInvitation: Amount][];
+ *   offerToPublicSubscriberPaths: [
+ *     offerId: string,
+ *     publicTopics: { [subscriberName: string]: string },
+ *   ][];
+ *   liveOffers: [OfferId, OfferStatus][];
  * }} CurrentWalletRecord
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ * @typedef {{ updated: 'offerStatus'; status: OfferStatus }
  *   | { updated: 'balance'; currentAmount: Amount }
- *   | { updated: 'walletAction'; status: { error: string } }
- * } UpdateRecord Record of an update to the state of this wallet.
+ *   | { updated: 'walletAction'; status: { error: string } }} UpdateRecord
+ *   Record of an update to the state of this wallet.
  *
- * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
+ *   Client is responsible for coalescing updates into a current state. See
+ *   `coalesceUpdates` utility.
  *
- * The reason for this burden on the client is that publishing
- * the full history of offers with each change is untenable.
+ *   The reason for this burden on the client is that publishing the full history
+ *   of offers with each change is untenable.
  *
- * `balance` update supports forward-compatibility for more than one purse per
- * brand. An additional key will be needed to disambiguate. For now the brand in
- * the amount suffices.
+ *   `balance` update supports forward-compatibility for more than one purse per
+ *   brand. An additional key will be needed to disambiguate. For now the brand
+ *   in the amount suffices.
  */
 
 /**
  * @typedef {{
- *   brand: Brand,
- *   displayInfo: DisplayInfo,
- *   issuer: Issuer,
- *   petname: import('./types.js').Petname
+ *   brand: Brand;
+ *   displayInfo: DisplayInfo;
+ *   issuer: Issuer;
+ *   petname: import('./types.js').Petname;
  * }} BrandDescriptor
- * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
+ *   For use by clients to describe brands to users. Includes `displayInfo` to
+ *   save a remote call.
  */
 
 /**
  * @typedef {{
- *   address: string,
- *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>,
- *   currentStorageNode: StorageNode,
- *   invitationPurse: Purse<'set', InvitationDetails>,
- *   walletStorageNode: StorageNode,
+ *   address: string;
+ *   bank: ERef<import('@agoric/vats/src/vat-bank.js').Bank>;
+ *   currentStorageNode: StorageNode;
+ *   invitationPurse: Purse<'set', InvitationDetails>;
+ *   walletStorageNode: StorageNode;
  * }} UniqueParams
  *
+ *
  * @typedef {Pick<MapStore<Brand, BrandDescriptor>, 'has' | 'get' | 'values'>} BrandDescriptorRegistry
+ *
+ *
  * @typedef {{
- *   agoricNames: ERef<import('@agoric/vats').NameHub>,
- *   registry: BrandDescriptorRegistry,
- *   invitationIssuer: Issuer<'set'>,
- *   invitationBrand: Brand<'set'>,
- *   invitationDisplayInfo: DisplayInfo,
- *   publicMarshaller: Marshaller,
- *   zoe: ERef<ZoeService>,
- *   secretWalletFactoryKey: any,
+ *   agoricNames: ERef<import('@agoric/vats').NameHub>;
+ *   registry: BrandDescriptorRegistry;
+ *   invitationIssuer: Issuer<'set'>;
+ *   invitationBrand: Brand<'set'>;
+ *   invitationDisplayInfo: DisplayInfo;
+ *   publicMarshaller: Marshaller;
+ *   zoe: ERef<ZoeService>;
+ *   secretWalletFactoryKey: any;
  * }} SharedParams
  *
- * @typedef {ImmutableState & MutableState} State
- * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
- * - `offerToInvitationMakers` is precious and closely held.
- * - `offerToPublicSubscriberPaths` is precious and closely held.
- * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
- * @typedef {Readonly<UniqueParams & {
- *   paymentQueues: MapStore<Brand, Array<Payment>>,
- *   offerToInvitationMakers: MapStore<string, import('./types.js').InvitationMakers>,
- *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
- *   offerToUsedInvitation: MapStore<string, Amount<'set'>>,
- *   purseBalances: MapStore<Purse, Amount>,
- *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
- *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
- *   liveOffers: MapStore<OfferId, import('./offers.js').OfferStatus>,
- *   liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>,
- *   liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>,
- * }>} ImmutableState
+ * @typedef {ImmutableState & MutableState} State - `brandPurses` is precious
+ *   and closely held. defined as late as possible to reduce its scope.
+ *
+ *   - `offerToInvitationMakers` is precious and closely held.
+ *   - `offerToPublicSubscriberPaths` is precious and closely held.
+ *   - `purseBalances` is a cache of what we've received from purses. Held so we can
+ *       publish all balances on change.
+ *
+ *
+ * @typedef {Readonly<
+ *   UniqueParams & {
+ *     paymentQueues: MapStore<Brand, Payment[]>;
+ *     offerToInvitationMakers: MapStore<
+ *       string,
+ *       import('./types.js').InvitationMakers
+ *     >;
+ *     offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>;
+ *     offerToUsedInvitation: MapStore<string, Amount<'set'>>;
+ *     purseBalances: MapStore<Purse, Amount>;
+ *     updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>;
+ *     currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>;
+ *     liveOffers: MapStore<OfferId, OfferStatus>;
+ *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
+ *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
+ *   }
+ * >} ImmutableState
+ *
  *
  * @typedef {BrandDescriptor & { purse: Purse }} PurseRecord
- * @typedef {{
- * }} MutableState
+ *
+ * @typedef {{}} MutableState
  */
 
 /**
@@ -296,8 +323,8 @@ export const prepareSmartWallet = (baggage, shared) => {
       (purse, helper) => ({ purse, helper }),
       {
         /**
-         * @param {{ value: Amount, updateCount: bigint | undefined }} updateRecord
-         * @param { Notifier<Amount> } notifier
+         * @param {{ value: Amount; updateCount: bigint | undefined }} updateRecord
+         * @param {Notifier<Amount>} notifier
          * @returns {void}
          */
         onFulfilled(updateRecord, notifier) {
@@ -458,9 +485,10 @@ export const prepareSmartWallet = (baggage, shared) => {
 
   // TODO move to top level so its type can be exported
   /**
-   * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
-   * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
-   * and the child storage node must be awaited until we have durable promises.
+   * Make the durable object to return, but taking some parameters that are
+   * awaited by a wrapping function. This is necessary because the class kit
+   * construction helpers, `initState` and `finish` run synchronously and the
+   * child storage node must be awaited until we have durable promises.
    */
   const makeWalletWithResolvedStorageNodes = prepareExoClassKit(
     baggage,
@@ -557,15 +585,15 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
 
         /**
-         * Provide a purse given a NameHub of issuers and their
-         * brands.
+         * Provide a purse given a NameHub of issuers and their brands.
          *
-         * We currently support only one NameHub, agoricNames, and
-         * hence one purse per brand. But we store an array of them
-         * to facilitate a transition to decentralized introductions.
+         * We currently support only one NameHub, agoricNames, and hence one
+         * purse per brand. But we store an array of them to facilitate a
+         * transition to decentralized introductions.
          *
          * @param {Brand} brand
-         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with brand, issuer branches
+         * @param {ERef<import('@agoric/vats').NameHub>} known - namehub with
+         *   brand, issuer branches
          * @returns {Promise<Purse | undefined>} undefined if brand is not known
          */
         async getPurseIfKnownBrand(brand, known) {
@@ -706,7 +734,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           void helper.watchPurse(invitationPurse);
         },
 
-        /** @param {import('./offers.js').OfferStatus} offerStatus */
+        /** @param {OfferStatus} offerStatus */
         updateStatus(offerStatus) {
           const { state, facets } = this;
           facets.helper.logWalletInfo('offerStatus', offerStatus);
@@ -736,9 +764,9 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         /**
          * @param {string} offerId
-         * @param {Amount<"set">} invitationAmount
-         * @param {import("./types.js").InvitationMakers} invitationMakers
-         * @param {import("./types.js").PublicSubscribers} publicSubscribers
+         * @param {Amount<'set'>} invitationAmount
+         * @param {import('./types.js').InvitationMakers} invitationMakers
+         * @param {import('./types.js').PublicSubscribers} publicSubscribers
          */
         async addContinuingOffer(
           offerId,
@@ -812,7 +840,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
       },
       /**
-       * Similar to {DepositFacet} but async because it has to look up the purse.
+       * Similar to {DepositFacet} but async because it has to look up the
+       * purse.
        */
       deposit: {
         /**
@@ -822,7 +851,8 @@ export const prepareSmartWallet = (baggage, shared) => {
          *
          * @param {Payment} payment
          * @returns {Promise<Amount>}
-         * @throws if there's not yet a purse, though the payment is held to try again when there is
+         * @throws if there's not yet a purse, though the payment is held to try
+         *   again when there is
          */
         async receive(payment) {
           const {
@@ -861,9 +891,11 @@ export const prepareSmartWallet = (baggage, shared) => {
 
       payments: {
         /**
-         * Withdraw the offered amount from the appropriate purse of this wallet.
+         * Withdraw the offered amount from the appropriate purse of this
+         * wallet.
          *
-         * Save its amount in liveOfferPayments in case we need to reclaim the payment.
+         * Save its amount in liveOfferPayments in case we need to reclaim the
+         * payment.
          *
          * @param {AmountKeywordRecord} give
          * @param {OfferId} offerId
@@ -903,7 +935,8 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
 
         /**
-         * Find the live payments for the offer and deposit them back in the appropriate purses.
+         * Find the live payments for the offer and deposit them back in the
+         * appropriate purses.
          *
          * @param {OfferId} offerId
          * @returns {Promise<Amount[]>}
@@ -944,11 +977,14 @@ export const prepareSmartWallet = (baggage, shared) => {
 
       offers: {
         /**
-         * Take an offer description provided in capData, augment it with payments and call zoe.offer()
+         * Take an offer description provided in capData, augment it with
+         * payments and call zoe.offer()
          *
          * @param {OfferSpec} offerSpec
-         * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
-         * @throws if any parts of the offer can be determined synchronously to be invalid
+         * @returns {Promise<void>} after the offer has been both seated and
+         *   exited by Zoe.
+         * @throws if any parts of the offer can be determined synchronously to
+         *   be invalid
          */
         async executeOffer(offerSpec) {
           const { facets, state } = this;
@@ -1078,9 +1114,11 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
       self: {
         /**
-         * Umarshals the actionCapData and delegates to the appropriate action handler.
+         * Umarshals the actionCapData and delegates to the appropriate action
+         * handler.
          *
-         * @param {import('@endo/marshal').CapData<string | null>} actionCapData of type BridgeAction
+         * @param {import('@endo/marshal').CapData<string | null>} actionCapData
+         *   of type BridgeAction
          * @param {boolean} [canSpend]
          * @returns {Promise<void>}
          */
@@ -1196,7 +1234,12 @@ export const prepareSmartWallet = (baggage, shared) => {
   );
 
   /**
-   * @param {Omit<UniqueParams, 'currentStorageNode' | 'walletStorageNode'> & {walletStorageNode: ERef<StorageNode>}} uniqueWithoutChildNodes
+   * @param {Omit<
+   *   UniqueParams,
+   *   'currentStorageNode' | 'walletStorageNode'
+   * > & {
+   *   walletStorageNode: ERef<StorageNode>;
+   * }} uniqueWithoutChildNodes
    */
   const makeSmartWallet = async uniqueWithoutChildNodes => {
     const [walletStorageNode, currentStorageNode] = await Promise.all([

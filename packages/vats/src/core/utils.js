@@ -317,6 +317,8 @@ export const makeMyAddressNameAdminKit = address => {
   return { nameHub, myAddressNameAdmin };
 };
 
+/** @typedef {MapStore<string, CreateVatResults>} VatStore */
+
 /**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
@@ -324,8 +326,6 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {string} [label]
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
- *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (
   svc,

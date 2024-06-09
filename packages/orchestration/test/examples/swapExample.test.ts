@@ -16,6 +16,7 @@ test('start', async t => {
   const {
     bootstrap,
     brands: { ist },
+    commonPrivateArgs,
     utils,
   } = await commonSetup(t);
 
@@ -27,13 +28,7 @@ test('start', async t => {
     installation,
     { Stable: ist.issuer },
     {},
-    {
-      localchain: bootstrap.localchain,
-      orchestrationService: null as any,
-      storageNode: bootstrap.storage.rootNode,
-      timerService: bootstrap.timer,
-      zone: bootstrap.rootZone,
-    },
+    commonPrivateArgs,
   );
 
   const inv = E(publicFacet).makeSwapAndStakeInvitation();

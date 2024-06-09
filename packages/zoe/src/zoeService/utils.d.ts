@@ -104,13 +104,16 @@ export type StartInstance = <SF>(
   issuerKeywordRecord?: Record<Keyword, Issuer<any>>,
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
+  // @ts-expect-error XXX
   privateArgs?: Parameters<SF>[1],
   label?: string,
+  // @ts-expect-error XXX
 ) => Promise<StartedInstanceKit<SF>>;
 
 // XXX SF should extend ContractStartFunction but doing that triggers a bunch of tech debt type errors
 export type GetPublicFacet = <SF>(
   instance: Instance<SF> | PromiseLike<Instance<SF>>,
+  // @ts-expect-error XXX
 ) => Promise<StartResult<SF>['publicFacet']>;
 
 export type GetTerms = <SF>(instance: Instance<SF>) => Promise<

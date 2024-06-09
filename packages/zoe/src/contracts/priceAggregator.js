@@ -159,7 +159,7 @@ const start = async (zcf, privateArgs) => {
       await Promise.all(querierPs).catch(console.error);
     },
   });
-  E(repeaterP).schedule(waker);
+  void E(repeaterP).schedule(waker);
 
   /**
    * @param {object} param0
@@ -231,17 +231,20 @@ const start = async (zcf, privateArgs) => {
     });
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
-  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => {
-      publisher.publish(priceDescriptionFromQuote(quote));
+  void observeNotifier(
+    priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
+    {
+      updateState: quote => {
+        publisher.publish(priceDescriptionFromQuote(quote));
+      },
+      fail: reason => {
+        throw Error(`priceAuthority observer failed: ${reason}`);
+      },
+      finish: done => {
+        throw Error(`priceAuthority observer died: ${done}`);
+      },
     },
-    fail: reason => {
-      throw Error(`priceAuthority observer failed: ${reason}`);
-    },
-    finish: done => {
-      throw Error(`priceAuthority observer died: ${done}`);
-    },
-  });
+  );
 
   /**
    * @param {Ratio} r
@@ -388,7 +391,7 @@ const start = async (zcf, privateArgs) => {
         return;
       }
       // Queue the next update.
-      E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
+      void E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
 
       // See if we have associated parameters or just a raw value.
       /** @type {Ratio | undefined} */
@@ -424,7 +427,7 @@ const start = async (zcf, privateArgs) => {
     };
 
     // Start the notifier.
-    E(oracleNotifier).getUpdateSince().then(recurse);
+    void E(oracleNotifier).getUpdateSince().then(recurse);
   };
 
   const creatorFacet = Far('PriceAggregatorCreatorFacet', {
@@ -463,7 +466,7 @@ const start = async (zcf, privateArgs) => {
             assertParsableNumber(price);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
-              admin.pushResult(price);
+              void admin.pushResult(price);
             }, 'PushPrice');
           },
         });

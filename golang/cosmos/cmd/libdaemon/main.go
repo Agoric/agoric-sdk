@@ -37,22 +37,22 @@ var agdServer *vm.AgdServer
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, daemoncmd.Sender) {
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
 	vmClientCodec = vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
-		if str == "shutdown" {
+	var sendToNode vm.Sender = func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
+		if jsonRequest == "shutdown" {
 			return "", vmClientCodec.Close()
 		}
 
 		msg := vm.Message{
 			Port:       nodePort,
 			NeedsReply: needReply,
-			Data:       str,
+			Data:       jsonRequest,
 		}
 		var reply string
-		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
 		return reply, err
 	}
 
@@ -72,7 +72,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 		panic(err)
 	}
 
-	var sendToNode daemoncmd.Sender
+	var sendToNode vm.Sender
 
 	sendFunc := func(port int, reply int, str string) {
 		C.invokeSendFunc(toNode, C.int(port), C.int(reply), C.CString(str))

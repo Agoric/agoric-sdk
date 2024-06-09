@@ -584,9 +584,7 @@ const preparePort = (zone, powers) => {
         // Clean up everything we did.
         const values = [...currentConnections.get(port).values()];
 
-        /** @type {import('@agoric/vow').Specimen[]} */
         const ps = [];
-
         ps.push(
           ...values.map(conn =>
             watch(E(conn).close(), this.facets.sinkWatcher),
@@ -1289,6 +1287,7 @@ export const prepareEchoConnectionKit = zone => {
 
   return makeEchoConnectionKit;
 };
+/** @typedef {ReturnType<typeof prepareEchoConnectionKit>} MakeEchoConnectionKit */
 
 /**
  * Create a protocol handler that just connects to itself.

@@ -18,7 +18,7 @@ import { V as E } from '@agoric/vow/vat.js';
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
- * @param {{ options: { orchestrationRef: VatSourceRef }}} options
+ * @param {{ options: { orchestrationRef: VatSourceRef } }} options
  *
  * @typedef {{
  *   orchestration: ERef<OrchestrationVat>;

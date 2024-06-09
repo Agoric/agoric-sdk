@@ -23,10 +23,7 @@ test.serial('stakeAtom - repl-style', async t => {
     evalProposal,
     runUtils: { EV },
   } = t.context;
-  // TODO move into a vm-config
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
+  // TODO move into a vm-config for future agoric-upgrade
   await evalProposal(
     buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
   );
@@ -62,7 +59,7 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance();
+  const queryRes = await EV(account).getBalance('uatom');
   t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
 
   const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');

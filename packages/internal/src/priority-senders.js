@@ -20,9 +20,13 @@ harden(normalizeSenderNamespace);
  */
 export const makePrioritySendersManager = sendersNode => {
   /**
-   * address to tuple with storage node and set of namespaces that requested priority
+   * address to tuple with storage node and set of namespaces that requested
+   * priority
    *
-   * @type {Map<string, readonly [node: StorageNode, namespaces: Set<string>]>}
+   * @type {Map<
+   *   string,
+   *   readonly [node: StorageNode, namespaces: Set<string>]
+   * >}
    */
   const addressRecords = new Map();
 
@@ -47,7 +51,7 @@ export const makePrioritySendersManager = sendersNode => {
     const node = await E(sendersNode).makeChildNode(address, {
       sequence: false,
     });
-    /** @type {readonly [ node: StorageNode, namespaces: Set<string> ]} */
+    /** @type {readonly [node: StorageNode, namespaces: Set<string>]} */
     const r = [node, new Set()];
     addressRecords.set(address, r);
     return r;

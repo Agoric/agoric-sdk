@@ -105,7 +105,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   const bridgeManager = await consume.bridgeManager;
   /**
-   * @type {| undefined
+   * @type {undefined
    *   | import('@agoric/vats').ScopedBridgeManager<'wallet'>}
    */
   // @ts-expect-error XXX EProxy

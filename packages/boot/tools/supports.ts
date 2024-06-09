@@ -22,10 +22,10 @@ import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import { icaMocks, protoMsgMocks } from './ibc/mocks.js';

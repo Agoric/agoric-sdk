@@ -202,13 +202,13 @@ type WellKnownName = {
 };
 
 type ContractInstallationPromises<
-  StartFns extends Record<WellKnownNames['installation'], ContractStartFn>,
+  StartFns extends Record<WellKnownName['installation'], ContractStartFn>,
 > = {
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
 };
 
 type ContractInstancePromises<
-  StartFns extends Record<WellKnownNames['instance'], ContractStartFn>,
+  StartFns extends Record<WellKnownName['instance'], ContractStartFn>,
 > = {
   [Property in keyof StartFns]: Promise<
     import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>
@@ -259,11 +259,13 @@ type WellKnownSpaces = {
       WellKnownName['installation'],
       Promise<Installation<unknown>>
     > &
+      // @ts-expect-error XXX
       ContractInstallationPromises<WellKnownContracts>;
   };
   instance: {
     produce: Record<WellKnownName['instance'], Producer<Instance>>;
     consume: Record<WellKnownName['instance'], Promise<Instance>> &
+      // @ts-expect-error XXX
       ContractInstancePromises<WellKnownContracts>;
   };
   uiConfig: {
@@ -281,6 +283,7 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
     'brands' | 'issuers' | 'governedParams' | 'electionManager'
   >;
   privateArgs: Omit<
+    // @ts-expect-error XXX
     import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
     'initialPoserInvitation'
   >;
@@ -314,8 +317,9 @@ type StartUpgradable = <
   }
 >;
 
-type StartedInstanceKit<T> =
-  import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
+type StartedInstanceKit<
+  T extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+> = import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
 
 type StartedInstanceKitWithLabel = {
   label: string;
@@ -365,24 +369,27 @@ type ChainBootstrapSpaceT = {
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
-  priceAuthority: PriceAuthority;
+  priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
-  provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
+  provisionBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'provision'>
+    | undefined;
   provisionWalletBridgeManager:
-    | import('../types.js').ScopedBridgeManager
+    | import('../types.js').ScopedBridgeManager<'provisionWallet'>
     | undefined;
   storageBridgeManager:
     | import('../types.js').ScopedBridgeManager<'storage'>
     | undefined;
+  transferMiddleware: import('../transfer.js').TransferMiddleware;
   /**
-   * Convienence function for starting a contract (ungoverned) and saving its
+   * Convenience function for starting a contract (ungoverned) and saving its
    * facets (including adminFacet)
    */
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
   contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
-  /** Convience function for starting contracts governed by the Econ Committee */
+  /** Convenience function for starting contracts governed by the Econ Committee */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
@@ -391,7 +398,9 @@ type ChainBootstrapSpaceT = {
   >;
   /** Used only for testing. Should not appear in any production proposals. */
   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
-  walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
+  walletBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'wallet'>
+    | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: GovernanceFacetKit<
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start

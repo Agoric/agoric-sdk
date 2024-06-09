@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
@@ -78,7 +77,7 @@ test('tick does not flush by default', async t => {
   const handler = Far('handler', {
     wake: scheduled => {
       woken = scheduled;
-      stallLots().then(() => (later = true));
+      void stallLots().then(() => (later = true));
     },
   });
   manualTimer.setWakeup(toTS(1n), handler);
@@ -105,7 +104,7 @@ test('tick can flush promise queue', async t => {
   const handler = Far('handler', {
     wake: scheduled => {
       woken = scheduled;
-      stallLots().then(() => (later = true));
+      void stallLots().then(() => (later = true));
     },
   });
   manualTimer.setWakeup(toTS(1n), handler);
@@ -134,7 +133,7 @@ test('tick does not await makeRepeater by default', async t => {
   const handler = Far('handler', {
     wake: scheduled => {
       woken = scheduled;
-      stallLots().then(() => (later = true));
+      void stallLots().then(() => (later = true));
     },
   });
 
@@ -163,7 +162,7 @@ test('tick can flush makeRepeater', async t => {
   const handler = Far('handler', {
     wake: scheduled => {
       woken = scheduled;
-      stallLots().then(() => (later = true));
+      void stallLots().then(() => (later = true));
     },
   });
 

@@ -22,6 +22,6 @@ var (
 
 type (
 	Keeper        = keeper.Keeper
-	ScopedKeeper	= types.ScopedKeeper
+	ScopedKeeper  = types.ScopedKeeper
 	MsgSendPacket = types.MsgSendPacket
 )

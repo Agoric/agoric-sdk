@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
-import type { Callable, RemotableBrand } from '@endo/eventual-send';
+import type { RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
+import type { Callable } from './utils.js';
 
 export declare class Callback<I extends (...args: unknown[]) => any> {
   private iface: I;

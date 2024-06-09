@@ -12,7 +12,15 @@ import type {
 } from '@agoric/ertp/src/types.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
-import type { IBCMsgTransferOptions, KnownChains } from './types.js';
+import type {
+  ChainInfo,
+  CosmosChainAccountMethods,
+  CosmosChainInfo,
+  IBCMsgTransferOptions,
+  wellKnownChainInfo,
+} from './types.js';
+
+type KnownChains = typeof wellKnownChainInfo;
 
 /**
  * A denom that designates a path to a token type on some blockchain.
@@ -57,8 +65,8 @@ export type ChainAddress = {
   addressEncoding: 'bech32' | 'ethereum';
 };
 
-export type OrchestrationAccount<C extends keyof KnownChains> =
-  OrchestrationAccountI & KnownChains[C]['methods'];
+export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
+  (CI extends CosmosChainInfo ? CosmosChainAccountMethods<CI> : never);
 
 /**
  * An object for access the core functions of a remote chain.
@@ -66,15 +74,15 @@ export type OrchestrationAccount<C extends keyof KnownChains> =
  * Note that "remote" can mean the local chain; it's just that
  * accounts are treated as remote/arms length for consistency.
  */
-export interface Chain<C extends keyof KnownChains> {
-  getChainInfo: () => Promise<KnownChains[C]['info']>;
+export interface Chain<CI extends ChainInfo> {
+  getChainInfo: () => Promise<CI>;
 
   // "makeAccount" suggests an operation within a vat
   /**
    * Creates a new account on the remote chain.
    * @returns an object that controls a new remote account on Chain
    */
-  makeAccount: () => Promise<OrchestrationAccount<C>>;
+  makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
 
   // TODO provide a way to get the local denom/brand/whatever for this chain
@@ -84,9 +92,9 @@ export interface Chain<C extends keyof KnownChains> {
  * Provided in the callback to `orchestrate()`.
  */
 export interface Orchestrator {
-  // TODO we need a way to work with a chain its native way vs generic way
-  // E.g. an Osmosis delegate that looks Cosmos-y or no different from an Ethereum delegate
-  getChain: <C extends keyof KnownChains>(chainName: C) => Promise<Chain<C>>;
+  getChain: <C extends string>(
+    chainName: C,
+  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
@@ -104,9 +112,9 @@ export interface Orchestrator {
     /** The well-known Brand on Agoric for the direct asset */
     brand?: Brand;
     /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-    chain: Chain<HoldingChain>;
+    chain: Chain<KnownChains[HoldingChain]>;
     /** The Chain that is the issuer of the underlying asset */
-    base: Chain<IssuingChain>;
+    base: Chain<KnownChains[IssuingChain]>;
     /** the Denom for the underlying asset on its issuer chain */
     baseDenom: Denom;
   };
@@ -170,7 +178,7 @@ export interface OrchestrationAccountI {
    * deposit payment from zoe to the account. For remote accounts,
    * an IBC Transfer will be executed to transfer funds there.
    */
-  deposit: (payment: Payment) => Promise<void>;
+  deposit: (payment: Payment<'nat'>) => Promise<void>;
 }
 
 /**
