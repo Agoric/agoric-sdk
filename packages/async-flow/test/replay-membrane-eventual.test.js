@@ -26,7 +26,7 @@ const panic = problem => Fail`panic over ${problem}`;
  */
 const preparePingee = zone =>
   zone.exoClass('Pingee', undefined, () => ({}), {
-    ping() {},
+    ping(_str) {},
   });
 
 /**
@@ -56,18 +56,18 @@ const testFirstPlay = async (t, zone) => {
   const guestPingee = mem.hostToGuest(pingee);
   t.deepEqual(log.dump(), []);
 
-  const pingTestSendResult = t.throwsAsync(() => E(guestPingee).ping("send"), {
+  const pingTestSendResult = t.throwsAsync(() => E(guestPingee).ping('send'), {
     message:
-      'panic over "[Error: guest eventual send not yet supported: \\"[Alleged: Pingee guest wrapper]\\".ping(["send"]) -> \\"[Promise]\\"]"',
+      'panic over "[Error: guest eventual send not yet supported: \\"[Alleged: Pingee guest wrapper]\\".ping([\\"send\\"]) -> \\"[Promise]\\"]"',
   });
-  
-  guestPingee.ping("call");
-  
+
+  guestPingee.ping('call');
+
   await pingTestSendResult;
 
   t.deepEqual(log.dump(), [
-    ['checkCall', pingee, 'ping', ["call"], 1],
-    ['doReturn', 1, undefined],
+    ['checkCall', pingee, 'ping', ['call'], 0],
+    ['doReturn', 0, undefined],
   ]);
 };
 
