@@ -7,7 +7,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
  * also prints helpful instructions for copying the files and installing them.
  */
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec:
@@ -23,6 +23,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
   });
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('upgrade-wallet-factory', defaultProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('upgrade-wallet-factory', defaultProposalBuilder);
 };

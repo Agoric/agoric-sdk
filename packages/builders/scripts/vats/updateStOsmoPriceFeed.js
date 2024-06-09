@@ -8,14 +8,14 @@ const OPTIONS = {
 };
 
 /**
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder}
+ * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
  */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return priceFeedProposalBuilder({ publishRef, install }, OPTIONS);
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreProposal('stOsmoPriceFeed', defaultProposalBuilder);
+  await writeCoreEval('stOsmoPriceFeed', defaultProposalBuilder);
 };
