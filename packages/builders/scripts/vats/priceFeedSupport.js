@@ -14,7 +14,7 @@ const ORACLE_ADDRESSES = [
 /**
  * modified copy of ../inter-protocol/price-feed-core.js
  *
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder}
+ * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
  */
 export const priceFeedProposalBuilder = async (
   { publishRef, install },

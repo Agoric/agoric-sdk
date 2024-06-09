@@ -8,7 +8,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
-// TODO: we need to rewrite writeCoreProposal.js to produce BundleIDs,
+// TODO: we need to rewrite writeCoreEvalParts.js to produce BundleIDs,
 // although this test doesn't exercise that.
 
 test('coreProposalBehavior', async t => {
