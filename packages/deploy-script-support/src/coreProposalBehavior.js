@@ -24,7 +24,7 @@ const t = 'makeCoreProposalBehavior';
  * They are merged with all of the manifest getter's permits to produce the
  * total permits needed by the resulting core proposal (such as might be---and
  * generally are---written into a *-permit.json file).
- * @see {@link ./writeCoreProposal.js}
+ * @see {@link ./writeCoreEvalParts.js}
  */
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
@@ -106,7 +106,7 @@ export const makeCoreProposalBehavior = ({
     // HOWEVER, do note that this function is invoked with at least the *union* of powers
     // required by individual moduleBehaviors declared by the manifest getter, which is
     // necessary so it can use `runModuleBehaviors` to provide the appropriate subset to
-    // each one (see ./writeCoreProposal.js).
+    // each one (see ./writeCoreEvalParts.js).
     // Handle `powers` with the requisite care.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },

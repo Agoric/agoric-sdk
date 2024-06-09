@@ -8,7 +8,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-proposal.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const game1ProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     sourceSpec: '@agoric/smart-wallet/test/start-game1-proposal.js',
@@ -28,6 +28,6 @@ export const game1ProposalBuilder = async ({ publishRef, install }) => {
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
-  await writeCoreProposal('start-game1', game1ProposalBuilder);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+  await writeCoreEval('start-game1', game1ProposalBuilder);
 };
