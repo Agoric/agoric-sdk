@@ -50,7 +50,15 @@ module.exports = {
   reportUnusedDisableDirectives: true,
 
   rules: {
-    '@typescript-eslint/prefer-ts-expect-error': 'error',
+    '@typescript-eslint/ban-ts-comment': [
+      'error',
+      {
+        // TODO tighten to 'allow-with-description' (42 unexplained atm)
+        'ts-expect-error': false,
+        // TODO make this error (start with `src` sans codegen)
+        'ts-nocheck': false,
+      },
+    ],
     '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
