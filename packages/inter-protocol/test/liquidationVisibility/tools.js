@@ -77,7 +77,7 @@ export const setupBasics = async (zoe, contractsWrapper) => {
 
 /**
  * NOTE: called separately by each test so zoe/priceAuthority don't interfere
- * This helper function will economicCommittee, reserve and auctioneer. It will
+ * This helper function will create economicCommittee, reserve and auctioneer. It will
  * start the vaultFactory and open a new vault with the collateral provided in
  * the context. The collateral value will be set by the priceAuthority with the
  * ratio provided by priceOrList
