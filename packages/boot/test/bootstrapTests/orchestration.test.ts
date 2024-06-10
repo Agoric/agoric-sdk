@@ -8,11 +8,12 @@ import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeAtom } from '@agoric/orchestration/src/examples/stakeAtom.contract.js';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-type DefaultTestContext = Awaited<ReturnType<typeof makeWalletFactoryContext>>;
-
-const test: TestFn<DefaultTestContext> = anyTest;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 test.before(async t => (t.context = await makeWalletFactoryContext(t)));
 test.after.always(t => t.context.shutdown?.());
