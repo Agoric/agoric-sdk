@@ -698,8 +698,12 @@ export const prepareVaultManagerKit = (
          * @returns {Promise<LiquidationVisibilityWriters>}
          */
         async makeLiquidationVisibilityWriters(timestamp) {
+          const {
+            facets: { helper },
+          } = this;
+
           const liquidationRecorderKits =
-            await this.facets.helper.makeLiquidationRecorderKits(timestamp);
+            await helper.makeLiquidationRecorderKits(timestamp);
 
           /** @param {VaultData} vaultData */
           const writePreAuction = vaultData => {
