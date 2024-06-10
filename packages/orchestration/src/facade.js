@@ -21,10 +21,6 @@ const mockLocalChainInfo = {
   allegedName: 'agoric',
   chainId: 'agoriclocal',
   connections: anyVal,
-  ibcHooksEnabled: true,
-  icaEnabled: true,
-  icqEnabled: true,
-  pfmEnabled: true,
 };
 
 /**

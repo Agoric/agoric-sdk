@@ -20,12 +20,6 @@ type StartFn =
 
 const chainInfoDefaults = {
   connections: {},
-  allowedMessages: [],
-  allowedQueries: [],
-  ibcHooksEnabled: false,
-  icaEnabled: false,
-  icqEnabled: false,
-  pfmEnabled: false,
 };
 
 const connectionDefaults = {

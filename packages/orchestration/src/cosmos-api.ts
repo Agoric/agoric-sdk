@@ -67,11 +67,10 @@ export type IBCConnectionInfo = {
  */
 export type CosmosChainInfo = {
   chainId: string;
-  connections: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
-  icaEnabled: boolean;
-  icqEnabled: boolean;
-  pfmEnabled: boolean;
-  ibcHooksEnabled: boolean;
+
+  connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+  icqEnabled?: boolean;
 
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117

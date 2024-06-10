@@ -75,13 +75,11 @@ export const IBCConnectionInfoShape = M.splitRecord({
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
-    connections: M.record(),
   },
   {
+    connections: M.record(),
     stakingTokens: M.arrayOf({ denom: M.string() }),
-    icaEnabled: M.boolean(),
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
     icqEnabled: M.boolean(),
-    pfmEnabled: M.boolean(),
-    ibcHooksEnabled: M.boolean(),
   },
 );

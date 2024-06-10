@@ -124,7 +124,7 @@ export const registerChain = async (agoricNamesAdmin, name, chainInfo) => {
     await E(agoricNamesAdmin).provideChild('chainConnection');
 
   mustMatch(chainInfo, CosmosChainInfoShape);
-  const { connections, ...vertex } = chainInfo;
+  const { connections = {}, ...vertex } = chainInfo;
   await E(nameAdmin).update(name, vertex);
 
   for await (const [destChainId, connInfo] of Object.entries(connections)) {
