@@ -13,7 +13,7 @@ test('makeTimestampHelper - getCurrentTimestamp', async t => {
   const timerBrand = timer.getTimerBrand();
   t.is(timer.getCurrentTimestamp().absValue, 0n, 'current time is 0n');
 
-  const { getTimeoutTimestampNS } = makeTimestampHelper(timer, timerBrand);
+  const { getTimeoutTimestampNS } = makeTimestampHelper(timer);
   await null;
   t.is(
     await getTimeoutTimestampNS(),
