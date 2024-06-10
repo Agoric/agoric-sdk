@@ -33,12 +33,12 @@ test.serial('config', async t => {
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
-  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmos');
+  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
   t.like(cosmosChainInfo, {
-    chainId: 'cosmoslocal',
+    chainId: 'cosmoshub-4',
     stakingTokens: [{ denom: 'uatom' }],
   });
-  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmos`);
+  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmoshub`);
   t.deepEqual(cosmosInfo, cosmosChainInfo);
 });
 

@@ -163,7 +163,7 @@ test('send using arbitrary chain info', async t => {
       inv,
       { give: { Send: anAmt } },
       { Send },
-      { destAddr: 'cosmos1destAddr', chainName: 'cosmos' },
+      { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
     );
     await E(userSeat).getOfferResult();
     const history = inspectLocalBridge();
