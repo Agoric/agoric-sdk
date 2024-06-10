@@ -1,6 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { makeInstallCache } from '../src/proposals/utils.js';
-import { getManifestVaultsUpgrade } from '../src/proposals/vaultsLiquidationVisibility.js';
+import { getManifestVaultsUpgrade } from '../src/proposals/vaultsUpgrade.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const vaultsUpgradeProposalBuilder = async ({
@@ -11,7 +11,7 @@ export const vaultsUpgradeProposalBuilder = async ({
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   return harden({
-    sourceSpec: '../src/proposals/vaultsLiquidationVisibility.js',
+    sourceSpec: '../src/proposals/vaultsUpgrade.js',
     getManifestCall: [
       getManifestVaultsUpgrade.name,
       {

@@ -1,6 +1,6 @@
 import { E } from '@endo/far';
 
-export const upgradeVaultsLiquidationVisibility = async (
+export const upgradeVaults = async (
   powers,
   { options: { vaultFactoryRef } },
 ) => {
@@ -19,7 +19,7 @@ export const upgradeVaultsLiquidationVisibility = async (
 
 /** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
 const manifest = {
-  [upgradeVaultsLiquidationVisibility.name]: {
+  [upgradeVaults.name]: {
     // include rationale for closely-held, high authority capabilities
     consume: {
       vaultFactoryKit: `to upgrade vaultFactory using its adminFacet`,
