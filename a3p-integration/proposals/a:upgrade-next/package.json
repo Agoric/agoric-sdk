@@ -7,8 +7,10 @@
       "coreProposals": []
     },
     "sdk-generate": [
-      "vats/probe-zcf-bundle.js probe-submission",
-      "vats/test-localchain.js localchaintest-submission"
+      "vats/upgrade-bank.js upgrade-bank",
+      "vats/upgrade-provisionPool.js upgrade-provisionPool",
+      "vats/add-STARS.js add-STARS",
+      "vats/add-STARS2.js add-STARS2"
     ],
     "type": "Software Upgrade Proposal"
   },
