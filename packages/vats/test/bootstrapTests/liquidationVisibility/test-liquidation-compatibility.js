@@ -1,7 +1,4 @@
 // @ts-check
-/**
- * @file Bootstrap test of restarting (almost) all vats
- */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
   checkVMChildNodes,
