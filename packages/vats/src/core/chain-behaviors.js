@@ -7,8 +7,6 @@ import {
   makeSubscriptionKit,
   observeIteration,
 } from '@agoric/notifier';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
 import * as farExports from '@endo/far';
 import { E, Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
@@ -437,51 +435,6 @@ export const publishAgoricNamesToChainStorage = async ({
     nameStorage,
     vatBoard,
     keys(agoricNamesReserved),
-  );
-};
-
-/**
- * @deprecated use publishAgoricNamesToChainStorage
- * @param {BootstrapPowers} powers
- * @param {{
- *   options?: {
- *     agoricNamesOptions?: {
- *       topLevel?: string[];
- *     };
- *   };
- * }} config
- */
-export const publishAgoricNames = async (
-  { consume: { agoricNamesAdmin, board, chainStorage: rootP } },
-  { options: { agoricNamesOptions } = {} } = {},
-) => {
-  const root = await rootP;
-  if (!root) {
-    console.warn('cannot publish agoricNames without chainStorage');
-    return;
-  }
-  const nameStorage = E(root).makeChildNode('agoricNames');
-  const marshaller = E(board).getPublishingMarshaller();
-
-  // XXX will fail upon restart, but so would the makeStoredPublishKit this is replacing
-  // Since we expect the bootstrap vat to be replaced instead of upgraded this should be
-  // fine. See {@link ./README.md bootstrap documentation} for details.
-  const fakeBaggage = makeScalarBigMapStore(
-    'fake baggage for AgoricNames kinds',
-  );
-  const makeRecorderKit = prepareRecorderKit(fakeBaggage, marshaller);
-
-  // brand, issuer, ...
-  const { topLevel = keys(agoricNamesReserved) } = agoricNamesOptions || {};
-  await Promise.all(
-    topLevel.map(async kind => {
-      const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
-
-      const kindNode = await E(nameStorage).makeChildNode(kind);
-      const { recorder } = makeRecorderKit(kindNode);
-      kindAdmin.onUpdate(recorder);
-      return recorder.write([]);
-    }),
   );
 };
 
