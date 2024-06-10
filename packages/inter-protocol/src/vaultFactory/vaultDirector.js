@@ -433,9 +433,9 @@ const prepareVaultDirector = (
         },
 
         makeLiquidationWaker() {
-          return makeWaker('liquidationWaker', _timestamp => {
+          return makeWaker('liquidationWaker', timestamp => {
             // XXX floating promise
-            allManagersDo(vm => vm.liquidateVaults(auctioneer, _timestamp));
+            allManagersDo(vm => vm.liquidateVaults(auctioneer, timestamp));
           });
         },
         makeReschedulerWaker() {
