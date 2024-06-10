@@ -3,7 +3,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { Fail } from '@agoric/assert';
-import { AmountMath } from '@agoric/ertp';
 import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import {
@@ -30,11 +29,20 @@ test.serial('stakeBld', async t => {
   // start-stakeBld depends on this. Sanity check in case the context changes.
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
+  // TODO instead use orchestration vm-config
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/init-localchain.js'),
+  );
+  // for chainInfo
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
+  );
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
   );
   // update now that stakeBld is instantiated
   refreshAgoricNamesRemotes();
+
   const stakeBld = agoricNamesRemotes.instance.stakeBld as Instance<
     typeof stakeBldStart
   >;
@@ -59,8 +67,8 @@ test.serial('stakeBld', async t => {
     },
   });
 
-  const current = await wd.getCurrentWalletRecord();
-  const latest = await wd.getLatestUpdateRecord();
+  const current = wd.getCurrentWalletRecord();
+  const latest = wd.getLatestUpdateRecord();
   t.like(current, {
     offerToPublicSubscriberPaths: [
       // TODO publish something useful

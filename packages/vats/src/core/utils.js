@@ -13,7 +13,8 @@ const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
 
 /**
- * We reserve these keys in name hubs.
+ * Used in bootstrap to reserve names in the agoricNames namespace before any
+ * other proposals.
  *
  * @type {{
  *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };

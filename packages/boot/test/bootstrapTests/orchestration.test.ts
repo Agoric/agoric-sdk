@@ -18,6 +18,26 @@ const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => (t.context = await makeWalletFactoryContext(t)));
 test.after.always(t => t.context.shutdown?.());
 
+/**
+ * Test the config itself. Part of this suite so we don't have to start up another swingset.
+ */
+test.serial('config', async t => {
+  const {
+    readLatest,
+    runUtils: { EV },
+  } = t.context;
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+
+  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmos');
+  t.like(cosmosChainInfo, {
+    chainId: 'cosmoslocal',
+    stakingTokens: [{ denom: 'uatom' }],
+  });
+  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmos`);
+  t.deepEqual(cosmosInfo, cosmosChainInfo);
+});
+
 test.serial('stakeAtom - repl-style', async t => {
   const {
     buildProposal,
@@ -37,6 +57,12 @@ test.serial('stakeAtom - repl-style', async t => {
     agoricNames,
   ).lookup('instance', 'stakeAtom');
   t.truthy(instance, 'stakeAtom instance is available');
+
+  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmos');
+  t.like(cosmosChainInfo, {
+    chainId: 'cosmoshub-4',
+    stakingTokens: [{ denom: 'uatom' }],
+  });
 
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const publicFacet = await EV(zoe).getPublicFacet(instance);
