@@ -427,10 +427,8 @@ export const publishAgoricNamesToChainStorage = async ({
   },
 }) => {
   const root = await rootP;
-  if (!root) {
-    console.warn('no chainStorage: not publishing agoricNames');
-    return;
-  }
+  assert(root, 'publishAgoricNamesToChainStorage requires chainStorage');
+
   const nameStorage = E(root).makeChildNode('agoricNames');
   await E(agoricNames).publishNameHubs(
     nameStorage,
