@@ -1,6 +1,6 @@
 // @ts-check
 import { AmountMath, BrandShape } from '@agoric/ertp';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import {
   observeIteration,
@@ -21,8 +21,14 @@ import {
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 const { details: X, quote: q, Fail } = assert;
+
+const trace = makeTracer('ProvPool');
+
+const FIRST_CAP_ASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
+const FIRST_LOWER_ASCII = /^[a-z][a-zA-Z0-9_$]*$/;
 
 /**
  * @import {ERef} from '@endo/far'
@@ -73,7 +79,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
       fromBridge: async obj => {
         obj.type === 'PLEASE_PROVISION' ||
           Fail`Unrecognized request ${obj.type}`;
-        console.info('PLEASE_PROVISION', obj);
+        trace('PLEASE_PROVISION', obj);
         const { address, powerFlags } = obj;
         powerFlags.includes(PowerFlags.SMART_WALLET) ||
           Fail`missing SMART_WALLET in powerFlags`;
@@ -90,10 +96,18 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
         if (created) {
           onProvisioned();
         }
-        console.info(created ? 'provisioned' : 're-provisioned', address);
+        trace(created ? 'provisioned' : 're-provisioned', address);
       },
     });
   return makeBridgeHandler;
+};
+
+const saveIssuerWithLegalKeyword = (desc, zcf) => {
+  const bad = desc.issuerName;
+  const good = bad.replace(bad[0], bad[0].toUpperCase());
+  trace(`Saved Issuer ${desc.issuerName} with repaired keyword ${good}`);
+
+  return zcf.saveIssuer(desc.issuer, good);
 };
 
 /**
@@ -149,7 +163,7 @@ export const prepareProvisionPoolKit = (
       /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
       const metricsRecorderKit = makeRecorderKit(metricsNode);
 
-      /** @type {MapStore<Brand, PsmInstance>} */
+      /** @type {MapStore<ERef<Brand>, PsmInstance>} */
       const brandToPSM = makeScalarBigMapStore('brandToPSM', { durable: true });
       const revivableAddresses = makeScalarBigSetStore('revivableAddresses', {
         durable: true,
@@ -184,7 +198,7 @@ export const prepareProvisionPoolKit = (
       machine: {
         /** @param {string[]} oldAddresses */
         addRevivableAddresses(oldAddresses) {
-          console.log('revivableAddresses count', oldAddresses.length);
+          trace('revivableAddresses count', oldAddresses.length);
           this.state.revivableAddresses.addAll(oldAddresses);
         },
         getWalletReviver() {
@@ -318,7 +332,7 @@ export const prepareProvisionPoolKit = (
             .deposit(initialPmt)
             .then(amt => {
               helper.onSendFunds(perAccountInitialAmount);
-              console.log('provisionPool sent', amt);
+              trace('provisionPool sent', amt);
             })
             .catch(reason => {
               console.error(X`initial deposit failed: ${q(reason)}`);
@@ -327,12 +341,87 @@ export const prepareProvisionPoolKit = (
             });
         },
         /**
+         * @param {ERef<Purse>} exchangePurse
+         * @param {ERef<Brand>} brand
+         */
+        watchCurrentAmount(exchangePurse, brand) {
+          const {
+            state: { brandToPSM, poolBrand },
+            facets: { helper },
+          } = this;
+
+          void observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
+            updateState: async amount => {
+              trace('provisionPool balance update', amount);
+              if (AmountMath.isEmpty(amount) || amount.brand === poolBrand) {
+                return;
+              }
+              if (!brandToPSM.has(brand)) {
+                console.error('funds arrived but no PSM instance', brand);
+                return;
+              }
+              const instance = brandToPSM.get(brand);
+              const payment = E(exchangePurse).withdraw(amount);
+              await helper
+                .swap(payment, amount, instance)
+                .catch(async reason => {
+                  console.error(X`swap failed: ${reason}`);
+                  const resolvedPayment = await payment;
+                  return E(exchangePurse).deposit(resolvedPayment);
+                });
+            },
+            fail: reason => {
+              if (isUpgradeDisconnection(reason)) {
+                void helper.watchCurrentAmount(exchangePurse, brand);
+              } else {
+                console.error(reason);
+              }
+            },
+          });
+        },
+        watchAssetSubscription() {
+          const { facets } = this;
+          const { helper } = facets;
+
+          return observeIteration(
+            subscribeEach(E(poolBank).getAssetSubscription()),
+            {
+              updateState: async desc => {
+                await null;
+                const issuer = zcf.getTerms().issuers[desc.issuerName];
+                if (issuer !== desc.issuer) {
+                  if (desc.issuerName.match(FIRST_CAP_ASCII)) {
+                    trace(`Saved Issuer ${desc.issuerName}`);
+                    await zcf.saveIssuer(desc.issuer, desc.issuerName);
+
+                    // see https://github.com/Agoric/agoric-sdk/issues/8238
+                  } else if (desc.issuerName.match(FIRST_LOWER_ASCII)) {
+                    await saveIssuerWithLegalKeyword(desc, zcf);
+                  } else {
+                    console.error(
+                      `unable to save issuer with illegal keyword: ${desc.issuerName}`,
+                    );
+                  }
+                } else {
+                  trace('provisionPool re-notified of known asset', desc.brand);
+                }
+                /** @type {ERef<Purse>} */
+                const exchangePurse = E(poolBank).getPurse(desc.brand);
+                helper.watchCurrentAmount(exchangePurse, desc.brand);
+              },
+              fail: _reason => {
+                void helper.watchAssetSubscription();
+              },
+            },
+          );
+        },
+        /**
          * @param {object} [options]
          * @param {MetricsNotification} [options.metrics]
          */
         start({ metrics } = {}) {
           const {
-            state: { brandToPSM, poolBrand },
+            state: { poolBrand },
             facets: { helper },
           } = this;
 
@@ -341,48 +430,7 @@ export const prepareProvisionPoolKit = (
           // That would be a severe bug.
           AmountMath.coerce(poolBrand, params.getPerAccountInitialAmount());
 
-          void observeIteration(
-            subscribeEach(E(poolBank).getAssetSubscription()),
-            {
-              updateState: async desc => {
-                console.log('provisionPool notified of new asset', desc.brand);
-                await zcf.saveIssuer(desc.issuer, desc.issuerName);
-                /** @type {ERef<Purse>} */
-                const exchangePurse = E(poolBank).getPurse(desc.brand);
-                void observeNotifier(
-                  E(exchangePurse).getCurrentAmountNotifier(),
-                  {
-                    updateState: async amount => {
-                      console.log('provisionPool balance update', amount);
-                      if (
-                        AmountMath.isEmpty(amount) ||
-                        amount.brand === poolBrand
-                      ) {
-                        return;
-                      }
-                      if (!brandToPSM.has(desc.brand)) {
-                        console.error(
-                          'funds arrived but no PSM instance',
-                          desc.brand,
-                        );
-                        return;
-                      }
-                      const instance = brandToPSM.get(desc.brand);
-                      const payment = E(exchangePurse).withdraw(amount);
-                      await helper
-                        .swap(payment, amount, instance)
-                        .catch(async reason => {
-                          console.error(X`swap failed: ${reason}`);
-                          const resolvedPayment = await payment;
-                          return E(exchangePurse).deposit(resolvedPayment);
-                        });
-                    },
-                    fail: reason => console.error(reason),
-                  },
-                );
-              },
-            },
-          );
+          void helper.watchAssetSubscription();
 
           if (metrics) {
             // Restore state.
