@@ -258,6 +258,7 @@ export const checkVisibility = async ({
     },
     collateralRemaining: { value: 0n },
     endTime: { absValue: endTime.absValue },
+    startTime: { absValue: startTime.absValue },
   });
 
   t.log('preAuction', preAuction);
