@@ -2,6 +2,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -66,11 +67,14 @@ export const commonSetup = async t => {
   );
 
   const transferBridge = makeFakeTransferBridge(rootZone);
-  const { makeTransferMiddlewareKit, makeBridgeTargetKit } =
-    prepareTransferTools(
-      rootZone.subZone('transfer'),
-      prepareVowTools(rootZone.subZone('vows')),
-    );
+  const { makeBridgeTargetKit } = prepareBridgeTargetModule(
+    rootZone.subZone('bridge'),
+  );
+  const { makeTransferMiddlewareKit } = prepareTransferTools(
+    rootZone.subZone('transfer'),
+    prepareVowTools(rootZone.subZone('vows')),
+  );
+
   const { finisher, interceptorFactory, transferMiddleware } =
     makeTransferMiddlewareKit();
   const bridgeTargetKit = makeBridgeTargetKit(
