@@ -1,13 +1,9 @@
 /** @file Orchestration service */
 
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
-import { CosmosChainInfoShape } from './typeGuards.js';
 
 /**
- * @import {NameHub} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -18,10 +14,6 @@ import { CosmosChainInfoShape } from './typeGuards.js';
 
 /** @type {any} */
 const anyVal = null;
-
-// TODO define key hierarchy in shared constants
-/** agoricNames key for ChainInfo hub */
-export const CHAIN_KEY = 'chain';
 
 // FIXME look up real values
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
@@ -37,9 +29,12 @@ const mockLocalChainInfo = {
 
 /**
  * @param {Remote<LocalChain>} localchain
+ * @param {ReturnType<
+ *   typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
+ * >} makeLocalChainAccountKit
  * @returns {Chain}
  */
-const makeLocalChainFacade = localchain => {
+const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
   return {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
@@ -47,7 +42,14 @@ const makeLocalChainFacade = localchain => {
     },
 
     async makeAccount() {
-      const account = await E(localchain).makeAccount();
+      const lcaP = E(localchain).makeAccount();
+      const [lca, address] = await Promise.all([lcaP, E(lcaP).getAddress()]);
+      const { holder: account } = makeLocalChainAccountKit({
+        account: lca,
+        address,
+        // @ts-expect-error TODO: Remote
+        storageNode: null,
+      });
 
       return {
         async deposit(payment) {
@@ -70,7 +72,7 @@ const makeLocalChainFacade = localchain => {
               ? [/** @type {any} */ (null), denomArg]
               : [denomArg, 'FIXME'];
 
-          const natAmount = await account.getBalance(brand);
+          const natAmount = await E(lca).getBalance(brand);
           return harden({ denom, value: natAmount.value });
         },
         getBalances() {
@@ -81,8 +83,8 @@ const makeLocalChainFacade = localchain => {
           console.log('send got', toAccount, amount);
         },
         async transfer(amount, destination, opts) {
-          // FIXME implement
           console.log('transfer got', amount, destination, opts);
+          return account.transfer(amount, destination, opts);
         },
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
@@ -157,7 +159,10 @@ const makeRemoteChainFacade = (
  *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
- *   agoricNames: Remote<NameHub>;
+ *   chainHub: import('./utils/chainHub.js').ChainHub;
+ *   makeLocalChainAccountKit: ReturnType<
+ *     typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
+ *   >;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -167,7 +172,8 @@ export const makeOrchestrationFacade = ({
   storageNode,
   orchestrationService,
   localchain,
-  agoricNames,
+  chainHub,
+  makeLocalChainAccountKit,
 }) => {
   console.log('makeOrchestrationFacade got', {
     zone,
@@ -177,43 +183,7 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
   });
 
-  const chainInfos = makeScalarBigMapStore('chainInfos', {
-    keyShape: M.string(),
-    valueShape: CosmosChainInfoShape,
-  });
-
-  /**
-   * @param {string} name
-   * @returns {Promise<CosmosChainInfo>}
-   */
-  const getChainInfo = async name => {
-    // Either from registerChain or memoized remote lookup()
-    if (chainInfos.has(name)) {
-      return chainInfos.get(name);
-    }
-
-    const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, name);
-    assert(chainInfo, `unknown chain ${name}`);
-    chainInfos.init(name, chainInfo);
-    return chainInfo;
-  };
-
   return {
-    /**
-     * Register a new chain in a heap store. The name will override a name in
-     * well known chain names.
-     *
-     * This registration will not surve a reincarnation of the vat so if the
-     * chain is not yet in the well known names at that point, it will have to
-     * be registered again. In an unchanged contract `start` the call will
-     * happen again naturally.
-     *
-     * @param {string} name
-     * @param {ChainInfo} chainInfo
-     */
-    registerChain(name, chainInfo) {
-      chainInfos.init(name, chainInfo);
-    },
     /**
      * @template Context
      * @template {any[]} Args
@@ -228,10 +198,10 @@ export const makeOrchestrationFacade = ({
       const orc = {
         async getChain(name) {
           if (name === 'agoric') {
-            return makeLocalChainFacade(localchain);
+            return makeLocalChainFacade(localchain, makeLocalChainAccountKit);
           }
 
-          const chainInfo = await getChainInfo(name);
+          const chainInfo = await chainHub.getChainInfo(name);
 
           return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,

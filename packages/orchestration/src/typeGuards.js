@@ -42,13 +42,43 @@ export const IBCTransferOptionsShape = M.splitRecord(
   },
 );
 
+export const IBCChannelIDShape = M.string();
+export const IBCChannelInfoShape = M.splitRecord({
+  portId: M.string(),
+  channelId: IBCChannelIDShape,
+  counterPartyPortId: M.string(),
+  counterPartyChannelId: IBCChannelIDShape,
+  ordering: M.scalar(), // XXX
+  state: M.scalar(), // XXX
+  version: M.string(),
+});
+export const IBCConnectionIDShape = M.string();
+export const IBCConnectionInfoShape = M.splitRecord({
+  id: IBCConnectionIDShape,
+  client_id: M.string(),
+  state: M.scalar(), // XXX STATE_OPEN or...
+  counterparty: {
+    client_id: M.string(),
+    connection_id: IBCConnectionIDShape,
+    prefix: {
+      key_prefix: M.string(),
+    },
+  },
+  versions: M.arrayOf({
+    identifier: M.string(),
+    features: M.arrayOf(M.string()),
+  }),
+  delay_period: M.nat(),
+  transferChannel: IBCChannelInfoShape,
+});
+
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
     connections: M.record(),
-    stakingTokens: M.arrayOf({ denom: M.string() }),
   },
   {
+    stakingTokens: M.arrayOf({ denom: M.string() }),
     icaEnabled: M.boolean(),
     icqEnabled: M.boolean(),
     pfmEnabled: M.boolean(),
