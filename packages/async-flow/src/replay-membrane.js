@@ -1,13 +1,16 @@
 /* eslint-disable no-use-before-define */
-import { Fail, b, q } from '@endo/errors';
+import { Fail, X, b, makeError, q } from '@endo/errors';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';
 
-const { fromEntries, defineProperties } = Object;
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ */
+
+const { fromEntries, defineProperties, assign } = Object;
 
 /**
  * @param {LogStore} log
@@ -30,6 +33,8 @@ export const makeReplayMembrane = (
   const guestPromiseMap = new WeakMap();
 
   let stopped = false;
+
+  const Panic = (template, ...args) => panic(makeError(X(template, ...args)));
 
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
 
@@ -196,9 +201,61 @@ export const makeReplayMembrane = (
       default: {
         // @ts-expect-error TS correctly knows this case would be outside
         // the type. But that's what we want to check.
-        throw Fail`unexpected outcome kind ${q(outcome.kind)}`;
+        throw Panic`unexpected outcome kind ${q(outcome.kind)}`;
       }
     }
+  };
+
+  // //////////////// Eventual Send ////////////////////////////////////////////
+
+  const guestHandler = harden({
+    applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
+      if (optVerb === undefined) {
+        throw Panic`guest eventual call not yet supported: ${guestTarget}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+      } else {
+        throw Panic`guest eventual send not yet supported: ${guestTarget}.${b(optVerb)}(${b(guestArgs)}) -> ${b(guestReturnedP)}`;
+      }
+    },
+    applyFunction(guestTarget, guestArgs, guestReturnedP) {
+      return guestHandler.applyMethod(
+        guestTarget,
+        undefined,
+        guestArgs,
+        guestReturnedP,
+      );
+    },
+    get(guestTarget, prop, guestReturnedP) {
+      throw Panic`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
+    },
+  });
+
+  const makeGuestPresence = (iface, methodEntries) => {
+    let guestPresence;
+    void new HandledPromise((_res, _rej, resolveWithPresence) => {
+      guestPresence = resolveWithPresence(guestHandler);
+    }); // no unfulfilledHandler
+    if (typeof guestPresence !== 'object') {
+      throw Fail`presence expected to be object ${guestPresence}`;
+    }
+    assign(guestPresence, fromEntries(methodEntries));
+    const result = Remotable(iface, undefined, guestPresence);
+    result === guestPresence ||
+      Fail`Remotable expected to make presence in place: ${guestPresence} vs ${result}`;
+    return result;
+  };
+
+  /**
+   * @returns {PromiseKit<any>}
+   */
+  const makeGuestPromiseKit = () => {
+    let resolve;
+    let reject;
+    const promise = new HandledPromise((res, rej, _resPres) => {
+      resolve = res;
+      reject = rej;
+    }, guestHandler);
+    // @ts-expect-error TS cannot infer that it is a PromiseKit
+    return harden({ promise, resolve, reject });
   };
 
   // //////////////// Converters ///////////////////////////////////////////////
@@ -246,9 +303,7 @@ export const makeReplayMembrane = (
         name,
         makeGuestMethod(name),
       ]);
-      // TODO in order to support E *well*,
-      // use HandledPromise to make gRem a remote presence for hRem
-      gRem = Remotable(guestIface, undefined, fromEntries(guestMethods));
+      gRem = makeGuestPresence(guestIface, guestMethods);
     }
     // See note at the top of the function to see why clearing the `hRem`
     // variable is safe, and what invariant the above code needs to maintain so
@@ -258,10 +313,12 @@ export const makeReplayMembrane = (
   };
   harden(makeGuestForHostRemotable);
 
+  /**
+   * @param {Vow} hVow
+   * @returns {Promise}
+   */
   const makeGuestForHostVow = hVow => {
-    // TODO in order to support E *well*,
-    // use HandledPromise to make `promise` a handled promise for hVow
-    const { promise, resolve, reject } = makePromiseKit();
+    const { promise, resolve, reject } = makeGuestPromiseKit();
     guestPromiseMap.set(promise, harden({ resolve, reject }));
 
     watchWake(hVow);
