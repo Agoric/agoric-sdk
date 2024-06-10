@@ -16,7 +16,6 @@ const makeDefaultTestContext = async t => {
   );
   return swingsetTestKit;
 };
-
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;

@@ -7,12 +7,15 @@ import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
 const { Fail } = assert;
 
-export const makeWalletFactoryContext = async t => {
+export const makeWalletFactoryContext = async (
+  t,
+  configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
+) => {
   const swingsetTestKit = await makeSwingsetTestKit(
     t.log,
     'bundles/walletFactory',
     {
-      configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+      configSpecifier,
     },
   );
 

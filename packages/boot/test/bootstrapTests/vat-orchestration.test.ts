@@ -17,13 +17,12 @@ import type {
 } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-const makeTestContext = async (t: ExecutionContext) =>
-  makeWalletFactoryContext(t);
-
-type DefaultTestContext = Awaited<ReturnType<typeof makeTestContext>>;
-const test: TestFn<DefaultTestContext> = anyTest;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 /**
  * To update, pass the message into `makeTxPacket` or `makeQueryPacket` from
@@ -47,7 +46,7 @@ const balanceQuery = toRequestQueryJson(
 );
 
 test.before(async t => {
-  t.context = await makeTestContext(t);
+  t.context = await makeWalletFactoryContext(t);
 
   async function setupDeps() {
     const {
