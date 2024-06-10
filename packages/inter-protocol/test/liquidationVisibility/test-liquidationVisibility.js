@@ -247,6 +247,7 @@ test('liq-flow-1', async t => {
       collateralSold: aeth.make(400n),
       collateralRemaining: aeth.makeEmpty(),
       endTime,
+      startTime,
     },
   });
 
@@ -579,6 +580,7 @@ test('liq-flow-1.1', async t => {
       collateralSold: aeth.make(400n),
       collateralRemaining: aeth.makeEmpty(),
       endTime,
+      startTime,
     },
   });
 
@@ -595,6 +597,7 @@ test('liq-flow-1.1', async t => {
       collateralSold: abtc.make(400n),
       collateralRemaining: abtc.makeEmpty(),
       endTime,
+      startTime,
     },
   });
 
@@ -842,6 +845,7 @@ test('liq-flow-2a', async t => {
       collateralSold: aeth.make(700n),
       collateralRemaining: aeth.makeEmpty(),
       endTime,
+      startTime: start1,
     },
   });
 
@@ -1109,6 +1113,7 @@ test('liq-flow-2b', async t => {
       collateralSold: aeth.make(8n),
       collateralRemaining: aeth.make(5n),
       endTime,
+      startTime,
     },
   });
 
@@ -1367,6 +1372,7 @@ test('liq-rejected-schedule', async t => {
       collateralSold: aeth.make(400n),
       collateralRemaining: aeth.makeEmpty(),
       endTime: undefined,
+      startTime: undefined,
     },
   });
 });

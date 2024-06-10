@@ -229,6 +229,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   collateralSold?: Amount<'nat'>;
  *   collateralRemaining?: Amount<'nat'>;
  *   endTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
+ *   startTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
  * }} AuctionResultState
  *
  * @typedef {{
@@ -758,6 +759,8 @@ export const prepareVaultManagerKit = (
               collateralRemaining: plan.collatRemaining,
               // @ts-expect-error
               endTime: auctionSchedule?.liveAuctionSchedule.endTime,
+              // @ts-expect-error
+              startTime: auctionSchedule?.liveAuctionSchedule.startTime,
             };
             return E(
               liquidationRecorderKits.auctionResultRecorderKit.recorder,
