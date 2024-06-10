@@ -12,7 +12,12 @@ import {
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.before(async t => {
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+});
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('stakeBld', async t => {
@@ -22,21 +27,11 @@ test.serial('stakeBld', async t => {
     evalProposal,
     refreshAgoricNamesRemotes,
   } = t.context;
-  // TODO move into a vm-config for u15
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-localchain.js'),
-  );
+
   // start-stakeBld depends on this. Sanity check in case the context changes.
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
-  // TODO instead use orchestration vm-config
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-localchain.js'),
-  );
-  // for chainInfo
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
-  );
+
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
   );

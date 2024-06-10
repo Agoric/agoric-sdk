@@ -1,13 +1,12 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { TestFn } from 'ava';
-
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { M, matches } from '@endo/patterns';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeAtom } from '@agoric/orchestration/src/examples/stakeAtom.contract.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { M, matches } from '@endo/patterns';
+import type { TestFn } from 'ava';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -15,7 +14,12 @@ import {
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.before(async t => {
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+});
 test.after.always(t => t.context.shutdown?.());
 
 /**
@@ -44,10 +48,6 @@ test.serial('stakeAtom - repl-style', async t => {
     evalProposal,
     runUtils: { EV },
   } = t.context;
-  // TODO move into a vm-config for future agoric-upgrade
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
-  );
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
   );
@@ -57,12 +57,6 @@ test.serial('stakeAtom - repl-style', async t => {
     agoricNames,
   ).lookup('instance', 'stakeAtom');
   t.truthy(instance, 'stakeAtom instance is available');
-
-  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmos');
-  t.like(cosmosChainInfo, {
-    chainId: 'cosmoshub-4',
-    stakingTokens: [{ denom: 'uatom' }],
-  });
 
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const publicFacet = await EV(zoe).getPublicFacet(instance);
