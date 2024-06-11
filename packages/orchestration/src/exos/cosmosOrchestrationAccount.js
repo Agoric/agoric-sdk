@@ -60,7 +60,7 @@ const { Fail } = assert;
  *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
- *   icqConnection: ICQConnection;
+ *   icqConnection: ICQConnection | undefined;
  *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
@@ -149,7 +149,7 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {object} io
      * @param {IcaAccount} io.account
      * @param {Remote<StorageNode>} io.storageNode
-     * @param {ICQConnection} io.icqConnection
+     * @param {ICQConnection | undefined} io.icqConnection
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
@@ -363,6 +363,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          */
         async getBalance(denom) {
           const { chainAddress, icqConnection } = this.state;
+          if (!icqConnection) throw Error('Queries not enabled.');
           // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
 
