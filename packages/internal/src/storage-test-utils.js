@@ -258,7 +258,7 @@ export const makeMockChainStorageRoot = () => {
 
 /**
  * @param {import('ava').ExecutionContext<unknown>} t
- * @param {MockChainStorageRoot} storage
+ * @param {MockChainStorageRoot | FakeStorageKit} storage
  * @param {({ note: string } | { node: string; owner: string }) &
  *   ({ pattern: string; replacement: string } | {})} opts
  */
@@ -266,13 +266,18 @@ export const documentStorageSchema = async (t, storage, opts) => {
   // chainStorage publication is unsynchronized
   await eventLoopIteration();
 
+  const [keys, getBody] =
+    'keys' in storage
+      ? [storage.keys(), (/** @type {string} */ k) => storage.getBody(k)]
+      : [storage.data.keys(), (/** @type {string} */ k) => storage.data.get(k)];
+
   const { pattern, replacement } =
     'pattern' in opts
       ? opts
       : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
-  const illustration = [...storage.keys()].sort().map(
+  const illustration = [...keys].sort().map(
     /** @type {(k: string) => [string, unknown]} */
-    key => [key.replace(pattern, replacement), storage.getBody(key)],
+    key => [key.replace(pattern, replacement), getBody(key)],
   );
   const pruned = illustration.filter(
     'node' in opts
