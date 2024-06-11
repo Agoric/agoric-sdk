@@ -64,11 +64,6 @@ export const IBCConnectionInfoShape = M.splitRecord({
       key_prefix: M.string(),
     },
   },
-  versions: M.arrayOf({
-    identifier: M.string(),
-    features: M.arrayOf(M.string()),
-  }),
-  delay_period: M.nat(),
   transferChannel: IBCChannelInfoShape,
 });
 

@@ -49,8 +49,6 @@ export type IBCConnectionInfo = {
       key_prefix: string;
     };
   };
-  versions: { identifier: string; features: string[] }[];
-  delay_period: bigint;
   transferChannel: {
     portId: string;
     channelId: IBCChannelID;

@@ -22,16 +22,6 @@ const chainInfoDefaults = {
   connections: {},
 };
 
-const connectionDefaults = {
-  versions: [
-    {
-      identifier: '1',
-      features: ['ORDER_ORDERED', 'ORDER_UNORDERED'],
-    },
-  ],
-  delay_period: 0n,
-};
-
 const txChannelDefaults = {
   counterPartyPortId: 'transfer',
   version: 'ics20-1',
@@ -95,7 +85,6 @@ test('send using arbitrary chain info', async t => {
   }) as CosmosChainInfo;
   t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
   const agoricToHotConnection = {
-    ...connectionDefaults,
     id: 'connection-1',
     client_id: '07-tendermint-1',
     state: 3, // STATE_OPEN

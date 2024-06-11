@@ -33,8 +33,6 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
             state: 3 /* IBCConnectionState.STATE_OPEN */,
             version: 'ics20-1',
           },
-          versions: [{ identifier: '', features: ['', ''] }],
-          delay_period: 0n,
         },
         osmosislocal: {
           id: 'connection-0',
@@ -56,8 +54,6 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
             state: 3 /* IBCConnectionState.STATE_OPEN */,
             version: 'ics20-1',
           },
-          versions: [{ identifier: '', features: ['', ''] }],
-          delay_period: 0n,
         },
       },
     },
