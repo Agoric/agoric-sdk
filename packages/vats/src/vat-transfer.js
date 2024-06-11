@@ -3,7 +3,7 @@ import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { provideLazy } from '@agoric/store';
-import { prepareVowTools } from '@agoric/vat-data/vow.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareBridgeTargetModule } from './bridge-target.js';
 import { prepareTransferTools } from './transfer.js';
 
