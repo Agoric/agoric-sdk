@@ -1,12 +1,14 @@
 // @ts-check
 import { getVowPayload, basicE } from './vow-utils.js';
 
-/** @import { Unwrap } from './types.js' */
+/** @import { IsRetryableReason, Unwrap } from './types.js' */
 
 /**
- * @param {(reason: any) => boolean} [isRetryableReason]
+ * @param {IsRetryableReason} [isRetryableReason]
  */
-export const makeWhen = (isRetryableReason = () => false) => {
+export const makeWhen = (
+  isRetryableReason = /** @type {IsRetryableReason} */ (() => false),
+) => {
   /**
    * Shorten `specimenP` until we achieve a final result.
    *
@@ -25,16 +27,25 @@ export const makeWhen = (isRetryableReason = () => false) => {
     // Ensure we have a presence that won't be disconnected later.
     let result = await specimenP;
     let payload = getVowPayload(result);
+    let priorRetryValue;
     while (payload) {
       result = await basicE(payload.vowV0)
         .shorten()
-        .catch(e => {
-          if (isRetryableReason(e)) {
-            // Shorten the same specimen to try again.
-            return result;
-          }
-          throw e;
-        });
+        .then(
+          res => {
+            priorRetryValue = undefined;
+            return res;
+          },
+          e => {
+            const nextValue = isRetryableReason(e, priorRetryValue);
+            if (nextValue) {
+              // Shorten the same specimen to try again.
+              priorRetryValue = nextValue;
+              return result;
+            }
+            throw e;
+          },
+        );
       // Advance to the next vow.
       payload = getVowPayload(result);
     }
