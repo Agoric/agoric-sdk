@@ -32,13 +32,9 @@ test('chain info', async t => {
   t.like(chain, { chainId: 'cosmoshub-4' });
 });
 
-test.failing('chain connection', async t => {
-  // FIXME encoding
-  //   message: `Command failed with exit code 1: agd query vstorage data --output json published.agoricNames.chainConnection.["agoriclocal","cosmoshub-4"] -o json␊
-  // Error: rpc error: code = Unknown desc = path "published.agoricNames.chainConnection.[\\"agoriclocal\\",\\"cosmoshub-4\\"]" contains invalid characters: panic␊
+test('chain connection', async t => {
   const connection = await queryData(
-    'published.agoricNames.chainConnection.["agoriclocal","cosmoshub-4"]',
+    'published.agoricNames.chainConnection.cosmoshub-4,juno-1',
   );
-  console.log(connection);
-  t.like(connection, {});
+  t.like(connection, { transferChannel: { portId: 'transfer' } });
 });

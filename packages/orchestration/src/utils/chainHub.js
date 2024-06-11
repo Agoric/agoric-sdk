@@ -3,6 +3,8 @@ import { M, mustMatch } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
+const { Fail } = assert;
+
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
@@ -17,6 +19,17 @@ export const CHAIN_KEY = 'chain';
 export const CONNECTIONS_KEY = 'chainConnection';
 
 /**
+ * Character used in a connection tuple key to separate the two chain ids. Valid
+ * because a chainId can contain only alphanumerics and dash.
+ *
+ * Vstorage keys can be only alphanumerics, dash or underscore. That leaves
+ * underscore as the only valid separator.
+ *
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md}
+ */
+const CHAIN_ID_SEPARATOR = '_';
+
+/**
  * The entries of the top-level namehubs in agoricNames are reflected to
  * vstorage. But only the top level. So we combine the 2 chain ids into 1 key.
  * Connections are directionless, so we sort the ids.
@@ -24,8 +37,15 @@ export const CONNECTIONS_KEY = 'chainConnection';
  * @param {string} chainId1
  * @param {string} chainId2
  */
-export const connectionKey = (chainId1, chainId2) =>
-  JSON.stringify([chainId1, chainId2].sort());
+export const connectionKey = (chainId1, chainId2) => {
+  if (
+    chainId1.includes(CHAIN_ID_SEPARATOR) ||
+    chainId2.includes(CHAIN_ID_SEPARATOR)
+  ) {
+    Fail`invalid chain id ${chainId1} or ${chainId2}`;
+  }
+  return [chainId1, chainId2].sort().join(CHAIN_ID_SEPARATOR);
+};
 
 /**
  * @param {Remote<NameHub>} agoricNames
