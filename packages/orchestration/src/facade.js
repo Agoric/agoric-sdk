@@ -109,11 +109,11 @@ export const makeOrchestrationFacade = ({
       ]),
     );
 
-  return {
+  return harden({
     adminAsyncFlow,
     orchestrate,
     orchestrateAll,
-  };
+  });
 };
 harden(makeOrchestrationFacade);
 /** @typedef {ReturnType<typeof makeOrchestrationFacade>} OrchestrationFacade */
