@@ -237,7 +237,6 @@ export const prepareLocalChainAccountKit = (
           // TODO #9211 lookup denom from brand
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
-          // TODO #8879 chainInfo and #9063 well-known chains
           const agoricChainInfo = await chainHub.getChainInfo('agoric');
           const { transferChannel } = await chainHub.getConnectionInfo(
             agoricChainInfo.chainId,

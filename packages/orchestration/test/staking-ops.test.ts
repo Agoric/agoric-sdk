@@ -122,7 +122,7 @@ const makeScenario = () => {
     const chainAddress: ChainAddress = harden({
       address: addr,
       addressEncoding: 'bech32',
-      chainId: 'FIXME',
+      chainId: 'mock-1',
     });
 
     const account: IcaAccount = Far('MockAccount', {
