@@ -117,18 +117,26 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
+ * @param {(...messages: string[]) => void} log
  */
-export const registerChain = async (agoricNamesAdmin, name, chainInfo) => {
+export const registerChain = async (
+  agoricNamesAdmin,
+  name,
+  chainInfo,
+  log = () => {},
+) => {
   const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
   const { nameAdmin: connAdmin } =
     await E(agoricNamesAdmin).provideChild('chainConnection');
 
   mustMatch(chainInfo, CosmosChainInfoShape);
   const { connections = {}, ...vertex } = chainInfo;
+  log(`registering agoricNames chain.${name}`);
   await E(nameAdmin).update(name, vertex);
 
   for await (const [destChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, destChainId);
+    log(`registering agoricNames chainConnection.${key}`);
     await E(connAdmin).update(key, connInfo);
   }
 };

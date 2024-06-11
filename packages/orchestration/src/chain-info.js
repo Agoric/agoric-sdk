@@ -72,7 +72,6 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  */
 export const registerChainNamespace = async (agoricNamesAdmin, log) => {
   for await (const [name, info] of Object.entries(knownChains)) {
-    log(`registering agoricNames chain.${name}`);
-    await registerChain(agoricNamesAdmin, name, info);
+    await registerChain(agoricNamesAdmin, name, info, log);
   }
 };
