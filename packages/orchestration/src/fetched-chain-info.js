@@ -8,7 +8,7 @@ export default {
       },
     ],
     connections: {
-      neutron: {
+      'neutron-1': {
         id: 'connection-7',
         client_id: '07-tendermint-29',
         counterparty: {
@@ -29,7 +29,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-2',
         client_id: '07-tendermint-10',
         counterparty: {
@@ -50,7 +50,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-15',
         client_id: '07-tendermint-52',
         counterparty: {
@@ -71,7 +71,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-56',
         client_id: '07-tendermint-86',
         counterparty: {
@@ -92,7 +92,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-4',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -123,7 +123,7 @@ export default {
       },
     ],
     connections: {
-      juno: {
+      'juno-1': {
         id: 'connection-372',
         client_id: '07-tendermint-439',
         counterparty: {
@@ -144,7 +144,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-809',
         client_id: '07-tendermint-1119',
         counterparty: {
@@ -165,7 +165,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-790',
         client_id: '07-tendermint-1116',
         counterparty: {
@@ -186,7 +186,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      omniflixhub: {
+      'omniflixhub-1': {
         id: 'connection-501',
         client_id: '07-tendermint-656',
         counterparty: {
@@ -207,7 +207,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-257',
         client_id: '07-tendermint-259',
         counterparty: {
@@ -228,7 +228,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-401',
         client_id: '07-tendermint-492',
         counterparty: {
@@ -249,7 +249,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-918',
         client_id: '07-tendermint-1188',
         counterparty: {
@@ -270,7 +270,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-635',
         client_id: '07-tendermint-913',
         counterparty: {
@@ -301,7 +301,7 @@ export default {
       },
     ],
     connections: {
-      neutron: {
+      'neutron-1': {
         id: 'connection-17',
         client_id: '07-tendermint-11',
         counterparty: {
@@ -322,7 +322,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-0',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -343,7 +343,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-7',
         client_id: '07-tendermint-3',
         counterparty: {
@@ -364,7 +364,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-1',
         client_id: '07-tendermint-1',
         counterparty: {
@@ -395,7 +395,7 @@ export default {
       },
     ],
     connections: {
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-2',
         client_id: '07-tendermint-3',
         counterparty: {
@@ -416,7 +416,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-524',
         client_id: '07-tendermint-557',
         counterparty: {
@@ -437,7 +437,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-322',
         client_id: '07-tendermint-334',
         counterparty: {
@@ -458,7 +458,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-0',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -479,7 +479,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-68',
         client_id: '07-tendermint-108',
         counterparty: {
@@ -500,7 +500,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-30',
         client_id: '07-tendermint-44',
         counterparty: {
@@ -521,7 +521,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-205',
         client_id: '07-tendermint-263',
         counterparty: {
@@ -573,7 +573,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-0',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -594,7 +594,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      dydx: {
+      'dydx-mainnet-1': {
         id: 'connection-51',
         client_id: '07-tendermint-72',
         counterparty: {
@@ -615,7 +615,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-71',
         client_id: '07-tendermint-97',
         counterparty: {
@@ -636,7 +636,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-31',
         client_id: '07-tendermint-40',
         counterparty: {
@@ -657,7 +657,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-18',
         client_id: '07-tendermint-19',
         counterparty: {
@@ -678,7 +678,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-63',
         client_id: '07-tendermint-85',
         counterparty: {
@@ -699,7 +699,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-23',
         client_id: '07-tendermint-31',
         counterparty: {
@@ -720,7 +720,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-15',
         client_id: '07-tendermint-18',
         counterparty: {
@@ -751,7 +751,7 @@ export default {
       },
     ],
     connections: {
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-12',
         client_id: '07-tendermint-4',
         counterparty: {
@@ -772,7 +772,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      dydx: {
+      'dydx-mainnet-1': {
         id: 'connection-57',
         client_id: '07-tendermint-59',
         counterparty: {
@@ -793,7 +793,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-8',
         client_id: '07-tendermint-3',
         counterparty: {
@@ -814,7 +814,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-34',
         client_id: '07-tendermint-25',
         counterparty: {
@@ -835,7 +835,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      omniflixhub: {
+      'omniflixhub-1': {
         id: 'connection-65',
         client_id: '07-tendermint-68',
         counterparty: {
@@ -856,7 +856,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-2',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -877,7 +877,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-33',
         client_id: '07-tendermint-24',
         counterparty: {
@@ -898,7 +898,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-25',
         client_id: '07-tendermint-16',
         counterparty: {
@@ -929,7 +929,7 @@ export default {
       },
     ],
     connections: {
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-19',
         client_id: '07-tendermint-23',
         counterparty: {
@@ -950,7 +950,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-49',
         client_id: '07-tendermint-51',
         counterparty: {
@@ -971,7 +971,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-8',
         client_id: '07-tendermint-8',
         counterparty: {
@@ -1024,7 +1024,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-1',
         client_id: '07-tendermint-1',
         counterparty: {
@@ -1045,7 +1045,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      dydx: {
+      'dydx-mainnet-1': {
         id: 'connection-2500',
         client_id: '07-tendermint-3009',
         counterparty: {
@@ -1066,7 +1066,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-1142',
         client_id: '07-tendermint-1457',
         counterparty: {
@@ -1087,7 +1087,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-2338',
         client_id: '07-tendermint-2823',
         counterparty: {
@@ -1108,7 +1108,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-2241',
         client_id: '07-tendermint-2704',
         counterparty: {
@@ -1129,7 +1129,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      omniflixhub: {
+      'omniflixhub-1': {
         id: 'connection-1431',
         client_id: '07-tendermint-1829',
         counterparty: {
@@ -1150,7 +1150,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-1244',
         client_id: '07-tendermint-1588',
         counterparty: {
@@ -1171,7 +1171,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-1223',
         client_id: '07-tendermint-1562',
         counterparty: {
@@ -1192,7 +1192,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-1657',
         client_id: '07-tendermint-2119',
         counterparty: {
@@ -1244,7 +1244,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-0',
         client_id: '07-tendermint-1',
         counterparty: {
@@ -1265,7 +1265,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-9',
         client_id: '07-tendermint-23',
         counterparty: {
@@ -1286,7 +1286,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-192',
         client_id: '07-tendermint-199',
         counterparty: {
@@ -1307,7 +1307,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-127',
         client_id: '07-tendermint-170',
         counterparty: {
@@ -1328,7 +1328,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-1',
         client_id: '07-tendermint-2',
         counterparty: {
@@ -1349,7 +1349,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-25',
         client_id: '07-tendermint-43',
         counterparty: {
@@ -1370,7 +1370,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-40',
         client_id: '07-tendermint-75',
         counterparty: {
@@ -1422,7 +1422,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-256',
         client_id: '07-tendermint-320',
         counterparty: {
@@ -1443,7 +1443,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-11',
         client_id: '07-tendermint-13',
         counterparty: {
@@ -1464,7 +1464,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-211',
         client_id: '07-tendermint-283',
         counterparty: {
@@ -1485,7 +1485,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      noble: {
+      'noble-1': {
         id: 'connection-214',
         client_id: '07-tendermint-287',
         counterparty: {
@@ -1506,7 +1506,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-0',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -1527,7 +1527,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-110',
         client_id: '07-tendermint-177',
         counterparty: {
@@ -1548,7 +1548,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stride: {
+      'stride-1': {
         id: 'connection-128',
         client_id: '07-tendermint-195',
         counterparty: {
@@ -1600,7 +1600,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      cosmoshub: {
+      'cosmoshub-4': {
         id: 'connection-0',
         client_id: '07-tendermint-0',
         counterparty: {
@@ -1621,7 +1621,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      dydx: {
+      'dydx-mainnet-1': {
         id: 'connection-123',
         client_id: '07-tendermint-133',
         counterparty: {
@@ -1642,7 +1642,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      juno: {
+      'juno-1': {
         id: 'connection-19',
         client_id: '07-tendermint-31',
         counterparty: {
@@ -1663,7 +1663,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      neutron: {
+      'neutron-1': {
         id: 'connection-113',
         client_id: '07-tendermint-125',
         counterparty: {
@@ -1684,7 +1684,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      osmosis: {
+      'osmosis-1': {
         id: 'connection-2',
         client_id: '07-tendermint-1',
         counterparty: {
@@ -1705,7 +1705,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      secretnetwork: {
+      'secret-4': {
         id: 'connection-25',
         client_id: '07-tendermint-37',
         counterparty: {
@@ -1726,7 +1726,7 @@ export default {
           version: 'ics20-1',
         },
       },
-      stargaze: {
+      'stargaze-1': {
         id: 'connection-18',
         client_id: '07-tendermint-30',
         counterparty: {

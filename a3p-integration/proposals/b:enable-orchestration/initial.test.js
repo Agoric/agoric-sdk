@@ -34,7 +34,7 @@ test('chain info', async t => {
 
 test('chain connection', async t => {
   const connection = await queryData(
-    'published.agoricNames.chainConnection.cosmoshub-4,juno-1',
+    'published.agoricNames.chainConnection.cosmoshub-4_juno-1',
   );
   t.like(connection, { transferChannel: { portId: 'transfer' } });
 });

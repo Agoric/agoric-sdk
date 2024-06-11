@@ -40,6 +40,21 @@ test.serial('config', async t => {
   });
   const cosmosInfo = readLatest(`published.agoricNames.chain.cosmoshub`);
   t.deepEqual(cosmosInfo, cosmosChainInfo);
+
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'cosmoshub-4_juno-1',
+    );
+
+    t.like(
+      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      {
+        state: 3,
+        transferChannel: { portId: 'transfer', state: 3 },
+      },
+    );
+  }
 });
 
 test.serial('stakeAtom - repl-style', async t => {
