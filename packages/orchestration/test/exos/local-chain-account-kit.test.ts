@@ -164,7 +164,7 @@ test('transfer', async t => {
   t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
 
   const destination: ChainAddress = {
-    chainId: 'cosmoslocal',
+    chainId: 'cosmoshub-4',
     address: 'cosmos1pleab',
     addressEncoding: 'bech32',
   };

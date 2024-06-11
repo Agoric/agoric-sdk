@@ -3,7 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
-import type { start as startStakeAtom } from '@agoric/orchestration/src/examples/stakeAtom.contract.js';
+import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import type { TestFn } from 'ava';
@@ -33,12 +33,12 @@ test.serial('config', async t => {
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
-  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmos');
+  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
   t.like(cosmosChainInfo, {
-    chainId: 'cosmoslocal',
+    chainId: 'cosmoshub-4',
     stakingTokens: [{ denom: 'uatom' }],
   });
-  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmos`);
+  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmoshub`);
   t.deepEqual(cosmosInfo, cosmosChainInfo);
 });
 
@@ -53,9 +53,10 @@ test.serial('stakeAtom - repl-style', async t => {
   );
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const instance: Instance<typeof startStakeAtom> = await EV(
-    agoricNames,
-  ).lookup('instance', 'stakeAtom');
+  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
+    'instance',
+    'stakeAtom',
+  );
   t.truthy(instance, 'stakeAtom instance is available');
 
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');

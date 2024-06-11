@@ -20,22 +20,6 @@ type StartFn =
 
 const chainInfoDefaults = {
   connections: {},
-  allowedMessages: [],
-  allowedQueries: [],
-  ibcHooksEnabled: false,
-  icaEnabled: false,
-  icqEnabled: false,
-  pfmEnabled: false,
-};
-
-const connectionDefaults = {
-  versions: [
-    {
-      identifier: '1',
-      features: ['ORDER_ORDERED', 'ORDER_UNORDERED'],
-    },
-  ],
-  delay_period: 0n,
 };
 
 const txChannelDefaults = {
@@ -101,7 +85,6 @@ test('send using arbitrary chain info', async t => {
   }) as CosmosChainInfo;
   t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
   const agoricToHotConnection = {
-    ...connectionDefaults,
     id: 'connection-1',
     client_id: '07-tendermint-1',
     state: 3, // STATE_OPEN
@@ -169,7 +152,7 @@ test('send using arbitrary chain info', async t => {
       inv,
       { give: { Send: anAmt } },
       { Send },
-      { destAddr: 'cosmos1destAddr', chainName: 'cosmos' },
+      { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
     );
     await E(userSeat).getOfferResult();
     const history = inspectLocalBridge();

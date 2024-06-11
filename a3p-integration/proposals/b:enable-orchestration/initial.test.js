@@ -20,31 +20,25 @@ test(`vat details`, async t => {
   }
 });
 
-test('chain info', async t => {
-  const cosmos = await agd
-    .query(
-      'vstorage',
-      'data',
-      '--output',
-      'json',
-      'published.agoricNames.chain.cosmos',
-    )
+const queryData = path =>
+  agd
+    .query('vstorage', 'data', '--output', 'json', path)
     .then(res => JSON.parse(JSON.parse(JSON.parse(res.value).values[0]).body));
-  console.log('chain.cosmos', cosmos);
-  t.like(cosmos, { chainId: 'cosmoslocal' });
 
-  const names = await agd.query(
-    'vstorage',
-    'children',
-    '--output',
-    'json',
-    'published.agoricNames.chain',
+test('chain info', async t => {
+  const chain = await queryData('published.agoricNames.chain.cosmoshub');
+
+  console.log('chain.cosmoshub', chain);
+  t.like(chain, { chainId: 'cosmoshub-4' });
+});
+
+test.failing('chain connection', async t => {
+  // FIXME encoding
+  //   message: `Command failed with exit code 1: agd query vstorage data --output json published.agoricNames.chainConnection.["agoriclocal","cosmoshub-4"] -o json␊
+  // Error: rpc error: code = Unknown desc = path "published.agoricNames.chainConnection.[\\"agoriclocal\\",\\"cosmoshub-4\\"]" contains invalid characters: panic␊
+  const connection = await queryData(
+    'published.agoricNames.chainConnection.["agoriclocal","cosmoshub-4"]',
   );
-  t.deepEqual(names.children, [
-    'agoric',
-    'celestia',
-    'cosmos',
-    'osmosis',
-    'stride',
-  ]);
+  console.log(connection);
+  t.like(connection, {});
 });

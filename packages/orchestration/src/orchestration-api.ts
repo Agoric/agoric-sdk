@@ -17,10 +17,8 @@ import type {
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
-  wellKnownChainInfo,
+  KnownChains,
 } from './types.js';
-
-type KnownChains = typeof wellKnownChainInfo;
 
 /**
  * A denom that designates a path to a token type on some blockchain.

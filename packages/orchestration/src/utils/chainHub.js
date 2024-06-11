@@ -6,6 +6,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
  */
@@ -59,12 +60,18 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       chainInfos.init(name, chainInfo);
     },
     /**
-     * @param {string} chainName
-     * @returns {Promise<CosmosChainInfo>}
+     * @template {string} K
+     * @param {K} chainName
+     * @returns {Promise<
+     *   K extends keyof KnownChains
+     *     ? Omit<KnownChains[K], 'connections'>
+     *     : ChainInfo
+     * >}
      */
     async getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
+        // @ts-expect-error cast
         return chainInfos.get(chainName);
       }
 
@@ -117,20 +124,26 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
+ * @param {(...messages: string[]) => void} log
  */
-export const registerChain = async (agoricNamesAdmin, name, chainInfo) => {
+export const registerChain = async (
+  agoricNamesAdmin,
+  name,
+  chainInfo,
+  log = () => {},
+) => {
   const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
   const { nameAdmin: connAdmin } =
     await E(agoricNamesAdmin).provideChild('chainConnection');
 
   mustMatch(chainInfo, CosmosChainInfoShape);
-  // XXX chainInfo.connections is redundant here.
-  await E(nameAdmin).update(name, chainInfo);
+  const { connections = {}, ...vertex } = chainInfo;
+  log(`registering agoricNames chain.${name}`);
+  await E(nameAdmin).update(name, vertex);
 
-  for await (const [destChainId, connInfo] of Object.entries(
-    chainInfo.connections,
-  )) {
+  for await (const [destChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, destChainId);
+    log(`registering agoricNames chainConnection.${key}`);
     await E(connAdmin).update(key, connInfo);
   }
 };
