@@ -1,5 +1,4 @@
 /** @file Example contract that uses orchestration */
-// TODO rename to "stakeIca" or something else that conveys is parameterized nature
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
@@ -38,11 +37,11 @@ export const privateArgsShape = meta.privateArgsShape;
  *   hostConnectionId: IBCConnectionID;
  *   controllerConnectionId: IBCConnectionID;
  *   bondDenom: string;
- * }} StakeAtomTerms
+ * }} StakeIcaTerms
  */
 
 /**
- * @param {ZCF<StakeAtomTerms>} zcf
+ * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
  *   orchestration: OrchestrationService;
  *   storageNode: StorageNode;

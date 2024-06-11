@@ -9,9 +9,9 @@ import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/stakeAtom.contract.js`;
+const contractFile = `${dirname}/../../src/examples/stakeIca.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stakeAtom.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/stakeIca.contract.js').start;
 
 const startContract = async ({
   orchestration,

@@ -2,7 +2,7 @@ import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
-/** @import {StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract' */
+/** @import {StakeAtomSF,  StakeIcaTerms} from '../examples/stakeIca.contract' */
 
 const trace = makeTracer('StartStakeAtom', true);
 
@@ -10,13 +10,13 @@ const trace = makeTracer('StartStakeAtom', true);
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
- *       stakeAtom: Installation<
- *         import('../examples/stakeAtom.contract.js').start
+ *       stakeIca: Installation<
+ *         import('../examples/stakeIca.contract.js').start
  *       >;
  *     };
  *   };
  * }} powers
- * @param {{ options: StakeAtomTerms }} options
+ * @param {{ options: StakeIcaTerms }} options
  */
 export const startStakeAtom = async (
   {
@@ -29,7 +29,7 @@ export const startStakeAtom = async (
       startUpgradable,
     },
     installation: {
-      consume: { stakeAtom },
+      consume: { stakeIca },
     },
     instance: {
       produce: { stakeAtom: produceInstance },
@@ -53,7 +53,7 @@ export const startStakeAtom = async (
   /** @type {StartUpgradableOpts<StakeAtomSF>} */
   const startOpts = {
     label: 'stakeAtom',
-    installation: stakeAtom,
+    installation: stakeIca,
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       hostConnectionId,
@@ -89,7 +89,7 @@ export const getManifestForStakeAtom = (
           startUpgradable: true,
         },
         installation: {
-          consume: { stakeAtom: true },
+          consume: { stakeIca: true },
         },
         instance: {
           produce: { stakeAtom: true },
@@ -97,7 +97,7 @@ export const getManifestForStakeAtom = (
       },
     },
     installations: {
-      stakeAtom: restoreRef(installKeys.stakeAtom),
+      stakeIca: restoreRef(installKeys.stakeIca),
     },
     options,
   };
