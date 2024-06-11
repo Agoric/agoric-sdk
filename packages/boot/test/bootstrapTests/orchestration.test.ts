@@ -111,15 +111,9 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance('uatom');
-  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
-
-  const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
-  t.deepEqual(
-    queryUnknownDenom,
-    { value: 0n, denom: 'some-invalid-denom' },
-    'getBalance for unknown denom returns value: 0n',
-  );
+  await t.throwsAsync(EV(account).getBalance('uatom'), {
+    message: 'Queries not available for chain "cosmoshub-4"',
+  });
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
