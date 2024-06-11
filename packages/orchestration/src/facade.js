@@ -8,6 +8,7 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
  * @import {TimerService} from '@agoric/time';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
@@ -95,6 +96,8 @@ const makeLocalChainFacade = (
  * @param {IBCConnectionInfo} connectionInfo
  * @param {object} io
  * @param {Remote<OrchestrationService>} io.orchestration
+ * @param {MakeRecorderKit} io.makeRecorderKit
+ * @param {Remote<StorageNode>} io.storageNode
  * @param {Remote<TimerService>} io.timer
  * @param {ZCF} io.zcf
  * @param {Zone} io.zone
@@ -103,9 +106,8 @@ const makeLocalChainFacade = (
 const makeRemoteChainFacade = (
   chainInfo,
   connectionInfo,
-  { orchestration, timer, zcf, zone },
+  { orchestration, makeRecorderKit, storageNode, timer, zcf, zone },
 ) => {
-  const makeRecorderKit = () => anyVal;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone.subZone(chainInfo.chainId),
     makeRecorderKit,
@@ -133,7 +135,7 @@ const makeRemoteChainFacade = (
       // @ts-expect-error XXX dynamic method availability
       return makeCosmosOrchestrationAccount(address, bondDenom, {
         account: icaAccount,
-        storageNode: anyVal,
+        storageNode,
         icqConnection: anyVal,
         timer,
       });
@@ -153,6 +155,7 @@ const makeRemoteChainFacade = (
  *   makeLocalChainAccountKit: ReturnType<
  *     typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
  *   >;
+ *   makeRecorderKit: MakeRecorderKit;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -164,6 +167,7 @@ export const makeOrchestrationFacade = ({
   localchain,
   chainHub,
   makeLocalChainAccountKit,
+  makeRecorderKit,
 }) => {
   console.log('makeOrchestrationFacade got', {
     zone,
@@ -205,6 +209,8 @@ export const makeOrchestrationFacade = ({
 
           return makeRemoteChainFacade(remoteChainInfo, connectionInfo, {
             orchestration: orchestrationService,
+            makeRecorderKit,
+            storageNode,
             timer: timerService,
             zcf,
             zone,

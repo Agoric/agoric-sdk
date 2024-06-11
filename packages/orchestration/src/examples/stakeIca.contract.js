@@ -3,7 +3,10 @@
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { V as E } from '@agoric/vow/vat.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
+import {
+  prepareRecorderKitMakers,
+  provideAll,
+} from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
@@ -67,6 +70,10 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const zone = makeDurableZone(baggage);
 
+  const { accountsStorageNode } = await provideAll(baggage, {
+    accountsStorageNode: () => E(storageNode).makeChildNode('accounts'),
+  });
+
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
@@ -88,9 +95,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
+    const accountNode = await E(accountsStorageNode).makeChildNode(
+      accountAddress.address,
+    );
     const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
       account,
-      storageNode,
+      storageNode: accountNode,
       icqConnection,
       timer,
     });

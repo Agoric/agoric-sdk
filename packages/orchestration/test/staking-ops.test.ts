@@ -8,6 +8,7 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
@@ -16,6 +17,9 @@ import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import {
   prepareCosmosOrchestrationAccountKit,
   trivialDelegateResponse,
@@ -174,17 +178,16 @@ const makeScenario = () => {
     return { zcf, zoe };
   };
 
-  const makeRecorderKit = () => harden({}) as any;
-
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   const { delegations, startTime } = configStaking;
 
-  // TODO: when we write to chainStorage, test it.
-  //   const { rootNode } = makeFakeStorageKit('mockChainStorageRoot');
-
-  const storageNode = Far('StorageNode', {}) as unknown as StorageNode;
+  const { rootNode } = makeFakeStorageKit('mockChainStorageRoot', {
+    sequence: false,
+  });
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -197,12 +200,38 @@ const makeScenario = () => {
     zone,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
-    storageNode,
+    storageNode: rootNode,
     timer,
     icqConnection,
     ...mockZCF(),
   };
 };
+
+test('makeAccount() writes to storage', async t => {
+  const s = makeScenario();
+  const { account, calls, timer } = s;
+  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
+  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+
+  // Higher fidelity tests below use invitationMakers.
+  const { holder } = make(account.getAddress(), 'uatom', {
+    account,
+    storageNode,
+    icqConnection,
+    timer,
+  });
+  const { publicSubscribers } = holder.asContinuingOffer();
+  const accountNotifier = makeNotifierFromSubscriber(
+    publicSubscribers.account.subscriber,
+  );
+  const storageUpdate = await E(accountNotifier).getUpdateSince();
+  t.deepEqual(storageUpdate, {
+    updateCount: 1n,
+    value: {
+      sequence: 0n,
+    },
+  });
+});
 
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
