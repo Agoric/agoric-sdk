@@ -1,0 +1,52 @@
+diff --git a/lib/exception.js b/lib/exception.js
+index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..b057a914926cf84601aee2fa6e8fe8b98c441935 100644
+--- a/lib/exception.js
++++ b/lib/exception.js
+@@ -26,7 +26,6 @@ function YAMLException(reason, mark) {
+   // Super constructor
+   Error.call(this);
+ 
+-  this.name = 'YAMLException';
+   this.reason = reason;
+   this.mark = mark;
+   this.message = formatError(this, false);
+@@ -42,14 +41,31 @@ function YAMLException(reason, mark) {
+ }
+ 
+ 
+-// Inherit from Error
+-YAMLException.prototype = Object.create(Error.prototype);
+-YAMLException.prototype.constructor = YAMLException;
+-
+-
+-YAMLException.prototype.toString = function toString(compact) {
+-  return this.name + ': ' + formatError(this, compact);
+-};
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++    toString: {
++      value: function toString(compact) {
++        return this.name + ": " + formatError(this, compact);
++      },
++      writable: true,
++      enumerable: true,
++      configurable: true,
++    },
++  });
++}
++makeErrorish(YAMLException, "YAMLException");
+ 
+ 
+ module.exports = YAMLException;

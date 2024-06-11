@@ -1,0 +1,42 @@
+diff --git a/lib/index.js b/lib/index.js
+index 087f2a09f85e03beaee767b2d2a8a98745e4ae5f..445d1eae0b57e61f03f730fc90055102cd6f4563 100644
+--- a/lib/index.js
++++ b/lib/index.js
+@@ -154,9 +154,23 @@ function FetchError(message, type, systemError) {
+   Error.captureStackTrace(this, this.constructor);
+ }
+ 
+-FetchError.prototype = Object.create(Error.prototype);
+-FetchError.prototype.constructor = FetchError;
+-FetchError.prototype.name = 'FetchError';
++function makeErrorish(errorConstructor, name) {
++  errorConstructor.prototype = Object.create(Error.prototype, {
++    constructor: {
++      value: errorConstructor,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++    name: {
++      value: name,
++      writable: true,
++      enumerable: true,
++      configurable: true
++    },
++  });
++}
++makeErrorish(FetchError, 'FetchError');
+ 
+ let convert;
+ try {
+@@ -1401,9 +1415,7 @@ function AbortError(message) {
+   Error.captureStackTrace(this, this.constructor);
+ }
+ 
+-AbortError.prototype = Object.create(Error.prototype);
+-AbortError.prototype.constructor = AbortError;
+-AbortError.prototype.name = 'AbortError';
++makeErrorish(AbortError, 'AbortError');
+ 
+ const URL$1 = Url.URL || whatwgUrl.URL;
+ 

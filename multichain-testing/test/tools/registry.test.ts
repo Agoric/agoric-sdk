@@ -1,10 +1,11 @@
-import anyTest, { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { TestFn } from 'ava';
 import { commonSetup } from '../support.js';
 
 const test = anyTest as TestFn<Record<string, never>>;
 
-test('assets can be retrieved from config', async (t) => {
-  const { useChain } = await commonSetup();
+test('assets can be retrieved from config', async t => {
+  const { useChain } = await commonSetup(t);
 
   t.like(useChain('osmosis').chainInfo.nativeAssetList.assets, [
     {
@@ -22,8 +23,8 @@ test('assets can be retrieved from config', async (t) => {
   ]);
 });
 
-test('staking info can be retrieved from config', async (t) => {
-  const { useChain } = await commonSetup();
+test('staking info can be retrieved from config', async t => {
+  const { useChain } = await commonSetup(t);
 
   t.like(useChain('osmosis').chain.staking, {
     staking_tokens: [{ denom: 'uosmo' }],

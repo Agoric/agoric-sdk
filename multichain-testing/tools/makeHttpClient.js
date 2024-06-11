@@ -5,7 +5,7 @@ const { freeze } = Object;
 
 const jsonType = { 'Content-Type': 'application/json' };
 
-const filterBadStatus = (res) => {
+const filterBadStatus = res => {
   if (res.status >= 400) {
     throw new Error(`Bad status on response: ${res.status}`);
   }
@@ -42,7 +42,7 @@ export const makeHttpClient = (url, fetch) => {
     /**
      * @param {import('@cosmjs/json-rpc').JsonRpcRequest} request
      */
-    execute: async (request) => {
+    execute: async request => {
       const settings = {
         method: 'POST',
         body: request ? JSON.stringify(request) : undefined,
@@ -50,7 +50,7 @@ export const makeHttpClient = (url, fetch) => {
       };
       return fetch(url, settings)
         .then(filterBadStatus)
-        .then((res) => res.json());
+        .then(res => res.json());
     },
   });
 };
@@ -84,9 +84,9 @@ export const makeAPI = (apiAddress, { fetch }) => {
       },
     };
     const url = `${apiAddress}${href}`;
-    return fetch(url, opts).then((r) => {
+    return fetch(url, opts).then(r => {
       if (!r.ok) throw Error(r.statusText);
-      return r.json().then((data) => {
+      return r.json().then(data => {
         return data;
       });
     });

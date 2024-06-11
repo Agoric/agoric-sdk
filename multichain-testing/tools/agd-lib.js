@@ -3,7 +3,7 @@ import assert from 'node:assert';
 
 const { freeze } = Object;
 
-const agdBinary = 'kubectl';
+const kubectlBinary = 'kubectl';
 const binaryArgs = [
   'exec',
   '-i',
@@ -19,7 +19,7 @@ const binaryArgs = [
  * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
  */
-export const flags = (record) => {
+export const flags = record => {
   // TODO? support --yes with boolean?
 
   /** @type {[string, string][]} */
@@ -63,7 +63,7 @@ export const makeAgd = ({ execFileSync }) => {
      * @param {*} [opts]
      */
     const exec = (args, opts = { encoding: 'utf-8' }) =>
-      execFileSync(agdBinary, [...binaryArgs, ...args], opts);
+      execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -75,7 +75,7 @@ export const makeAgd = ({ execFileSync }) => {
        *         | [mod: 'vstorage', kind: 'data' | 'children', path: string]
        * } qArgs
        */
-      query: async (qArgs) => {
+      query: async qArgs => {
         const out = exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'ignore'],
@@ -129,8 +129,8 @@ export const makeAgd = ({ execFileSync }) => {
           ...(yes ? ['--yes'] : []),
           ...outJson,
         ];
-        console.log('$$$', agdBinary, ...args);
-        const out = exec(args);
+        console.log('$$$ agd', ...args);
+        const out = exec(args, { stdio: ['pipe', 'pipe', 'ignore'] });
         try {
           const detail = JSON.parse(out);
           if (detail.code !== 0) {
@@ -153,20 +153,26 @@ export const makeAgd = ({ execFileSync }) => {
          */
         add: (name, mnemonic) => {
           return execFileSync(
-            agdBinary,
+            kubectlBinary,
             [...binaryArgs, ...keyringArgs, 'keys', 'add', name, '--recover'],
-            { encoding: 'utf-8', input: mnemonic },
+            {
+              encoding: 'utf-8',
+              input: mnemonic,
+              stdio: ['pipe', 'pipe', 'ignore'],
+            },
           ).toString();
         },
         /** @param {string} name */
-        delete: (name) => {
-          return exec([...keyringArgs, 'keys', 'delete', name, '-y']);
+        delete: name => {
+          return exec([...keyringArgs, 'keys', 'delete', name, '-y'], {
+            stdio: ['pipe', 'pipe', 'ignore'],
+          });
         },
       },
       /**
        * @param {Record<string, unknown>} opts
        */
-      withOpts: (opts) => make({ home, keyringBackend, rpcAddrs, ...opts }),
+      withOpts: opts => make({ home, keyringBackend, rpcAddrs, ...opts }),
     });
     return rw;
   };

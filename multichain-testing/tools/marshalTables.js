@@ -32,7 +32,7 @@ const makeTranslationTable = (makeSlot, makeVal) => {
   const slotToVal = new Map();
 
   /** @type {(val: Val) => string} */
-  const convertValToSlot = (val) => {
+  const convertValToSlot = val => {
     if (valToSlot.has(val)) {
       // @ts-expect-error https://github.com/microsoft/TypeScript/issues/13086
       return valToSlot.get(val);
@@ -55,7 +55,7 @@ const makeTranslationTable = (makeSlot, makeVal) => {
     slotToVal.set(slot, val);
     return val;
   };
-
+  // eslint-disable-next-line no-undef
   return harden({ convertValToSlot, convertSlotToVal });
 };
 
@@ -73,8 +73,8 @@ const synthesizeRemotable = (slot, iface) => {
  *
  * @param {(v: unknown) => string} [valToSlot]
  */
-export const makeClientMarshaller = (valToSlot) => {
-  const noNewSlots = (val) => {
+export const makeClientMarshaller = valToSlot => {
+  const noNewSlots = val => {
     throw new Error(`unknown value: ${val}`);
   };
   const { convertValToSlot, convertSlotToVal } = makeTranslationTable(

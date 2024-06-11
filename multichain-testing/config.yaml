@@ -10,10 +10,10 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "48h"
+            unbonding_time: "2m"
         swingset:
           params:
-            bootstrap_vat_config: "@agoric/vm-config/decentral-devnet-config.json"
+            bootstrap_vat_config: "@agoric/vm-config/decentral-itest-orchestration-config.json"
     faucet:
       enabled: false
     ports:
@@ -22,7 +22,7 @@ chains:
       exposer: 38087
       grpc: 9090
     resources:
-      cpu: 2
+      cpu: 1
       memory: 4Gi
   - id: osmosislocal
     name: osmosis
@@ -31,7 +31,7 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "48h"
+            unbonding_time: "2m"
         interchain_accounts:
           host_genesis_state:
             params:
@@ -60,7 +60,7 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "48h"
+            unbonding_time: "2m"
         interchain_accounts:
           host_genesis_state:
             params:

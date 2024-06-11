@@ -1,4 +1,5 @@
-import anyTest, { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { TestFn } from 'ava';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';
 import { sleep } from '../../tools/sleep.js';
@@ -6,8 +7,8 @@ import { commonSetup } from '../support.js';
 
 const test = anyTest as TestFn<Record<string, never>>;
 
-test('create a wallet and get tokens', async (t) => {
-  const { useChain } = await commonSetup();
+test('create a wallet and get tokens', async t => {
+  const { useChain } = await commonSetup(t);
 
   const prefix = useChain('osmosis').chain.bech32_prefix;
   const wallet = await createWallet(prefix);
@@ -25,8 +26,10 @@ test('create a wallet and get tokens', async (t) => {
 
   const osmosisFaucet = useChain('osmosis').creditFromFaucet;
   t.log('Requeting faucet funds');
+
   await osmosisFaucet(addr);
-  await sleep(1000, t.log); // needed to avoid race condition
+  // XXX needed to avoid race condition between faucet POST and LCD Query
+  await sleep(1000, t.log);
 
   const { balances: updatedBalances } = await queryClient.queryBalances(addr);
   t.like(updatedBalances, [{ denom: 'uosmo', amount: '10000000000' }]);
@@ -34,7 +37,10 @@ test('create a wallet and get tokens', async (t) => {
 
   const bondDenom =
     useChain('osmosis').chain.staking?.staking_tokens?.[0].denom;
-  if (!bondDenom) throw new Error('Bond denom not found.');
-  const { balance } = await queryClient.queryBalance(addr, bondDenom);
-  t.deepEqual(balance, { denom: bondDenom, amount: '10000000000' });
+  if (!bondDenom) {
+    t.fail('Bond denom not found.');
+  } else {
+    const { balance } = await queryClient.queryBalance(addr, bondDenom);
+    t.deepEqual(balance, { denom: bondDenom, amount: '10000000000' });
+  }
 });
