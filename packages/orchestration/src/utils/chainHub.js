@@ -104,22 +104,22 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       return chainInfo;
     },
     /**
-     * @param {string} srcChainId
-     * @param {string} destChainId
+     * @param {string} chainId1
+     * @param {string} chainId2
      * @param {IBCConnectionInfo} connectionInfo
      */
-    registerConnection(srcChainId, destChainId, connectionInfo) {
-      const key = connectionKey(srcChainId, destChainId);
+    registerConnection(chainId1, chainId2, connectionInfo) {
+      const key = connectionKey(chainId1, chainId2);
       connectionInfos.init(key, connectionInfo);
     },
 
     /**
-     * @param {string} srcChainId
-     * @param {string} destChainId
+     * @param {string} chainId1
+     * @param {string} chainId2
      * @returns {Promise<IBCConnectionInfo>}
      */
-    async getConnectionInfo(srcChainId, destChainId) {
-      const key = connectionKey(srcChainId, destChainId);
+    async getConnectionInfo(chainId1, chainId2) {
+      const key = connectionKey(chainId1, chainId2);
       if (connectionInfos.has(key)) {
         return connectionInfos.get(key);
       }
@@ -127,9 +127,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       const connectionInfo = await E(agoricNames)
         .lookup(CONNECTIONS_KEY, key)
         .catch(_cause => {
-          throw assert.error(
-            `connection not found: ${srcChainId}<->${destChainId}`,
-          );
+          throw assert.error(`connection not found: ${chainId1}<->${chainId2}`);
         });
       connectionInfos.init(key, connectionInfo);
       return connectionInfo;
@@ -166,8 +164,8 @@ export const registerChain = async (
   ];
 
   // XXX updates redundantly, twice per edge
-  for await (const [destChainId, connInfo] of Object.entries(connections)) {
-    const key = connectionKey(chainInfo.chainId, destChainId);
+  for await (const [counterChainId, connInfo] of Object.entries(connections)) {
+    const key = connectionKey(chainInfo.chainId, counterChainId);
     promises.push(
       E(connAdmin)
         .update(key, connInfo)
