@@ -93,7 +93,12 @@ const publishChainInfoToChainStorage = async (
     const chainNamesNode = E(agoricNamesNode).makeChildNode(subpath);
     const { nameAdmin } = await E(agoricNamesAdmin).provideChild(subpath);
 
-    // FIXME keep a dict of the written data so we only write what has changed
+    /**
+     * Previous entries, to prevent redundant updates
+     *
+     * @type {Record<string, string>} chainName => stringified chainInfo
+     */
+    const prev = {};
 
     // XXX cannot be changed until we upgrade vat-agoricNames to allow it
     await E(nameAdmin).onUpdate(
@@ -105,11 +110,15 @@ const publishChainInfoToChainStorage = async (
           // chainInfo has no cap data but we need to marshal bigints
           const marshalData = makeMarshal(_val => Fail`data only`);
           for (const [chainName, info] of entries) {
-            // XXX writes even if the entry hasn't changed
+            const value = JSON.stringify(marshalData.toCapData(info));
+            if (prev[chainName] === value) {
+              continue;
+            }
             const chainNode = E(chainNamesNode).makeChildNode(chainName);
-            void E(chainNode).setValue(
-              JSON.stringify(marshalData.toCapData(info)),
-            );
+            prev[chainName] = value;
+            void E(chainNode)
+              .setValue(value)
+              .catch(() => delete prev[chainName]);
           }
         },
       }),
