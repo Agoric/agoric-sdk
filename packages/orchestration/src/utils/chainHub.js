@@ -124,12 +124,10 @@ export const registerChain = async (agoricNamesAdmin, name, chainInfo) => {
     await E(agoricNamesAdmin).provideChild('chainConnection');
 
   mustMatch(chainInfo, CosmosChainInfoShape);
-  // XXX chainInfo.connections is redundant here.
-  await E(nameAdmin).update(name, chainInfo);
+  const { connections, ...vertex } = chainInfo;
+  await E(nameAdmin).update(name, vertex);
 
-  for await (const [destChainId, connInfo] of Object.entries(
-    chainInfo.connections,
-  )) {
+  for await (const [destChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, destChainId);
     await E(connAdmin).update(key, connInfo);
   }
