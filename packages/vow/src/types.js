@@ -11,6 +11,16 @@ export {};
  */
 
 /**
+ * @callback IsRetryableReason
+ * Return truthy if a rejection reason should result in a retry.
+ * @param {any} reason
+ * @param {any} priorRetryValue the previous value returned by this function
+ * when deciding whether to retry the same logical operation
+ * @returns {any} If falsy, the reason is not retryable. If truthy, the
+ * priorRetryValue for the next call.
+ */
+
+/**
  * @template T
  * @typedef {Promise<T | Vow<T>>} PromiseVow Return type of a function that may
  * return a promise or a vow.
