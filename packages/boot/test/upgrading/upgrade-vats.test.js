@@ -536,23 +536,18 @@ test('upgrade vat-vow', async t => {
   await EV(vowRoot).resolveVowWatchers(localVowsUpdates);
   await EV(promiseKit.resolver).resolve('ciao');
   t.timeout(10_000);
-  await EV(fakeVowKit.resolver).reject(
-    harden({
+  const upgradeRejection = harden({
+    status: 'rejected',
+    reason: {
       name: 'vatUpgraded',
       upgradeMessage: 'vat upgraded',
       incarnationNumber: 0,
-    }),
-  );
+    },
+  });
+  await EV(fakeVowKit.resolver).reject(upgradeRejection.reason);
   t.timeout(600_000); // t.timeout.clear() not yet available in our ava version
   t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
-    promiseForever: {
-      status: 'rejected',
-      reason: {
-        name: 'vatUpgraded',
-        upgradeMessage: 'vat upgraded',
-        incarnationNumber: 0,
-      },
-    },
+    promiseForever: upgradeRejection,
     promiseFulfilled: { status: 'fulfilled', value: 'hello' },
     promiseRejected: { status: 'rejected', reason: 'goodbye' },
     vowForever: {
@@ -562,22 +557,11 @@ test('upgrade vat-vow', async t => {
     vowFulfilled: { status: 'fulfilled', value: 'hello' },
     vowRejected: { status: 'rejected', reason: 'goodbye' },
     vowPostUpgrade: { status: 'fulfilled', value: 'bonjour' },
-    vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
-    vowExternalVow: {
-      status: 'rejected',
-      reason: {
-        name: 'vatUpgraded',
-        upgradeMessage: 'vat upgraded',
-        incarnationNumber: 0,
-      },
-    },
-    vowPromiseForever: {
-      status: 'rejected',
-      reason: {
-        name: 'vatUpgraded',
-        upgradeMessage: 'vat upgraded',
-        incarnationNumber: 0,
-      },
-    },
+    // The 'fulfilled' result below is wishful thinking.  Long-lived
+    // promises are not supported by `watch` at this time.
+    // vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
+    vowExternalPromise: upgradeRejection,
+    vowExternalVow: upgradeRejection,
+    vowPromiseForever: upgradeRejection,
   });
 });

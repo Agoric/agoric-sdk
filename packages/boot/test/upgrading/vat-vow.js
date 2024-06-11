@@ -6,7 +6,7 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
   const { watch, makeVowKit } = prepareVowTools(zone.subZone('VowTools'));
 
-  /** @typedef {{ status: 'unsettled', resolver?: import('@agoric/vow').VowResolver } | PromiseSettledResult<any>} WatcherResult */
+  /** @typedef {({ status: 'unsettled' } | PromiseSettledResult<any>) & { resolver?: import('@agoric/vow').VowResolver }} WatcherResult */
 
   /** @type {MapStore<string, WatcherResult>} */
   const nameToResult = zone.mapStore('nameToResult');
