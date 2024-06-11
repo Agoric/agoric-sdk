@@ -93,6 +93,9 @@ const publishChainInfoToChainStorage = async (
     const chainNamesNode = E(agoricNamesNode).makeChildNode(subpath);
     const { nameAdmin } = await E(agoricNamesAdmin).provideChild(subpath);
 
+    // FIXME keep a dict of the written data so we only write what has changed
+
+    // XXX cannot be changed until we upgrade vat-agoricNames to allow it
     await E(nameAdmin).onUpdate(
       // XXX will live on the heap in the bootstrap vat. When we upgrade or kill
       // that this handler will sever and vat-agoricNames will need to be upgraded

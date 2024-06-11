@@ -165,6 +165,7 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
+  // XXX updates redundantly, twice per edge
   for await (const [destChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, destChainId);
     promises.push(
