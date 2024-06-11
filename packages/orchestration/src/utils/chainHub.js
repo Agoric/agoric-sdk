@@ -158,12 +158,21 @@ export const registerChain = async (
 
   mustMatch(chainInfo, CosmosChainInfoShape);
   const { connections = {}, ...vertex } = chainInfo;
-  log(`registering agoricNames chain.${name}`);
-  await E(nameAdmin).update(name, vertex);
+
+  const promises = [
+    E(nameAdmin)
+      .update(name, vertex)
+      .then(() => log(`registered agoricNames chain.${name}`)),
+  ];
 
   for await (const [destChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, destChainId);
-    log(`registering agoricNames chainConnection.${key}`);
-    await E(connAdmin).update(key, connInfo);
+    promises.push(
+      E(connAdmin)
+        .update(key, connInfo)
+        .then(() => log(`registering agoricNames chainConnection.${key}`)),
+    );
   }
+  // Bundle to pipeline IO
+  await Promise.all(promises);
 };
