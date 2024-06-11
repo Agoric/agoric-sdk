@@ -158,6 +158,9 @@ export const prepareCosmosOrchestrationAccountKit = (
       // must be the fully synchronous maker because the kit is held in durable state
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      // TODO https://github.com/Agoric/agoric-sdk/issues/9066
+      // update sequence after successful executeEncodedTx, _if we want sequence in `vstorage`_
+      void E(topicKit.recorder).write(harden({ sequence: 0n }));
 
       return { chainAddress, bondDenom, topicKit, ...rest };
     },
