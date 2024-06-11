@@ -117,7 +117,7 @@ test.serial('stakeAtom - repl-style', async t => {
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
-  const { agoricNamesRemotes } = t.context;
+  const { agoricNamesRemotes, readLatest } = t.context;
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
     'agoric1testStakAtom',
@@ -134,12 +134,18 @@ test.serial('stakeAtom - smart wallet', async t => {
   });
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
-      ['request-account', { account: 'published.stakeAtom' }],
+      [
+        'request-account',
+        {
+          account: 'published.stakeAtom.accounts.cosmos1test',
+        },
+      ],
     ],
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
+  t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;

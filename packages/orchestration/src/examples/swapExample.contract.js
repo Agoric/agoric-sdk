@@ -2,9 +2,10 @@ import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
+import { provideAll } from '@agoric/zoe/src/contractSupport';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { orcUtils } from '../utils/orc.js';
@@ -79,16 +80,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     timerService,
     chainHub,
   );
+  const { accountsStorageNode } = await provideAll(baggage, {
+    accountsStorageNode: () => E(storageNode).makeChildNode('accounts'),
+  });
 
   const { orchestrate } = makeOrchestrationFacade({
     localchain,
     orchestrationService,
-    storageNode,
+    storageNode: accountsStorageNode,
     timerService,
     zcf,
     zone,
     chainHub,
     makeLocalChainAccountKit,
+    makeRecorderKit,
   });
 
   /** deprecated historical example */
