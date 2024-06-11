@@ -15,26 +15,23 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
 /** @type {any} */
 const anyVal = null;
 
-// FIXME look up real values
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
-const mockLocalChainInfo = {
-  allegedName: 'agoric',
-  chainId: 'agoriclocal',
-  connections: anyVal,
-};
-
 /**
  * @param {Remote<LocalChain>} localchain
  * @param {ReturnType<
  *   typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
  * >} makeLocalChainAccountKit
+ * @param {ChainInfo} localInfo
  * @returns {Chain}
  */
-const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
+const makeLocalChainFacade = (
+  localchain,
+  makeLocalChainAccountKit,
+  localInfo,
+) => {
   return {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
-      return mockLocalChainInfo;
+      return localInfo;
     },
 
     async makeAccount() {
@@ -56,7 +53,7 @@ const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
           const addressStr = account.getAddress();
           return {
             address: addressStr,
-            chainId: mockLocalChainInfo.chainId,
+            chainId: localInfo.chainId,
             addressEncoding: 'bech32',
           };
         },
@@ -193,11 +190,15 @@ export const makeOrchestrationFacade = ({
       /** @type {Orchestrator} */
       const orc = {
         async getChain(name) {
-          if (name === 'agoric') {
-            return makeLocalChainFacade(localchain, makeLocalChainAccountKit);
-          }
-
           const chainInfo = await chainHub.getChainInfo(name);
+
+          if (name === 'agoric') {
+            return makeLocalChainFacade(
+              localchain,
+              makeLocalChainAccountKit,
+              chainInfo,
+            );
+          }
 
           return makeRemoteChainFacade(chainInfo, {
             orchestration: orchestrationService,
