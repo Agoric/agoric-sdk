@@ -86,7 +86,7 @@ export const makeOrchestrationFacade = ({
 
   const { when } = vowTools;
 
-  return {
+  return harden({
     /**
      * @template GuestReturn
      * @template HostReturn
@@ -126,7 +126,7 @@ export const makeOrchestrationFacade = ({
       return harden(orcFn);
     },
     adminAsyncFlow,
-  };
+  });
 };
 harden(makeOrchestrationFacade);
 /** @typedef {ReturnType<typeof makeOrchestrationFacade>} OrchestrationFacade */
