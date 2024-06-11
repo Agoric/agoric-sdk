@@ -1,6 +1,6 @@
 /** @file Orchestration service */
 
-import { E } from '@endo/far';
+import { V as E } from '@agoric/vow/vat.js';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 
 /**
