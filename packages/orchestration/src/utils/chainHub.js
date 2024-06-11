@@ -6,6 +6,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
  */
@@ -59,12 +60,18 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       chainInfos.init(name, chainInfo);
     },
     /**
-     * @param {string} chainName
-     * @returns {Promise<CosmosChainInfo>}
+     * @template {string} K
+     * @param {K} chainName
+     * @returns {Promise<
+     *   K extends keyof KnownChains
+     *     ? Omit<KnownChains[K], 'connections'>
+     *     : ChainInfo
+     * >}
      */
     async getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
+        // @ts-expect-error cast
         return chainInfos.get(chainName);
       }
 
