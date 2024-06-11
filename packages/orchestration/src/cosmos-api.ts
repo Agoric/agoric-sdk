@@ -5,20 +5,19 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import type { Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type {
+  State as IBCChannelState,
+  Order,
+} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type { Brand, Purse } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
+import { IBCChannelID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
-import type {
-  Order,
-  State as IBCChannelState,
-} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
-import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
@@ -39,21 +38,25 @@ export type CosmosValidatorAddress = ChainAddress & {
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
 export type IBCConnectionInfo = {
-  id: IBCConnectionID; // e.g. connection-0
+  // XXX really IBCConnectionID but our chain info fetcher doesn't know
+  id: string; // e.g. connection-0
   client_id: string; // '07-tendermint-0'
   state: IBCConnectionState;
   counterparty: {
     client_id: string;
-    connection_id: IBCConnectionID;
+    // XXX really IBCConnectionID but our chain info fetcher doesn't know
+    connection_id: string;
     prefix: {
       key_prefix: string;
     };
   };
   transferChannel: {
     portId: string;
-    channelId: IBCChannelID;
+    // XXX really IBCChannelID but our chain info fetcher doesn't know
+    channelId: string;
     counterPartyPortId: string;
-    counterPartyChannelId: IBCChannelID;
+    // XXX really IBCChannelID but our chain info fetcher doesn't know
+    counterPartyChannelId: string;
     ordering: Order;
     state: IBCChannelState;
     version: string; // e.eg. 'ics20-1'
