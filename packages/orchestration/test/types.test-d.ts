@@ -16,13 +16,15 @@ import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmosOrchestrati
 const anyVal = null as any;
 
 const validatorAddr = {
-  chainId: 'agoric3',
+  chainName: 'agoric',
+  chainId: 'agoric-3',
   address: 'agoric1valoperhello',
   addressEncoding: 'bech32',
 } as const;
 expectType<CosmosValidatorAddress>(validatorAddr);
 
 const chainAddr = {
+  chainName: 'agoric',
   chainId: 'agoric-3',
   address: 'agoric1pleab',
   addressEncoding: 'bech32',

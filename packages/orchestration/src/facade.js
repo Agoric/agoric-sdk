@@ -55,6 +55,7 @@ const makeLocalChainFacade = (
           return {
             address: addressStr,
             chainId: localInfo.chainId,
+            chainName: localInfo.chainName,
             addressEncoding: 'bech32',
           };
         },
@@ -117,7 +118,7 @@ const makeRemoteChainFacade = (
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
       const icaAccount = await E(orchestration).makeAccount(
-        chainInfo.chainId,
+        chainInfo,
         // XXX IBCConnectionInfo concessions for JSON encoding
         /** @type {IBCConnectionID} */ (connectionInfo.id),
         /** @type {IBCConnectionID} */ (

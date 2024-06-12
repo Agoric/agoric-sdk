@@ -102,6 +102,7 @@ for (const name of chainNames) {
 
   const chain = client.getChain(name);
   chainInfo[name] = {
+    chainName: name,
     chainId: chain.chain_id,
     stakingTokens: chain.staking?.staking_tokens,
   };

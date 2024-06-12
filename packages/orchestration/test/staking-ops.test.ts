@@ -40,6 +40,7 @@ const configStaking = {
     address: 'agoric1valoper234',
     addressEncoding: 'bech32',
     chainId: 'agoriclocal',
+    chainName: 'agoriclocal',
   },
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '200' },
@@ -53,6 +54,7 @@ const configRedelegate = {
     address: 'agoric1valoper444',
     addressEncoding: 'bech32',
     chainId: 'atom-test',
+    chainName: 'cosmoshub',
   },
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '50' },
@@ -120,6 +122,7 @@ const makeScenario = () => {
     };
 
     const chainAddress: ChainAddress = harden({
+      chainName: 'mock',
       address: addr,
       addressEncoding: 'bech32',
       chainId: 'mock-1',

@@ -109,13 +109,13 @@ const prepareOrchestrationKit = (
       },
       public: {
         /**
-         * @param {string} chainId
+         * @param {{ chainId: string; chainName: string }} chainInfo
          * @param {IBCConnectionID} hostConnectionId the counterparty
          *   connection_id
          * @param {IBCConnectionID} controllerConnectionId self connection_id
          * @returns {Promise<IcaAccount>}
          */
-        async makeAccount(chainId, hostConnectionId, controllerConnectionId) {
+        async makeAccount(chainInfo, hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.allocateICAControllerPort();
 
           const remoteConnAddr = makeICAChannelAddress(
@@ -123,7 +123,7 @@ const prepareOrchestrationKit = (
             controllerConnectionId,
           );
           const chainAccountKit = makeChainAccountKit(
-            chainId,
+            chainInfo,
             port,
             remoteConnAddr,
           );

@@ -164,6 +164,7 @@ test('transfer', async t => {
   t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
 
   const destination: ChainAddress = {
+    chainName: 'cosmoshub',
     chainId: 'cosmoshub-4',
     address: 'cosmos1pleab',
     addressEncoding: 'bech32',
@@ -190,7 +191,8 @@ test('transfer', async t => {
   );
 
   const unknownDestination: ChainAddress = {
-    chainId: 'fakenet',
+    chainName: 'fakenet',
+    chainId: 'fakenet-1',
     address: 'fakenet1pleab',
     addressEncoding: 'bech32',
   };

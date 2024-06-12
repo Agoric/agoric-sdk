@@ -67,6 +67,7 @@ export type IBCConnectionInfo = {
  * Info for a Cosmos-based chain.
  */
 export type CosmosChainInfo = {
+  chainName: string;
   chainId: string;
 
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName

@@ -104,22 +104,22 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       return chainInfo;
     },
     /**
-     * @param {string} chainId1
-     * @param {string} chainId2
+     * @param {string} chain1
+     * @param {string} chain2
      * @param {IBCConnectionInfo} connectionInfo
      */
-    registerConnection(chainId1, chainId2, connectionInfo) {
-      const key = connectionKey(chainId1, chainId2);
+    registerConnection(chain1, chain2, connectionInfo) {
+      const key = connectionKey(chain1, chain2);
       connectionInfos.init(key, connectionInfo);
     },
 
     /**
-     * @param {string} chainId1
-     * @param {string} chainId2
+     * @param {string} chain1
+     * @param {string} chain2
      * @returns {Promise<IBCConnectionInfo>}
      */
-    async getConnectionInfo(chainId1, chainId2) {
-      const key = connectionKey(chainId1, chainId2);
+    async getConnectionInfo(chain1, chain2) {
+      const key = connectionKey(chain1, chain2);
       if (connectionInfos.has(key)) {
         return connectionInfos.get(key);
       }
@@ -127,7 +127,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       const connectionInfo = await E(agoricNames)
         .lookup(CONNECTIONS_KEY, key)
         .catch(_cause => {
-          throw assert.error(`connection not found: ${chainId1}<->${chainId2}`);
+          throw assert.error(`connection not found: ${chain1}<->${chain2}`);
         });
       connectionInfos.init(key, connectionInfo);
       return connectionInfo;
@@ -165,6 +165,7 @@ export const registerChain = async (
 
   // XXX updates redundantly, twice per edge
   for await (const [counterChainId, connInfo] of Object.entries(connections)) {
+    // FIXME look up the chainName for the counterChainId and use chainNames here for the keys
     const key = connectionKey(chainInfo.chainId, counterChainId);
     promises.push(
       E(connAdmin)

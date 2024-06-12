@@ -10,6 +10,7 @@ import { makeChainHub } from '../src/utils/chainHub.js';
 const test = anyTest;
 
 export const mockChainInfo: CosmosChainInfo = harden({
+  chainName: 'mock',
   chainId: 'mock-1',
   icaEnabled: false,
   icqEnabled: false,

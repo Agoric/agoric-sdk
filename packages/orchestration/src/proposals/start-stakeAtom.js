@@ -61,6 +61,7 @@ export const startStakeAtom = async ({
     installation: stakeIca,
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
+      chainName: cosmoshub.chainName,
       chainId: cosmoshub.chainId,
       hostConnectionId: /** @type {IBCConnectionID} */ (connectionInfo.id),
       controllerConnectionId: /** @type {IBCConnectionID} */ (

@@ -11,6 +11,7 @@ export const orcUtils = {
     // XXX mocked, so typescript is happy
     return {
       toAccount: {
+        chainName: 'osmosis',
         chainId: 'osmosis-test',
         address: 'osmo1234',
         addressEncoding: 'bech32',
@@ -29,6 +30,7 @@ export const orcUtils = {
     // XXX mocked, so typescript is happy
     return {
       toAccount: {
+        chainName: 'osmosis',
         chainId: 'osmosis-test',
         address: 'osmo1234',
         addressEncoding: 'bech32',

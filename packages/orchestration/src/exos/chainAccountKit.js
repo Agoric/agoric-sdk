@@ -46,6 +46,7 @@ export const ChainAccountI = M.interface('ChainAccount', {
 /**
  * @typedef {{
  *   chainId: string;
+ *   chainName: string;
  *   port: Port;
  *   connection: Remote<Connection> | undefined;
  *   localAddress: LocalIbcAddress | undefined;
@@ -61,13 +62,14 @@ export const prepareChainAccountKit = zone =>
     'ChainAccountKit',
     { account: ChainAccountI, connectionHandler: ConnectionHandlerI },
     /**
-     * @param {string} chainId
+     * @param {{ chainId: string; chainName: string }} chainInfo
      * @param {Port} port
      * @param {string} requestedRemoteAddress
      */
-    (chainId, port, requestedRemoteAddress) =>
+    (chainInfo, port, requestedRemoteAddress) =>
       /** @type {State} */ ({
-        chainId,
+        chainId: chainInfo.chainId,
+        chainName: chainInfo.chainName,
         port,
         connection: undefined,
         requestedRemoteAddress,
@@ -162,6 +164,7 @@ export const prepareChainAccountKit = zone =>
           this.state.chainAddress = harden({
             address: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
             chainId: this.state.chainId,
+            chainName: this.state.chainName,
             addressEncoding: 'bech32',
           });
         },
