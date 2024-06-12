@@ -33,7 +33,7 @@ $ inter bid list --from test-acct --all | jq
 }
 ```
 
-See also [test-inter-cli.js.md](https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/test/snapshots/test-inter-cli.js.md) for exhaustive command options.
+See also [test-inter-cli.js.md](../../../agoric-cli/test/snapshots/inter-cli.test.js.md) for exhaustive command options.
 
 ## Installation
 

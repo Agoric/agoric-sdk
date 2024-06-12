@@ -3,6 +3,7 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@agoric/assert';
 import { registerChainNamespace } from '../chain-info.js';
+import { CHAIN_KEY, CONNECTIONS_KEY } from '../utils/chainHub.js';
 
 const trace = makeTracer('CoreEvalOrchestration', true);
 
@@ -73,7 +74,6 @@ export const setupOrchestrationVat = async (
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {ERef<StorageNode | null>} chainStorageP
  */
-
 const publishChainInfoToChainStorage = async (
   agoricNamesAdmin,
   chainStorageP,
@@ -84,29 +84,48 @@ const publishChainInfoToChainStorage = async (
     return;
   }
 
-  const chainNamesNode = E(
-    E(chainStorage).makeChildNode('agoricNames'),
-  ).makeChildNode('chain');
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
+  const agoricNamesNode = await E(chainStorage).makeChildNode('agoricNames');
 
-  await E(nameAdmin).onUpdate(
-    // XXX will live on the heap in the bootstrap vat. When we upgrade or kill
-    // that this handler will sever and vat-agoricNames will need to be upgraded
-    // to allow changing the handler, or to use pubsub mechanics instead.
-    Far('chain info writer', {
-      write(entries) {
-        // chainInfo has no cap data but we need to marshal bigints
-        const marshalData = makeMarshal(_val => Fail`data only`);
-        for (const [chainName, info] of entries) {
-          // XXX writes even if the entry hasn't changed
-          const chainNode = E(chainNamesNode).makeChildNode(chainName);
-          void E(chainNode).setValue(
-            JSON.stringify(marshalData.toCapData(info)),
-          );
-        }
-      },
-    }),
-  );
+  /**
+   * @param {string} subpath
+   */
+  const echoNameUpdates = async subpath => {
+    const chainNamesNode = E(agoricNamesNode).makeChildNode(subpath);
+    const { nameAdmin } = await E(agoricNamesAdmin).provideChild(subpath);
+
+    /**
+     * Previous entries, to prevent redundant updates
+     *
+     * @type {Record<string, string>} chainName => stringified chainInfo
+     */
+    const prev = {};
+
+    // XXX cannot be changed until we upgrade vat-agoricNames to allow it
+    await E(nameAdmin).onUpdate(
+      // XXX will live on the heap in the bootstrap vat. When we upgrade or kill
+      // that this handler will sever and vat-agoricNames will need to be upgraded
+      // to allow changing the handler, or to use pubsub mechanics instead.
+      Far('chain info writer', {
+        write(entries) {
+          // chainInfo has no cap data but we need to marshal bigints
+          const marshalData = makeMarshal(_val => Fail`data only`);
+          for (const [chainName, info] of entries) {
+            const value = JSON.stringify(marshalData.toCapData(info));
+            if (prev[chainName] === value) {
+              continue;
+            }
+            const chainNode = E(chainNamesNode).makeChildNode(chainName);
+            prev[chainName] = value;
+            void E(chainNode)
+              .setValue(value)
+              .catch(() => delete prev[chainName]);
+          }
+        },
+      }),
+    );
+  };
+  await echoNameUpdates(CHAIN_KEY);
+  await echoNameUpdates(CONNECTIONS_KEY);
 };
 
 /**

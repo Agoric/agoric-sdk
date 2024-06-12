@@ -41,6 +41,8 @@ const client = new ChainRegistryClient({
 // chain info, assets and ibc data will be downloaded dynamically by invoking fetchUrls method
 await client.fetchUrls();
 
+const chainInfo = {} as Record<string, CosmosChainInfo>;
+
 function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
   // IbcInfo encodes the undirected edge as a tuple of (chain_1, chain_2) in alphabetical order
   const fromChain1 = ibcInfo.chain_1.chain_name === name;
@@ -90,13 +92,12 @@ function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
       version: channel.version,
     },
   } as IBCConnectionInfo;
-  return [to.chain_name, record];
+  const destChainId = chainInfo[to.chain_name].chainId;
+  return [destChainId, record];
 }
 
-const chainInfo = {} as Record<string, CosmosChainInfo>;
-
 for (const name of chainNames) {
-  console.log('processing', name);
+  console.log('processing info', name);
 
   const chain = client.getChain(name);
   chainInfo[name] = {
@@ -107,6 +108,10 @@ for (const name of chainNames) {
   if (name === 'osmosis') {
     chainInfo[name].icqEnabled = true;
   }
+}
+// iterate this after chainInfo is filled out
+for (const name of chainNames) {
+  console.log('processing connections', name);
 
   const ibcData = client.getChainIbcData(name);
   chainInfo[name].connections = Object.fromEntries(

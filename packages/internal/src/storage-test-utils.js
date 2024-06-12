@@ -5,6 +5,7 @@ import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
+import { eventLoopIteration } from './testing-utils.js';
 
 /**
  * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
@@ -253,4 +254,44 @@ export const makeMockChainStorageRoot = () => {
     },
     keys: () => [...data.keys()],
   });
+};
+
+/**
+ * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {MockChainStorageRoot | FakeStorageKit} storage
+ * @param {({ note: string } | { node: string; owner: string }) &
+ *   ({ pattern: string; replacement: string } | {})} opts
+ */
+export const documentStorageSchema = async (t, storage, opts) => {
+  // chainStorage publication is unsynchronized
+  await eventLoopIteration();
+
+  const [keys, getBody] =
+    'keys' in storage
+      ? [storage.keys(), (/** @type {string} */ k) => storage.getBody(k)]
+      : [storage.data.keys(), (/** @type {string} */ k) => storage.data.get(k)];
+
+  const { pattern, replacement } =
+    'pattern' in opts
+      ? opts
+      : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
+  const illustration = [...keys].sort().map(
+    /** @type {(k: string) => [string, unknown]} */
+    key => [key.replace(pattern, replacement), getBody(key)],
+  );
+  const pruned = illustration.filter(
+    'node' in opts
+      ? ([key, _]) => key.startsWith(`published.${opts.node}`)
+      : _entry => true,
+  );
+
+  const note =
+    'note' in opts
+      ? opts.note
+      : `Under "published", the "${opts.node}" node is delegated to ${opts.owner}.`;
+  const boilerplate = `
+The example below illustrates the schema of the data published there.
+
+See also board marshalling conventions (_to appear_).`;
+  t.snapshot(pruned, note + boilerplate);
 };

@@ -7,6 +7,7 @@ import type { start as startStakeIca } from '@agoric/orchestration/src/examples/
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import type { TestFn } from 'ava';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -27,19 +28,48 @@ test.after.always(t => t.context.shutdown?.());
  */
 test.serial('config', async t => {
   const {
+    storage,
     readLatest,
     runUtils: { EV },
   } = t.context;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
-  const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
-  t.like(cosmosChainInfo, {
-    chainId: 'cosmoshub-4',
-    stakingTokens: [{ denom: 'uatom' }],
-  });
-  const cosmosInfo = readLatest(`published.agoricNames.chain.cosmoshub`);
-  t.deepEqual(cosmosInfo, cosmosChainInfo);
+  {
+    const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
+    t.like(cosmosChainInfo, {
+      chainId: 'cosmoshub-4',
+      stakingTokens: [{ denom: 'uatom' }],
+    });
+    t.deepEqual(
+      readLatest(`published.agoricNames.chain.cosmoshub`),
+      cosmosChainInfo,
+    );
+    await documentStorageSchema(t, storage, {
+      note: 'Chain info for Orchestration',
+      node: 'agoricNames.chain',
+    });
+  }
+
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'cosmoshub-4_juno-1',
+    );
+
+    t.like(
+      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      {
+        state: 3,
+        transferChannel: { portId: 'transfer', state: 3 },
+      },
+    );
+
+    await documentStorageSchema(t, storage, {
+      note: 'Chain connections for Orchestration',
+      node: 'agoricNames.chainConnection',
+    });
+  }
 });
 
 test.serial('stakeAtom - repl-style', async t => {
