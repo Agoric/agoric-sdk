@@ -54,6 +54,7 @@ test('start', async t => {
     {
       staked: ten,
       validator: {
+        chainName: 'agoric',
         chainId: 'agoric-3',
         address: 'agoric1valoperfufu',
         addressEncoding: 'bech32',

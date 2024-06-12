@@ -29,6 +29,7 @@ const startContract = async ({
     { In: bld.issuer },
     {
       chainId: 'cosmoshub-4',
+      chainName: 'cosmoshub',
       hostConnectionId: 'connection-1',
       controllerConnectionId: 'connection-2',
       bondDenom: 'uatom',
