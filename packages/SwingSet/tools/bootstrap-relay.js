@@ -1,6 +1,7 @@
 import { assert } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from './manual-timer.js';
 
 const { Fail, quote: q } = assert;
@@ -37,10 +38,13 @@ export const buildRootObject = () => {
       return root;
     },
 
-    createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
+    createVat: async (
+      { name, bundleCapName, vatParameters = {} },
+      options = {},
+    ) => {
       const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
-      const options = { vatParameters };
-      const { adminNode, root } = await E(vatAdmin).createVat(bcap, options);
+      const vatOptions = { ...options, vatParameters };
+      const { adminNode, root } = await E(vatAdmin).createVat(bcap, vatOptions);
       vatData.set(name, { adminNode, root });
       return root;
     },
@@ -75,6 +79,12 @@ export const buildRootObject = () => {
       const remotable = Far(label, { ...methods });
       callLogsByRemotable.set(remotable, callLogs);
       return remotable;
+    },
+
+    makePromiseKit: () => {
+      const { promise, ...resolverMethods } = makePromiseKit();
+      const resolver = Far('resolver', resolverMethods);
+      return harden({ promise, resolver });
     },
 
     /**

@@ -4,9 +4,11 @@ import { Far } from '@endo/far';
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
-  const { watch } = prepareVowTools(zone.subZone('VowTools'));
+  const { watch, makeVowKit } = prepareVowTools(zone.subZone('VowTools'));
 
-  /** @type {MapStore<string, { status: 'unsettled' } | PromiseSettledResult<any>>} */
+  /** @typedef {({ status: 'unsettled' } | PromiseSettledResult<any>) & { resolver?: import('@agoric/vow').VowResolver }} WatcherResult */
+
+  /** @type {MapStore<string, WatcherResult>} */
   const nameToResult = zone.mapStore('nameToResult');
 
   const makeWatcher = zone.exoClass('Watcher', undefined, name => ({ name }), {
@@ -41,6 +43,49 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
           }
         }
         watch(p, makeWatcher(name));
+      }
+    },
+    /** @param {Record<string, [settlementValue?: unknown, isRejection?: boolean, wrapInPromise?: boolean]>} localVows */
+    async makeLocalVowWatchers(localVows) {
+      for (const [name, settlement] of Object.entries(localVows)) {
+        const { vow, resolver } = makeVowKit();
+        nameToResult.init(name, harden({ status: 'unsettled', resolver }));
+        if (settlement.length) {
+          let [settlementValue, isRejection] = settlement;
+          const wrapInPromise = settlement[2];
+          if (wrapInPromise) {
+            if (isRejection) {
+              settlementValue = Promise.reject(settlementValue);
+              isRejection = false;
+            } else if (settlementValue === undefined) {
+              // Consider an undefined value as no settlement
+              settlementValue = new Promise(() => {});
+            } else {
+              settlementValue = Promise.resolve(settlementValue);
+            }
+          }
+          if (isRejection) {
+            resolver.reject(settlementValue);
+          } else {
+            resolver.resolve(settlementValue);
+          }
+        }
+        watch(vow, makeWatcher(name));
+      }
+    },
+    /** @param {Record<string, [settlementValue: unknown, isRejection?: boolean]>} localVows */
+    async resolveVowWatchers(localVows) {
+      for (const [name, settlement] of Object.entries(localVows)) {
+        const { status, resolver } = nameToResult.get(name);
+        if (status !== 'unsettled' || !resolver) {
+          throw Error(`Invalid pending vow for ${name}`);
+        }
+        const [settlementValue, isRejection] = settlement;
+        if (isRejection) {
+          resolver.reject(settlementValue);
+        } else {
+          resolver.resolve(settlementValue);
+        }
       }
     },
   });
