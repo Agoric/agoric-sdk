@@ -33,8 +33,8 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/async-flow": "^0.1.0",
     "@agoric/assert": "^0.6.0",
+    "@agoric/async-flow": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
@@ -48,9 +48,12 @@
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
     "@endo/base64": "^1.0.5",
+    "@endo/bundle-source": "3.2.3",
     "@endo/far": "^1.1.2",
+    "@endo/import-bundle": "1.1.2",
     "@endo/marshal": "^1.5.0",
-    "@endo/patterns": "^1.4.0"
+    "@endo/patterns": "^1.4.0",
+    "@noble/hashes": "1.1.2"
   },
   "devDependencies": {
     "@chain-registry/client": "^1.47.4",
