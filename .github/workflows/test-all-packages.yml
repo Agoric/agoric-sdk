@@ -3,6 +3,7 @@ name: Test all Packages
 # run on all PRs (even the ones that target other branches)
 
 on:
+  workflow_dispatch:
   pull_request:
   merge_group:
   push:
