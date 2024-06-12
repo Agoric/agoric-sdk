@@ -151,12 +151,12 @@ export const start = async (zcf, privateArgs, baggage) => {
        * @param {IBCConnectionInfo} connectionInfo
        */
       async addChain(chainInfo, connectionInfo) {
-        const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
+        const chainKey = `${chainInfo.chainName}-${(nonce += 1n)}`;
         const agoricChainInfo = await chainHub.getChainInfo('agoric');
         chainHub.registerChain(chainKey, chainInfo);
         chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainInfo.chainId,
+          agoricChainInfo.chainName,
+          chainInfo.chainName,
           connectionInfo,
         );
         return chainKey;
