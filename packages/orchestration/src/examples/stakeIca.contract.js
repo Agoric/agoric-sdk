@@ -19,6 +19,7 @@ const trace = makeTracer('StakeAtom');
 
 export const meta = harden({
   customTermsShape: {
+    chainId: M.string(),
     hostConnectionId: M.string(),
     controllerConnectionId: M.string(),
     bondDenom: M.string(),
@@ -34,6 +35,7 @@ export const privateArgsShape = meta.privateArgsShape;
 
 /**
  * @typedef {{
+ *   chainId: string;
  *   hostConnectionId: IBCConnectionID;
  *   controllerConnectionId: IBCConnectionID;
  *   bondDenom: string;
@@ -51,7 +53,7 @@ export const privateArgsShape = meta.privateArgsShape;
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { hostConnectionId, controllerConnectionId, bondDenom } =
+  const { chainId, hostConnectionId, controllerConnectionId, bondDenom } =
     zcf.getTerms();
   const { orchestration, marshaller, storageNode, timer } = privateArgs;
 
@@ -67,6 +69,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
+      chainId,
       hostConnectionId,
       controllerConnectionId,
     );

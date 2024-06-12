@@ -28,6 +28,7 @@ const startContract = async ({
     installation,
     { In: bld.issuer },
     {
+      chainId: 'cosmoshub-4',
       hostConnectionId: 'connection-1',
       controllerConnectionId: 'connection-2',
       bondDenom: 'uatom',
@@ -56,7 +57,7 @@ test('makeAccount, deposit, withdraw', async t => {
   const address = await E(account).getAddress();
   // XXX address.address is weird
   //   t.regex(address.address, /agoric1/);
-  t.like(address, { chainId: 'FIXME', addressEncoding: 'bech32' });
+  t.like(address, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
 
   t.log('deposit 100 bld to account');
   await E(account).deposit(await utils.pourPayment(ist.units(100)));

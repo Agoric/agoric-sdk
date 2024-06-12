@@ -45,6 +45,7 @@ export const ChainAccountI = M.interface('ChainAccount', {
 
 /**
  * @typedef {{
+ *   chainId: string;
  *   port: Port;
  *   connection: Remote<Connection> | undefined;
  *   localAddress: LocalIbcAddress | undefined;
@@ -60,11 +61,13 @@ export const prepareChainAccountKit = zone =>
     'ChainAccountKit',
     { account: ChainAccountI, connectionHandler: ConnectionHandlerI },
     /**
+     * @param {string} chainId
      * @param {Port} port
      * @param {string} requestedRemoteAddress
      */
-    (port, requestedRemoteAddress) =>
+    (chainId, port, requestedRemoteAddress) =>
       /** @type {State} */ ({
+        chainId,
         port,
         connection: undefined,
         requestedRemoteAddress,
@@ -158,9 +161,7 @@ export const prepareChainAccountKit = zone =>
           this.state.localAddress = localAddr;
           this.state.chainAddress = harden({
             address: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
-            // TODO get this from `Chain` object #9063
-            // XXX how do we get a chainId for an unknown chain? seems it may need to be a user supplied arg
-            chainId: 'FIXME',
+            chainId: this.state.chainId,
             addressEncoding: 'bech32',
           });
         },

@@ -48,10 +48,11 @@ export const startStakeAtom = async ({
 
   const chainHub = makeChainHub(await agoricNames);
 
+  const agoric = await chainHub.getChainInfo('agoric');
   const cosmoshub = await chainHub.getChainInfo('cosmoshub');
   const connectionInfo = await chainHub.getConnectionInfo(
-    'agoriclocal',
-    'cosmoshub-4',
+    agoric.chainId,
+    cosmoshub.chainId,
   );
 
   /** @type {StartUpgradableOpts<StakeAtomSF>} */
@@ -60,6 +61,7 @@ export const startStakeAtom = async ({
     installation: stakeIca,
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
+      chainId: cosmoshub.chainId,
       hostConnectionId: /** @type {IBCConnectionID} */ (connectionInfo.id),
       controllerConnectionId: /** @type {IBCConnectionID} */ (
         connectionInfo.counterparty.connection_id
