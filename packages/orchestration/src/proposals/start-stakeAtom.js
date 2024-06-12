@@ -65,8 +65,7 @@ export const startStakeAtom = async ({
       hostConnectionId: connectionInfo.id,
       controllerConnectionId: connectionInfo.counterparty.connection_id,
       bondDenom: cosmoshub.stakingTokens[0].denom,
-      // @ts-expect-error icqEnabled exists on CosmosChainInfo type
-      icqEnabled: !!cosmoshub.icqEnabled,
+      icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: {
       orchestration: await orchestration,
