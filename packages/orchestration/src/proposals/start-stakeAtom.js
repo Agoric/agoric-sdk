@@ -48,10 +48,7 @@ export const startStakeAtom = async ({
 
   const agoric = await chainHub.getChainInfo('agoric');
   const cosmoshub = await chainHub.getChainInfo('cosmoshub');
-  const connectionInfo = await chainHub.getConnectionInfo(
-    agoric.chainId,
-    cosmoshub.chainId,
-  );
+  const connectionInfo = await chainHub.getConnectionInfo(agoric, cosmoshub);
 
   /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {

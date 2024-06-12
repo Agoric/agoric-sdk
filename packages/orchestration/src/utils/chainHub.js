@@ -114,11 +114,13 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     },
 
     /**
-     * @param {string} chainId1
-     * @param {string} chainId2
+     * @param {string | { chainId: string }} chain1
+     * @param {string | { chainId: string }} chain2
      * @returns {Promise<IBCConnectionInfo>}
      */
-    async getConnectionInfo(chainId1, chainId2) {
+    async getConnectionInfo(chain1, chain2) {
+      const chainId1 = typeof chain1 === 'string' ? chain1 : chain1.chainId;
+      const chainId2 = typeof chain2 === 'string' ? chain2 : chain2.chainId;
       const key = connectionKey(chainId1, chainId2);
       if (connectionInfos.has(key)) {
         return connectionInfos.get(key);

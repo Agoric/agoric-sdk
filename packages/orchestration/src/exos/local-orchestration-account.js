@@ -252,8 +252,8 @@ export const prepareLocalOrchestrationAccountKit = (
 
           const agoricChainInfo = await chainHub.getChainInfo('agoric');
           const { transferChannel } = await chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            destination.chainId,
+            agoricChainInfo,
+            destination,
           );
 
           await null;
