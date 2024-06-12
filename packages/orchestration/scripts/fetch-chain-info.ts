@@ -33,6 +33,7 @@ const chainNames = [
   'secretnetwork',
   'stargaze',
   'stride',
+  'umee',
 ];
 
 const client = new ChainRegistryClient({
