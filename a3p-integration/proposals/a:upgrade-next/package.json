@@ -9,8 +9,8 @@
     "sdk-generate": [
       "vats/upgrade-bank.js upgrade-bank",
       "vats/upgrade-provisionPool.js upgrade-provisionPool",
-      "vats/add-STARS.js add-STARS",
-      "vats/add-STARS2.js add-STARS2"
+      "testing/add-LEMONS.js add-LEMONS",
+      "testing/add-OLIVES.js add-OLIVES"
     ],
     "type": "Software Upgrade Proposal"
   },

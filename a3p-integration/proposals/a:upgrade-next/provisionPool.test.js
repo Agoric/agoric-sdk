@@ -12,8 +12,8 @@ import { bankSend, getProvisionPoolMetrics } from './agd-tools.js';
 
 const NULL_UPGRADE_BANK_DIR = 'upgrade-bank';
 const UPGRADE_PP_DIR = 'upgrade-provisionPool';
-const ADD_STARS_DIR = 'add-STARS';
-const ADD_STARS2_DIR = 'add-STARS2';
+const ADD_LEMONS_DIR = 'add-LEMONS';
+const ADD_OLIVES_DIR = 'add-OLIVES';
 
 const USDC_DENOM =
   'ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F';
