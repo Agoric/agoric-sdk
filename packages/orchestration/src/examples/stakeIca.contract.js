@@ -51,7 +51,6 @@ export const privateArgsShape = meta.privateArgsShape;
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  // TODO #9063 this roughly matches what we'll get from Chain<C>.getChainInfo()
   const { hostConnectionId, controllerConnectionId, bondDenom } =
     zcf.getTerms();
   const { orchestration, marshaller, storageNode, timer } = privateArgs;
