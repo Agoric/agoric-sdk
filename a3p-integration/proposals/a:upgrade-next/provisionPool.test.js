@@ -21,8 +21,8 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 /**
  * @file
- * The problems to be addressed are that provisionPool won't correctly handle
- * (#8722) deposit of assets after it (provisionPool) is upgraded, or (#8724)
+ * The problem to be addressed is that provisionPool won't correctly handle
+ * (#8722) deposit of assets after it (provisionPool) is upgraded or (#8724)
  * new asset kinds after vat-bank is upgraded.
  *
  * To test this, we will
@@ -31,14 +31,17 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
  *
  * 2. Null upgrade vat-bank, and see that we can add a new collateal.
  *
- * 2a. if we had been able to null-upgrade provisionPool at this point, we
- * wouldn't have been able to productively add USDC, but the null upgrade fails.
+ * 2a. Not null upgrade provisionPool, since it would fail. If it had succeeded,
+ * we would have been able to observe the effect of #8724, which would have
+ * caused addition of new currencies to be ignored.
  *
  * 3. Do a full upgrade of provisionPool; then deposit USDC, and see IST
  * incremented in totalMintedConverted.
  *
  * 4. Null upgrade vat-bank again, and then see (in logs) that adding a new
- * asset type gives the ability to make deposits.
+ * asset type gives the ability to make deposits. We don't actually add it
+ * because it would be too much work to add a faucet or other ability to mint
+ * the new collateral.
  */
 
 const contributeToPool = async (t, asset, expectedToGrow) => {
@@ -69,33 +72,31 @@ const contributeToPool = async (t, asset, expectedToGrow) => {
   }
 };
 
-test.serial('add assets before', async t => {
+test('upgrading provisionPool and vat-bank', async t => {
+  t.log('add assets before');
   await contributeToPool(t, `10000${USDC_DENOM}`, true);
-});
 
-test.serial(`upgrade Bank`, async t => {
+  t.log(`upgrade Bank`);
   await evalBundles(NULL_UPGRADE_BANK_DIR);
 
-  const incarnation = await getIncarnation('bank');
-  t.is(incarnation, 1);
+  const firstIncarnation = await getIncarnation('bank');
+  t.is(firstIncarnation, 1);
 
-  await evalBundles(ADD_STARS_DIR);
-});
+  await evalBundles(ADD_LEMONS_DIR);
 
-test.serial('full upgrade ProvisionPool', async t => {
+  t.log('full upgrade ProvisionPool');
   await evalBundles(UPGRADE_PP_DIR);
   const ppIncarnation = await getIncarnation('db93f-provisionPool');
   t.is(ppIncarnation, 1);
 
   await contributeToPool(t, `30000${USDC_DENOM}`, true);
-});
 
-test.serial(`Add assets after bank upgrade`, async t => {
+  t.log(`Add assets after bank upgrade`);
   await evalBundles(NULL_UPGRADE_BANK_DIR);
   await waitForBlock(2);
 
-  const incarnation = await getIncarnation('bank');
-  t.is(incarnation, 2);
+  const secondIncarnation = await getIncarnation('bank');
+  t.is(secondIncarnation, 2);
 
-  await evalBundles(ADD_STARS2_DIR);
+  await evalBundles(ADD_OLIVES_DIR);
 });

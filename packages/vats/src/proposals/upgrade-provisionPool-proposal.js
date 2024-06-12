@@ -30,7 +30,6 @@ export const upgradeProvisionPool = async (
     instancePrivateArgsP,
   ]);
   const { adminFacet, instance } = provisionPoolStartResult;
-  // const privateArgs = await deeplyFulfilled(instancePrivateArgs.get(instance));
 
   const [originalPrivateArgs, poserInvitation] = await Promise.all([
     deeplyFulfilled(instancePrivateArgs.get(instance)),

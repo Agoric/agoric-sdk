@@ -27,8 +27,9 @@ const { details: X, quote: q, Fail } = assert;
 
 const trace = makeTracer('ProvPool');
 
-const FIRST_CAP_ASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
-const FIRST_LOWER_ASCII = /^[a-z][a-zA-Z0-9_$]*$/;
+const FIRST_UPPER_KEYWORD = /^[A-Z][a-zA-Z0-9_$]*$/;
+// see https://github.com/Agoric/agoric-sdk/issues/8238
+const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
 
 /**
  * @import {ERef} from '@endo/far'
@@ -100,14 +101,6 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
       },
     });
   return makeBridgeHandler;
-};
-
-const saveIssuerWithLegalKeyword = (desc, zcf) => {
-  const bad = desc.issuerName;
-  const good = bad.replace(bad[0], bad[0].toUpperCase());
-  trace(`Saved Issuer ${desc.issuerName} with repaired keyword ${good}`);
-
-  return zcf.saveIssuer(desc.issuer, good);
 };
 
 /**
@@ -383,28 +376,46 @@ export const prepareProvisionPoolKit = (
           const { facets } = this;
           const { helper } = facets;
 
+          /** @param {import('@agoric/vats/src/vat-bank.js').AssetDescriptor} desc */
+          const repairDesc = desc => {
+            if (desc.issuerName.match(FIRST_UPPER_KEYWORD)) {
+              trace(`Saving Issuer ${desc.issuerName}`);
+              return desc;
+            } else if (desc.issuerName.match(FIRST_LOWER_NEAR_KEYWORD)) {
+              const bad = desc.issuerName;
+              const goodName = bad.replace(bad[0], bad[0].toUpperCase());
+
+              trace(
+                `Saving Issuer ${desc.issuerName} with repaired keyword ${goodName}`,
+              );
+              return { ...desc, issuerName: goodName };
+            } else {
+              console.error(
+                `unable to save issuer with illegal keyword: ${desc.issuerName}`,
+              );
+              return undefined;
+            }
+          };
+
           return observeIteration(
             subscribeEach(E(poolBank).getAssetSubscription()),
             {
               updateState: async desc => {
                 await null;
                 const issuer = zcf.getTerms().issuers[desc.issuerName];
-                if (issuer !== desc.issuer) {
-                  if (desc.issuerName.match(FIRST_CAP_ASCII)) {
-                    trace(`Saved Issuer ${desc.issuerName}`);
-                    await zcf.saveIssuer(desc.issuer, desc.issuerName);
-
-                    // see https://github.com/Agoric/agoric-sdk/issues/8238
-                  } else if (desc.issuerName.match(FIRST_LOWER_ASCII)) {
-                    await saveIssuerWithLegalKeyword(desc, zcf);
+                if (issuer === desc.issuer) {
+                  trace('provisionPool re-notified of known asset', desc.brand);
+                } else {
+                  const goodDesc = repairDesc(desc);
+                  if (goodDesc) {
+                    await zcf.saveIssuer(goodDesc.issuer, goodDesc.issuerName);
                   } else {
                     console.error(
                       `unable to save issuer with illegal keyword: ${desc.issuerName}`,
                     );
                   }
-                } else {
-                  trace('provisionPool re-notified of known asset', desc.brand);
                 }
+
                 /** @type {ERef<Purse>} */
                 const exchangePurse = E(poolBank).getPurse(desc.brand);
                 helper.watchCurrentAmount(exchangePurse, desc.brand);
