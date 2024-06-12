@@ -226,6 +226,11 @@ type ContractMeta<
     Pattern
   >;
   privateArgsShape?: { [K in keyof Parameters<SF>[1]]: Pattern };
+  /**
+   * - `none` means that the contract is not upgradable.
+   * - `canUpgrade` means this code can perform an upgrade
+   * - `canBeUpgraded` means that the contract stores kinds durably such that the next version can upgrade
+   */
   upgradability?: 'none' | 'canBeUpgraded' | 'canUpgrade' | undefined;
 };
 /**
