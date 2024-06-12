@@ -48,9 +48,12 @@
     "@agoric/zone": "^0.2.2",
     "@endo/base64": "^1.0.5",
     "@endo/errors": "^1.2.2",
+    "@endo/bundle-source": "3.2.3",
     "@endo/far": "^1.1.2",
+    "@endo/import-bundle": "1.1.2",
     "@endo/marshal": "^1.5.0",
-    "@endo/patterns": "^1.4.0"
+    "@endo/patterns": "^1.4.0",
+    "@noble/hashes": "1.1.2"
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
