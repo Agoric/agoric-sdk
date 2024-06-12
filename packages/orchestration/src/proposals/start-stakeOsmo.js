@@ -5,10 +5,10 @@ import { makeChainHub } from '../utils/chainHub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
+ * @import {StakeIcaSF} from '../examples/stakeIca.contract';
  */
 
-const trace = makeTracer('StartStakeAtom', true);
+const trace = makeTracer('StartStakeOsmo', true);
 
 /**
  * @param {BootstrapPowers & {
@@ -21,7 +21,7 @@ const trace = makeTracer('StartStakeAtom', true);
  *   };
  * }} powers
  */
-export const startStakeAtom = async ({
+export const startStakeOsmo = async ({
   consume: {
     agoricNames,
     board,
@@ -34,38 +34,43 @@ export const startStakeAtom = async ({
     consume: { stakeIca },
   },
   instance: {
-    produce: { stakeAtom: produceInstance },
+    // @ts-expect-error stakeOsmo not typed
+    produce: { stakeOsmo: produceInstance },
   },
 }) => {
-  const VSTORAGE_PATH = 'stakeAtom';
-  trace('startStakeAtom');
+  const VSTORAGE_PATH = 'stakeOsmo';
+  trace('startStakeOsmo');
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
+
+  // TODO add osmo to bank
   const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
   trace('ATOM Issuer', atomIssuer);
 
   const chainHub = makeChainHub(await agoricNames);
 
   const agoric = await chainHub.getChainInfo('agoric');
-  const cosmoshub = await chainHub.getChainInfo('cosmoshub');
+  const osmosis = await chainHub.getChainInfo('osmosis');
   const connectionInfo = await chainHub.getConnectionInfo(
     agoric.chainId,
-    cosmoshub.chainId,
+    osmosis.chainId,
   );
 
   /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {
-    label: 'stakeAtom',
+    label: 'stakeOsmo',
     installation: stakeIca,
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
-      chainId: cosmoshub.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
-      bondDenom: cosmoshub.stakingTokens[0].denom,
-      icqEnabled: cosmoshub.icqEnabled,
+      chainId: osmosis.chainId,
+      hostConnectionId: /** @type {IBCConnectionID} */ (connectionInfo.id),
+      controllerConnectionId: /** @type {IBCConnectionID} */ (
+        connectionInfo.counterparty.connection_id
+      ),
+      bondDenom: osmosis.stakingTokens[0].denom,
+      icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: {
       orchestration: await orchestration,
@@ -78,15 +83,15 @@ export const startStakeAtom = async ({
   const { instance } = await E(startUpgradable)(startOpts);
   produceInstance.resolve(instance);
 };
-harden(startStakeAtom);
+harden(startStakeOsmo);
 
-export const getManifestForStakeAtom = (
+export const getManifestForStakeOsmo = (
   { restoreRef },
   { installKeys, ...options },
 ) => {
   return {
     manifest: {
-      [startStakeAtom.name]: {
+      [startStakeOsmo.name]: {
         consume: {
           agoricNames: true,
           board: true,
@@ -99,7 +104,7 @@ export const getManifestForStakeAtom = (
           consume: { stakeIca: true },
         },
         instance: {
-          produce: { stakeAtom: true },
+          produce: { stakeOsmo: true },
         },
       },
     },

@@ -72,6 +72,42 @@ test.serial('config', async t => {
   }
 });
 
+test.serial('stakeOsmo - queries', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    runUtils: { EV },
+  } = t.context;
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
+  );
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
+    'instance',
+    'stakeOsmo',
+  );
+  t.truthy(instance, 'stakeOsmo instance is available');
+
+  const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
+  const publicFacet = await EV(zoe).getPublicFacet(instance);
+  t.truthy(publicFacet, 'stakeOsmo publicFacet is available');
+
+  const account = await EV(publicFacet).makeAccount();
+  t.log('account', account);
+  t.truthy(account, 'makeAccount returns an account on OSMO connection');
+
+  const queryRes = await EV(account).getBalance('uatom');
+  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
+
+  const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
+  t.deepEqual(
+    queryUnknownDenom,
+    { value: 0n, denom: 'some-invalid-denom' },
+    'getBalance for unknown denom returns value: 0n',
+  );
+});
+
 test.serial('stakeAtom - repl-style', async t => {
   const {
     buildProposal,
@@ -111,15 +147,9 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance('uatom');
-  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
-
-  const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
-  t.deepEqual(
-    queryUnknownDenom,
-    { value: 0n, denom: 'some-invalid-denom' },
-    'getBalance for unknown denom returns value: 0n',
-  );
+  await t.throwsAsync(EV(account).getBalance('uatom'), {
+    message: 'Queries not enabled.',
+  });
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
