@@ -102,11 +102,9 @@ const makeRemoteChainFacade = (
   chainInfo,
   { orchestration, timer, zcf, zone },
 ) => {
-  const name = chainInfo.chainId;
-
   const makeRecorderKit = () => anyVal;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    zone.subZone(name),
+    zone.subZone(chainInfo.chainId),
     makeRecorderKit,
     zcf,
   );
