@@ -57,6 +57,16 @@ function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
       // @ts-expect-error tags does not specify keys
       c.tags?.preferred,
   );
+  if (transferChannels.length === 0) {
+    console.warn(
+      'no transfer channel for [',
+      from.chain_name,
+      to.chain_name,
+      ']',
+      '(skipping)',
+    );
+    return [];
+  }
   if (transferChannels.length > 1) {
     console.warn(
       'multiple preferred transfer channels [',
