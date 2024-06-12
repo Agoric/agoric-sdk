@@ -6,7 +6,7 @@ const { apply } = Reflect;
 
 /**
  * @import { PromiseWatcher, Zone } from '@agoric/base-zone';
- * @import { ERef, Vow, VowKit, VowResolver, Watcher } from './types.js';
+ * @import { ERef, IsRetryableReason, Vow, VowKit, VowResolver, Watcher } from './types.js';
  */
 
 /**
@@ -62,7 +62,7 @@ const settle = (resolver, watcher, wcb, value, watcherContext) => {
 
 /**
  * @param {Zone} zone
- * @param {(reason: any) => boolean} isRetryableReason
+ * @param {IsRetryableReason} isRetryableReason
  * @param {ReturnType<typeof makeWatchNextStep>} watchNextStep
  */
 const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
@@ -80,6 +80,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
     (resolver, watcher, watcherContext) => {
       const state = {
         vow: /** @type {unknown} */ (undefined),
+        priorRetryValue: /** @type {any} */ (undefined),
         resolver,
         watcher,
         watcherContext: harden(watcherContext),
@@ -96,17 +97,25 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
           watchNextStep(value, this.self);
           return;
         }
+        this.state.priorRetryValue = undefined;
         this.state.watcher = undefined;
         this.state.resolver = undefined;
         settle(resolver, watcher, 'onFulfilled', value, watcherContext);
       },
       /** @type {Required<PromiseWatcher>['onRejected']} */
       onRejected(reason) {
-        const { vow, watcher, watcherContext, resolver } = this.state;
-        if (vow && isRetryableReason(reason)) {
-          watchNextStep(vow, this.self);
-          return;
+        const { vow, watcher, watcherContext, resolver, priorRetryValue } =
+          this.state;
+        if (vow) {
+          const retryValue = isRetryableReason(reason, priorRetryValue);
+          if (retryValue) {
+            // Retry the same specimen.
+            this.state.priorRetryValue = retryValue;
+            watchNextStep(vow, this.self);
+            return;
+          }
         }
+        this.state.priorRetryValue = undefined;
         this.state.resolver = undefined;
         this.state.watcher = undefined;
         settle(resolver, watcher, 'onRejected', reason, watcherContext);
@@ -117,12 +126,12 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
 /**
  * @param {Zone} zone
  * @param {() => VowKit<any>} makeVowKit
- * @param {(reason: any) => boolean} [isRetryableReason]
+ * @param {(reason: any, lastValue: any) => any} [isRetryableReason]
  */
 export const prepareWatch = (
   zone,
   makeVowKit,
-  isRetryableReason = _reason => false,
+  isRetryableReason = (_reason, _lastValue) => undefined,
 ) => {
   const watchNextStep = makeWatchNextStep(zone);
   const makePromiseWatcher = preparePromiseWatcher(
