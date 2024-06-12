@@ -12,7 +12,7 @@ const { details: X } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

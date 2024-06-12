@@ -15,7 +15,7 @@ const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

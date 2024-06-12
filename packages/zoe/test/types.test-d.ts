@@ -7,7 +7,7 @@
 import { E, RemoteFunctions } from '@endo/eventual-send';
 import { expectNotType, expectType } from 'tsd';
 
-import type { Key } from '@endo/patterns';
+import { M, type Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';
@@ -103,4 +103,39 @@ const mock = null as any;
   void pf2.getPriceAuthority();
   // @ts-expect-error
   pf2.notInPublicFacet;
+}
+
+{
+  const start = async (
+    zcf: ZCF<{ anchorBrand: Brand<'nat'> }>,
+    privateArgs: {
+      storageNode: StorageNode;
+      marshaller: Marshaller;
+      feeMintAccess?: FeeMintAccess;
+    },
+  ) => ({});
+
+  const meta: ContractMeta<typeof start> = {
+    // XXX not detected
+    extrakey: 'bad',
+    privateArgsShape: {
+      // @ts-expect-error extra key
+      extraKey: 'bad',
+      marshaller: mock,
+      storageNode: mock,
+    },
+    // @ts-expect-error invalid upgradability value
+    upgradability: 'invalid',
+  };
+
+  const metaWithSplitRecord: ContractMeta<typeof start> = {
+    // XXX not detected
+    extrakey: 'bad',
+    // @ts-expect-error Matcher not assignable
+    privateArgsShape: M.splitRecord({
+      extraKey: 'bad',
+      marshaller: mock,
+      storageNode: mock,
+    }),
+  };
 }

@@ -21,7 +21,7 @@ import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js'
  * @import {NameHub} from '@agoric/vats';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   privateArgsShape: {
     agoricNames: M.remotable('agoricNames'),
