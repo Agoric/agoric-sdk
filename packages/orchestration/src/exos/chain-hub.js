@@ -80,6 +80,18 @@ const ChainHubI = M.interface('ChainHub', {
 });
 
 /**
+ * @typedef {{
+ *   issuerName: string;
+ *   denom: string;
+ *   brand: Brand;
+ *   issuer: Issuer;
+ *   displayInfo: DisplayInfo;
+ *   issuerChain: string; // XXX new
+ *   baseDenom: string;
+ * }} VBankAssetInfo
+ */
+
+/**
  * Make a new ChainHub in the zone (or in the heap if no zone is provided).
  *
  * The resulting object is an Exo singleton. It has no precious state. It's only
@@ -101,6 +113,13 @@ export const makeChainHub = (agoricNames, vowTools) => {
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
+  });
+  /**
+   * @typedef {{ holding: string; issuing: string; baseDenom: string }} DInfoXXX
+   */ /** @type {MapStore<string, VBankAssetInfo>} */
+  const denomInfos = zone.mapStore('denom', {
+    keyShape: M.string(),
+    valueShape: M.record(), // XX TODO: shape
   });
 
   const lookupChainInfo = vowTools.retriable(
@@ -217,6 +236,19 @@ export const makeChainHub = (agoricNames, vowTools) => {
 
       return lookupChainInfo(chainName);
     },
+
+    /**
+     * @template {string} K
+     * @param {K} chainName
+     * @returns {K extends keyof KnownChains
+     *   ? Omit<KnownChains[K], 'connections'>
+     *   : ChainInfo}
+     */
+    recallChainInfo(chainName) {
+      // @ts-expect-error cast
+      return chainInfos.get(chainName);
+    },
+
     /**
      * @param {string} chainId1
      * @param {string} chainId2
@@ -255,6 +287,28 @@ export const makeChainHub = (agoricNames, vowTools) => {
     getChainsAndConnection(chainName1, chainName2) {
       // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(chainName1, chainName2);
+    },
+
+    /**
+     * @param {string} denom
+     * @param {any} brandInfo
+     */
+    registerAsset(denom, brandInfo) {
+      denomInfos.init(denom, brandInfo);
+    },
+
+    async saveVBankAssets() {
+      const todo = await E(E(agoricNames).lookup('vbankAsset')).entries();
+      for await (const [denom, info] of todo) {
+        chainHub.registerAsset(denom, info); // TODO: base chain and such??
+      }
+    },
+
+    /**
+     * @param {string} denom
+     */
+    getAssetInfo(denom) {
+      return denomInfos.get(denom);
     },
   });
 
