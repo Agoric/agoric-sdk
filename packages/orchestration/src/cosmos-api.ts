@@ -13,7 +13,7 @@ import type {
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type { Brand, Purse } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import { IBCChannelID } from '@agoric/vats';
+import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
@@ -38,25 +38,21 @@ export type CosmosValidatorAddress = ChainAddress & {
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
 export type IBCConnectionInfo = {
-  // XXX really IBCConnectionID but our chain info fetcher doesn't know
-  id: string; // e.g. connection-0
+  id: IBCConnectionID; // e.g. connection-0
   client_id: string; // '07-tendermint-0'
   state: IBCConnectionState;
   counterparty: {
     client_id: string;
-    // XXX really IBCConnectionID but our chain info fetcher doesn't know
-    connection_id: string;
+    connection_id: IBCConnectionID;
     prefix: {
       key_prefix: string;
     };
   };
   transferChannel: {
     portId: string;
-    // XXX really IBCChannelID but our chain info fetcher doesn't know
-    channelId: string;
+    channelId: IBCChannelID;
     counterPartyPortId: string;
-    // XXX really IBCChannelID but our chain info fetcher doesn't know
-    counterPartyChannelId: string;
+    counterPartyChannelId: IBCChannelID;
     ordering: Order;
     state: IBCChannelState;
     version: string; // e.eg. 'ics20-1'
@@ -66,7 +62,7 @@ export type IBCConnectionInfo = {
 /**
  * Info for a Cosmos-based chain.
  */
-export type CosmosChainInfo = {
+export type CosmosChainInfo = Readonly<{
   chainId: string;
 
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
@@ -76,8 +72,8 @@ export type CosmosChainInfo = {
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
-  stakingTokens?: Array<{ denom: string }>;
-};
+  stakingTokens?: Readonly<Array<{ denom: string }>>;
+}>;
 
 export interface StakingAccountQueries {
   /**

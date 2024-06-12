@@ -118,11 +118,8 @@ const makeRemoteChainFacade = (
     makeAccount: async () => {
       const icaAccount = await E(orchestration).makeAccount(
         chainInfo.chainId,
-        // XXX IBCConnectionInfo concessions for JSON encoding
-        /** @type {IBCConnectionID} */ (connectionInfo.id),
-        /** @type {IBCConnectionID} */ (
-          connectionInfo.counterparty.connection_id
-        ),
+        connectionInfo.id,
+        connectionInfo.counterparty.connection_id,
       );
 
       const address = await E(icaAccount).getAddress();
