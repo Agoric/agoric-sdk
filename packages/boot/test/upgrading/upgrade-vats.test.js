@@ -557,10 +557,7 @@ test('upgrade vat-vow', async t => {
     vowFulfilled: { status: 'fulfilled', value: 'hello' },
     vowRejected: { status: 'rejected', reason: 'goodbye' },
     vowPostUpgrade: { status: 'fulfilled', value: 'bonjour' },
-    // The 'fulfilled' result below is wishful thinking.  Long-lived
-    // promises are not supported by `watch` at this time.
-    // vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
-    vowExternalPromise: upgradeRejection,
+    vowExternalPromise: { status: 'fulfilled', value: 'ciao' },
     vowExternalVow: upgradeRejection,
     vowPromiseForever: upgradeRejection,
   });
