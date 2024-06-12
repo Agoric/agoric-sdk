@@ -775,28 +775,23 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         * This method checks if liquidationVisibilityWriters is undefined or
-         * not in case of a rejected promise when creating the writers. If
-         * liquidationVisibilityWriters is undefined it silently notifies the
-         * console. Otherwise, it goes on with the writing.
          *
          * @param {LiquidationVisibilityWriters} liquidationVisibilityWriters
-         * @param {[string, object][]} writes
+         * @returns {boolean}
          */
-        async writeLiqVisibility(liquidationVisibilityWriters, writes) {
-          console.log('WRITES', writes);
-          if (!liquidationVisibilityWriters) {
-            trace(
-              'writeLiqVisibility',
-              `Error: liquidationVisibilityWriters is ${liquidationVisibilityWriters}`,
-            );
-            return;
-          }
-
-          for (const [methodName, params] of writes) {
-            trace('DEBUG', methodName, params);
-            void liquidationVisibilityWriters[methodName](params);
-          }
+        checkWritersPresent(liquidationVisibilityWriters) {
+          console.log(
+            '[DEBUG] liquidationVisibilityWriters:',
+            liquidationVisibilityWriters,
+          );
+          return !(
+            typeof liquidationVisibilityWriters?.writePreAuction !==
+              'function' ||
+            typeof liquidationVisibilityWriters?.writePostAuction !==
+              'function' ||
+            typeof liquidationVisibilityWriters?.writeAuctionResults !==
+              'function'
+          );
         },
 
         /**
@@ -1411,9 +1406,9 @@ export const prepareVaultManagerKit = (
             auctionSchedule: schedulesP,
           });
 
-          void helper.writeLiqVisibility(liquidationVisibilityWriters, [
-            ['writePreAuction', vaultData],
-          ]);
+          if (helper.checkWritersPresent(liquidationVisibilityWriters)) {
+            liquidationVisibilityWriters.writePreAuction(vaultData);
+          }
 
           // This is expected to wait for the duration of the auction, which
           // is controlled by the auction parameters startFrequency, clockStep,
@@ -1457,27 +1452,19 @@ export const prepareVaultManagerKit = (
             vault.liquidated();
             liquidatingVaults.delete(vault);
           }
-          void helper.writeLiqVisibility(
-            liquidationVisibilityWriters,
-            harden([
-              [
-                'writeAuctionResults',
-                {
-                  plan,
-                  totalCollateral,
-                  totalDebt,
-                  auctionSchedule,
-                },
-              ],
-              [
-                'writePostAuction',
-                {
-                  plan,
-                  vaultsInPlan,
-                },
-              ],
-            ]),
-          );
+
+          if (helper.checkWritersPresent(liquidationVisibilityWriters)) {
+            liquidationVisibilityWriters.writePostAuction({
+              plan,
+              vaultsInPlan,
+            });
+            liquidationVisibilityWriters.writeAuctionResults({
+              plan,
+              totalCollateral,
+              totalDebt,
+              auctionSchedule,
+            });
+          }
           void helper.writeMetrics();
         },
       },
