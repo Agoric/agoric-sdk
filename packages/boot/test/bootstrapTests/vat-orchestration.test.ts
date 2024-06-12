@@ -78,6 +78,7 @@ test('makeAccount returns an ICA connection', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -95,7 +96,7 @@ test('makeAccount returns an ICA connection', async t => {
   t.regex(remoteAddress, /icahost/);
   t.regex(localAddress, /icacontroller/);
   t.regex(chainAddress.address, /cosmos1/);
-  t.regex(chainAddress.chainId, /FIXME/); // TODO, use a real chainId #9063
+  t.is(chainAddress.chainId, 'somechain-1');
   t.truthy(matches(port, M.remotable('Port')));
   t.log('ICA Account Addresses', {
     remoteAddress,
@@ -113,6 +114,7 @@ test('ICA connection can be closed', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -134,6 +136,7 @@ test('ICA connection can send msg with proto3', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );

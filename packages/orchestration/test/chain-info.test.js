@@ -15,6 +15,7 @@ test('chain-info', async t => {
   });
   t.deepEqual(chainNames.keys(), [
     'agoric',
+    'agoriclocal',
     'celestia',
     'cosmoshub',
     'dydx',

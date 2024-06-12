@@ -10,7 +10,9 @@ import fetchedChainInfo from './fetched-chain-info.js';
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden({
     ...fetchedChainInfo,
-    agoric: {
+    // XXX does not have useful connections
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
+    agoriclocal: {
       chainId: 'agoriclocal',
       connections: {
         'cosmoshub-4': {

@@ -164,7 +164,7 @@ test('send using arbitrary chain info', async t => {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
       receiver: 'cosmos1destAddr',
       sender: execAddr,
-      sourceChannel: 'channel-1',
+      sourceChannel: 'channel-5',
       token: { amount: '1250000', denom: 'uist' },
     });
   }
@@ -176,7 +176,7 @@ test('send using arbitrary chain info', async t => {
     'hot',
     harden({
       ...hotChainInfo,
-      connections: { agoriclocal: agoricToHotConnection },
+      connections: { 'agoric-3': agoricToHotConnection },
     }),
   );
 

@@ -108,7 +108,7 @@ export const commonSetup = async t => {
   const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
-  await registerChainNamespace(agoricNamesAdmin, t.log);
+  await registerChainNamespace(agoricNamesAdmin, () => {});
 
   return {
     bootstrap: {
