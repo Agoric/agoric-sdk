@@ -7,6 +7,7 @@ export default /** @type {const} } */ ({
         denom: 'ubld',
       },
     ],
+    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-8',
@@ -143,6 +144,7 @@ export default /** @type {const} } */ ({
         denom: 'utia',
       },
     ],
+    icqEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-7',
@@ -258,6 +260,7 @@ export default /** @type {const} } */ ({
         denom: 'uatom',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-649',
@@ -457,6 +460,7 @@ export default /** @type {const} } */ ({
         denom: 'adydx',
       },
     ],
+    icqEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-17',
@@ -551,6 +555,7 @@ export default /** @type {const} } */ ({
         denom: 'ujuno',
       },
     ],
+    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-2',
@@ -708,6 +713,7 @@ export default /** @type {const} } */ ({
         denom: 'untrn',
       },
     ],
+    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-36',
@@ -907,6 +913,7 @@ export default /** @type {const} } */ ({
         denom: 'ustake',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1106,6 +1113,7 @@ export default /** @type {const} } */ ({
         denom: 'uflix',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1442,6 +1450,7 @@ export default /** @type {const} } */ ({
         denom: 'uscrt',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-80',
@@ -1641,6 +1650,7 @@ export default /** @type {const} } */ ({
         denom: 'ustars',
       },
     ],
+    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-296',
@@ -1819,6 +1829,7 @@ export default /** @type {const} } */ ({
         denom: 'ustrd',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-118',

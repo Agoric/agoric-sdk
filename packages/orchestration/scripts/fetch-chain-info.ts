@@ -114,10 +114,10 @@ for (const name of chainNames) {
   chainInfo[name] = {
     chainId: chain.chain_id,
     stakingTokens: chain.staking?.staking_tokens,
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+    icqEnabled: name === 'osmosis',
   };
 }
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-chainInfo.osmosis = { ...chainInfo.osmosis, icqEnabled: true };
 
 // iterate this after chainInfo is filled out
 for (const name of chainNames) {
