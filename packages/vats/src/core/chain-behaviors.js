@@ -11,6 +11,7 @@ import * as farExports from '@endo/far';
 import { E, Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
@@ -355,8 +356,8 @@ export const makeChainStorage = async ({
 }) => {
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
-    console.warn('Cannot support chainStorage without an actual chain.');
-    chainStorageP.resolve(null);
+    console.warn('no bridge so chainStorage will not write.');
+    chainStorageP.resolve(makeMockChainStorageRoot());
     // @ts-expect-error expects value or undefined
     storageBridgeManagerP.resolve(null);
     return;
