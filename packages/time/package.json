@@ -11,7 +11,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:xs": "exit 0",
+    "test:xs": "ava-xs",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint .",

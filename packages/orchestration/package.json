@@ -14,7 +14,7 @@
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
-    "test:xs": "exit 0",
+    "test:xs": "ava-xs",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
     "lint:eslint": "eslint .",

@@ -9,7 +9,7 @@
     "build": "exit 0",
     "test": "ava",
     "test:c8": "exit 0",
-    "test:xs": "exit 0",
+    "test:xs": "ava-xs",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:eslint": "eslint .",

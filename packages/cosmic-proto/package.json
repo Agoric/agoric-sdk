@@ -123,7 +123,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",
     "test": "ava",
-    "test:xs": "exit 0",
+    "test:xs": "ava-xs",
     "test:live": "yarn build && scripts/test-live.js"
   },
   "publishConfig": {
