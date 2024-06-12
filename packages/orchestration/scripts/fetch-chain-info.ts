@@ -21,6 +21,7 @@ const outputFile = 'src/fetched-chain-info.js';
  * Names for which to fetch info
  */
 const chainNames = [
+  'agoric',
   'celestia',
   'cosmoshub',
   'dydx',
