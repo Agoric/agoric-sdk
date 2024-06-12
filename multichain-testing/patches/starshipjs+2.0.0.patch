@@ -1,7 +1,7 @@
-diff --git a/hooks.js b/hooks.js
-index fb3e3cfde62a5c562564a5ab0250ecd12551fd94..6b6567bb081208b9e977edc0d97c39648b234911 100644
---- a/hooks.js
-+++ b/hooks.js
+diff --git a/node_modules/starshipjs/hooks.js b/node_modules/starshipjs/hooks.js
+index fb3e3cf..6b6567b 100644
+--- a/node_modules/starshipjs/hooks.js
++++ b/node_modules/starshipjs/hooks.js
 @@ -14,7 +14,7 @@ const useRegistry = async (configFile) => {
      const registryUrl = `http://localhost:${config.registry.ports.rest}`;
      const urls = [];

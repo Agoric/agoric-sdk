@@ -37,10 +37,7 @@ test('create a wallet and get tokens', async t => {
 
   const bondDenom =
     useChain('osmosis').chain.staking?.staking_tokens?.[0].denom;
-  if (!bondDenom) {
-    t.fail('Bond denom not found.');
-  } else {
-    const { balance } = await queryClient.queryBalance(addr, bondDenom);
-    t.deepEqual(balance, { denom: bondDenom, amount: '10000000000' });
-  }
+  t.truthy(bondDenom, 'bond denom found');
+  const { balance } = await queryClient.queryBalance(addr, bondDenom!);
+  t.deepEqual(balance, { denom: bondDenom, amount: '10000000000' });
 });

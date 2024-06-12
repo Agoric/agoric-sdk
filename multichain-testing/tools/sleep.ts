@@ -1,8 +1,6 @@
-import type { LogFn } from 'ava';
+type Log = (...values: unknown[]) => void;
 
-type NoOpFn = () => void;
-
-export const sleep = (ms: number, log: LogFn | NoOpFn = () => {}) =>
+export const sleep = (ms: number, log: Log = () => {}) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
     setTimeout(resolve, ms);

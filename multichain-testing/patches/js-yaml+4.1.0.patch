@@ -1,7 +1,7 @@
-diff --git a/lib/exception.js b/lib/exception.js
-index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..b057a914926cf84601aee2fa6e8fe8b98c441935 100644
---- a/lib/exception.js
-+++ b/lib/exception.js
+diff --git a/node_modules/js-yaml/lib/exception.js b/node_modules/js-yaml/lib/exception.js
+index 7f62daa..8d60657 100644
+--- a/node_modules/js-yaml/lib/exception.js
++++ b/node_modules/js-yaml/lib/exception.js
 @@ -26,7 +26,6 @@ function YAMLException(reason, mark) {
    // Super constructor
    Error.call(this);
@@ -10,10 +10,16 @@ index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..b057a914926cf84601aee2fa6e8fe8b9
    this.reason = reason;
    this.mark = mark;
    this.message = formatError(this, false);
-@@ -42,14 +41,31 @@ function YAMLException(reason, mark) {
+@@ -37,19 +36,34 @@ function YAMLException(reason, mark) {
+     Error.captureStackTrace(this, this.constructor);
+   } else {
+     // FF, IE 10+ and Safari 6+. Fallback for others
+-    this.stack = (new Error()).stack || '';
++    this.stack = new Error().stack || "";
+   }
  }
  
- 
+-
 -// Inherit from Error
 -YAMLException.prototype = Object.create(Error.prototype);
 -YAMLException.prototype.constructor = YAMLException;
@@ -22,6 +28,7 @@ index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..b057a914926cf84601aee2fa6e8fe8b9
 -YAMLException.prototype.toString = function toString(compact) {
 -  return this.name + ': ' + formatError(this, compact);
 -};
+-
 +function makeErrorish(errorConstructor, name) {
 +  errorConstructor.prototype = Object.create(Error.prototype, {
 +    constructor: {
@@ -47,6 +54,5 @@ index 7f62daaef8bcdb8248da0fd65e7b2880a5c1cf92..b057a914926cf84601aee2fa6e8fe8b9
 +  });
 +}
 +makeErrorish(YAMLException, "YAMLException");
- 
  
  module.exports = YAMLException;
