@@ -62,10 +62,8 @@ export const startStakeAtom = async ({
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       chainId: cosmoshub.chainId,
-      hostConnectionId: /** @type {IBCConnectionID} */ (connectionInfo.id),
-      controllerConnectionId: /** @type {IBCConnectionID} */ (
-        connectionInfo.counterparty.connection_id
-      ),
+      hostConnectionId: connectionInfo.id,
+      controllerConnectionId: connectionInfo.counterparty.connection_id,
       bondDenom: cosmoshub.stakingTokens[0].denom,
     },
     privateArgs: {
