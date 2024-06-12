@@ -3,9 +3,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
-    sourceSpec: '@agoric/orchestration/src/proposals/start-stakeAtom.js',
+    sourceSpec: '@agoric/orchestration/src/proposals/start-stakeOsmo.js',
     getManifestCall: [
-      'getManifestForStakeAtom',
+      'getManifestForStakeOsmo',
       {
         installKeys: {
           stakeIca: publishRef(
@@ -19,5 +19,5 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
 
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval('start-stakeAtom', defaultProposalBuilder);
+  await writeCoreEval('start-stakeOsmo', defaultProposalBuilder);
 };

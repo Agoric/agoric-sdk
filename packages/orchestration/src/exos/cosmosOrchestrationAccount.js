@@ -366,7 +366,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         async getBalance(denom) {
           const { chainAddress, icqConnection } = this.state;
           if (!icqConnection) {
-            throw Fail`'Queries not available for chain ${chainAddress.chainId}`;
+            throw Fail`Queries not available for chain ${chainAddress.chainId}`;
           }
           // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
