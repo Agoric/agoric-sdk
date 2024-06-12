@@ -137,4 +137,4 @@ export const start = async (zcf, privateArgs, baggage) => {
   return { publicFacet };
 };
 
-/** @typedef {typeof start} StakeAtomSF */
+/** @typedef {typeof start} StakeIcaSF */
