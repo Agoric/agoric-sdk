@@ -93,8 +93,19 @@ const ChainHubI = M.interface('ChainHub', {
  *
  * @param {Remote<NameHub>} agoricNames
  * @param {Zone} [zone]
+ *
+ * @typedef {{
+ *   issuerName: string;
+ *   denom: string;
+ *   brand: Brand;
+ *   issuer: Issuer;
+ *   displayInfo: DisplayInfo;
+ *   issuerChain: string; // XXX new
+ *   baseDenom: string;
+ * }} VBankAssetInfo
  */
 export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
+  console.warn('TODO: ChainHub cache invalidation');
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
@@ -104,6 +115,13 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
+  });
+  /**
+   * @typedef {{ holding: string; issuing: string; baseDenom: string }} DInfoXXX
+   */ /** @type {MapStore<string, VBankAssetInfo>} */
+  const denomInfos = zone.mapStore('denom', {
+    keyShape: M.string(),
+    valueShape: M.record(), // XX TODO: shape
   });
 
   const chainHub = zone.exo('ChainHub', ChainHubI, {
@@ -145,6 +163,19 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
         },
       });
     },
+
+    /**
+     * @template {string} K
+     * @param {K} chainName
+     * @returns {K extends keyof KnownChains
+     *   ? Omit<KnownChains[K], 'connections'>
+     *   : ChainInfo}
+     */
+    recallChainInfo(chainName) {
+      // @ts-expect-error cast
+      return chainInfos.get(chainName);
+    },
+
     /**
      * @param {string} chainId1
      * @param {string} chainId2
@@ -204,6 +235,28 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
           },
         },
       );
+    },
+
+    /**
+     * @param {string} denom
+     * @param {any} brandInfo
+     */
+    registerAsset(denom, brandInfo) {
+      denomInfos.init(denom, brandInfo);
+    },
+
+    async saveVBankAssets() {
+      const todo = await E(E(agoricNames).lookup('vbankAsset')).entries();
+      for await (const [denom, info] of todo) {
+        chainHub.registerAsset(denom, info); // TODO: base chain and such??
+      }
+    },
+
+    /**
+     * @param {string} denom
+     */
+    getAssetInfo(denom) {
+      return denomInfos.get(denom);
     },
   });
 
