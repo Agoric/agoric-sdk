@@ -1,7 +1,11 @@
 # Linear queue for the main branch.
 queue_rules:
   - name: main
-    conditions:
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
+
+      {{ body | trim }}
+    queue_conditions:
       - base=master
       # Require integration tests before merging only
       - or:
@@ -30,7 +34,7 @@ pull_request_rules:
     actions:
       queue:
         name: main
-        method: merge
+        merge_method: merge
   - name: rebase updates then merge to master
     conditions:
       - base=master
@@ -49,7 +53,7 @@ pull_request_rules:
     actions:
       queue:
         name: main
-        method: merge
+        merge_method: merge
         update_method: rebase
   - name: squash to master
     conditions:
@@ -69,4 +73,4 @@ pull_request_rules:
     actions:
       queue:
         name: main
-        method: squash
+        merge_method: squash
