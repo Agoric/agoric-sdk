@@ -104,7 +104,7 @@ function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
     },
   } as IBCConnectionInfo;
   const destChainId = chainInfo[to.chain_name].chainId;
-  return [destChainId, record];
+  return [destChainId, record] as const;
 }
 
 for (const name of chainNames) {
@@ -127,9 +127,8 @@ for (const name of chainNames) {
   const connections = Object.fromEntries(
     ibcData
       .map(datum => toConnectionEntry(datum, name))
-      // sort alphbetically for consistency
-      // eslint-disable-next-line no-nested-ternary
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+      // sort alphabetically for consistency
+      .sort(([a], [b]) => a?.localeCompare(b)),
   );
   chainInfo[name] = { ...chainInfo[name], connections };
 }
