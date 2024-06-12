@@ -217,9 +217,15 @@ type OfferHandler<OR extends unknown = unknown, OA = never> =
   | {
       handle: HandleOffer<OR, OA>;
     };
-type ContractMeta = {
-  customTermsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
-  privateArgsShape?: import('@endo/pass-style').CopyRecord<any> | undefined;
+type ContractMeta<
+  SF extends // import inline to maintain ambient mode
+    import('../zoeService/utils').ContractStartFunction = import('../zoeService/utils').ContractStartFunction,
+> = {
+  customTermsShape?: Record<
+    Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,
+    Pattern
+  >;
+  privateArgsShape?: { [K in keyof Parameters<SF>[1]]: Pattern };
   upgradability?: 'none' | 'canBeUpgraded' | 'canUpgrade' | undefined;
 };
 /**

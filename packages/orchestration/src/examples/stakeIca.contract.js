@@ -17,6 +17,7 @@ const trace = makeTracer('StakeAtom');
  * @import {ICQConnection, OrchestrationService} from '../types.js';
  */
 
+/** @type {ContractMeta<typeof start>} */
 export const meta = harden({
   customTermsShape: {
     chainId: M.string(),

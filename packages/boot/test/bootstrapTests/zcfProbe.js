@@ -17,7 +17,7 @@ const ZcfProbeI = M.interface('ZCF Probe', {
   makeFaucetInvitation: M.call().returns(M.promise()),
 });
 
-// /** @type {ContractMeta} */
+// /** @type {ContractMeta<typeof start>} */
 // export const meta = { upgradability: 'canUpgrade' };
 // harden(meta);
 
