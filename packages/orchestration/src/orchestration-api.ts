@@ -56,6 +56,7 @@ export type AmountArg = DenomAmount | Amount;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
+  chainName: string;
   /** e.g. 1 for Ethereum, agoric-3 for Agoric, cosmoshub-4 for Cosmos */
   chainId: string;
   address: string;

@@ -13,6 +13,7 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
     // XXX does not have useful connections
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
     agoriclocal: {
+      chainName: 'agoriclocal',
       chainId: 'agoriclocal',
       connections: {
         'cosmoshub-4': {
