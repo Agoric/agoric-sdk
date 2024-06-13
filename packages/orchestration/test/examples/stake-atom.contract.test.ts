@@ -61,6 +61,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   const account = await E(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
   const chainAddress = await E(account).getAddress();
+  // FIXME mock remoteAddress in ibc bridge. Currently UNPARSABLE_CHAIN_ADDRESS
   // t.regex(address.address, /cosmos1/);
   t.like(chainAddress, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
 
@@ -90,7 +91,6 @@ test('makeAccountInvitationMaker', async t => {
   t.log('inv', inv);
 
   const seat = await E(zoe).offer(inv);
-  t.log('seat', seat);
   const offerResult = await E(seat).getOfferResult();
 
   t.like(offerResult, {
