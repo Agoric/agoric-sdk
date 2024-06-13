@@ -213,6 +213,10 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  */
 
 /**
+ * @typedef {{
+ *   error: string
+ * }} DistributionError
+ *
  * @typedef {(
  *   | string
  *   | { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
@@ -234,8 +238,8 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *
  * @typedef {{
  *   preAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PreAuctionState>;
- *   postAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PostAuctionState>;
- *   auctionResultRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AuctionResultState>;
+ *   postAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PostAuctionState | DistributionError>;
+ *   auctionResultRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AuctionResultState | DistributionError>;
  * }} LiquidationRecorderKits
  */
 
@@ -726,6 +730,11 @@ export const prepareVaultManagerKit = (
            * @returns {Promise<void>}
            */
           const writePostAuction = ({ plan, vaultsInPlan }) => {
+            if (!(plan && vaultsInPlan)) {
+              return E(
+                liquidationRecorderKits.postAuctionRecorderKit.recorder,
+              ).writeFinal({ error: 'Error distributing proceeds' });
+            }
             /** @type PostAuctionState */
             const postAuctionState = plan.transfersToVault.map(
               ([id, transfer]) => [
@@ -748,6 +757,12 @@ export const prepareVaultManagerKit = (
             totalDebt,
             auctionSchedule,
           }) => {
+            if (!plan) {
+              return E(
+                liquidationRecorderKits.auctionResultRecorderKit.recorder,
+              ).writeFinal({ error: 'Error distributing proceeds' });
+            }
+
             /** @type AuctionResultState */
             const auctionResultState = {
               collateralOffered: totalCollateral,
@@ -1390,24 +1405,18 @@ export const prepareVaultManagerKit = (
               ),
           );
 
-          // helper.makeLiquidationVisibilityWriters and schedulesP depends on others vats,
-          // so we switched from Promise.all to Promise.allSettled because if one of those vats fail
-          // we don't want those failures to prevent liquidation process from going forward.
-          // We don't handle the case where 'makeDeposit' rejects as liquidation depends on
-          // 'makeDeposit' being fulfilled.
-          const {
-            makeDeposit: { userSeatPromise, deposited },
+          const [
+            { userSeatPromise, deposited },
             liquidationVisibilityWriters,
             auctionSchedule,
-          } = await allValuesSettled({
+          ] = await Promise.all([
             makeDeposit,
-            liquidationVisibilityWriters:
-              helper.makeLiquidationVisibilityWriters(timestamp),
-            auctionSchedule: schedulesP,
-          });
+            helper.makeLiquidationVisibilityWriters(timestamp),
+            schedulesP,
+          ]);
 
           if (helper.checkWritersPresent(liquidationVisibilityWriters)) {
-            liquidationVisibilityWriters.writePreAuction(vaultData);
+            void liquidationVisibilityWriters.writePreAuction(vaultData);
           }
 
           // This is expected to wait for the duration of the auction, which
@@ -1454,11 +1463,11 @@ export const prepareVaultManagerKit = (
           }
 
           if (helper.checkWritersPresent(liquidationVisibilityWriters)) {
-            liquidationVisibilityWriters.writePostAuction({
+            void liquidationVisibilityWriters.writePostAuction({
               plan,
               vaultsInPlan,
             });
-            liquidationVisibilityWriters.writeAuctionResults({
+            void liquidationVisibilityWriters.writeAuctionResults({
               plan,
               totalCollateral,
               totalDebt,
