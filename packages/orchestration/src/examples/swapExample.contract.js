@@ -1,15 +1,17 @@
+import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
+import { prepareVowTools } from '@agoric/vow';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { makeOrchestrationFacade } from '../facade.js';
-import { orcUtils } from '../utils/orc.js';
-import { makeChainHub } from '../utils/chainHub.js';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { makeOrchestrationFacade } from '../facade.js';
+import { makeChainHub } from '../utils/chainHub.js';
+import { orcUtils } from '../utils/orc.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -79,6 +81,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     timerService,
     chainHub,
   );
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+    vowTools,
+  });
 
   const { orchestrate } = makeOrchestrationFacade({
     localchain,
@@ -89,6 +95,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     chainHub,
     makeLocalChainAccountKit,
+    asyncFlowTools,
   });
 
   /** deprecated historical example */

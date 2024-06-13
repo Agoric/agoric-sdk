@@ -2,6 +2,8 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { prepareVowTools } from '@agoric/vow';
+import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from '../utils/chainHub.js';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
@@ -48,6 +50,11 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.timerService,
     chainHub,
   );
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+    vowTools,
+  });
+
   const { orchestrate } = makeOrchestrationFacade({
     localchain,
     orchestrationService,
@@ -57,6 +64,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     chainHub: makeChainHub(agoricNames),
     makeLocalChainAccountKit,
+    asyncFlowTools,
   });
 
   /** @type {OfferHandler} */

@@ -6,6 +6,8 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 
 import { AmountShape } from '@agoric/ertp';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { prepareVowTools } from '@agoric/vow';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
@@ -63,11 +65,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.timerService,
     chainHub,
   );
+
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+    vowTools,
+  });
+
   const { orchestrate } = makeOrchestrationFacade({
     zcf,
     zone,
     chainHub,
     makeLocalChainAccountKit,
+    asyncFlowTools,
     ...orchPowers,
   });
 
