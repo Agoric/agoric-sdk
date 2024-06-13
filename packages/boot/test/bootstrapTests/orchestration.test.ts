@@ -181,9 +181,7 @@ test.serial('stakeAtom - smart wallet', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
-  t.like(readLatest('published.stakeAtom.accounts.cosmos1test'), {
-    sequence: 0n,
-  });
+  t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;

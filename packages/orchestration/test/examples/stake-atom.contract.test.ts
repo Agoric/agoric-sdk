@@ -88,7 +88,6 @@ test('makeAccountInvitationMaker', async t => {
   });
   const inv = await E(publicFacet).makeAccountInvitationMaker();
   t.log('make an offer for ICA account');
-  t.log('inv', inv);
 
   const seat = await E(zoe).offer(inv);
   const offerResult = await E(seat).getOfferResult();
@@ -107,19 +106,14 @@ test('makeAccountInvitationMaker', async t => {
   const storageUpdate = await E(accountNotifier).getUpdateSince();
   t.deepEqual(storageUpdate, {
     updateCount: 1n,
-    value: {
-      sequence: 0n,
-    },
+    value: '',
   });
 
   // FIXME mock remoteAddress in ibc bridge
   const storagePath =
     'mockChainStorageRoot.stakeAtom.accounts.UNPARSABLE_CHAIN_ADDRESS';
   const vstorageEntry = bootstrap.storage.data.get(storagePath);
-  if (typeof vstorageEntry !== 'string') {
-    t.fail('vstorageEntry not found');
-  } else {
-    t.log(storagePath, vstorageEntry);
-    t.regex(vstorageEntry, /sequence/);
-  }
+  t.truthy(vstorageEntry, 'vstorage account entry created');
+  t.log(storagePath, vstorageEntry);
+  t.is(bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)), '');
 });

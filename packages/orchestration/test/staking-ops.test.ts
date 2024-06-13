@@ -227,9 +227,7 @@ test('makeAccount() writes to storage', async t => {
   const storageUpdate = await E(accountNotifier).getUpdateSince();
   t.deepEqual(storageUpdate, {
     updateCount: 1n,
-    value: {
-      sequence: 0n,
-    },
+    value: '',
   });
 });
 
