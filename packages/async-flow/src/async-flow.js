@@ -4,6 +4,7 @@ import { M } from '@endo/patterns';
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { PromiseWatcherI } from '@agoric/base-zone';
 import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
+import { Remotable } from '@endo/pass-style';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
@@ -460,6 +461,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
         flow.wake();
       }
     },
+    // ??? can this return something generic on T?
+    /**
+     * @template T
+     * @param {Vow<T>} outcomeVow
+     * @returns {Remotable<'flow'>}
+     */
     getFlowForOutcomeVow(outcomeVow) {
       return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
     },

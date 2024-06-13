@@ -21,7 +21,7 @@
  * @template {Passable} [T=Passable]
  * @typedef {T} Guest
  */
-
+// FIXME Host and Guest types are the same. Why do we need these? If we need to distinguish they should be tagged.
 /**
  * @template {Passable} [T=Passable]
  * @typedef {T} Host
