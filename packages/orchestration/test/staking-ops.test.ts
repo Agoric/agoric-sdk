@@ -185,7 +185,7 @@ const makeScenario = () => {
 
   const { delegations, startTime } = configStaking;
 
-  const { rootNode } = makeFakeStorageKit('mockChainStorageRoot', {
+  const { rootNode } = makeFakeStorageKit('stakingOpsTest', {
     sequence: false,
   });
 
@@ -209,11 +209,10 @@ const makeScenario = () => {
 
 test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
-  const { account, calls, timer } = s;
+  const { account, timer } = s;
   const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
 
-  // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
     account,
     storageNode,
