@@ -73,7 +73,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   });
 
   await t.throwsAsync(E(account).getBalance('uatom'), {
-    message: 'Queries not enabled.',
+    message: 'Queries not available for chain "cosmoshub-4"',
   });
 });
 
