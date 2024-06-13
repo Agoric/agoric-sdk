@@ -7,6 +7,7 @@ export default /** @type {const} } */ ({
         denom: 'ubld',
       },
     ],
+    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-8',
@@ -134,6 +135,27 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'umee-1': {
+        id: 'connection-18',
+        client_id: '07-tendermint-18',
+        counterparty: {
+          client_id: '07-tendermint-152',
+          connection_id: 'connection-101',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-42',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-11',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   celestia: {
@@ -143,6 +165,7 @@ export default /** @type {const} } */ ({
         denom: 'utia',
       },
     ],
+    icqEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-7',
@@ -258,6 +281,7 @@ export default /** @type {const} } */ ({
         denom: 'uatom',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-649',
@@ -457,6 +481,7 @@ export default /** @type {const} } */ ({
         denom: 'adydx',
       },
     ],
+    icqEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-17',
@@ -542,6 +567,27 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'umee-1': {
+        id: 'connection-13',
+        client_id: '07-tendermint-8',
+        counterparty: {
+          client_id: '07-tendermint-244',
+          connection_id: 'connection-208',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-118',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-8',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   juno: {
@@ -551,6 +597,7 @@ export default /** @type {const} } */ ({
         denom: 'ujuno',
       },
     ],
+    icqEnabled: false,
     connections: {
       'cosmoshub-4': {
         id: 'connection-2',
@@ -708,6 +755,7 @@ export default /** @type {const} } */ ({
         denom: 'untrn',
       },
     ],
+    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-36',
@@ -907,6 +955,7 @@ export default /** @type {const} } */ ({
         denom: 'ustake',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1097,6 +1146,27 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'umee-1': {
+        id: 'connection-74',
+        client_id: '07-tendermint-73',
+        counterparty: {
+          client_id: '07-tendermint-248',
+          connection_id: 'connection-210',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-120',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-51',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   omniflixhub: {
@@ -1106,6 +1176,7 @@ export default /** @type {const} } */ ({
         denom: 'uflix',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1433,6 +1504,27 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'umee-1': {
+        id: 'connection-1410',
+        client_id: '07-tendermint-1805',
+        counterparty: {
+          client_id: '07-tendermint-6',
+          connection_id: 'connection-0',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-0',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-184',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   secretnetwork: {
@@ -1442,6 +1534,7 @@ export default /** @type {const} } */ ({
         denom: 'uscrt',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-80',
@@ -1632,6 +1725,27 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'umee-1': {
+        id: 'connection-188',
+        client_id: '07-tendermint-193',
+        counterparty: {
+          client_id: '07-tendermint-249',
+          connection_id: 'connection-213',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-123',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-126',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
     },
   },
   stargaze: {
@@ -1641,6 +1755,7 @@ export default /** @type {const} } */ ({
         denom: 'ustars',
       },
     ],
+    icqEnabled: false,
     connections: {
       celestia: {
         id: 'connection-296',
@@ -1819,6 +1934,7 @@ export default /** @type {const} } */ ({
         denom: 'ustrd',
       },
     ],
+    icqEnabled: false,
     connections: {
       'agoric-3': {
         id: 'connection-118',
@@ -2003,6 +2119,164 @@ export default /** @type {const} } */ ({
           channelId: 'channel-106',
           portId: 'transfer',
           counterPartyChannelId: 'channel-19',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'umee-1': {
+        id: 'connection-20',
+        client_id: '07-tendermint-32',
+        counterparty: {
+          client_id: '07-tendermint-64',
+          connection_id: 'connection-45',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-34',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-29',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+    },
+  },
+  umee: {
+    chainId: 'umee-1',
+    stakingTokens: [
+      {
+        denom: 'uumee',
+      },
+    ],
+    icqEnabled: false,
+    connections: {
+      'agoric-3': {
+        id: 'connection-101',
+        client_id: '07-tendermint-152',
+        counterparty: {
+          client_id: '07-tendermint-18',
+          connection_id: 'connection-18',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-11',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-42',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'dydx-mainnet-1': {
+        id: 'connection-208',
+        client_id: '07-tendermint-244',
+        counterparty: {
+          client_id: '07-tendermint-8',
+          connection_id: 'connection-13',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-8',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-118',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'noble-1': {
+        id: 'connection-210',
+        client_id: '07-tendermint-248',
+        counterparty: {
+          client_id: '07-tendermint-73',
+          connection_id: 'connection-74',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-51',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-120',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'osmosis-1': {
+        id: 'connection-0',
+        client_id: '07-tendermint-6',
+        counterparty: {
+          client_id: '07-tendermint-1805',
+          connection_id: 'connection-1410',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-184',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-0',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'secret-4': {
+        id: 'connection-213',
+        client_id: '07-tendermint-249',
+        counterparty: {
+          client_id: '07-tendermint-193',
+          connection_id: 'connection-188',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-126',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-123',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      'stride-1': {
+        id: 'connection-45',
+        client_id: '07-tendermint-64',
+        counterparty: {
+          client_id: '07-tendermint-32',
+          connection_id: 'connection-20',
+          prefix: {
+            key_prefix: 'FIXME',
+          },
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-29',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-34',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
