@@ -17,13 +17,12 @@ import type {
 } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-const makeTestContext = async (t: ExecutionContext) =>
-  makeWalletFactoryContext(t);
-
-type DefaultTestContext = Awaited<ReturnType<typeof makeTestContext>>;
-const test: TestFn<DefaultTestContext> = anyTest;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 /**
  * To update, pass the message into `makeTxPacket` or `makeQueryPacket` from
@@ -47,7 +46,7 @@ const balanceQuery = toRequestQueryJson(
 );
 
 test.before(async t => {
-  t.context = await makeTestContext(t);
+  t.context = await makeWalletFactoryContext(t);
 
   async function setupDeps() {
     const {
@@ -79,6 +78,7 @@ test('makeAccount returns an ICA connection', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -96,7 +96,7 @@ test('makeAccount returns an ICA connection', async t => {
   t.regex(remoteAddress, /icahost/);
   t.regex(localAddress, /icacontroller/);
   t.regex(chainAddress.address, /cosmos1/);
-  t.regex(chainAddress.chainId, /FIXME/); // TODO, use a real chainId #9063
+  t.is(chainAddress.chainId, 'somechain-1');
   t.truthy(matches(port, M.remotable('Port')));
   t.log('ICA Account Addresses', {
     remoteAddress,
@@ -114,6 +114,7 @@ test('ICA connection can be closed', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -135,6 +136,7 @@ test('ICA connection can send msg with proto3', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );

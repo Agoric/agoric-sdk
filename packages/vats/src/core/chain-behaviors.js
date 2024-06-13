@@ -441,7 +441,7 @@ export const publishAgoricNamesToChainStorage = async ({
 };
 
 /**
- * @deprecated use reflectAgoricNamesToChainStorage
+ * @deprecated use publishAgoricNamesToChainStorage
  * @param {BootstrapPowers} powers
  * @param {{
  *   options?: {

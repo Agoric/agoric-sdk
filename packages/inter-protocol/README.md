@@ -42,7 +42,7 @@ import { makeFollower } from '@agoric/casting';
 
 The canonical keys (under `published`) are as follows. Non-terminal nodes could have data but don't yet. A `0` indicates the index of that child in added order. To get the actual key look it up in parent. High cardinality types get a parent key for enumeration (e.g. `vaults`.)
 - `published`
-    - `vaultFactory` - [snapshot of details](./test/vaultFactory/snapshots/test-vaultFactory.js.md)
+    - `vaultFactory` - [snapshot of details](./test/vaultFactory/snapshots/vaultFactory.test.js.md)
         - `governance`
         - `metrics`
         - `managers`
@@ -51,22 +51,22 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
               - `governance`
               - `vaults`
                 - `vault0`
-    - `auction` - [snapshot of details](./test/auction/snapshots/test-auctionContract.js.md)
+    - `auction` - [snapshot of details](./test/auction/snapshots/auctionContract.test.js.md)
         - `schedule`
         - `governance`
         - `book0`
-    - `reserve` - [snapshot of details](./test/reserve/snapshots/test-reserve.js.md)
+    - `reserve` - [snapshot of details](./test/reserve/snapshots/reserve.test.js.md)
       - `governance`
       - `metrics`
-    - `priceFeed` - [snapshot of details](./test/price/snapshots/test-fluxAggregatorKit.js.md)
+    - `priceFeed` - [snapshot of details](./test/price/snapshots/fluxAggregatorKit.test.js.md)
       - `${inputBrand}-${outputBrand}_price_feed`
       - `${inputBrand}-${outputBrand}_price_feed.latestRound`
-    - `psm` - [snapshot of details](./test/psm/snapshots/test-psm.js.md)
+    - `psm` - [snapshot of details](./test/psm/snapshots/psm.test.js.md)
       - `<minted>`
         - `<anchor>`
           - `governance`
           - `metrics`
-    - `committees` - [snapshot of details](../governance/test/unitTests/snapshots/test-committee.js.md)
+    - `committees` - [snapshot of details](../governance/test/unitTests/snapshots/committee.test.js.md)
         - `Economic_Committee`
           - `latestQuestion`
           - `latestOutcome`

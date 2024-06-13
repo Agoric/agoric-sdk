@@ -51,7 +51,7 @@ const getPower = (powers, name) => {
 };
 
 export const OrchestrationI = M.interface('Orchestration', {
-  makeAccount: M.callWhen(M.string(), M.string()).returns(
+  makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
     M.remotable('ChainAccount'),
   ),
   provideICQConnection: M.callWhen(M.string()).returns(
@@ -109,19 +109,24 @@ const prepareOrchestrationKit = (
       },
       public: {
         /**
+         * @param {string} chainId
          * @param {IBCConnectionID} hostConnectionId the counterparty
          *   connection_id
          * @param {IBCConnectionID} controllerConnectionId self connection_id
          * @returns {Promise<IcaAccount>}
          */
-        async makeAccount(hostConnectionId, controllerConnectionId) {
+        async makeAccount(chainId, hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.allocateICAControllerPort();
 
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
           );
-          const chainAccountKit = makeChainAccountKit(port, remoteConnAddr);
+          const chainAccountKit = makeChainAccountKit(
+            chainId,
+            port,
+            remoteConnAddr,
+          );
 
           // await so we do not return a ChainAccount before it successfully instantiates
           await E(port).connect(

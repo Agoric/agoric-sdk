@@ -164,7 +164,7 @@ test('transfer', async t => {
   t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
 
   const destination: ChainAddress = {
-    chainId: 'cosmoslocal',
+    chainId: 'cosmoshub-4',
     address: 'cosmos1pleab',
     addressEncoding: 'bech32',
   };
@@ -196,7 +196,7 @@ test('transfer', async t => {
   };
   await t.throwsAsync(
     () => E(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
-    { message: /connection not found: agoriclocal<->fakenet/ },
+    { message: /connection not found: agoric-3<->fakenet/ },
     'cannot create transfer msg with unknown chainId',
   );
 

@@ -7,8 +7,10 @@
       "coreProposals": []
     },
     "sdk-generate": [
-      "vats/probe-zcf-bundle.js probe-submission",
-      "vats/test-localchain.js localchaintest-submission"
+      "vats/upgrade-bank.js upgrade-bank",
+      "vats/upgrade-provisionPool.js upgrade-provisionPool",
+      "testing/add-LEMONS.js add-LEMONS",
+      "testing/add-OLIVES.js add-OLIVES"
     ],
     "type": "Software Upgrade Proposal"
   },
@@ -28,5 +30,5 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.1.1"
+  "packageManager": "yarn@4.2.2"
 }

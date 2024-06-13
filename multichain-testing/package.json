@@ -1,0 +1,94 @@
+{
+  "private": true,
+  "description": "E2E Interchain testing environment for Agoric smart contracts.",
+  "type": "module",
+  "scripts": {
+    "build": "exit 0",
+    "lint": "yarn lint:eslint",
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc --noEmit",
+    "lint-fix": "yarn lint:eslint --fix",
+    "test": "ava",
+    "starship:setup": "make setup-deps setup-kind",
+    "starship:install": "make install",
+    "starship:port-forward": "make port-forward",
+    "starship:stop": "make stop",
+    "postinstall": "patch-package"
+  },
+  "packageManager": "yarn@4.1.1",
+  "devDependencies": {
+    "@agoric/assert": "^0.6.0",
+    "@agoric/cosmic-proto": "0.4.1-dev-08f8549.0",
+    "@cosmjs/crypto": "^0.32.2",
+    "@cosmjs/proto-signing": "^0.32.2",
+    "@cosmjs/stargate": "^0.32.2",
+    "@endo/far": "^1.1.2",
+    "@endo/nat": "^5.0.7",
+    "@endo/ses-ava": "^1.2.2",
+    "@types/eslint": "^8",
+    "@types/node": "^20.11.13",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "ava": "^6.1.3",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "patch-package": "^8.0.0",
+    "prettier": "^3.2.4",
+    "starshipjs": "2.0.0",
+    "tsimp": "^2.0.10",
+    "typescript": "^5.3.3"
+  },
+  "resolutions": {
+    "node-fetch": "2.6.12"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "nodeArguments": [
+      "--import=tsimp/import"
+    ],
+    "files": [
+      "**/*.test.ts"
+    ],
+    "concurrency": 1,
+    "serial": true
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint",
+      "prettier"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "prettier"
+    ],
+    "rules": {
+      "prettier/prettier": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ]
+    }
+  },
+  "license": "Apache-2.0"
+}

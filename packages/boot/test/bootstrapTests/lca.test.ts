@@ -3,17 +3,21 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { Fail } from '@agoric/assert';
-import { AmountMath } from '@agoric/ertp';
 import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { M, matches } from '@endo/patterns';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-type DefaultTestContext = Awaited<ReturnType<typeof makeWalletFactoryContext>>;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-const test: TestFn<DefaultTestContext> = anyTest;
-
-test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.before(async t => {
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+});
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('stakeBld', async t => {
@@ -23,18 +27,17 @@ test.serial('stakeBld', async t => {
     evalProposal,
     refreshAgoricNamesRemotes,
   } = t.context;
-  // TODO move into a vm-config for u15
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-localchain.js'),
-  );
+
   // start-stakeBld depends on this. Sanity check in case the context changes.
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
+
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
   );
   // update now that stakeBld is instantiated
   refreshAgoricNamesRemotes();
+
   const stakeBld = agoricNamesRemotes.instance.stakeBld as Instance<
     typeof stakeBldStart
   >;
@@ -59,8 +62,8 @@ test.serial('stakeBld', async t => {
     },
   });
 
-  const current = await wd.getCurrentWalletRecord();
-  const latest = await wd.getLatestUpdateRecord();
+  const current = wd.getCurrentWalletRecord();
+  const latest = wd.getLatestUpdateRecord();
   t.like(current, {
     offerToPublicSubscriberPaths: [
       // TODO publish something useful

@@ -69,8 +69,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       // We would actually alreaady have the account from the orchestrator
       // ??? could these be passed in? It would reduce the size of this handler,
       // keeping it focused on long-running operations.
-      const celestia = await orch.getChain('celestia');
-      const celestiaAccount = await celestia.makeAccount();
+      const omni = await orch.getChain('omniflixhub');
+      const omniAccount = await omni.makeAccount();
 
       // TODO implement these
       // const delegations = await celestiaAccount.getDelegations();
@@ -86,7 +86,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
       // await strideAccount.liquidStake(tiaAmt);
-      console.log(celestiaAccount, strideAccount);
+      console.log(omniAccount, strideAccount);
     },
   );
 

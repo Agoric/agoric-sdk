@@ -6,39 +6,33 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
 /**
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
+ * @import {IBCConnectionID} from '@agoric/vats';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
 /** @type {any} */
 const anyVal = null;
-
-// FIXME look up real values
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
-const mockLocalChainInfo = {
-  allegedName: 'agoric',
-  chainId: 'agoriclocal',
-  connections: anyVal,
-  ibcHooksEnabled: true,
-  icaEnabled: true,
-  icqEnabled: true,
-  pfmEnabled: true,
-};
 
 /**
  * @param {Remote<LocalChain>} localchain
  * @param {ReturnType<
  *   typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
  * >} makeLocalChainAccountKit
+ * @param {ChainInfo} localInfo
  * @returns {Chain}
  */
-const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
+const makeLocalChainFacade = (
+  localchain,
+  makeLocalChainAccountKit,
+  localInfo,
+) => {
   return {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
-      return mockLocalChainInfo;
+      return localInfo;
     },
 
     async makeAccount() {
@@ -60,7 +54,7 @@ const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
           const addressStr = account.getAddress();
           return {
             address: addressStr,
-            chainId: mockLocalChainInfo.chainId,
+            chainId: localInfo.chainId,
             addressEncoding: 'bech32',
           };
         },
@@ -98,6 +92,7 @@ const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
 /**
  * @template {CosmosChainInfo} CCI
  * @param {CCI} chainInfo
+ * @param {IBCConnectionInfo} connectionInfo
  * @param {object} io
  * @param {Remote<OrchestrationService>} io.orchestration
  * @param {Remote<TimerService>} io.timer
@@ -107,13 +102,12 @@ const makeLocalChainFacade = (localchain, makeLocalChainAccountKit) => {
  */
 const makeRemoteChainFacade = (
   chainInfo,
+  connectionInfo,
   { orchestration, timer, zcf, zone },
 ) => {
-  const name = chainInfo.chainId;
-
   const makeRecorderKit = () => anyVal;
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    zone.subZone(name),
+    zone.subZone(chainInfo.chainId),
     makeRecorderKit,
     zcf,
   );
@@ -122,14 +116,10 @@ const makeRemoteChainFacade = (
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
-      // FIXME look up real values
-      // UNTIL https://github.com/Agoric/agoric-sdk/issues/9063
-      const hostConnectionId = 'connection-1';
-      const controllerConnectionId = 'connection-2';
-
       const icaAccount = await E(orchestration).makeAccount(
-        hostConnectionId,
-        controllerConnectionId,
+        chainInfo.chainId,
+        connectionInfo.id,
+        connectionInfo.counterparty.connection_id,
       );
 
       const address = await E(icaAccount).getAddress();
@@ -197,13 +187,23 @@ export const makeOrchestrationFacade = ({
       /** @type {Orchestrator} */
       const orc = {
         async getChain(name) {
+          const agoricChainInfo = await chainHub.getChainInfo('agoric');
+
           if (name === 'agoric') {
-            return makeLocalChainFacade(localchain, makeLocalChainAccountKit);
+            return makeLocalChainFacade(
+              localchain,
+              makeLocalChainAccountKit,
+              agoricChainInfo,
+            );
           }
 
-          const chainInfo = await chainHub.getChainInfo(name);
+          const remoteChainInfo = await chainHub.getChainInfo(name);
+          const connectionInfo = await chainHub.getConnectionInfo(
+            agoricChainInfo.chainId,
+            remoteChainInfo.chainId,
+          );
 
-          return makeRemoteChainFacade(chainInfo, {
+          return makeRemoteChainFacade(remoteChainInfo, connectionInfo, {
             orchestration: orchestrationService,
             timer: timerService,
             zcf,

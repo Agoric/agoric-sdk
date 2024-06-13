@@ -21,7 +21,7 @@ import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js'
  * @import {NameHub} from '@agoric/vats';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   privateArgsShape: {
     agoricNames: M.remotable('agoricNames'),
@@ -105,15 +105,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
       const { give } = seat.getProposal();
 
-      const celestia = await orch.getChain('celestia');
+      const omni = await orch.getChain('omniflixhub');
       const agoric = await orch.getChain('agoric');
 
-      const [celestiaAccount, localAccount] = await Promise.all([
-        celestia.makeAccount(),
+      const [omniAccount, localAccount] = await Promise.all([
+        omni.makeAccount(),
         agoric.makeAccount(),
       ]);
 
-      const tiaAddress = celestiaAccount.getAddress();
+      const omniAddress = omniAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
       const payments = await withdrawFromSeat(zcf, seat, give);
@@ -122,8 +122,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
       // build swap instructions with orcUtils library
       const transferMsg = orcUtils.makeOsmosisSwap({
-        destChain: 'celestia',
-        destAddress: tiaAddress,
+        destChain: 'omniflixhub',
+        destAddress: omniAddress,
         amountIn: give.Stable,
         brandOut: /** @type {any} */ ('FIXME'),
         slippage: 0.03,
@@ -132,7 +132,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       await localAccount
         .transferSteps(give.Stable, transferMsg)
         .then(_txResult =>
-          celestiaAccount.delegate(offerArgs.validator, offerArgs.staked),
+          omniAccount.delegate(offerArgs.validator, offerArgs.staked),
         )
         .catch(e => console.error(e));
 

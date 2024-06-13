@@ -9,7 +9,7 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   customTermsShape: {
     keywordShares: KeywordSharesShape,

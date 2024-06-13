@@ -1468,6 +1468,11 @@ export const preparePortAllocator = (zone, { watch }) =>
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
     }),
+    /**
+     *
+     * @param {object} opts
+     * @param {Protocol} opts.protocol
+     */
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n, lastICQPortNum: 0n }),
     {
       allocateCustomIBCPort(specifiedName = '') {
@@ -1517,3 +1522,4 @@ export const preparePortAllocator = (zone, { watch }) =>
       },
     },
   );
+/** @typedef {ReturnType<ReturnType<typeof preparePortAllocator>>} PortAllocator */

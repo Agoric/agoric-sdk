@@ -1,8 +1,12 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+import { makeChainHub } from '../utils/chainHub.js';
 
-/** @import {StakeAtomSF,  StakeAtomTerms} from '../examples/stakeAtom.contract' */
+/**
+ * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {StakeAtomSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
+ */
 
 const trace = makeTracer('StartStakeAtom', true);
 
@@ -10,39 +14,31 @@ const trace = makeTracer('StartStakeAtom', true);
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
- *       stakeAtom: Installation<
- *         import('../examples/stakeAtom.contract.js').start
+ *       stakeIca: Installation<
+ *         import('../examples/stakeIca.contract.js').start
  *       >;
  *     };
  *   };
  * }} powers
- * @param {{ options: StakeAtomTerms }} options
  */
-export const startStakeAtom = async (
-  {
-    consume: {
-      agoricNames,
-      board,
-      chainStorage,
-      chainTimerService,
-      orchestration,
-      startUpgradable,
-    },
-    installation: {
-      consume: { stakeAtom },
-    },
-    instance: {
-      produce: { stakeAtom: produceInstance },
-    },
+export const startStakeAtom = async ({
+  consume: {
+    agoricNames,
+    board,
+    chainStorage,
+    chainTimerService,
+    orchestration,
+    startUpgradable,
   },
-  { options: { hostConnectionId, controllerConnectionId, bondDenom } },
-) => {
+  installation: {
+    consume: { stakeIca },
+  },
+  instance: {
+    produce: { stakeAtom: produceInstance },
+  },
+}) => {
   const VSTORAGE_PATH = 'stakeAtom';
-  trace('startStakeAtom', {
-    hostConnectionId,
-    controllerConnectionId,
-    bondDenom,
-  });
+  trace('startStakeAtom');
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
@@ -50,15 +46,25 @@ export const startStakeAtom = async (
   const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
   trace('ATOM Issuer', atomIssuer);
 
+  const chainHub = makeChainHub(await agoricNames);
+
+  const agoric = await chainHub.getChainInfo('agoric');
+  const cosmoshub = await chainHub.getChainInfo('cosmoshub');
+  const connectionInfo = await chainHub.getConnectionInfo(
+    agoric.chainId,
+    cosmoshub.chainId,
+  );
+
   /** @type {StartUpgradableOpts<StakeAtomSF>} */
   const startOpts = {
     label: 'stakeAtom',
-    installation: stakeAtom,
+    installation: stakeIca,
     issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
-      hostConnectionId,
-      controllerConnectionId,
-      bondDenom,
+      chainId: cosmoshub.chainId,
+      hostConnectionId: connectionInfo.id,
+      controllerConnectionId: connectionInfo.counterparty.connection_id,
+      bondDenom: cosmoshub.stakingTokens[0].denom,
     },
     privateArgs: {
       orchestration: await orchestration,
@@ -89,7 +95,7 @@ export const getManifestForStakeAtom = (
           startUpgradable: true,
         },
         installation: {
-          consume: { stakeAtom: true },
+          consume: { stakeIca: true },
         },
         instance: {
           produce: { stakeAtom: true },
@@ -97,7 +103,7 @@ export const getManifestForStakeAtom = (
       },
     },
     installations: {
-      stakeAtom: restoreRef(installKeys.stakeAtom),
+      stakeIca: restoreRef(installKeys.stakeIca),
     },
     options,
   };
