@@ -18,11 +18,15 @@ sed -i -e 's/seeds = ".*"/seeds = ""/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's#cors_allowed_origins = \[\]#cors_allowed_origins = \["*"\]#g' $CHAIN_DIR/config/config.toml
 
 echo "Increase `*_bytes` parameters for MsgInstallBundle"
-sed -i -e "s/max_body_bytes = .*/max_body_bytes = 15728640/g" $CHAIN_DIR/config/config.toml
-sed -i -e "s/max_header_bytes = .*/max_header_bytes = 1048576/g" $CHAIN_DIR/config/config.toml
-sed -i -e "s/max_txs_bytes = .*/max_txs_bytes = 1073741824/g" $CHAIN_DIR/config/config.toml
-sed -i -e "s/max_tx_bytes = .*/max_tx_bytes = 15728640/g" $CHAIN_DIR/config/config.toml
-sed -i -e "s/^rpc-max-body-bytes =.*/rpc-max-body-bytes = 15728640/" $CHAIN_DIR/config/app.toml
+# See https://github.com/Agoric/agoric-sdk/blob/7b684a6268c999b082a326fdb22f63e4575bac4f/packages/agoric-cli/src/chain-config.js#L66
+RPC_MAX_BODY_BYTES=15000000
+MAX_HEADER_BYTES=$((RPC_MAX_BODY_BYTES / 10))
+MAX_TXS_BYTES=$((RPC_MAX_BODY_BYTES * 50))
+sed -i -e "s/max_body_bytes = .*/max_body_bytes = $RPC_MAX_BODY_BYTES/g" $CHAIN_DIR/config/config.toml
+sed -i -e "s/max_header_bytes = .*/max_header_bytes = $MAX_HEADER_BYTES/g" $CHAIN_DIR/config/config.toml
+sed -i -e "s/max_txs_bytes = .*/max_txs_bytes = $MAX_TXS_BYTES/g" $CHAIN_DIR/config/config.toml
+sed -i -e "s/max_tx_bytes = .*/max_tx_bytes = $RPC_MAX_BODY_BYTES/g" $CHAIN_DIR/config/config.toml
+sed -i -e "s/^rpc-max-body-bytes =.*/rpc-max-body-bytes = $RPC_MAX_BODY_BYTES/" $CHAIN_DIR/config/app.toml
 
 echo "Update client.toml file"
 sed -i -e 's#keyring-backend = "os"#keyring-backend = "test"#g' $CHAIN_DIR/config/client.toml
