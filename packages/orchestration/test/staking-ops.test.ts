@@ -274,8 +274,11 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const { validator, delegations } = configStaking;
   {
     const value = BigInt(Object.values(delegations)[0].amount);
-    const anAmount = { brand: aBrand, value };
-    const toDelegate = await E(invitationMakers).Delegate(validator, anAmount);
+    const anAmountArg = { denom: 'uatom', value };
+    const toDelegate = await E(invitationMakers).Delegate(
+      validator,
+      anAmountArg,
+    );
     const seat = E(zoe).offer(toDelegate);
     const result = await E(seat).getOfferResult();
 

@@ -16,7 +16,6 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -75,11 +74,13 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     holder: M.any(),
   }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
+  delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
+    M.undefined(),
+  ),
   redelegate: M.callWhen(
     ChainAddressShape,
     ChainAddressShape,
-    AmountShape,
+    AmountArgShape,
   ).returns(M.undefined()),
   withdrawReward: M.callWhen(ChainAddressShape).returns(
     M.arrayOf(ChainAmountShape),
@@ -123,11 +124,11 @@ export const prepareCosmosOrchestrationAccountKit = (
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
-        amountToCoin: M.call(AmountShape).returns(M.record()),
+        amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.callWhen(ChainAddressShape, AmountShape).returns(
+        Delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
           InvitationShape,
         ),
         Redelegate: M.callWhen(
@@ -197,7 +198,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       invitationMakers: {
         /**
          * @param {CosmosValidatorAddress} validator
-         * @param {Amount<'nat'>} amount
+         * @param {AmountArg} amount
          */
         Delegate(validator, amount) {
           trace('Delegate', validator, amount);
