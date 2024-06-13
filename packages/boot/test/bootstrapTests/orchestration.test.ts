@@ -148,7 +148,7 @@ test.serial('stakeAtom - repl-style', async t => {
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
   await t.throwsAsync(EV(account).getBalance('uatom'), {
-    message: 'Queries not aviable for chain "cosmoshub-4".',
+    message: 'Queries not available for chain "cosmoshub-4"',
   });
 });
 
