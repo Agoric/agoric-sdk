@@ -15,6 +15,20 @@ const { Fail } = assert;
  */
 
 /**
+ * @template {unknown[]} T
+ * @typedef {Promise<T>} PromiseVowOfTupleMappedToGenerics Temporary hack
+ *
+ *   UNTIL(microsoft/TypeScript#57122): This type should be replaced with just
+ *   PromiseVow<T>, but TypeScript doesn't understand that the result of a
+ *   mapping a tuple type using generics is iterable:
+ *
+ *   'JsonSafe<MsgTransferResponse & { '@type':
+ *   "/ibc.applications.transfer.v1.MsgTransferResponse"; }>[] |
+ *   Vow<JsonSafe<MsgTransferResponse & { ...; }>[]>' must have a
+ *   '[Symbol.iterator]()' method that returns an iterator.
+ */
+
+/**
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bank: Bank;
@@ -131,13 +145,15 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           return E(purse).withdraw(amount);
         },
         /**
-         * Execute a batch of transactions and return the responses. Use
-         * `typedJson()` on the arguments to get typed return values.
+         * Execute a batch of messages in order as a single atomic transaction
+         * and return the responses. If any of the messages fails, the entire
+         * batch will be rolled back. Use `typedJson()` on the arguments to get
+         * typed return values.
          *
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
          * @param {MT} messages
-         * @returns {PromiseVow<{
+         * @returns {PromiseVowOfTupleMappedToGenerics<{
          *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
          * }>}
          */
