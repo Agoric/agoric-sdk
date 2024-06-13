@@ -19,7 +19,7 @@ const startContract = async ({
   timer,
   marshaller,
   storage,
-  issuerKeywordRecord,
+  issuerKeywordRecord = undefined,
   terms = {
     chainId: 'cosmoshub-4',
     hostConnectionId: 'connection-1',
@@ -52,10 +52,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     brands: { ist },
     utils,
   } = await commonSetup(t);
-  const { publicFacet } = await startContract({
-    ...bootstrap,
-    issuerKeywordRecord: { In: ist.issuer },
-  });
+  const { publicFacet } = await startContract(bootstrap);
 
   t.log('make an ICA account');
   const account = await E(publicFacet).makeAccount();
@@ -78,14 +75,8 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
 });
 
 test('makeAccountInvitationMaker', async t => {
-  const {
-    bootstrap,
-    brands: { ist },
-  } = await commonSetup(t);
-  const { publicFacet, zoe } = await startContract({
-    ...bootstrap,
-    issuerKeywordRecord: { In: ist.issuer },
-  });
+  const { bootstrap } = await commonSetup(t);
+  const { publicFacet, zoe } = await startContract(bootstrap);
   const inv = await E(publicFacet).makeAccountInvitationMaker();
   t.log('make an offer for ICA account');
 

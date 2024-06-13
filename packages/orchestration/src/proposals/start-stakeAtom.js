@@ -43,8 +43,6 @@ export const startStakeAtom = async ({
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
-  const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
-  trace('ATOM Issuer', atomIssuer);
 
   const chainHub = makeChainHub(await agoricNames);
 
@@ -59,7 +57,6 @@ export const startStakeAtom = async ({
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeIca,
-    issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       chainId: cosmoshub.chainId,
       hostConnectionId: connectionInfo.id,

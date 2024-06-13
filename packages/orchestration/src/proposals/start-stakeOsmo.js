@@ -45,10 +45,6 @@ export const startStakeOsmo = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  // TODO add osmo to bank
-  const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
-  trace('ATOM Issuer', atomIssuer);
-
   const chainHub = makeChainHub(await agoricNames);
 
   const agoric = await chainHub.getChainInfo('agoric');
@@ -62,13 +58,10 @@ export const startStakeOsmo = async ({
   const startOpts = {
     label: 'stakeOsmo',
     installation: stakeIca,
-    issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       chainId: osmosis.chainId,
-      hostConnectionId: /** @type {IBCConnectionID} */ (connectionInfo.id),
-      controllerConnectionId: /** @type {IBCConnectionID} */ (
-        connectionInfo.counterparty.connection_id
-      ),
+      hostConnectionId: connectionInfo.id,
+      controllerConnectionId: connectionInfo.counterparty.connection_id,
       bondDenom: osmosis.stakingTokens[0].denom,
       icqEnabled: osmosis.icqEnabled,
     },
