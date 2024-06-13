@@ -119,7 +119,8 @@ export const commonSetup = async t => {
       localchain,
       marshaller,
       orchestration,
-      rootZone,
+      // TODO remove; bootstrap doesn't have a zone
+      rootZone: rootZone.subZone('contract'),
       storage,
     },
     brands: {
