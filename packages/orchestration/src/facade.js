@@ -1,9 +1,11 @@
 /** @file Orchestration service */
 
 import { V as E } from '@agoric/vow/vat.js';
+import { Fail } from '@agoric/assert';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
 
 /**
+ * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {TimerService} from '@agoric/time';
  * @import {IBCConnectionID} from '@agoric/vats';
@@ -156,6 +158,7 @@ const makeRemoteChainFacade = (
  *     typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
  *   >;
  *   makeRecorderKit: MakeRecorderKit;
+ *   asyncFlowTools: AsyncFlowTools;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -168,14 +171,19 @@ export const makeOrchestrationFacade = ({
   chainHub,
   makeLocalChainAccountKit,
   makeRecorderKit,
+  asyncFlowTools,
 }) => {
-  console.log('makeOrchestrationFacade got', {
-    zone,
-    timerService,
-    zcf,
-    storageNode,
-    orchestrationService,
-  });
+  (zone &&
+    timerService &&
+    zcf &&
+    storageNode &&
+    orchestrationService &&
+    // @ts-expect-error type says defined but double check
+    makeLocalChainAccountKit &&
+    // @ts-expect-error type says defined but double check
+    makeRecorderKit &&
+    asyncFlowTools) ||
+    Fail`params missing`;
 
   return {
     /**

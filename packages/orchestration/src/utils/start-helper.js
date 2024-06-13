@@ -54,12 +54,18 @@ export const provideOrchestration = (
     chainHub,
   );
 
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+    vowTools,
+  });
+
   const facade = makeOrchestrationFacade({
     zcf,
     zone,
     chainHub,
     makeLocalChainAccountKit,
     makeRecorderKit,
+    asyncFlowTools,
     ...remotePowers,
   });
   return { ...facade, chainHub, zone };
