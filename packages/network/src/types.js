@@ -200,5 +200,3 @@ export {};
  * ) => PromiseVow<Connection>} outbound
  *   Create an outbound connection
  */
-
-/** @typedef {ReturnType<ReturnType<typeof import('@agoric/network').preparePortAllocator>>} PortAllocator */

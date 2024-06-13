@@ -5,20 +5,19 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import type { Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type {
+  State as IBCChannelState,
+  Order,
+} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type { Brand, Purse } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
+import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
-import type {
-  Order,
-  State as IBCChannelState,
-} from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import { IBCChannelID, IBCConnectionID } from '@agoric/vats';
-import { MapStore } from '@agoric/store';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** A helper type for type extensions. */
@@ -49,8 +48,6 @@ export type IBCConnectionInfo = {
       key_prefix: string;
     };
   };
-  versions: { identifier: string; features: string[] }[];
-  delay_period: bigint;
   transferChannel: {
     portId: string;
     channelId: IBCChannelID;
@@ -65,19 +62,18 @@ export type IBCConnectionInfo = {
 /**
  * Info for a Cosmos-based chain.
  */
-export type CosmosChainInfo = {
+export type CosmosChainInfo = Readonly<{
   chainId: string;
-  connections: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
-  icaEnabled: boolean;
-  icqEnabled: boolean;
-  pfmEnabled: boolean;
-  ibcHooksEnabled: boolean;
+
+  connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+  icqEnabled?: boolean;
 
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
-  stakingTokens?: Array<{ denom: string }>;
-};
+  stakingTokens?: Readonly<Array<{ denom: string }>>;
+}>;
 
 export interface StakingAccountQueries {
   /**

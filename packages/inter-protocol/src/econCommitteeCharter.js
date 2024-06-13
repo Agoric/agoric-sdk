@@ -38,7 +38,7 @@ const ParamChangesOfferArgsShape = M.splitRecord(
   },
 );
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   customTermsShape: {
     binaryVoteCounterInstallation: InstallationShape,

@@ -10,11 +10,12 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { makeChainHub } from '../utils/chainHub.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
- * @import {TimerBrand, TimerService} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  */
 
@@ -28,7 +29,6 @@ const trace = makeTracer('StakeBld');
  *   marshaller: Marshaller;
  *   storageNode: StorageNode;
  *   timerService: TimerService;
- *   timerBrand: TimerBrand;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -45,20 +45,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  // FIXME in a second incarnation we can't make a remote call before defining all kinds
-  // UNTIL https://github.com/Agoric/agoric-sdk/issues/8879
-  const agoricChainInfo = await E(privateArgs.agoricNames).lookup(
-    'chain',
-    'agoric',
-  );
-
   const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
-    privateArgs.timerBrand,
-    agoricChainInfo,
+    makeChainHub(privateArgs.agoricNames),
   );
 
   async function makeLocalAccountKit() {

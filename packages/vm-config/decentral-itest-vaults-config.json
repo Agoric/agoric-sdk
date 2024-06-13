@@ -5,8 +5,6 @@
   "coreProposals": [
     "@agoric/builders/scripts/vats/init-core.js",
     "@agoric/builders/scripts/vats/init-network.js",
-    "@agoric/builders/scripts/vats/init-localchain.js",
-    "@agoric/builders/scripts/vats/init-transfer.js",
     {
       "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
       "entrypoint": "defaultProposalBuilder",

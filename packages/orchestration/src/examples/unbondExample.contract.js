@@ -1,7 +1,10 @@
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeOrchestrationFacade } from '../facade.js';
+import { makeChainHub } from '../utils/chainHub.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -20,6 +23,7 @@ import { makeOrchestrationFacade } from '../facade.js';
  *   localchain: Remote<LocalChain>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
+ *   marshaller: Marshaller;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Baggage} baggage
@@ -30,18 +34,29 @@ export const start = async (zcf, privateArgs, baggage) => {
     localchain,
     orchestrationService,
     storageNode,
+    marshaller,
     timerService,
   } = privateArgs;
   const zone = makeDurableZone(baggage);
 
+  const chainHub = makeChainHub(agoricNames);
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+    privateArgs.timerService,
+    chainHub,
+  );
   const { orchestrate } = makeOrchestrationFacade({
-    agoricNames,
     localchain,
     orchestrationService,
     storageNode,
     timerService,
     zcf,
     zone,
+    chainHub: makeChainHub(agoricNames),
+    makeLocalChainAccountKit,
   });
 
   /** @type {OfferHandler} */
@@ -54,8 +69,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       // We would actually alreaady have the account from the orchestrator
       // ??? could these be passed in? It would reduce the size of this handler,
       // keeping it focused on long-running operations.
-      const celestia = await orch.getChain('celestia');
-      const celestiaAccount = await celestia.makeAccount();
+      const omni = await orch.getChain('omniflixhub');
+      const omniAccount = await omni.makeAccount();
 
       // TODO implement these
       // const delegations = await celestiaAccount.getDelegations();
@@ -71,7 +86,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
       // await strideAccount.liquidStake(tiaAmt);
-      console.log(celestiaAccount, strideAccount);
+      console.log(omniAccount, strideAccount);
     },
   );
 

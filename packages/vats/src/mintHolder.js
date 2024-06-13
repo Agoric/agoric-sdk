@@ -25,7 +25,7 @@ function provideIssuerKit(zcf, baggage) {
   return prepareIssuerKit(baggage, keyword, assetKind, displayInfo);
 }
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

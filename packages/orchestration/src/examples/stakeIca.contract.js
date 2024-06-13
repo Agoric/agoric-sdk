@@ -1,5 +1,4 @@
 /** @file Example contract that uses orchestration */
-// TODO rename to "stakeIca" or something else that conveys is parameterized nature
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
@@ -18,8 +17,10 @@ const trace = makeTracer('StakeAtom');
  * @import {ICQConnection, OrchestrationService} from '../types.js';
  */
 
+/** @type {ContractMeta<typeof start>} */
 export const meta = harden({
   customTermsShape: {
+    chainId: M.string(),
     hostConnectionId: M.string(),
     controllerConnectionId: M.string(),
     bondDenom: M.string(),
@@ -35,14 +36,15 @@ export const privateArgsShape = meta.privateArgsShape;
 
 /**
  * @typedef {{
+ *   chainId: string;
  *   hostConnectionId: IBCConnectionID;
  *   controllerConnectionId: IBCConnectionID;
  *   bondDenom: string;
- * }} StakeAtomTerms
+ * }} StakeIcaTerms
  */
 
 /**
- * @param {ZCF<StakeAtomTerms>} zcf
+ * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
  *   orchestration: OrchestrationService;
  *   storageNode: StorageNode;
@@ -52,8 +54,7 @@ export const privateArgsShape = meta.privateArgsShape;
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  // TODO #9063 this roughly matches what we'll get from Chain<C>.getChainInfo()
-  const { hostConnectionId, controllerConnectionId, bondDenom } =
+  const { chainId, hostConnectionId, controllerConnectionId, bondDenom } =
     zcf.getTerms();
   const { orchestration, marshaller, storageNode, timer } = privateArgs;
 
@@ -69,6 +70,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
+      chainId,
       hostConnectionId,
       controllerConnectionId,
     );

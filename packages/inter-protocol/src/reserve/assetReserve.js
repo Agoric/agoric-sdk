@@ -10,7 +10,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 const trace = makeTracer('AR', true);
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

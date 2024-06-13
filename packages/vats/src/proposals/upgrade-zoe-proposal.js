@@ -11,7 +11,7 @@ import { E } from '@endo/far';
  *   };
  * }} powers
  * @param {object} options
- * @param {{ zoeRef: VatSourceRef; zcfRef: VatSourceRef }} options.options
+ * @param {{ zoeRef: VatSourceRef }} options.options
  */
 export const upgradeZoe = async (
   { consume: { vatAdminSvc, vatStore } },

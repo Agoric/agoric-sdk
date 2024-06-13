@@ -11,6 +11,7 @@ import { getInterfaceOf } from '@endo/marshal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
+import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 import { prepareTransferTools } from '../src/transfer.js';
 import { makeFakeBankManagerKit } from '../tools/bank-utils.js';
 import {
@@ -45,14 +46,16 @@ const makeTestContext = async _t => {
   );
 
   const transferZone = makeDurableZone(provideBaggage('transfer'));
-  const transferBridge = makeFakeTransferBridge(transferZone.subZone('bridge'));
-  const transferTools = prepareTransferTools(
+  const bridgeZone = transferZone.subZone('bridge');
+  const transferBridge = makeFakeTransferBridge(bridgeZone);
+  const { makeBridgeTargetKit } = prepareBridgeTargetModule(bridgeZone);
+  const { makeTransferMiddlewareKit } = prepareTransferTools(
     transferZone,
     prepareVowTools(transferZone.subZone('vows')),
   );
   const { finisher, interceptorFactory, transferMiddleware } =
-    transferTools.makeTransferMiddlewareKit();
-  const bridgeTargetKit = transferTools.makeBridgeTargetKit(
+    makeTransferMiddlewareKit();
+  const bridgeTargetKit = makeBridgeTargetKit(
     transferBridge,
     VTRANSFER_IBC_EVENT,
     interceptorFactory,

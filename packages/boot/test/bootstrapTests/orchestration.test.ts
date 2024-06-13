@@ -1,21 +1,76 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { TestFn } from 'ava';
-
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
-import type { CosmosValidatorAddress } from '@agoric/orchestration';
-import type { start as startStakeAtom } from '@agoric/orchestration/src/examples/stakeAtom.contract.js';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import type { TestFn } from 'ava';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-type DefaultTestContext = Awaited<ReturnType<typeof makeWalletFactoryContext>>;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-const test: TestFn<DefaultTestContext> = anyTest;
-
-test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.before(async t => {
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+});
 test.after.always(t => t.context.shutdown?.());
+
+/**
+ * Test the config itself. Part of this suite so we don't have to start up another swingset.
+ */
+test.serial('config', async t => {
+  const {
+    storage,
+    readLatest,
+    runUtils: { EV },
+  } = t.context;
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+
+  {
+    const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
+    t.like(cosmosChainInfo, {
+      chainId: 'cosmoshub-4',
+      stakingTokens: [{ denom: 'uatom' }],
+    });
+    t.deepEqual(
+      readLatest(`published.agoricNames.chain.cosmoshub`),
+      cosmosChainInfo,
+    );
+    await documentStorageSchema(t, storage, {
+      note: 'Chain info for Orchestration',
+      node: 'agoricNames.chain',
+    });
+  }
+
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'cosmoshub-4_juno-1',
+    );
+
+    t.like(
+      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      {
+        state: 3,
+        transferChannel: { portId: 'transfer', state: 3 },
+      },
+    );
+
+    await documentStorageSchema(t, storage, {
+      note: 'Chain connections for Orchestration',
+      node: 'agoricNames.chainConnection',
+    });
+  }
+});
 
 test.serial('stakeAtom - repl-style', async t => {
   const {
@@ -23,18 +78,15 @@ test.serial('stakeAtom - repl-style', async t => {
     evalProposal,
     runUtils: { EV },
   } = t.context;
-  // TODO move into a vm-config for future agoric-upgrade
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
-  );
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
   );
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const instance: Instance<typeof startStakeAtom> = await EV(
-    agoricNames,
-  ).lookup('instance', 'stakeAtom');
+  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
+    'instance',
+    'stakeAtom',
+  );
   t.truthy(instance, 'stakeAtom instance is available');
 
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');

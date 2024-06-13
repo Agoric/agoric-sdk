@@ -2,14 +2,14 @@ import {
   agd,
   agops,
   agopsLocation,
+  CHAINID,
   executeCommand,
-  VALIDATORADDR,
   executeOffer,
   GOV1ADDR,
   GOV2ADDR,
   GOV3ADDR,
   newOfferId,
-  CHAINID,
+  VALIDATORADDR,
 } from '@agoric/synthetic-chain';
 
 const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
@@ -136,4 +136,9 @@ export const bankSend = (addr, wanted) => {
   const noise = [...from, ...chain, ...testKeyring, '--yes'];
 
   return agd.tx('bank', 'send', VALIDATORADDR, addr, wanted, ...noise);
+};
+
+export const getProvisionPoolMetrics = async () => {
+  const path = `published.provisionPool.metrics`;
+  return getQuoteBody(path);
 };
