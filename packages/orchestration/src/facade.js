@@ -188,6 +188,7 @@ export const makeOrchestrationFacade = ({
      * @returns {(...args: Args) => Promise<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
+      // ??? does the the Orchestrator itself have to be durable?
       /** @type {Orchestrator} */
       const orc = {
         async getChain(name) {
@@ -220,7 +221,17 @@ export const makeOrchestrationFacade = ({
         getBrandInfo: anyVal,
         asAmount: anyVal,
       };
-      return async (...args) => fn(orc, ctx, ...args);
+
+      const { asyncFlow } = asyncFlowTools;
+      /** @param {Args} args */
+      const guestMethod = (...args) => fn(orc, ctx, ...args);
+      const wrapperFunc = asyncFlow(zone, durableName, guestMethod);
+      // ????
+      const outcomeV = zone.makeOnce('outcomeV', () =>
+        wrapperFunc(hOrch7, v1, v3),
+      );
+
+      return outcomeV;
     },
   };
 };
