@@ -280,29 +280,6 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
 
-  const addRunOptions = cmd =>
-    cmd
-      .option(
-        '--allow-unsafe-plugins',
-        `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
-        false,
-      )
-      .option(
-        '--hostport <host:port>',
-        'host and port to connect to VM',
-        '127.0.0.1:8000',
-      )
-      .option(
-        '--need <subsystems>',
-        'comma-separated names of subsystems to wait for',
-        'local,agoric,wallet',
-      )
-      .option(
-        '--provide <subsystems>',
-        'comma-separated names of subsystems this script initializes',
-        '',
-      );
-
   baseCmd('run <script> [script-args...]')
     .description(
       'run a script with all your user privileges and some Agoric endowments',
@@ -313,20 +290,39 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(runMain, ['run', script], opts);
     });
 
-  addRunOptions(
-    baseCmd('deploy [script...]')
-      .option(
-        '--target <target>',
-        'One of agoric, local, cosmos, or sim',
-        'agoric',
-      )
-      .description(
-        'run multiple scripts with all your user privileges against the local Agoric VM',
-      ),
-  ).action(async (scripts, _options, cmd) => {
-    const opts = { ...program.opts(), ...cmd.opts() };
-    return subMain(deployMain, ['deploy', ...scripts], opts);
-  });
+  baseCmd('deploy [script...]')
+    .option(
+      '--target <target>',
+      'One of agoric, local, cosmos, or sim',
+      'agoric',
+    )
+    .option(
+      '--allow-unsafe-plugins',
+      `CAREFUL: installed Agoric VM plugins will also have all your user's privileges`,
+      false,
+    )
+    .option(
+      '--hostport <host:port>',
+      'host and port to connect to VM',
+      '127.0.0.1:8000',
+    )
+    .option(
+      '--need <subsystems>',
+      'comma-separated names of subsystems to wait for',
+      'local,agoric,wallet',
+    )
+    .option(
+      '--provide <subsystems>',
+      'comma-separated names of subsystems this script initializes',
+      '',
+    )
+    .description(
+      'run multiple scripts with all your user privileges against the local Agoric VM',
+    )
+    .action(async (scripts, _options, cmd) => {
+      const opts = { ...program.opts(), ...cmd.opts() };
+      return subMain(deployMain, ['deploy', ...scripts], opts);
+    });
 
   baseCmd('publish [bundle...]')
     .option(
