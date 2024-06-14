@@ -6,7 +6,11 @@ import { E } from '@endo/far';
 import path from 'path';
 import { makeMockTestSpace } from './supports.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<typeof makeTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 const makeTestContext = async () => {

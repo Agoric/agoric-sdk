@@ -2,8 +2,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import path from 'path';
 
-import '../../../../exported.js';
-
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
@@ -15,8 +13,7 @@ import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js'
 import buildManualTimer from '../../../../tools/manualTimer.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const loanRoot = `${dirname}/../../../../src/contracts/loan/`;
 const autoswapRoot = `${dirname}/../../../../src/contracts/autoswap`;

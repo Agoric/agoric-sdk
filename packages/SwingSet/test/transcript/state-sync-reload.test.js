@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import test from 'ava';
 
 import tmp from 'tmp';

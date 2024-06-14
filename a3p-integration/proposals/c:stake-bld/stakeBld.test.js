@@ -66,10 +66,33 @@ test('basic', async t => {
     },
   });
 
-  const postDelegation = await currentDelegation();
-  t.is(postDelegation.length, 2, 'new delegation now');
-  t.like(postDelegation[1], {
+  const afterDelegate = await currentDelegation();
+  t.is(afterDelegate.length, 2, 'delegations after delegation');
+  t.like(afterDelegate[1], {
     balance: { amount: '10', denom: 'ubld' },
-    // omit 'delegation' because it has 'delgatorAddress' which is different every test run
+    // omit 'delegation' because it has 'delegatorAddress' which is different every test run
   });
+
+  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+    method: 'executeOffer',
+    offer: {
+      id: 'request-undelegate',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Undelegate',
+        invitationArgs: [VALIDATOR_ADDRESS, { brand: brand.BLD, value: 5n }],
+      },
+      proposal: {},
+    },
+  });
+
+  // TODO wait until completionTime, so we can check the count has gone back down
+  // https://github.com/Agoric/agoric-sdk/pull/9439#discussion_r1626451871
+
+  // const afterUndelegate = await currentDelegation();
+  // t.is(afterDelegate.length, 1, 'delegations after undelegation');
+  // t.like(afterUndelegate[1], {
+  //   balance: { amount: '5', denom: 'ubld' },
+  // });
 });

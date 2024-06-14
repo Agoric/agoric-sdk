@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /**
  * A Duration represents a signed, fixed-length span of time represented
  * as a count of seconds and fractions of seconds at nanosecond
@@ -195,7 +196,7 @@ export const Duration = {
       nanos: isSet(object.nanos) ? Number(object.nanos) : 0,
     };
   },
-  toJSON(message: Duration): unknown {
+  toJSON(message: Duration): JsonSafe<Duration> {
     const obj: any = {};
     message.seconds !== undefined &&
       (obj.seconds = (message.seconds || BigInt(0)).toString());

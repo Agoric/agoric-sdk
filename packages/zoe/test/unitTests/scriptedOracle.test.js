@@ -12,7 +12,6 @@ import { assert } from '@endo/errors';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
-import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
@@ -20,8 +19,7 @@ import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
 
 // This test shows how to set up a fake oracle and use it in a contract.
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const oracleContractPath = `${dirname}/../../src/contracts/oracle.js`;
 const bountyContractPath = `${dirname}/bounty.js`;

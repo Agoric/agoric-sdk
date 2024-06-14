@@ -1,7 +1,5 @@
 // @ts-nocheck
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import '../../../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
@@ -149,7 +147,7 @@ test('borrow not enough collateral', async t => {
   // collateral is 0
   const { borrowSeat, borrowFacet } = await setupBorrowFacet(0n);
   // Sink unhandled rejection
-  E.when(
+  void E.when(
     borrowFacet,
     () => {},
     () => {},
@@ -182,13 +180,13 @@ test('borrow getDebtNotifier', async t => {
   const { borrowFacet, maxLoan } = await setupBorrowFacet();
   const debtNotifier = await E(borrowFacet).getDebtNotifier();
   const state = await debtNotifier.getUpdateSince();
-  assertAmountsEqual(t, state.value, maxLoan);
+  await assertAmountsEqual(t, state.value, maxLoan);
 });
 
 test('borrow getRecentCollateralAmount', async t => {
   const { borrowFacet, collateral } = await setupBorrowFacet();
   const collateralAmount = await E(borrowFacet).getRecentCollateralAmount();
-  assertAmountsEqual(t, collateralAmount, collateral);
+  await assertAmountsEqual(t, collateralAmount, collateral);
 });
 
 test('borrow getLiquidationPromise', async t => {
@@ -212,8 +210,8 @@ test('borrow getLiquidationPromise', async t => {
   const { quoteAmount, quotePayment } = await liquidationPromise;
   const quoteAmount2 = await E(quoteIssuer).getAmountOf(quotePayment);
 
-  assertAmountsEqual(t, quoteAmount, quoteAmount2);
-  assertAmountsEqual(
+  await assertAmountsEqual(t, quoteAmount, quoteAmount2);
+  await assertAmountsEqual(
     t,
     quoteAmount,
     AmountMath.make(
@@ -276,8 +274,8 @@ test('borrow, then addCollateral, then getLiquidationPromise', async t => {
 
   const quoteBrand = await E(quoteIssuer).getBrand();
 
-  assertAmountsEqual(t, quoteAmount, quoteAmount2);
-  assertAmountsEqual(
+  await assertAmountsEqual(t, quoteAmount, quoteAmount2);
+  await assertAmountsEqual(
     t,
     quoteAmount,
     AmountMath.make(
@@ -318,13 +316,13 @@ test('getDebtNotifier with interest', async t => {
 
   const { value: originalDebt, updateCount } =
     await E(debtNotifier).getUpdateSince();
-  assertAmountsEqual(t, originalDebt, maxLoan);
+  await assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6n);
 
   const { value: debtCompounded1, updateCount: updateCount1 } =
     await E(debtNotifier).getUpdateSince(updateCount);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded1,
     AmountMath.make(loanKit.brand, 40020n),
@@ -334,7 +332,7 @@ test('getDebtNotifier with interest', async t => {
 
   const { value: debtCompounded2 } =
     await E(debtNotifier).getUpdateSince(updateCount1);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded2,
     AmountMath.make(loanKit.brand, 40041n),
@@ -372,7 +370,7 @@ test('borrow collateral just too low', async t => {
     await setupBorrowFacet(74n);
 
   // Sink unhandled rejection
-  E.when(
+  void E.when(
     borrowFacetBad,
     () => {},
     () => {},
@@ -393,13 +391,13 @@ test('aperiodic interest', async t => {
 
   const { value: originalDebt, updateCount } =
     await E(debtNotifier).getUpdateSince();
-  assertAmountsEqual(t, originalDebt, maxLoan);
+  await assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(6n);
 
   const { value: debtCompounded1, updateCount: updateCount1 } =
     await E(debtNotifier).getUpdateSince(updateCount);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded1,
     AmountMath.make(loanKit.brand, 40020n),
@@ -412,7 +410,7 @@ test('aperiodic interest', async t => {
   const { value: debtCompounded2, updateCount: updateCount2 } =
     await E(debtNotifier).getUpdateSince(updateCount1);
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(16n));
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded2,
     AmountMath.make(loanKit.brand, 40062n),
@@ -421,7 +419,7 @@ test('aperiodic interest', async t => {
   periodUpdater.updateState(21n);
   const { value: debtCompounded3 } =
     await E(debtNotifier).getUpdateSince(updateCount2);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded3,
     AmountMath.make(loanKit.brand, 40083n),
@@ -489,7 +487,7 @@ test('short periods', async t => {
 
   const { value: originalDebt, updateCount } =
     await E(debtNotifier).getUpdateSince();
-  assertAmountsEqual(t, originalDebt, maxLoan);
+  await assertAmountsEqual(t, originalDebt, maxLoan);
 
   periodUpdater.updateState(5n);
   t.deepEqual(await E(borrowFacet).getLastCalculationTimestamp(), toTS(1n));
@@ -497,7 +495,7 @@ test('short periods', async t => {
   periodUpdater.updateState(9n);
   const { value: debtCompounded1, updateCount: updateCount1 } =
     await E(debtNotifier).getUpdateSince(updateCount);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded1,
     AmountMath.make(loanKit.brand, 40020n),
@@ -507,7 +505,7 @@ test('short periods', async t => {
   periodUpdater.updateState(14n);
   const { value: debtCompounded2, updateCount: updateCount2 } =
     await E(debtNotifier).getUpdateSince(updateCount1);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded2,
     AmountMath.make(loanKit.brand, 40041n),
@@ -517,7 +515,7 @@ test('short periods', async t => {
   periodUpdater.updateState(17n);
   const { value: debtCompounded3, updateCount: updateCount3 } =
     await E(debtNotifier).getUpdateSince(updateCount2);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded3,
     AmountMath.make(loanKit.brand, 40062n),
@@ -527,7 +525,7 @@ test('short periods', async t => {
   periodUpdater.updateState(21n);
   const { value: debtCompounded4, updateCount: updateCount4 } =
     await E(debtNotifier).getUpdateSince(updateCount3);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded4,
     AmountMath.make(loanKit.brand, 40083n),
@@ -540,7 +538,7 @@ test('short periods', async t => {
   periodUpdater.updateState(29n);
   const { value: debtCompounded5 } =
     await E(debtNotifier).getUpdateSince(updateCount4);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     debtCompounded5,
     AmountMath.make(loanKit.brand, 40104n),

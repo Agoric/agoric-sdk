@@ -13,7 +13,8 @@ const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
 
 /**
- * We reserve these keys in name hubs.
+ * Used in bootstrap to reserve names in the agoricNames namespace before any
+ * other proposals.
  *
  * @type {{
  *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };
@@ -317,6 +318,8 @@ export const makeMyAddressNameAdminKit = address => {
   return { nameHub, myAddressNameAdmin };
 };
 
+/** @typedef {MapStore<string, CreateVatResults>} VatStore */
+
 /**
  * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
  * @param {unknown} criticalVatKey
@@ -324,8 +327,6 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {string} [label]
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
- *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatSpace = (
   svc,

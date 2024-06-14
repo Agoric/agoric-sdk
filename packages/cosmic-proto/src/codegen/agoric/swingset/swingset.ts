@@ -2,6 +2,7 @@
 import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
@@ -275,7 +276,7 @@ export const CoreEvalProposal = {
         : [],
     };
   },
-  toJSON(message: CoreEvalProposal): unknown {
+  toJSON(message: CoreEvalProposal): JsonSafe<CoreEvalProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -354,7 +355,7 @@ export const CoreEval = {
       jsCode: isSet(object.jsCode) ? String(object.jsCode) : '',
     };
   },
-  toJSON(message: CoreEval): unknown {
+  toJSON(message: CoreEval): JsonSafe<CoreEval> {
     const obj: any = {};
     message.jsonPermits !== undefined &&
       (obj.jsonPermits = message.jsonPermits);
@@ -465,7 +466,7 @@ export const Params = {
         : [],
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     if (message.beansPerUnit) {
       obj.beansPerUnit = message.beansPerUnit.map(e =>
@@ -566,7 +567,7 @@ export const State = {
         : [],
     };
   },
-  toJSON(message: State): unknown {
+  toJSON(message: State): JsonSafe<State> {
     const obj: any = {};
     if (message.queueAllowed) {
       obj.queueAllowed = message.queueAllowed.map(e =>
@@ -643,7 +644,7 @@ export const StringBeans = {
       beans: isSet(object.beans) ? String(object.beans) : '',
     };
   },
-  toJSON(message: StringBeans): unknown {
+  toJSON(message: StringBeans): JsonSafe<StringBeans> {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.beans !== undefined && (obj.beans = message.beans);
@@ -717,7 +718,7 @@ export const PowerFlagFee = {
         : [],
     };
   },
-  toJSON(message: PowerFlagFee): unknown {
+  toJSON(message: PowerFlagFee): JsonSafe<PowerFlagFee> {
     const obj: any = {};
     message.powerFlag !== undefined && (obj.powerFlag = message.powerFlag);
     if (message.fee) {
@@ -793,7 +794,7 @@ export const QueueSize = {
       size: isSet(object.size) ? Number(object.size) : 0,
     };
   },
-  toJSON(message: QueueSize): unknown {
+  toJSON(message: QueueSize): JsonSafe<QueueSize> {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.size !== undefined && (obj.size = Math.round(message.size));
@@ -877,7 +878,7 @@ export const Egress = {
         : [],
     };
   },
-  toJSON(message: Egress): unknown {
+  toJSON(message: Egress): JsonSafe<Egress> {
     const obj: any = {};
     message.nickname !== undefined && (obj.nickname = message.nickname);
     message.peer !== undefined &&
@@ -963,7 +964,7 @@ export const SwingStoreArtifact = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: SwingStoreArtifact): unknown {
+  toJSON(message: SwingStoreArtifact): JsonSafe<SwingStoreArtifact> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
     message.data !== undefined &&

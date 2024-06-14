@@ -1,12 +1,13 @@
 // @ts-check
 
+/// <reference types="@agoric/store/exported.js" />
+
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Fail } from '@endo/errors';
 import { toBytes } from './bytes.js';
 import { Shape } from './shapes.js';
 
-import '@agoric/store/exported.js';
 /// <reference path="./types.js" />
 /**
  * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
@@ -583,9 +584,7 @@ const preparePort = (zone, powers) => {
         // Clean up everything we did.
         const values = [...currentConnections.get(port).values()];
 
-        /** @type {import('@agoric/vow').Specimen[]} */
         const ps = [];
-
         ps.push(
           ...values.map(conn =>
             watch(E(conn).close(), this.facets.sinkWatcher),
@@ -1288,6 +1287,7 @@ export const prepareEchoConnectionKit = zone => {
 
   return makeEchoConnectionKit;
 };
+/** @typedef {ReturnType<typeof prepareEchoConnectionKit>} MakeEchoConnectionKit */
 
 /**
  * Create a protocol handler that just connects to itself.
@@ -1468,9 +1468,14 @@ export const preparePortAllocator = (zone, { watch }) =>
         .optional(M.string())
         .returns(Shape.Vow$(Shape.Port)),
     }),
+    /**
+     *
+     * @param {object} opts
+     * @param {Protocol} opts.protocol
+     */
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n, lastICQPortNum: 0n }),
     {
-      allocateCustomIBCPort(specifiedName = '') {
+      async allocateCustomIBCPort(specifiedName = '') {
         const { state } = this;
         let localAddr = `/ibc-port/`;
 
@@ -1483,7 +1488,7 @@ export const preparePortAllocator = (zone, { watch }) =>
         // Allocate an IBC port with a unique generated name.
         return watch(E(state.protocol).bindPort(localAddr));
       },
-      allocateICAControllerPort() {
+      async allocateICAControllerPort() {
         const { state } = this;
         state.lastICAPortNum += 1n;
         return watch(
@@ -1492,7 +1497,7 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateICQControllerPort() {
+      async allocateICQControllerPort() {
         const { state } = this;
         state.lastICQPortNum += 1n;
         return watch(
@@ -1501,7 +1506,7 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateCustomLocalPort(specifiedName = '') {
+      async allocateCustomLocalPort(specifiedName = '') {
         const { state } = this;
 
         let localAddr = `/local/`;
@@ -1517,3 +1522,4 @@ export const preparePortAllocator = (zone, { watch }) =>
       },
     },
   );
+/** @typedef {ReturnType<ReturnType<typeof preparePortAllocator>>} PortAllocator */

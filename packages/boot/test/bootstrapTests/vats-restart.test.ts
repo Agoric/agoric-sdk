@@ -23,9 +23,13 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
-    configSpecifier: PLATFORM_CONFIG,
-  });
+  const swingsetTestKit = await makeSwingsetTestKit(
+    t.log,
+    'bundles/vats-restart',
+    {
+      configSpecifier: PLATFORM_CONFIG,
+    },
+  );
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -94,23 +98,12 @@ test.serial('open vault', async t => {
   });
 });
 
-test.serial('run network vat proposal', async t => {
-  const { buildProposal, evalProposal } = t.context;
-
-  t.log('building network proposal');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
-
-  t.pass(); // reached here without throws
-});
-
 test.serial('make IBC callbacks before upgrade', async t => {
   const { EV } = t.context.runUtils;
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const { root: ibc } = await EV(vatStore).get('ibc');
   t.log('E(ibc).makeCallbacks(m1)');
-  const dummyBridgeManager = null as unknown as ScopedBridgeManager;
+  const dummyBridgeManager = null as unknown as ScopedBridgeManager<any>;
   const callbacks = await EV(ibc).makeCallbacks(dummyBridgeManager);
   t.truthy(callbacks);
   t.context.shared.ibcCallbacks = callbacks;

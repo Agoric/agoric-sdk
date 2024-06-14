@@ -1,84 +1,144 @@
 // @ts-check
-import { Fail } from '@endo/errors';
-import { AmountMath, AmountShape } from '@agoric/ertp';
-import { E, Far } from '@endo/far';
-import { M } from '@endo/patterns';
+import { Far } from '@endo/far';
+import { M, objectMap } from '@endo/patterns';
+import { StorageNodeShape } from '@agoric/internal';
+import { TimerServiceShape } from '@agoric/time';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { deeplyFulfilled } from '@endo/marshal';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { orcUtils } from '../utils/orc.js';
+import { makeChainHub } from '../utils/chainHub.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 /**
- * @import {Orchestrator, ChainAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
- * @import {ERef} from '@endo/far'
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {Zone} from '@agoric/zone';
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {NameHub} from '@agoric/vats';
  */
+
+/** @type {ContractMeta<typeof start>} */
+export const meta = {
+  privateArgsShape: {
+    agoricNames: M.remotable('agoricNames'),
+    localchain: M.remotable('localchain'),
+    orchestrationService: M.or(M.remotable('orchestration'), null),
+    storageNode: StorageNodeShape,
+    marshaller: M.remotable('marshaller'),
+    timerService: M.or(TimerServiceShape, null),
+  },
+  upgradability: 'canUpgrade',
+};
+harden(meta);
+
+// XXX copied from inter-protocol
+// TODO move to new `@agoric/contracts` package when we have it
+/**
+ * @param {Brand} brand must be a 'nat' brand, not checked
+ * @param {NatValue} [min]
+ */
+export const makeNatAmountShape = (brand, min) =>
+  harden({ brand, value: min ? M.gte(min) : M.nat() });
 
 /**
  * @param {ZCF} zcf
  * @param {{
- * orchestrationService: ERef<OrchestrationService>;
- * storageNode: ERef<StorageNode>;
- * timerService: ERef<TimerService>;
- * zone: Zone;
+ *   agoricNames: Remote<NameHub>;
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<OrchestrationService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
+ *   marshaller: Marshaller;
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
-  const { orchestrationService, storageNode, timerService, zone } = privateArgs;
+export const start = async (zcf, privateArgs, baggage) => {
+  const { brands } = zcf.getTerms();
+
+  const zone = makeDurableZone(baggage);
+
+  const {
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
+    timerService,
+    marshaller,
+  } = privateArgs;
+
+  const chainHub = makeChainHub(agoricNames);
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    zone,
+    makeRecorderKit,
+    zcf,
+    timerService,
+    chainHub,
+  );
 
   const { orchestrate } = makeOrchestrationFacade({
-    zone,
+    localchain,
+    orchestrationService,
+    storageNode,
     timerService,
     zcf,
-    storageNode,
-    orchestrationService,
+    zone,
+    chainHub,
+    makeLocalChainAccountKit,
   });
 
   /** deprecated historical example */
-  /** @type {OfferHandler} */
+  /**
+   * @type {OfferHandler<
+   *   unknown,
+   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
+   * >}
+   */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf },
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
       const { give } = seat.getProposal();
-      !AmountMath.isEmpty(give.USDC.value) || Fail`Must provide USDC.`;
 
-      const celestia = await orch.getChain('celestia');
+      const omni = await orch.getChain('omniflixhub');
       const agoric = await orch.getChain('agoric');
 
-      const [celestiaAccount, localAccount] = await Promise.all([
-        celestia.makeAccount(),
+      const [omniAccount, localAccount] = await Promise.all([
+        omni.makeAccount(),
         agoric.makeAccount(),
       ]);
 
-      const tiaAddress = await celestiaAccount.getAddress();
+      const omniAddress = omniAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
-      const seatKit = zcf.makeEmptySeatKit();
-      zcf.atomicRearrange(harden([[seat, seatKit.zcfSeat, give]]));
-      // seat.exit() // exit user seat now, or later?
-      const payment = await E(seatKit.userSeat).getPayout('USDC');
-      await localAccount.deposit(payment);
+      const payments = await withdrawFromSeat(zcf, seat, give);
+      await deeplyFulfilled(objectMap(payments, localAccount.deposit));
+      seat.exit();
 
       // build swap instructions with orcUtils library
       const transferMsg = orcUtils.makeOsmosisSwap({
-        destChain: 'celestia',
-        destAddress: tiaAddress,
-        amountIn: give.USDC,
-        brandOut: offerArgs.staked.brand,
+        destChain: 'omniflixhub',
+        destAddress: omniAddress,
+        amountIn: give.Stable,
+        brandOut: /** @type {any} */ ('FIXME'),
         slippage: 0.03,
       });
 
       await localAccount
-        .transferSteps(give.USDC, transferMsg)
+        .transferSteps(give.Stable, transferMsg)
         .then(_txResult =>
-          celestiaAccount.delegate(offerArgs.validator, offerArgs.staked),
+          omniAccount.delegate(offerArgs.validator, offerArgs.staked),
         )
         .catch(e => console.error(e));
 
       // XXX close localAccount?
-      return celestiaAccount; // should be continuing inv since this is an offer?
+      // return continuing inv since this is an offer?
     },
   );
 
@@ -88,7 +148,7 @@ export const start = async (zcf, privateArgs) => {
       'Swap for TIA and stake',
       undefined,
       harden({
-        give: { USDC: AmountShape },
+        give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
         want: {}, // XXX ChainAccount Ownable?
         exit: M.any(),
       }),

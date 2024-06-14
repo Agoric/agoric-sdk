@@ -7,6 +7,7 @@ import {
 } from '../../tendermint/abci/types.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** InterchainQueryPacketData is comprised of raw query. */
 export interface InterchainQueryPacketData {
   data: Uint8Array;
@@ -110,7 +111,9 @@ export const InterchainQueryPacketData = {
       memo: isSet(object.memo) ? String(object.memo) : '',
     };
   },
-  toJSON(message: InterchainQueryPacketData): unknown {
+  toJSON(
+    message: InterchainQueryPacketData,
+  ): JsonSafe<InterchainQueryPacketData> {
     const obj: any = {};
     message.data !== undefined &&
       (obj.data = base64FromBytes(
@@ -188,7 +191,9 @@ export const InterchainQueryPacketAck = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: InterchainQueryPacketAck): unknown {
+  toJSON(
+    message: InterchainQueryPacketAck,
+  ): JsonSafe<InterchainQueryPacketAck> {
     const obj: any = {};
     message.data !== undefined &&
       (obj.data = base64FromBytes(
@@ -261,7 +266,7 @@ export const CosmosQuery = {
         : [],
     };
   },
-  toJSON(message: CosmosQuery): unknown {
+  toJSON(message: CosmosQuery): JsonSafe<CosmosQuery> {
     const obj: any = {};
     if (message.requests) {
       obj.requests = message.requests.map(e =>
@@ -332,7 +337,7 @@ export const CosmosResponse = {
         : [],
     };
   },
-  toJSON(message: CosmosResponse): unknown {
+  toJSON(message: CosmosResponse): JsonSafe<CosmosResponse> {
     const obj: any = {};
     if (message.responses) {
       obj.responses = message.responses.map(e =>

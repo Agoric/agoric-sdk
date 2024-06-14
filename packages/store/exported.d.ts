@@ -12,8 +12,8 @@ import {
 } from './src/types.js';
 import { Pattern as _Pattern } from '@endo/patterns';
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
-    _LegacyMap as LegacyMap,
     _LegacyMap as LegacyMap,
     _LegacyWeakMap as LegacyWeakMap,
     _MapStore as MapStore,

@@ -13,8 +13,6 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
-import '../../../src/contracts/exported.js';
-
 // This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext
@@ -28,8 +26,7 @@ import '../../../src/contracts/exported.js';
 
 const test = /** @type {import('ava').TestFn<TestContext>} */ (unknownTest);
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const scaledPricePath = `${dirname}/../../../src/contracts/scaledPriceAuthority.js`;
 

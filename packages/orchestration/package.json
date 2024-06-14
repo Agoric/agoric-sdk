@@ -10,6 +10,9 @@
   },
   "scripts": {
     "build": "exit 0",
+    "codegen": "scripts/fetch-chain-info.ts",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
@@ -48,10 +51,12 @@
     "@endo/patterns": "^1.4.0"
   },
   "devDependencies": {
+    "@chain-registry/client": "^1.47.4",
     "@cosmjs/amino": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
     "@endo/ses-ava": "^1.2.2",
-    "ava": "^5.3.1"
+    "ava": "^5.3.1",
+    "prettier": "^3.3.2"
   },
   "ava": {
     "extensions": {
@@ -59,7 +64,6 @@
       "ts": "module"
     },
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "nodeArguments": [
@@ -81,6 +85,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 96.18
+    "atLeast": 97.1
   }
 }

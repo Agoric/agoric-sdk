@@ -2,8 +2,7 @@
 /** @see {@link /docs/typescript.md} */
 /* eslint-disable -- doesn't understand .d.ts */
 
-// XXX also explicit exports because `@agoric/ertp` top level confuses the type and value of `AssetKind`
-export * from './src/types.js';
+import '@agoric/notifier/exported.js';
 
 import {
   Amount as _Amount,
@@ -20,6 +19,7 @@ import {
   Purse as _Purse,
 } from './src/types.js';
 declare global {
+  // @ts-ignore TS2666: Exports and export assignments are not permitted in module augmentations.
   export {
     _Amount as Amount,
     _Brand as Brand,

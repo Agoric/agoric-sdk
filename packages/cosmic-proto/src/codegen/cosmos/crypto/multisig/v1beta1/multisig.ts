@@ -5,6 +5,7 @@ import {
   base64FromBytes,
   isSet,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * MultiSignature wraps the signatures from a multisig.LegacyAminoPubKey.
  * See cosmos.tx.v1betata1.ModeInfo.Multi for how to specify which signers
@@ -90,7 +91,7 @@ export const MultiSignature = {
         : [],
     };
   },
-  toJSON(message: MultiSignature): unknown {
+  toJSON(message: MultiSignature): JsonSafe<MultiSignature> {
     const obj: any = {};
     if (message.signatures) {
       obj.signatures = message.signatures.map(e =>
@@ -170,7 +171,7 @@ export const CompactBitArray = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: CompactBitArray): unknown {
+  toJSON(message: CompactBitArray): JsonSafe<CompactBitArray> {
     const obj: any = {};
     message.extraBitsStored !== undefined &&
       (obj.extraBitsStored = Math.round(message.extraBitsStored));

@@ -8,8 +8,6 @@ import { makeScalarSetStore } from '../src/stores/scalarSetStore.js';
 import { makeScalarWeakMapStore } from '../src/stores/scalarWeakMapStore.js';
 import { provideLazy } from '../src/stores/store-utils.js';
 
-import '../src/types.js';
-
 function check(t, mode, objMaker) {
   // Check the full API, and make sure object identity isn't a problem by
   // creating two potentially-similar things for use as keys.

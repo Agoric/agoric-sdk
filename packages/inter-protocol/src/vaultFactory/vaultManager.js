@@ -16,7 +16,7 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
 import {
   AmountMath,
@@ -146,6 +146,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   interestRate: Ratio;
  *   latestInterestUpdate: Timestamp;
  * }} AssetState
+ *
  *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;

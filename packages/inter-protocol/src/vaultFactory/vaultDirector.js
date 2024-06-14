@@ -1,7 +1,5 @@
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
-
-import '@agoric/governance/exported.js';
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
@@ -51,6 +49,7 @@ const trace = makeTracer('VD', true);
  *   rewardPoolAllocation: AmountKeywordRecord;
  * }} MetricsNotification
  *
+ *
  * @typedef {Readonly<{}>} ImmutableState
  *
  * @typedef {{}} MutableState
@@ -67,6 +66,7 @@ const trace = makeTracer('VD', true);
  *     import('../reserve/assetReserve.js').ShortfallReporter
  *   >;
  * }} FactoryPowersFacet
+ *
  *
  * @typedef {Readonly<{
  *   state: State;
@@ -90,6 +90,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
+ * @param managerParams
  */
 const prepareVaultDirector = (
   baggage,

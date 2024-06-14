@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
@@ -20,8 +19,6 @@ import {
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
-
-import '../src/types-ambient.js';
 
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
@@ -1641,7 +1638,7 @@ test('stamps from dateNow', async t => {
   await E(wallet).addPayment(pmt1);
   const { value: val1a, updateCount: count1a } =
     await E(paymentNotifier).getUpdateSince(count0);
-  E(wallet).addPayment(pmt4);
+  void E(wallet).addPayment(pmt4);
   const { value: val1, updateCount: count1 } =
     await E(paymentNotifier).getUpdateSince(count1a);
 

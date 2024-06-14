@@ -699,6 +699,7 @@ export {};
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} allegedGovernor
  * @param {Instance} allegedElectorate
+ * @returns {Promise<true>}
  */
 
 /**

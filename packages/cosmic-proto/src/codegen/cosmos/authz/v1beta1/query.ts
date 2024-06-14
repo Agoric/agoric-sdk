@@ -13,6 +13,7 @@ import {
 } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** QueryGrantsRequest is the request type for the Query/Grants RPC method. */
 export interface QueryGrantsRequest {
   granter: string;
@@ -179,7 +180,7 @@ export const QueryGrantsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryGrantsRequest): unknown {
+  toJSON(message: QueryGrantsRequest): JsonSafe<QueryGrantsRequest> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.grantee !== undefined && (obj.grantee = message.grantee);
@@ -271,7 +272,7 @@ export const QueryGrantsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryGrantsResponse): unknown {
+  toJSON(message: QueryGrantsResponse): JsonSafe<QueryGrantsResponse> {
     const obj: any = {};
     if (message.grants) {
       obj.grants = message.grants.map(e => (e ? Grant.toJSON(e) : undefined));
@@ -358,7 +359,9 @@ export const QueryGranterGrantsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryGranterGrantsRequest): unknown {
+  toJSON(
+    message: QueryGranterGrantsRequest,
+  ): JsonSafe<QueryGranterGrantsRequest> {
     const obj: any = {};
     message.granter !== undefined && (obj.granter = message.granter);
     message.pagination !== undefined &&
@@ -454,7 +457,9 @@ export const QueryGranterGrantsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryGranterGrantsResponse): unknown {
+  toJSON(
+    message: QueryGranterGrantsResponse,
+  ): JsonSafe<QueryGranterGrantsResponse> {
     const obj: any = {};
     if (message.grants) {
       obj.grants = message.grants.map(e =>
@@ -550,7 +555,9 @@ export const QueryGranteeGrantsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryGranteeGrantsRequest): unknown {
+  toJSON(
+    message: QueryGranteeGrantsRequest,
+  ): JsonSafe<QueryGranteeGrantsRequest> {
     const obj: any = {};
     message.grantee !== undefined && (obj.grantee = message.grantee);
     message.pagination !== undefined &&
@@ -646,7 +653,9 @@ export const QueryGranteeGrantsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryGranteeGrantsResponse): unknown {
+  toJSON(
+    message: QueryGranteeGrantsResponse,
+  ): JsonSafe<QueryGranteeGrantsResponse> {
     const obj: any = {};
     if (message.grants) {
       obj.grants = message.grants.map(e =>

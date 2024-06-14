@@ -1,6 +1,6 @@
 // @ts-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 /**
  * @import {Bytes, ConnectionHandler} from '@agoric/network';
  */
@@ -12,7 +12,7 @@
 
 /**
  * @typedef {object} PacketParts
- * @property {import("@agoric/ertp/exported.js").AmountValue} value
+ * @property {import('@agoric/ertp/src/types.js').AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo

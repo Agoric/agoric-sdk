@@ -1,6 +1,6 @@
 // @jessie-check
 
-import '@agoric/internal/exported.js';
+/// <reference types="@agoric/internal/exported" />
 
 // eslint-disable-next-line import/export
 export * from './types.js'; // no named exports

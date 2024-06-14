@@ -48,8 +48,33 @@ jobs:
       - name: Install graphviz
         run: sudo apt install -y graphviz
 
+      # This is now redundant with Lerna's --reject-cycles but keep it here so we have
+      # test coverage of this script we use for visualizing the dep graph.
       - name: Check for cycles
         run: scripts/check-dependency-cycles.sh
+
+      # install node_modules
+      - uses: ./.github/actions/restore-node
+
+      # Releasing SDK builds all packages in this order during `lerna publish`.
+      # Due to ambient types, certain build orders (from the dependency graph)
+      # may break the type resolution. Run this in the PR to find out before
+      # attempting to merge to master. This takes about 1min locally and since
+      # this job is about 30s in CI doing it here doesn't add to wall wait for
+      # CI resolution.
+      #
+      # We prepack only because full pack removes the declarations, relying on
+      # ambient resolution in the repo filesystem which will not be available
+      # when the packages are pulled from npm.
+      #
+      # After that test, we postpack to avoid putting the prepack artifacts in
+      # the cache maintained by restore-node, since they are not .gitignored and
+      # thus will fail restore-node's check for a clean repo when the cache is
+      # restored.
+      - name: Pack packages without ambient type resolution
+        run: |
+          yarn lerna run --reject-cycles --concurrency 1 prepack
+          yarn lerna run postpack
 
   ##################
   # Lint tests
@@ -211,6 +236,9 @@ jobs:
       - name: yarn test (agoric-cli)
         if: (success() || failure())
         run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (async-flow)
+        if: (success() || failure())
+        run: cd packages/async-flow && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (base-zone)
         if: (success() || failure())
         run: cd packages/base-zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

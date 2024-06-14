@@ -3,10 +3,8 @@
 import { assert, Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 
-import { dataToBase64, base64ToBytes } from '@agoric/network';
+import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
 
-import '@agoric/store/exported.js';
-import '@agoric/network/exported.js';
 import {
   localAddrToPortID,
   decodeRemoteIbcAddress,
@@ -134,7 +132,7 @@ export const prepareIBCConnectionHandler = zone => {
           source_channel: channelID,
           destination_port: rPortID,
           destination_channel: rChannelID,
-          data: dataToBase64(packetBytes),
+          data: byteSourceToBase64(packetBytes),
         };
         return protocolUtils.ibcSendPacket(packet, relativeTimeoutNs);
       },
@@ -680,7 +678,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { packet } = watcherContext;
 
           const realAck = ack || DEFAULT_ACKNOWLEDGEMENT;
-          const ack64 = dataToBase64(realAck);
+          const ack64 = byteSourceToBase64(realAck);
           this.facets.util
             .downcall('receiveExecuted', {
               packet,
@@ -816,7 +814,7 @@ export const prepareCallbacks = zone => {
   return zone.exoClass(
     'callbacks',
     undefined,
-    /** @param {ScopedBridgeManager} dibcBridgeManager */
+    /** @param {ScopedBridgeManager<'dibc'>} dibcBridgeManager */
     dibcBridgeManager => ({ dibcBridgeManager }),
     {
       /**

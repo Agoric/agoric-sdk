@@ -47,7 +47,6 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
@@ -57,6 +56,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 89.87
+    "atLeast": 91.11
   }
 }

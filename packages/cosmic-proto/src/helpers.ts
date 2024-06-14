@@ -1,6 +1,11 @@
 import type {
+  Bech32PrefixRequest,
+  Bech32PrefixResponse,
+} from './codegen/cosmos/auth/v1beta1/query.js';
+import type {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
+  QueryBalanceRequestProtoMsg,
 } from './codegen/cosmos/bank/v1beta1/query.js';
 import type {
   MsgSend,
@@ -9,16 +14,22 @@ import type {
 import type {
   MsgDelegate,
   MsgDelegateResponse,
+  MsgUndelegate,
+  MsgUndelegateResponse,
 } from './codegen/cosmos/staking/v1beta1/tx.js';
-import { RequestQuery } from './codegen/tendermint/abci/types.js';
 import type { Any } from './codegen/google/protobuf/any.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from './codegen/ibc/applications/transfer/v1/tx.js';
+import type { JsonSafe } from './codegen/index.js';
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
 
 /**
- * The result of Any.toJSON(). The type in cosms-types says it returns
- * `unknown` but it's actually this. The `value` string is a base64 encoding of
- * the bytes array.
+ * The result of Any.toJSON(). Exported at top level as a convenience
+ * for a very common import.
  */
-export type AnyJson = { typeUrl: string; value: string };
+export type AnyJson = JsonSafe<Any>;
 
 // TODO codegen this by modifying Telescope
 export type Proto3Shape = {
@@ -28,13 +39,12 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
   '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
-};
-
-// Often s/Request$/Response/ but not always
-type ResponseMap = {
-  '/cosmos.bank.v1beta1.MsgSend': '/cosmos.bank.v1beta1.MsgSendResponse';
-  '/cosmos.bank.v1beta1.QueryAllBalancesRequest': '/cosmos.bank.v1beta1.QueryAllBalancesResponse';
-  '/cosmos.staking.v1beta1.MsgDelegate': '/cosmos.staking.v1beta1.MsgDelegateResponse';
+  '/cosmos.staking.v1beta1.MsgUndelegate': MsgUndelegate;
+  '/cosmos.staking.v1beta1.MsgUndelegateResponse': MsgUndelegateResponse;
+  '/ibc.applications.transfer.v1.MsgTransfer': MsgTransfer;
+  '/ibc.applications.transfer.v1.MsgTransferResponse': MsgTransferResponse;
+  '/cosmos.auth.v1beta1.Bech32PrefixRequest': Bech32PrefixRequest;
+  '/cosmos.auth.v1beta1.Bech32PrefixResponse': Bech32PrefixResponse;
 };
 
 /**
@@ -51,10 +61,20 @@ export type TypedJson<T extends unknown | keyof Proto3Shape = unknown> =
       }
     : { '@type': string };
 
+/** General pattern for Request that has a corresponding Response */
+type RequestTypeUrl<Base extends string> = `/${Base}Request`;
+/** Pattern specific to Msg sends, in which "Msg" without "Response" implies it's a request */
+type TxMessageTypeUrl<
+  Package extends string,
+  Name extends Capitalize<string>,
+> = `/${Package}.Msg${Name}`;
+
 export type ResponseTo<T extends TypedJson> =
-  T['@type'] extends keyof ResponseMap
-    ? TypedJson<ResponseMap[T['@type']]>
-    : TypedJson;
+  T['@type'] extends RequestTypeUrl<infer Base>
+    ? TypedJson<`/${Base}Response`>
+    : T['@type'] extends TxMessageTypeUrl<infer Package, infer Name>
+      ? TypedJson<`/${Package}.Msg${Name}Response`>
+      : TypedJson;
 
 export const typedJson = <T extends keyof Proto3Shape>(
   typeStr: T,
@@ -65,35 +85,6 @@ export const typedJson = <T extends keyof Proto3Shape>(
     ...obj,
   } as TypedJson<T>;
 };
-
-// TODO make codegen toJSON() return these instead of unknown
-/**
- * Proto Any with arrays encoded as base64
- */
-export type Base64Any<T> = {
-  [Prop in keyof T]: T[Prop] extends Uint8Array ? string : T[Prop];
-};
-
-// TODO make codegen toJSON() return these instead of unknown
-// https://github.com/cosmology-tech/telescope/issues/605
-/**
- * Mimics behavor of .toJSON(), converting Uint8Array to base64 strings
- * and bigints to strings
- */
-export type JsonSafe<T> = {
-  [Prop in keyof T]: T[Prop] extends Uint8Array
-    ? string
-    : T[Prop] extends bigint
-      ? string
-      : T[Prop];
-};
-
-/**
- * The result of RequestQuery.toJSON(). The type in cosms-types says it returns
- * `unknown` but it's actually this. The Uint8Array fields are base64 encoded, while
- * bigint fields are strings.
- */
-export type RequestQueryJson = JsonSafe<RequestQuery>;
 
 const QUERY_REQ_TYPEURL_RE =
   /^\/(?<serviceName>\w+(?:\.\w+)*)\.Query(?<methodName>\w+)Request$/;
@@ -112,13 +103,13 @@ export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
 type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
 
 export const toRequestQueryJson = (
-  any: Any,
+  msg: QueryBalanceRequestProtoMsg,
   opts: RequestQueryOpts = {},
-): RequestQueryJson =>
+) =>
   RequestQuery.toJSON(
     RequestQuery.fromPartial({
-      path: typeUrlToGrpcPath(any.typeUrl),
-      data: any.value,
+      path: typeUrlToGrpcPath(msg.typeUrl),
+      data: msg.value,
       ...opts,
     }),
-  ) as RequestQueryJson;
+  );

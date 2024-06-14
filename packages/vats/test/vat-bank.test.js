@@ -8,6 +8,11 @@ import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 
+/**
+ * @import {Remote} from '@agoric/internal';
+ * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ */
+
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
   const root = fakeVomKit.cm.provideBaggage();
@@ -27,13 +32,15 @@ test('provideAssetSubscription - MapStore insertion order preserved', async t =>
     );
 
     const forwardMap = zone.mapStore(`${name} forward map`);
-    handleToId.forEach((id, h) => forwardMap.init(h, id));
+    for (const [h, id] of handleToId.entries()) {
+      forwardMap.init(h, id);
+    }
     const forwardMapIds = [...forwardMap.values()];
 
     const reverseMap = zone.mapStore(`${name} reverse map`);
-    [...handleToId.entries()]
-      .reverse()
-      .forEach(([h, id]) => reverseMap.init(h, id));
+    for (const [h, id] of [...handleToId.entries()].reverse()) {
+      reverseMap.init(h, id);
+    }
     const reverseMapIds = [...reverseMap.values()];
 
     t.deepEqual(
@@ -50,16 +57,16 @@ test('provideAssetSubscription - MapStore insertion order preserved', async t =>
 });
 
 test('communication', async t => {
-  t.plan(32);
+  t.plan(31);
   const baggage = provideBaggage('communication');
   const bankVat = E(buildRootObject)(null, null, baggage);
 
   const zone = makeDurableZone(baggage);
 
-  /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
+  /** @type {undefined | Remote<BridgeHandler>} */
   let bankHandler;
 
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  /** @type {ScopedBridgeManager<'bank'>} */
   const bankBridgeMgr = zone.exo('fakeBankBridgeManager', undefined, {
     async fromBridge(obj) {
       t.is(typeof obj, 'string');
@@ -147,7 +154,7 @@ test('communication', async t => {
   });
 
   /**
-   * @type {| undefined
+   * @type {undefined
    *   | IteratorResult<{
    *       brand: Brand;
    *       issuer: ERef<Issuer>;
@@ -194,8 +201,7 @@ test('communication', async t => {
   const updateRecord = await E(notifier).getUpdateSince();
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
   const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
-  t.assert(bankHandler);
-  // @ts-expect-error banHandler does not resolve to undefined
+  assert(bankHandler);
   await E(bankHandler).fromBridge(obj);
 
   // Wait for new balance.

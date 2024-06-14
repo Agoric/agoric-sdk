@@ -264,13 +264,17 @@ test('makeFakeStorageKit sequence data', async t => {
 });
 
 const testUnmarshaller = test.macro((t, format) => {
-  /** @type {(val: import('@endo/marshal').RemotableObject & SlottedRemotable) => string} */
+  /**
+   * @type {(
+   *   val: import('@endo/marshal').RemotableObject & SlottedRemotable,
+   * ) => string}
+   */
   const convertValToSlot = val => val.getBoardId();
   const serializeBodyFormat = /** @type {any} */ (format);
   const m = makeMarshal(convertValToSlot, undefined, { serializeBodyFormat });
 
   // create capdata with specific slots
-  /** @typedef { { getBoardId: () => string } } SlottedRemotable */
+  /** @typedef {{ getBoardId: () => string }} SlottedRemotable */
   const foo = Far('foo');
   const foo1 = Far('foo', { getBoardId: () => 'board1' });
   const foo2 = Far('foo', { getBoardId: () => 'board2' });

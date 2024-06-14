@@ -1,3 +1,5 @@
+import type { BridgeIdValue, Remote } from '@agoric/internal';
+import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
 
 export type Board = ReturnType<
@@ -41,13 +43,13 @@ export type NameAdmin = {
    */
   default: <T>(key: string, newValue: T, newAdmin?: NameAdmin) => T;
   /** Update only if already initialized. Reject if not. */
-  set: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
+  set: (key: string, newValue: any, newAdmin?: NameAdmin) => void;
   /**
    * Fulfill an outstanding reserved promise (if any) to the newValue and set
    * the key to the newValue. If newAdmin is provided, set that to return via
    * lookupAdmin.
    */
-  update: (key: string, newValue: V, newAdmin?: NameAdmin) => void;
+  update: (key: string, newValue: any, newAdmin?: NameAdmin) => void;
   /**
    * Look up the `newAdmin` from the path of keys starting from the current
    * NameAdmin. Wait on any reserved promises.
@@ -61,7 +63,7 @@ export type NameAdmin = {
 };
 
 export type NameHubUpdateHandler = {
-  write: (entries: [string, V][]) => void;
+  write: (entries: [string, any][]) => void;
 };
 
 /** a node in a name hierarchy */
@@ -89,23 +91,31 @@ export type NamesByAddressAdmin = NameAdmin & {
 /** An object that can receive messages from the bridge device */
 export type BridgeHandler = {
   /** Handle an inbound message */
-  fromBridge: (obj: any) => PromiseVow<void>;
+  fromBridge: (obj: any) => Promise<unknown>;
 };
 
 /** An object which handles messages for a specific bridge */
-export type ScopedBridgeManager = Guarded<{
+export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
+  /**
+   * Optional bridge ID getter. Not part of the production bridge vat but
+   * available in fake bridges as a means for test reflection and for the type
+   * system to hang the bridgeId
+   */
+  getBridgeId?: () => BridgeId;
+  /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
-  fromBridge: (obj: any) => PromiseVow<void>;
-  initHandler: (handler: ERef<BridgeHandler>) => void;
-  setHandler: (handler: ERef<BridgeHandler>) => void;
+  /** Upcall from Golang into the VM */
+  fromBridge: (obj: any) => Promise<unknown>;
+  initHandler: (handler: Remote<BridgeHandler>) => void;
+  setHandler: (handler: Remote<BridgeHandler>) => void;
 }>;
 
 /** The object to manage this bridge */
 export type BridgeManager = {
-  register: (
-    bridgeId: string,
-    handler?: ERef<BridgeHandler | undefined>,
-  ) => ScopedBridgeManager;
+  register: <BridgeId extends BridgeIdValue>(
+    bridgeId: BridgeId,
+    handler?: Remote<BridgeHandler | undefined>,
+  ) => ScopedBridgeManager<BridgeId>;
 };
 
 export type IBCPortID = string;
@@ -141,7 +151,7 @@ export type ConnectingInfo = {
 };
 
 /** see [ibc_module.go](../../../golang/cosmos/x/vibc/types/ibc_module.go) */
-type IBCBridgeEvent =
+export type IBCBridgeEvent =
   | 'channelOpenInit'
   | 'channelOpenTry'
   | 'channelOpenAck'
@@ -184,7 +194,7 @@ export type IBCEvent<E extends IBCBridgeEvent> = {
 };
 
 /** see [receiver.go](../../../golang/cosmos/x/vibc/types/receiver.go) */
-type IBCDowncallMethod =
+export type IBCDowncallMethod =
   | 'sendPacket'
   | 'tryOpenExecuted'
   | 'receiveExecuted'

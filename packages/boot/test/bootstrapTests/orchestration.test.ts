@@ -4,89 +4,73 @@ import type { TestFn } from 'ava';
 
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
-import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
+import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
-import type { CosmosValidatorAddress } from '@agoric/orchestration';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-type DefaultTestContext = Awaited<ReturnType<typeof makeWalletFactoryContext>>;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-const test: TestFn<DefaultTestContext> = anyTest;
-
-test.before(async t => (t.context = await makeWalletFactoryContext(t)));
+test.before(async t => {
+  t.context = await makeWalletFactoryContext(
+    t,
+    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  );
+});
 test.after.always(t => t.context.shutdown?.());
 
-test.serial('stakeBld', async t => {
+/**
+ * Test the config itself. Part of this suite so we don't have to start up another swingset.
+ */
+test.serial('config', async t => {
   const {
-    agoricNamesRemotes,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
+    storage,
+    readLatest,
+    runUtils: { EV },
   } = t.context;
-  // TODO move into a vm-config for u15
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-localchain.js'),
-  );
-  // start-stakeBld depends on this. Sanity check in case the context changes.
-  const { BLD } = agoricNamesRemotes.brand;
-  BLD || Fail`BLD missing from agoricNames`;
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
-  );
-  // update now that stakeBld is instantiated
-  refreshAgoricNamesRemotes();
-  const stakeBld = agoricNamesRemotes.instance.stakeBld as Instance<
-    typeof stakeBldStart
-  >;
-  t.truthy(stakeBld);
 
-  const wd = await t.context.walletFactoryDriver.provideSmartWallet(
-    'agoric1testStakeBld',
-  );
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
-  await wd.executeOffer({
-    id: 'request-stake',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['stakeBld'],
-      callPipe: [['makeStakeBldInvitation']],
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX BoardRemote
-        In: { brand: BLD, value: 10n },
+  {
+    const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
+    t.like(cosmosChainInfo, {
+      chainId: 'cosmoshub-4',
+      stakingTokens: [{ denom: 'uatom' }],
+    });
+    t.deepEqual(
+      readLatest(`published.agoricNames.chain.cosmoshub`),
+      cosmosChainInfo,
+    );
+    await documentStorageSchema(t, storage, {
+      note: 'Chain info for Orchestration',
+      node: 'agoricNames.chain',
+    });
+  }
+
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'cosmoshub-4_juno-1',
+    );
+
+    t.like(
+      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      {
+        state: 3,
+        transferChannel: { portId: 'transfer', state: 3 },
       },
-    },
-  });
+    );
 
-  const current = await wd.getCurrentWalletRecord();
-  const latest = await wd.getLatestUpdateRecord();
-  t.like(current, {
-    offerToPublicSubscriberPaths: [
-      // TODO publish something useful
-      ['request-stake', { account: 'published.stakeBld' }],
-    ],
-  });
-  t.like(latest, {
-    status: { id: 'request-stake', numWantsSatisfied: 1 },
-  });
-
-  await wd.executeOffer({
-    id: 'request-delegate',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'request-stake',
-      invitationMakerName: 'Delegate',
-      invitationArgs: ['agoric1validator1', { brand: BLD, value: 10n }],
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX BoardRemote
-        In: { brand: BLD, value: 10n },
-      },
-    },
-  });
+    await documentStorageSchema(t, storage, {
+      note: 'Chain connections for Orchestration',
+      node: 'agoricNames.chainConnection',
+    });
+  }
 });
 
 test.serial('stakeAtom - repl-style', async t => {
@@ -95,22 +79,18 @@ test.serial('stakeAtom - repl-style', async t => {
     evalProposal,
     runUtils: { EV },
   } = t.context;
-  // TODO move into a vm-config for u15
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-  );
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
-  );
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
   );
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const instance = await EV(agoricNames).lookup('instance', 'stakeAtom');
+  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
+    'instance',
+    'stakeAtom',
+  );
   t.truthy(instance, 'stakeAtom instance is available');
 
-  const zoe = await EV.vat('bootstrap').consumeItem('zoe');
+  const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const publicFacet = await EV(zoe).getPublicFacet(instance);
   t.truthy(publicFacet, 'stakeAtom publicFacet is available');
 
@@ -122,7 +102,7 @@ test.serial('stakeAtom - repl-style', async t => {
     'account is a remotable',
   );
 
-  const atomBrand = await EV(agoricNames).lookup('brand', 'ATOM');
+  const atomBrand: Brand = await EV(agoricNames).lookup('brand', 'ATOM');
   const atomAmount = AmountMath.make(atomBrand, 10n);
 
   const validatorAddress: CosmosValidatorAddress = {
@@ -132,7 +112,7 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance();
+  const queryRes = await EV(account).getBalance('uatom');
   t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
 
   const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
@@ -155,7 +135,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['stakeAtom'],
-      callPipe: [['makeAcountInvitationMaker']],
+      callPipe: [['makeAccountInvitationMaker']],
     },
     proposal: {},
   });

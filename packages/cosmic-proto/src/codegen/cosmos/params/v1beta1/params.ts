@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** ParameterChangeProposal defines a proposal to change one or more parameters. */
 export interface ParameterChangeProposal {
   $typeUrl?: '/cosmos.params.v1beta1.ParameterChangeProposal';
@@ -102,7 +103,7 @@ export const ParameterChangeProposal = {
         : [],
     };
   },
-  toJSON(message: ParameterChangeProposal): unknown {
+  toJSON(message: ParameterChangeProposal): JsonSafe<ParameterChangeProposal> {
     const obj: any = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
@@ -198,7 +199,7 @@ export const ParamChange = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: ParamChange): unknown {
+  toJSON(message: ParamChange): JsonSafe<ParamChange> {
     const obj: any = {};
     message.subspace !== undefined && (obj.subspace = message.subspace);
     message.key !== undefined && (obj.key = message.key);

@@ -58,12 +58,10 @@
   },
   "files": [
     "src",
-    "NEWS.md",
-    "exported.js"
+    "NEWS.md"
   ],
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [

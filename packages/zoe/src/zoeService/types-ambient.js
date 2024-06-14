@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 /**
  * @typedef {object} ZoeService
@@ -232,7 +232,7 @@
  */
 
 /**
- * @typedef {Record<Keyword, import('@agoric/ertp/exported.js').AnyAmount>} AmountKeywordRecord
+ * @typedef {Record<Keyword, import('@agoric/ertp/src/types.js').AnyAmount>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: AmountMath.make(assetBrand, 5n), Price:

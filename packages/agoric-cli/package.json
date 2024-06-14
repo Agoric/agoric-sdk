@@ -92,13 +92,12 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "timeout": "2m",
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 76.88
+    "atLeast": 76.99
   }
 }

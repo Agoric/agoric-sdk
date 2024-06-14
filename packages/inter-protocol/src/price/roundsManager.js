@@ -76,6 +76,7 @@ const validRoundId = roundId => {
  *   }
  * >} HeldParams
  *
+ *
  * @typedef {Readonly<
  *   HeldParams & {
  *     details: MapStore<bigint, RoundDetails>;
@@ -83,6 +84,7 @@ const validRoundId = roundId => {
  *     unitIn: bigint;
  *   }
  * >} ImmutableState
+ *
  *
  * @typedef {{
  *   lastValueOutForUnitIn: bigint?;

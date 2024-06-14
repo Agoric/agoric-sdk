@@ -104,6 +104,11 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'anyAddress',
   );
   const bridgeManager = await consume.bridgeManager;
+  /**
+   * @type {undefined
+   *   | import('@agoric/vats').ScopedBridgeManager<'wallet'>}
+   */
+  // @ts-expect-error XXX EProxy
   const walletBridgeManager = await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET));
   const walletFactory = await E(zoe).startInstance(

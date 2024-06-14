@@ -1,5 +1,5 @@
 // @ts-check
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { E } from '@endo/far';
 

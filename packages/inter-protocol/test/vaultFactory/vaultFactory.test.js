@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
@@ -24,12 +23,11 @@ import {
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   metricsTracker,
   reserveInitialState,
@@ -47,12 +45,13 @@ import {
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js'
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  */
 
 /**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;
@@ -147,7 +146,7 @@ const setupServices = async (
   t,
   priceOrList,
   unitAmountIn,
-  timer = buildManualTimer(t.log, 0n, { eventLoopIteration }),
+  timer = buildZoeManualTimer(t.log, 0n, { eventLoopIteration }),
   quoteInterval = 1n,
   stableInitialLiquidity,
   startFrequency = undefined,
@@ -406,7 +405,7 @@ test('interest on multiple vaults', async t => {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
-  const manualTimer = buildManualTimer(t.log, 0n, {
+  const manualTimer = buildZoeManualTimer(t.log, 0n, {
     timeStep: SECONDS_PER_DAY,
     eventLoopIteration,
   });
@@ -605,7 +604,7 @@ test('adjust balances', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -849,7 +848,7 @@ test('adjust balances - withdraw RUN', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -917,7 +916,7 @@ test('adjust balances after interest charges', async t => {
   const { aeth, run } = t.context;
 
   // charge interest on every tick
-  const manualTimer = buildManualTimer(trace, 0n, {
+  const manualTimer = buildZoeManualTimer(trace, 0n, {
     timeStep: SECONDS_PER_DAY,
   });
   t.context.interestTiming = {
@@ -981,7 +980,7 @@ test('transfer vault', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -1114,7 +1113,7 @@ test('overdeposit', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -1239,7 +1238,7 @@ test('collect fees from vault', async t => {
   };
 
   // charge interest on every tick
-  const manualTimer = buildManualTimer(t.log, 0n, {
+  const manualTimer = buildZoeManualTimer(t.log, 0n, {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
   });
@@ -1393,7 +1392,7 @@ test('close vault', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log, 0n, { eventLoopIteration }),
+    buildZoeManualTimer(t.log, 0n, { eventLoopIteration }),
     undefined,
     500n,
   );
@@ -1508,7 +1507,7 @@ test('debt too small - MinInitialDebt', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -1549,7 +1548,7 @@ test('excessive debt on collateral type - debtLimit', async t => {
     t,
     [15n],
     aeth.make(1n),
-    buildManualTimer(t.log),
+    buildZoeManualTimer(t.log),
     undefined,
     500n,
   );
@@ -1694,7 +1693,7 @@ test('manager notifiers, with snapshot', async t => {
   const ENOUGH = 10_000n;
 
   const { aeth, run } = t.context;
-  const manualTimer = buildManualTimer(t.log, 0n, {
+  const manualTimer = buildZoeManualTimer(t.log, 0n, {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
   });

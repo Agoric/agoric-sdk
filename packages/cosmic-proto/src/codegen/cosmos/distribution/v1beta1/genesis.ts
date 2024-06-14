@@ -18,6 +18,7 @@ import {
 } from './distribution.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * DelegatorWithdrawInfo is the address for where distributions rewards are
  * withdrawn to by default this struct is only used at genesis to feed in
@@ -256,7 +257,7 @@ export const DelegatorWithdrawInfo = {
         : '',
     };
   },
-  toJSON(message: DelegatorWithdrawInfo): unknown {
+  toJSON(message: DelegatorWithdrawInfo): JsonSafe<DelegatorWithdrawInfo> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -339,7 +340,9 @@ export const ValidatorOutstandingRewardsRecord = {
         : [],
     };
   },
-  toJSON(message: ValidatorOutstandingRewardsRecord): unknown {
+  toJSON(
+    message: ValidatorOutstandingRewardsRecord,
+  ): JsonSafe<ValidatorOutstandingRewardsRecord> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -438,7 +441,9 @@ export const ValidatorAccumulatedCommissionRecord = {
         : undefined,
     };
   },
-  toJSON(message: ValidatorAccumulatedCommissionRecord): unknown {
+  toJSON(
+    message: ValidatorAccumulatedCommissionRecord,
+  ): JsonSafe<ValidatorAccumulatedCommissionRecord> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -547,7 +552,9 @@ export const ValidatorHistoricalRewardsRecord = {
         : undefined,
     };
   },
-  toJSON(message: ValidatorHistoricalRewardsRecord): unknown {
+  toJSON(
+    message: ValidatorHistoricalRewardsRecord,
+  ): JsonSafe<ValidatorHistoricalRewardsRecord> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -651,7 +658,9 @@ export const ValidatorCurrentRewardsRecord = {
         : undefined,
     };
   },
-  toJSON(message: ValidatorCurrentRewardsRecord): unknown {
+  toJSON(
+    message: ValidatorCurrentRewardsRecord,
+  ): JsonSafe<ValidatorCurrentRewardsRecord> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -759,7 +768,9 @@ export const DelegatorStartingInfoRecord = {
         : undefined,
     };
   },
-  toJSON(message: DelegatorStartingInfoRecord): unknown {
+  toJSON(
+    message: DelegatorStartingInfoRecord,
+  ): JsonSafe<DelegatorStartingInfoRecord> {
     const obj: any = {};
     message.delegatorAddress !== undefined &&
       (obj.delegatorAddress = message.delegatorAddress);
@@ -880,7 +891,9 @@ export const ValidatorSlashEventRecord = {
         : undefined,
     };
   },
-  toJSON(message: ValidatorSlashEventRecord): unknown {
+  toJSON(
+    message: ValidatorSlashEventRecord,
+  ): JsonSafe<ValidatorSlashEventRecord> {
     const obj: any = {};
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = message.validatorAddress);
@@ -1107,7 +1120,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);

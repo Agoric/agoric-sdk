@@ -1,4 +1,3 @@
-// @ts-check
 /** @file ICQConnection Exo */
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
@@ -10,8 +9,8 @@ import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
  * @import {Remote} from '@agoric/vow';
- * @import {Base64Any, RequestQueryJson} from '@agoric/cosmic-proto';
- * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -39,16 +38,17 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  */
 
 /**
- * Prepares an ICQ Connection Kit based on the {@link https://github.com/cosmos/ibc-apps/blob/e9b46e4bf0ad0a66cf6bc53b5e5496f6e2b4b02b/modules/async-icq/README.md | `icq/v1` IBC application protocol}.
+ * Prepares an ICQ Connection Kit based on the
+ * {@link https://github.com/cosmos/ibc-apps/blob/e9b46e4bf0ad0a66cf6bc53b5e5496f6e2b4b02b/modules/async-icq/README.md | `icq/v1` IBC application protocol}.
  *
- * `icq/v1`, also referred to as `async-icq`, is a protocol for asynchronous queries
- * between IBC-enabled chains. It allows a chain to send queries to another chain
- * and receive responses asynchronously.
+ * `icq/v1`, also referred to as `async-icq`, is a protocol for asynchronous
+ * queries between IBC-enabled chains. It allows a chain to send queries to
+ * another chain and receive responses asynchronously.
  *
- * The ICQ connection kit provides the necessary functionality to establish and manage
- * an ICQ connection between two chains. It includes methods for retrieving the local
- * and remote addresses of the connection, as well as sending queries and handling
- * connection events.
+ * The ICQ connection kit provides the necessary functionality to establish and
+ * manage an ICQ connection between two chains. It includes methods for
+ * retrieving the local and remote addresses of the connection, as well as
+ * sending queries and handling connection events.
  *
  * @param {Zone} zone
  */
@@ -60,14 +60,12 @@ export const prepareICQConnectionKit = zone =>
      * @param {Port} port
      */
     port =>
-      /** @type {ICQConnectionKitState} */ (
-        harden({
-          port,
-          connection: undefined,
-          remoteAddress: undefined,
-          localAddress: undefined,
-        })
-      ),
+      /** @type {ICQConnectionKitState} */ ({
+        port,
+        connection: undefined,
+        remoteAddress: undefined,
+        localAddress: undefined,
+      }),
     {
       connection: {
         getLocalAddress() {
@@ -83,8 +81,8 @@ export const prepareICQConnectionKit = zone =>
           );
         },
         /**
-         * @param {RequestQueryJson[]} msgs
-         * @returns {Promise<Base64Any<ResponseQuery>[]>}
+         * @param {JsonSafe<RequestQuery>[]} msgs
+         * @returns {Promise<JsonSafe<ResponseQuery>[]>}
          * @throws {Error} if packet fails to send or an error is returned
          */
         query(msgs) {

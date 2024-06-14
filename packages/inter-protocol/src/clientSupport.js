@@ -19,7 +19,7 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
  *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
  *   'brand'
  * >} agoricNames
- * @param {| { giveMinted?: number; wantMinted?: number }
+ * @param {{ giveMinted?: number; wantMinted?: number }
  *   | {
  *       collateralBrandKey: string;
  *       giveCollateral?: number;
@@ -180,7 +180,7 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
  *   string,
  *   import('@agoric/internal/src/marshal.js').BoardRemote
  * >} brands
- * @param {| { wantMinted: number; giveMinted?: undefined }
+ * @param {{ wantMinted: number; giveMinted?: undefined }
  *   | { giveMinted: number; wantMinted?: undefined }} opts
  * @param {number} [fee]
  * @param {string} [anchor]

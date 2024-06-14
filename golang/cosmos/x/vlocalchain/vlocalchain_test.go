@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -16,6 +17,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -77,8 +79,36 @@ func (t *mockTransfer) Transfer(cctx context.Context, msg *transfertypes.MsgTran
 	return &transfertypes.MsgTransferResponse{Sequence: 1}, nil
 }
 
+type mockStaking struct {
+	stakingtypes.UnimplementedMsgServer
+	stakingtypes.UnimplementedQueryServer
+}
+
+var _ stakingtypes.MsgServer = (*mockStaking)(nil)
+var _ stakingtypes.QueryServer = (*mockStaking)(nil)
+
+func (s *mockStaking) Undelegate(cctx context.Context, msg *stakingtypes.MsgUndelegate) (*stakingtypes.MsgUndelegateResponse, error) {
+	return &stakingtypes.MsgUndelegateResponse{CompletionTime: time.Now().UTC()}, nil
+}
+
+func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtypes.QueryUnbondingDelegationRequest) (*stakingtypes.QueryUnbondingDelegationResponse, error) {
+	unbondingDelegation := stakingtypes.UnbondingDelegation{
+		DelegatorAddress: req.DelegatorAddr,
+		ValidatorAddress: "cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj",
+		Entries: []stakingtypes.UnbondingDelegationEntry{
+			{
+				CreationHeight: 100,
+				CompletionTime: time.Now().UTC().Add(time.Hour * 24 * 7),
+				InitialBalance: sdk.NewInt(1000),
+				Balance:        sdk.NewInt(500),
+			},
+		},
+	}
+	return &stakingtypes.QueryUnbondingDelegationResponse{Unbond: unbondingDelegation}, nil
+}
+
 // makeTestKit creates a minimal Keeper and Context for use in testing.
-func makeTestKit(bank *mockBank, transfer *mockTransfer) (vm.PortHandler, context.Context) {
+func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking) (vm.PortHandler, context.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
 
@@ -93,6 +123,10 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer) (vm.PortHandler, contex
 	transfertypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 	transfertypes.RegisterMsgServer(txRouter, transfer)
 	transfertypes.RegisterQueryServer(queryRouter, transfer)
+	stakingtypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	stakingtypes.RegisterMsgServer(txRouter, staking)
+	stakingtypes.RegisterQueryServer(queryRouter, staking)
+
 
 	// create a new Keeper
 	keeper := vlocalchain.NewKeeper(cdc, vlocalchainStoreKey, txRouter, queryRouter)
@@ -118,7 +152,8 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer) (vm.PortHandler, contex
 func TestAllocateAddress(t *testing.T) {
 	bank := &mockBank{}
 	transfer := &mockTransfer{}
-	handler, cctx := makeTestKit(bank, transfer)
+	staking := &mockStaking{}
+	handler, cctx := makeTestKit(bank, transfer, staking)
 
 	addrs := map[string]bool{
 		firstAddr: false,
@@ -161,7 +196,8 @@ func TestQuery(t *testing.T) {
 		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
-	handler, cctx := makeTestKit(bank, transfer)
+	staking := &mockStaking{}
+	handler, cctx := makeTestKit(bank, transfer, staking)
 
 	// get balances
 	testCases := []struct {
@@ -230,6 +266,68 @@ func TestQuery(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("UnbondingDelegation", func(t *testing.T) {
+		// create a new message
+		msg := `{"type":"VLOCALCHAIN_QUERY_MANY","messages":[{"@type":"/cosmos.staking.v1beta1.QueryUnbondingDelegationRequest","delegator_addr":"` + firstAddr + `","validator_addr":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj"}]}`
+		t.Logf("query request: %v", msg)
+		ret, err := handler.Receive(cctx, msg)
+		t.Logf("query response: %v", ret)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if ret == "" {
+			t.Fatalf("expected non-empty json")
+		}
+
+		// Unmarshal the JSON response
+		var respJSON []map[string]interface{}
+		if err := json.Unmarshal([]byte(ret), &respJSON); err != nil {
+			t.Fatalf("unexpected error unmarshalling JSON response: %v", err)
+		}
+
+		// Check the response fields
+		if len(respJSON) != 1 {
+			t.Fatalf("expected 1 response, got %d", len(respJSON))
+		}
+		resp := respJSON[0]
+
+		replyAny, ok := resp["reply"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected reply field to be a map, got %v", resp["reply"])
+		}
+
+		unbond, ok := replyAny["unbond"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected unbond field to be a map, got %v", replyAny["unbond"])
+		}
+
+		// Check the field names and values
+		if unbond["delegatorAddress"] != firstAddr {
+			t.Errorf("expected delegatorAddress %s, got %v", firstAddr, unbond["delegator_address"])
+		}
+		if unbond["validatorAddress"] != "cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj" {
+			t.Errorf("expected validatorAddress cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj, got %v", unbond["validator_address"])
+		}
+
+		entries, ok := unbond["entries"].([]interface{})
+		if !ok || len(entries) != 1 {
+			t.Fatalf("expected 1 unbonding delegation entry, got %v", entries)
+		}
+		entry, ok := entries[0].(map[string]interface{})
+		if !ok {
+			t.Fatalf("expected unbonding delegation entry to be a map, got %v", entries[0])
+		}
+		if entry["creationHeight"] != "100" {
+			t.Errorf("expected creationHeight \"100\", got %v", entry["creation_height"])
+		}
+		if entry["balance"] != "500" {
+			t.Errorf("expected balance \"500\", got %v", entry["balance"])
+		}
+		if _, ok := entry["completionTime"]; !ok {
+			t.Error("expected completionTime field in the response")
+		}
+	})
 }
 
 func TestExecuteTx(t *testing.T) {
@@ -239,7 +337,8 @@ func TestExecuteTx(t *testing.T) {
 		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
-	handler, cctx := makeTestKit(bank, transfer)
+	staking := &mockStaking{}
+	handler, cctx := makeTestKit(bank, transfer, staking)
 
 	// create a new message
 	msg := `{"type":"VLOCALCHAIN_ALLOCATE_ADDRESS"}`
@@ -302,4 +401,34 @@ func TestExecuteTx(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("MsgUndelegate", func(t *testing.T) {
+		// create a new message
+		msg := `{"type":"VLOCALCHAIN_EXECUTE_TX","address":"` + addr +
+			`","messages":[{"@type":"/cosmos.staking.v1beta1.MsgUndelegate","delegatorAddress":"` +
+			addr + `","validatorAddress":"cosmosvaloper1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj","amount":{"denom":"stake","amount":"100"}}]}`
+
+		ret, err := handler.Receive(cctx, msg)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+		if ret == "" {
+			t.Fatalf("expected non-empty json")
+		}
+
+		// Unmarshal the response
+		var resp []map[string]interface{}
+		if err := json.Unmarshal([]byte(ret), &resp); err != nil {
+			t.Fatalf("unexpected error unmarshalling response: %v", err)
+		}
+
+		// Check the response fields
+		if len(resp) != 1 {
+			t.Fatalf("expected 1 response, got %d", len(resp))
+		}
+		
+		if _, ok := resp[0]["completionTime"]; !ok {
+			t.Error("expected 'completionTime' field in response")
+		}
+	})
 }

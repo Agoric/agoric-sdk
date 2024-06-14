@@ -7,6 +7,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * TxResponse defines a structure containing relevant tx data and metadata. The
  * tags are stringified and the log is JSON decoded.
@@ -431,7 +432,7 @@ export const TxResponse = {
         : [],
     };
   },
-  toJSON(message: TxResponse): unknown {
+  toJSON(message: TxResponse): JsonSafe<TxResponse> {
     const obj: any = {};
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
@@ -561,7 +562,7 @@ export const ABCIMessageLog = {
         : [],
     };
   },
-  toJSON(message: ABCIMessageLog): unknown {
+  toJSON(message: ABCIMessageLog): JsonSafe<ABCIMessageLog> {
     const obj: any = {};
     message.msgIndex !== undefined &&
       (obj.msgIndex = Math.round(message.msgIndex));
@@ -644,7 +645,7 @@ export const StringEvent = {
         : [],
     };
   },
-  toJSON(message: StringEvent): unknown {
+  toJSON(message: StringEvent): JsonSafe<StringEvent> {
     const obj: any = {};
     message.type !== undefined && (obj.type = message.type);
     if (message.attributes) {
@@ -723,7 +724,7 @@ export const Attribute = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: Attribute): unknown {
+  toJSON(message: Attribute): JsonSafe<Attribute> {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.value !== undefined && (obj.value = message.value);
@@ -799,7 +800,7 @@ export const GasInfo = {
         : BigInt(0),
     };
   },
-  toJSON(message: GasInfo): unknown {
+  toJSON(message: GasInfo): JsonSafe<GasInfo> {
     const obj: any = {};
     message.gasWanted !== undefined &&
       (obj.gasWanted = (message.gasWanted || BigInt(0)).toString());
@@ -901,7 +902,7 @@ export const Result = {
         : [],
     };
   },
-  toJSON(message: Result): unknown {
+  toJSON(message: Result): JsonSafe<Result> {
     const obj: any = {};
     message.data !== undefined &&
       (obj.data = base64FromBytes(
@@ -996,7 +997,7 @@ export const SimulationResponse = {
       result: isSet(object.result) ? Result.fromJSON(object.result) : undefined,
     };
   },
-  toJSON(message: SimulationResponse): unknown {
+  toJSON(message: SimulationResponse): JsonSafe<SimulationResponse> {
     const obj: any = {};
     message.gasInfo !== undefined &&
       (obj.gasInfo = message.gasInfo
@@ -1080,7 +1081,7 @@ export const MsgData = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: MsgData): unknown {
+  toJSON(message: MsgData): JsonSafe<MsgData> {
     const obj: any = {};
     message.msgType !== undefined && (obj.msgType = message.msgType);
     message.data !== undefined &&
@@ -1159,7 +1160,7 @@ export const TxMsgData = {
         : [],
     };
   },
-  toJSON(message: TxMsgData): unknown {
+  toJSON(message: TxMsgData): JsonSafe<TxMsgData> {
     const obj: any = {};
     if (message.data) {
       obj.data = message.data.map(e => (e ? MsgData.toJSON(e) : undefined));
@@ -1282,7 +1283,7 @@ export const SearchTxsResult = {
         : [],
     };
   },
-  toJSON(message: SearchTxsResult): unknown {
+  toJSON(message: SearchTxsResult): JsonSafe<SearchTxsResult> {
     const obj: any = {};
     message.totalCount !== undefined &&
       (obj.totalCount = (message.totalCount || BigInt(0)).toString());

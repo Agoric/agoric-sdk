@@ -1,9 +1,8 @@
 // @ts-check
+/// <reference types="@agoric/vats/src/core/types-ambient" />
+
 import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/vats/src/core/types-ambient.js';
 
 /**
  * @param {BootstrapPowers & ChainBootstrapSpace} powers

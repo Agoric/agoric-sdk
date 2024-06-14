@@ -12,6 +12,7 @@ import {
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** Exec defines modes of execution of a proposal on creation or on new vote. */
 export enum Exec {
   /**
@@ -548,7 +549,7 @@ export const MsgCreateGroup = {
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
     };
   },
-  toJSON(message: MsgCreateGroup): unknown {
+  toJSON(message: MsgCreateGroup): JsonSafe<MsgCreateGroup> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     if (message.members) {
@@ -626,7 +627,7 @@ export const MsgCreateGroupResponse = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgCreateGroupResponse): unknown {
+  toJSON(message: MsgCreateGroupResponse): JsonSafe<MsgCreateGroupResponse> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -719,7 +720,7 @@ export const MsgUpdateGroupMembers = {
         : [],
     };
   },
-  toJSON(message: MsgUpdateGroupMembers): unknown {
+  toJSON(message: MsgUpdateGroupMembers): JsonSafe<MsgUpdateGroupMembers> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupId !== undefined &&
@@ -789,7 +790,9 @@ export const MsgUpdateGroupMembersResponse = {
   fromJSON(_: any): MsgUpdateGroupMembersResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupMembersResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupMembersResponse,
+  ): JsonSafe<MsgUpdateGroupMembersResponse> {
     const obj: any = {};
     return obj;
   },
@@ -876,7 +879,7 @@ export const MsgUpdateGroupAdmin = {
       newAdmin: isSet(object.newAdmin) ? String(object.newAdmin) : '',
     };
   },
-  toJSON(message: MsgUpdateGroupAdmin): unknown {
+  toJSON(message: MsgUpdateGroupAdmin): JsonSafe<MsgUpdateGroupAdmin> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupId !== undefined &&
@@ -939,7 +942,9 @@ export const MsgUpdateGroupAdminResponse = {
   fromJSON(_: any): MsgUpdateGroupAdminResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupAdminResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupAdminResponse,
+  ): JsonSafe<MsgUpdateGroupAdminResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1026,7 +1031,7 @@ export const MsgUpdateGroupMetadata = {
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
     };
   },
-  toJSON(message: MsgUpdateGroupMetadata): unknown {
+  toJSON(message: MsgUpdateGroupMetadata): JsonSafe<MsgUpdateGroupMetadata> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupId !== undefined &&
@@ -1091,7 +1096,9 @@ export const MsgUpdateGroupMetadataResponse = {
   fromJSON(_: any): MsgUpdateGroupMetadataResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupMetadataResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupMetadataResponse,
+  ): JsonSafe<MsgUpdateGroupMetadataResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1192,7 +1199,7 @@ export const MsgCreateGroupPolicy = {
         : undefined,
     };
   },
-  toJSON(message: MsgCreateGroupPolicy): unknown {
+  toJSON(message: MsgCreateGroupPolicy): JsonSafe<MsgCreateGroupPolicy> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupId !== undefined &&
@@ -1273,7 +1280,9 @@ export const MsgCreateGroupPolicyResponse = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: MsgCreateGroupPolicyResponse): unknown {
+  toJSON(
+    message: MsgCreateGroupPolicyResponse,
+  ): JsonSafe<MsgCreateGroupPolicyResponse> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     return obj;
@@ -1362,7 +1371,9 @@ export const MsgUpdateGroupPolicyAdmin = {
       newAdmin: isSet(object.newAdmin) ? String(object.newAdmin) : '',
     };
   },
-  toJSON(message: MsgUpdateGroupPolicyAdmin): unknown {
+  toJSON(
+    message: MsgUpdateGroupPolicyAdmin,
+  ): JsonSafe<MsgUpdateGroupPolicyAdmin> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupPolicyAddress !== undefined &&
@@ -1492,7 +1503,9 @@ export const MsgCreateGroupWithPolicy = {
         : undefined,
     };
   },
-  toJSON(message: MsgCreateGroupWithPolicy): unknown {
+  toJSON(
+    message: MsgCreateGroupWithPolicy,
+  ): JsonSafe<MsgCreateGroupWithPolicy> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     if (message.members) {
@@ -1601,7 +1614,9 @@ export const MsgCreateGroupWithPolicyResponse = {
         : '',
     };
   },
-  toJSON(message: MsgCreateGroupWithPolicyResponse): unknown {
+  toJSON(
+    message: MsgCreateGroupWithPolicyResponse,
+  ): JsonSafe<MsgCreateGroupWithPolicyResponse> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -1669,7 +1684,9 @@ export const MsgUpdateGroupPolicyAdminResponse = {
   fromJSON(_: any): MsgUpdateGroupPolicyAdminResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupPolicyAdminResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupPolicyAdminResponse,
+  ): JsonSafe<MsgUpdateGroupPolicyAdminResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1762,7 +1779,9 @@ export const MsgUpdateGroupPolicyDecisionPolicy = {
         : undefined,
     };
   },
-  toJSON(message: MsgUpdateGroupPolicyDecisionPolicy): unknown {
+  toJSON(
+    message: MsgUpdateGroupPolicyDecisionPolicy,
+  ): JsonSafe<MsgUpdateGroupPolicyDecisionPolicy> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupPolicyAddress !== undefined &&
@@ -1834,7 +1853,9 @@ export const MsgUpdateGroupPolicyDecisionPolicyResponse = {
   fromJSON(_: any): MsgUpdateGroupPolicyDecisionPolicyResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupPolicyDecisionPolicyResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupPolicyDecisionPolicyResponse,
+  ): JsonSafe<MsgUpdateGroupPolicyDecisionPolicyResponse> {
     const obj: any = {};
     return obj;
   },
@@ -1922,7 +1943,9 @@ export const MsgUpdateGroupPolicyMetadata = {
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
     };
   },
-  toJSON(message: MsgUpdateGroupPolicyMetadata): unknown {
+  toJSON(
+    message: MsgUpdateGroupPolicyMetadata,
+  ): JsonSafe<MsgUpdateGroupPolicyMetadata> {
     const obj: any = {};
     message.admin !== undefined && (obj.admin = message.admin);
     message.groupPolicyAddress !== undefined &&
@@ -1988,7 +2011,9 @@ export const MsgUpdateGroupPolicyMetadataResponse = {
   fromJSON(_: any): MsgUpdateGroupPolicyMetadataResponse {
     return {};
   },
-  toJSON(_: MsgUpdateGroupPolicyMetadataResponse): unknown {
+  toJSON(
+    _: MsgUpdateGroupPolicyMetadataResponse,
+  ): JsonSafe<MsgUpdateGroupPolicyMetadataResponse> {
     const obj: any = {};
     return obj;
   },
@@ -2092,7 +2117,7 @@ export const MsgSubmitProposal = {
       exec: isSet(object.exec) ? execFromJSON(object.exec) : -1,
     };
   },
-  toJSON(message: MsgSubmitProposal): unknown {
+  toJSON(message: MsgSubmitProposal): JsonSafe<MsgSubmitProposal> {
     const obj: any = {};
     message.groupPolicyAddress !== undefined &&
       (obj.groupPolicyAddress = message.groupPolicyAddress);
@@ -2176,7 +2201,9 @@ export const MsgSubmitProposalResponse = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgSubmitProposalResponse): unknown {
+  toJSON(
+    message: MsgSubmitProposalResponse,
+  ): JsonSafe<MsgSubmitProposalResponse> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -2261,7 +2288,7 @@ export const MsgWithdrawProposal = {
       address: isSet(object.address) ? String(object.address) : '',
     };
   },
-  toJSON(message: MsgWithdrawProposal): unknown {
+  toJSON(message: MsgWithdrawProposal): JsonSafe<MsgWithdrawProposal> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -2322,7 +2349,9 @@ export const MsgWithdrawProposalResponse = {
   fromJSON(_: any): MsgWithdrawProposalResponse {
     return {};
   },
-  toJSON(_: MsgWithdrawProposalResponse): unknown {
+  toJSON(
+    _: MsgWithdrawProposalResponse,
+  ): JsonSafe<MsgWithdrawProposalResponse> {
     const obj: any = {};
     return obj;
   },
@@ -2422,7 +2451,7 @@ export const MsgVote = {
       exec: isSet(object.exec) ? execFromJSON(object.exec) : -1,
     };
   },
-  toJSON(message: MsgVote): unknown {
+  toJSON(message: MsgVote): JsonSafe<MsgVote> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -2487,7 +2516,7 @@ export const MsgVoteResponse = {
   fromJSON(_: any): MsgVoteResponse {
     return {};
   },
-  toJSON(_: MsgVoteResponse): unknown {
+  toJSON(_: MsgVoteResponse): JsonSafe<MsgVoteResponse> {
     const obj: any = {};
     return obj;
   },
@@ -2557,7 +2586,7 @@ export const MsgExec = {
       executor: isSet(object.executor) ? String(object.executor) : '',
     };
   },
-  toJSON(message: MsgExec): unknown {
+  toJSON(message: MsgExec): JsonSafe<MsgExec> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());
@@ -2627,7 +2656,7 @@ export const MsgExecResponse = {
         : -1,
     };
   },
-  toJSON(message: MsgExecResponse): unknown {
+  toJSON(message: MsgExecResponse): JsonSafe<MsgExecResponse> {
     const obj: any = {};
     message.result !== undefined &&
       (obj.result = proposalExecutorResultToJSON(message.result));
@@ -2700,7 +2729,7 @@ export const MsgLeaveGroup = {
         : BigInt(0),
     };
   },
-  toJSON(message: MsgLeaveGroup): unknown {
+  toJSON(message: MsgLeaveGroup): JsonSafe<MsgLeaveGroup> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.groupId !== undefined &&
@@ -2761,7 +2790,7 @@ export const MsgLeaveGroupResponse = {
   fromJSON(_: any): MsgLeaveGroupResponse {
     return {};
   },
-  toJSON(_: MsgLeaveGroupResponse): unknown {
+  toJSON(_: MsgLeaveGroupResponse): JsonSafe<MsgLeaveGroupResponse> {
     const obj: any = {};
     return obj;
   },

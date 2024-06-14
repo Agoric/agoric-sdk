@@ -17,7 +17,6 @@ import {
   subscribeLatest,
   prepareDurablePublishKit,
 } from '../src/index.js';
-import '../src/types.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 /**

@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { Lien, LienSDKType } from './lien.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
+import { JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /** The initial or exported state. */
 export interface GenesisState {
@@ -71,7 +72,7 @@ export const GenesisState = {
         : [],
     };
   },
-  toJSON(message: GenesisState): unknown {
+  toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     if (message.liens) {
       obj.liens = message.liens.map(e =>
@@ -147,7 +148,7 @@ export const AccountLien = {
       lien: isSet(object.lien) ? Lien.fromJSON(object.lien) : undefined,
     };
   },
-  toJSON(message: AccountLien): unknown {
+  toJSON(message: AccountLien): JsonSafe<AccountLien> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.lien !== undefined &&

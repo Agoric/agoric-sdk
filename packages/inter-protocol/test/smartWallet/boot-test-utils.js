@@ -8,7 +8,7 @@ import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
@@ -52,7 +52,7 @@ export const makeMock = log =>
         buildSpawner: () => harden({ _: 'spawner' }),
       },
       timer: Far('TimerVat', {
-        createTimerService: async () => buildManualTimer(log),
+        createTimerService: async () => buildZoeManualTimer(log),
       }),
       uploads: { getUploads: () => harden({ _: 'uploads' }) },
 

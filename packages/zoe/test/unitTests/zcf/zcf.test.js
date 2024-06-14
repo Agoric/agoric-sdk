@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
@@ -442,7 +441,7 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
   const { brand } = zcfMint.getIssuerRecord();
   const zcfSeat = zcfMint.mintGains(harden({ A: AmountMath.make(brand, 4n) }));
   t.truthy(zcfSeat);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
     AmountMath.make(brand, 4n),
@@ -516,7 +515,7 @@ test(`zcf.makeZCFMint - mintGains - right issuer`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
     AmountMath.make(brand, 4n),
@@ -534,7 +533,7 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
     AmountMath.make(brand, 4n),
@@ -546,7 +545,7 @@ test(`zcf.makeZCFMint - burnLosses - right issuer`, async t => {
     zcfSeat,
   );
   t.is(result, undefined);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
     AmountMath.make(brand, 3n),
@@ -577,7 +576,7 @@ test(`zcf.makeZCFMint - burnLosses - seat exited`, async t => {
     zcfSeat,
   );
   t.is(zcfSeat2, zcfSeat);
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     zcfSeat.getAmountAllocated('A', brand),
     AmountMath.make(brand, 4n),
@@ -840,7 +839,7 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Mint some gains to change the allocation.
   const { brand: brand1 } = await allocateEasy(zcf, 'Stuff', zcfSeat, 'A', 3n);
 
-  assertAmountsEqual(t, zcfSeat.getAmountAllocated('A', brand1), {
+  await assertAmountsEqual(t, zcfSeat.getAmountAllocated('A', brand1), {
     brand: brand1,
     value: 3n,
   });
@@ -848,12 +847,12 @@ test(`zcfSeat.getAmountAllocated from zcf.makeEmptySeatKit`, async t => {
   // Again, mint some gains to change the allocation.
   const { brand: brand2 } = await allocateEasy(zcf, 'Stuff2', zcfSeat, 'B', 6n);
 
-  assertAmountsEqual(t, zcfSeat.getAmountAllocated('B'), {
+  await assertAmountsEqual(t, zcfSeat.getAmountAllocated('B'), {
     brand: brand2,
     value: 6n,
   });
 
-  assertAmountsEqual(t, zcfSeat.getAmountAllocated('B', brand2), {
+  await assertAmountsEqual(t, zcfSeat.getAmountAllocated('B', brand2), {
     brand: brand2,
     value: 6n,
   });
@@ -976,11 +975,11 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   t.deepEqual(await payoutPs.A, await payoutAP);
   t.deepEqual(await payoutPs.B, await payoutBP);
 
-  assertAmountsEqual(t, await E(issuer1).getAmountOf(payoutAP), {
+  await assertAmountsEqual(t, await E(issuer1).getAmountOf(payoutAP), {
     brand: brand1,
     value: 3n,
   });
-  assertAmountsEqual(t, await E(issuer2).getAmountOf(payoutBP), {
+  await assertAmountsEqual(t, await E(issuer2).getAmountOf(payoutBP), {
     brand: brand2,
     value: 6n,
   });

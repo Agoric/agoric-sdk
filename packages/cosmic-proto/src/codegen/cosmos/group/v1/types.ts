@@ -12,6 +12,7 @@ import {
   isSet,
   fromJsonTimestamp,
 } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given proposal. */
 export enum VoteOption {
   /**
@@ -627,7 +628,7 @@ export const Member = {
         : undefined,
     };
   },
-  toJSON(message: Member): unknown {
+  toJSON(message: Member): JsonSafe<Member> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.weight !== undefined && (obj.weight = message.weight);
@@ -712,7 +713,7 @@ export const MemberRequest = {
       metadata: isSet(object.metadata) ? String(object.metadata) : '',
     };
   },
-  toJSON(message: MemberRequest): unknown {
+  toJSON(message: MemberRequest): JsonSafe<MemberRequest> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.weight !== undefined && (obj.weight = message.weight);
@@ -798,7 +799,7 @@ export const ThresholdDecisionPolicy = {
         : undefined,
     };
   },
-  toJSON(message: ThresholdDecisionPolicy): unknown {
+  toJSON(message: ThresholdDecisionPolicy): JsonSafe<ThresholdDecisionPolicy> {
     const obj: any = {};
     message.threshold !== undefined && (obj.threshold = message.threshold);
     message.windows !== undefined &&
@@ -894,7 +895,9 @@ export const PercentageDecisionPolicy = {
         : undefined,
     };
   },
-  toJSON(message: PercentageDecisionPolicy): unknown {
+  toJSON(
+    message: PercentageDecisionPolicy,
+  ): JsonSafe<PercentageDecisionPolicy> {
     const obj: any = {};
     message.percentage !== undefined && (obj.percentage = message.percentage);
     message.windows !== undefined &&
@@ -988,7 +991,7 @@ export const DecisionPolicyWindows = {
         : undefined,
     };
   },
-  toJSON(message: DecisionPolicyWindows): unknown {
+  toJSON(message: DecisionPolicyWindows): JsonSafe<DecisionPolicyWindows> {
     const obj: any = {};
     message.votingPeriod !== undefined &&
       (obj.votingPeriod = message.votingPeriod
@@ -1114,7 +1117,7 @@ export const GroupInfo = {
         : undefined,
     };
   },
-  toJSON(message: GroupInfo): unknown {
+  toJSON(message: GroupInfo): JsonSafe<GroupInfo> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
     message.admin !== undefined && (obj.admin = message.admin);
@@ -1205,7 +1208,7 @@ export const GroupMember = {
       member: isSet(object.member) ? Member.fromJSON(object.member) : undefined,
     };
   },
-  toJSON(message: GroupMember): unknown {
+  toJSON(message: GroupMember): JsonSafe<GroupMember> {
     const obj: any = {};
     message.groupId !== undefined &&
       (obj.groupId = (message.groupId || BigInt(0)).toString());
@@ -1342,7 +1345,7 @@ export const GroupPolicyInfo = {
         : undefined,
     };
   },
-  toJSON(message: GroupPolicyInfo): unknown {
+  toJSON(message: GroupPolicyInfo): JsonSafe<GroupPolicyInfo> {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.groupId !== undefined &&
@@ -1553,7 +1556,7 @@ export const Proposal = {
         : [],
     };
   },
-  toJSON(message: Proposal): unknown {
+  toJSON(message: Proposal): JsonSafe<Proposal> {
     const obj: any = {};
     message.id !== undefined && (obj.id = (message.id || BigInt(0)).toString());
     message.groupPolicyAddress !== undefined &&
@@ -1700,7 +1703,7 @@ export const TallyResult = {
         : '',
     };
   },
-  toJSON(message: TallyResult): unknown {
+  toJSON(message: TallyResult): JsonSafe<TallyResult> {
     const obj: any = {};
     message.yesCount !== undefined && (obj.yesCount = message.yesCount);
     message.abstainCount !== undefined &&
@@ -1811,7 +1814,7 @@ export const Vote = {
         : undefined,
     };
   },
-  toJSON(message: Vote): unknown {
+  toJSON(message: Vote): JsonSafe<Vote> {
     const obj: any = {};
     message.proposalId !== undefined &&
       (obj.proposalId = (message.proposalId || BigInt(0)).toString());

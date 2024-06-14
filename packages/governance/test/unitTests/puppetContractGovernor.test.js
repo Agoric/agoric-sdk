@@ -1,9 +1,8 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -39,7 +38,7 @@ const governedTerms = {
 
 test('multiple params bad change', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -66,7 +65,7 @@ test('multiple params bad change', async t => {
 
 test('change a param', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, getFakeInvitation } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -80,7 +79,7 @@ test('change a param', async t => {
     await E(publicFacet).getSubscription(),
   );
   const update1 = await notifier.getUpdateSince();
-  publicFacet.getGovernedParams();
+
   // This value isn't available synchronously and we don't have access here to the param manager to await its finish
   // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   // t.is(
@@ -108,7 +107,7 @@ test('change a param', async t => {
     },
   });
 
-  E(governorFacets.creatorFacet).changeParams(paramChangesSpec);
+  void E(governorFacets.creatorFacet).changeParams(paramChangesSpec);
 
   const update2 = await notifier.getUpdateSince(update1.updateCount);
   t.like(update2, {
@@ -126,7 +125,7 @@ test('change a param', async t => {
 
 test('set offer Filter directly', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -143,7 +142,7 @@ test('set offer Filter directly', async t => {
 
 test('call API directly', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),
@@ -167,7 +166,7 @@ test('call API directly', async t => {
 test('add issuerKeywordRecord', async t => {
   const zoe = await makeZoeForTest();
   const issuerKit = makeIssuerKit('Food', AssetKind.COPY_BAG);
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
     E(zoe).install(governedBundleP),

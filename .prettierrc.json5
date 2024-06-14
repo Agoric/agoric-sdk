@@ -4,15 +4,18 @@
     {
       // opt into prettier-plugin-jsdoc
       files: [
-        'packages/ERTP/**/*.{js,ts}',
-        'packages/inter-protocol/**/*.{js,ts}',
-        'packages/store/**/*.{js,ts}',
-        'packages/vats/**/*.{js,ts}',
+        'packages/ERTP/**/*.js',
+        'packages/inter-protocol/**/*.js',
+        'packages/internal/**/*.js',
+        'packages/orchestration/**/*.js',
+        'packages/store/**/*.js',
+        'packages/smart-wallet/**/*.js',
+        'packages/vats/**/*.js',
       ],
       options: {
         plugins: ['prettier-plugin-jsdoc'],
         jsdocAddDefaultToDescription: false,
-        jsdocParser: true,
+        jsdocCommentLineStrategy: 'keep',
         jsdocCapitalizeDescription: false,
         tsdoc: true,
       },

@@ -12,8 +12,6 @@ import { E } from '@endo/eventual-send';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
-import '../../../src/contracts/exported.js';
-
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
@@ -24,8 +22,7 @@ import '../../../src/contracts/exported.js';
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractPath = `${dirname}/../../../src/contracts/oracle.js`;
 

@@ -6,8 +6,6 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import '../../exported.js';
-
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {

@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
-import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 
 /**
@@ -32,7 +32,7 @@ const nolog = (..._args) => {};
  * @property {(nTimes: number, msg?: string) => Promise<void>} tickN
  */
 
-/** @typedef {TimerServiceI & RemotableObject<'TimerService'> & RemotableBrand<ManualTimerAdmin, TimerServiceI & ManualTimerAdmin> & ManualTimerAdmin} ManualTimer */
+/** @typedef {ReturnType<typeof buildManualTimer> & RemotableBrand<ManualTimerAdmin, TimerServiceI & ManualTimerAdmin> & ManualTimerAdmin} ZoeManualTimer */
 
 /**
  * A fake TimerService, for unit tests that do not use a real
@@ -69,10 +69,14 @@ const nolog = (..._args) => {};
  * @param {(...args: any[]) => void} [log]
  * @param {import('@agoric/time').Timestamp | bigint} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
- * @returns {ManualTimer}
+ * @returns {ZoeManualTimer}
  */
 
-const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
+export const buildZoeManualTimer = (
+  log = nolog,
+  startValue = 0n,
+  options = {},
+) => {
   const { timeStep = 1n, eventLoopIteration, ...buildOptions } = options;
   const optSuffix = msg => (msg ? `: ${msg}` : '');
   const callbacks = {
@@ -90,7 +94,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
   assert.typeof(startValue, 'bigint');
   assert.typeof(timeStepValue, 'bigint');
 
-  const timerService = build({
+  const timerService = buildManualTimer({
     startTime: startValue,
     ...buildOptions,
     callbacks,
@@ -114,17 +118,13 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
     }
   };
 
-  const setWakeup = (when, handler, cancelToken) => {
-    return timerService.setWakeup(when, handler, cancelToken);
-  };
-
   return Far('ManualTimer', {
     ...bindAllMethods(timerService),
     tick,
     tickN,
-    setWakeup,
   });
 };
-harden(buildManualTimer);
+harden(buildZoeManualTimer);
 
-export default buildManualTimer;
+// Default export is for backwards compatibility
+export default buildZoeManualTimer;

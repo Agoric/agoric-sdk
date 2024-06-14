@@ -1,9 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-
-import '@agoric/zoe/exported.js';
-
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';

@@ -7,8 +7,7 @@ import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const CONTRACT_FILES = ['crashingAutoRefund'];
 const contractBundles = {};
@@ -60,10 +59,10 @@ const throwInAPILog = [
   '=> alice is set up',
   '=> alice.doThrowInApiCall called',
   'counter: 3',
+  'Swap outcome is an invitation (true).',
   'throwingAPI should throw Error: someException',
   'counter: 5',
   'counter: 6',
-  'Swap outcome is an invitation (true).',
   'newCounter: 2',
   'counter: 7',
   'outcome correctly resolves: "The offer has been accepted. Once the contract has been completed, please check your payout"',

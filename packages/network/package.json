@@ -27,6 +27,7 @@
     "@agoric/vat-data": "^0.5.2",
     "@endo/base64": "^1.0.5",
     "@endo/far": "^1.1.2",
+    "@endo/pass-style": "^1.4.0",
     "@endo/patterns": "^1.4.0",
     "@endo/promise-kit": "^1.1.2"
   },
@@ -40,17 +41,13 @@
     "c8": "^9.1.0"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./exported.js": "./exported.js"
+    ".": "./src/index.js"
   },
   "files": [
     "CHANGELOG.md",
     "src/",
     "scripts/",
-    "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
+    "tools/"
   ],
   "publishConfig": {
     "access": "public"
@@ -60,7 +57,6 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
@@ -70,6 +66,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 89.5
+    "atLeast": 89.7
   }
 }

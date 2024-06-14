@@ -1,5 +1,4 @@
 /* global clearTimeout setTimeout Buffer */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import path from 'path';
 import fs from 'fs';
 import url from 'url';
@@ -786,7 +785,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   // Begin the sender when we get the first (empty) mailbox update.
-  mbNotifier.getUpdateSince().then(() => recurseEachSend());
+  void mbNotifier.getUpdateSince().then(() => recurseEachSend());
 
   async function deliver(newMessages, acknum) {
     let doSend = false;

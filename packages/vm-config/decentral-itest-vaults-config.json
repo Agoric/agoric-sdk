@@ -4,6 +4,7 @@
   "defaultReapInterval": 1000,
   "coreProposals": [
     "@agoric/builders/scripts/vats/init-core.js",
+    "@agoric/builders/scripts/vats/init-network.js",
     {
       "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
       "entrypoint": "defaultProposalBuilder",

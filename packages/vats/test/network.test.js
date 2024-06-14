@@ -1,19 +1,19 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/far';
 import {
   makePinnedHistoryTopic,
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
 
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
+import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
 
-import '../src/types.js';
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -93,36 +93,14 @@ test('network - ibc', async t => {
   const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
   const events = subscribeEach(pinnedHistoryTopic)[Symbol.asyncIterator]();
 
-  let hndlr;
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
-  const bridgeHandler = zone.exo('IBC Bridge Manager', undefined, {
-    toBridge: async obj => {
-      const { method, type, ...params } = obj;
-      publisher.publish([method, params]);
-      t.is(type, 'IBC_METHOD');
-      if (method === 'sendPacket') {
-        const { packet } = params;
-        return { ...packet, sequence: '39' };
-      }
-      return undefined;
-    },
-    fromBridge: async obj => {
-      if (!hndlr) throw Error('no handler!');
-      await when(E(hndlr).fromBridge(obj));
-    },
-    initHandler: h => {
-      if (hndlr) throw Error('already init');
-      hndlr = h;
-    },
-    setHandler: h => {
-      if (!hndlr) throw Error('must init first');
-      hndlr = h;
-    },
+  const ibcBridge = makeFakeIbcBridge(zone, obj => {
+    const { method, type: _, ...params } = obj;
+    publisher.publish([method, params]);
   });
 
   await registerNetworkProtocols(
     { network: networkVat, ibc: ibcVat, provisioning: undefined },
-    bridgeHandler,
+    ibcBridge,
   );
 
   const portAllocator = await E(networkVat).getPortAllocator();
@@ -182,7 +160,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(bridgeHandler).fromBridge({
+    await E(ibcBridge).fromBridge({
       event: 'channelOpenAck',
       portID: 'port-1',
       channelID: 'channel-1',
@@ -222,7 +200,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(bridgeHandler).fromBridge({
+    await E(ibcBridge).fromBridge({
       event: 'acknowledgementPacket',
       packet: {
         data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
@@ -243,7 +221,7 @@ test('network - ibc', async t => {
   await testIBCOutbound();
 
   const testIBCInbound = async () => {
-    await E(bridgeHandler).fromBridge({
+    await E(ibcBridge).fromBridge({
       event: 'channelOpenTry',
       channelID: 'channel-2',
       portID: 'port-1',
@@ -254,7 +232,7 @@ test('network - ibc', async t => {
       counterpartyVersion: 'bazo',
     });
 
-    await E(bridgeHandler).fromBridge({
+    await E(ibcBridge).fromBridge({
       event: 'channelOpenConfirm',
       portID: 'port-1',
       channelID: 'channel-2',
@@ -271,7 +249,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(bridgeHandler).fromBridge({
+    await E(ibcBridge).fromBridge({
       event: 'receivePacket',
       packet: {
         data: 'aW5ib3VuZC1tc2c=',

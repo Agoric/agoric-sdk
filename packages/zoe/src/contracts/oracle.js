@@ -7,6 +7,10 @@ import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
 
 /**
+ * @import {ContractOf} from '../zoeService/utils.js';
+ */
+
+/**
  * This contract provides oracle queries for a fee or for free.
  *
  * @param {ZCF} zcf
@@ -71,7 +75,7 @@ const start = async zcf => {
           Fail`Oracle required a fee but the query had none`;
         return reply;
       } catch (e) {
-        E(handler).onError(query, e);
+        void E(handler).onError(query, e);
         throw e;
       }
     },
@@ -87,10 +91,10 @@ const start = async zcf => {
             atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
           }
           querySeat.exit();
-          E(handler).onReply(query, reply, requiredFee);
+          void E(handler).onReply(query, reply, requiredFee);
           return reply;
         } catch (e) {
-          E(handler).onError(query, e);
+          void E(handler).onError(query, e);
           throw e;
         }
       };

@@ -331,11 +331,14 @@ export const makeBridgeManager = async ({
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
+    // @ts-expect-error XXX EProxy
     E(bridgeManager).register(BRIDGE_ID.PROVISION),
   );
   provisionWalletBridgeManager.resolve(
+    // @ts-expect-error XXX EProxy
     E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
   );
+  // @ts-expect-error XXX EProxy
   walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
 };
 harden(makeBridgeManager);
@@ -361,6 +364,8 @@ export const makeChainStorage = async ({
     return;
   }
 
+  /** @type {import('../types.js').ScopedBridgeManager<'storage'>} */
+  // @ts-expect-error XXX EProxy
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
   storageBridgeManagerP.resolve(storageBridgeManager);
 
@@ -436,7 +441,7 @@ export const publishAgoricNamesToChainStorage = async ({
 };
 
 /**
- * @deprecated use reflectAgoricNamesToChainStorage
+ * @deprecated use publishAgoricNamesToChainStorage
  * @param {BootstrapPowers} powers
  * @param {{
  *   options?: {

@@ -104,7 +104,7 @@ export const makeInitialTransform = (
     assert.equal(bOut, brandOut);
 
     const quoteP = E(priceAuthority).quoteGiven(amountIn, brandOut);
-    quoteP.then(() => (initialMode = false));
+    void quoteP.then(() => (initialMode = false));
     return initialMode
       ? mintCurrentQuote(amountIn, multiplyBy(amountIn, priceOutPerIn))
       : quoteP;

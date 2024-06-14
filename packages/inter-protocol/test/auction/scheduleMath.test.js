@@ -2,7 +2,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
-import '@agoric/zoe/exported.js';
 
 import { NonNullish } from '@agoric/internal';
 import {
@@ -211,8 +210,8 @@ const TWO_PM = 1680876000n;
 const FIVE_MINUTES = 5n * 60n;
 const FIFTEEN_MINUTES = 15n * 60n;
 const defaults = /** @type {any} */ (makeDefaultParams());
-const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
-const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
+const TWO_PM_SCHED = computeRoundTiming(defaults, coerceAbs(TWO_PM - 1n));
+const THREE_PM_SCHED = computeRoundTiming(defaults, coerceAbs(TWO_PM));
 
 const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
   const nowTime = coerceAbs(now);

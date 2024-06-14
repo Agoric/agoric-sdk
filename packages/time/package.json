@@ -45,7 +45,6 @@
       "@endo/init/debug.js"
     ],
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ]
   },
@@ -58,6 +57,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 87.11
+    "atLeast": 87.29
   }
 }

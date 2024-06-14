@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/gogo/protobuf/jsonpb"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/keeper"
@@ -56,28 +55,36 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 			return
 		}
 
-		// We need jsonpb for its access to the global registry.
-		marshaller := jsonpb.Marshaler{EmitDefaults: true, OrigName: true}
-
-		var s string
-		resps := make([]json.RawMessage, len(qms))
+		var errs []error
+		resps := make([]interface{}, len(qms))
 		for i, qm := range qms {
 			var qr *types.QueryResponse
 			qr, err = h.keeper.Query(cctx, qm)
-			if err != nil {
-				return
+			if err == nil {
+				// Only fill out the response if the query was successful.
+				resps[i] = qr
+			} else {
+				errs = append(errs, err) // Accumulate errors
+				resps[i] = &types.QueryResponse{Error: err.Error()}
 			}
-			if s, err = marshaller.MarshalToString(qr); err != nil {
-				return
-			}
-			resps[i] = []byte(s)
 		}
 
-		var bz []byte
-		if bz, err = json.Marshal(resps); err != nil {
-			return
+		bz, err := vm.ProtoJSONMarshalSlice(resps)
+		if err != nil {
+			return "", err
 		}
-		ret = string(bz)
+
+		switch len(errs) {
+		case 0:
+			err = nil
+		case 1:
+			err = errs[0]
+		case len(resps):
+			err = fmt.Errorf("all queries in batch failed: %v", errs)
+		default:
+			// Let them inspect the individual errors manually.
+		}
+		return string(bz), err
 
 	case "VLOCALCHAIN_EXECUTE_TX":
 		origCtx := sdk.UnwrapSDKContext(cctx)
@@ -97,11 +104,9 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 			return
 		}
 
-		var bz []byte
-		if bz, err = json.Marshal(resps); err != nil {
-			return
-		}
-		ret = string(bz)
+		// Marshal the responses to proto3 JSON.
+		bz, e := vm.ProtoJSONMarshalSlice(resps)
+		return string(bz), e
 	default:
 		err = fmt.Errorf("unrecognized message type %s", msg.Type)
 	}

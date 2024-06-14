@@ -2,7 +2,7 @@ import type { ERef, RemotableBrand } from '@endo/eventual-send';
 
 import type { RankComparison, RemotableObject } from '@endo/marshal';
 
-/// <reference types="@agoric/notifier/src/types.js"/>
+/// <reference types="@agoric/notifier/src/types.js" />
 
 // These aren't in the global runtime environment. They are just types that are
 // meant to be globally accessible as a side-effect of importing this module.
@@ -121,7 +121,7 @@ export interface TimerServiceI {
     cancelToken?: CancelToken,
   ) => TimestampRecord;
   /**
-   * Create and return a promise that will resolve after the absolte
+   * Create and return a promise that will resolve after the absolute
    * time has passed.
    */
   wakeAt: (
@@ -167,7 +167,7 @@ export interface TimerServiceI {
     delay: RelativeTime,
     interval: RelativeTime,
     cancelToken?: CancelToken,
-  ) => Notifier<TimestampRecord>;
+  ) => import('@agoric/notifier').Notifier<TimestampRecord>;
   /**
    * Cancel a previously-established wakeup or repeater.
    */
@@ -290,17 +290,19 @@ export type TimeMathType = {
   ) => RelativeTimeRecord;
   /**
    * An absolute time + a relative time gives a new absolute time.
-   *
-   * @template {Timestamp} T
    */
-  addAbsRel: (abs: T, rel: RelativeTime) => T;
+  addAbsRel: <T extends Timestamp>(
+    abs: T,
+    rel: RelativeTime,
+  ) => T extends TimestampRecord ? TimestampRecord : TimestampValue;
   /**
    * A relative time (i.e., a duration) + another relative time
    * gives a new relative time.
-   *
-   * @template {RelativeTime} T
    */
-  addRelRel: (rel1: T, rel2: T) => T;
+  addRelRel: <T extends RelativeTime>(
+    rel1: T,
+    rel2: T,
+  ) => T extends RelativeTimeRecord ? RelativeTimeRecord : RelativeTimeValue;
   /**
    * The difference between two absolute times is a relative time. If abs1 > abs2
    * the difference would be negative, so this method throws instead.

@@ -1,9 +1,8 @@
-import '@agoric/zoe/exported.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -120,7 +119,7 @@ const setUpVoterAndVote = async (committeeCreator, zoe, qHandle, choice) => {
 
 test('governParam no votes', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, installs, invitationAmount } =
     await setUpGovernedContract(
       zoe,
@@ -174,7 +173,7 @@ test('governParam no votes', async t => {
 
 test('multiple params bad change', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, installs } = await setUpGovernedContract(
     zoe,
     { committeeName: 'Demos', committeeSize: 1 },
@@ -205,7 +204,7 @@ test('multiple params bad change', async t => {
 
 test('change multiple params', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
       zoe,
@@ -290,7 +289,7 @@ test('change multiple params', async t => {
 
 test('change multiple params used invitation', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, installs, invitationAmount, committeeCreator } =
     await setUpGovernedContract(
       zoe,
@@ -361,7 +360,7 @@ test('change multiple params used invitation', async t => {
 
 test('change param continuing invitation', async t => {
   const zoe = await makeZoeForTest();
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { governorFacets, installs, committeeCreator } =
     await setUpGovernedContract(
       zoe,

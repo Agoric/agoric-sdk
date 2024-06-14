@@ -75,7 +75,6 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
@@ -87,6 +86,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 91.21
+    "atLeast": 91.22
   }
 }

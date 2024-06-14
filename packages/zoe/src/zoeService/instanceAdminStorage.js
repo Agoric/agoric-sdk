@@ -178,7 +178,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
 
       state.zoeSeatAdmins.add(zoeSeatAdmin);
       state.handleOfferObj || Fail`incomplete setup of zoe seat`;
-      E.when(
+      void E.when(
         E(state.handleOfferObj).handleOffer(invitationHandle, seatData),
         /** @param {HandleOfferResult} result */
         result => zoeSeatAdmin.resolveExitAndResult(result),

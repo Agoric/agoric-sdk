@@ -29,14 +29,15 @@ export type InvitationMakers = Record<
 
 export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
 
+export interface ContinuingOfferResult {
+  invitationMakers: InvitationMakers;
+  publicSubscribers: PublicSubscribers;
+}
+
 export type Cell<T> = {
   get: () => T;
   set(val: T): void;
 };
-
-export type BridgeActionCapData = WalletCapData<
-  import('./smartWallet.js').BridgeAction
->;
 
 /**
  * Defined by walletAction struct in msg_server.go
@@ -47,7 +48,7 @@ export type WalletActionMsg = {
   type: 'WALLET_ACTION';
   /** base64 of Uint8Array of bech32 data  */
   owner: string;
-  /** JSON of BridgeActionCapData */
+  /** JSON of marshalled BridgeAction */
   action: string;
   blockHeight: unknown; // int64
   blockTime: unknown; // int64

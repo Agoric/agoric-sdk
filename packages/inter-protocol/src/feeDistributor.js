@@ -9,7 +9,7 @@ import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
 const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   customTermsShape: {
     keywordShares: KeywordSharesShape,
@@ -269,7 +269,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
     /**
      * @param {import('@endo/far').EOnly<
-     *   import('@agoric/ertp/exported.js').DepositFacet
+     *   import('@agoric/ertp/src/types.js').DepositFacet
      * >} depositFacet
      */
     makeDepositFacetDestination: depositFacet => {

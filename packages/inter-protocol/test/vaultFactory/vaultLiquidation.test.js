@@ -1,4 +1,3 @@
-import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -29,7 +28,6 @@ import {
   SECONDS_PER_WEEK as ONE_WEEK,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   reserveInitialState,
   subscriptionTracker,
@@ -44,12 +42,15 @@ import {
   setupElectorateReserveAndAuction,
 } from './vaultFactoryUtils.js';
 
-/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+/**
+ * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ */
 
 /**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>;
  *   rates: VaultManagerParamValues;
  *   interestTiming: InterestTiming;

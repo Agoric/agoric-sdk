@@ -1,4 +1,4 @@
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';

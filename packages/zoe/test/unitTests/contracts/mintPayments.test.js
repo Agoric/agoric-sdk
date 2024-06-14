@@ -11,8 +11,7 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 

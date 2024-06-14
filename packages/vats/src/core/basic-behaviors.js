@@ -18,6 +18,8 @@ import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
+/** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
+
 const { details: X } = assert;
 
 /**
@@ -48,12 +50,13 @@ const bootMsgEx = {
  * may want/need them later.
  */
 
+/** @typedef {MapStore<string, CreateVatResults>} VatStore */
+/** @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat */
+
 /**
  * @param {BootstrapPowers & {}} powers
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
- *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -330,8 +333,6 @@ harden(produceStartGovernedUpgradable);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
  * }} powers
- *
- * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
  */
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
@@ -363,10 +364,6 @@ harden(buildZoe);
  * @param {BootstrapPowers & {
  *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
  * }} powers
- *
- * @typedef {ERef<
- *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
@@ -652,12 +649,16 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand });
+  const bldKit = /** @type {IssuerKit<'nat'>} */ (
+    harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand })
+  );
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
 
   const bridgeManager = await bridgeManagerP;
+  /** @type {import('../types.js').ScopedBridgeManager<'bank'> | undefined} */
+  // @ts-expect-error XXX EProxy
   const bankBridgeManager =
     bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(

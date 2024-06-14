@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
@@ -73,7 +73,7 @@ const makeScenario = async t => {
     stableMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
-  const timerService = buildManualTimer(t.log);
+  const timerService = buildZoeManualTimer(t.log);
   const { publicFacet, creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,
     collectionInterval: 1n,
@@ -196,7 +196,7 @@ test('fee distribution, leftovers', async t => {
     stableMint.mintPayment(AmountMath.makeEmpty(brand));
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
-  const timerService = buildManualTimer(t.log);
+  const timerService = buildZoeManualTimer(t.log);
   const { creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,
     collectionInterval: 1n,

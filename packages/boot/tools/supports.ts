@@ -23,13 +23,11 @@ import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import { Fail } from '@endo/errors';
 
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/vats/exported.js';
-
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
 import type { ExecutionContext as AvaT } from 'ava';
 
@@ -62,15 +60,10 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
-/**
- * @param {string} bundleDir
- * @param {string} specifier
- * @param {ManagerType} [defaultManagerType]
- */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
-  defaultManagerType = 'local',
+  defaultManagerType = 'local' as ManagerType,
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -86,7 +79,7 @@ export const getNodeTestVaultsConfig = async (
   //     - exhibits inconsistent GC behavior from run to run
   //   'xs-worker'
   //     - timing results more accurately reflect production
-  config.defaultManagerType = defaultManagerType as ManagerType;
+  config.defaultManagerType = defaultManagerType;
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
@@ -262,7 +255,6 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
- * @param [options.bridgeHandlers]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -275,7 +267,6 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
-    bridgeHandlers = {} as Record<string, (obj: any) => unknown>,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -318,9 +309,6 @@ export const makeSwingsetTestKit = async (
     }
     outboundMessages.get(bridgeId).push(obj);
 
-    if (bridgeId in bridgeHandlers) {
-      return bridgeHandlers[bridgeId](obj);
-    }
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(

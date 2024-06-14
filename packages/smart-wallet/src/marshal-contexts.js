@@ -23,10 +23,9 @@ const isDefaultBoardId = specimen => {
 };
 
 /**
- * When marshaling a purse, payment, etc. we partition the slots
- * using prefixes.
+ * When marshaling a purse, payment, etc. we partition the slots using prefixes.
  *
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @typedef {`${string & keyof T}:${Digits}`} WalletSlot
  */
 /**
@@ -35,7 +34,7 @@ const isDefaultBoardId = specimen => {
  */
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} _tables
  * @param {string & keyof T} kind
  * @param {number} id
@@ -47,10 +46,10 @@ const makeWalletSlot = (_tables, kind, id) => {
 };
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} record
  * @param {(value: string, index: number, obj: string[]) => boolean} predicate
- * @returns {string & keyof T | undefined}
+ * @returns {(string & keyof T) | undefined}
  */
 const findKey = (record, predicate) => {
   const key = Object.keys(record).find(predicate);
@@ -58,10 +57,10 @@ const findKey = (record, predicate) => {
 };
 
 /**
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @param {T} tables
  * @param {string} slot
- * @returns {{ kind: undefined | string & keyof T, id: number }}
+ * @returns {{ kind: undefined | (string & keyof T); id: number }}
  */
 const parseWalletSlot = (tables, slot) => {
   const kind = findKey(tables, k => slot.startsWith(`${k}:`));
@@ -70,25 +69,23 @@ const parseWalletSlot = (tables, slot) => {
 };
 
 /**
- * Since KindSlots always include a colon and BoardIds never do,
- * we an mix them without confusion.
+ * Since KindSlots always include a colon and BoardIds never do, we an mix them
+ * without confusion.
  *
- * @template {Record<string, IdTable<*,*>>} T
+ * @template {Record<string, IdTable<any, any>>} T
  * @typedef {WalletSlot<T> | BoardId} MixedSlot
  */
 /**
- * @typedef {`1` | `12` | `123`} Digits - 1 or more digits.
- * NOTE: the typescript definition here is more restrictive than
- * actual usage.
+ * @typedef {`1` | `12` | `123`} Digits - 1 or more digits. NOTE: the typescript
+ *   definition here is more restrictive than actual usage.
  */
 
 /**
  * @template {Key} Slot
  * @template {PassableCap} Val
- *
  * @typedef {{
- *   bySlot: MapStore<Slot, Val>,
- *   byVal: MapStore<Val, Slot>,
+ *   bySlot: MapStore<Slot, Val>;
+ *   byVal: MapStore<Val, Slot>;
  * }} IdTable<Value>
  */
 
@@ -105,17 +102,20 @@ const initSlotVal = (table, slot, val) => {
 };
 
 /**
- * Make context for exporting wallet data where brands etc. can be recognized by boardId.
- * Export for use outside the smart wallet.
+ * Make context for exporting wallet data where brands etc. can be recognized by
+ * boardId. Export for use outside the smart wallet.
  *
  * When serializing wallet state for, there's a tension between
  *
- *  - keeping purses etc. closely held
- *  - recognizing identity of brands also referenced in the state of contracts such as the AMM
+ * - keeping purses etc. closely held
+ * - recognizing identity of brands also referenced in the state of contracts such
+ *   as the AMM
  *
- * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint union of
- *   - board ids for widely shared objects
- *   - kind:seq ids for closely held objects; for example purse:123
+ * `makeMarshal()` is parameterized by the type of slots. Here we use a disjoint
+ * union of
+ *
+ * - board ids for widely shared objects
+ * - kind:seq ids for closely held objects; for example purse:123
  */
 export const makeExportContext = () => {
   const walletObjects = {
@@ -143,14 +143,13 @@ export const makeExportContext = () => {
   };
 
   /**
-   * Look up the slot in mappings from published data
-   * else try walletObjects that we have seen.
-   *
-   * @throws if not found (a slotToVal function typically
-   *         conjures a new identity)
+   * Look up the slot in mappings from published data else try walletObjects
+   * that we have seen.
    *
    * @param {MixedSlot<typeof walletObjects>} slot
    * @param {string} _iface
+   * @throws if not found (a slotToVal function typically conjures a new
+   *   identity)
    */
   const slotToVal = (slot, _iface) => {
     if (isDefaultBoardId(slot) && boardObjects.bySlot.has(slot)) {
@@ -239,8 +238,8 @@ const defaultMakePresence = iface => {
 };
 
 /**
- * Make context for marshalling wallet or board data.
- * To be imported into the client, which never exports objects.
+ * Make context for marshalling wallet or board data. To be imported into the
+ * client, which never exports objects.
  *
  * @param {(iface: string) => PassableCap} [makePresence]
  */
@@ -363,8 +362,12 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
 /**
  * @param {string} iface
  * @param {{
- *   applyMethod: (target: unknown, method: string | symbol, args: unknown[]) => void,
- *   applyFunction: (target: unknown, args: unknown[]) => void,
+ *   applyMethod: (
+ *     target: unknown,
+ *     method: string | symbol,
+ *     args: unknown[],
+ *   ) => void;
+ *   applyFunction: (target: unknown, args: unknown[]) => void;
  * }} handler
  */
 const makePresence = (iface, handler) => {

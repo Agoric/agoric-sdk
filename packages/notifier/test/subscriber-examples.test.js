@@ -9,8 +9,6 @@ import {
 } from '../src/index.js';
 import { paula, alice, bob, carol } from './iterable-testing-tools.js';
 
-import '../src/types.js';
-
 test('subscription for-await-of success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();
   paula(publication);

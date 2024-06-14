@@ -5,6 +5,7 @@ import {
 } from '../../commitment/v1/commitment.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a connection is in one of the following states:
  * INIT, TRYOPEN, OPEN or UNINITIALIZED.
@@ -311,7 +312,7 @@ export const ConnectionEnd = {
         : BigInt(0),
     };
   },
-  toJSON(message: ConnectionEnd): unknown {
+  toJSON(message: ConnectionEnd): JsonSafe<ConnectionEnd> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.versions) {
@@ -449,7 +450,7 @@ export const IdentifiedConnection = {
         : BigInt(0),
     };
   },
-  toJSON(message: IdentifiedConnection): unknown {
+  toJSON(message: IdentifiedConnection): JsonSafe<IdentifiedConnection> {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.clientId !== undefined && (obj.clientId = message.clientId);
@@ -557,7 +558,7 @@ export const Counterparty = {
         : undefined,
     };
   },
-  toJSON(message: Counterparty): unknown {
+  toJSON(message: Counterparty): JsonSafe<Counterparty> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.connectionId !== undefined &&
@@ -632,7 +633,7 @@ export const ClientPaths = {
         : [],
     };
   },
-  toJSON(message: ClientPaths): unknown {
+  toJSON(message: ClientPaths): JsonSafe<ClientPaths> {
     const obj: any = {};
     if (message.paths) {
       obj.paths = message.paths.map(e => e);
@@ -708,7 +709,7 @@ export const ConnectionPaths = {
         : [],
     };
   },
-  toJSON(message: ConnectionPaths): unknown {
+  toJSON(message: ConnectionPaths): JsonSafe<ConnectionPaths> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     if (message.paths) {
@@ -786,7 +787,7 @@ export const Version = {
         : [],
     };
   },
-  toJSON(message: Version): unknown {
+  toJSON(message: Version): JsonSafe<Version> {
     const obj: any = {};
     message.identifier !== undefined && (obj.identifier = message.identifier);
     if (message.features) {
@@ -856,7 +857,7 @@ export const Params = {
         : BigInt(0),
     };
   },
-  toJSON(message: Params): unknown {
+  toJSON(message: Params): JsonSafe<Params> {
     const obj: any = {};
     message.maxExpectedTimePerBlock !== undefined &&
       (obj.maxExpectedTimePerBlock = (

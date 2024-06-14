@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import {
   coerceQuestionSpec,
   ChoiceMethod,
@@ -10,7 +10,7 @@ import {
 
 const issue = harden({ text: 'will it blend?' });
 const positions = [harden({ text: 'yes' }), harden({ text: 'no' })];
-const timer = buildManualTimer(console.log);
+const timer = buildZoeManualTimer(console.log);
 const closingRule = { timer, deadline: 37n };
 
 test('good QuestionSpec', t => {

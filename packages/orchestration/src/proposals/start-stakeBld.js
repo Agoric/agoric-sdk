@@ -6,10 +6,25 @@ import { E } from '@endo/far';
 const trace = makeTracer('StartStakeBld', true);
 
 /**
- * @param {BootstrapPowers & {installation: {consume: {stakeBld: Installation<import('../../test/examples/stakeBld.contract.js').start>}}}} powers
+ * @param {BootstrapPowers & {
+ *   installation: {
+ *     consume: {
+ *       stakeBld: Installation<
+ *         import('../../src/examples/stakeBld.contract.js').start
+ *       >;
+ *     };
+ *   };
+ * }} powers
  */
 export const startStakeBld = async ({
-  consume: { board, chainStorage, localchain, startUpgradable },
+  consume: {
+    agoricNames: agoricNamesP,
+    board,
+    chainStorage,
+    chainTimerService: chainTimerServiceP,
+    localchain,
+    startUpgradable,
+  },
   installation: {
     consume: { stakeBld },
   },
@@ -28,15 +43,25 @@ export const startStakeBld = async ({
   // NB: committee must only publish what it intended to be public
   const marshaller = await E(board).getPublishingMarshaller();
 
-  // FIXME this isn't detecting missing privateArgs
-  /** @type {StartUpgradableOpts<import('../../test/examples/stakeBld.contract.js').start>} */
+  const [agoricNames, timerService] = await Promise.all([
+    agoricNamesP,
+    chainTimerServiceP,
+  ]);
+
+  /**
+   * @type {StartUpgradableOpts<
+   *   import('../../src/examples/stakeBld.contract.js').start
+   * >}
+   */
   const startOpts = {
     label: 'stakeBld',
     installation: stakeBld,
-    issuerKeywordRecord: harden({ BLD: await stakeIssuer }),
+    issuerKeywordRecord: harden({ In: await stakeIssuer }),
     terms: {},
     privateArgs: {
+      agoricNames,
       localchain: await localchain,
+      timerService,
       storageNode,
       marshaller,
     },
@@ -44,6 +69,7 @@ export const startStakeBld = async ({
 
   const { instance } = await E(startUpgradable)(startOpts);
   produceInstance.resolve(instance);
+  trace('done');
 };
 harden(startStakeBld);
 
@@ -52,8 +78,10 @@ export const getManifestForStakeBld = ({ restoreRef }, { installKeys }) => {
     manifest: {
       [startStakeBld.name]: {
         consume: {
+          agoricNames: true,
           board: true,
           chainStorage: true,
+          chainTimerService: true,
           localchain: true,
           startUpgradable: true,
         },

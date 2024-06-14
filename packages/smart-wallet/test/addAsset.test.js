@@ -1,15 +1,14 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E, Far } from '@endo/far';
-import { buildRootObject as buildBankVatRoot } from '@agoric/vats/src/vat-bank.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeCopyBag, makeScalarMapStore } from '@agoric/store';
+import { makeCopyBag } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
@@ -19,16 +18,16 @@ const { Fail } = assert;
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
+/**
+ * @type {import('ava').TestFn<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >}
+ */
 const test = anyTest;
 
 test.before(async t => {
   const withBankManager = async () => {
-    const noBridge = undefined;
-    const baggage = makeScalarMapStore('baggage');
-    const bankManager = E(
-      buildBankVatRoot(undefined, undefined, baggage),
-    ).makeBankManager(noBridge);
+    const { bankManager } = await makeFakeBankManagerKit();
     const noop = () => {};
     const space0 = await makeMockTestSpace(noop);
     space0.produce.bankManager.reset();
@@ -48,8 +47,8 @@ const range = qty => [...Array(qty).keys()];
 // agoricNames and vstorage are shared mutable state.
 
 /**
- * NOTE: this doesn't test all forms of work.
- * A better test would measure inter-vat messages or some such.
+ * NOTE: this doesn't test all forms of work. A better test would measure
+ * inter-vat messages or some such.
  */
 test.serial('avoid O(wallets) storage writes for a new asset', async t => {
   const bankManager = t.context.consume.bankManager;
@@ -130,16 +129,20 @@ const the = async xP => {
 const IST_UNIT = 1_000_000n;
 const CENT = IST_UNIT / 100n;
 
-/** @param {import('ava').ExecutionContext<Awaited<ReturnType<makeDefaultTestContext>>>} t */
+/**
+ * @param {import('ava').ExecutionContext<
+ *   Awaited<ReturnType<makeDefaultTestContext>>
+ * >} t
+ */
 const makeScenario = t => {
   /**
    * A player and their user agent (wallet UI, signer)
    *
    * @param {string} addr
-   * @param {PromiseKit<*>} bridgeKit - to announce UI is ready
+   * @param {PromiseKit<any>} bridgeKit - to announce UI is ready
    * @param {MockVStorageRoot} vsRPC - access to vstorage via RPC
    * @param {typeof t.context.sendToBridge} broadcastMsg
-   * @param {*} walletUpdates - access to wallet updates via RPC
+   * @param {any} walletUpdates - access to wallet updates via RPC
    */
   const aPlayer = async (
     addr,
@@ -319,7 +322,7 @@ test.serial('trading in non-vbank asset: game real-estate NFTs', async t => {
 
   /**
    * @param {MockVStorageRoot} rpc - access to vstorage (in prod: via RPC)
-   * @param {*} walletBridge - iframe connection to wallet UI
+   * @param {any} walletBridge - iframe connection to wallet UI
    */
   const dappFrontEnd = async (rpc, walletBridge) => {
     const { fromEntries } = Object;
@@ -463,7 +466,7 @@ test.serial('non-vbank asset: give before deposit', async t => {
    * Goofy client: proposes to give Places before we have any
    *
    * @param {MockVStorageRoot} rpc - access to vstorage (in prod: via RPC)
-   * @param {*} walletBridge - iframe connection to wallet UI
+   * @param {any} walletBridge - iframe connection to wallet UI
    */
   const goofyClient = async (rpc, walletBridge) => {
     const { fromEntries } = Object;
@@ -523,7 +526,11 @@ test.serial('non-vbank asset: give before deposit', async t => {
     vsGet(`agoricNames.brand`);
     vsGet(`agoricNames.instance`);
 
-    /** @type {import('../src/smartWallet.js').UpdateRecord & {updated: 'offerStatus'}} */
+    /**
+     * @type {import('../src/smartWallet.js').UpdateRecord & {
+     *   updated: 'offerStatus';
+     * }}
+     */
     let offerUpdate;
     let ix = -1;
     for (;;) {

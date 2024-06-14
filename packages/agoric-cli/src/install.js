@@ -9,8 +9,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
   '@agoric/cosmic-swingset',
 ];
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;

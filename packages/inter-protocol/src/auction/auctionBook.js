@@ -1,8 +1,6 @@
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/internal/exported.js';
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
 import { AmountMath, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';

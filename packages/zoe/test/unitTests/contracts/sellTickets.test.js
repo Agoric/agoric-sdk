@@ -13,8 +13,7 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const mintAndSellNFTRoot = `${dirname}/../../../src/contracts/mintAndSellNFT.js`;
 const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;

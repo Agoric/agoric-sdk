@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"io"
 	"os"
@@ -42,16 +41,13 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-// Sender is a function that sends a request to the controller.
-type Sender func(ctx context.Context, needReply bool, str string) (string, error)
-
 var AppName = "agd"
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
-func NewRootCmd(sender Sender) (*cobra.Command, params.EncodingConfig) {
+func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 	encodingConfig := gaia.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
@@ -125,7 +121,7 @@ func initAppConfig() (string, interface{}) {
 	return serverconfig.DefaultConfigTemplate, *srvCfg
 }
 
-func initRootCmd(sender Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
@@ -252,7 +248,7 @@ func txCommand() *cobra.Command {
 
 type appCreator struct {
 	encCfg    params.EncodingConfig
-	sender    Sender
+	sender    vm.Sender
 	agdServer *vm.AgdServer
 }
 
@@ -323,6 +319,9 @@ func (ac appCreator) newApp(
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
 		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
+		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
+		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagDisableIAVLFastNode))),
+		baseapp.SetIAVLLazyLoading(cast.ToBool(appOpts.Get(server.FlagIAVLLazyLoading))),
 	)
 }
 

@@ -1,8 +1,4 @@
-// @ts-check
 /** @file Orchestration service */
-
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/network/exported.js';
 
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
@@ -15,17 +11,18 @@ import {
 } from './utils/address.js';
 
 /**
- * @import { Zone } from '@agoric/base-zone';
- * @import { Port, PortAllocator } from '@agoric/network';
- * @import { IBCConnectionID } from '@agoric/vats';
- * @import { ICQConnection, ChainAccount, ICQConnectionKit } from './types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Remote} from '@agoric/internal';
+ * @import {Port, PortAllocator} from '@agoric/network';
+ * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {ICQConnection, IcaAccount, ICQConnectionKit} from './types.js';
  */
 
 const { Fail, bare } = assert;
 
 /**
  * @typedef {object} OrchestrationPowers
- * @property {ERef<PortAllocator>} portAllocator
+ * @property {Remote<PortAllocator>} portAllocator
  */
 
 /**
@@ -40,7 +37,7 @@ const { Fail, bare } = assert;
  */
 
 /**
- * @typedef {MapStore<IBCConnectionID,ICQConnectionKit>} ICQConnectionStore
+ * @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore
  */
 
 /**
@@ -54,7 +51,7 @@ const getPower = (powers, name) => {
 };
 
 export const OrchestrationI = M.interface('Orchestration', {
-  makeAccount: M.callWhen(M.string(), M.string()).returns(
+  makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
     M.remotable('ChainAccount'),
   ),
   provideICQConnection: M.callWhen(M.string()).returns(
@@ -62,7 +59,7 @@ export const OrchestrationI = M.interface('Orchestration', {
   ),
 });
 
-/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore } } OrchestrationState */
+/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore }} OrchestrationState */
 
 /**
  * @param {Zone} zone
@@ -112,20 +109,24 @@ const prepareOrchestrationKit = (
       },
       public: {
         /**
-         * @param {IBCConnectionID} hostConnectionId
-         *   the counterparty connection_id
-         * @param {IBCConnectionID} controllerConnectionId
-         *   self connection_id
-         * @returns {Promise<ChainAccount>}
+         * @param {string} chainId
+         * @param {IBCConnectionID} hostConnectionId the counterparty
+         *   connection_id
+         * @param {IBCConnectionID} controllerConnectionId self connection_id
+         * @returns {Promise<IcaAccount>}
          */
-        async makeAccount(hostConnectionId, controllerConnectionId) {
+        async makeAccount(chainId, hostConnectionId, controllerConnectionId) {
           const port = await this.facets.self.allocateICAControllerPort();
 
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
           );
-          const chainAccountKit = makeChainAccountKit(port, remoteConnAddr);
+          const chainAccountKit = makeChainAccountKit(
+            chainId,
+            port,
+            remoteConnAddr,
+          );
 
           // await so we do not return a ChainAccount before it successfully instantiates
           await E(port).connect(

@@ -77,7 +77,6 @@
       "ts": "module"
     },
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "nodeArguments": [
@@ -91,6 +90,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 86.47
+    "atLeast": 87.28
   }
 }

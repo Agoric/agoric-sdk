@@ -1,5 +1,4 @@
 /* global process */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /* eslint no-await-in-loop: ["off"] */
 
 /**
@@ -57,6 +56,81 @@ const safeHintFromDescription = description =>
   description.replaceAll(/[^a-zA-Z0-9_.-]/g, '-');
 
 /**
+ * @typedef {object} SnapshotLoader
+ * @property {string} snapPath
+ *   where XS can load the snapshot from, either a filesystem path or a string
+ *   like `@${fileDescriptorNumber}:${readableDescription}`
+ * @property {(destStream?: Writable) => Promise<void>} afterSpawn
+ *   callback for providing a destination stream to which the data should be
+ *   piped (only relevant for a stream-based loader)
+ * @property {() => Promise<void>} cleanup
+ *   callback to free resources when the loader is no longer needed
+ */
+
+/**
+ * @callback MakeSnapshotLoader
+ * @param {AsyncIterable<Uint8Array>} sourceBytes
+ * @param {string} description
+ * @param {{fs: Pick<typeof import('fs/promises'), 'open' | 'unlink'>, ptmpName: (opts: import('tmp').TmpNameOptions) => Promise<string>}} ioPowers
+ * @returns {Promise<SnapshotLoader>}
+ */
+
+/** @type {MakeSnapshotLoader} */
+const makeSnapshotLoaderWithFS = async (
+  sourceBytes,
+  description,
+  { fs, ptmpName },
+) => {
+  const snapPath = await ptmpName({
+    template: `load-snapshot-${safeHintFromDescription(description)}-XXXXXX.xss`,
+  });
+
+  const afterSpawn = async () => {};
+  const cleanup = async () => fs.unlink(snapPath);
+
+  try {
+    const tmpSnap = await fs.open(snapPath, 'w');
+    // @ts-expect-error incorrect typings; writeFile does support AsyncIterable
+    await tmpSnap.writeFile(sourceBytes);
+    await tmpSnap.close();
+  } catch (e) {
+    await cleanup();
+    throw e;
+  }
+
+  return harden({
+    snapPath,
+    afterSpawn,
+    cleanup,
+  });
+};
+
+/** @type {MakeSnapshotLoader} */
+const makeSnapshotLoaderWithPipe = async (
+  sourceBytes,
+  description,
+  _ioPowers,
+) => {
+  let done = Promise.resolve();
+
+  const cleanup = async () => done;
+
+  const afterSpawn = async destStream => {
+    const sourceStream = Readable.from(sourceBytes);
+    sourceStream.pipe(destStream, { end: false });
+
+    done = finished(sourceStream);
+    void done.catch(noop).then(() => sourceStream.unpipe(destStream));
+  };
+
+  return harden({
+    snapPath: `@${SNAPSHOT_LOAD_FD}:${safeHintFromDescription(description)}`,
+    afterSpawn,
+    cleanup,
+  });
+};
+
+/**
  * @param {XSnapOptions} options
  *
  * @typedef {object} XSnapOptions
@@ -87,7 +161,7 @@ export async function xsnap(options) {
     netstringMaxChunkSize = undefined,
     parserBufferSize = undefined,
     snapshotStream,
-    snapshotDescription = snapshotStream && 'unknown',
+    snapshotDescription = 'unknown',
     snapshotUseFs = false,
     stdout = 'ignore',
     stderr = 'ignore',
@@ -105,65 +179,6 @@ export async function xsnap(options) {
     throw Error(`xsnap does not support platform ${os}`);
   }
 
-  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
-  const ptmpName = fs.tmpName && promisify(fs.tmpName);
-
-  const makeLoadSnapshotHandlerWithFS = async () => {
-    assert(snapshotStream);
-    const snapPath = await ptmpName({
-      template: `load-snapshot-${safeHintFromDescription(
-        snapshotDescription,
-      )}-XXXXXX.xss`,
-    });
-
-    const afterSpawn = async () => {};
-    const cleanup = async () => fs.unlink(snapPath);
-
-    try {
-      const tmpSnap = await fs.open(snapPath, 'w');
-      await tmpSnap.writeFile(
-        // @ts-expect-error incorrect typings, does support AsyncIterable
-        snapshotStream,
-      );
-      await tmpSnap.close();
-    } catch (e) {
-      await cleanup();
-      throw e;
-    }
-
-    return harden({
-      snapPath,
-      afterSpawn,
-      cleanup,
-    });
-  };
-
-  const makeLoadSnapshotHandlerWithPipe = async () => {
-    let done = Promise.resolve();
-
-    const cleanup = async () => done;
-
-    /** @param {Writable} loadSnapshotsStream */
-    const afterSpawn = async loadSnapshotsStream => {
-      assert(snapshotStream);
-      const destStream = loadSnapshotsStream;
-
-      const sourceStream = Readable.from(snapshotStream);
-      sourceStream.pipe(destStream, { end: false });
-
-      done = finished(sourceStream);
-      void done.catch(noop).then(() => sourceStream.unpipe(destStream));
-    };
-
-    return harden({
-      snapPath: `@${SNAPSHOT_LOAD_FD}:${safeHintFromDescription(
-        snapshotDescription,
-      )}`,
-      afterSpawn,
-      cleanup,
-    });
-  };
-
   let bin = new URL(
     `../xsnap-native/xsnap/build/bin/${platform}/${
       debug ? 'debug' : 'release'
@@ -176,15 +191,18 @@ export async function xsnap(options) {
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
-  let loadSnapshotHandler = await (snapshotStream &&
-    (snapshotUseFs
-      ? makeLoadSnapshotHandlerWithFS
-      : makeLoadSnapshotHandlerWithPipe)());
+  /** @type {(opts: import('tmp').TmpNameOptions) => Promise<string>} */
+  const ptmpName = fs.tmpName && promisify(fs.tmpName);
+  const makeSnapshotLoader = snapshotUseFs
+    ? makeSnapshotLoaderWithFS
+    : makeSnapshotLoaderWithPipe;
+  let snapshotLoader = await (snapshotStream &&
+    makeSnapshotLoader(snapshotStream, snapshotDescription, { fs, ptmpName }));
 
   let args = [name];
 
-  if (loadSnapshotHandler) {
-    args.push('-r', loadSnapshotHandler.snapPath);
+  if (snapshotLoader) {
+    args.push('-r', snapshotLoader.snapPath);
   }
 
   if (meteringLimit) {
@@ -255,13 +273,13 @@ export async function xsnap(options) {
   const snapshotSaveStream = xsnapProcessStdio[SNAPSHOT_SAVE_FD];
   const snapshotLoadStream = xsnapProcessStdio[SNAPSHOT_LOAD_FD];
 
-  await loadSnapshotHandler?.afterSpawn(snapshotLoadStream);
+  await snapshotLoader?.afterSpawn(snapshotLoadStream);
 
-  if (loadSnapshotHandler) {
+  if (snapshotLoader) {
     void vatExit.promise.catch(noop).then(() => {
-      if (loadSnapshotHandler) {
-        const { cleanup } = loadSnapshotHandler;
-        loadSnapshotHandler = undefined;
+      if (snapshotLoader) {
+        const { cleanup } = snapshotLoader;
+        snapshotLoader = undefined;
         return cleanup();
       }
     });
@@ -283,9 +301,9 @@ export async function xsnap(options) {
   async function runToIdle() {
     for await (const _ of forever) {
       const iteration = await messagesFromXsnap.next(undefined);
-      if (loadSnapshotHandler) {
-        const { cleanup } = loadSnapshotHandler;
-        loadSnapshotHandler = undefined;
+      if (snapshotLoader) {
+        const { cleanup } = snapshotLoader;
+        snapshotLoader = undefined;
         await cleanup();
       }
       if (iteration.done) {

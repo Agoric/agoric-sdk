@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -16,8 +15,7 @@ import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const coveredCallRoot = `${dirname}/../../../src/contracts/coveredCall.js`;
 const atomicSwapRoot = `${dirname}/../../../src/contracts/atomicSwap.js`;
@@ -785,7 +783,11 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
 
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
-  assertAmountsEqual(t, daveCustomDetails.strikePrice.StrikePrice, bucks(1n));
+  await assertAmountsEqual(
+    t,
+    daveCustomDetails.strikePrice.StrikePrice,
+    bucks(1n),
+  );
   t.deepEqual(daveCustomDetails.expirationDate, toTS(100n));
   t.deepEqual(daveCustomDetails.timeAuthority, timer);
 
@@ -799,7 +801,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
       .expirationDate,
     toTS(100n),
   );
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
       .strikePrice.StrikePrice,
@@ -1003,12 +1005,12 @@ test('zoe - coveredCall non-fungible', async t => {
 
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     customDetails.underlyingAssets.UnderlyingAsset,
     growlTigerAmount,
   );
-  assertAmountsEqual(
+  await assertAmountsEqual(
     t,
     customDetails.strikePrice.StrikePrice,
     aGloriousShieldAmount,

@@ -1,82 +1,128 @@
-// @ts-check
 /**
  * @file Stake BLD contract
- *
  */
-
 import { makeTracer } from '@agoric/internal';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { M } from '@endo/patterns';
-import { E } from '@endo/far';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import { prepareLocalchainAccountKit } from '../exos/localchainAccountKit.js';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { V } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
+import { M } from '@endo/patterns';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { makeChainHub } from '../utils/chainHub.js';
+
+/**
+ * @import {NameHub} from '@agoric/vats';
+ * @import {Remote} from '@agoric/internal';
+ * @import {TimerService} from '@agoric/time';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ */
 
 const trace = makeTracer('StakeBld');
 
 /**
- *
  * @param {ZCF} zcf
  * @param {{
- *   localchain: import('@agoric/vats/src/localchain.js').LocalChain;
+ *   agoricNames: Remote<NameHub>;
+ *   localchain: Remote<LocalChain>;
  *   marshaller: Marshaller;
  *   storageNode: StorageNode;
+ *   timerService: TimerService;
  * }} privateArgs
- * @param {import("@agoric/vat-data").Baggage} baggage
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { BLD } = zcf.getTerms().brands;
-
-  const bldAmountShape = await E(BLD).getAmountShape();
-
   const zone = makeDurableZone(baggage);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
     privateArgs.marshaller,
   );
-  const makeLocalchainAccountKit = prepareLocalchainAccountKit(
-    baggage,
+
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+    zone,
     makeRecorderKit,
     zcf,
+    privateArgs.timerService,
+    makeChainHub(privateArgs.agoricNames),
   );
 
-  const publicFacet = zone.exo('StakeBld', undefined, {
-    makeStakeBldInvitation() {
-      return zcf.makeInvitation(
-        async seat => {
-          const { give } = seat.getProposal();
-          trace('makeStakeBldInvitation', give);
-          // XXX type appears local but it's remote
-          const account = await E(privateArgs.localchain).makeAccount();
-          const lcaSeatKit = zcf.makeEmptySeatKit();
-          atomicTransfer(zcf, seat, lcaSeatKit.zcfSeat, give);
-          seat.exit();
-          trace('makeStakeBldInvitation tryExit lca userSeat');
-          await E(lcaSeatKit.userSeat).tryExit();
-          trace('awaiting payouts');
-          const payouts = await E(lcaSeatKit.userSeat).getPayouts();
-          const { holder, invitationMakers } = makeLocalchainAccountKit(
-            account,
-            privateArgs.storageNode,
-          );
-          trace('awaiting deposit');
-          await E(account).deposit(await payouts.In);
+  // ----------------
+  // All `prepare*` calls should go above this line.
 
-          return {
+  const BLD = zcf.getTerms().brands.In;
+  const bldAmountShape = await E(BLD).getAmountShape();
+
+  async function makeLocalAccountKit() {
+    const account = await V(privateArgs.localchain).makeAccount();
+    const address = await V(account).getAddress();
+    // XXX 'address' is implied by 'account'; use an async maker that get the value itself
+    return makeLocalChainAccountKit({
+      account,
+      address,
+      storageNode: privateArgs.storageNode,
+    });
+  }
+
+  const publicFacet = zone.exo(
+    'StakeBld',
+    M.interface('StakeBldI', {
+      makeAccount: M.callWhen().returns(M.remotable('LocalChainAccountHolder')),
+      makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
+      makeStakeBldInvitation: M.callWhen().returns(InvitationShape),
+    }),
+    {
+      /**
+       * Invitation to make an account, initialized with the give's BLD
+       */
+      makeStakeBldInvitation() {
+        return zcf.makeInvitation(
+          async seat => {
+            const { give } = seat.getProposal();
+            trace('makeStakeBldInvitation', give);
+            const { holder, invitationMakers } = await makeLocalAccountKit();
+            const { In } = await deeplyFulfilled(
+              withdrawFromSeat(zcf, seat, give),
+            );
+            await V(holder).deposit(In);
+            seat.exit();
+            return harden({
+              publicSubscribers: holder.getPublicTopics(),
+              invitationMakers,
+              account: holder,
+            });
+          },
+          'wantStake',
+          undefined,
+          M.splitRecord({
+            give: { In: bldAmountShape },
+          }),
+        );
+      },
+      async makeAccount() {
+        trace('makeAccount');
+        const { holder } = await makeLocalAccountKit();
+        return holder;
+      },
+      /**
+       * Invitation to make an account, without any funds
+       */
+      makeAccountInvitationMaker() {
+        trace('makeCreateAccountInvitation');
+        return zcf.makeInvitation(async seat => {
+          seat.exit();
+          const { holder, invitationMakers } = await makeLocalAccountKit();
+          return harden({
             publicSubscribers: holder.getPublicTopics(),
             invitationMakers,
             account: holder,
-          };
-        },
-        'wantStake',
-        undefined,
-        M.splitRecord({
-          give: { In: bldAmountShape },
-        }),
-      );
+          });
+        }, 'wantLocalChainAccount');
+      },
     },
-  });
+  );
 
   return { publicFacet };
 };

@@ -13,7 +13,7 @@ import {
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, Far } from '@endo/far';
@@ -63,9 +63,13 @@ export const subscriptionKey = subscription => {
 
 /** @returns {import('@agoric/vats').BridgeManager} */
 const makeFakeBridgeManager = () =>
+  // @ts-expect-error XXX generics puzzle: could be instantiated with a different subtype of constraint
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
+        getBridgeId() {
+          return bridgeId;
+        },
         fromBridge(_obj) {
           assert.fail(`expected fromBridge`);
         },
@@ -90,15 +94,20 @@ const makeFakeBridgeManager = () =>
     },
   });
 /**
- * @param {*} log
- * @returns {Promise<ChainBootstrapSpace>}>}
+ * @param {any} log
+ * @returns {Promise<ChainBootstrapSpace>} >}
  */
 export const makeMockTestSpace = async log => {
   const space = /** @type {any} */ (makePromiseSpace(log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: (n: 'mints') => MintsVat, loadCriticalVat: (n: 'mints') => MintsVat }} } */ (
-      space
-    );
+  /**
+   * @type {BootstrapPowers & {
+   *   consume: {
+   *     loadVat: (n: 'mints') => MintsVat;
+   *     loadCriticalVat: (n: 'mints') => MintsVat;
+   *   };
+   * }}
+   */
+  const { consume, produce } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
     await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -132,18 +141,9 @@ export const makeMockTestSpace = async log => {
 
   produce.testFirstAnchorKit.resolve(makeIssuerKit('AUSD', 'nat'));
 
-  const fakeBankKit = makeFakeBankKit([]);
+  const { bankManager } = await makeFakeBankManagerKit();
 
-  produce.bankManager.resolve(
-    Promise.resolve(
-      Far(
-        'mockBankManager',
-        /** @type {any} */ ({
-          getBankForAddress: _a => fakeBankKit.bank,
-        }),
-      ),
-    ),
-  );
+  produce.bankManager.resolve(bankManager);
 
   await Promise.all([
     // @ts-expect-error
@@ -157,7 +157,9 @@ export const makeMockTestSpace = async log => {
 };
 
 /**
- * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord}>} hasTopics
+ * @param {ERef<{
+ *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ * }>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {

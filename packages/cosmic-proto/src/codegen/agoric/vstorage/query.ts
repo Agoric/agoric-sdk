@@ -7,6 +7,7 @@ import {
 } from '../../cosmos/base/query/v1beta1/pagination.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 /** QueryDataRequest is the vstorage path data query. */
 export interface QueryDataRequest {
   path: string;
@@ -154,7 +155,7 @@ export const QueryDataRequest = {
       path: isSet(object.path) ? String(object.path) : '',
     };
   },
-  toJSON(message: QueryDataRequest): unknown {
+  toJSON(message: QueryDataRequest): JsonSafe<QueryDataRequest> {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     return obj;
@@ -216,7 +217,7 @@ export const QueryDataResponse = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: QueryDataResponse): unknown {
+  toJSON(message: QueryDataResponse): JsonSafe<QueryDataResponse> {
     const obj: any = {};
     message.value !== undefined && (obj.value = message.value);
     return obj;
@@ -307,7 +308,7 @@ export const QueryCapDataRequest = {
         : '',
     };
   },
-  toJSON(message: QueryCapDataRequest): unknown {
+  toJSON(message: QueryCapDataRequest): JsonSafe<QueryCapDataRequest> {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.mediaType !== undefined && (obj.mediaType = message.mediaType);
@@ -387,7 +388,7 @@ export const QueryCapDataResponse = {
       value: isSet(object.value) ? String(object.value) : '',
     };
   },
-  toJSON(message: QueryCapDataResponse): unknown {
+  toJSON(message: QueryCapDataResponse): JsonSafe<QueryCapDataResponse> {
     const obj: any = {};
     message.blockHeight !== undefined &&
       (obj.blockHeight = message.blockHeight);
@@ -465,7 +466,7 @@ export const QueryChildrenRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryChildrenRequest): unknown {
+  toJSON(message: QueryChildrenRequest): JsonSafe<QueryChildrenRequest> {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.pagination !== undefined &&
@@ -553,7 +554,7 @@ export const QueryChildrenResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryChildrenResponse): unknown {
+  toJSON(message: QueryChildrenResponse): JsonSafe<QueryChildrenResponse> {
     const obj: any = {};
     if (message.children) {
       obj.children = message.children.map(e => e);

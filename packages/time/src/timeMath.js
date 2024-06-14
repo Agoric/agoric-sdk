@@ -2,14 +2,16 @@ import { Nat } from '@endo/nat';
 import { mustMatch } from '@endo/patterns';
 import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
+/** @import {RelativeTime, RelativeTimeValue, TimerBrand, TimeMathType, Timestamp, TimestampRecord, TimestampValue} from './types.js' */
+
 const { Fail, quote: q } = assert;
 
 /**
  * `agreedTimerBrand` is internal to this module.
  *
- * @param {import('./types').TimerBrand | undefined} leftBrand
- * @param {import('./types').TimerBrand | undefined} rightBrand
- * @returns {import('./types').TimerBrand | undefined}
+ * @param {TimerBrand | undefined} leftBrand
+ * @param {TimerBrand | undefined} rightBrand
+ * @returns {TimerBrand | undefined}
  */
 const agreedTimerBrand = (leftBrand, rightBrand) => {
   if (leftBrand === undefined) {
@@ -34,9 +36,9 @@ const agreedTimerBrand = (leftBrand, rightBrand) => {
  * this logic. It does the error checking between the operands, and returns
  * the brand, if any, that should label the resulting time value.
  *
- * @param {import('./types').Timestamp | import('./types').RelativeTime} left
- * @param {import('./types').Timestamp | import('./types').RelativeTime} right
- * @returns {import('./types').TimerBrand | undefined}
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
+ * @returns {TimerBrand | undefined}
  */
 const sharedTimerBrand = (left, right) => {
   const leftBrand = typeof left === 'bigint' ? undefined : left.timerBrand;
@@ -49,10 +51,10 @@ const sharedTimerBrand = (left, right) => {
  * operators in the case where the returned time should be a `Timestamp`
  * rather than a `RelativeTime`.
  *
- * @param {import('./types').Timestamp | import('./types').RelativeTime} left
- * @param {import('./types').Timestamp | import('./types').RelativeTime} right
- * @param {import('./types').TimestampValue} absValue
- * @returns {import('./types').Timestamp}
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
+ * @param {TimestampValue} absValue
+ * @returns {Timestamp}
  */
 const absLike = (left, right, absValue) => {
   Nat(absValue);
@@ -72,10 +74,10 @@ const absLike = (left, right, absValue) => {
  * operators in the case where the returned time should be a `RelativeTime`
  * rather than a `Timestamp`.
  *
- * @param {import('./types').Timestamp | import('./types').RelativeTime} left
- * @param {import('./types').Timestamp | import('./types').RelativeTime} right
- * @param {import('./types').RelativeTimeValue} relValue
- * @returns {import('./types').RelativeTime}
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
+ * @param {RelativeTimeValue} relValue
+ * @returns {RelativeTime}
  */
 const relLike = (left, right, relValue) => {
   Nat(relValue);
@@ -187,8 +189,8 @@ const modRelRel = (rel, step) =>
  * `compareValues` is internal to this module, and used to implement
  * the time comparison operators.
  *
- * @param {import('./types').Timestamp | import('./types').RelativeTime} left
- * @param {import('./types').Timestamp | import('./types').RelativeTime} right
+ * @param {Timestamp | RelativeTime} left
+ * @param {Timestamp | RelativeTime} right
  * @param {bigint} v1
  * @param {bigint} v2
  * @returns {import('@endo/marshal').RankComparison}
@@ -237,14 +239,16 @@ const compareValues = (left, right, v1, v2) => {
  * operand, and return a labeled time object with the brand of the labeled
  * operand.
  *
- * @type {import('./types').TimeMathType}
+ * @type {TimeMathType}
  */
 export const TimeMath = harden({
   absValue,
   relValue,
   coerceTimestampRecord,
   coerceRelativeTimeRecord,
+  // @ts-expect-error xxx dynamic typing
   addAbsRel,
+  // @ts-expect-error xxx dynamic typing
   addRelRel,
   subtractAbsAbs,
   clampedSubtractAbsAbs,

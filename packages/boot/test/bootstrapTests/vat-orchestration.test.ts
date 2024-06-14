@@ -1,7 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
-import type { AnyJson } from '@agoric/cosmic-proto';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -18,13 +17,12 @@ import type {
 } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
-import { makeWalletFactoryContext } from './walletFactory.ts';
+import {
+  makeWalletFactoryContext,
+  type WalletFactoryTestContext,
+} from './walletFactory.ts';
 
-const makeTestContext = async (t: ExecutionContext) =>
-  makeWalletFactoryContext(t);
-
-type DefaultTestContext = Awaited<ReturnType<typeof makeTestContext>>;
-const test: TestFn<DefaultTestContext> = anyTest;
+const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 /**
  * To update, pass the message into `makeTxPacket` or `makeQueryPacket` from
@@ -39,7 +37,7 @@ const delegateMsgSuccess = Any.toJSON(
     validatorAddress: 'cosmosvaloper1test',
     amount: { denom: 'uatom', amount: '10' },
   }),
-) as AnyJson;
+);
 const balanceQuery = toRequestQueryJson(
   QueryBalanceRequest.toProtoMsg({
     address: 'cosmos1test',
@@ -48,7 +46,7 @@ const balanceQuery = toRequestQueryJson(
 );
 
 test.before(async t => {
-  t.context = await makeTestContext(t);
+  t.context = await makeWalletFactoryContext(t);
 
   async function setupDeps() {
     const {
@@ -56,10 +54,7 @@ test.before(async t => {
       evalProposal,
       runUtils: { EV },
     } = t.context;
-    /** ensure network, ibc, and orchestration are available */
-    await evalProposal(
-      buildProposal('@agoric/builders/scripts/vats/init-network.js'),
-    );
+    /** ensure orchestration is available */
     await evalProposal(
       buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
     );
@@ -83,6 +78,7 @@ test('makeAccount returns an ICA connection', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -100,7 +96,7 @@ test('makeAccount returns an ICA connection', async t => {
   t.regex(remoteAddress, /icahost/);
   t.regex(localAddress, /icacontroller/);
   t.regex(chainAddress.address, /cosmos1/);
-  t.regex(chainAddress.chainId, /FIXME/); // TODO, use a real chainId #9063
+  t.is(chainAddress.chainId, 'somechain-1');
   t.truthy(matches(port, M.remotable('Port')));
   t.log('ICA Account Addresses', {
     remoteAddress,
@@ -118,6 +114,7 @@ test('ICA connection can be closed', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -139,6 +136,7 @@ test('ICA connection can send msg with proto3', async t => {
     await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
+    'somechain-1',
     'connection-0',
     'connection-0',
   );
@@ -181,7 +179,7 @@ test('ICA connection can send msg with proto3', async t => {
       validatorAddress: 'cosmosvaloper1fail',
       amount: { denom: 'uatom', amount: '10' },
     }),
-  ) as AnyJson;
+  );
 
   await t.throwsAsync(EV(account).executeEncodedTx([delegateMsgFailure]), {
     message: 'ABCI code: 5: error handling packet: see events for details',
@@ -225,7 +223,7 @@ test('Query connection can send a query', async t => {
 
     const [result] = await EV(queryConnection).query([balanceQuery]);
     t.is(result.code, 0);
-    t.is(typeof result.height, 'bigint');
+    t.is(result.height, '0'); // bigint
     t.deepEqual(QueryBalanceResponse.decode(decodeBase64(result.key)), {
       balance: {
         amount: '0',

@@ -6,6 +6,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /** MsgCreateClient defines a message to create an IBC client */
 export interface MsgCreateClient {
   /** light client state */
@@ -212,7 +213,7 @@ export const MsgCreateClient = {
       signer: isSet(object.signer) ? String(object.signer) : '',
     };
   },
-  toJSON(message: MsgCreateClient): unknown {
+  toJSON(message: MsgCreateClient): JsonSafe<MsgCreateClient> {
     const obj: any = {};
     message.clientState !== undefined &&
       (obj.clientState = message.clientState
@@ -283,7 +284,7 @@ export const MsgCreateClientResponse = {
   fromJSON(_: any): MsgCreateClientResponse {
     return {};
   },
-  toJSON(_: MsgCreateClientResponse): unknown {
+  toJSON(_: MsgCreateClientResponse): JsonSafe<MsgCreateClientResponse> {
     const obj: any = {};
     return obj;
   },
@@ -363,7 +364,7 @@ export const MsgUpdateClient = {
       signer: isSet(object.signer) ? String(object.signer) : '',
     };
   },
-  toJSON(message: MsgUpdateClient): unknown {
+  toJSON(message: MsgUpdateClient): JsonSafe<MsgUpdateClient> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.header !== undefined &&
@@ -426,7 +427,7 @@ export const MsgUpdateClientResponse = {
   fromJSON(_: any): MsgUpdateClientResponse {
     return {};
   },
-  toJSON(_: MsgUpdateClientResponse): unknown {
+  toJSON(_: MsgUpdateClientResponse): JsonSafe<MsgUpdateClientResponse> {
     const obj: any = {};
     return obj;
   },
@@ -538,7 +539,7 @@ export const MsgUpgradeClient = {
       signer: isSet(object.signer) ? String(object.signer) : '',
     };
   },
-  toJSON(message: MsgUpgradeClient): unknown {
+  toJSON(message: MsgUpgradeClient): JsonSafe<MsgUpgradeClient> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.clientState !== undefined &&
@@ -626,7 +627,7 @@ export const MsgUpgradeClientResponse = {
   fromJSON(_: any): MsgUpgradeClientResponse {
     return {};
   },
-  toJSON(_: MsgUpgradeClientResponse): unknown {
+  toJSON(_: MsgUpgradeClientResponse): JsonSafe<MsgUpgradeClientResponse> {
     const obj: any = {};
     return obj;
   },
@@ -711,7 +712,7 @@ export const MsgSubmitMisbehaviour = {
       signer: isSet(object.signer) ? String(object.signer) : '',
     };
   },
-  toJSON(message: MsgSubmitMisbehaviour): unknown {
+  toJSON(message: MsgSubmitMisbehaviour): JsonSafe<MsgSubmitMisbehaviour> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.misbehaviour !== undefined &&
@@ -776,7 +777,9 @@ export const MsgSubmitMisbehaviourResponse = {
   fromJSON(_: any): MsgSubmitMisbehaviourResponse {
     return {};
   },
-  toJSON(_: MsgSubmitMisbehaviourResponse): unknown {
+  toJSON(
+    _: MsgSubmitMisbehaviourResponse,
+  ): JsonSafe<MsgSubmitMisbehaviourResponse> {
     const obj: any = {};
     return obj;
   },

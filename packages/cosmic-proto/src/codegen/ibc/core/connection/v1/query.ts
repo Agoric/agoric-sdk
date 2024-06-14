@@ -26,6 +26,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * QueryConnectionRequest is the request type for the Query/Connection RPC
  * method
@@ -319,7 +320,7 @@ export const QueryConnectionRequest = {
         : '',
     };
   },
-  toJSON(message: QueryConnectionRequest): unknown {
+  toJSON(message: QueryConnectionRequest): JsonSafe<QueryConnectionRequest> {
     const obj: any = {};
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);
@@ -412,7 +413,7 @@ export const QueryConnectionResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryConnectionResponse): unknown {
+  toJSON(message: QueryConnectionResponse): JsonSafe<QueryConnectionResponse> {
     const obj: any = {};
     message.connection !== undefined &&
       (obj.connection = message.connection
@@ -504,7 +505,7 @@ export const QueryConnectionsRequest = {
         : undefined,
     };
   },
-  toJSON(message: QueryConnectionsRequest): unknown {
+  toJSON(message: QueryConnectionsRequest): JsonSafe<QueryConnectionsRequest> {
     const obj: any = {};
     message.pagination !== undefined &&
       (obj.pagination = message.pagination
@@ -606,7 +607,9 @@ export const QueryConnectionsResponse = {
       height: isSet(object.height) ? Height.fromJSON(object.height) : undefined,
     };
   },
-  toJSON(message: QueryConnectionsResponse): unknown {
+  toJSON(
+    message: QueryConnectionsResponse,
+  ): JsonSafe<QueryConnectionsResponse> {
     const obj: any = {};
     if (message.connections) {
       obj.connections = message.connections.map(e =>
@@ -698,7 +701,9 @@ export const QueryClientConnectionsRequest = {
       clientId: isSet(object.clientId) ? String(object.clientId) : '',
     };
   },
-  toJSON(message: QueryClientConnectionsRequest): unknown {
+  toJSON(
+    message: QueryClientConnectionsRequest,
+  ): JsonSafe<QueryClientConnectionsRequest> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     return obj;
@@ -791,7 +796,9 @@ export const QueryClientConnectionsResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryClientConnectionsResponse): unknown {
+  toJSON(
+    message: QueryClientConnectionsResponse,
+  ): JsonSafe<QueryClientConnectionsResponse> {
     const obj: any = {};
     if (message.connectionPaths) {
       obj.connectionPaths = message.connectionPaths.map(e => e);
@@ -881,7 +888,9 @@ export const QueryConnectionClientStateRequest = {
         : '',
     };
   },
-  toJSON(message: QueryConnectionClientStateRequest): unknown {
+  toJSON(
+    message: QueryConnectionClientStateRequest,
+  ): JsonSafe<QueryConnectionClientStateRequest> {
     const obj: any = {};
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);
@@ -981,7 +990,9 @@ export const QueryConnectionClientStateResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryConnectionClientStateResponse): unknown {
+  toJSON(
+    message: QueryConnectionClientStateResponse,
+  ): JsonSafe<QueryConnectionClientStateResponse> {
     const obj: any = {};
     message.identifiedClientState !== undefined &&
       (obj.identifiedClientState = message.identifiedClientState
@@ -1094,7 +1105,9 @@ export const QueryConnectionConsensusStateRequest = {
         : BigInt(0),
     };
   },
-  toJSON(message: QueryConnectionConsensusStateRequest): unknown {
+  toJSON(
+    message: QueryConnectionConsensusStateRequest,
+  ): JsonSafe<QueryConnectionConsensusStateRequest> {
     const obj: any = {};
     message.connectionId !== undefined &&
       (obj.connectionId = message.connectionId);
@@ -1208,7 +1221,9 @@ export const QueryConnectionConsensusStateResponse = {
         : undefined,
     };
   },
-  toJSON(message: QueryConnectionConsensusStateResponse): unknown {
+  toJSON(
+    message: QueryConnectionConsensusStateResponse,
+  ): JsonSafe<QueryConnectionConsensusStateResponse> {
     const obj: any = {};
     message.consensusState !== undefined &&
       (obj.consensusState = message.consensusState
@@ -1290,7 +1305,9 @@ export const QueryConnectionParamsRequest = {
   fromJSON(_: any): QueryConnectionParamsRequest {
     return {};
   },
-  toJSON(_: QueryConnectionParamsRequest): unknown {
+  toJSON(
+    _: QueryConnectionParamsRequest,
+  ): JsonSafe<QueryConnectionParamsRequest> {
     const obj: any = {};
     return obj;
   },
@@ -1359,7 +1376,9 @@ export const QueryConnectionParamsResponse = {
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
-  toJSON(message: QueryConnectionParamsResponse): unknown {
+  toJSON(
+    message: QueryConnectionParamsResponse,
+  ): JsonSafe<QueryConnectionParamsResponse> {
     const obj: any = {};
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);

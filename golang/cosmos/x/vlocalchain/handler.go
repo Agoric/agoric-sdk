@@ -3,6 +3,7 @@ package vlocalchain
 import (
 	"fmt"
 
+	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -14,7 +15,7 @@ func NewHandler(keeper keeper.Keeper) sdk.Handler {
 		switch msg := msg.(type) {
 		default:
 			errMsg := fmt.Sprintf("Unrecognized vlocalchain Msg type: %T", msg)
-			return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
+			return nil, sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, errMsg)
 		}
 	}
 }

@@ -66,7 +66,7 @@ export const makeStartInstance = (
     adminNode: M.remotable('adminNode'),
   });
 
-  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<unknown, [InstanceAdmin, Handle<'adminNode'>]>} */
+  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
   const watcher = prepareExo(
     zoeBaggage,
     'InstanceCompletionWatcher',

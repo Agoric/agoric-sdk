@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import '../../../../exported.js';
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';

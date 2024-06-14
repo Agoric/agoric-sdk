@@ -1,5 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
-
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
@@ -11,8 +9,7 @@ import { TestFn } from 'ava';
 import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeZoeDriver } from '../../tools/drivers.ts';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const ZCF_PROBE_SRC = './zcfProbe.js';
 
@@ -38,9 +35,13 @@ const ZCF_PROBE_SRC = './zcfProbe.js';
 
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/zoe', {
-    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
-  });
+  const swingsetTestKit = await makeSwingsetTestKit(
+    t.log,
+    'bundles/zcf-upgrade',
+    {
+      configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+    },
+  );
 
   const { runUtils } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

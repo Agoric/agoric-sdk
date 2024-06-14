@@ -8,8 +8,7 @@ import { E } from '@endo/eventual-send';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/throwInOfferHandler.js`;
 

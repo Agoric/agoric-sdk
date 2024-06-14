@@ -55,12 +55,10 @@
   "files": [
     "scripts/",
     "src/",
-    "exported.js",
     "NEWS.md"
   ],
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
@@ -72,6 +70,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 90.68
+    "atLeast": 90.6
   }
 }

@@ -6,18 +6,19 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { WalletName } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
-import { buildRootObject as buildBankRoot } from '@agoric/vats/src/vat-bank.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
-import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import {
+  makeFakeBankKit,
+  makeFakeBankManagerKit,
+} from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
@@ -275,12 +276,7 @@ test('provisionPool trades provided assets for IST', async t => {
  * @param {string[]} addresses
  */
 const makeWalletFactoryKitForAddresses = async addresses => {
-  const baggage = makeScalarBigMapStore('bank baggage');
-  const bankManager = await buildBankRoot(
-    undefined,
-    undefined,
-    baggage,
-  ).makeBankManager();
+  const { bankManager } = await makeFakeBankManagerKit();
 
   const feeKit = makeIssuerKit('FEE');
   const fees = withAmountUtils(feeKit);

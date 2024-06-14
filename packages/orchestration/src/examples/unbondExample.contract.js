@@ -1,36 +1,63 @@
 // @ts-check
-import { Fail } from '@endo/errors';
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeOrchestrationFacade } from '../facade.js';
+import { makeChainHub } from '../utils/chainHub.js';
+import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 
 /**
- * @import {Orchestrator, ChainAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
- * @import {ERef} from '@endo/far'
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {LocalChain} from '@agoric/vats/src/localchain.js';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {Zone} from '@agoric/zone';
  */
 
 /**
  * @param {ZCF} zcf
  * @param {{
- * orchestrationService: ERef<OrchestrationService>;
- * storageNode: ERef<StorageNode>;
- * timerService: ERef<TimerService>;
- * zone: Zone;
+ *   agoricNames: Remote<NameHub>;
+ *   localchain: Remote<LocalChain>;
+ *   orchestrationService: Remote<OrchestrationService>;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Marshaller;
+ *   timerService: Remote<TimerService>;
  * }} privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
-  const { orchestrationService, storageNode, timerService, zone } = privateArgs;
+export const start = async (zcf, privateArgs, baggage) => {
+  const {
+    agoricNames,
+    localchain,
+    orchestrationService,
+    storageNode,
+    marshaller,
+    timerService,
+  } = privateArgs;
+  const zone = makeDurableZone(baggage);
 
-  const { orchestrate } = makeOrchestrationFacade({
+  const chainHub = makeChainHub(agoricNames);
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
     zone,
+    makeRecorderKit,
+    zcf,
+    privateArgs.timerService,
+    chainHub,
+  );
+  const { orchestrate } = makeOrchestrationFacade({
+    localchain,
+    orchestrationService,
+    storageNode,
     timerService,
     zcf,
-    storageNode,
-    orchestrationService,
+    zone,
+    chainHub: makeChainHub(agoricNames),
+    makeLocalChainAccountKit,
   });
 
   /** @type {OfferHandler} */
@@ -38,30 +65,29 @@ export const start = async (zcf, privateArgs) => {
     'LSTTia',
     { zcf },
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (/** @type {Orchestrator} */ orch, { zcf }, seat, _offerArgs) => {
+    async (/** @type {Orchestrator} */ orch, { zcf }, _seat, _offerArgs) => {
       console.log('zcf within the membrane', zcf);
-      const { give } = seat.getProposal();
-      !AmountMath.isEmpty(give.USDC.value) || Fail`Must provide USDC.`;
-
       // We would actually alreaady have the account from the orchestrator
       // ??? could these be passed in? It would reduce the size of this handler,
       // keeping it focused on long-running operations.
-      const celestia = await orch.getChain('celestia');
-      const celestiaAccount = await celestia.makeAccount();
+      const omni = await orch.getChain('omniflixhub');
+      const omniAccount = await omni.makeAccount();
 
-      const delegations = await celestiaAccount.getDelegations();
-      // wait for the undelegations to be complete (may take weeks)
-      await celestiaAccount.undelegate(delegations);
+      // TODO implement these
+      // const delegations = await celestiaAccount.getDelegations();
+      // // wait for the undelegations to be complete (may take weeks)
+      // await celestiaAccount.undelegate(delegations);
 
       // ??? should this be synchronous? depends on how names are resolved.
       const stride = await orch.getChain('stride');
       const strideAccount = await stride.makeAccount();
 
       // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-      const tiaAmt = await celestiaAccount.getBalance('TIA');
-      await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
+      // const tiaAmt = await celestiaAccount.getBalance('TIA');
+      // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
 
-      await strideAccount.liquidStake(tiaAmt);
+      // await strideAccount.liquidStake(tiaAmt);
+      console.log(omniAccount, strideAccount);
     },
   );
 
@@ -71,7 +97,8 @@ export const start = async (zcf, privateArgs) => {
       'Unbond and liquid stake',
       undefined,
       harden({
-        give: { USDC: AmountShape },
+        // Nothing to give; the funds come from undelegating
+        give: {},
         want: {}, // XXX ChainAccount Ownable?
         exit: M.any(),
       }),

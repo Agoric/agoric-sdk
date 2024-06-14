@@ -36,7 +36,6 @@
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/base64": "^1.0.5",
     "@endo/far": "^1.1.2",
     "@endo/import-bundle": "^1.1.2",
     "@endo/marshal": "^1.5.0",
@@ -58,8 +57,7 @@
     "src/",
     "scripts/",
     "tools/",
-    "index.*",
-    "exported.*"
+    "index.*"
   ],
   "publishConfig": {
     "access": "public"
@@ -69,7 +67,6 @@
   },
   "ava": {
     "files": [
-      "test/**/test-*.*",
       "test/**/*.test.*"
     ],
     "require": [
@@ -79,6 +76,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 91.33
+    "atLeast": 91.21
   }
 }

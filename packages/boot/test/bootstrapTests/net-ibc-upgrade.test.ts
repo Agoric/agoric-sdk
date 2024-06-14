@@ -1,13 +1,15 @@
 /** @file upgrade network / IBC vat at many points in state machine */
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { createRequire } from 'module';
-import type { TestFn } from 'ava';
-import type { BridgeHandler } from '@agoric/vats';
 import { BridgeId } from '@agoric/internal';
+import type { BridgeHandler } from '@agoric/vats';
+import { makeFakeIbcBridge } from '@agoric/vats/tools/fake-bridge.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-// import { E } from '@endo/eventual-send';
-import { V as E } from '@agoric/vow/vat.js';
-import { makeBridge } from './ibcBridgeMock.js';
+import type { TestFn } from 'ava';
+import { createRequire } from 'module';
+
+import type { Baggage } from '@agoric/swingset-liveslots';
+import { M, makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const { entries, assign } = Object;
@@ -22,8 +24,14 @@ const asset = {
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const { bridgeHandler, events } = makeBridge(t);
-  const bundleDir = 'bundles/vaults';
+
+  const baggage = makeScalarBigMapStore('baggage', {
+    keyShape: M.string(),
+    durable: true,
+  }) as Baggage;
+  const zone = makeDurableZone(baggage);
+
+  const bundleDir = 'bundles/net-ibc-upgrade';
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
@@ -31,9 +39,6 @@ export const makeTestContext = async t => {
   );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
-    bridgeHandlers: {
-      [BridgeId.DIBC]: obj => bridgeHandler.toBridge(obj),
-    },
   });
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
@@ -56,26 +61,8 @@ test.serial('bootstrap produces provisioning vat', async t => {
   t.truthy(provisioning);
 });
 
-test.serial('network vat core eval launches network, ibc vats', async t => {
-  const { controller, buildProposal } = t.context;
+test.serial('bootstrap launches network, ibc vats', async t => {
   const { EV } = t.context.runUtils;
-
-  t.log('building network proposal');
-  const proposal = await buildProposal(
-    '@agoric/builders/scripts/vats/init-network.js',
-  );
-
-  for await (const bundle of proposal.bundles) {
-    await controller.validateAndInstallBundle(bundle);
-  }
-  t.log('installed', proposal.bundles.length, 'bundles');
-
-  t.log('executing', proposal.evals.length, 'core evals');
-  const bridgeMessage = { type: 'CORE_EVAL', evals: proposal.evals };
-  const coreHandler: BridgeHandler = await EV.vat('bootstrap').consumeItem(
-    'coreEvalBridgeHandler',
-  );
-  await EV(coreHandler).fromBridge(bridgeMessage);
 
   t.log('network proposal executed');
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
@@ -101,8 +88,10 @@ const upgradeVats = async (t, EV, vatsToUpgrade) => {
     await EV.vat('bootstrap').consumeItem('vatUpgradeInfo');
   const vatAdminSvc = await EV.vat('bootstrap').consumeItem('vatAdminSvc');
   for (const vatName of vatsToUpgrade) {
-    const { bundleID } = await EV(vatUpgradeInfo).get(vatName);
-    const bcap = await EV(vatAdminSvc).getBundleCap(bundleID);
+    const { bundleID, bundleName } = await EV(vatUpgradeInfo).get(vatName);
+    const bcap = await (bundleID
+      ? EV(vatAdminSvc).getBundleCap(bundleID)
+      : EV(vatAdminSvc).getNamedBundleCap(bundleName));
     const { adminNode } = await EV(vatStore).get(vatName);
     const result = await EV(adminNode).upgrade(bcap);
     t.log(vatName, result);

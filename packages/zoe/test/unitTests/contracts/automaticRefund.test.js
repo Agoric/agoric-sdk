@@ -9,8 +9,7 @@ import { claim, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const automaticRefundRoot = `${dirname}/../../../src/contracts/automaticRefund.js`;
 

@@ -1,5 +1,3 @@
-import '@agoric/zoe/exported.js';
-
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { allValues, makeTracer, NonNullish, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
@@ -10,7 +8,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
@@ -24,7 +22,6 @@ import {
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import '../../src/vaultFactory/types-ambient.js';
 import {
   installPuppetGovernance,
   setupBootstrap,
@@ -32,7 +29,10 @@ import {
   withAmountUtils,
 } from '../supports.js';
 
-/** @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js' */
+/**
+ * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
+ * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
+ */
 
 const trace = makeTracer('VFDriver');
 
@@ -59,7 +59,7 @@ const contractRoots = {
 /**
  * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500, lP: 0%
  *
- * @param {import('../supports.js').AmountUtils} debt
+ * @param {AmountUtils} debt
  */
 const defaultParamValues = debt =>
   harden({
@@ -77,7 +77,7 @@ const defaultParamValues = debt =>
 
 /**
  * @typedef {{
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & AmountUtils;
  *   aethInitialLiquidity: Amount<'nat'>;
  *   consume: import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume'];
  *   puppetGovernors: {
@@ -94,9 +94,9 @@ const defaultParamValues = debt =>
  *   minInitialDebt: bigint;
  *   reserveCreatorFacet: ERef<AssetReserveLimitedCreatorFacet>;
  *   rates: any;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   run: IssuerKit & AmountUtils;
  *   stableInitialLiquidity: Amount<'nat'>;
- *   timer: ReturnType<typeof buildManualTimer>;
+ *   timer: ReturnType<typeof buildZoeManualTimer>;
  *   zoe: ZoeService;
  * }} DriverContext
  */
@@ -210,7 +210,7 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {Amount} priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
-  const timer = buildManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log);
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
@@ -369,7 +369,7 @@ export const makeManagerDriver = async (
       notification: () => notification,
       /**
        * @param {bigint} collValue
-       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {AmountUtils} collUtils
        * @param {bigint} [mintedValue]
        */
       giveCollateral: async (collValue, collUtils, mintedValue = 0n) => {
@@ -390,7 +390,7 @@ export const makeManagerDriver = async (
       },
       /**
        * @param {bigint} mintedValue
-       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {AmountUtils} collUtils
        * @param {bigint} [collValue]
        */
       giveMinted: async (mintedValue, collUtils, collValue = 0n) => {
@@ -579,13 +579,11 @@ export const makeAuctioneerDriver = async t => {
     auctioneerKit,
     advanceTimerByStartFrequency: async () => {
       trace('advanceTimerByStartFrequency');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency));
       await eventLoopIteration();
     },
     induceTimequake: async () => {
       trace('induceTimequake');
-      // @ts-expect-error ManualTimer debt https://github.com/Agoric/agoric-sdk/issues/7747
       await t.context.timer.advanceBy(BigInt(startFrequency) * 10n);
       await eventLoopIteration();
     },

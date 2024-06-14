@@ -1,6 +1,6 @@
 // @jessie-check
 
-/// <reference types="ses"/>
+/// <reference types="ses" />
 
 import { E, Far } from '@endo/far';
 import { subscribeEach } from './subscribe.js';

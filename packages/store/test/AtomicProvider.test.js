@@ -5,8 +5,6 @@ import { setTimeout } from 'timers';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
 import { makeAtomicProvider } from '../src/stores/store-utils.js';
 
-import '../src/types.js';
-
 test('race', async t => {
   const store = makeScalarMapStore('foo');
   const provider = makeAtomicProvider(store);

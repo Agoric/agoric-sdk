@@ -1,8 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 
-import '@agoric/zoe/exported.js';
-
 export async function showPurseBalance(purseP, name, log) {
   try {
     const amount = await E(purseP).getCurrentAmount();

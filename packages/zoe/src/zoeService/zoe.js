@@ -11,6 +11,8 @@
  * validate that.
  */
 
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
 import { E } from '@endo/eventual-send';
@@ -25,10 +27,6 @@ import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
-
-// XXX ambient types runtime imports until https://github.com/Agoric/agoric-sdk/issues/6512
-import '@agoric/internal/exported.js';
-import '@agoric/notifier/exported.js';
 
 /** @import {Baggage} from '@agoric/vat-data' */
 

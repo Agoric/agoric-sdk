@@ -28,7 +28,7 @@ const { ceilDivide } = natSafeMath;
  * }} CommitteeElectorateCreatorFacet
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   privateArgsShape: {
     storageNode: StorageNodeShape,

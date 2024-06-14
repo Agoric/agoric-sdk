@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
 import { E } from '@endo/eventual-send';

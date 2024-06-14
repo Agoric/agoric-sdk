@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
@@ -16,13 +15,12 @@ import {
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeOffer } from './makeOffer.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractRoot = `${dirname}/zcf/zcfTesterContract.js`;
 
 const setupContract = async (moolaIssuer, bucksIssuer) => {
-  /** @type {ContractFacet} */
+  /** @type {ZCF} */
   let zcf;
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin(jig => {
     zcf = jig.zcf;
@@ -43,6 +41,7 @@ const setupContract = async (moolaIssuer, bucksIssuer) => {
 
   await E(zoe).startInstance(installation, issuerKeywordRecord);
 
+  // @ts-expect-error may be used before being defined
   return { zoe, zcf };
 };
 

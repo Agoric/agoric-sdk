@@ -2,6 +2,7 @@
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
+import { JsonSafe } from '../../../json-safe.js';
 /**
  * LegacyAminoPubKey specifies a public key type
  * which nests multiple public keys and a threshold,
@@ -73,7 +74,7 @@ export const LegacyAminoPubKey = {
         : [],
     };
   },
-  toJSON(message: LegacyAminoPubKey): unknown {
+  toJSON(message: LegacyAminoPubKey): JsonSafe<LegacyAminoPubKey> {
     const obj: any = {};
     message.threshold !== undefined &&
       (obj.threshold = Math.round(message.threshold));

@@ -27,6 +27,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
+import { JsonSafe } from '../../../../json-safe.js';
 /**
  * ClientState from Tendermint tracks the current validator set, latest height,
  * and a possible frozen height.
@@ -341,7 +342,7 @@ export const ClientState = {
         : false,
     };
   },
-  toJSON(message: ClientState): unknown {
+  toJSON(message: ClientState): JsonSafe<ClientState> {
     const obj: any = {};
     message.chainId !== undefined && (obj.chainId = message.chainId);
     message.trustLevel !== undefined &&
@@ -498,7 +499,7 @@ export const ConsensusState = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: ConsensusState): unknown {
+  toJSON(message: ConsensusState): JsonSafe<ConsensusState> {
     const obj: any = {};
     message.timestamp !== undefined &&
       (obj.timestamp = message.timestamp.toISOString());
@@ -594,7 +595,7 @@ export const Misbehaviour = {
         : undefined,
     };
   },
-  toJSON(message: Misbehaviour): unknown {
+  toJSON(message: Misbehaviour): JsonSafe<Misbehaviour> {
     const obj: any = {};
     message.clientId !== undefined && (obj.clientId = message.clientId);
     message.header1 !== undefined &&
@@ -716,7 +717,7 @@ export const Header = {
         : undefined,
     };
   },
-  toJSON(message: Header): unknown {
+  toJSON(message: Header): JsonSafe<Header> {
     const obj: any = {};
     message.signedHeader !== undefined &&
       (obj.signedHeader = message.signedHeader
@@ -821,7 +822,7 @@ export const Fraction = {
         : BigInt(0),
     };
   },
-  toJSON(message: Fraction): unknown {
+  toJSON(message: Fraction): JsonSafe<Fraction> {
     const obj: any = {};
     message.numerator !== undefined &&
       (obj.numerator = (message.numerator || BigInt(0)).toString());

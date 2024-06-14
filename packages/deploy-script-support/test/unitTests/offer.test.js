@@ -7,8 +7,6 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/far';
 
-import '../../exported.js';
-
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('offer', async t => {

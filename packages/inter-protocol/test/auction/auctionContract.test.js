@@ -1,7 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import '@agoric/zoe/exported.js';
-
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import {
@@ -41,10 +39,12 @@ import { setUpInstallations } from './tools.js';
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
+/** @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js'; */
+
 /**
  * @typedef {Record<string, any> & {
- *   bid: IssuerKit & import('../supports.js').AmountUtils;
- *   collateral: IssuerKit & import('../supports.js').AmountUtils;
+ *   bid: IssuerKit & AmountUtils;
+ *   collateral: IssuerKit & AmountUtils;
  *   zoe: ZoeService;
  * }} Context
  */

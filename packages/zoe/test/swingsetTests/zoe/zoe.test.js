@@ -5,8 +5,7 @@ import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import bundleSource from '@endo/bundle-source';
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const CONTRACT_FILES = [
   'automaticRefund',

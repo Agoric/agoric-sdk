@@ -1,6 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
+import { JsonSafe } from '../../json-safe.js';
 export interface Proof {
   total: bigint;
   index: bigint;
@@ -148,7 +149,7 @@ export const Proof = {
         : [],
     };
   },
-  toJSON(message: Proof): unknown {
+  toJSON(message: Proof): JsonSafe<Proof> {
     const obj: any = {};
     message.total !== undefined &&
       (obj.total = (message.total || BigInt(0)).toString());
@@ -241,7 +242,7 @@ export const ValueOp = {
       proof: isSet(object.proof) ? Proof.fromJSON(object.proof) : undefined,
     };
   },
-  toJSON(message: ValueOp): unknown {
+  toJSON(message: ValueOp): JsonSafe<ValueOp> {
     const obj: any = {};
     message.key !== undefined &&
       (obj.key = base64FromBytes(
@@ -328,7 +329,7 @@ export const DominoOp = {
       output: isSet(object.output) ? String(object.output) : '',
     };
   },
-  toJSON(message: DominoOp): unknown {
+  toJSON(message: DominoOp): JsonSafe<DominoOp> {
     const obj: any = {};
     message.key !== undefined && (obj.key = message.key);
     message.input !== undefined && (obj.input = message.input);
@@ -412,7 +413,7 @@ export const ProofOp = {
         : new Uint8Array(),
     };
   },
-  toJSON(message: ProofOp): unknown {
+  toJSON(message: ProofOp): JsonSafe<ProofOp> {
     const obj: any = {};
     message.type !== undefined && (obj.type = message.type);
     message.key !== undefined &&
@@ -486,7 +487,7 @@ export const ProofOps = {
         : [],
     };
   },
-  toJSON(message: ProofOps): unknown {
+  toJSON(message: ProofOps): JsonSafe<ProofOps> {
     const obj: any = {};
     if (message.ops) {
       obj.ops = message.ops.map(e => (e ? ProofOp.toJSON(e) : undefined));

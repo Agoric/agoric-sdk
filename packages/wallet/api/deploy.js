@@ -6,8 +6,7 @@ import { E } from '@endo/eventual-send';
 import { Fail } from '@endo/errors';
 import path from 'path';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export default async function deployWallet(
   homePromise,

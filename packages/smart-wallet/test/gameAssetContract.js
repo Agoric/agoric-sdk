@@ -1,5 +1,4 @@
 /** @file illustrates using non-vbank assets */
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 // deep import to avoid dependency on all of ERTP, vat-data
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
@@ -21,7 +20,7 @@ const totalPlaces = amt => {
 };
 
 /**
- * @param {ZCF<{joinPrice: Amount}>} zcf
+ * @param {ZCF<{ joinPrice: Amount }>} zcf
  */
 export const start = async zcf => {
   const { joinPrice } = zcf.getTerms();

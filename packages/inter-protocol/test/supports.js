@@ -1,4 +1,3 @@
-import { AmountMath } from '@agoric/ertp';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
@@ -15,8 +14,7 @@ import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 
@@ -69,7 +67,7 @@ export const setupBootstrap = async (t, optTimer) => {
 
   await produceDiagnostics(space);
 
-  const timer = optTimer || buildManualTimer(t.log);
+  const timer = optTimer || buildZoeManualTimer(t.log);
   produce.chainTimerService.resolve(timer);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeFakeBoard());
@@ -152,25 +150,7 @@ export const produceInstallations = (space, installations) => {
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
-/** @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit */
-export const withAmountUtils = kit => {
-  const decimalPlaces = kit.issuer.getDisplayInfo?.()?.decimalPlaces ?? 6;
-  return {
-    ...kit,
-    /** @param {NatValue} v */
-    make: v => AmountMath.make(kit.brand, v),
-    makeEmpty: () => AmountMath.makeEmpty(kit.brand),
-    /**
-     * @param {NatValue} n
-     * @param {NatValue} [d]
-     */
-    makeRatio: (n, d) => makeRatio(n, kit.brand, d),
-    /** @param {number} n */
-    units: n =>
-      AmountMath.make(kit.brand, BigInt(Math.round(n * 10 ** decimalPlaces))),
-  };
-};
-/** @typedef {ReturnType<typeof withAmountUtils>} AmountUtils */
+export { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 
 /** @param {ERef<StoredSubscription<unknown> | StoredSubscriber<unknown>>} subscription */
 export const subscriptionKey = subscription => {

@@ -2,6 +2,7 @@
 // prettier-ignore
 export default [
   "@agoric/access-token",
+  "@agoric/async-flow",
   "@agoric/base-zone",
   "@agoric/benchmark",
   "@agoric/boot",
