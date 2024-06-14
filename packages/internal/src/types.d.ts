@@ -57,6 +57,7 @@ export type Remote<Primary, Local = DataOnly<Primary>> =
   | Primary
   | RemotableBrand<Local, Primary>;
 
+// TODO: Add type tests for FarRef and Remote.
 /**
  * Potentially remote promises or settled references.
  */
