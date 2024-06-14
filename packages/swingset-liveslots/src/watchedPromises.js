@@ -157,9 +157,15 @@ export function makeWatchedPromiseManager({
   function providePromiseWatcher(
     kindHandle,
     // @ts-expect-error xxx rest params in typedef
-    fulfillHandler = _value => {},
+    fulfillHandler = _value => {
+      // It's fine to not pass the value through since promise watchers are not chainable
+    },
     // @ts-expect-error xxx rest params in typedef
-    rejectHandler = _reason => {},
+    rejectHandler = reason => {
+      // Replicate the unhandled rejection that would have happened if the
+      // watcher had not implemented an `onRejected` method. See `settle` above
+      throw reason;
+    },
   ) {
     assert.typeof(fulfillHandler, 'function');
     assert.typeof(rejectHandler, 'function');
