@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
@@ -53,7 +54,7 @@ test('makeAccount, deposit, withdraw', async t => {
   t.regex(await E(account).getAddress(), /agoric1/);
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(
+  const depositResp = await V(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
   t.true(AmountMath.isEqual(depositResp, bld.units(100)), 'deposit');
@@ -61,7 +62,7 @@ test('makeAccount, deposit, withdraw', async t => {
   // TODO validate balance, .getBalance()
 
   t.log('withdraw bld from account');
-  const withdrawResp = await E(account).withdraw(bld.units(100));
+  const withdrawResp = await V(account).withdraw(bld.units(100));
   const withdrawAmt = await bld.issuer.getAmountOf(withdrawResp);
   t.true(AmountMath.isEqual(withdrawAmt, bld.units(100)), 'withdraw');
 
