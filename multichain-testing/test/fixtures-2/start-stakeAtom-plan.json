@@ -1,0 +1,17 @@
+{
+  "name": "start-stakeAtom",
+  "script": "start-stakeAtom.js",
+  "permit": "start-stakeAtom-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/orchestration/src/examples/stakeIca.contract.js",
+      "bundleID": "b1-fb2a80980f3d1e6a85f3bfdf6b1041559c4997af41c37d58698d652b475557ef5459c5c8ddb6e03a7f7eb24f6fa187a13c18dd23b4f527e397e357e0b4f6c523",
+      "fileName": "/Users/0xpatrick/.agoric/cache/b1-fb2a80980f3d1e6a85f3bfdf6b1041559c4997af41c37d58698d652b475557ef5459c5c8ddb6e03a7f7eb24f6fa187a13c18dd23b4f527e397e357e0b4f6c523.json"
+    },
+    {
+      "entrypoint": "@agoric/orchestration/src/proposals/start-stakeAtom.js",
+      "bundleID": "b1-d89a5bfa474890dba01527018112d561a0b7ed6ec0d2f8940ccb906503f17c54c1b5ed25a81dcf5f7420bec611aea8181a1e2c1665764ed3d6a233c4355b37e7",
+      "fileName": "/Users/0xpatrick/.agoric/cache/b1-d89a5bfa474890dba01527018112d561a0b7ed6ec0d2f8940ccb906503f17c54c1b5ed25a81dcf5f7420bec611aea8181a1e2c1665764ed3d6a233c4355b37e7.json"
+    }
+  ]
+}
