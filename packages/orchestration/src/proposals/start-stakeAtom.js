@@ -55,11 +55,11 @@ export const startStakeAtom = async ({
     label: 'stakeAtom',
     installation: stakeIca,
     terms: {
-      chainId: cosmoshub.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
-      bondDenom: cosmoshub.stakingTokens[0].denom,
-      icqEnabled: cosmoshub.icqEnabled,
+      chainId: 'gaialocal',
+      hostConnectionId: 'connection-1',
+      controllerConnectionId: 'connection-0',
+      bondDenom: 'uatom',
+      icqEnabled: false,
     },
     privateArgs: {
       orchestration: await orchestration,
