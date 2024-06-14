@@ -45,25 +45,16 @@ export const startStakeOsmo = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const chainHub = makeChainHub(await agoricNames);
-
-  const agoric = await chainHub.getChainInfo('agoric');
-  const osmosis = await chainHub.getChainInfo('osmosis');
-  const connectionInfo = await chainHub.getConnectionInfo(
-    agoric.chainId,
-    osmosis.chainId,
-  );
-
   /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {
     label: 'stakeOsmo',
     installation: stakeIca,
     terms: {
-      chainId: osmosis.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
-      bondDenom: osmosis.stakingTokens[0].denom,
-      icqEnabled: osmosis.icqEnabled,
+      chainId: 'osmosislocal',
+      hostConnectionId: 'connection-1',
+      controllerConnectionId: 'connection-1',
+      bondDenom: 'uosmo',
+      icqEnabled: true,
     },
     privateArgs: {
       orchestration: await orchestration,

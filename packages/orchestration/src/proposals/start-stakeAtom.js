@@ -44,25 +44,16 @@ export const startStakeAtom = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const chainHub = makeChainHub(await agoricNames);
-
-  const agoric = await chainHub.getChainInfo('agoric');
-  const cosmoshub = await chainHub.getChainInfo('cosmoshub');
-  const connectionInfo = await chainHub.getConnectionInfo(
-    agoric.chainId,
-    cosmoshub.chainId,
-  );
-
   /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeIca,
     terms: {
-      chainId: cosmoshub.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
-      bondDenom: cosmoshub.stakingTokens[0].denom,
-      icqEnabled: cosmoshub.icqEnabled,
+      chainId: 'gaialocal',
+      hostConnectionId: 'connection-1',
+      controllerConnectionId: 'connection-0',
+      bondDenom: 'uatom',
+      icqEnabled: false,
     },
     privateArgs: {
       orchestration: await orchestration,
