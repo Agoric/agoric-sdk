@@ -7,7 +7,7 @@ const getManifestCall = harden([
   {
     installKeys: {
       stakeIca: {
-        bundleID: "b1-8175541c851941c6f0a83d96104270bde7d267ae81dd41096fa499edf9c39925255ca8e8166dc0b8550a9eef5e96ea09cb326b8b695016cd428eeadefd55fea1",
+        bundleID: "b1-fb2a80980f3d1e6a85f3bfdf6b1041559c4997af41c37d58698d652b475557ef5459c5c8ddb6e03a7f7eb24f6fa187a13c18dd23b4f527e397e357e0b4f6c523",
       },
     },
   },
