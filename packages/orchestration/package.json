@@ -13,7 +13,7 @@
     "codegen": "scripts/fetch-chain-info.ts",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
-    "test": "ava",
+    "test": "c8 ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
