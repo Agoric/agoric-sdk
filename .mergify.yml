@@ -5,7 +5,7 @@ queue_rules:
       {{ title }} (#{{ number }})
 
       {{ body | trim }}
-    queue_conditions:
+    merge_conditions:
       - base=master
       # Require integration tests before merging only
       - or:
