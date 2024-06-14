@@ -125,7 +125,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
-        amountToCoin: M.call(AmountShape).returns(M.record()),
+        amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
