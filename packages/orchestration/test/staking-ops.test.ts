@@ -378,7 +378,6 @@ test(`undelegate waits for unbonding period`, async t => {
   const value = BigInt(Object.values(delegations)[0].amount);
   const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
   const delegation = {
-    delegatorAddress: account.getAddress().address,
     shares: `${anAmount.value}`,
     validatorAddress: validator.address,
   };

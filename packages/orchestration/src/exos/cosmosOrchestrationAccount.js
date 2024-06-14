@@ -234,7 +234,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return this.facets.holder.withdrawReward(validator);
           }, 'WithdrawReward');
         },
-        /** @param {Delegation[]} delegations */
+        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
         Undelegate(delegations) {
           trace('Undelegate', delegations);
 
@@ -407,7 +407,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           throw assert.error('Not implemented');
         },
 
-        /** @param {Delegation[]} delegations */
+        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
         async undelegate(delegations) {
           trace('undelegate', delegations);
           const { helper } = this.facets;
