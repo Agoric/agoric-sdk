@@ -6,6 +6,7 @@ import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
@@ -159,9 +160,9 @@ export const prepareLocalChainAccountKit = (
           };
           const { account: lca } = this.state;
           trace('lca', lca);
-          const delegatorAddress = await E(lca).getAddress();
+          const delegatorAddress = await V(lca).getAddress();
           trace('delegatorAddress', delegatorAddress);
-          const [result] = await E(lca).executeTx([
+          const [result] = await V(lca).executeTx([
             typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
               amount,
               validatorAddress,
@@ -184,9 +185,9 @@ export const prepareLocalChainAccountKit = (
           };
           const { account: lca } = this.state;
           trace('lca', lca);
-          const delegatorAddress = await E(lca).getAddress();
+          const delegatorAddress = await V(lca).getAddress();
           trace('delegatorAddress', delegatorAddress);
-          const [response] = await E(lca).executeTx([
+          const [response] = await V(lca).executeTx([
             typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
               amount,
               validatorAddress,
@@ -208,16 +209,16 @@ export const prepareLocalChainAccountKit = (
          */
         /** @type {LocalChainAccount['deposit']} */
         async deposit(payment, optAmountShape) {
-          return E(this.state.account).deposit(payment, optAmountShape);
+          return V(this.state.account).deposit(payment, optAmountShape);
         },
         /** @type {LocalChainAccount['withdraw']} */
         async withdraw(amount) {
-          return E(this.state.account).withdraw(amount);
+          return V(this.state.account).withdraw(amount);
         },
         /** @type {LocalChainAccount['executeTx']} */
         async executeTx(messages) {
           // @ts-expect-error subtype
-          return E(this.state.account).executeTx(messages);
+          return V(this.state.account).executeTx(messages);
         },
         /** @returns {ChainAddress['address']} */
         getAddress() {
@@ -252,7 +253,7 @@ export const prepareLocalChainAccountKit = (
               ? 0n
               : await timestampHelper.getTimeoutTimestampNS());
 
-          const [result] = await E(this.state.account).executeTx([
+          const [result] = await V(this.state.account).executeTx([
             typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
               sourcePort: transferChannel.portId,
               sourceChannel: transferChannel.channelId,

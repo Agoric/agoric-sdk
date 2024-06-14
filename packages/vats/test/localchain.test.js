@@ -6,10 +6,9 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { E } from '@endo/far';
 import { getInterfaceOf } from '@endo/marshal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
-import { prepareVowTools } from '@agoric/vow/vat.js';
+import { prepareVowTools, V as E } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
 import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 import { prepareTransferTools } from '../src/transfer.js';
@@ -71,7 +70,8 @@ const makeTestContext = async _t => {
   /** @param {LocalChainPowers} powers */
   const makeLocalChain = async powers => {
     const zone = makeDurableZone(provideBaggage('localchain'));
-    return prepareLocalChainTools(zone).makeLocalChain(powers);
+    const vowTools = prepareVowTools(zone.subZone('vows'));
+    return prepareLocalChainTools(zone, vowTools).makeLocalChain(powers);
   };
 
   const localchain = await makeLocalChain({
@@ -113,7 +113,7 @@ test('localchain - deposit and withdraw', async t => {
     return {
       makeAccount: async () => {
         const lca = await E(localchain).makeAccount();
-        t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccount');
+        t.is(getInterfaceOf(lca), 'Alleged: LocalChainAccountKit account');
 
         const address = await E(lca).getAddress();
         t.is(address, LOCALCHAIN_DEFAULT_ADDRESS);

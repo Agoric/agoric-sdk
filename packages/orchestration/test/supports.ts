@@ -66,13 +66,15 @@ export const commonSetup = async t => {
     }),
   );
 
+  const vowTools = prepareVowTools(rootZone.subZone('vows'));
+
   const transferBridge = makeFakeTransferBridge(rootZone);
   const { makeBridgeTargetKit } = prepareBridgeTargetModule(
     rootZone.subZone('bridge'),
   );
   const { makeTransferMiddlewareKit } = prepareTransferTools(
     rootZone.subZone('transfer'),
-    prepareVowTools(rootZone.subZone('vows')),
+    vowTools,
   );
 
   const { finisher, interceptorFactory, transferMiddleware } =
@@ -90,6 +92,7 @@ export const commonSetup = async t => {
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
+    vowTools,
   ).makeLocalChain({
     bankManager,
     system: localchainBridge,
