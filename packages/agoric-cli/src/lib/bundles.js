@@ -80,6 +80,10 @@ export const statBundle = async bundleFilename => {
   console.table(byPackage);
 
   console.log('total size:', totalSize);
+  console.log('\nTo explore the contents:\n');
+  console.log(
+    `  DIR=$(mktemp -d); cat ${bundleFilename} | jq -r .endoZipBase64 | base64 -d | tar xC $DIR; open $DIR`,
+  );
 };
 
 /** @param {string} path */
