@@ -8,7 +8,7 @@
     "packages/wallet/api"
   ],
   "type": "module",
-  "packageManager": "yarn@1.22.19",
+  "packageManager": "yarn@1.22.22",
   "devDependencies": {
     "@endo/eslint-plugin": "^2.1.3",
     "@jessie.js/eslint-plugin": "^0.4.1",
