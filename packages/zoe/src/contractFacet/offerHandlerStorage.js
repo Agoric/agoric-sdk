@@ -7,6 +7,15 @@ import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { defineDurableHandle } from '../makeHandle.js';
 
 /**
+ * The following should work. But for some reason, @endo/errors does
+ * not export the type `Details`. TODO fix.
+ * at-import {Details} from '@endo/errors'
+ * In the meantime...
+ *
+ * @typedef {string | {}} Details
+ */
+
+/**
  * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {RemotableObject} from '@endo/pass-style';
  */
