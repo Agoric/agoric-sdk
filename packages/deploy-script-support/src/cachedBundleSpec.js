@@ -1,4 +1,4 @@
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @param {string} cacheDir

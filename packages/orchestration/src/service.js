@@ -3,6 +3,7 @@
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
+import { Fail, bare } from '@endo/errors';
 import { prepareChainAccountKit } from './exos/chainAccountKit.js';
 import { prepareICQConnectionKit } from './exos/icqConnectionKit.js';
 import {
@@ -17,8 +18,6 @@ import {
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit} from './types.js';
  */
-
-const { Fail, bare } = assert;
 
 /**
  * @typedef {object} OrchestrationPowers

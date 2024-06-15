@@ -19,6 +19,7 @@ import {
 import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
 
+import { Fail } from '@endo/errors';
 import { makeNatAmountShape } from '../contractSupport.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
@@ -32,7 +33,6 @@ import {
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail } = assert;
 const { makeEmpty } = AmountMath;
 
 const DEFAULT_DECIMALS = 9;

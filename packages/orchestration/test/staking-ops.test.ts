@@ -16,14 +16,13 @@ import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Fail } from '@endo/errors';
 import {
   prepareCosmosOrchestrationAccountKit,
   trivialDelegateResponse,
 } from '../src/exos/cosmosOrchestrationAccount.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
 import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
-
-const { Fail } = assert;
 
 test('MsgDelegateResponse trivial response', t => {
   t.is(

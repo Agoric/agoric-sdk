@@ -4,7 +4,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * Export any specified storage subtrees, then delete the ones marked to clear.

@@ -4,6 +4,7 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { q, Fail } from '@endo/errors';
 import {
   addSubtract,
   allEmpty,
@@ -12,8 +13,6 @@ import {
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { calculateDebtCosts } from './math.js';
 import { prepareVaultKit } from './vaultKit.js';
-
-const { quote: q, Fail } = assert;
 
 const trace = makeTracer('Vault', true);
 

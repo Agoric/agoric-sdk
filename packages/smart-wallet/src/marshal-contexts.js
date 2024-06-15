@@ -4,7 +4,7 @@ import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * @import {PassableCap, RemotableObject} from '@endo/marshal';

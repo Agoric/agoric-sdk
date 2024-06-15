@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail, NonNullish } from '@endo/errors';
 import { makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';

@@ -3,13 +3,12 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
+import { Fail, bare } from '@endo/errors';
 import { TargetAppI, AppTransformerI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
  */
-
-const { Fail, bare } = assert;
 
 /**
  * The least possibly restrictive guard for a `watch` watcher's `onFulfilled` or

@@ -1,4 +1,4 @@
-// @ts-check
+/* eslint @jessie.js/no-nested-await:['error'],curly:['error','all'],eqeqeq:['error','always'],no-bitwise:['error'],no-fallthrough:['error',{commentPattern:'fallthrough is not allowed in Jessie'}],no-restricted-globals:['error','RegExp','Date','Symbol'],no-restricted-syntax:['error',{selector:"BinaryExpression[operator='in']",message:"'in' is not allowed in Jessie"},{selector:"BinaryExpression[operator='instanceof']",message:"'instanceof' is not allowed in Jessie; use duck typing"},{selector:'NewExpression',message:"'new' is not allowed in Jessie; use a 'maker' function"},{selector:'FunctionDeclaration[generator=true]',message:'generators are not allowed in Jessie'},{selector:'FunctionExpression[generator=true]',message:'generators are not allowed in Jessie'},{selector:'DoWhileStatement',message:'do/while statements are not allowed in Jessie'},{selector:'ThisExpression',message:"'this' is not allowed in Jessie; use a closed-over lexical variable instead"},{selector:"UnaryExpression[operator='delete']",message:"'delete' is not allowed in Jessie; destructure objects and reassemble them without mutation"},{selector:'ForInStatement',message:'for/in statements are not allowed in Jessie; use for/of Object.keys(val)'},{selector:"MemberExpression[computed=true][property.type!='Literal'][property.type!='UnaryExpression']",message:"arbitrary computed property names are not allowed in Jessie; use leading '+'"},{selector:"MemberExpression[computed=true][property.type='UnaryExpression'][property.operator!='+']",message:"arbitrary computed property names are not allowed in Jessie; use leading '+'"},{selector:'Super',message:"'super' is not allowed in Jessie"},{selector:'MetaProperty',message:"'import.meta' is not allowed in Jessie"},{selector:'ClassExpression',message:"'class' is not allowed in Jessie; define a 'maker' function"},{selector:'ClassDeclaration',message:"'class' is not allowed in Jessie; define a 'maker' function"},{selector:"CallExpression[callee.name='eval']",message:"'eval' is not allowed in Jessie"},{selector:'Literal[regex]',message:'regexp literal syntax is not allowed in Jessie'}],no-var:['error'],guard-for-in:'off',semi:['error','always'] */ // @ts-check
 // @jessie-check
 
 import { deeplyFulfilled, isObject } from '@endo/marshal';
@@ -6,9 +6,9 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 
-const { fromEntries, keys, values } = Object;
+import { q, Fail } from '@endo/errors';
 
-const { quote: q, Fail } = assert;
+const { fromEntries, keys, values } = Object;
 
 export const BASIS_POINTS = 10_000n;
 
@@ -204,8 +204,8 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     if (doneResult) {
       result = Promise.resolve(doneResult);
     } else if (rejections.length) {
-      const error = assert.error(assert.details`Teed stream threw`);
-      assert.note(error, assert.details`Teed rejections: ${rejections}`);
+      const error = makeError(assert.details`Teed stream threw`);
+      annotateError(error, assert.details`Teed rejections: ${rejections}`);
       result =
         sourceStream.throw?.(error) ||
         Promise.resolve(sourceStream.return?.()).then(() =>

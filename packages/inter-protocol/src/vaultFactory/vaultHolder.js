@@ -4,7 +4,7 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @typedef {{

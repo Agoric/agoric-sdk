@@ -6,7 +6,7 @@ import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
 export const ratioPattern = harden({

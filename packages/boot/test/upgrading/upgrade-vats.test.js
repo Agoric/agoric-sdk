@@ -6,14 +6,13 @@ import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { Fail } from '@endo/errors';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
 
 /**
  * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
-
-const { Fail } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = spec =>

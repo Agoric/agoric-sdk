@@ -15,7 +15,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @typedef {object} Deleter

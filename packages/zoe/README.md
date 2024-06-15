@@ -80,7 +80,7 @@ For example, suppose v1 code of a simple single-increment-counter contract antic
 import { M } from '@agoric/store';
 import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 export const start = async (zcf, _privateArgs, instanceBaggage) => {
   const CODE_VERSION = 2;

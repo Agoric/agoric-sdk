@@ -5,7 +5,7 @@ import { Buffer } from 'buffer';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { Nat } from '@endo/nat';
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { createSHA256 } from './hasher.js';
 
 /**

@@ -17,33 +17,6 @@ import { fromBech32 } from '@cosmjs/encoding';
 
 import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
 
-// https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
-const Agoric = {
-  Bech32MainPrefix: 'agoric',
-  CoinType: 564,
-  proto: {
-    swingset: {
-      InstallBundle: {
-        // matches package agoric.swingset in swingset/msgs.go
-        typeUrl: '/agoric.swingset.MsgInstallBundle',
-      },
-    },
-  },
-  // arbitrary fee for installing a bundle
-  fee: { amount: [], gas: '50000000' },
-  // Agoric chain does not use cosmos gas (yet?)
-  gasPrice: { denom: 'uist', amount: Decimal.fromUserInput('50000000', 0) },
-};
-
-const hdPath = (coinType = 118, account = 0) =>
-  stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
-
-// @ts-expect-error difference in private property _push
-const registry = new Registry([
-  ...defaultRegistryTypes,
-  [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
-]);
-
 /**
  * @typedef {object} JsonHttpRequest
  * @property {string} hostname
@@ -83,7 +56,34 @@ const registry = new Registry([
  * @typedef {SourceBundle | HashBundle} Bundle
  */
 
-const { details: X, quote: q, Fail } = assert;
+import { X, q, Fail } from '@endo/errors';
+
+// https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
+const Agoric = {
+  Bech32MainPrefix: 'agoric',
+  CoinType: 564,
+  proto: {
+    swingset: {
+      InstallBundle: {
+        // matches package agoric.swingset in swingset/msgs.go
+        typeUrl: '/agoric.swingset.MsgInstallBundle',
+      },
+    },
+  },
+  // arbitrary fee for installing a bundle
+  fee: { amount: [], gas: '50000000' },
+  // Agoric chain does not use cosmos gas (yet?)
+  gasPrice: { denom: 'uist', amount: Decimal.fromUserInput('50000000', 0) },
+};
+
+const hdPath = (coinType = 118, account = 0) =>
+  stringToPath(`m/44'/${coinType}'/${account}'/0/0`);
+
+// @ts-expect-error difference in private property _push
+const registry = new Registry([
+  ...defaultRegistryTypes,
+  [Agoric.proto.swingset.InstallBundle.typeUrl, MsgInstallBundle],
+]);
 
 /**
  * @template T

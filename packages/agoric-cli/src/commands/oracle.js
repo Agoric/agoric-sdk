@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, setTimeout, process */
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';

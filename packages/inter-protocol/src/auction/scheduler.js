@@ -4,14 +4,13 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
+import { X, Fail, q } from '@endo/errors';
 import { AuctionState, makeCancelTokenMaker } from './util.js';
 import {
   computeRoundTiming,
   nextDescendingStepTime,
   timeVsSchedule,
 } from './scheduleMath.js';
-
-const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', true);
 
@@ -263,7 +262,7 @@ export const makeScheduler = async (
 
     if (!nextSchedule) {
       console.error(
-        assert.error(X`tried to start auction when none is scheduled`),
+        makeError(X`tried to start auction when none is scheduled`),
       );
       return;
     }

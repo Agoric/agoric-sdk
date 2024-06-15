@@ -17,7 +17,7 @@ import {
 
 import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.

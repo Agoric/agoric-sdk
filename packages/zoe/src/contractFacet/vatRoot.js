@@ -12,9 +12,8 @@ import { E } from '@endo/far';
 
 import '../internal-types.js';
 
+import { Fail } from '@endo/errors';
 import { makeZCFZygote } from './zcfZygote.js';
-
-const { Fail } = assert;
 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers

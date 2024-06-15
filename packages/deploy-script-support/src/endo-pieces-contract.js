@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { ZipWriter } from '@endo/zip';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 export const start = () => {
   /** @type { Map<string, [string, Uint8Array]>} */

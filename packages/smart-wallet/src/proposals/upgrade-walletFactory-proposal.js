@@ -3,9 +3,9 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { allValues } from '@agoric/internal';
 
-console.warn('upgrade-walletFactory-proposal.js module evaluating');
+import { Fail } from '@endo/errors';
 
-const { Fail } = assert;
+console.warn('upgrade-walletFactory-proposal.js module evaluating');
 
 // vstorage paths under published.*
 const WALLET_STORAGE_PATH_SEGMENT = 'wallet';

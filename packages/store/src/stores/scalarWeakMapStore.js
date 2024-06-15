@@ -12,7 +12,7 @@ import {
  * @import {WeakMapStore, StoreOptions} from '../types.js';
  */
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 /**
  * @template {Key} K

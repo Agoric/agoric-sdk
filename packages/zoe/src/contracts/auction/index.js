@@ -5,6 +5,7 @@ import { Far } from '@endo/marshal';
 import { TimeMath, RelativeTimeShape } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
+import { Fail } from '@endo/errors';
 import {
   defaultAcceptanceMsg,
   assertIssuerKeywords,
@@ -13,8 +14,6 @@ import {
 import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
-
-const { Fail } = assert;
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';

@@ -2,10 +2,9 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
+import { Fail } from '@endo/errors';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
-
-const { Fail } = assert;
 
 const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 

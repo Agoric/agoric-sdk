@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, AssertContractGovernance, AssertContractElectorate} from './types.js';

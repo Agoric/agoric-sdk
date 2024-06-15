@@ -8,7 +8,7 @@ import { M, matches } from '@endo/patterns';
  * @import {Key} from '@endo/patterns';
  */
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 // TODO: Undate `@endo/patterns` to export the original, and delete the
 // reimplementation here.

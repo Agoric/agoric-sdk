@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';

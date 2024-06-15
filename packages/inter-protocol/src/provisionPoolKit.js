@@ -23,7 +23,7 @@ import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
-const { details: X, quote: q, Fail } = assert;
+import { X, q, Fail } from '@endo/errors';
 
 const trace = makeTracer('ProvPool');
 

@@ -2,6 +2,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { mustMatch, keyEQ } from '@agoric/store';
 
+import { Fail } from '@endo/errors';
 import {
   ChoiceMethod,
   coerceQuestionSpec,
@@ -13,8 +14,6 @@ import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 /**
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
  */
-
-const { Fail } = assert;
 
 /**
  * The electorate that governs changes to the contract's parameters. It must be

@@ -5,6 +5,7 @@ import { Nat } from '@endo/nat';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { assertAllDefined } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
 import { ParamTypes } from '../constants.js';
 
 import {
@@ -20,8 +21,6 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 /**
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
  */
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager

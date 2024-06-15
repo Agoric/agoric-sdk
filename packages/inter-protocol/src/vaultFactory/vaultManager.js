@@ -51,6 +51,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
+import { X, Fail, q } from '@endo/errors';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -68,8 +69,6 @@ import { AuctionPFShape } from '../auction/auctioneer.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
-
-const { details: X, Fail, quote: q } = assert;
 
 const trace = makeTracer('VM');
 
@@ -415,12 +414,12 @@ export const prepareVaultManagerKit = (
                 ),
             fail: reason => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${reason}`),
+                makeError(X`Unable to continue without a timer: ${reason}`),
               );
             },
             finish: done => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${done}`),
+                makeError(X`Unable to continue without a timer: ${done}`),
               );
             },
           });

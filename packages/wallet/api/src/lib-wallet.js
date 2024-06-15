@@ -11,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { objectMap, WalletName } from '@agoric/internal';
 import { slotStringUnserialize } from '@agoric/internal/src/storage-test-utils.js';

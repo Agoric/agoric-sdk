@@ -7,9 +7,8 @@ import {
 import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
 
+import { Fail } from '@endo/errors';
 import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';
-
-const { Fail } = assert;
 
 /**
  * @file we use a floating point representation of the price or rate as the

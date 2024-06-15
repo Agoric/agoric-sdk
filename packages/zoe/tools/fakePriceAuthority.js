@@ -8,13 +8,13 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 
+import { Fail } from '@endo/errors';
 import { natSafeMath } from '../src/contractSupport/index.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail } = assert;
 const { coerceRelativeTimeRecord } = TimeMath;
 
 // 'if (a >= b)' becomes 'if (timestampGTE(a,b))'

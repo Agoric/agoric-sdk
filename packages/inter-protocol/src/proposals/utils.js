@@ -4,7 +4,7 @@ import { E } from '@endo/far';
 
 /** @import {CopyMap} from '@endo/patterns') */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin

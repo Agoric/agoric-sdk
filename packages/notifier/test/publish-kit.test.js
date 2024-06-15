@@ -11,6 +11,7 @@ import {
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
+import { q } from '@endo/errors';
 import {
   makePublishKit,
   subscribeEach,
@@ -25,7 +26,6 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
  */
 
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

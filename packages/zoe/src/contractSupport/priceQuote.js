@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
 // with the same value. The underlying amount wraps amountIn, amountOut, timer

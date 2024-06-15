@@ -1,5 +1,5 @@
 /** @file Use-object for the owner of a localchain account */
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
@@ -8,6 +8,7 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
+import { Fail } from '@endo/errors';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -27,8 +28,6 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  */
 
 const trace = makeTracer('LCAH');
-
-const { Fail } = assert;
 /**
  * @typedef {object} LocalChainAccountNotification
  * @property {string} address

@@ -1,7 +1,7 @@
 import { M } from '@endo/patterns';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /** @import {Amplify} from '@endo/exo'; */
 

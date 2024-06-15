@@ -6,13 +6,13 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 
 import { AmountShape } from '@agoric/ertp';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { Fail } from '@endo/errors';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 import { makeChainHub } from '../utils/chainHub.js';
 
 const { entries } = Object;
-const { Fail } = assert;
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

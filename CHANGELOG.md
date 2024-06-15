@@ -912,7 +912,7 @@ See https://github.com/Agoric/agoric-sdk/issues/3672 for the issue to fix the ro
 ### ⚠ BREAKING CHANGES
 
 * **tame-metering:** Converts `@agoric/tame-metering` from emulated ESM with `node -r esm` to Node.js ESM proper.
-* **assert:** Converts `@agoric/assert` from emulated ESM with `node -r esm` to Node.js ESM proper.
+* **assert:** Converts `@endo/errors` from emulated ESM with `node -r esm` to Node.js ESM proper.
 * **zoe:** new reallocate API to assist with reviewing conservation of rights (#3184)
 * **swing-store-simple:** This includes a renaming and refactoring of the constructors to
 acknowledge that the different SwingStore constructors are not polymorphic.
@@ -1539,7 +1539,7 @@ otherwise.
 * review comments ([7db7e5c](https://github.com/Agoric/agoric-sdk/commit/7db7e5c4c569dfedff8d748dd58893218b0a2458))
 * run ag-setup-cosmos under SES ([13c8efe](https://github.com/Agoric/agoric-sdk/commit/13c8efe6cf9ebc8c6a71b9098410c1af4162b570))
 * take advantage of `/.../` being stripped from stack traces ([7acacc0](https://github.com/Agoric/agoric-sdk/commit/7acacc0d6ac06c37065ce984cc9147c945c572e5))
-* update '@agoric/assert' types ([3ce7587](https://github.com/Agoric/agoric-sdk/commit/3ce7587d0ba6d7a0f5c51a0cacbdc414eb02891b))
+* update '@endo/errors' types ([3ce7587](https://github.com/Agoric/agoric-sdk/commit/3ce7587d0ba6d7a0f5c51a0cacbdc414eb02891b))
 * update dibc for v0.41.0 ([d990c14](https://github.com/Agoric/agoric-sdk/commit/d990c145ddcef3b090c63879a96a1942bc4ae69c))
 * upgrade to patched cosmos-sdk v0.41.0 ([807320f](https://github.com/Agoric/agoric-sdk/commit/807320f5e16dafc8a1486eaf082bb54e994da577))
 * use assert rather than FooError constructors ([f860c5b](https://github.com/Agoric/agoric-sdk/commit/f860c5bf5add165a08cb5bd543502857c3f57998))

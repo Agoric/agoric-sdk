@@ -12,7 +12,7 @@ import { M } from '@agoric/store';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
  */
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 const trace = makeTracer('PA', false);
 

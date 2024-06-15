@@ -17,7 +17,7 @@ import {
   prepareSingleton,
 } from '@agoric/vat-data';
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
 

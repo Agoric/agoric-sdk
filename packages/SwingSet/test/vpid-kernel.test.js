@@ -4,7 +4,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';

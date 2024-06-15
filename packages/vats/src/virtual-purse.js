@@ -12,7 +12,7 @@ import {
 
 import { getInterfaceGuardPayload } from '@endo/patterns';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @param {Pattern} [brandShape]

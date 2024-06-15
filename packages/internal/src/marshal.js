@@ -1,9 +1,8 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { Fail } from '@endo/errors';
 import { isStreamCell } from './lib-chainStorage.js';
-
-const { Fail } = assert;
 
 /**
  * Should be a union with Remotable, but that's `any`, making this type

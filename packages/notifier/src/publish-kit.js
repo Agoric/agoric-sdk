@@ -10,7 +10,7 @@ import { makePromiseKit } from '@endo/promise-kit';
  * @import {DurablePublishKitState, DurablePublishKitValueDurability, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, Subscriber, UpdateRecord} from '../src/types.js';
  */
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 const sink = () => {};
 const makeQuietRejection = reason => {

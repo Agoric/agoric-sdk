@@ -12,9 +12,8 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
+import { Fail } from '@endo/errors';
 import { bundles, devices } from './devices.js';
-
-const { Fail } = assert;
 
 export const noop = () => {};
 

@@ -1,5 +1,5 @@
 /* eslint-disable jsdoc/require-param */
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail, NonNullish } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';

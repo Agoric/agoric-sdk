@@ -1,4 +1,4 @@
-// @jessie-check
+/* eslint @jessie.js/no-nested-await:['error'],curly:['error','all'],eqeqeq:['error','always'],no-bitwise:['error'],no-fallthrough:['error',{commentPattern:'fallthrough is not allowed in Jessie'}],no-restricted-globals:['error','RegExp','Date','Symbol'],no-restricted-syntax:['error',{selector:"BinaryExpression[operator='in']",message:"'in' is not allowed in Jessie"},{selector:"BinaryExpression[operator='instanceof']",message:"'instanceof' is not allowed in Jessie; use duck typing"},{selector:'NewExpression',message:"'new' is not allowed in Jessie; use a 'maker' function"},{selector:'FunctionDeclaration[generator=true]',message:'generators are not allowed in Jessie'},{selector:'FunctionExpression[generator=true]',message:'generators are not allowed in Jessie'},{selector:'DoWhileStatement',message:'do/while statements are not allowed in Jessie'},{selector:'ThisExpression',message:"'this' is not allowed in Jessie; use a closed-over lexical variable instead"},{selector:"UnaryExpression[operator='delete']",message:"'delete' is not allowed in Jessie; destructure objects and reassemble them without mutation"},{selector:'ForInStatement',message:'for/in statements are not allowed in Jessie; use for/of Object.keys(val)'},{selector:"MemberExpression[computed=true][property.type!='Literal'][property.type!='UnaryExpression']",message:"arbitrary computed property names are not allowed in Jessie; use leading '+'"},{selector:"MemberExpression[computed=true][property.type='UnaryExpression'][property.operator!='+']",message:"arbitrary computed property names are not allowed in Jessie; use leading '+'"},{selector:'Super',message:"'super' is not allowed in Jessie"},{selector:'MetaProperty',message:"'import.meta' is not allowed in Jessie"},{selector:'ClassExpression',message:"'class' is not allowed in Jessie; define a 'maker' function"},{selector:'ClassDeclaration',message:"'class' is not allowed in Jessie; define a 'maker' function"},{selector:"CallExpression[callee.name='eval']",message:"'eval' is not allowed in Jessie"},{selector:'Literal[regex]',message:'regexp literal syntax is not allowed in Jessie'}],no-var:['error'],guard-for-in:'off',semi:['error','always'] */ // @jessie-check
 // @ts-check
 
 import { ToFarFunction } from '@endo/captp';
@@ -12,6 +12,7 @@ import { Stable } from '@agoric/internal/src/tokens.js';
 import { TimeMath } from '@agoric/time/src/timeMath.js';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { q } from '@endo/errors';
 import {
   oracleBrandFeedName,
   reserveThenGetNames,
@@ -19,8 +20,6 @@ import {
 } from './utils.js';
 
 export * from './startPSM.js';
-
-const { quote: q } = assert;
 
 /**
  * @typedef {object} InterchainAssetOptions

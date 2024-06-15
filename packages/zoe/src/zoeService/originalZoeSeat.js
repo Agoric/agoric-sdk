@@ -15,7 +15,7 @@ import {
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),

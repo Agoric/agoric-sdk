@@ -6,6 +6,7 @@ import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { E } from '@endo/eventual-send';
+import { Fail } from '@endo/errors';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
 import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
@@ -13,8 +14,6 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 /**
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  */
-
-const { Fail } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 

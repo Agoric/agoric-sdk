@@ -6,7 +6,7 @@ import {
   isCopySet,
 } from '@endo/patterns';
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 /**
  * @import {Key} from '@endo/patterns';

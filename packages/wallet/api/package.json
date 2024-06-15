@@ -21,7 +21,7 @@
     "ava": "^5.3.0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/cache": "^0.3.2",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",

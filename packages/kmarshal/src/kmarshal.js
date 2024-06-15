@@ -1,6 +1,6 @@
 import { Far, passStyleOf } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 
 /**
  * @import { ERef } from '@endo/far';

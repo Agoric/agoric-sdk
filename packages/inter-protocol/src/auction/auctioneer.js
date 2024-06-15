@@ -28,6 +28,7 @@ import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+import { Fail, q } from '@endo/errors';
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';
 import { auctioneerParamTypes } from './params.js';
@@ -39,7 +40,6 @@ import { AuctionState } from './util.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;
 
 const trace = makeTracer('Auction', true);

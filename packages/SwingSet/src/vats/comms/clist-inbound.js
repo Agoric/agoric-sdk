@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import {
   flipRemoteSlot,
   insistRemoteType,

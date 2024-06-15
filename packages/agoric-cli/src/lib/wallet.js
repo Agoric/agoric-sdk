@@ -3,13 +3,13 @@
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import { Fail } from '@endo/errors';
 import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
 /** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
 /** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
 
-const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();
 
 /** @type {CurrentWalletRecord} */

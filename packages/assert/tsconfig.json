@@ -1,8 +1,0 @@
-// This file can contain .js-specific Typescript compiler config.
-{
-  "extends": "../../tsconfig.json",
-  "include": [
-    "src/**/*.js",
-    "test/**/*.js",
-  ],
-}

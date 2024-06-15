@@ -10,13 +10,12 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 import { TestFn } from 'ava';
 import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
 import type { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { Fail } from '@endo/errors';
 import {
   makeProposalExtractor,
   makeSwingsetTestKit,
 } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
-
-const { Fail } = assert;
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';

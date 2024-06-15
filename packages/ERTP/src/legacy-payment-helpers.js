@@ -2,14 +2,13 @@
 
 import { mustMatch } from '@agoric/store';
 import { E } from '@endo/far';
+import { Fail } from '@endo/errors';
 import { AmountMath } from './amountMath.js';
 
 /**
  * @import {ERef} from '@endo/far');
  * @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js'
  */
-
-const { Fail } = assert;
 
 /**
  * @file This file contains safer helper function alternatives to the similarly

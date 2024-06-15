@@ -12,6 +12,7 @@ import { whileTrue } from '@agoric/internal';
 
 import { getAccessToken } from '@agoric/access-token';
 
+import { X } from '@endo/errors';
 import {
   makeBundlePublisher,
   makeCosmosBundlePublisher,
@@ -19,8 +20,6 @@ import {
 } from './publish.js';
 import { makeJsonHttpClient } from './json-http-client-node.js';
 import { makeScriptLoader } from './scripts.js';
-
-const { details: X } = assert;
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling

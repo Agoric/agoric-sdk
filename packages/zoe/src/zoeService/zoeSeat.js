@@ -15,7 +15,7 @@ import {
   coreUserSeatMethods,
 } from './originalZoeSeat.js';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat
 // is the facet shared with users. The latter transparently forwards to the

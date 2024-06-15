@@ -9,7 +9,7 @@ import { TimeMath } from '@agoric/time';
  * @import {RemotableBrand} from '@endo/eventual-send';
  */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
 // zoe's tests

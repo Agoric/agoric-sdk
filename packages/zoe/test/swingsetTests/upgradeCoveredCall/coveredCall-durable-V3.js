@@ -1,14 +1,13 @@
 import { M, mustMatch } from '@agoric/store';
 
 import { prepareExoClass, prepareExo } from '@agoric/vat-data';
+import { X } from '@endo/errors';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import {
   InvitationShape,
   isAfterDeadlineExitRule,
   OfferHandlerI,
 } from '../../../src/typeGuards.js';
-
-const { details: X } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 

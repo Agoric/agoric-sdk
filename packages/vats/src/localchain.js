@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /**
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';

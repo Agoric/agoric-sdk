@@ -13,11 +13,11 @@ import * as farExports from '@endo/far';
 import { E, Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 import { makePromiseKit } from '@endo/promise-kit';
+import { Fail } from '@endo/errors';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 
-const { Fail } = assert;
 const { keys } = Object;
 
 /**

@@ -2,12 +2,11 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
+import { X } from '@endo/errors';
 import {
   assertIssuerKeywords,
   assertProposalShape,
 } from '../../../src/contractSupport/index.js';
-
-const { details: X } = assert;
 
 /**
  * Give a use object when a payment is escrowed

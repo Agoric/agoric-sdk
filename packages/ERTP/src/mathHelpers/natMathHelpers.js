@@ -4,7 +4,8 @@ import { Nat, isNat } from '@endo/nat';
 
 /** @import {MathHelpers, NatValue} from '../types.js' */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
+
 const empty = 0n;
 
 /**

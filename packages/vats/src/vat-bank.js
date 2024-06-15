@@ -13,6 +13,7 @@ import { provideLazy } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import { Fail } from '@endo/errors';
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
   makeVirtualPurseKitIKit,
@@ -23,8 +24,6 @@ import {
  * @import {Guarded} from '@endo/exo')
  * @import {Passable, RemotableObject} from '@endo/pass-style')
  */
-
-const { Fail } = assert;
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
 

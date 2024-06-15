@@ -7,14 +7,13 @@ import {
   observeIteration,
   subscribeLatest,
 } from '@agoric/notifier';
+import { Fail } from '@endo/errors';
 import {
   assertIssuerKeywords,
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
 } from '../contractSupport/index.js';
-
-const { Fail } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or

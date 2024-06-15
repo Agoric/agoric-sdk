@@ -1,9 +1,8 @@
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
-
-const { Fail } = assert;
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -98,7 +97,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       const chainInfo = await E(agoricNames)
         .lookup(CHAIN_KEY, chainName)
         .catch(_cause => {
-          throw assert.error(`chain not found:${chainName}`);
+          throw makeError(`chain not found:${chainName}`);
         });
       chainInfos.init(chainName, chainInfo);
       return chainInfo;
@@ -127,7 +126,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       const connectionInfo = await E(agoricNames)
         .lookup(CONNECTIONS_KEY, key)
         .catch(_cause => {
-          throw assert.error(`connection not found: ${chainId1}<->${chainId2}`);
+          throw makeError(`connection not found: ${chainId1}<->${chainId2}`);
         });
       connectionInfos.init(key, connectionInfo);
       return connectionInfo;

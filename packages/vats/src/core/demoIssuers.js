@@ -9,7 +9,8 @@ import { Nat } from '@endo/nat';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
+
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 

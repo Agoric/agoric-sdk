@@ -5,6 +5,7 @@ import {
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import { bundles, devices } from '../test/devices.js';
 
 import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
@@ -16,8 +17,6 @@ import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
-
-const { Fail } = assert;
 
 export const vatRoots = {
   agoricNames: agoricNamesRoot,

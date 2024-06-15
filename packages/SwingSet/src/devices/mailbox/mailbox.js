@@ -66,7 +66,7 @@
 
 import { Nat } from '@endo/nat';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 // This Map-based mailboxState object is a good starting point, but we may
 // replace it with one that tracks which parts of the state have been

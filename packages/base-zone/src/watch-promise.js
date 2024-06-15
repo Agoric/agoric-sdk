@@ -2,7 +2,7 @@
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 const { apply } = Reflect;
 

@@ -4,6 +4,7 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+import { q } from '@endo/errors';
 import {
   assertContractElectorate,
   CONTRACT_ELECTORATE,
@@ -14,8 +15,6 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe

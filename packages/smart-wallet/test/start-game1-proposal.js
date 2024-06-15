@@ -3,9 +3,9 @@ import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
-console.warn('start-game1-proposal.js module evaluating');
+import { Fail } from '@endo/errors';
 
-const { Fail } = assert;
+console.warn('start-game1-proposal.js module evaluating');
 
 // vstorage paths under published.*
 const BOARD_AUX = 'boardAux';

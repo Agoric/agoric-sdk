@@ -2,9 +2,8 @@ import { AmountMath } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
 import { InvitationHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
+import { Fail } from '@endo/errors';
 import { shape } from './typeGuards.js';
-
-const { Fail } = assert;
 
 // A safety limit
 const MAX_PIPE_LENGTH = 2;

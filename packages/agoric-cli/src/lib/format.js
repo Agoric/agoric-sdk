@@ -2,6 +2,8 @@
 
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
+import { Fail, q } from '@endo/errors';
+
 /** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
 /** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
 
@@ -70,8 +72,6 @@ export const asPercent = ratio => {
   assert(numerator.brand === denominator.brand);
   return (100 * Number(numerator.value)) / Number(denominator.value);
 };
-
-const { Fail, quote: q } = assert;
 
 const isObject = x => typeof x === 'object' && x !== null;
 

@@ -10,7 +10,7 @@ import { M } from '@agoric/store';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   makeNameHubKit,

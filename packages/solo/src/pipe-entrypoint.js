@@ -52,7 +52,7 @@ const main = async () => {
       break;
     }
     default: {
-      assert.error(`unknown method ${method}`);
+      makeError(`unknown method ${method}`);
     }
   }
 

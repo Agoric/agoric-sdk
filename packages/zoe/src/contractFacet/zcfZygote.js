@@ -14,6 +14,7 @@ import { passStyleOf, Remotable } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { objectMap } from '@agoric/internal';
+import { Fail } from '@endo/errors';
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
@@ -31,8 +32,6 @@ import { prepareZcMint } from './zcfMint.js';
 /// <reference path="./internal-types.js" />
 
 /** @import {IssuerOptionsRecord} from '@agoric/ertp' */
-
-const { Fail } = assert;
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is

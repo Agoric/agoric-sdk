@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * @callback Operation

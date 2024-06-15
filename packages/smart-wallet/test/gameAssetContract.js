@@ -7,7 +7,7 @@ import { makeTracer } from '@agoric/internal';
 import { M, getCopyBagEntries } from '@agoric/store';
 import { E, Far } from '@endo/far';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 const trace = makeTracer('Game', true);
 

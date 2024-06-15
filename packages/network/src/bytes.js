@@ -1,5 +1,5 @@
 // @ts-check
-import { details, Fail } from '@agoric/assert';
+import { details, Fail } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { isObject } from '@endo/pass-style';
 

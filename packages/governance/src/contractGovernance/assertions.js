@@ -3,7 +3,7 @@ import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 const makeLooksLikeBrand = name => {
   /** @param {Brand} brand */

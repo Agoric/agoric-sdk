@@ -9,11 +9,10 @@ import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
+import { Fail } from '@endo/errors';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
 import { makeImportContext } from '../src/marshal-contexts.js';
-
-const { Fail } = assert;
 
 const importSpec = spec =>
   importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);

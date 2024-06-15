@@ -1,13 +1,12 @@
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
+import { Fail, q } from '@endo/errors';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
   runModuleBehaviors,
 } from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
-
-const { Fail, quote: q } = assert;
 
 /**
  * @typedef {true

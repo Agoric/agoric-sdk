@@ -4,6 +4,7 @@ import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
 
+import { Fail } from '@endo/errors';
 import { defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
@@ -18,8 +19,6 @@ import {
  * @typedef {{steps: ConfigProposal[][]}} SequentialCoreProposals
  * @typedef {ConfigProposal[] | SequentialCoreProposals} CoreProposals
  */
-
-const { Fail } = assert;
 
 const req = createRequire(import.meta.url);
 

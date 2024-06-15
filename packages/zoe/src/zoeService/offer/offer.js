@@ -10,7 +10,7 @@ import { makeInvitationQueryFns } from '../invitationQueries.js';
 
 import '../internal-types.js';
 
-const { quote: q, Fail } = assert;
+import { q, Fail } from '@endo/errors';
 
 export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */

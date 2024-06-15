@@ -3,6 +3,8 @@
 import '@endo/init';
 import process from 'process';
 
+import { Fail, q } from '@endo/errors';
+
 const { entries, keys, values } = Object;
 
 const logged = label => x => {
@@ -198,8 +200,6 @@ const manifest2graph = manifest => {
   }
   return { nodes, neighbors };
 };
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {string} specifier

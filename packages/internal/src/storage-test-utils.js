@@ -1,6 +1,7 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
+import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
@@ -10,8 +11,6 @@ import { eventLoopIteration } from './testing-utils.js';
 /**
  * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
  */
-
-const { Fail } = assert;
 
 const trace = makeTracer('StorTU', false);
 

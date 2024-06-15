@@ -5,6 +5,7 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
+import { X, q, Fail } from '@endo/errors';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
@@ -16,8 +17,6 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
  * @import {Key} from '@endo/patterns';
  */
-
-const { details: X, quote: q, Fail } = assert;
 
 /**
  * @param {Brand} brand
@@ -133,7 +132,7 @@ export const preparePaymentLedger = (
       try {
         optShutdownWithFailure(reason);
       } catch (errInShutdown) {
-        assert.note(errInShutdown, X`Caused by: ${reason}`);
+        annotateError(errInShutdown, X`Caused by: ${reason}`);
         throw errInShutdown;
       }
     }

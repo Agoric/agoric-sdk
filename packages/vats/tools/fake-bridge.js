@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { makeTracer, VBankAccount } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makeWhen } from '@agoric/vow/src/when.js';

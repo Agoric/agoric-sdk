@@ -24,6 +24,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { Fail, q } from '@endo/errors';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   setWakeupsForNextAuction,
@@ -38,8 +39,6 @@ import {
   prepareVaultManagerKit,
   provideAndStartVaultManagerKits,
 } from './vaultManager.js';
-
-const { Fail, quote: q } = assert;
 
 const trace = makeTracer('VD', true);
 

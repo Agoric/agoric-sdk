@@ -32,10 +32,9 @@ import {
 import { E } from '@endo/eventual-send';
 
 import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeNatAmountShape } from '../contractSupport.js';
-
-const { Fail } = assert;
 
 /**
  * @file The Parity Stability Module supports efficiently minting/burning a

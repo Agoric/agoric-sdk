@@ -1,7 +1,7 @@
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
 
-const { Fail, details: X } = assert;
+import { Fail, X } from '@endo/errors';
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {
   fromBridge: M.call(M.any()).returns(M.promise()),

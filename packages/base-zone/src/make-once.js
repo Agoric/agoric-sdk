@@ -1,5 +1,5 @@
 // @ts-check
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 /** @param {string} label */
 const defaultLabelToKeys = label => harden([label]);

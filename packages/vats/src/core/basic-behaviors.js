@@ -12,14 +12,12 @@ import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, getInterfaceOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail, NonNullish, X } from '@endo/errors';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
 /** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
-
-const { details: X } = assert;
 
 /**
  * In golang/cosmos/app/app.go, we define cosmosInitAction with type

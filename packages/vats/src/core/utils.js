@@ -8,9 +8,9 @@ import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 import './types-ambient.js';
+import { Fail, q } from '@endo/errors';
 
 const { entries, fromEntries, keys } = Object;
-const { Fail, quote: q } = assert;
 
 /**
  * Used in bootstrap to reserve names in the agoricNames namespace before any
