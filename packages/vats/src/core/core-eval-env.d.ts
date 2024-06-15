@@ -29,6 +29,8 @@ declare global {
 
   // endowments
   var VatData: VatData;
+  // This is correctly the `Assert` type from `'ses'`, not from @endo/errors
+  // See https://github.com/Agoric/agoric-sdk/issues/9515
   var assert: Assert;
 
   // console is a VirtualConsole but this directive fails to override the extant global `console`

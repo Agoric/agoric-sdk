@@ -1,3 +1,5 @@
+/* global globalThis */
+
 import test from 'ava';
 
 import * as proc from 'child_process';
@@ -173,7 +175,9 @@ test('console - objects should include detail', async t => {
       Error('oops!'),
     ];
 
-    const { Fail } = assert;
+    // Using `globalThis.assert` because of delayed SES lockdown
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    const { Fail } = globalThis.assert;
 
     try {
       Fail`assertion text ${richStructure}`;

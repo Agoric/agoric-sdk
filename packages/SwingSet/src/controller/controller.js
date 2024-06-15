@@ -211,7 +211,8 @@ export async function makeSwingsetController(
     filePrefix: 'kernel/...',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       require: kernelRequire,
       URL: globalThis.Base64, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap

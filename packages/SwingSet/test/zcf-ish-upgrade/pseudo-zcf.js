@@ -1,11 +1,10 @@
 // @ts-nocheck
-/* global VatData */
+/* global globalThis, VatData */
 /* eslint-disable no-unused-vars */
 
 import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 import { defineDurableKind } from '@agoric/vat-data';
-import { assert } from '@agoric/assert';
 import {
   provideHandle,
   provideBaggageSubset as provideBaggageSubTree,
@@ -24,7 +23,12 @@ export const buildRootObject = async (vatPowers, vatParameters, baggage) => {
   const { D } = vatPowers;
   const { contractBundleCap } = vatParameters;
   const contractBundle = D(contractBundleCap).getBundle();
-  const endowments = { console, assert, VatData };
+  const endowments = {
+    console,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
+    VatData,
+  };
   const contractNS = await importBundle(contractBundle, { endowments });
   const { setupInstallation, setup: _ } = contractNS;
   if (!setupInstallation) {
