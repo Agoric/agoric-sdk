@@ -1,4 +1,4 @@
-import { quote } from '@endo/errors';
+import { q } from '@endo/errors';
 
 /**
  * @template T
@@ -6,7 +6,7 @@ import { quote } from '@endo/errors';
  * @param {string} [optDetails]
  * @returns {T}
  */
-export const NonNullish = (val, optDetails = `unexpected ${quote(val)}`) => {
+export const NonNullish = (val, optDetails = `unexpected ${q(val)}`) => {
   if (val != null) {
     // This `!= null` idiom checks that `val` is neither `null` nor `undefined`.
     return val;

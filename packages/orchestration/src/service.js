@@ -3,7 +3,7 @@
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { Fail, bare } from '@endo/errors';
+import { Fail, b } from '@endo/errors';
 import { prepareChainAccountKit } from './exos/chainAccountKit.js';
 import { prepareICQConnectionKit } from './exos/icqConnectionKit.js';
 import {
@@ -45,7 +45,7 @@ import {
  * @param {K} name
  */
 const getPower = (powers, name) => {
-  powers.has(name) || Fail`need powers.${bare(name)} for this method`;
+  powers.has(name) || Fail`need powers.${b(name)} for this method`;
   return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
 };
 
