@@ -1,4 +1,4 @@
-import { assert, Fail, q } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,

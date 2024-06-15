@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
-import { assert, X } from '@endo/errors';
+import { annotateError, X } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
 

@@ -1,5 +1,6 @@
 // @jessie-check
 
+import { q, Fail } from '@endo/errors';
 import { passStyleOf } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
 import { E } from '@endo/eventual-send';
@@ -9,8 +10,6 @@ import { burnInvitation } from './burnInvitation.js';
 import { makeInvitationQueryFns } from '../invitationQueries.js';
 
 import '../internal-types.js';
-
-import { q, Fail } from '@endo/errors';
 
 export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */

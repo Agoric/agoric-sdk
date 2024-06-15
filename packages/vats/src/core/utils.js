@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
@@ -8,7 +9,6 @@ import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 import './types-ambient.js';
-import { Fail, q } from '@endo/errors';
 
 const { entries, fromEntries, keys } = Object;
 

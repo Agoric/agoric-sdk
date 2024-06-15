@@ -6,7 +6,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 
-import { q, Fail } from '@endo/errors';
+import { q, Fail, makeError, annotateError } from '@endo/errors';
 
 const { fromEntries, keys, values } = Object;
 

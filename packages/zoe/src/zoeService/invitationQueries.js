@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { assert, X, Fail, q } from '@endo/errors';
+import { X, Fail, q, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {

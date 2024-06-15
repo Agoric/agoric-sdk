@@ -1,6 +1,6 @@
-import { assert } from '@endo/errors';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { makeError } from '@endo/errors';
 
 /** maximum clock skew, in seconds, for unbonding time reported from other chain */
 export const maxClockSkew = 10n * 60n;

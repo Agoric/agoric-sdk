@@ -51,7 +51,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { X, Fail, q } from '@endo/errors';
+import { X, Fail, q, makeError } from '@endo/errors';
 import {
   checkDebtLimit,
   makeNatAmountShape,

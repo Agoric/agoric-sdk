@@ -4,7 +4,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
-import { X, Fail, q } from '@endo/errors';
+import { X, Fail, q, makeError } from '@endo/errors';
 import { AuctionState, makeCancelTokenMaker } from './util.js';
 import {
   computeRoundTiming,

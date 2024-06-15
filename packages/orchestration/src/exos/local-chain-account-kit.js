@@ -1,8 +1,7 @@
 /** @file Use-object for the owner of a localchain account */
-import { NonNullish } from '@agoric/internal';
+import { NonNullish, makeTracer } from '@agoric/internal';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';

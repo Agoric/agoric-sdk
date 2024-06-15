@@ -4,7 +4,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, Fail, X } from '@endo/errors';
+import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';

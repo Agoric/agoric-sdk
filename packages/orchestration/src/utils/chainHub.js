@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/zone';
-import { Fail } from '@endo/errors';
+import { Fail, makeError } from '@endo/errors';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 /**

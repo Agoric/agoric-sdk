@@ -11,7 +11,7 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 
-import { Fail } from '@endo/errors';
+import { annotateError, Fail } from '@endo/errors';
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';

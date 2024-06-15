@@ -4,6 +4,7 @@ import {
   getEnvironmentOption,
   environmentOptionsListHas,
 } from '@endo/env-options';
+import { annotateError, X } from '@endo/errors';
 
 // NOTE: We can't import these because they're not in scope before lockdown.
 // import { assert, X, Fail } from '@endo/errors';
@@ -42,7 +43,7 @@ const addRejectionNote = detailsNote => reason => {
 };
 
 const wrapFunction =
-  (func, sendingError, X) =>
+  (func, sendingError) =>
   (...args) => {
     hiddenPriorError = sendingError;
     hiddenCurrentTurn += 1;
@@ -91,7 +92,6 @@ export const trackTurns = funcs => {
   if (!ENABLED || typeof globalThis === 'undefined' || !globalThis.assert) {
     return funcs;
   }
-  import { X } from '@endo/errors';
 
   hiddenCurrentEvent += 1;
   const sendingError = Error(
@@ -102,7 +102,7 @@ export const trackTurns = funcs => {
   }
 
   return /** @type {T} */ (
-    funcs.map(func => func && wrapFunction(func, sendingError, X))
+    funcs.map(func => func && wrapFunction(func, sendingError))
   );
 };
 

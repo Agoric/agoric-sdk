@@ -5,7 +5,7 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
-import { X, q, Fail } from '@endo/errors';
+import { X, q, Fail, annotateError } from '@endo/errors';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';

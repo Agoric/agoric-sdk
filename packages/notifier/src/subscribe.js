@@ -7,7 +7,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord, EachTopic, ForkableAsyncIterableIterator} from '../src/types.js';
  */
 
-import { X, Fail } from '@endo/errors';
+import { X, Fail, annotateError } from '@endo/errors';
 
 const sink = () => {};
 

@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail, assert, X } from '@endo/errors';
+import { Fail, assert, X, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**

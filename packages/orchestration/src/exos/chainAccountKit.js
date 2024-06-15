@@ -1,7 +1,6 @@
 /** @file ChainAccount exo */
-import { NonNullish } from '@agoric/internal';
+import { NonNullish, makeTracer } from '@agoric/internal';
 import { PurseShape } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { Fail } from '@endo/errors';

@@ -1,4 +1,4 @@
-import { assert, Fail, q } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -23,7 +23,7 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { decodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
-import { Fail } from '@endo/errors';
+import { Fail, makeError } from '@endo/errors';
 import {
   AmountArgShape,
   ChainAddressShape,

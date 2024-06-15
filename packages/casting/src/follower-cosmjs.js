@@ -6,7 +6,7 @@ import * as stargateStar from '@cosmjs/stargate';
 
 import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
 
-import { X, q, Fail } from '@endo/errors';
+import { X, q, Fail, makeError } from '@endo/errors';
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
