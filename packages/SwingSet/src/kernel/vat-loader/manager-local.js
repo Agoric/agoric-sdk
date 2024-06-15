@@ -74,7 +74,8 @@ export function makeLocalVatManagerFactory({
     const workerEndowments = harden({
       ...vatEndowments,
       console: makeVatConsole(makeLogMaker('vat')),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       TextEncoder,
       TextDecoder,
       Base64: globalThis.Base64, // Available only on XSnap
