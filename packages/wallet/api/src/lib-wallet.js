@@ -1682,7 +1682,7 @@ export function makeWalletRoot({
       (kind, lookup) =>
       (...path) => {
         path.length === 1 ||
-          Fail`${assert.quote(
+          Fail`${q(
             kind,
           )} lookup must be called with a single offer ID, not ${path}`;
         return lookup(path[0]);

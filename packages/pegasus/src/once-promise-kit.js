@@ -3,6 +3,15 @@ import { assert } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
+ * Should be
+ * at-import {DetailsToken} from '@endo/errors'
+ * but somehow @endo/errors is not exporting that type. TODO fix.
+ * In the meantime...
+ *
+ * @typedef {{}} DetailsToken
+ */
+
+/**
  * Create a promise kit that will throw an exception if it is resolved or
  * rejected more than once.
  *
