@@ -4,10 +4,11 @@ import {
   getEnvironmentOption,
   environmentOptionsListHas,
 } from '@endo/env-options';
-import { annotateError, X } from '@endo/errors';
 
-// NOTE: We can't import these because they're not in scope before lockdown.
-// import { assert, X, Fail } from '@endo/errors';
+// Note that in the original track-turns.js in @endo/eventual-send we
+// can't simply import these because `assert` is not in scope before lockdown.
+// But this copy in @agoric/vow the import is fine.
+import { annotateError, X } from '@endo/errors';
 
 // WARNING: Global Mutable State!
 // This state is communicated to `assert` that makes it available to the
