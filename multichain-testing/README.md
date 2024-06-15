@@ -46,7 +46,7 @@ make stop
 To setup finish setting up Agoric, also run:
 
 ```bash
-make fund-provision-poool
+make fund-provision-pool
 ```
 
 ## Logs
