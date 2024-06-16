@@ -6,7 +6,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 
-import { q, Fail, makeError, annotateError } from '@endo/errors';
+import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 
 const { fromEntries, keys, values } = Object;
 
@@ -204,8 +204,8 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     if (doneResult) {
       result = Promise.resolve(doneResult);
     } else if (rejections.length) {
-      const error = makeError(assert.details`Teed stream threw`);
-      annotateError(error, assert.details`Teed rejections: ${rejections}`);
+      const error = makeError(X`Teed stream threw`);
+      annotateError(error, X`Teed rejections: ${rejections}`);
       result =
         sourceStream.throw?.(error) ||
         Promise.resolve(sourceStream.return?.()).then(() =>
