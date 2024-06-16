@@ -15,10 +15,31 @@ const trace = makeTracer('FakeBridge');
 
 const when = makeWhen();
 
+const makeFakeBridgeChannel = (zone, id, label, toBridge) => {
+  /** @type {Remote<BridgeHandler>} */
+  let hndlr;
+  return zone.exo(`Fake ${label} Bridge Manager`, undefined, {
+    getBridgeId: () => id,
+    toBridge,
+    fromBridge: async obj => {
+      if (!hndlr) throw Error('no handler!');
+      trace('fromBridge', obj);
+      return when(E(hndlr).fromBridge(obj));
+    },
+    initHandler: h => {
+      if (hndlr) throw Error('already init');
+      hndlr = h;
+    },
+    setHandler: h => {
+      if (!hndlr) throw Error('must init first');
+      hndlr = h;
+    },
+  });
+};
+
 /** @typedef {{ [address: string]: { [denom: string]: bigint } }} Balances */
 
 export const FAUCET_ADDRESS = 'faucet';
-const INFINITE_AMOUNT = 99999999999n;
 
 /**
  * You can withdraw from the `faucet` address infinitely because its balance is
@@ -36,85 +57,67 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
 
   const currentBalance = ({ address, denom }) =>
     address === FAUCET_ADDRESS
-      ? INFINITE_AMOUNT
+      ? 99999999999n
       : Nat((balances[address] && balances[address][denom]) ?? 0n);
 
   let lastNonce = 0n;
-  /** @type {Remote<BridgeHandler>} */
-  let hndlr;
-  return zone.exo('Fake Bank Bridge Manager', undefined, {
-    getBridgeId: () => 'bank',
-    toBridge: async obj => {
-      const { method, type, ...params } = obj;
-      trace('toBridge', type, method, params);
-      switch (obj.type) {
-        case 'VBANK_GET_MODULE_ACCOUNT_ADDRESS': {
-          const { moduleName } = obj;
-          const moduleDescriptor = Object.values(VBankAccount).find(
-            ({ module }) => module === moduleName,
-          );
-          if (!moduleDescriptor) {
-            return 'undefined';
-          }
-          return moduleDescriptor.address;
+  return makeFakeBridgeChannel(zone, 'bank', 'Bank', async obj => {
+    const { method, type, ...params } = obj;
+    trace('toBridge', type, method, params);
+    switch (obj.type) {
+      case 'VBANK_GET_MODULE_ACCOUNT_ADDRESS': {
+        const { moduleName } = obj;
+        const moduleDescriptor = Object.values(VBankAccount).find(
+          ({ module }) => module === moduleName,
+        );
+        if (!moduleDescriptor) {
+          return 'undefined';
         }
-
-        // Observed message:
-        // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
-        // denom: 'ibc/toyatom',
-        // type: 'VBANK_GET_BALANCE'
-        case 'VBANK_GET_BALANCE': {
-          return String(currentBalance(obj));
-        }
-
-        case 'VBANK_GRAB':
-        case 'VBANK_GIVE': {
-          const { amount, denom } = obj;
-          const address = type === 'VBANK_GRAB' ? obj.sender : obj.recipient;
-          balances[address] ||= {};
-          balances[address][denom] ||= 0n;
-
-          if (type === 'VBANK_GRAB') {
-            balances[address][denom] = Nat(
-              currentBalance({ address, denom }) - BigInt(amount),
-            );
-          } else {
-            balances[address][denom] = Nat(
-              currentBalance({ address, denom }) + BigInt(amount),
-            );
-          }
-
-          lastNonce += 1n;
-          // Also empty balances.
-          return harden({
-            type: 'VBANK_BALANCE_UPDATE',
-            nonce: `${lastNonce}`,
-            updated: [
-              {
-                address,
-                denom,
-                amount: String(currentBalance({ address, denom })),
-              },
-            ],
-          });
-        }
-        default:
-          Fail`unknown type ${type}`;
+        return moduleDescriptor.address;
       }
-    },
-    fromBridge: async obj => {
-      if (!hndlr) throw Error('no handler!');
-      trace('fromBridge', obj);
-      return when(E(hndlr).fromBridge(obj));
-    },
-    initHandler: h => {
-      if (hndlr) throw Error('already init');
-      hndlr = h;
-    },
-    setHandler: h => {
-      if (!hndlr) throw Error('must init first');
-      hndlr = h;
-    },
+
+      // Observed message:
+      // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
+      // denom: 'ibc/toyatom',
+      // type: 'VBANK_GET_BALANCE'
+      case 'VBANK_GET_BALANCE': {
+        return String(currentBalance(obj));
+      }
+
+      case 'VBANK_GRAB':
+      case 'VBANK_GIVE': {
+        const { amount, denom } = obj;
+        const address = type === 'VBANK_GRAB' ? obj.sender : obj.recipient;
+        balances[address] ||= {};
+        balances[address][denom] ||= 0n;
+
+        if (type === 'VBANK_GRAB') {
+          balances[address][denom] = Nat(
+            currentBalance({ address, denom }) - BigInt(amount),
+          );
+        } else {
+          balances[address][denom] = Nat(
+            currentBalance({ address, denom }) + BigInt(amount),
+          );
+        }
+
+        lastNonce += 1n;
+        // Also empty balances.
+        return harden({
+          type: 'VBANK_BALANCE_UPDATE',
+          nonce: `${lastNonce}`,
+          updated: [
+            {
+              address,
+              denom,
+              amount: String(currentBalance({ address, denom })),
+            },
+          ],
+        });
+      }
+      default:
+        Fail`unknown type ${type}`;
+    }
   });
 };
 
@@ -124,32 +127,15 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
  * @returns {ScopedBridgeManager<'dibc'>}
  */
 export const makeFakeIbcBridge = (zone, onToBridge) => {
-  /** @type {Remote<BridgeHandler>} */
-  let hndlr;
-  return zone.exo('Fake IBC Bridge Manager', undefined, {
-    getBridgeId: () => 'dibc',
-    toBridge: async obj => {
-      onToBridge(obj);
-      const { method, type, ...params } = obj;
-      assert.equal(type, 'IBC_METHOD');
-      if (method === 'sendPacket') {
-        const { packet } = params;
-        return { ...packet, sequence: '39' };
-      }
-      return undefined;
-    },
-    fromBridge: async obj => {
-      if (!hndlr) throw Error('no handler!');
-      return when(E(hndlr).fromBridge(obj));
-    },
-    initHandler: h => {
-      if (hndlr) throw Error('already init');
-      hndlr = h;
-    },
-    setHandler: h => {
-      if (!hndlr) throw Error('must init first');
-      hndlr = h;
-    },
+  return makeFakeBridgeChannel(zone, 'dibc', 'IBC', async obj => {
+    onToBridge(obj);
+    const { method, type, ...params } = obj;
+    assert.equal(type, 'IBC_METHOD');
+    if (method === 'sendPacket') {
+      const { packet } = params;
+      return { ...packet, sequence: '39' };
+    }
+    return undefined;
   });
 };
 
@@ -161,66 +147,47 @@ export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
 export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
-  /** @type {Remote<BridgeHandler>} */
-  let hndlr;
   let lcaExecuteTxSequence = 0;
-  return zone.exo('Fake Localchain Bridge Manager', undefined, {
-    getBridgeId: () => 'vlocalchain',
-    toBridge: async obj => {
-      onToBridge(obj);
-      const { method, type, ...params } = obj;
-      trace('toBridge', type, method, params);
-      switch (type) {
-        case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return LOCALCHAIN_DEFAULT_ADDRESS;
-        case 'VLOCALCHAIN_EXECUTE_TX': {
-          lcaExecuteTxSequence += 1;
-          return obj.messages.map(message => {
-            switch (message['@type']) {
-              // TODO #9402 reference bank to ensure caller has tokens they are transferring
-              case '/ibc.applications.transfer.v1.MsgTransfer': {
-                if (message.token.amount === '504') {
-                  throw Error(
-                    'simulated unexpected MsgTransfer packet timeout',
-                  );
-                }
-                // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
-                // XXX should vlocalchain return a string instead of number for bigint?
-                return {
-                  sequence: lcaExecuteTxSequence,
-                };
+  return makeFakeBridgeChannel(zone, 'vlocalchain', 'Localchain', async obj => {
+    onToBridge(obj);
+    const { method, type, ...params } = obj;
+    trace('toBridge', type, method, params);
+    switch (type) {
+      case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
+        return LOCALCHAIN_DEFAULT_ADDRESS;
+      case 'VLOCALCHAIN_EXECUTE_TX': {
+        lcaExecuteTxSequence += 1;
+        return obj.messages.map(message => {
+          switch (message['@type']) {
+            // TODO #9402 reference bank to ensure caller has tokens they are transferring
+            case '/ibc.applications.transfer.v1.MsgTransfer': {
+              if (message.token.amount === '504') {
+                throw Error('simulated unexpected MsgTransfer packet timeout');
               }
-              case '/cosmos.staking.v1beta1.MsgDelegate': {
-                return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
-              }
-              case '/cosmos.staking.v1beta1.MsgUndelegate': {
-                return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
-                  completionTime: new Date().toJSON(),
-                });
-              }
-              // returns one empty object per message unless specified
-              default:
-                return {};
+              // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
+              // XXX should vlocalchain return a string instead of number for bigint?
+              return {
+                sequence: lcaExecuteTxSequence,
+              };
             }
-          });
-        }
-        default:
-          Fail`unknown type ${type}`;
+            case '/cosmos.staking.v1beta1.MsgDelegate': {
+              return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
+            }
+            case '/cosmos.staking.v1beta1.MsgUndelegate': {
+              return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
+                completionTime: new Date().toJSON(),
+              });
+            }
+            // returns one empty object per message unless specified
+            default:
+              return {};
+          }
+        });
       }
-      return undefined;
-    },
-    fromBridge: async obj => {
-      if (!hndlr) throw Error('no handler!');
-      return when(E(hndlr).fromBridge(obj));
-    },
-    initHandler: h => {
-      if (hndlr) throw Error('already init');
-      hndlr = h;
-    },
-    setHandler: h => {
-      if (!hndlr) throw Error('must init first');
-      hndlr = h;
-    },
+      default:
+        Fail`unknown type ${type}`;
+    }
+    return undefined;
   });
 };
 
@@ -230,40 +197,23 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
  * @returns {ScopedBridgeManager<'vtransfer'>}
  */
 export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
-  /** @type {Remote<BridgeHandler>} */
-  let hndlr;
   const registered = zone.setStore('registered');
-  return zone.exo('Fake Transfer Bridge Manager', undefined, {
-    getBridgeId: () => 'vtransfer',
-    toBridge: async obj => {
-      onToBridge(obj);
-      const { type, ...params } = obj;
-      trace('toBridge', type, params);
-      switch (type) {
-        case 'BRIDGE_TARGET_REGISTER': {
-          registered.add(params.target);
-          return undefined;
-        }
-        case 'BRIDGE_TARGET_UNREGISTER': {
-          registered.delete(params.target);
-          return undefined;
-        }
-        default:
-          Fail`unknown type ${type}`;
+  return makeFakeBridgeChannel(zone, 'vtransfer', 'Transfer', async obj => {
+    onToBridge(obj);
+    const { type, ...params } = obj;
+    trace('toBridge', type, params);
+    switch (type) {
+      case 'BRIDGE_TARGET_REGISTER': {
+        registered.add(params.target);
+        return undefined;
       }
-      return undefined;
-    },
-    fromBridge: async obj => {
-      if (!hndlr) throw Error('no handler!');
-      return when(E(hndlr).fromBridge(obj));
-    },
-    initHandler: h => {
-      if (hndlr) throw Error('already init');
-      hndlr = h;
-    },
-    setHandler: h => {
-      if (!hndlr) throw Error('must init first');
-      hndlr = h;
-    },
+      case 'BRIDGE_TARGET_UNREGISTER': {
+        registered.delete(params.target);
+        return undefined;
+      }
+      default:
+        Fail`unknown type ${type}`;
+    }
+    return undefined;
   });
 };
