@@ -23,7 +23,9 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   // Supply bootstrap prerequisites.
   const space = /** @type {any} */ (makePromiseSpace(t.log));
   /**
-   * @type {BootstrapPowers}
+   * @type {BootstrapPowers & {
+   *   produce: { loadCriticalVat: Producer<VatLoader> };
+   * }}
    */
   const { produce, consume } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
@@ -85,13 +87,15 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     'initialSupply of 50 RUN',
   );
 
+  /** @type {VatLoader<'bank'>} */
   const loadCriticalVat = async name => {
     assert.equal(name, 'bank');
-    return E(buildRootObject)(
+    const vatP = E(buildRootObject)(
       null,
       null,
       makeScalarMapStore('addAssets baggage'),
     );
+    return /** @type {Awaited<WellKnownVats[typeof name]>} */ (vatP);
   };
   produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);

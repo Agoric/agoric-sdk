@@ -209,7 +209,7 @@ const mintRunPayment = async (
 
 /**
  * @param {string} name
- * @param {MintsVat} mints
+ * @param {ERef<MintsVat>} mints
  */
 const provideCoin = async (name, mints) => {
   return E(mints).provideIssuerKit(name, AssetKind.NAT, {

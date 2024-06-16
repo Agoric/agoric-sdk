@@ -14,6 +14,7 @@ import type {
 } from '@agoric/store';
 import type { Amplify, IsInstance, ReceivePower, StateShape } from '@endo/exo';
 import type { RemotableObject } from '@endo/pass-style';
+import type { RemotableBrand } from '@endo/eventual-send';
 import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
@@ -38,9 +39,13 @@ type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
   ? (...args: P) => R
   : never;
 
-export type KindFacet<O> = RemotableObject & {
+// The type of a passable local object with methods.
+// An internal helper to avoid having to repeat `O`.
+type PrimaryRemotable<O> = O & RemotableObject & RemotableBrand<{}, O>;
+
+export type KindFacet<O> = PrimaryRemotable<{
   [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter
-};
+}>;
 
 export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;

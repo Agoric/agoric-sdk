@@ -100,7 +100,12 @@ const makeFakeBridgeManager = () =>
 export const makeMockTestSpace = async log => {
   const space = /** @type {any} */ (makePromiseSpace(log));
   /**
-   * @type {BootstrapPowers}
+   * @type {BootstrapPowers & {
+   *   produce: {
+   *     loadVat: Producer<VatLoader>;
+   *     loadCriticalVat: Producer<VatLoader>;
+   *   };
+   * }}
    */
   const { consume, produce } = space;
   const { agoricNames, agoricNamesAdmin, spaces } =
@@ -112,13 +117,15 @@ export const makeMockTestSpace = async log => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  const vatLoader = name => {
+  /** @type {VatLoader<'mints' | 'board'>} */
+  const vatLoader = async name => {
+    /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
     switch (name) {
       case 'mints':
-        return mintsRoot();
+        return /** @type {ReturnedVat} */ (mintsRoot());
       case 'board': {
         const baggage = makeScalarBigMapStore('baggage');
-        return boardRoot({}, {}, baggage);
+        return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
       }
       default:
         throw Error('unknown loadVat name');

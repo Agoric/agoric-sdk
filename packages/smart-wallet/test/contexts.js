@@ -3,6 +3,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
+import { makeScopedBridge } from '@agoric/vats';
 import { withAmountUtils } from './supports.js';
 
 /**
@@ -38,10 +39,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'anyAddress',
   );
   const bridgeManager = await consume.bridgeManager;
-  /** @type {import('@agoric/vats').ScopedBridgeManager<'wallet'>} */
-  // @ts-expect-error XXX generics through EProxy
   const walletBridgeManager = await (bridgeManager &&
-    E(bridgeManager).register(BridgeId.WALLET));
+    makeScopedBridge(bridgeManager, BridgeId.WALLET));
   const walletFactory = await E(zoe).startInstance(
     installation,
     {},

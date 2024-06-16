@@ -109,10 +109,10 @@ type Producer<T> = {
 };
 
 type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader = <K extends keyof WellKnownVats>(
-  name: K,
+type VatLoader<Names extends string = keyof WellKnownVats> = <N extends Names>(
+  name: N,
   sourceRef?: VatSourceRef,
-) => WellKnownVats[K];
+) => Promise<Awaited<WellKnownVats[N]>>;
 
 /** callback to assign a property onto the `home` object of the client */
 type PropertyMaker = (addr: string, flags: string[]) => Record<string, unknown>;
@@ -437,13 +437,21 @@ type BootstrapSpace = WellKnownSpaces &
   PromiseSpaceOf<
     ChainBootstrapSpaceT & {
       vatAdminSvc: VatAdminSvc;
-    } & {
+    },
+    {
       loadVat: VatLoader;
       loadCriticalVat: VatLoader;
     },
-    {},
     {}
   >;
+
+type LocalChainVat = ERef<
+  ReturnType<typeof import('../vat-localchain.js').buildRootObject>
+>;
+
+type TransferVat = ERef<
+  ReturnType<typeof import('../vat-transfer.js').buildRootObject>
+>;
 
 type ProvisioningVat = ERef<
   ReturnType<typeof import('../vat-provisioning.js').buildRootObject>
@@ -467,6 +475,9 @@ type NamedVatPowers = {
     board: Awaited<BoardVat>;
   }>;
 };
+
+type OrchestrationVat = ERef<import('@agoric/orchestration').OrchestrationVat>;
+type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
 
 type RemoteIssuerKit = {
   mint: ERef<Mint>;
@@ -515,16 +526,13 @@ type WellKnownVats = SwingsetVats & {
   bank: BankVat;
   board: BoardVat;
   bridge: ChainStorageVat;
-  localchain: LocalChainVat;
   ibc: IBCVat;
+  localchain: LocalChainVat;
   mints: MintsVat;
   network: NetworkVat;
-  orchestration: ERef<
-    ReturnType<
-      typeof import('@agoric/orchestration/src/vat-orchestration.js').buildRootObject
-    >
-  >;
+  orchestration: OrchestrationVat;
   priceAuthority: PriceAuthorityVat;
   provisioning: ProvisioningVat;
-  zoe: ERef<ReturnType<typeof import('../vat-zoe.js').buildRootObject>>;
+  transfer: TransferVat;
+  zoe: ZoeVat;
 };

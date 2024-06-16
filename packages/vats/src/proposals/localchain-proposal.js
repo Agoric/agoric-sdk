@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @param {BootstrapPowers & {
@@ -57,9 +58,10 @@ export const setupLocalChainVat = async (
   /** @type {import('../types').ScopedBridgeManager<'vlocalchain'>} */
   let scopedManager;
   try {
-    /** @type {import('../types.js').ScopedBridgeManager<'vlocalchain'>} */
-    // @ts-expect-error XXX EProxy
-    scopedManager = await E(bridgeManager).register(BRIDGE_ID.VLOCALCHAIN);
+    scopedManager = await makeScopedBridge(
+      bridgeManager,
+      BRIDGE_ID.VLOCALCHAIN,
+    );
     localchainBridgeManager.reset();
     localchainBridgeManager.resolve(scopedManager);
   } catch (e) {

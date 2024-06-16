@@ -16,6 +16,7 @@ import { Fail, NonNullish } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
+import { makeScopedBridge } from '../bridge.js';
 
 /** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
 
@@ -52,7 +53,12 @@ const bootMsgEx = {
 /** @typedef {MapStore<string, CreateVatResults>} VatStore */
 
 /**
- * @param {BootstrapPowers & {}} powers
+ * @param {BootstrapPowers & {
+ *   produce: {
+ *     loadVat: Producer<VatLoader>;
+ *     loadCriticalVat: Producer<VatLoader>;
+ *   };
+ * }} powers
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
  */
@@ -65,7 +71,6 @@ export const makeVatsFromBundles = async ({
   // NOTE: we rely on multiple createVatAdminService calls
   // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-  // @ts-expect-error XXX
   vatAdminSvc.resolve(svc);
 
   const durableStore = await vatStore;
@@ -80,7 +85,6 @@ export const makeVatsFromBundles = async ({
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type {Promise<CreateVatResults>} */
-          // @ts-expect-error XXX
           const vatInfo = E(svc).createVatByName(bundleName, {
             ...defaultVatCreationOptions,
             name: vatName,
@@ -91,7 +95,6 @@ export const makeVatsFromBundles = async ({
         assert(bundleID);
         const bcap = await E(svc).getBundleCap(bundleID);
         /** @type {Promise<CreateVatResults>} */
-        // @ts-expect-error XXX
         const vatInfo = E(svc).createVat(bcap, {
           ...defaultVatCreationOptions,
           name: vatName,
@@ -647,10 +650,8 @@ export const addBankAssets = async ({
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
 
   const bridgeManager = await bridgeManagerP;
-  /** @type {import('../types.js').ScopedBridgeManager<'bank'> | undefined} */
-  // @ts-expect-error XXX EProxy
   const bankBridgeManager =
-    bridgeManager && E(bridgeManager).register(BridgeId.BANK);
+    bridgeManager && makeScopedBridge(bridgeManager, BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bankBridgeManager,
     assetAdmin,
