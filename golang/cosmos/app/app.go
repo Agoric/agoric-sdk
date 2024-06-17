@@ -934,7 +934,30 @@ func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// Empty for now
+				// Upgrade Zoe + ZCF
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
+
+				// upgrade the provisioning vat
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
+				// Enable low-level Orchestration.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/init-network.js",
+					"@agoric/builders/scripts/vats/init-localchain.js",
+				),
+				// Add new vats for price feeds. The existing ones will be retired shortly.
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/updateAtomPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStAtomPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
+					"@agoric/builders/scripts/vats/updateStkAtomPriceFeed.js",
+				),
+				// Add new auction contract. The old one will be retired shortly.
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
+				// upgrade vaultFactory.
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeVaults.js"),
+				// upgrade scaledPriceAuthorities.
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeScaledPriceAuthorities.js"),
 			}
 		}
 
