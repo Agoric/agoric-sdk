@@ -1,5 +1,6 @@
 /** @file Orchestration service */
 
+// import { E } from '@endo/far';
 import { V as E } from '@agoric/vow/vat.js';
 import { Fail } from '@agoric/assert';
 import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
@@ -40,7 +41,7 @@ const makeLocalChainFacade = (
     },
 
     async makeAccount() {
-      const lcaP = E(localchain).makeAccount();
+      const lcaP = E.when(E(localchain).makeAccount());
       const [lca, address] = await Promise.all([lcaP, E(lcaP).getAddress()]);
       const { holder: account } = makeLocalChainAccountKit({
         account: lca,
@@ -52,7 +53,7 @@ const makeLocalChainFacade = (
       return {
         async deposit(payment) {
           console.log('deposit got', payment);
-          await E(account).deposit(payment);
+          await E.when(E(account).deposit(payment));
         },
         getAddress() {
           const addressStr = account.getAddress();
@@ -70,7 +71,7 @@ const makeLocalChainFacade = (
               ? [/** @type {any} */ (null), denomArg]
               : [denomArg, 'FIXME'];
 
-          const natAmount = await E(lca).getBalance(brand);
+          const natAmount = await E.when(E(lca).getBalance(brand));
           return harden({ denom, value: natAmount.value });
         },
         getBalances() {
@@ -82,7 +83,7 @@ const makeLocalChainFacade = (
         },
         async transfer(amount, destination, opts) {
           console.log('transfer got', amount, destination, opts);
-          return account.transfer(amount, destination, opts);
+          return E.when(account.transfer(amount, destination, opts));
         },
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
@@ -123,13 +124,15 @@ const makeRemoteChainFacade = (
     getChainInfo: async () => chainInfo,
     /** @returns {Promise<OrchestrationAccount<CCI>>} */
     makeAccount: async () => {
-      const icaAccount = await E(orchestration).makeAccount(
-        chainInfo.chainId,
-        connectionInfo.id,
-        connectionInfo.counterparty.connection_id,
+      const icaAccount = await E.when(
+        E(orchestration).makeAccount(
+          chainInfo.chainId,
+          connectionInfo.id,
+          connectionInfo.counterparty.connection_id,
+        ),
       );
 
-      const address = await E(icaAccount).getAddress();
+      const address = await E.when(E(icaAccount).getAddress());
 
       const [{ denom: bondDenom }] = chainInfo.stakingTokens || [
         {
@@ -232,12 +235,12 @@ export const makeOrchestrationFacade = ({
           });
         },
         makeLocalAccount() {
-          return E(localchain).makeAccount();
+          return E.when(E(localchain).makeAccount());
         },
         getBrandInfo: anyVal,
         asAmount: anyVal,
       };
-      return async (...args) => fn(orc, ctx, ...args);
+      return async (...args) => E.when(fn(orc, ctx, ...args));
     },
   };
 };
