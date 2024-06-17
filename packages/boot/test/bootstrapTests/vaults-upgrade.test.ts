@@ -31,13 +31,9 @@ const makeDefaultTestContext = async (
   } = {},
 ) => {
   logTiming && console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/vaults-upgrade',
-    {
-      storage,
-    },
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    storage,
+  });
 
   const { readLatest, runUtils } = swingsetTestKit;
   ({ storage } = swingsetTestKit);

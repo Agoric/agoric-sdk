@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { Fail } from '@endo/errors';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
   MsgBeginRedelegateResponse,
@@ -8,6 +9,7 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
@@ -16,7 +18,9 @@ import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { Fail } from '@endo/errors';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import {
   prepareCosmosOrchestrationAccountKit,
   trivialDelegateResponse,
@@ -173,17 +177,16 @@ const makeScenario = () => {
     return { zcf, zoe };
   };
 
-  const makeRecorderKit = () => harden({}) as any;
-
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   const { delegations, startTime } = configStaking;
 
-  // TODO: when we write to chainStorage, test it.
-  //   const { rootNode } = makeFakeStorageKit('mockChainStorageRoot');
-
-  const storageNode = Far('StorageNode', {}) as unknown as StorageNode;
+  const { rootNode } = makeFakeStorageKit('stakingOpsTest', {
+    sequence: false,
+  });
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -196,12 +199,35 @@ const makeScenario = () => {
     zone,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
-    storageNode,
+    storageNode: rootNode,
     timer,
     icqConnection,
     ...mockZCF(),
   };
 };
+
+test('makeAccount() writes to storage', async t => {
+  const s = makeScenario();
+  const { account, timer } = s;
+  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
+  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+
+  const { holder } = make(account.getAddress(), 'uatom', {
+    account,
+    storageNode,
+    icqConnection,
+    timer,
+  });
+  const { publicSubscribers } = holder.asContinuingOffer();
+  const accountNotifier = makeNotifierFromSubscriber(
+    publicSubscribers.account.subscriber,
+  );
+  const storageUpdate = await E(accountNotifier).getUpdateSince();
+  t.deepEqual(storageUpdate, {
+    updateCount: 1n,
+    value: '',
+  });
+});
 
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
@@ -247,8 +273,11 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const { validator, delegations } = configStaking;
   {
     const value = BigInt(Object.values(delegations)[0].amount);
-    const anAmount = { brand: aBrand, value };
-    const toDelegate = await E(invitationMakers).Delegate(validator, anAmount);
+    const anAmountArg = { denom: 'uatom', value };
+    const toDelegate = await E(invitationMakers).Delegate(
+      validator,
+      anAmountArg,
+    );
     const seat = E(zoe).offer(toDelegate);
     const result = await E(seat).getOfferResult();
 
@@ -348,7 +377,6 @@ test(`undelegate waits for unbonding period`, async t => {
   const value = BigInt(Object.values(delegations)[0].amount);
   const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
   const delegation = {
-    delegatorAddress: account.getAddress().address,
     shares: `${anAmount.value}`,
     validatorAddress: validator.address,
   };

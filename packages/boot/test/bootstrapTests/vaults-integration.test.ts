@@ -31,10 +31,7 @@ const likePayouts = (collateral, minted) => ({
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/vaults-integration',
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log);
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

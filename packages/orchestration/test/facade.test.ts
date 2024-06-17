@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import { makeOrchestrationFacade } from '../src/facade.js';
 import type { Chain } from '../src/orchestration-api.js';
@@ -48,6 +49,10 @@ test('chain info', async t => {
 
   const { zcf } = await setupZCFTest();
   const chainHub = makeChainHub(facadeServices.agoricNames);
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    zone.mapStore('recorder'),
+    bootstrap.marshaller,
+  );
 
   const { orchestrate } = makeOrchestrationFacade({
     ...facadeServices,
@@ -56,6 +61,7 @@ test('chain info', async t => {
     zone,
     chainHub,
     makeLocalChainAccountKit,
+    makeRecorderKit,
   });
 
   chainHub.registerChain('mock', mockChainInfo);

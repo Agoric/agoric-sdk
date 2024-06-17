@@ -165,19 +165,6 @@
             }
           ]
         }
-      ],
-      [
-        {
-          "module": "@agoric/builders/scripts/orchestration/init-stakeAtom.js",
-          "entrypoint": "defaultProposalBuilder",
-          "args": [
-            {
-              "hostConnectionId": "connection-1",
-              "controllerConnectionId": "connection-0",
-              "bondDenom": "uatom"
-            }
-          ]
-        }
       ]
     ]
   },

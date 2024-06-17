@@ -3,7 +3,10 @@
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { V as E } from '@agoric/vow/vat.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport';
+import {
+  prepareRecorderKitMakers,
+  provideAll,
+} from '@agoric/zoe/src/contractSupport';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
@@ -24,6 +27,7 @@ export const meta = harden({
     hostConnectionId: M.string(),
     controllerConnectionId: M.string(),
     bondDenom: M.string(),
+    icqEnabled: M.boolean(),
   },
   privateArgsShape: {
     orchestration: M.remotable('orchestration'),
@@ -40,6 +44,7 @@ export const privateArgsShape = meta.privateArgsShape;
  *   hostConnectionId: IBCConnectionID;
  *   controllerConnectionId: IBCConnectionID;
  *   bondDenom: string;
+ *   icqEnabled: boolean;
  * }} StakeIcaTerms
  */
 
@@ -54,11 +59,20 @@ export const privateArgsShape = meta.privateArgsShape;
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { chainId, hostConnectionId, controllerConnectionId, bondDenom } =
-    zcf.getTerms();
+  const {
+    chainId,
+    hostConnectionId,
+    controllerConnectionId,
+    bondDenom,
+    icqEnabled,
+  } = zcf.getTerms();
   const { orchestration, marshaller, storageNode, timer } = privateArgs;
 
   const zone = makeDurableZone(baggage);
+
+  const { accountsStorageNode } = await provideAll(baggage, {
+    accountsStorageNode: () => E(storageNode).makeChildNode('accounts'),
+  });
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
@@ -74,17 +88,19 @@ export const start = async (zcf, privateArgs, baggage) => {
       hostConnectionId,
       controllerConnectionId,
     );
-    // TODO https://github.com/Agoric/agoric-sdk/issues/9326
-    // Should not fail if host does not have `async-icq` module;
-    // communicate to OrchestrationAccount that it can't send queries
-    const icqConnection = await E(orchestration).provideICQConnection(
-      controllerConnectionId,
-    );
+    // TODO permissionless queries https://github.com/Agoric/agoric-sdk/issues/9326
+    const icqConnection = icqEnabled
+      ? await E(orchestration).provideICQConnection(controllerConnectionId)
+      : undefined;
+
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
+    const accountNode = await E(accountsStorageNode).makeChildNode(
+      accountAddress.address,
+    );
     const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
       account,
-      storageNode,
+      storageNode: accountNode,
       icqConnection,
       timer,
     });
@@ -121,4 +137,4 @@ export const start = async (zcf, privateArgs, baggage) => {
   return { publicFacet };
 };
 
-/** @typedef {typeof start} StakeAtomSF */
+/** @typedef {typeof start} StakeIcaSF */

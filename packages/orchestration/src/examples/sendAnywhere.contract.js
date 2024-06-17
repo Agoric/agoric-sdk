@@ -68,6 +68,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     chainHub,
     makeLocalChainAccountKit,
+    makeRecorderKit,
     ...orchPowers,
   });
 
