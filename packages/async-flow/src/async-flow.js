@@ -10,7 +10,14 @@ import { prepareBijection } from './bijection.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**
- * @import { WeakMapStore } from '@agoric/store'
+ * @import {WeakMapStore} from '@agoric/store'
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {MapStore} from '@agoric/store';
+ * @import {LogStore} from '../src/log-store.js';
+ * @import {Bijection} from '../src/bijection.js';
+ * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, PreparationOptions} from '../src/types.js';
+ * @import {ReplayMembrane} from '../src/replay-membrane.js';
  */
 
 const { defineProperties } = Object;

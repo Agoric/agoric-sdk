@@ -17,6 +17,11 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
 const nonPassableFunc = () => 'non-passable-function';
 harden(nonPassableFunc);
 const guestCreatedPromise = harden(Promise.resolve('guest-created'));

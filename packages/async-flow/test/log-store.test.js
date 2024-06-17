@@ -15,6 +15,14 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareLogStore } from '../src/log-store.js';
 
 /**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {LogStore} from '../src/log-store.js';
+ * @import {Bijection} from '../src/bijection.js';
+ */
+
+/**
  * @param {any} t
  * @param {Zone} zone
  */

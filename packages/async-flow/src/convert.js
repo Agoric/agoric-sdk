@@ -10,6 +10,10 @@ import {
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { objectMap } from '@endo/common/object-map.js';
 
+/**
+ * @import {Passable} from '@endo/pass-style'
+ */
+
 const makeConvert = (convertRemotable, convertPromiseOrVow, convertError) => {
   const convertRecur = (specimen, label) => {
     // Open code the synchronous part of applyLabelingError, because
