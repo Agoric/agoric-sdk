@@ -151,7 +151,9 @@ export interface StakingAccountActions {
    * The unbonding time is padded by 10 minutes to account for clock skew.
    * @param delegations - the delegation to undelegate
    */
-  undelegate: (delegations: Delegation[]) => Promise<void>;
+  undelegate: (
+    delegations: Omit<Delegation, 'delegatorAddress'>[],
+  ) => Promise<void>;
 
   /**
    * Withdraw rewards from all validators. The promise settles when the rewards are withdrawn.
