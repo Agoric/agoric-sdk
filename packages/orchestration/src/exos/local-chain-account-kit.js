@@ -278,4 +278,5 @@ export const prepareLocalChainAccountKit = (
   );
   return makeLocalChainAccountKit;
 };
-/** @typedef {ReturnType<ReturnType<typeof prepareLocalChainAccountKit>>} LocalChainAccountKit */
+/** @typedef {ReturnType<typeof prepareLocalChainAccountKit>} MakeLocalChainAccountKit */
+/** @typedef {ReturnType<MakeLocalChainAccountKit>} LocalChainAccountKit */

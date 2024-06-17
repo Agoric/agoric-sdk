@@ -5,6 +5,8 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from './chainHub.js';
+import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -59,12 +61,28 @@ export const provideOrchestration = (
     vowTools,
   });
 
+  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
+    // XXX what zone?
+    zone,
+    makeRecorderKit,
+    zcf,
+  );
+
+  const makeRemoteChainFacade = prepareRemoteChainFacade(zone, {
+    makeCosmosOrchestrationAccount,
+    orchestration: remotePowers.orchestrationService,
+    storageNode: remotePowers.storageNode,
+    timer: remotePowers.timerService,
+  });
+
   const facade = makeOrchestrationFacade({
     zcf,
     zone,
     chainHub,
     makeLocalChainAccountKit,
     makeRecorderKit,
+    makeCosmosOrchestrationAccount,
+    makeRemoteChainFacade,
     asyncFlowTools,
     ...remotePowers,
   });
