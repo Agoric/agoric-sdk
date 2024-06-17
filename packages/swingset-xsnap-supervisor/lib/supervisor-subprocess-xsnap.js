@@ -255,7 +255,8 @@ function makeWorker(port) {
 
     const workerEndowments = {
       console: makeVatConsole(makeLogMaker('vat')),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
       TextEncoder,

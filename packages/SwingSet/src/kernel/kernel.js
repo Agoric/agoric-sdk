@@ -1,3 +1,5 @@
+/* global globalThis */
+
 import { assert, Fail } from '@agoric/assert';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
@@ -1644,7 +1646,12 @@ export default function buildKernel(
       assert(bundle);
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
-        endowments: harden({ ...vatEndowments, console: devConsole, assert }),
+        endowments: harden({
+          ...vatEndowments,
+          console: devConsole,
+          // See https://github.com/Agoric/agoric-sdk/issues/9515
+          assert: globalThis.assert,
+        }),
       });
 
       if (deviceEndowments[name] || unendowed) {
