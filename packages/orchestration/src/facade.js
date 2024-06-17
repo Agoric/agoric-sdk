@@ -7,6 +7,7 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
+ * @import {Vow} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -193,7 +194,7 @@ export const makeOrchestrationFacade = ({
      *   (to resume across upgrades)
      * @param {Context} ctx - values to pass through the async flow membrane
      * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
-     * @returns {(...args: Args) => Promise<unknown>}
+     * @returns {(...args: Args) => Vow<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
       /** @type {Orchestrator} */
@@ -230,7 +231,18 @@ export const makeOrchestrationFacade = ({
         getBrandInfo: anyVal,
         asAmount: anyVal,
       };
-      return async (...args) => fn(orc, ctx, ...args);
+
+      const { asyncFlow } = asyncFlowTools;
+      /** @type {(...args: Args) => Promise<unknown>} */
+      // TODO The lexical references to `orc` and `ctx` below are a
+      // stopgap for a correct endowments mechanism. This stopgap passes
+      // them through directly, rather than through the membrane. As a result,
+      // interactions with these endowments will not yet be replayable.
+      // Even as a stopgap, this will bypass too much. But we gotta get
+      // started somewhere.
+      const guestFunc = async (...args) => fn(orc, ctx, ...args);
+      const hostFunc = asyncFlow(zone, durableName, guestFunc);
+      return hostFunc;
     },
   };
 };
