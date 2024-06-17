@@ -25,7 +25,6 @@ export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
 export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
 
 export const DelegationShape = harden({
-  delegatorAddress: M.string(),
   validatorAddress: M.string(),
   shares: M.string(), // TODO: bigint?
 });

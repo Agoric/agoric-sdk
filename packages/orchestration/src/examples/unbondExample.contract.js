@@ -57,6 +57,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     chainHub: makeChainHub(agoricNames),
     makeLocalChainAccountKit,
+    makeRecorderKit,
   });
 
   /** @type {OfferHandler} */
