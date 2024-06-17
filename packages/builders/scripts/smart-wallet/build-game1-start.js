@@ -9,7 +9,7 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-proposal.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const game1ProposalBuilder = async ({ publishRef, install }) => {
+const game1ProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     sourceSpec: '@agoric/smart-wallet/test/start-game1-proposal.js',
     getManifestCall: [
