@@ -1,6 +1,6 @@
 # see https://github.com/cosmology-tech/starship/blob/0e18757b8393357fc66426c5ee23da4ccf760e74/examples/getting-started/Makefile
 
-NAME = starship-getting-started
+NAME = agoric-multichain-testing
 FILE = config.yaml
 
 HELM_REPO = starship
@@ -53,7 +53,7 @@ stop-forward:
 ###############################################################################
 ###                          Local Kind Setup                               ###
 ###############################################################################
-KIND_CLUSTER=starship
+KIND_CLUSTER=agship
 
 .PHONY: setup-kind
 setup-kind:
