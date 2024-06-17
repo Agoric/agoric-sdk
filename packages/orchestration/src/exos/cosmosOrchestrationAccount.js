@@ -16,7 +16,6 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -60,7 +59,7 @@ const { Fail } = assert;
  *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
- *   icqConnection: ICQConnection;
+ *   icqConnection: ICQConnection | undefined;
  *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
@@ -75,11 +74,13 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     holder: M.any(),
   }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  delegate: M.callWhen(ChainAddressShape, AmountShape).returns(M.undefined()),
+  delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
+    M.undefined(),
+  ),
   redelegate: M.callWhen(
     ChainAddressShape,
     ChainAddressShape,
-    AmountShape,
+    AmountArgShape,
   ).returns(M.undefined()),
   withdrawReward: M.callWhen(ChainAddressShape).returns(
     M.arrayOf(ChainAmountShape),
@@ -123,11 +124,11 @@ export const prepareCosmosOrchestrationAccountKit = (
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
-        amountToCoin: M.call(AmountShape).returns(M.record()),
+        amountToCoin: M.call(AmountArgShape).returns(M.record()),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.callWhen(ChainAddressShape, AmountShape).returns(
+        Delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
           InvitationShape,
         ),
         Redelegate: M.callWhen(
@@ -149,7 +150,7 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {object} io
      * @param {IcaAccount} io.account
      * @param {Remote<StorageNode>} io.storageNode
-     * @param {ICQConnection} io.icqConnection
+     * @param {ICQConnection | undefined} io.icqConnection
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
@@ -158,6 +159,8 @@ export const prepareCosmosOrchestrationAccountKit = (
       // must be the fully synchronous maker because the kit is held in durable state
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
+      void E(topicKit.recorder).write('');
 
       return { chainAddress, bondDenom, topicKit, ...rest };
     },
@@ -195,7 +198,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       invitationMakers: {
         /**
          * @param {CosmosValidatorAddress} validator
-         * @param {Amount<'nat'>} amount
+         * @param {AmountArg} amount
          */
         Delegate(validator, amount) {
           trace('Delegate', validator, amount);
@@ -231,7 +234,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return this.facets.holder.withdrawReward(validator);
           }, 'WithdrawReward');
         },
-        /** @param {Delegation[]} delegations */
+        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
         Undelegate(delegations) {
           trace('Undelegate', delegations);
 
@@ -363,6 +366,9 @@ export const prepareCosmosOrchestrationAccountKit = (
          */
         async getBalance(denom) {
           const { chainAddress, icqConnection } = this.state;
+          if (!icqConnection) {
+            throw Fail`Queries not available for chain ${chainAddress.chainId}`;
+          }
           // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
 
@@ -401,7 +407,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           throw assert.error('Not implemented');
         },
 
-        /** @param {Delegation[]} delegations */
+        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
         async undelegate(delegations) {
           trace('undelegate', delegations);
           const { helper } = this.facets;
