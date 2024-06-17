@@ -132,7 +132,9 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 
-	_ "github.com/quicksilver-zone/quicksilver/x/interchainquery"
+	"github.com/quicksilver-zone/quicksilver/x/interchainquery"
+	interchainquerykeeper "github.com/quicksilver-zone/quicksilver/x/interchainquery/keeper"
+	interchainquerytypes "github.com/quicksilver-zone/quicksilver/x/interchainquery/types"
 )
 
 const appName = "agoric"
@@ -180,6 +182,7 @@ var (
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		packetforward.AppModuleBasic{},
+		interchainquery.AppModuleBasic{},
 		swingset.AppModuleBasic{},
 		vstorage.AppModuleBasic{},
 		vibc.AppModuleBasic{},
@@ -189,18 +192,19 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		icatypes.ModuleName:            nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		vbank.ModuleName:               {authtypes.Minter, authtypes.Burner},
-		vbanktypes.ReservePoolName:     nil,
-		vbanktypes.ProvisionPoolName:   nil,
-		vbanktypes.GiveawayPoolName:    nil,
+		authtypes.FeeCollectorName:      nil,
+		distrtypes.ModuleName:           nil,
+		icatypes.ModuleName:             nil,
+		minttypes.ModuleName:            {authtypes.Minter},
+		stakingtypes.BondedPoolName:     {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:  {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:             {authtypes.Burner},
+		ibctransfertypes.ModuleName:     {authtypes.Minter, authtypes.Burner},
+		vbank.ModuleName:                {authtypes.Minter, authtypes.Burner},
+		vbanktypes.ReservePoolName:      nil,
+		vbanktypes.ProvisionPoolName:    nil,
+		vbanktypes.GiveawayPoolName:     nil,
+		interchainquerytypes.ModuleName: nil,
 	}
 )
 
@@ -251,13 +255,14 @@ type GaiaApp struct { // nolint: golint
 	UpgradeKeeper    upgradekeeper.Keeper
 	ParamsKeeper     paramskeeper.Keeper
 	// IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	IBCKeeper           *ibckeeper.Keeper
-	ICAHostKeeper       icahostkeeper.Keeper
-	PacketForwardKeeper *packetforwardkeeper.Keeper
-	EvidenceKeeper      evidencekeeper.Keeper
-	TransferKeeper      ibctransferkeeper.Keeper
-	FeeGrantKeeper      feegrantkeeper.Keeper
-	AuthzKeeper         authzkeeper.Keeper
+	IBCKeeper             *ibckeeper.Keeper
+	ICAHostKeeper         icahostkeeper.Keeper
+	PacketForwardKeeper   *packetforwardkeeper.Keeper
+	InterchainQueryKeeper interchainquerykeeper.Keeper
+	EvidenceKeeper        evidencekeeper.Keeper
+	TransferKeeper        ibctransferkeeper.Keeper
+	FeeGrantKeeper        feegrantkeeper.Keeper
+	AuthzKeeper           authzkeeper.Keeper
 
 	SwingStoreExportsHandler swingset.SwingStoreExportsHandler
 	SwingSetSnapshotter      swingset.ExtensionSnapshotter
@@ -637,6 +642,8 @@ func NewAgoricApp(
 	// Seal the router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
+	app.InterchainQueryKeeper = interchainquerykeeper.NewKeeper(appCodec, app.keys[interchainquerytypes.StoreKey], app.IBCKeeper)
+
 	// The local chain keeper provides ICA/ICQ-like support for the VM to
 	// control a fresh account and/or query this Cosmos-SDK instance.
 	app.VlocalchainKeeper = vlocalchain.NewKeeper(
@@ -689,6 +696,7 @@ func NewAgoricApp(
 		ics20TransferModule,
 		icaModule,
 		packetforward.NewAppModule(app.PacketForwardKeeper),
+		interchainquery.NewAppModule(appCodec, app.InterchainQueryKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
 		swingset.NewAppModule(app.SwingSetKeeper, &app.SwingStoreExportsHandler, setBootstrapNeeded, app.ensureControllerInited, swingStoreExportDir),
 		vibcModule,
@@ -715,6 +723,7 @@ func NewAgoricApp(
 		ibchost.ModuleName,
 		icatypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		interchainquerytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
@@ -744,6 +753,7 @@ func NewAgoricApp(
 		ibchost.ModuleName,
 		icatypes.ModuleName,
 		packetforwardtypes.ModuleName,
+		interchainquerytypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
 		capabilitytypes.ModuleName,
@@ -794,6 +804,7 @@ func NewAgoricApp(
 		genutiltypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		interchainquerytypes.ModuleName,
 		// Agoric-specific modules go last since they may rely on other SDK modules.
 		vstorage.ModuleName,
 		vbank.ModuleName,
@@ -829,6 +840,7 @@ func NewAgoricApp(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		ics20TransferModule,
+		interchainquery.NewAppModule(appCodec, app.InterchainQueryKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -876,9 +888,10 @@ func NewAgoricApp(
 	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
-				packetforwardtypes.ModuleName, // Added PFM
-				vlocalchain.ModuleName,        // Agoric added vlocalchain
-				vtransfer.ModuleName,          // Agoric added vtransfer
+				packetforwardtypes.ModuleName,   // Added PFM
+				vlocalchain.ModuleName,          // Agoric added vlocalchain
+				vtransfer.ModuleName,            // Agoric added vtransfer
+				interchainquerytypes.ModuleName, // Quicksilver ICQ
 			},
 			Deleted: []string{
 				"lien", // Agoric removed the lien module
