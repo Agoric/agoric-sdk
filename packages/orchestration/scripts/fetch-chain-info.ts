@@ -33,6 +33,7 @@ const chainNames = [
   'secretnetwork',
   'stargaze',
   'stride',
+  'umee',
 ];
 
 const client = new ChainRegistryClient({
@@ -57,6 +58,16 @@ function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
       // @ts-expect-error tags does not specify keys
       c.tags?.preferred,
   );
+  if (transferChannels.length === 0) {
+    console.warn(
+      'no transfer channel for [',
+      from.chain_name,
+      to.chain_name,
+      ']',
+      '(skipping)',
+    );
+    return [];
+  }
   if (transferChannels.length > 1) {
     console.warn(
       'multiple preferred transfer channels [',
@@ -94,7 +105,7 @@ function toConnectionEntry(ibcInfo: IBCInfo, name: string) {
     },
   } as IBCConnectionInfo;
   const destChainId = chainInfo[to.chain_name].chainId;
-  return [destChainId, record];
+  return [destChainId, record] as const;
 }
 
 for (const name of chainNames) {
@@ -104,10 +115,10 @@ for (const name of chainNames) {
   chainInfo[name] = {
     chainId: chain.chain_id,
     stakingTokens: chain.staking?.staking_tokens,
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
+    icqEnabled: name === 'osmosis',
   };
 }
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-chainInfo.osmosis = { ...chainInfo.osmosis, icqEnabled: true };
 
 // iterate this after chainInfo is filled out
 for (const name of chainNames) {
@@ -117,9 +128,8 @@ for (const name of chainNames) {
   const connections = Object.fromEntries(
     ibcData
       .map(datum => toConnectionEntry(datum, name))
-      // sort alphbetically for consistency
-      // eslint-disable-next-line no-nested-ternary
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+      // sort alphabetically for consistency
+      .sort(([a], [b]) => a?.localeCompare(b)),
   );
   chainInfo[name] = { ...chainInfo[name], connections };
 }

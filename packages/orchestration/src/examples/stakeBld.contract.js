@@ -6,6 +6,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
@@ -33,11 +34,6 @@ const trace = makeTracer('StakeBld');
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const BLD = zcf.getTerms().brands.In;
-
-  // XXX is this safe to call before prepare statements are completed?
-  const bldAmountShape = await E(BLD).getAmountShape();
-
   const zone = makeDurableZone(baggage);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -53,9 +49,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeChainHub(privateArgs.agoricNames),
   );
 
+  // ----------------
+  // All `prepare*` calls should go above this line.
+
+  const BLD = zcf.getTerms().brands.In;
+  const bldAmountShape = await E(BLD).getAmountShape();
+
   async function makeLocalAccountKit() {
-    const account = await E(privateArgs.localchain).makeAccount();
-    const address = await E(account).getAddress();
+    const account = await V(privateArgs.localchain).makeAccount();
+    const address = await V(account).getAddress();
     // XXX 'address' is implied by 'account'; use an async maker that get the value itself
     return makeLocalChainAccountKit({
       account,
@@ -84,7 +86,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
-            await E(holder).deposit(In);
+            await V(holder).deposit(In);
             seat.exit();
             return harden({
               publicSubscribers: holder.getPublicTopics(),

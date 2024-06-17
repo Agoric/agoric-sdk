@@ -9,11 +9,9 @@ import { keyArrayEqual, makeSwingsetTestKit } from '../../tools/supports.ts';
 const { keys } = Object;
 
 const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/demo-config',
-    { configSpecifier: '@agoric/vm-config/decentral-demo-config.json' },
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+  });
   return swingsetTestKit;
 };
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;

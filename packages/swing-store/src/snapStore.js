@@ -4,7 +4,10 @@ import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@agoric/assert';
-import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
+import {
+  aggregateTryFinally,
+  PromiseAllOrErrors,
+} from '@agoric/internal/src/node/utils.js';
 import { buffer } from './util.js';
 
 /**

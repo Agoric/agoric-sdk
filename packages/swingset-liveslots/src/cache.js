@@ -17,7 +17,7 @@ import { Fail } from '@agoric/assert';
 /**
  * @callback CacheDelete
  * @param {string} key
- * @returns {boolean}
+ * @returns {void}
  *
  * @callback CacheFlush
  * @returns {void}
@@ -83,9 +83,8 @@ export function makeCache(readBacking, writeBacking, deleteBacking) {
     },
     delete: key => {
       assert.typeof(key, 'string');
-      const result = stash.delete(key);
+      stash.delete(key);
       dirtyKeys.add(key);
-      return result;
     },
     flush: () => {
       const keys = [...dirtyKeys.keys()];

@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import type { RemotableBrand } from '@endo/eventual-send';
+import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
 import type { Callable } from './utils.js';
 
@@ -56,3 +56,11 @@ export type DataOnly<T> =
 export type Remote<Primary, Local = DataOnly<Primary>> =
   | Primary
   | RemotableBrand<Local, Primary>;
+
+// TODO: Add type tests for FarRef and Remote.
+/**
+ * Potentially remote promises or settled references.
+ */
+export type FarRef<Primary, Local = DataOnly<Primary>> = ERef<
+  Remote<Primary, Local>
+>;

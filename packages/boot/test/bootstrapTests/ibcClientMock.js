@@ -4,13 +4,14 @@ import { Far } from '@endo/far';
 import { V as E } from '@agoric/vow/vat.js';
 
 /**
- * @import {ListenHandler, PortAllocator} from '@agoric/network';
+ * @import {Connection, PortAllocator} from '@agoric/network';
+ * @import {FarRef, ERef} from '@agoric/vow';
  */
 
 /**
  * @param {ZCF} zcf
  * @param {{
- *   portAllocator: ERef<PortAllocator>;
+ *   portAllocator: FarRef<PortAllocator>;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} _baggage
  */
@@ -20,7 +21,13 @@ export const start = async (zcf, privateArgs, _baggage) => {
   const myPort = await E(portAllocator).allocateCustomIBCPort();
 
   const { log } = console;
+  /**
+   * @type {FarRef<Connection>}
+   */
   let connP;
+  /**
+   * @type {ERef<string>}
+   */
   let ackP;
 
   const creatorFacet = Far('CF', {

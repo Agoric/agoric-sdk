@@ -10,11 +10,9 @@ import { BridgeId, VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/vtransfer',
-    { configSpecifier: '@agoric/vm-config/decentral-demo-config.json' },
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+  });
   return swingsetTestKit;
 };
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;

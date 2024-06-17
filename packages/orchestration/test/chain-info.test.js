@@ -27,6 +27,7 @@ test('chain-info', async t => {
     'secretnetwork',
     'stargaze',
     'stride',
+    'umee',
   ]);
   t.snapshot(chainNames.entries());
 });
