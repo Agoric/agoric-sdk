@@ -63,10 +63,12 @@ test('makeAccount returns a ChainAccount', async t => {
     bootstrap: { orchestration },
   } = await commonSetup(t);
 
+  const CHAIN_ID = 'cosmoshub-99';
   const HOST_CONNECTION_ID = 'connection-0';
   const CONTROLLER_CONNECTION_ID = 'connection-1';
 
   const account = await E(orchestration).makeAccount(
+    CHAIN_ID,
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
   );

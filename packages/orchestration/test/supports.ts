@@ -104,9 +104,7 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
-  const { portAllocator, vowTools } = fakeNetworkEchoStuff(
-    rootZone.subZone('network'),
-  );
+  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
 
   const { makeOrchestrationKit } = prepareOrchestrationTools(
     rootZone.subZone('orchestration'),

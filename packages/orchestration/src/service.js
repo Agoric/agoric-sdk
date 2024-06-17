@@ -71,7 +71,7 @@ const prepareOrchestrationKit = (
     {
       requestICAChannelWatcher: M.interface('RequestICAChannelWatcher', {
         onFulfilled: M.call(M.remotable('Port'))
-          .optional({ remoteConnAddr: M.string() })
+          .optional({ chainId: M.string(), remoteConnAddr: M.string() })
           .returns(NetworkShape.Vow$(NetworkShape.Connection)),
       }),
       requestICQChannelWatcher: M.interface('RequestICQChannelWatcher', {
@@ -93,7 +93,7 @@ const prepareOrchestrationKit = (
           .returns(M.remotable('ConnectionKit Holder facet')),
       }),
       public: M.interface('OrchestrationService', {
-        makeAccount: M.callWhen(M.string(), M.string()).returns(
+        makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
           M.remotable('ChainAccountKit'),
         ),
         provideICQConnection: M.callWhen(M.string()).returns(
