@@ -9,6 +9,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
+/**
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {AsyncFlow} from '../src/async-flow.js'
+ */
+
 const { apply } = Reflect;
 
 /**

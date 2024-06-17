@@ -21,6 +21,9 @@ import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
 /**
  * @import {AsyncFlow} from '../src/async-flow.js'
+ * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
  */
 
 /**

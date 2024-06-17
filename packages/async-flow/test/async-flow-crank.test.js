@@ -16,6 +16,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {Ephemera} from './types.js';
+ */
+
 const neverSettlesP = new Promise(() => {});
 
 /**
