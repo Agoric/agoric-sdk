@@ -15,12 +15,20 @@ import {
  */
 
 /**
+ * @typedef CoreEvalPlan
+ * @property {string} name
+ * @property {string} permit
+ * @property {string} script
+ * @property {{entrypoint: string, bundleID: string, fileName: string}[]} bundles
+ */
+
+/**
  * @callback WriteCoreEval write to disk the files needed for a CoreEval (js code to`${filePrefix}.js`, permits to `${filePrefix}-permit.json`, an overall
  *   summary to `${filePrefix}-plan.json), plus whatever bundles bundles the code loads)
  * see CoreEval in {@link '/golang/cosmos/x/swingset/types/swingset.pb.go'}
  * @param {string} filePrefix name on disk
  * @param {import('./externalTypes.js').CoreEvalBuilder} builder
- * @returns {Promise<void>}
+ * @returns {Promise<CoreEvalPlan>}
  */
 
 /**
@@ -189,6 +197,7 @@ behavior;
     log(`creating ${codeFile}`);
     await writeFile(codeFile, trimmed);
 
+    /** @type {CoreEvalPlan} */
     const plan = {
       name: filePrefix,
       script: codeFile,
@@ -209,6 +218,7 @@ You can now run a governance submission command like:
 Remember to install bundles before submitting the proposal:
   ${cmds.join('\n  ')}
 `);
+    return plan;
   };
 
   return writeCoreEval;
