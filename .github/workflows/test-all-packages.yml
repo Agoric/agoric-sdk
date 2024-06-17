@@ -164,9 +164,6 @@ jobs:
       - name: yarn test (ERTP)
         if: (success() || failure())
         run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (governance)
-        if: (success() || failure())
-        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (import-manager)
         if: (success() || failure())
         run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -197,6 +194,12 @@ jobs:
       - name: yarn test (vow)
         if: (success() || failure())
         run: cd packages/vow && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (xsnap-lockdown)
+        if: (success() || failure())
+        run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (xsnap)
+        if: (success() || failure())
+        run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -334,6 +337,47 @@ jobs:
 
   ##############
   # Long-running tests are executed individually.
+  test-governance:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # test:xs is noop in governance/package.json
+        engine: ['18.x', '20.x']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ steps.vars.outputs.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (governance)
+        if: (success() || failure())
+        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
   test-solo:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
@@ -468,6 +512,9 @@ jobs:
     strategy:
       matrix:
         engine: ['18.x', '20.x', 'xs']
+        # Run parallel testing jobs, each executing a subset.
+        node_index: [0, 1, 2, 3]
+        total_nodes: [4] # the total number of nodes
     steps:
       - name: set vars
         id: vars
@@ -475,6 +522,8 @@ jobs:
           echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+          echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
+          echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -500,7 +549,6 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
-  # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
@@ -509,6 +557,9 @@ jobs:
     strategy:
       matrix:
         engine: ['18.x', '20.x', 'xs']
+        # Run parallel testing jobs, each executing a subset.
+        node_index: [0, 1, 2, 3, 4]
+        total_nodes: [5] # the total number of nodes
     steps:
       - name: set vars
         id: vars
@@ -516,6 +567,8 @@ jobs:
           echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+          echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
+          echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -526,142 +579,11 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[A-Da-d]*' | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  test-swingset2:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        engine: ['18.x', '20.x', 'xs']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ steps.vars.outputs.node-version }}
-        id: restore-node
-      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
-      # END-TEST-BOILERPLATE
-      - name: yarn test (SwingSet)
-        if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[E-Ie-i]*' | $TEST_COLLECT
-      - name: yarn test (xsnap-lockdown)
-        if: (success() || failure())
-        run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (xsnap)
-        if: (success() || failure())
-        run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
         if: (success() || failure()) && matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  test-swingset3:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        engine: ['18.x', '20.x', 'xs']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ steps.vars.outputs.node-version }}
-        id: restore-node
-      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
-      # END-TEST-BOILERPLATE
-      - name: yarn test (SwingSet)
-        if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[J-Rj-r]*' | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  test-swingset4:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        engine: ['18.x', '20.x', 'xs']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ steps.vars.outputs.node-version }}
-        id: restore-node
-      - run: echo "ENDO_BRANCH=${{ steps.restore-node.outputs.endo-branch }}" >> $GITHUB_ENV
-      # END-TEST-BOILERPLATE
-
-      - name: yarn test (SwingSet)
-        if: (success() || failure())
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/[S-Zs-z0-9.test]*.js' | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

@@ -23,13 +23,9 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/vats-restart',
-    {
-      configSpecifier: PLATFORM_CONFIG,
-    },
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier: PLATFORM_CONFIG,
+  });
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
