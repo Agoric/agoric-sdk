@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+set -x
+
 source /usr/src/upgrade-test-scripts/env_setup.sh
 
 OFFER=$(mktemp -t agops.XXX)

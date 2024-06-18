@@ -1,0 +1,13 @@
+diff --git a/dist/upgrade-test-scripts/env_setup.sh b/dist/upgrade-test-scripts/env_setup.sh
+index 617a0fbe7efdfa457e28fc52806dba1b323930d8..8f15ffcdf4297d69ef1ff0e4e6f041d5b17003fe 100755
+--- a/dist/upgrade-test-scripts/env_setup.sh
++++ b/dist/upgrade-test-scripts/env_setup.sh
+@@ -86,7 +86,7 @@ startAgd() {
+   # precondition check
+   await_agd_startable 10
+ 
+-  agd start --log_level warn "$@" &
++  SLOGFILE=${SLOGFILE:-$HOME/.agoric/chain-$(date +%s).slog} agd start --log_level warn "$@" &
+   AGD_PID=$!
+   echo $AGD_PID >$HOME/.agoric/agd.pid
+   wait_for_bootstrap
