@@ -1,0 +1,17 @@
+{
+  "name": "add-STARS2-collateral",
+  "script": "add-STARS2-collateral.js",
+  "permit": "add-STARS2-collateral-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/zoe/src/contracts/scaledPriceAuthority.js",
+      "bundleID": "b1-c4f1d8595bcf7a36a86b72e817d75e5a8e18d390a0a6a5d5c5100cdf4543edee0ed6da532b9e3555231e9787777ee13af9cd355ac567df6d283d99ca27012ef8",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-c4f1d8595bcf7a36a86b72e817d75e5a8e18d390a0a6a5d5c5100cdf4543edee0ed6da532b9e3555231e9787777ee13af9cd355ac567df6d283d99ca27012ef8.json"
+    },
+    {
+      "entrypoint": "@agoric/inter-protocol/src/proposals/addAssetToVault.js",
+      "bundleID": "b1-860f899ba7983551767bbd2872fd2bb108d00999ed6355281c01449898d88ef2bde3c3655a2199198a262590299db6c9e076a98ddb85d35ee414fd97fce43010",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-860f899ba7983551767bbd2872fd2bb108d00999ed6355281c01449898d88ef2bde3c3655a2199198a262590299db6c9e076a98ddb85d35ee414fd97fce43010.json"
+    }
+  ]
+}

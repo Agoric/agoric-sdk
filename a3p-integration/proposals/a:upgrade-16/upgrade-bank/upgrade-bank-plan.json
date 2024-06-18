@@ -1,0 +1,17 @@
+{
+  "name": "upgrade-bank",
+  "script": "upgrade-bank.js",
+  "permit": "upgrade-bank-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/vats/src/vat-bank.js",
+      "bundleID": "b1-8106a7500d879e63163ea52120bbcc6f0b2029f6c4c5a62d3792daf1b6819f2ca52320fdf003f3cccb3b28b2f84f6c9e5d109f1fc4716eb7730ec1dcd5dc6ea6",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-8106a7500d879e63163ea52120bbcc6f0b2029f6c4c5a62d3792daf1b6819f2ca52320fdf003f3cccb3b28b2f84f6c9e5d109f1fc4716eb7730ec1dcd5dc6ea6.json"
+    },
+    {
+      "entrypoint": "@agoric/vats/src/proposals/upgrade-bank-proposal.js",
+      "bundleID": "b1-13dca0f74381c0833132bbbbdbd96013aa63920549d30e941749dcb740bda9e2964b65fd1d3796bbfa9897494d8e8d056476872f8ac9813b3ad58e98b3d79521",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-13dca0f74381c0833132bbbbdbd96013aa63920549d30e941749dcb740bda9e2964b65fd1d3796bbfa9897494d8e8d056476872f8ac9813b3ad58e98b3d79521.json"
+    }
+  ]
+}
