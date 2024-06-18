@@ -81,8 +81,8 @@ export {};
  * @template [T=any]
  * @template [TResult1=T]
  * @template [TResult2=never]
- * @template [C=any] watcher context
+ * @template {any[]} [C=any[]] watcher args
  * @typedef {object} Watcher
- * @property {(value: T, context?: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
- * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
+ * @property {(value: T, ...args: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
+ * @property {(reason: any, ...args: C) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
