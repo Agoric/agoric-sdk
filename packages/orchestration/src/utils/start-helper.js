@@ -48,16 +48,18 @@ export const provideOrchestration = (
 
   const chainHub = makeChainHub(remotePowers.agoricNames);
 
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     remotePowers.timerService,
+    vowTools,
     chainHub,
   );
 
-  const vowTools = prepareVowTools(zone.subZone('vows'));
   const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
     vowTools,
   });

@@ -1,8 +1,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { V } from '@agoric/vow/vat.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
@@ -58,6 +59,8 @@ test('makeAccount, deposit, withdraw', async t => {
   );
   // FIXME #9211
   // t.deepEqual(await E(account).getBalance('ubld'), bld.units(100));
+  // XXX races in the bridge
+  await eventLoopIteration();
 
   t.log('withdraw bld from account');
   const withdrawResp = await V(account).withdraw(bld.units(100));

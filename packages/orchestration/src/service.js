@@ -213,13 +213,14 @@ const prepareOrchestrationKit = (
         },
         /**
          * @param {IBCConnectionID} controllerConnectionId
-         * @returns {ICQConnection | Promise<ICQConnection>}
+         * @returns {Promise<ICQConnection>}
          */
         provideICQConnection(controllerConnectionId) {
           if (this.state.icqConnections.has(controllerConnectionId)) {
             // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
-            return this.state.icqConnections.get(controllerConnectionId)
-              .connection;
+            return when(
+              this.state.icqConnections.get(controllerConnectionId).connection,
+            );
           }
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
           const portAllocator = getPower(this.state.powers, 'portAllocator');

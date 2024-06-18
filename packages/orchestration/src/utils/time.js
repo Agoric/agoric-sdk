@@ -21,6 +21,8 @@ export function makeTimestampHelper(timer) {
 
   return harden({
     /**
+     * XXX do this need to be resumable / use Vows?
+     *
      * Takes the current time from ChainTimerService and adds a relative time to
      * determine a timeout timestamp in nanoseconds. Useful for
      * {@link MsgTransfer.timeoutTimestamp}.
