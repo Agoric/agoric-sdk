@@ -2,12 +2,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import type { TestFn } from 'ava';
-import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -230,4 +230,42 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     'delegate fails with invalid validator',
   );
+});
+
+// XXX rely on .serial to be in sequence, and keep this one last
+test.serial('revise chain info', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    runUtils: { EV },
+  } = t.context;
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+
+  const agoricBefore = await EV(agoricNames).lookup('chain', 'agoric');
+  t.like(agoricBefore, { chainId: 'agoric-3' });
+
+  await t.throwsAsync(EV(agoricNames).lookup('chain', 'hot'), {
+    message: '"nameKey" not found: "hot"',
+  });
+
+  // Revise chain info in agoricNames with the fixture in this script
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/tweak-chain-info.js'),
+  );
+
+  const hotAfter = await EV(agoricNames).lookup('chain', 'hot');
+  t.deepEqual(hotAfter, { allegedName: 'Hot New Chain', chainId: 'hot-1' });
+
+  const agoricAfter = await EV(agoricNames).lookup('chain', 'agoric');
+  t.like(agoricAfter, { chainId: 'agoric-4' });
+
+  const connection = await EV(agoricNames).lookup(
+    'chainConnection',
+    'cosmoshub-4_hot-1',
+  );
+  t.like(connection, {
+    id: 'connection-99',
+    client_id: '07-tendermint-3',
+  });
 });
