@@ -193,7 +193,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
 
 export const LocalChainI = M.interface('LocalChain', {
   makeAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
-  query: M.callWhen(M.record()).returns(M.record()),
+  query: M.callWhen(M.record()).returns(NetworkShape.Vow$(M.record())),
   queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
