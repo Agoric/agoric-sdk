@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/far';
+import { V } from '@agoric/vow/vat.js';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { QueryBalanceRequest } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
@@ -15,7 +16,7 @@ test('makeICQConnection returns an ICQConnection', async t => {
 
   const CONTROLLER_CONNECTION_ID = 'connection-0';
 
-  const icqConnection = await E(orchestration).provideICQConnection(
+  const icqConnection = await V(orchestration).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
   );
   const [localAddr, remoteAddr] = await Promise.all([
@@ -38,14 +39,14 @@ test('makeICQConnection returns an ICQConnection', async t => {
     'remote address contains icqhost port, unordered ordering, and icq-1 version string',
   );
 
-  const icqConnection2 = await E(orchestration).provideICQConnection(
+  const icqConnection2 = await V(orchestration).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
   );
   const localAddr2 = await E(icqConnection2).getLocalAddress();
   t.is(localAddr, localAddr2, 'provideICQConnection is idempotent');
 
   await t.throwsAsync(
-    E(icqConnection).query([
+    V(icqConnection).query([
       toRequestQueryJson(
         QueryBalanceRequest.toProtoMsg({
           address: 'cosmos1test',
@@ -67,7 +68,7 @@ test('makeAccount returns a ChainAccount', async t => {
   const HOST_CONNECTION_ID = 'connection-0';
   const CONTROLLER_CONNECTION_ID = 'connection-1';
 
-  const account = await E(orchestration).makeAccount(
+  const account = await V(orchestration).makeAccount(
     CHAIN_ID,
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
@@ -114,14 +115,14 @@ test('makeAccount returns a ChainAccount', async t => {
     }),
   );
   await t.throwsAsync(
-    E(account).executeEncodedTx([delegateMsg]),
+    V(account).executeEncodedTx([delegateMsg]),
     { message: /"type":1(.*)"data":"(.*)"memo":""/ },
     'TODO do not use echo connection',
   );
 
-  await E(account).close();
+  await V(account).close();
   await t.throwsAsync(
-    E(account).executeEncodedTx([delegateMsg]),
+    V(account).executeEncodedTx([delegateMsg]),
     {
       message: 'Connection closed',
     },

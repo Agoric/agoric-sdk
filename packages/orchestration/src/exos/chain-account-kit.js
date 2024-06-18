@@ -2,6 +2,7 @@
 import { NonNullish } from '@agoric/assert';
 import { PurseShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
@@ -15,7 +16,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote, VowTools} from '@agoric/vow';
+ * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -36,10 +37,10 @@ export const ChainAccountI = M.interface('ChainAccount', {
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
   executeTx: M.call(M.arrayOf(M.record())).returns(M.promise()),
-  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+  executeEncodedTx: M.callWhen(M.arrayOf(Proto3Shape))
     .optional(M.record())
-    .returns(M.promise()),
-  close: M.callWhen().returns(M.undefined()),
+    .returns(NetworkShape.Vow$(M.string())),
+  close: M.callWhen().returns(NetworkShape.Vow$(M.undefined())),
   getPurse: M.callWhen().returns(PurseShape),
 });
 
@@ -59,7 +60,7 @@ export const ChainAccountI = M.interface('ChainAccount', {
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-export const prepareChainAccountKit = (zone, { watch, when }) =>
+export const prepareChainAccountKit = (zone, { watch }) =>
   zone.exoClassKit(
     'ChainAccountKit',
     {
@@ -133,7 +134,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
          *
          * @param {AnyJson[]} msgs
          * @param {Omit<TxBody, 'messages'>} [opts]
-         * @returns {Promise<string>} - base64 encoded bytes string. Can be
+         * @returns {PromiseVow<string>} - base64 encoded bytes string. Can be
          *   decoded using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
          */
@@ -142,14 +143,16 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
           // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
           /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          return when(
-            watch(
-              E(connection).send(makeTxPacket(msgs, opts)),
-              this.facets.parseTxPacketWatcher,
-            ),
+          return watch(
+            E(connection).send(makeTxPacket(msgs, opts)),
+            this.facets.parseTxPacketWatcher,
           );
         },
-        /** Close the remote account */
+        /**
+         * Close the remote account
+         *
+         * @returns {PromiseVow<void>}
+         */
         async close() {
           /// TODO #9192 what should the behavior be here? and `onClose`?
           // - retrieve assets?
@@ -158,7 +161,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
           // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
           /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          return when(watch(E(connection).close()));
+          return watch(E(connection).close());
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account

@@ -1,6 +1,7 @@
 /** @file ICQConnection Exo */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
@@ -9,7 +10,7 @@ import { ConnectionHandlerI } from '../typeGuards.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote, VowTools} from '@agoric/vow';
+ * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -26,7 +27,9 @@ export const ICQMsgShape = M.splitRecord(
 export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
-  query: M.call(M.arrayOf(ICQMsgShape)).returns(M.promise()),
+  query: M.callWhen(M.arrayOf(ICQMsgShape)).returns(
+    NetworkShape.Vow$(M.arrayOf(M.record())),
+  ),
 });
 
 /**
@@ -54,7 +57,7 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-export const prepareICQConnectionKit = (zone, { watch, when }) =>
+export const prepareICQConnectionKit = (zone, { watch }) =>
   zone.exoClassKit(
     'ICQConnectionKit',
     {
@@ -90,7 +93,7 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
         },
         /**
          * @param {JsonSafe<RequestQuery>[]} msgs
-         * @returns {Promise<JsonSafe<ResponseQuery>[]>}
+         * @returns {PromiseVow<JsonSafe<ResponseQuery>[]>}
          * @throws {Error} if packet fails to send or an error is returned
          */
         query(msgs) {
@@ -98,11 +101,10 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
           // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
           /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          return when(
-            watch(
-              E(connection).send(makeQueryPacket(msgs)),
-              this.facets.parseQueryPacketWatcher,
-            ),
+          // @ts-expect-error Type 'Vow<JsonSafe<ResponseQuery>[]>' is missing the following properties from type 'Promise<JsonSafe<ResponseQuery>[] | Vow<JsonSafe<ResponseQuery>[]>>': then, catch, finally ts(2739)
+          return watch(
+            E(connection).send(makeQueryPacket(msgs)),
+            this.facets.parseQueryPacketWatcher,
           );
         },
       },

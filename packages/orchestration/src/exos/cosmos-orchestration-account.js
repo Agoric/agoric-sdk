@@ -16,6 +16,7 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -39,7 +40,7 @@ import { dateInSeconds } from '../utils/time.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
- * @import {VowTools} from '@agoric/vow';
+ * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
@@ -74,18 +75,22 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
-    M.undefined(),
+    NetworkShape.Vow$(M.undefined()),
   ),
   redelegate: M.callWhen(
     ChainAddressShape,
     ChainAddressShape,
     AmountArgShape,
-  ).returns(M.undefined()),
+  ).returns(NetworkShape.Vow$(M.undefined())),
   withdrawReward: M.callWhen(ChainAddressShape).returns(
-    M.arrayOf(ChainAmountShape),
+    NetworkShape.Vow$(M.arrayOf(ChainAmountShape)),
   ),
-  withdrawRewards: M.callWhen().returns(M.arrayOf(ChainAmountShape)),
-  undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(M.undefined()),
+  withdrawRewards: M.callWhen().returns(
+    NetworkShape.Vow$(M.arrayOf(ChainAmountShape)),
+  ),
+  undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(
+    NetworkShape.Vow$(M.undefined()),
+  ),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -105,7 +110,7 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
-  { when, watch },
+  { watch },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
@@ -349,13 +354,14 @@ export const prepareCosmosOrchestrationAccountKit = (
          *
          * @param {CosmosValidatorAddress} validator
          * @param {AmountArg} amount
+         * @returns {PromiseVow<void>}
          */
         async delegate(validator, amount) {
           trace('delegate', validator, amount);
           const { helper } = this.facets;
           const { chainAddress } = this.state;
 
-          const results = E(helper.owned()).executeEncodedTx([
+          const resultsV = E(helper.owned()).executeEncodedTx([
             Any.toJSON(
               MsgDelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
@@ -364,7 +370,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-          return when(watch(results, this.facets.returnVoidWatcher));
+          return watch(resultsV, this.facets.returnVoidWatcher);
         },
         async deposit(payment) {
           trace('deposit', payment);
@@ -381,13 +387,14 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {CosmosValidatorAddress} srcValidator
          * @param {CosmosValidatorAddress} dstValidator
          * @param {AmountArg} amount
+         * @returns {PromiseVow<void>}
          */
         async redelegate(srcValidator, dstValidator, amount) {
           trace('redelegate', srcValidator, dstValidator, amount);
           const { helper } = this.facets;
           const { chainAddress } = this.state;
 
-          const results = E(helper.owned()).executeEncodedTx([
+          const resultsV = E(helper.owned()).executeEncodedTx([
             Any.toJSON(
               MsgBeginRedelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
@@ -398,17 +405,15 @@ export const prepareCosmosOrchestrationAccountKit = (
             ),
           ]);
 
-          return when(
-            watch(
-              results,
-              // NOTE: response, including completionTime, is currently discarded.
-              this.facets.returnVoidWatcher,
-            ),
+          return watch(
+            resultsV,
+            // NOTE: response, including completionTime, is currently discarded.
+            this.facets.returnVoidWatcher,
           );
         },
         /**
          * @param {CosmosValidatorAddress} validator
-         * @returns {Promise<DenomAmount[]>}
+         * @returns {PromiseVow<DenomAmount[]>}
          */
         async withdrawReward(validator) {
           trace('withdrawReward', validator);
@@ -421,11 +426,11 @@ export const prepareCosmosOrchestrationAccountKit = (
           const account = helper.owned();
 
           const results = E(account).executeEncodedTx([Any.toJSON(msg)]);
-          return when(watch(results, this.facets.withdrawRewardWatcher));
+          return watch(results, this.facets.withdrawRewardWatcher);
         },
         /**
          * @param {DenomArg} denom
-         * @returns {Promise<DenomAmount>}
+         * @returns {PromiseVow<DenomAmount>}
          */
         async getBalance(denom) {
           const { chainAddress, icqConnection } = this.state;
@@ -435,7 +440,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
 
-          const results = E(icqConnection).query([
+          const resultsV = E(icqConnection).query([
             toRequestQueryJson(
               QueryBalanceRequest.toProtoMsg({
                 address: chainAddress.address,
@@ -443,7 +448,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-          return when(watch(results, this.facets.balanceQueryWatcher));
+          return watch(resultsV, this.facets.balanceQueryWatcher);
         },
 
         send(toAccount, amount) {
@@ -465,7 +470,10 @@ export const prepareCosmosOrchestrationAccountKit = (
           throw assert.error('Not implemented');
         },
 
-        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
+        /**
+         * @param {Omit<Delegation, 'delegatorAddress'>[]} delegations
+         * @returns {PromiseVow<void>}
+         */
         async undelegate(delegations) {
           trace('undelegate', delegations);
           const { helper } = this.facets;
@@ -485,7 +493,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             ),
             this.facets.undelegateWatcher,
           );
-          return when(watch(undelegateV, this.facets.returnVoidWatcher));
+          return watch(undelegateV, this.facets.returnVoidWatcher);
         },
       },
     },

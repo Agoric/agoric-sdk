@@ -2,6 +2,7 @@
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { V } from '@agoric/vow/vat.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -47,10 +48,11 @@ const { Fail } = assert;
 const HolderI = M.interface('holder', {
   ...orchestrationAccountMethods,
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  delegate: M.call(M.string(), AmountShape).returns(M.promise()),
-  undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  // XXX why aren't `delegate` and `undelegate` on `orchestrationAccountMethods`?
+  delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+  undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -71,7 +73,7 @@ export const prepareLocalOrchestrationAccountKit = (
   makeRecorderKit,
   zcf,
   timerService,
-  { watch, when, allVows },
+  { watch, allVows },
   chainHub,
 ) => {
   const timestampHelper = makeTimestampHelper(timerService);
@@ -265,12 +267,15 @@ export const prepareLocalOrchestrationAccountKit = (
        */
       returnVoidWatcher: {
         /**
-         * @param {Record<unknown, unknown>[]} results
+         * @param {Record<unknown, unknown>[] | Amount<'nat'>} results
          */
         onFulfilled(results) {
-          results.length === 1 ||
-            Fail`expected exactly one result; got ${results}`;
-          trace('Result', results[0]);
+          if (Array.isArray(results)) {
+            results.length === 1 ||
+              Fail`expected exactly one result; got ${results}`;
+            trace('Result', results[0]);
+            return undefined;
+          }
           return undefined;
         },
       },
@@ -315,7 +320,7 @@ export const prepareLocalOrchestrationAccountKit = (
           };
           const { account: lca } = this.state;
 
-          const results = E(lca).executeTx([
+          const resultsV = E(lca).executeTx([
             typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
               amount,
               validatorAddress,
@@ -323,7 +328,7 @@ export const prepareLocalOrchestrationAccountKit = (
             }),
           ]);
 
-          return when(watch(results, this.facets.extractFirstResultWatcher));
+          return watch(resultsV, this.facets.extractFirstResultWatcher);
         },
         /**
          * @param {string} validatorAddress
@@ -337,7 +342,7 @@ export const prepareLocalOrchestrationAccountKit = (
             denom: 'ubld',
           };
           const { account: lca } = this.state;
-          const results = E(lca).executeTx([
+          const resultsV = E(lca).executeTx([
             typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
               amount,
               validatorAddress,
@@ -345,7 +350,7 @@ export const prepareLocalOrchestrationAccountKit = (
             }),
           ]);
           // @ts-expect-error  Type 'JsonSafe<MsgUndelegateResponse & { '@type': "/cosmos.staking.v1beta1.MsgUndelegateResponse"; }>' is not assignable to type 'MsgUndelegateResponse'.
-          return when(watch(results, this.facets.undelegateWatcher));
+          return watch(resultsV, this.facets.undelegateWatcher);
         },
         /**
          * Starting a transfer revokes the account holder. The associated
@@ -354,21 +359,20 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         /** @type {OrchestrationAccount<any>['deposit']} */
         async deposit(payment) {
-          return when(
-            watch(
-              E(this.state.account)
-                .deposit(payment)
-                .then(() => {}),
-            ),
+          // @ts-expect-error Vow vs Promise
+          return watch(
+            E(this.state.account).deposit(payment),
+            this.facets.returnVoidWatcher,
           );
         },
         /** @type {LocalChainAccount['withdraw']} */
         async withdraw(amount) {
-          return when(watch(E(this.state.account).withdraw(amount)));
+          return watch(E(this.state.account).withdraw(amount));
         },
         /** @type {LocalChainAccount['executeTx']} */
         async executeTx(messages) {
-          return when(watch(E(this.state.account).executeTx(messages)));
+          // @ts-expect-error Type 'Vow<Narrowest>' is not assignable to type '{ [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>; }' ts(2322)
+          return watch(E(this.state.account).executeTx(messages));
         },
         /** @returns {ChainAddress} */
         getAddress() {
@@ -385,7 +389,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
          *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
          *   be set for 5 minutes in the future
-         * @returns {Promise<void>}
+         * @returns {PromiseVow<void>}
          */
         async transfer(amount, destination, opts) {
           trace('Transferring funds from LCA over IBC');
@@ -412,7 +416,7 @@ export const prepareLocalOrchestrationAccountKit = (
             this.facets.transferWatcher,
             { opts, amount, destination },
           );
-          return when(watch(transferV, this.facets.returnVoidWatcher));
+          return watch(transferV, this.facets.returnVoidWatcher);
         },
         /** @type {OrchestrationAccount<any>['transferSteps']} */
         transferSteps(amount, msg) {

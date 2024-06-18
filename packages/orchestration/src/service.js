@@ -16,7 +16,7 @@ import {
  * @import {Connection, Port, PortAllocator} from '@agoric/network';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {VowTools} from '@agoric/vow';
+ * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from './types.js';
  */
 
@@ -62,7 +62,7 @@ const getPower = (powers, name) => {
  */
 const prepareOrchestrationKit = (
   zone,
-  { when, watch },
+  { watch },
   makeChainAccountKit,
   makeICQConnectionKit,
 ) =>
@@ -94,10 +94,10 @@ const prepareOrchestrationKit = (
       }),
       public: M.interface('OrchestrationService', {
         makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
-          M.remotable('ChainAccountKit'),
+          NetworkShape.Vow$(M.remotable('ChainAccountKit')),
         ),
         provideICQConnection: M.callWhen(M.string()).returns(
-          M.remotable('ICQConnection'),
+          NetworkShape.Vow$(M.remotable('ICQConnection')),
         ),
       }),
     },
@@ -192,7 +192,7 @@ const prepareOrchestrationKit = (
          * @param {IBCConnectionID} hostConnectionId the counterparty
          *   connection_id
          * @param {IBCConnectionID} controllerConnectionId self connection_id
-         * @returns {Promise<IcaAccount>}
+         * @returns {PromiseVow<IcaAccount>}
          */
         makeAccount(chainId, hostConnectionId, controllerConnectionId) {
           const remoteConnAddr = makeICAChannelAddress(
@@ -200,20 +200,18 @@ const prepareOrchestrationKit = (
             controllerConnectionId,
           );
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return when(
-            watch(
-              E(portAllocator).allocateICAControllerPort(),
-              this.facets.requestICAChannelWatcher,
-              {
-                chainId,
-                remoteConnAddr,
-              },
-            ),
+          return watch(
+            E(portAllocator).allocateICAControllerPort(),
+            this.facets.requestICAChannelWatcher,
+            {
+              chainId,
+              remoteConnAddr,
+            },
           );
         },
         /**
          * @param {IBCConnectionID} controllerConnectionId
-         * @returns {Promise<ICQConnection>}
+         * @returns {PromiseVow<ICQConnection>}
          */
         provideICQConnection(controllerConnectionId) {
           if (this.state.icqConnections.has(controllerConnectionId)) {
@@ -224,17 +222,15 @@ const prepareOrchestrationKit = (
           }
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return when(
-            watch(
-              // allocate a new Port for every Connection
-              // TODO #9317 optimize ICQ port allocation
-              E(portAllocator).allocateICQControllerPort(),
-              this.facets.requestICQChannelWatcher,
-              {
-                remoteConnAddr,
-                controllerConnectionId,
-              },
-            ),
+          return watch(
+            // allocate a new Port for every Connection
+            // TODO #9317 optimize ICQ port allocation
+            E(portAllocator).allocateICQControllerPort(),
+            this.facets.requestICQChannelWatcher,
+            {
+              remoteConnAddr,
+              controllerConnectionId,
+            },
           );
         },
       },

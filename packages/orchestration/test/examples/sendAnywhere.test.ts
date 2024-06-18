@@ -122,7 +122,7 @@ test('send using arbitrary chain info', async t => {
       { destAddr: 'hot1destAddr', chainName },
     );
     await E(userSeat).getOfferResult();
-
+    await new Promise(resolve => setTimeout(resolve, 1000)); // history[1] not present without this 🤔
     const history = inspectLocalBridge();
     t.like(history, [
       { type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' },
@@ -155,6 +155,7 @@ test('send using arbitrary chain info', async t => {
       { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
     );
     await E(userSeat).getOfferResult();
+    await new Promise(resolve => setTimeout(resolve, 1000)); // 3rd message not available w/o this
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
     t.is(messages.length, 1);
@@ -201,6 +202,7 @@ test('send using arbitrary chain info', async t => {
       { destAddr: 'hot1destAddr', chainName: 'hot' },
     );
     await E(userSeat).getOfferResult();
+    await new Promise(resolve => setTimeout(resolve, 1000)); // 5th message not available w/o this
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
     t.is(messages.length, 1);

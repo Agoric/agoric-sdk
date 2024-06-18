@@ -15,7 +15,7 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { prepareVowTools } from '@agoric/vow/vat.js';
+import { prepareVowTools, V } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -262,7 +262,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
     timer,
   });
   const { validator } = configStaking;
-  const actual = await E(holder).withdrawReward(validator);
+  const actual = await V(holder).withdrawReward(validator);
   t.deepEqual(actual, [{ denom: 'uatom', value: 2n }]);
   const msg = {
     typeUrl: '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
@@ -302,12 +302,12 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   {
     const value = BigInt(Object.values(delegations)[0].amount);
     const anAmountArg = { denom: 'uatom', value };
-    const toDelegate = await E(invitationMakers).Delegate(
+    const toDelegate = await V(invitationMakers).Delegate(
       validator,
       anAmountArg,
     );
     const seat = E(zoe).offer(toDelegate);
-    const result = await E(seat).getOfferResult();
+    const result = await V(seat).getOfferResult();
 
     t.deepEqual(result, undefined);
     const msg = {
@@ -341,7 +341,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
       anAmount,
     );
     const seat = E(zoe).offer(toRedelegate);
-    const result = await E(seat).getOfferResult();
+    const result = await V(seat).getOfferResult();
 
     t.deepEqual(result, undefined);
     const msg = {
@@ -380,9 +380,9 @@ test(`withdraw rewards using invitationMakers`, async t => {
   });
 
   const { validator } = configStaking;
-  const toWithdraw = await E(invitationMakers).WithdrawReward(validator);
+  const toWithdraw = await V(invitationMakers).WithdrawReward(validator);
   const seat = E(zoe).offer(toWithdraw);
-  const result = await E(seat).getOfferResult();
+  const result = await V(seat).getOfferResult();
 
   t.deepEqual(result, [{ denom: 'uatom', value: 2n }]);
   const msg = {
@@ -439,7 +439,7 @@ test(`undelegate waits for unbonding period`, async t => {
       .tickN(10 * DAYf)
       .then(() => 25),
   );
-  const resultP = E(seat).getOfferResult();
+  const resultP = V(seat).getOfferResult();
   const notTooSoon = await Promise.race([beforeDone, resultP]);
   t.log(await current(), 'not too soon?', notTooSoon === 15);
   t.is(notTooSoon, 15);

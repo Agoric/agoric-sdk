@@ -50,7 +50,7 @@ test('makeAccount, deposit, withdraw', async t => {
   const { publicFacet } = await startContract({ ...bootstrap, bld });
 
   t.log('make a LocalChainAccount');
-  const account = await E(publicFacet).makeAccount();
+  const account = await V(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
 
   t.log('deposit 100 bld to account');
@@ -107,7 +107,7 @@ test('makeStakeBldInvitation', async t => {
     { give: { In: hundred } },
     { In: utils.pourPayment(hundred) },
   );
-  const res = await E(delegateOffer).getOfferResult();
+  const res = await V(delegateOffer).getOfferResult();
   t.deepEqual(res, {});
   t.log('Successfully delegated');
 
