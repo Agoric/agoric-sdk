@@ -11,7 +11,6 @@ import {
 import {
   MsgBeginRedelegate,
   MsgDelegate,
-  MsgDelegateResponse,
   MsgUndelegate,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
@@ -26,13 +25,10 @@ import {
   AmountArgShape,
   ChainAddressShape,
   ChainAmountShape,
+  CoinShape,
   DelegationShape,
 } from '../typeGuards.js';
-import {
-  encodeTxResponse,
-  maxClockSkew,
-  tryDecodeResponse,
-} from '../utils/cosmos.js';
+import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { dateInSeconds } from '../utils/time.js';
 
@@ -43,7 +39,10 @@ import { dateInSeconds } from '../utils/time.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
+ * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
+ * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
@@ -94,28 +93,19 @@ const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
 
-export const trivialDelegateResponse = encodeTxResponse(
-  {},
-  MsgDelegateResponse.toProtoMsg,
-);
-
-const expect = (actual, expected, message) => {
-  if (actual !== expected) {
-    console.log(message, { actual, expected });
-  }
-};
-
 /** @type {(c: { denom: string; amount: string }) => DenomAmount} */
 const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
  * @param {Zone} zone
  * @param {MakeRecorderKit} makeRecorderKit
+ * @param {VowTools} vowTools
  * @param {ZCF} zcf
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
+  { when, watch },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
@@ -125,6 +115,26 @@ export const prepareCosmosOrchestrationAccountKit = (
         owned: M.call().returns(M.remotable()),
         getUpdater: M.call().returns(M.remotable()),
         amountToCoin: M.call(AmountArgShape).returns(M.record()),
+      }),
+      returnVoidWatcher: M.interface('returnVoidWatcher', {
+        onFulfilled: M.call(M.or(M.string(), M.record()))
+          .optional(M.arrayOf(M.undefined()))
+          .returns(M.undefined()),
+      }),
+      balanceQueryWatcher: M.interface('balanceQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record()))
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(M.or(M.record(), M.undefined())),
+      }),
+      undelegateWatcher: M.interface('undelegateWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(M.promise()),
+      }),
+      withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(M.arrayOf(CoinShape)),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
@@ -193,6 +203,59 @@ export const prepareCosmosOrchestrationAccountKit = (
             denom: bondDenom,
             amount: String(amount.value),
           });
+        },
+      },
+      balanceQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { balance } = QueryBalanceResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!balance) throw Fail`Result lacked balance key: ${result}`;
+          return harden(toDenomAmount(balance));
+        },
+      },
+      undelegateWatcher: {
+        /**
+         * @param {string} result
+         */
+        onFulfilled(result) {
+          const response = tryDecodeResponse(
+            result,
+            MsgUndelegateResponse.fromProtoMsg,
+          );
+          trace('undelegate response', response);
+          const { completionTime } = response;
+          completionTime || Fail`No completion time result ${result}`;
+          return E(this.state.timer).wakeAt(
+            dateInSeconds(completionTime) + maxClockSkew,
+          );
+        },
+      },
+      /**
+       * takes an array of results (from `executeEncodedTx`) and returns void
+       * since we are not interested in the result
+       */
+      returnVoidWatcher: {
+        /** @param {string | Record<string, unknown>} result */
+        onFulfilled(result) {
+          trace('Result', result);
+          return undefined;
+        },
+      },
+      withdrawRewardWatcher: {
+        /** @param {string} result */
+        onFulfilled(result) {
+          const response = tryDecodeResponse(
+            result,
+            MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
+          );
+          trace('withdrawReward response', response);
+          const { amount: coins } = response;
+          return harden(coins.map(toDenomAmount));
         },
       },
       invitationMakers: {
@@ -292,7 +355,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           const { helper } = this.facets;
           const { chainAddress } = this.state;
 
-          const result = await E(helper.owned()).executeEncodedTx([
+          const results = E(helper.owned()).executeEncodedTx([
             Any.toJSON(
               MsgDelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
@@ -301,8 +364,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-
-          expect(result, trivialDelegateResponse, 'MsgDelegateResponse');
+          return when(watch(results, this.facets.returnVoidWatcher));
         },
         async deposit(payment) {
           trace('deposit', payment);
@@ -325,8 +387,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           const { helper } = this.facets;
           const { chainAddress } = this.state;
 
-          // NOTE: response, including completionTime, is currently discarded.
-          await E(helper.owned()).executeEncodedTx([
+          const results = E(helper.owned()).executeEncodedTx([
             Any.toJSON(
               MsgBeginRedelegate.toProtoMsg({
                 delegatorAddress: chainAddress.address,
@@ -336,8 +397,15 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-        },
 
+          return when(
+            watch(
+              results,
+              // NOTE: response, including completionTime, is currently discarded.
+              this.facets.returnVoidWatcher,
+            ),
+          );
+        },
         /**
          * @param {CosmosValidatorAddress} validator
          * @returns {Promise<DenomAmount[]>}
@@ -351,14 +419,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             validatorAddress: validator.address,
           });
           const account = helper.owned();
-          const result = await E(account).executeEncodedTx([Any.toJSON(msg)]);
-          const response = tryDecodeResponse(
-            result,
-            MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
-          );
-          trace('withdrawReward response', response);
-          const { amount: coins } = response;
-          return harden(coins.map(toDenomAmount));
+
+          const results = E(account).executeEncodedTx([Any.toJSON(msg)]);
+          return when(watch(results, this.facets.withdrawRewardWatcher));
         },
         /**
          * @param {DenomArg} denom
@@ -372,7 +435,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           // TODO #9211 lookup denom from brand
           assert.typeof(denom, 'string');
 
-          const [result] = await E(icqConnection).query([
+          const results = E(icqConnection).query([
             toRequestQueryJson(
               QueryBalanceRequest.toProtoMsg({
                 address: chainAddress.address,
@@ -380,12 +443,7 @@ export const prepareCosmosOrchestrationAccountKit = (
               }),
             ),
           ]);
-          if (!result?.key) throw Fail`Error parsing result ${result}`;
-          const { balance } = QueryBalanceResponse.decode(
-            decodeBase64(result.key),
-          );
-          if (!balance) throw Fail`Result lacked balance key: ${result}`;
-          return harden(toDenomAmount(balance));
+          return when(watch(results, this.facets.balanceQueryWatcher));
         },
 
         send(toAccount, amount) {
@@ -411,28 +469,23 @@ export const prepareCosmosOrchestrationAccountKit = (
         async undelegate(delegations) {
           trace('undelegate', delegations);
           const { helper } = this.facets;
-          const { chainAddress, bondDenom, timer } = this.state;
+          const { chainAddress, bondDenom } = this.state;
 
-          const result = await E(helper.owned()).executeEncodedTx(
-            delegations.map(d =>
-              Any.toJSON(
-                MsgUndelegate.toProtoMsg({
-                  delegatorAddress: chainAddress.address,
-                  validatorAddress: d.validatorAddress,
-                  amount: { denom: bondDenom, amount: d.shares },
-                }),
+          const undelegateV = watch(
+            E(helper.owned()).executeEncodedTx(
+              delegations.map(d =>
+                Any.toJSON(
+                  MsgUndelegate.toProtoMsg({
+                    delegatorAddress: chainAddress.address,
+                    validatorAddress: d.validatorAddress,
+                    amount: { denom: bondDenom, amount: d.shares },
+                  }),
+                ),
               ),
             ),
+            this.facets.undelegateWatcher,
           );
-
-          const response = tryDecodeResponse(
-            result,
-            MsgUndelegateResponse.fromProtoMsg,
-          );
-          trace('undelegate response', response);
-          const { completionTime } = response;
-
-          await E(timer).wakeAt(dateInSeconds(completionTime) + maxClockSkew);
+          return when(watch(undelegateV, this.facets.returnVoidWatcher));
         },
       },
     },
@@ -450,6 +503,7 @@ export const prepareCosmosOrchestrationAccountKit = (
 /**
  * @param {Zone} zone
  * @param {MakeRecorderKit} makeRecorderKit
+ * @param {VowTools} vowTools
  * @param {ZCF} zcf
  * @returns {(
  *   ...args: Parameters<
@@ -460,11 +514,13 @@ export const prepareCosmosOrchestrationAccountKit = (
 export const prepareCosmosOrchestrationAccount = (
   zone,
   makeRecorderKit,
+  vowTools,
   zcf,
 ) => {
   const makeKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
   return (...args) => makeKit(...args).holder;

@@ -137,7 +137,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
          *   decoded using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
          */
-        executeEncodedTx(msgs, opts) {
+        async executeEncodedTx(msgs, opts) {
           const { connection } = this.state;
           // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
           /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
@@ -150,7 +150,7 @@ export const prepareChainAccountKit = (zone, { watch, when }) =>
           );
         },
         /** Close the remote account */
-        close() {
+        async close() {
           /// TODO #9192 what should the behavior be here? and `onClose`?
           // - retrieve assets?
           // - revoke the port?

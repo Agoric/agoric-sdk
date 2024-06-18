@@ -68,6 +68,7 @@ export const provideOrchestration = (
     // FIXME what zone?
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
