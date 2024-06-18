@@ -183,7 +183,7 @@ export const makeAgd = ({ execFileSync }) => {
 
 /** @typedef {ReturnType<makeAgd>} Agd */
 
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: import('ava').LogFn }} powers */
+/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
 export const makeCopyFiles = (
   { execFileSync, log },
   {

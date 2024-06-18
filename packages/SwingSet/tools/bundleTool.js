@@ -16,8 +16,9 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   };
   return wrappedMaker(dest, { log, ...options }, loadModule, pid);
 };
+/** @typedef {ReturnType<typeof makeNodeBundleCache>} BundleCache */
 
-/** @type {Map<string, ReturnType<typeof makeNodeBundleCache>>} */
+/** @type {Map<string, BundleCache>} */
 const providedCaches = new Map();
 
 /**
@@ -28,6 +29,7 @@ const providedCaches = new Map();
  * @param {{ format?: string, dev?: boolean }} options
  * @param {(id: string) => Promise<any>} loadModule
  * @param {number} [pid]
+ * @returns {BundleCache}
  */
 export const provideBundleCache = (dest, options, loadModule, pid) => {
   const uniqueDest = [dest, options.format, options.dev].join('-');
