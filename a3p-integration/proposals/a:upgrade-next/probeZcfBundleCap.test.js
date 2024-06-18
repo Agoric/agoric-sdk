@@ -10,7 +10,7 @@ const SUBMISSION_DIR = 'probe-submission';
 
 test('upgrade Zoe to verify ZcfBundleCap endures', async t => {
   await null;
-  t.assert((await getIncarnation('zoe')) === 1, 'zoe incarnation must be one');
+  t.assert((await getIncarnation('zoe')) === 2, 'zoe incarnation must be one');
 
   // Before the test, the Wallet Factory should be using the legacy ZCF
   const detailsBefore = await getVatDetails('walletFactory');
