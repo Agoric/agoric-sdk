@@ -37,7 +37,7 @@ make port-forward
 To setup finish setting up Agoric, then run:
 
 ```bash
-make fund-provision-pool
+make fund-provision-pool override-chain-registry
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.

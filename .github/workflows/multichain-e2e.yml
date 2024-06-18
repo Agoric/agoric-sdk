@@ -62,6 +62,10 @@ jobs:
           curl --fail --retry 3 --retry-delay 10 http://localhost:8081/chains/osmosislocal || (echo "osmosislocal URL check failed")
           curl --fail --retry 3 --retry-delay 10 http://localhost:8081/chains/gaialocal || (echo "gaialocal URL check failed")
 
+      - name: Update Chain Registry
+        run: make override-chain-registry
+        working-directory: ./agoric-sdk/multichain-testing
+
       - name: Run @agoric/multichain-testing E2E Tests
         run: yarn test
         working-directory: ./agoric-sdk/multichain-testing
