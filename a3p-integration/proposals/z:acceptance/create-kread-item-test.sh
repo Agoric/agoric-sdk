@@ -7,7 +7,7 @@ source /usr/src/upgrade-test-scripts/env_setup.sh
 
 OFFER=$(mktemp -t agops.XXX)
 agops vaults open --wantMinted 6.00 --giveCollateral 9.0 >| "$OFFER"
-agoric wallet send --offer "$OFFER" --from $GOV1ADDR --keyring-backend="test"
+agoric wallet --keyring-backend test send --offer "$OFFER" --from $GOV1ADDR
 
 govamount="200000000ubld"
 provisionSmartWallet $GOV1ADDR $govamount
