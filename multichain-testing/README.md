@@ -61,8 +61,8 @@ make tail-slog
 kubectl logs agoriclocal-genesis-0 --container=validator --follow
 
 # relayer logs
-kubectl logs hermes-agoric-gaia-0 --container=validator --follow
-kubectl logs hermes-agoric-gaia-0 --container=validator --follow
+kubectl logs hermes-agoric-gaia-0 --container=relayer --follow
+kubectl logs hermes-osmosis-gaia-0  --container=relayer --follow
 ```
 
 ## Agoric Smart Wallet
