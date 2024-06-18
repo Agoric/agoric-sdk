@@ -68,6 +68,7 @@ test('chain info', async t => {
     makeLocalChainAccountKit,
     makeRecorderKit,
     asyncFlowTools,
+    vowTools,
   });
 
   chainHub.registerChain('mock', mockChainInfo);

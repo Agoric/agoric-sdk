@@ -14,6 +14,7 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {VowTools} from '@agoric/vow';
  */
 
 /** @type {any} */
@@ -101,6 +102,7 @@ const makeLocalChainFacade = (
  * @param {MakeRecorderKit} io.makeRecorderKit
  * @param {Remote<StorageNode>} io.storageNode
  * @param {Remote<TimerService>} io.timer
+ * @param {VowTools} io.vowTools
  * @param {ZCF} io.zcf
  * @param {Zone} io.zone
  * @returns {Chain<CCI>}
@@ -108,11 +110,12 @@ const makeLocalChainFacade = (
 const makeRemoteChainFacade = (
   chainInfo,
   connectionInfo,
-  { orchestration, makeRecorderKit, storageNode, timer, zcf, zone },
+  { orchestration, makeRecorderKit, storageNode, timer, vowTools, zcf, zone },
 ) => {
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone.subZone(chainInfo.chainId),
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -159,6 +162,7 @@ const makeRemoteChainFacade = (
  *   >;
  *   makeRecorderKit: MakeRecorderKit;
  *   asyncFlowTools: AsyncFlowTools;
+ *   vowTools: VowTools;
  * }} powers
  */
 export const makeOrchestrationFacade = ({
@@ -172,6 +176,7 @@ export const makeOrchestrationFacade = ({
   makeLocalChainAccountKit,
   makeRecorderKit,
   asyncFlowTools,
+  vowTools,
 }) => {
   (zone &&
     timerService &&
@@ -182,7 +187,8 @@ export const makeOrchestrationFacade = ({
     makeLocalChainAccountKit &&
     // @ts-expect-error type says defined but double check
     makeRecorderKit &&
-    asyncFlowTools) ||
+    asyncFlowTools &&
+    vowTools) ||
     Fail`params missing`;
 
   return {
@@ -220,6 +226,7 @@ export const makeOrchestrationFacade = ({
             makeRecorderKit,
             storageNode,
             timer: timerService,
+            vowTools,
             zcf,
             zone,
           });

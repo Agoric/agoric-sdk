@@ -60,6 +60,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     anyVal,
     anyVal,
     anyVal,
+    anyVal,
   );
   makeCosmosOrchestrationAccount(
     anyVal,

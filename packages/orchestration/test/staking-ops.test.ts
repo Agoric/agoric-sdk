@@ -20,14 +20,17 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import {
-  prepareCosmosOrchestrationAccountKit,
-  trivialDelegateResponse,
-} from '../src/exos/cosmosOrchestrationAccount.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
+import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmosOrchestrationAccount.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
 import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 
 const { Fail } = assert;
+
+const trivialDelegateResponse = encodeTxResponse(
+  {},
+  MsgDelegateResponse.toProtoMsg,
+);
 
 test('MsgDelegateResponse trivial response', t => {
   t.is(
@@ -189,6 +192,8 @@ const makeScenario = () => {
     sequence: false,
   });
 
+  const vowTools = prepareVowTools(zone.subZone('VowTools'));
+
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
   const timer = buildZoeManualTimer(undefined, time.parse(startTime), {
@@ -203,6 +208,7 @@ const makeScenario = () => {
     storageNode: rootNode,
     timer,
     icqConnection,
+    vowTools,
     ...mockZCF(),
   };
 };
@@ -210,8 +216,14 @@ const makeScenario = () => {
 test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
-  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
+    s;
+  const make = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    vowTools,
+    zcf,
+  );
 
   const { holder } = make(account.getAddress(), 'uatom', {
     account,
@@ -233,8 +245,14 @@ test('makeAccount() writes to storage', async t => {
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
-  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
+    s;
+  const make = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    vowTools,
+    zcf,
+  );
 
   // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
@@ -256,11 +274,20 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
 test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const aBrand = Far('Token') as Brand<'nat'>;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -329,10 +356,19 @@ test(`delegate; redelegate using invitationMakers`, async t => {
 test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -359,10 +395,19 @@ test(`withdraw rewards using invitationMakers`, async t => {
 test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 

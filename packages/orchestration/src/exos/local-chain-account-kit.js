@@ -114,7 +114,7 @@ export const prepareLocalChainAccountKit = (
           .optional(M.arrayOf(M.undefined()))
           .returns(M.record()),
       }),
-      returnVoidWatcher: M.interface('extractFirstResultWatcher', {
+      returnVoidWatcher: M.interface('returnVoidWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
           .optional(M.arrayOf(M.undefined()))
           .returns(M.undefined()),
