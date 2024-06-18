@@ -7,6 +7,7 @@
       "coreProposals": []
     },
     "sdk-generate": [
+      "vats/test-localchain.js localchaintest-submission",
       "vats/upgrade-bank.js upgrade-bank",
       "vats/upgrade-provisionPool.js upgrade-provisionPool",
       "testing/add-LEMONS.js add-LEMONS",
