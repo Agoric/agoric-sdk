@@ -934,8 +934,8 @@ func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
-				// Upgrade Zoe + ZCF
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-zoe.js"),
+				// Upgrade ZCF only
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgrade-zcf.js"),
 
 				// upgrade the provisioning vat
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
@@ -943,6 +943,7 @@ func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/init-network.js",
 					"@agoric/builders/scripts/vats/init-localchain.js",
+					"@agoric/builders/scripts/vats/init-transfer.js",
 				),
 				// Add new vats for price feeds. The existing ones will be retired shortly.
 				vm.CoreProposalStepForModules(
