@@ -48,9 +48,7 @@ export const probeZcfBundleCap = async (
   await E(adminNode).upgrade(zoeBundleCap, {});
 
   // STEP 4: restart WF ////////////////////////
-  // Need to use `upgradeContract` instead of `restartContract`
-  // See https://github.com/Agoric/agoric-sdk/issues/9249
-  await E(walletAdminFacet).upgradeContract(walletRef.bundleID, privateArgs);
+  await E(walletAdminFacet).restartContract(privateArgs);
 
   // //////  See which zcf bundle was used //////////
 };
