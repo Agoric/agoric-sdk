@@ -3,6 +3,7 @@ import type { TestFn } from 'ava';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
+import { installStakeContracts } from './install-contracts.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -11,6 +12,7 @@ test.before(async t => {
   // deleteTestKeys().catch();
   const wallets = await setupTestKeys();
   t.context = { ...rest, wallets, deleteTestKeys };
+  installStakeContracts(t.context);
 });
 
 test.after(async t => {

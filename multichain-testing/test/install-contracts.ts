@@ -1,22 +1,18 @@
-// import anyTest from '@endo/ses-ava/prepare-endo.js';
-import anyTest, { TestFn } from 'ava';
 import { createRequire } from 'module';
-import { commonSetup, SetupContext } from './support.js';
 import { readFile as ambientReadFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import type { SetupContext } from './support.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
-const test = anyTest as TestFn<SetupContext>;
-
+// XXX use -2 if Osmosis comes up first
 const fixturesFolder = 'fixtures-2';
 
-test.before(async t => {
-  t.context = await commonSetup(t);
-});
-
-test('install contracts', async t => {
-  const { copyFiles, installBundles, runCoreEval } = t.context;
-
+export const installStakeContracts = async ({
+  copyFiles,
+  installBundles,
+  runCoreEval,
+}: Pick<SetupContext, 'copyFiles' | 'installBundles' | 'runCoreEval'>) => {
   const plans = ['stakeAtom', 'stakeOsmo'];
 
   const fullPath = (relPath: string) =>
@@ -43,26 +39,22 @@ test('install contracts', async t => {
 
   const output = copyFiles(files.map(fullPath));
   const outputFileNames = output.trim().split('\n');
-  t.true(
+  assert(
     [...uniqueFiles].every(file => outputFileNames.includes(file)),
     'all files copied to container',
   );
 
-  await t.notThrowsAsync(() =>
-    installBundles(
-      [...uniqueFiles]
-        .filter(x => /^b\d+-/.test(x)) // XXX keep separate array above?
-        .map(x => `/tmp/contracts/${x}`),
-      t.log,
-    ),
+  await installBundles(
+    [...uniqueFiles]
+      .filter(x => /^b\d+-/.test(x)) // XXX keep separate array above?
+      .map(x => `/tmp/contracts/${x}`),
+    console.log,
   );
 
   for (const plan of plans) {
-    await t.notThrowsAsync(() =>
-      runCoreEval({
-        name: plan,
-        description: `${plan} proposal`,
-      }),
-    );
+    await runCoreEval({
+      name: plan,
+      description: `${plan} proposal`,
+    });
   }
-});
+};
