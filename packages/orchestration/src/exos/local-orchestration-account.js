@@ -250,6 +250,8 @@ export const prepareLocalOrchestrationAccountKit = (
           // TODO #9211 lookup denom from brand
           if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
+          // TODO consider using `getChainsAndConnection` but right now it's keyed by chain name
+          // and we only have chainId for destination.
           const agoricChainInfo = await chainHub.getChainInfo('agoric');
           const { transferChannel } = await chainHub.getConnectionInfo(
             agoricChainInfo,
