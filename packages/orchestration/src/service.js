@@ -194,7 +194,7 @@ const prepareOrchestrationKit = (
          * @param {IBCConnectionID} controllerConnectionId self connection_id
          * @returns {Promise<IcaAccount>}
          */
-        makeAccount(chainId, hostConnectionId, controllerConnectionId) {
+        async makeAccount(chainId, hostConnectionId, controllerConnectionId) {
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
@@ -213,9 +213,9 @@ const prepareOrchestrationKit = (
         },
         /**
          * @param {IBCConnectionID} controllerConnectionId
-         * @returns {ICQConnection | Promise<ICQConnection>}
+         * @returns {Promise<ICQConnection>}
          */
-        provideICQConnection(controllerConnectionId) {
+        async provideICQConnection(controllerConnectionId) {
           if (this.state.icqConnections.has(controllerConnectionId)) {
             // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
             return this.state.icqConnections.get(controllerConnectionId)

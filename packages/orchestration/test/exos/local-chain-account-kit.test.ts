@@ -15,7 +15,8 @@ test('deposit, withdraw', async t => {
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
 
@@ -30,6 +31,7 @@ test('deposit, withdraw', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -81,7 +83,8 @@ test('delegate, undelegate', async t => {
 
   const { bld } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -94,6 +97,7 @@ test('delegate, undelegate', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -128,7 +132,8 @@ test('transfer', async t => {
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -141,6 +146,7 @@ test('transfer', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 
