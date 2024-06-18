@@ -1,15 +1,11 @@
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { M, mustMatch } from '@endo/patterns';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { M, mustMatch } from '@endo/patterns';
 
 import { AmountShape } from '@agoric/ertp';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { CosmosChainInfoShape } from '../typeGuards.js';
-import { makeOrchestrationFacade } from '../facade.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
-import { makeChainHub } from '../utils/chainHub.js';
+import { provideOrchestration } from '../utils/start-helper.js';
 
 const { entries } = Object;
 const { Fail } = assert;
@@ -49,28 +45,12 @@ export const SingleAmountRecord = M.and(
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const zone = makeDurableZone(baggage);
-
-  const chainHub = makeChainHub(privateArgs.agoricNames);
-
-  // TODO once durability is settled, provide some helpers to reduce boilerplate
-  const { marshaller, ...orchPowers } = privateArgs;
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    zone,
-    makeRecorderKit,
+  const { chainHub, orchestrate, zone } = provideOrchestration(
     zcf,
-    privateArgs.timerService,
-    chainHub,
+    baggage,
+    privateArgs,
+    privateArgs.marshaller,
   );
-  const { orchestrate } = makeOrchestrationFacade({
-    zcf,
-    zone,
-    chainHub,
-    makeLocalChainAccountKit,
-    makeRecorderKit,
-    ...orchPowers,
-  });
 
   let contractAccount;
 

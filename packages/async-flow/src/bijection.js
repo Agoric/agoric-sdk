@@ -4,6 +4,12 @@ import { Far } from '@endo/pass-style';
 import { toPassableCap } from '@agoric/vow';
 import { makeEphemera } from './ephemera.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {Ephemera} from './types.js';
+ */
+
 const BijectionI = M.interface('Bijection', {
   reset: M.call().returns(),
   init: M.call(M.any(), M.any()).returns(),

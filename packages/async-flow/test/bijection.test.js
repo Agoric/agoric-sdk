@@ -16,6 +16,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareBijection } from '../src/bijection.js';
 
 /**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {Ephemera} from './types.js';
+ */
+
+/**
  * @param {any} t
  * @param {Zone} zone
  */
