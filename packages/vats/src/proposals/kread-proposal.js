@@ -2,7 +2,7 @@ import { E } from '@endo/far';
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { kreadKit: KreadKit };
+ *   consume: { kreadKit: any };
  * }} powers
  */
 export const repairKread = async ({ consume: { kreadKit: kreadKitP } }) => {
