@@ -68,6 +68,10 @@ clean-kind:
 ###############################################################################
 PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 
+# add address
+add-address:
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
+
 fund-provision-pool:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 
@@ -83,3 +87,13 @@ provision-smart-wallet:
 # view agoric swingset logs from slog file, until we can set `DEBUG=SwingSet:vat,SwingSet:ls`
 tail-slog:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- tail -f slog.slog
+
+###############################################################################
+###                          Tests Setup                                   ###
+###############################################################################
+corepack-setup:
+	corepack prepare yarn@4 --activate
+corepack-enable:
+	corepack enable 
+test-install-contracts:
+	yarn test test/install-contracts.test.ts
