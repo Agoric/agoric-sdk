@@ -1,3 +1,4 @@
+// @ts-check
 /** global harden */
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
@@ -78,7 +79,7 @@ const makeBlockTool = ({ rpc, delay }) => {
  * @param {object} opts
  * @param {string} opts.id
  * @param {import('./agd-lib.js').Agd} opts.agd
- * @param {import('./ui-kit-goals/queryKit.js').QueryTool['follow']} opts.follow
+ * @param {import('./queryKit.js').QueryTool['follow']} opts.follow
  * @param {(ms: number) => Promise<void>} opts.delay
  * @param {typeof console.log} [opts.progress]
  * @param {string} [opts.chainId]
@@ -228,7 +229,7 @@ export const provisionSmartWallet = async (
       const brand = await E(payment).getAllegedBrand();
       const asset = vbankEntries.find(([_denom, a]) => a.brand === brand);
       if (!asset) throw Error(`unknown brand`);
-      /** @type {Issuer} */
+      /** @type {Issuer<'nat'>} */
       const issuer = asset.issuer;
       const amt = await E(issuer).getAmountOf(payment);
       await sendFromWhale(asset.denom, amt.value);
@@ -285,6 +286,7 @@ export const provisionSmartWallet = async (
     }
   }
 
+  // @ts-expect-error FIXME no type
   /** @type {import('../test/wallet-tools.js').MockWallet['peek']} */
   const peek = Far('Peek', { purseUpdates });
 
@@ -346,7 +348,7 @@ const voteLatestProposalAndWait = async ({
 };
 
 /**
- * @param {Pick<import('ava').ExecutionContext, 'log' | 'is'>} t
+ * @param {{ log: typeof console.log }} t
  * @param {{
  *   evals: { permit: string; code: string }[];
  *   title: string;
@@ -391,7 +393,7 @@ const runCoreEval = async (
     { from, chainId, yes: true },
   );
   t.log(txAbbr(result));
-  t.is(result.code, 0);
+  assert(result.code, 0);
 
   console.log('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait({ agd, blockTool });
@@ -400,13 +402,13 @@ const runCoreEval = async (
   // TODO: how long is long enough? poll?
   await blockTool.waitForBlock(5, { step: 'run', propsal: detail.proposal_id });
 
-  t.is(detail.status, 'PROPOSAL_STATUS_PASSED');
+  assert(detail.status, 'PROPOSAL_STATUS_PASSED');
   return detail;
 };
 
 /**
- * @param {Pick<import('ava').ExecutionContext, 'log' | 'is'>} t
- * @param {import('../test/mintStable.js').BundleCache} bundleCache
+ * @param {{ log: typeof console.log }} t
+ * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
  * @param {object} io
  * @param {import('./agd-lib.js').ExecSync} io.execFileSync
  * @param {typeof import('child_process').execFile} io.execFile
@@ -415,7 +417,6 @@ const runCoreEval = async (
  * @param {string} [io.bundleDir]
  * @param {string} [io.rpcAddress]
  * @param {string} [io.apiAddress]
- * @param {typeof import('fs/promises').writeFile} io.writeFile
  * @param {(...parts: string[]) => string} [io.join]
  */
 export const makeE2ETools = async (
@@ -425,8 +426,6 @@ export const makeE2ETools = async (
     execFileSync,
     fetch,
     setTimeout,
-    writeFile,
-    bundleDir = 'bundles',
     rpcAddress = 'http://localhost:26657',
     apiAddress = 'http://localhost:1317',
   },
@@ -450,11 +449,12 @@ export const makeE2ETools = async (
   const qt = makeQueryKit(vstorage);
 
   /**
-   * @param {Iterable<string>} bundleRoots
+   * @param {Iterable<string>} fullPaths
    * @param {typeof console.log} progress
    */
   const installBundles = async (fullPaths, progress) => {
     await null;
+    // @ts-expect-error FIXME no type
     /** @type {Record<string, import('../test/boot-tools.js').CachedBundle>} */
     const bundles = {};
     // for (const [name, rootModPath] of Object.entries(bundleRoots)) {
@@ -502,14 +502,6 @@ export const makeE2ETools = async (
     const detail = { evals: [eval0], title, description };
     // await runPackageScript('build:deployer', entryFile);
     const proposal = await runCoreEval(t, detail, { agd, blockTool });
-    // await writeFile(
-    //   `${eval0.code}.done`,
-    //   JSON.stringify(
-    //     { ...proposal, name, title, description, entry: entryFile },
-    //     null,
-    //     2,
-    //   ),
-    // );
     return proposal;
   };
 
@@ -532,6 +524,7 @@ export const makeE2ETools = async (
     addKey: async (name, mnemonic) =>
       agd.keys.add(
         name,
+        // @ts-expect-error XXX
         Array.isArray(mnemonic) ? mnemonic.join(' ') : mnemonic,
       ),
     /** @param {string} name */
@@ -543,7 +536,7 @@ export const makeE2ETools = async (
 /**
  * Seat-like API from wallet updates
  *
- * @param {AsyncGenerator<UpdateRecord>} updates
+ * @param {AsyncGenerator<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>} updates
  */
 export const seatLike = updates => {
   const sync = {
