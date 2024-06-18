@@ -56,13 +56,14 @@ test.serial('config', async t => {
       'chainConnection',
       'cosmoshub-4_juno-1',
     );
+    t.like(connection, {
+      state: 3,
+      transferChannel: { portId: 'transfer', state: 3 },
+    });
 
-    t.like(
+    t.deepEqual(
       readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
-      {
-        state: 3,
-        transferChannel: { portId: 'transfer', state: 3 },
-      },
+      connection,
     );
 
     await documentStorageSchema(t, storage, {
