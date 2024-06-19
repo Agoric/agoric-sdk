@@ -1,12 +1,15 @@
 /** @file Orchestration service */
 
-import { V as E } from '@agoric/vow/vat.js';
 import { Fail } from '@agoric/assert';
-import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAccount.js';
+import { V as E } from '@agoric/vow/vat.js';
+import { Far } from '@endo/far';
+// eslint-disable-next-line import/no-cycle -- FIXME
+import { prepareOrchestrator } from './exos/orchestrator.js';
 
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
+ * @import {Vow} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -16,9 +19,7 @@ import { prepareCosmosOrchestrationAccount } from './exos/cosmosOrchestrationAcc
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
  */
 
-/** @type {any} */
-const anyVal = null;
-
+// FIXME turn this into an Exo
 /**
  * @param {Remote<LocalChain>} localchain
  * @param {ReturnType<
@@ -27,12 +28,12 @@ const anyVal = null;
  * @param {ChainInfo} localInfo
  * @returns {Chain}
  */
-const makeLocalChainFacade = (
+export const makeLocalChainFacade = (
   localchain,
   makeLocalChainAccountKit,
   localInfo,
 ) => {
-  return {
+  return Far('LocalChainFacade', {
     /** @returns {Promise<ChainInfo>} */
     async getChainInfo() {
       return localInfo;
@@ -48,6 +49,7 @@ const makeLocalChainFacade = (
         storageNode: null,
       });
 
+      // FIXME turn this into an Exo LocalChainOrchestrationAccount or make that a facet of makeLocalChainAccountKit
       return {
         async deposit(payment) {
           console.log('deposit got', payment);
@@ -89,60 +91,7 @@ const makeLocalChainFacade = (
         },
       };
     },
-  };
-};
-
-/**
- * @template {CosmosChainInfo} CCI
- * @param {CCI} chainInfo
- * @param {IBCConnectionInfo} connectionInfo
- * @param {object} io
- * @param {Remote<OrchestrationService>} io.orchestration
- * @param {MakeRecorderKit} io.makeRecorderKit
- * @param {Remote<StorageNode>} io.storageNode
- * @param {Remote<TimerService>} io.timer
- * @param {ZCF} io.zcf
- * @param {Zone} io.zone
- * @returns {Chain<CCI>}
- */
-const makeRemoteChainFacade = (
-  chainInfo,
-  connectionInfo,
-  { orchestration, makeRecorderKit, storageNode, timer, zcf, zone },
-) => {
-  const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    zone.subZone(chainInfo.chainId),
-    makeRecorderKit,
-    zcf,
-  );
-
-  return {
-    getChainInfo: async () => chainInfo,
-    /** @returns {Promise<OrchestrationAccount<CCI>>} */
-    makeAccount: async () => {
-      const icaAccount = await E(orchestration).makeAccount(
-        chainInfo.chainId,
-        connectionInfo.id,
-        connectionInfo.counterparty.connection_id,
-      );
-
-      const address = await E(icaAccount).getAddress();
-
-      const [{ denom: bondDenom }] = chainInfo.stakingTokens || [
-        {
-          denom: null,
-        },
-      ];
-      assert(bondDenom, 'missing bondDenom');
-      // @ts-expect-error XXX dynamic method availability
-      return makeCosmosOrchestrationAccount(address, bondDenom, {
-        account: icaAccount,
-        storageNode,
-        icqConnection: anyVal,
-        timer,
-      });
-    },
-  };
+  });
 };
 
 /**
@@ -158,6 +107,8 @@ const makeRemoteChainFacade = (
  *     typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
  *   >;
  *   makeRecorderKit: MakeRecorderKit;
+ *   makeCosmosOrchestrationAccount: any;
+ *   makeRemoteChainFacade: any;
  *   asyncFlowTools: AsyncFlowTools;
  * }} powers
  */
@@ -171,6 +122,7 @@ export const makeOrchestrationFacade = ({
   chainHub,
   makeLocalChainAccountKit,
   makeRecorderKit,
+  makeRemoteChainFacade,
   asyncFlowTools,
 }) => {
   (zone &&
@@ -182,8 +134,22 @@ export const makeOrchestrationFacade = ({
     makeLocalChainAccountKit &&
     // @ts-expect-error type says defined but double check
     makeRecorderKit &&
+    makeRemoteChainFacade &&
     asyncFlowTools) ||
     Fail`params missing`;
+
+  const makeOrchestrator = prepareOrchestrator(zone, {
+    asyncFlowTools,
+    chainHub,
+    localchain,
+    makeLocalChainAccountKit,
+    makeRecorderKit,
+    makeRemoteChainFacade,
+    orchestrationService,
+    storageNode,
+    timerService,
+    zcf,
+  });
 
   return {
     /**
@@ -196,40 +162,8 @@ export const makeOrchestrationFacade = ({
      * @returns {(...args: Args) => Promise<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
-      /** @type {Orchestrator} */
-      const orc = {
-        async getChain(name) {
-          const agoricChainInfo = await chainHub.getChainInfo('agoric');
+      const orc = makeOrchestrator();
 
-          if (name === 'agoric') {
-            return makeLocalChainFacade(
-              localchain,
-              makeLocalChainAccountKit,
-              agoricChainInfo,
-            );
-          }
-
-          const remoteChainInfo = await chainHub.getChainInfo(name);
-          const connectionInfo = await chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            remoteChainInfo.chainId,
-          );
-
-          return makeRemoteChainFacade(remoteChainInfo, connectionInfo, {
-            orchestration: orchestrationService,
-            makeRecorderKit,
-            storageNode,
-            timer: timerService,
-            zcf,
-            zone,
-          });
-        },
-        makeLocalAccount() {
-          return E(localchain).makeAccount();
-        },
-        getBrandInfo: anyVal,
-        asAmount: anyVal,
-      };
       return async (...args) => fn(orc, ctx, ...args);
     },
   };

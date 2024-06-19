@@ -1,14 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { prepareVowTools } from '@agoric/vow';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
-import { makeOrchestrationFacade } from '../src/facade.js';
 import type { Chain } from '../src/orchestration-api.js';
+import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup } from './supports.js';
-import { makeChainHub } from '../src/utils/chainHub.js';
 
 const test = anyTest;
 
@@ -45,30 +41,25 @@ export const mockChainConnection: IBCConnectionInfo = {
 const makeLocalChainAccountKit = () => assert.fail(`not used`);
 
 test('chain info', async t => {
-  const { bootstrap, facadeServices } = await commonSetup(t);
+  const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);
 
   const zone = bootstrap.rootZone;
   const { zcf } = await setupZCFTest();
-  const chainHub = makeChainHub(facadeServices.agoricNames);
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    zone.mapStore('recorder'),
-    bootstrap.marshaller,
-  );
-  const vowTools = prepareVowTools(zone.subZone('vows'));
-  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
-    vowTools,
-  });
 
-  const { orchestrate } = makeOrchestrationFacade({
-    ...facadeServices,
-    storageNode: bootstrap.storage.rootNode,
+  const orchKit = provideOrchestration(
     zcf,
-    zone,
-    chainHub,
-    makeLocalChainAccountKit,
-    makeRecorderKit,
-    asyncFlowTools,
-  });
+    zone.mapStore('test'),
+    {
+      agoricNames: facadeServices.agoricNames,
+      timerService: facadeServices.timerService,
+      storageNode: commonPrivateArgs.storageNode,
+      orchestrationService: facadeServices.orchestrationService,
+      localchain: facadeServices.localchain,
+    },
+    commonPrivateArgs.marshaller,
+  );
+
+  const { chainHub, orchestrate } = orchKit;
 
   chainHub.registerChain('mock', mockChainInfo);
   chainHub.registerConnection(
