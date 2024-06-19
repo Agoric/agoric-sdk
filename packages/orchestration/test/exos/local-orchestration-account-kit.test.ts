@@ -7,7 +7,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { Far } from '@endo/far';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
-import { makeChainHub } from '../../src/utils/chainHub.js';
+import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { commonSetup } from '../supports.js';
 

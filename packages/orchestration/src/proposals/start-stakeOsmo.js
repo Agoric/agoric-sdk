@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { getChainsAndConnection, makeChainHub } from '../utils/chainHub.js';
+import { getChainsAndConnection, makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';

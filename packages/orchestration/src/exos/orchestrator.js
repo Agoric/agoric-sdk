@@ -14,8 +14,8 @@ import { getChainsAndConnection } from '../utils/chainHub.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {ChainHub} from '../utils/chainHub.js';
- * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {VowTools} from '@agoric/vow';
+ * @import {ChainHub} from './chain-hub.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.

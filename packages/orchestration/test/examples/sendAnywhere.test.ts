@@ -9,7 +9,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
-import { registerChain } from '../../src/utils/chainHub.js';
+import { registerChain } from '../../src/exos/chain-hub.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

@@ -2,7 +2,7 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeNameHubKit } from '@agoric/vats';
-import { makeChainHub } from '../../src/utils/chainHub.js';
+import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 const connection = {
   id: 'connection-1',
