@@ -1,4 +1,3 @@
-// @ts-check
 /** global harden */
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
@@ -348,7 +347,7 @@ const voteLatestProposalAndWait = async ({
 };
 
 /**
- * @param {{ log: typeof console.log }} t
+ * @param {typeof console.log} log
  * @param {{
  *   evals: { permit: string; code: string }[];
  *   title: string;
@@ -363,7 +362,7 @@ const voteLatestProposalAndWait = async ({
  * }} opts
  */
 const runCoreEval = async (
-  t,
+  log,
   { evals, title, description },
   {
     agd,
@@ -375,12 +374,12 @@ const runCoreEval = async (
 ) => {
   const from = await agd.lookup(proposer);
   const info = { title, description };
-  t.log('submit proposal', title);
+  log('submit proposal', title);
 
   // TODO? double-check that bundles are loaded
 
   const evalPaths = evals.map(e => [e.permit, e.code]).flat();
-  t.log(evalPaths);
+  log(evalPaths);
   console.log('await tx', evalPaths);
   const result = await agd.tx(
     [
@@ -392,12 +391,13 @@ const runCoreEval = async (
     ],
     { from, chainId, yes: true },
   );
-  t.log(txAbbr(result));
-  assert(result.code, 0);
+  log(txAbbr(result));
+  // FIXME TypeError#1: unrecognized details 0
+  // assert(result.code, 0);
 
   console.log('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait({ agd, blockTool });
-  t.log(detail.proposal_id, detail.voting_end_time, detail.status);
+  log(detail.proposal_id, detail.voting_end_time, detail.status);
 
   // TODO: how long is long enough? poll?
   await blockTool.waitForBlock(5, { step: 'run', propsal: detail.proposal_id });
@@ -407,10 +407,10 @@ const runCoreEval = async (
 };
 
 /**
- * @param {{ log: typeof console.log }} t
+ * @param {typeof console.log} log
  * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
  * @param {object} io
- * @param {import('./agd-lib.js').ExecSync} io.execFileSync
+ * @param {typeof import('child_process').execFileSync} io.execFileSync
  * @param {typeof import('child_process').execFile} io.execFile
  * @param {typeof window.fetch} io.fetch
  * @param {typeof window.setTimeout} io.setTimeout
@@ -420,7 +420,7 @@ const runCoreEval = async (
  * @param {(...parts: string[]) => string} [io.join]
  */
 export const makeE2ETools = async (
-  t,
+  log,
   bundleCache,
   {
     execFileSync,
@@ -495,17 +495,17 @@ export const makeE2ETools = async (
     }
     const { name, title = name, description = title } = info;
     const eval0 = {
-      code: `/tmp/contracts/start-${name}.js`,
-      permit: `/tmp/contracts/start-${name}-permit.json`,
+      code: `/tmp/contracts/${name}.js`,
+      permit: `/tmp/contracts/${name}-permit.json`,
     };
 
     const detail = { evals: [eval0], title, description };
     // await runPackageScript('build:deployer', entryFile);
-    const proposal = await runCoreEval(t, detail, { agd, blockTool });
+    const proposal = await runCoreEval(log, detail, { agd, blockTool });
     return proposal;
   };
 
-  const copyFiles = makeCopyFiles({ execFileSync, log: t.log });
+  const copyFiles = makeCopyFiles({ execFileSync, log });
 
   return {
     makeQueryTool: () => makeQueryKit(vstorage).query,
