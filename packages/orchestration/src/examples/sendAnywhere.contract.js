@@ -79,7 +79,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       const { denom } = await findBrandInVBank(amt.brand);
       const chain = await orch.getChain(chainName);
 
-      // XXX ok to use a heap var crossing the membrane scope this way?
+      // FIXME ok to use a heap var crossing the membrane scope this way?
       if (!contractAccount) {
         const agoricChain = await orch.getChain('agoric');
         contractAccount = await agoricChain.makeAccount();

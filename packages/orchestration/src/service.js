@@ -133,7 +133,7 @@ const prepareOrchestrationKit = (
             remoteConnAddr,
             chainAccountKit.connectionHandler,
           );
-          // XXX if we fail, should we close the port (if it was created in this flow)?
+          // FIXME if we fail, should we close the port (if it was created in this flow)?
           return chainAccountKit.account;
         },
         /**

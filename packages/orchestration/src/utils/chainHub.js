@@ -163,7 +163,7 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  // XXX updates redundantly, twice per edge
+  // FIXME updates redundantly, twice per edge
   for await (const [counterChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainInfo.chainId, counterChainId);
     promises.push(

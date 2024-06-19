@@ -131,7 +131,7 @@ export const prepareChainAccountKit = zone =>
         },
         /** Close the remote account */
         async close() {
-          /// XXX what should the behavior be here? and `onClose`?
+          // FIXME what should the behavior be here? and `onClose`?
           // - retrieve assets?
           // - revoke the port?
           const { connection } = this.state;
@@ -169,7 +169,7 @@ export const prepareChainAccountKit = zone =>
         },
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
-          // XXX handle connection closing
+          // FIXME handle connection closing
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
         },
         async onReceive(connection, bytes) {

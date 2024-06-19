@@ -62,7 +62,7 @@ export const provideOrchestration = (
   });
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    // XXX what zone?
+    // FIXME what zone?
     zone,
     makeRecorderKit,
     zcf,
