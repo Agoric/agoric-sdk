@@ -10,11 +10,11 @@ import {
 } from '@agoric/synthetic-chain';
 
 import {
-  addOraclesForBrand,
   bankSend,
   BID_OFFER_ID,
   checkForOracle,
   createBid,
+  generateOracleMap,
   getLiveOffers,
   getPriceQuote,
   pushPrices,
@@ -40,27 +40,10 @@ const checkPriceFeedVatsUpdated = async t => {
   ]);
 };
 
-const oraclesByBrand = new Map();
+const BRANDNAMES = ['ATOM', 'stATOM', 'stTIA', 'stOSMO', 'stkATOM'];
+const oraclesByBrand = generateOracleMap('u16', BRANDNAMES);
 
-const tryPushPrices = async t => {
-  // There are no old prices for the other currencies.
-  const atomOutPre = await getPriceQuote('ATOM');
-  t.is(atomOutPre, '+12010000');
-
-  t.log('adding oracle for each brand');
-  await addOraclesForBrand('ATOM', oraclesByBrand);
-  await addOraclesForBrand('stATOM', oraclesByBrand);
-  await addOraclesForBrand('stTIA', oraclesByBrand);
-  await addOraclesForBrand('stOSMO', oraclesByBrand);
-  await addOraclesForBrand('stkATOM', oraclesByBrand);
-
-  t.log('pushing new prices');
-  await pushPrices(11.2, 'ATOM', oraclesByBrand);
-  await pushPrices(11.3, 'stTIA', oraclesByBrand);
-  await pushPrices(11.4, 'stATOM', oraclesByBrand);
-  await pushPrices(11.5, 'stOSMO', oraclesByBrand);
-  await pushPrices(11.6, 'stkATOM', oraclesByBrand);
-
+const checkNewQuotes = async t => {
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+11200000');
@@ -106,7 +89,7 @@ const triggerAuction = async t => {
   t.is(atomOut, '+5200000');
 };
 
-const makeNewAuctionVat = async t => {
+const checkAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');
   // This query matches both the auction and its governor, so double the count
   t.true(Object.keys(details).length > 2);
@@ -117,8 +100,8 @@ test('liquidation post upgrade', async t => {
   t.log('starting upgrade vaults test');
   await checkPriceFeedVatsUpdated(t);
 
-  t.log('starting pushPrices');
-  await tryPushPrices(t);
+  t.log('check new price quotes');
+  await checkNewQuotes(t);
 
   t.log('create a new Bid for the auction');
   await createNewBid(t);
@@ -130,5 +113,5 @@ test('liquidation post upgrade', async t => {
   await triggerAuction(t);
 
   t.log('make new auction');
-  await makeNewAuctionVat(t);
+  await checkAuctionVat(t);
 });
