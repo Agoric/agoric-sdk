@@ -92,7 +92,7 @@ export const makeOrchestrationFacade = ({
      * @returns {(...args: Args) => Promise<unknown>}
      */
     orchestrate(durableName, ctx, fn) {
-      const orc = makeOrchestrator();
+      const orc = makeOrchestrator().orchestrator;
 
       return async (...args) => fn(orc, ctx, ...args);
     },
