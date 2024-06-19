@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@agoric/assert';
 import { registerChainNamespace } from '../chain-info.js';
-import { CHAIN_KEY, CONNECTIONS_KEY } from '../utils/chainHub.js';
+import { CHAIN_KEY, CONNECTIONS_KEY } from '../exos/chain-hub.js';
 
 const trace = makeTracer('CoreEvalOrchestration', true);
 

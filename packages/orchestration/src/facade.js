@@ -28,7 +28,7 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
- *   chainHub: import('./utils/chainHub.js').ChainHub;
+ *   chainHub: import('./exos/chain-hub.js').ChainHub;
  *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeCosmosOrchestrationAccount: any;

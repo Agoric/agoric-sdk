@@ -13,7 +13,7 @@ import {
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {ChainHub} from '../utils/chainHub.js';
+ * @import {ChainHub} from './chain-hub.js';
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';

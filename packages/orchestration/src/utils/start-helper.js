@@ -4,7 +4,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeOrchestrationFacade } from '../facade.js';
-import { makeChainHub } from './chainHub.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';

@@ -1,4 +1,4 @@
-import { registerChain } from './utils/chainHub.js';
+import { registerChain } from './exos/chain-hub.js';
 
 // Refresh with scripts/refresh-chain-info.ts
 import fetchedChainInfo from './fetched-chain-info.js';

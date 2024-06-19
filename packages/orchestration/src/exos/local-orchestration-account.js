@@ -25,7 +25,7 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TypedJson} from '@agoric/cosmic-proto';
- * @import {ChainHub} from '../utils/chainHub.js';
+ * @import {ChainHub} from './chain-hub.js';
  */
 
 const trace = makeTracer('LOA');
