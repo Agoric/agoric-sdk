@@ -55,7 +55,7 @@ export const prepareLocalChainFacade = (
             chainId: localChainInfo.chainId,
             addressEncoding: 'bech32',
           }),
-          // FIXME storage path
+          // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
           storageNode,
         });
 

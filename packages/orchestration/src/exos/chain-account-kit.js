@@ -169,7 +169,7 @@ export const prepareChainAccountKit = zone =>
         },
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
-          // FIXME handle connection closing
+          // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
         },
         async onReceive(connection, bytes) {
