@@ -1,4 +1,3 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import { E } from '@endo/eventual-send';
 import '@agoric/notifier/exported.js';
 import '@agoric/time';
@@ -9,7 +8,7 @@ import '../../src/vaultFactory/types.js';
 import '@agoric/zoe/exported.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
-import { providePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
@@ -27,7 +26,6 @@ import {
 } from '../../src/proposals/econ-behaviors.js';
 
 /**
- *
  * @param {ERef<StorageNode>} chainStorageP
  * @param {Map<string, Promise>} childrenMap
  */
@@ -97,8 +95,8 @@ const setupBootstrap = async (t, optTimer) => {
 
 /**
  * @typedef {Record<string, any> & {
- *   aeth: IssuerKit & import('../supports.js').AmountUtils;
- *   run: IssuerKit & import('../supports.js').AmountUtils;
+ *   aeth: IssuerKit & import('@agoric/zoe/tools/test-utils.js').AmountUtils;
+ *   run: IssuerKit & import('@agoric/zoe/tools/test-utils.js').AmountUtils;
  *   bundleCache: Awaited<
  *     ReturnType<
  *       typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache
@@ -118,7 +116,7 @@ const setupBootstrap = async (t, optTimer) => {
  * @param {RelativeTime} quoteInterval
  * @param {Amount | undefined} unitAmountIn
  * @param {Partial<import('../../src/auction/params.js').AuctionParams>} actionParamArgs
- * @param {| {
+ * @param {{
  *       btc: any;
  *       btcPrice: Ratio;
  *       btcAmountIn: any;

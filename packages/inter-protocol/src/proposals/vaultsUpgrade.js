@@ -17,7 +17,7 @@ export const upgradeVaults = async (
   console.log('Upgrade Resulted With: ', result);
 };
 
-/** @type { import("@agoric/vats/src/core/lib-boot").BootstrapManifest } */
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const manifest = {
   [upgradeVaults.name]: {
     // include rationale for closely-held, high authority capabilities

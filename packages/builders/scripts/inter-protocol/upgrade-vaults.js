@@ -1,6 +1,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { makeInstallCache } from '../src/proposals/utils.js';
-import { getManifestVaultsUpgrade } from '../src/proposals/vaultsUpgrade.js';
+import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { getManifestVaultsUpgrade } from '@agoric/inter-protocol/src/proposals/vaultsUpgrade.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').ProposalBuilder} */
 export const vaultsUpgradeProposalBuilder = async ({
