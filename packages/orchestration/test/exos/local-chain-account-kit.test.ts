@@ -52,7 +52,8 @@ test('deposit, withdraw', async t => {
 
   t.log('deposit 100 bld to account');
   const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
   const withdrawal1 = await E(account).withdraw(stake.units(50));
   t.true(
@@ -169,8 +170,9 @@ test('transfer', async t => {
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
+  await E(account).deposit(oneHundredStakePmt);
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',

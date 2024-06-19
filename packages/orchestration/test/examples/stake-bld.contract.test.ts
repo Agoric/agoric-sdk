@@ -56,9 +56,8 @@ test('makeAccount, deposit, withdraw', async t => {
   const depositResp = await V(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
-  t.true(AmountMath.isEqual(depositResp, bld.units(100)), 'deposit');
-
-  // TODO validate balance, .getBalance()
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), bld.units(100));
 
   t.log('withdraw bld from account');
   const withdrawResp = await V(account).withdraw(bld.units(100));

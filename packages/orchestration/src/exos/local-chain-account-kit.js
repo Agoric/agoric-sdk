@@ -1,24 +1,19 @@
 /** @file Use-object for the owner of a localchain account */
-import { NonNullish } from '@agoric/assert';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
+import { V } from '@agoric/vow/vat.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
-import {
-  AmountArgShape,
-  ChainAddressShape,
-  IBCTransferOptionsShape,
-} from '../typeGuards.js';
 import { maxClockSkew } from '../utils/cosmos.js';
+import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, CosmosChainInfo} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -43,15 +38,11 @@ const { Fail } = assert;
  */
 
 const HolderI = M.interface('holder', {
+  ...orchestrationAccountMethods,
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(M.promise()),
   undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
-  deposit: M.callWhen(PaymentShape).optional(AmountShape).returns(AmountShape),
   withdraw: M.callWhen(AmountShape).returns(PaymentShape),
-  transfer: M.call(AmountArgShape, ChainAddressShape)
-    .optional(IBCTransferOptionsShape)
-    .returns(M.promise()),
-  getAddress: M.call().returns(M.string()),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
 });
 
@@ -75,6 +66,7 @@ export const prepareLocalChainAccountKit = (
   chainHub,
 ) => {
   const timestampHelper = makeTimestampHelper(timerService);
+
   // TODO: rename to makeLocalOrchestrationAccount or the like to distinguish from lca
   /** Make an object wrapping an LCA with Zoe interfaces. */
   const makeLocalChainAccountKit = zone.exoClassKit(
@@ -137,6 +129,24 @@ export const prepareLocalChainAccountKit = (
         },
       },
       holder: {
+        /** @type {OrchestrationAccount<any>['getBalance']} */
+        async getBalance(denomArg) {
+          // FIXME look up real values
+          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
+          const [brand, denom] =
+            typeof denomArg === 'string'
+              ? [/** @type {any} */ (null), denomArg]
+              : [denomArg, 'FIXME'];
+
+          const natAmount = await V.when(
+            E(this.state.account).getBalance(brand),
+          );
+          return harden({ denom, value: natAmount.value });
+        },
+        getBalances() {
+          throw new Error('not yet implemented');
+        },
+
         getPublicTopics() {
           const { topicKit } = this.state;
           return harden({
@@ -206,9 +216,9 @@ export const prepareLocalChainAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {LocalChainAccount['deposit']} */
-        async deposit(payment, optAmountShape) {
-          return V(this.state.account).deposit(payment, optAmountShape);
+        /** @type {OrchestrationAccount<any>['deposit']} */
+        async deposit(payment) {
+          await V(this.state.account).deposit(payment);
         },
         /** @type {LocalChainAccount['withdraw']} */
         async withdraw(amount) {
@@ -221,7 +231,11 @@ export const prepareLocalChainAccountKit = (
         },
         /** @returns {ChainAddress} */
         getAddress() {
-          return NonNullish(this.state.address, 'Chain address not available.');
+          return this.state.address;
+        },
+        async send(toAccount, amount) {
+          // FIXME implement
+          console.log('send got', toAccount, amount);
         },
         /**
          * @param {AmountArg} amount an ERTP {@link Amount} or a
@@ -271,6 +285,11 @@ export const prepareLocalChainAccountKit = (
             }),
           ]);
           trace('MsgTransfer result', result);
+        },
+        /** @type {OrchestrationAccount<any>['transferSteps']} */
+        transferSteps(amount, msg) {
+          console.log('transferSteps got', amount, msg);
+          return Promise.resolve();
         },
       },
     },

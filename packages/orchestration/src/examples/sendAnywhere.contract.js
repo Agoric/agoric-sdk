@@ -52,6 +52,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
+  /** @type {import('../orchestration-api.js').OrchestrationAccount<any>} */
   let contractAccount;
 
   const findBrandInVBank = async brand => {
@@ -88,7 +89,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       const info = await chain.getChainInfo();
       const { chainId } = info;
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-      await E.when(pmtP, pmt => contractAccount.deposit(pmt, amt));
+      await E.when(pmtP, pmt => contractAccount.deposit(pmt));
       await contractAccount.transfer(
         { denom, value: amt.value },
         {
