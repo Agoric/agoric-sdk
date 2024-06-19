@@ -71,15 +71,11 @@ export const prepareRemoteChainFacade = (
 
         const address = await V(icaAccount).getAddress();
 
-        const [{ denom: bondDenom }] = remoteChainInfo.stakingTokens || [
-          {
-            denom: null,
-          },
-        ];
-        if (!bondDenom) {
-          throw Fail`missing bondDenom`;
+        const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
+        if (!stakingDenom) {
+          throw Fail`chain info lacks staking denom`;
         }
-        return makeCosmosOrchestrationAccount(address, bondDenom, {
+        return makeCosmosOrchestrationAccount(address, stakingDenom, {
           account: icaAccount,
           storageNode,
           icqConnection: anyVal,
