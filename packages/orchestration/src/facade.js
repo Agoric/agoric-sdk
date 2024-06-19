@@ -1,9 +1,7 @@
 /** @file Orchestration service */
 
 import { Fail } from '@agoric/assert';
-import { V as E } from '@agoric/vow/vat.js';
-import { Far } from '@endo/far';
-// eslint-disable-next-line import/no-cycle -- FIXME
+
 import { prepareOrchestrator } from './exos/orchestrator.js';
 
 /**
@@ -17,45 +15,10 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {MakeLocalChainFacade} from './exos/local-chain-facade.js';
+ * @import {MakeRemoteChainFacade} from './exos/remote-chain-facade.js';
  * @import {MakeLocalOrchestrationAccountKit} from './exos/local-orchestration-account.js';
  */
-
-// FIXME turn this into an Exo
-/**
- * @param {Remote<LocalChain>} localchain
- * @param {MakeLocalOrchestrationAccountKit} makeLocalOrchestrationAccountKit
- * @param {ChainInfo} localInfo
- * @returns {Chain}
- */
-export const makeLocalChainFacade = (
-  localchain,
-  makeLocalOrchestrationAccountKit,
-  localInfo,
-) => {
-  return Far('LocalChainFacade', {
-    /** @returns {Promise<ChainInfo>} */
-    async getChainInfo() {
-      return localInfo;
-    },
-
-    async makeAccount() {
-      const lcaP = E(localchain).makeAccount();
-      const [lca, address] = await Promise.all([lcaP, E(lcaP).getAddress()]);
-      const { holder: account } = makeLocalOrchestrationAccountKit({
-        account: lca,
-        address: harden({
-          address,
-          chainId: localInfo.chainId,
-          addressEncoding: 'bech32',
-        }),
-        // @ts-expect-error TODO: Remote
-        storageNode: null,
-      });
-
-      return account;
-    },
-  });
-};
 
 /**
  * @param {{
@@ -69,7 +32,8 @@ export const makeLocalChainFacade = (
  *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeCosmosOrchestrationAccount: any;
- *   makeRemoteChainFacade: any;
+ *   makeLocalChainFacade: MakeLocalChainFacade;
+ *   makeRemoteChainFacade: MakeRemoteChainFacade;
  *   asyncFlowTools: AsyncFlowTools;
  * }} powers
  */
@@ -83,6 +47,7 @@ export const makeOrchestrationFacade = ({
   chainHub,
   makeLocalOrchestrationAccountKit,
   makeRecorderKit,
+  makeLocalChainFacade,
   makeRemoteChainFacade,
   asyncFlowTools,
 }) => {
@@ -95,6 +60,7 @@ export const makeOrchestrationFacade = ({
     makeLocalOrchestrationAccountKit &&
     // @ts-expect-error type says defined but double check
     makeRecorderKit &&
+    // @ts-expect-error type says defined but double check
     makeRemoteChainFacade &&
     asyncFlowTools) ||
     Fail`params missing`;
@@ -103,8 +69,8 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools,
     chainHub,
     localchain,
-    makeLocalOrchestrationAccountKit,
     makeRecorderKit,
+    makeLocalChainFacade,
     makeRemoteChainFacade,
     orchestrationService,
     storageNode,

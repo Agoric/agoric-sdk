@@ -78,3 +78,4 @@ export const prepareRemoteChainFacade = (
     },
   );
 harden(prepareRemoteChainFacade);
+/** @typedef {ReturnType<typeof prepareRemoteChainFacade>} MakeRemoteChainFacade */

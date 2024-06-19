@@ -3,8 +3,6 @@ import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { V } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-// eslint-disable-next-line import/no-cycle -- FIXME
-import { makeLocalChainFacade } from '../facade.js';
 import {
   ChainInfoShape,
   LocalChainAccountShape,
@@ -24,6 +22,8 @@ import {
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
+ * @import {MakeLocalChainFacade} from './local-chain-facade.js';
+ * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from '../types.js';
  */
 
@@ -44,9 +44,9 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
- *   makeRemoteChainFacade: any;
+ *   makeLocalChainFacade: MakeLocalChainFacade;
+ *   makeRemoteChainFacade: MakeRemoteChainFacade;
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
@@ -55,12 +55,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  */
 export const prepareOrchestrator = (
   zone,
-  {
-    chainHub,
-    localchain,
-    makeLocalOrchestrationAccountKit,
-    makeRemoteChainFacade,
-  },
+  { chainHub, localchain, makeLocalChainFacade, makeRemoteChainFacade },
 ) =>
   zone.exoClass(
     'Orchestrator',
@@ -75,11 +70,8 @@ export const prepareOrchestrator = (
         const agoricChainInfo = await chainHub.getChainInfo('agoric');
 
         if (name === 'agoric') {
-          return makeLocalChainFacade(
-            localchain,
-            makeLocalOrchestrationAccountKit,
-            agoricChainInfo,
-          );
+          // @ts-expect-error XXX chainInfo generic
+          return makeLocalChainFacade(agoricChainInfo);
         }
 
         const remoteChainInfo = await chainHub.getChainInfo(name);
@@ -88,6 +80,7 @@ export const prepareOrchestrator = (
           remoteChainInfo.chainId,
         );
 
+        // @ts-expect-error XXX chainInfo generic
         return makeRemoteChainFacade(remoteChainInfo, connectionInfo);
       },
       makeLocalAccount() {

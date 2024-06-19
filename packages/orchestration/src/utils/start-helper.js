@@ -7,6 +7,7 @@ import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from './chainHub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -75,6 +76,15 @@ export const provideOrchestration = (
     timer: remotePowers.timerService,
   });
 
+  const makeLocalChainFacade = prepareLocalChainFacade(zone, {
+    makeLocalOrchestrationAccountKit,
+    localchain: remotePowers.localchain,
+    // FIXME what path?
+    storageNode: remotePowers.storageNode,
+    orchestration: remotePowers.orchestrationService,
+    timer: remotePowers.timerService,
+  });
+
   const facade = makeOrchestrationFacade({
     zcf,
     zone,
@@ -82,6 +92,7 @@ export const provideOrchestration = (
     makeLocalOrchestrationAccountKit,
     makeRecorderKit,
     makeCosmosOrchestrationAccount,
+    makeLocalChainFacade,
     makeRemoteChainFacade,
     asyncFlowTools,
     ...remotePowers,

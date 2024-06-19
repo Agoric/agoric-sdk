@@ -64,3 +64,4 @@ export const prepareLocalChainFacade = (
     },
   );
 harden(prepareLocalChainFacade);
+/** @typedef {ReturnType<typeof prepareLocalChainFacade>} MakeLocalChainFacade */
