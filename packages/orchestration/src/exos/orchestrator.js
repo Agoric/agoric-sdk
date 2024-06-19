@@ -10,7 +10,7 @@ import {
   BrandInfoShape,
   DenomAmountShape,
 } from '../typeGuards.js';
-import { getChainsAndConnection } from '../utils/chainHub.js';
+import { getChainsAndConnection } from './chain-hub.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
