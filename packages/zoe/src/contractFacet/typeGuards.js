@@ -17,7 +17,9 @@ export const ZcfI = M.interface(
     makeInvitation: M.call(M.raw(), M.string())
       .optional(M.record(), M.pattern())
       .returns(M.promise()),
-    setTestJig: M.call(M.raw()).returns(),
+    // TODO raw argument should be mandatory, but there's a no-arg call in
+    // the documentation repo
+    setTestJig: M.call().optional(M.raw()).returns(),
   },
   {
     defaultGuards: 'passable',
