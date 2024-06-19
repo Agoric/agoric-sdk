@@ -487,7 +487,6 @@ export const prepareVaultManagerKit = (
             collateralUnit,
             debtBrand,
           );
-          // @ts-expect-error XXX quotes
           ephemera.storedQuotesNotifier = makeStoredNotifier(
             // @ts-expect-error XXX quotes
             quoteNotifier,

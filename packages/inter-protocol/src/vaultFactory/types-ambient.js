@@ -2,6 +2,11 @@
 
 /**
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ *
+ *
+ * @typedef {import('./liquidation.js').VaultData} VaultData
+ *
+ * @typedef {import('./proceeds.js').DistributionPlan} DistributionPlan
  * @import {VaultNotification} from './vault.js'
  * @import {Vault} from './vault.js'
  * @import {VaultKit} from './vaultKit.js'
@@ -13,39 +18,6 @@
  * @import {Timestamp} from '@agoric/time'
  * @import {TimestampRecord} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- * @typedef {import('./liquidation.js').VaultData} VaultData
- *
- * @typedef {import('./proceeds.js').DistributionPlan} DistributionPlan
  */
 
 /**
