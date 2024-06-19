@@ -60,7 +60,8 @@
       "**/*.test.ts"
     ],
     "concurrency": 1,
-    "serial": true
+    "serial": true,
+    "timeout": "30s"
   },
   "prettier": {
     "arrowParens": "avoid",
