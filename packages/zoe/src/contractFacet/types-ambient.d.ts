@@ -131,12 +131,12 @@ type ZCFRegisterFeeMint = (
  * never in production; i.e., it is only called if `testJigSetter`
  * was supplied.
  *
- * If no, `testFn` is supplied, then an empty jig will be used.
+ * If no `testFn` is supplied, then an empty jig will be used.
  * An additional `zcf` property set to the current ContractFacet
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  */
-type SetTestJig = (testFn: () => Record<string, unknown>) => void;
+type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
 type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => IssuerRecord<K>;
   /**
