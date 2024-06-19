@@ -1,8 +1,8 @@
 /** @file Orchestration service */
 
 import { Fail } from '@agoric/assert';
-
-import { prepareOrchestrator } from './exos/orchestrator.js';
+import { pickFacet } from '@agoric/vat-data';
+import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
@@ -67,7 +67,7 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools) ||
     Fail`params missing`;
 
-  const makeOrchestrator = prepareOrchestrator(zone, {
+  const makeOrchestratorKit = prepareOrchestratorKit(zone, {
     asyncFlowTools,
     chainHub,
     localchain,
@@ -80,6 +80,7 @@ export const makeOrchestrationFacade = ({
     vowTools,
     zcf,
   });
+  const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
 
   return {
     /**
