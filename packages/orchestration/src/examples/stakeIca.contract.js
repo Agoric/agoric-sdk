@@ -93,7 +93,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
     // TODO permissionless queries https://github.com/Agoric/agoric-sdk/issues/9326
     const icqConnection = icqEnabled
-      ? await E(orchestration).provideICQConnection(controllerConnectionId)
+      ? await E.when(E(orchestration).provideICQConnection(controllerConnectionId))
       : undefined;
 
     const accountAddress = await E(account).getAddress();

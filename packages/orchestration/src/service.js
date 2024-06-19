@@ -62,7 +62,7 @@ const getPower = (powers, name) => {
  */
 const prepareOrchestrationKit = (
   zone,
-  { when, watch },
+  { watch },
   makeChainAccountKit,
   makeICQConnectionKit,
 ) =>
@@ -94,11 +94,9 @@ const prepareOrchestrationKit = (
       }),
       public: M.interface('OrchestrationService', {
         makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
-          M.remotable('ChainAccountKit'),
+          M.any(),
         ),
-        provideICQConnection: M.callWhen(M.string()).returns(
-          M.remotable('ICQConnection'),
-        ),
+        provideICQConnection: M.callWhen(M.string()).returns(M.any()),
       }),
     },
     /** @param {Partial<OrchestrationPowers>} [initialPowers] */
@@ -200,15 +198,13 @@ const prepareOrchestrationKit = (
             controllerConnectionId,
           );
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return when(
-            watch(
-              E(portAllocator).allocateICAControllerPort(),
-              this.facets.requestICAChannelWatcher,
-              {
-                chainId,
-                remoteConnAddr,
-              },
-            ),
+          return watch(
+            E(portAllocator).allocateICAControllerPort(),
+            this.facets.requestICAChannelWatcher,
+            {
+              chainId,
+              remoteConnAddr,
+            },
           );
         },
         /**
@@ -223,17 +219,15 @@ const prepareOrchestrationKit = (
           }
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return when(
-            watch(
-              // allocate a new Port for every Connection
-              // TODO #9317 optimize ICQ port allocation
-              E(portAllocator).allocateICQControllerPort(),
-              this.facets.requestICQChannelWatcher,
-              {
-                remoteConnAddr,
-                controllerConnectionId,
-              },
-            ),
+          return watch(
+            // allocate a new Port for every Connection
+            // TODO #9317 optimize ICQ port allocation
+            E(portAllocator).allocateICQControllerPort(),
+            this.facets.requestICQChannelWatcher,
+            {
+              remoteConnAddr,
+              controllerConnectionId,
+            },
           );
         },
       },

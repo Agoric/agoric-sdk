@@ -1,5 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { E } from '@endo/far';
+import { V as E } from '@agoric/vow/vat.js';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { QueryBalanceRequest } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
