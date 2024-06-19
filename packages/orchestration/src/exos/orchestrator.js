@@ -5,18 +5,20 @@ import { V } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 // eslint-disable-next-line import/no-cycle -- FIXME
 import { makeLocalChainFacade } from '../facade.js';
+import {
+  ChainInfoShape,
+  LocalChainAccountShape,
+  DenomShape,
+  BrandInfoShape,
+  DenomAmountShape,
+} from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ChainHub} from '../utils/chainHub.js';
- * @import {Connection, Port} from '@agoric/network';
- * @import {AnyJson} from '@agoric/cosmic-proto';
- * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
- * @import {IBCConnectionID} from '@agoric/vats';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
@@ -27,14 +29,6 @@ import { makeLocalChainFacade } from '../facade.js';
 
 const { Fail } = assert;
 const trace = makeTracer('Orchestrator');
-
-// TODO more validation
-export const ChainInfoShape = M.any();
-export const LocalChainAccountShape = M.remotable('LocalChainAccount');
-export const DenomShape = M.string();
-export const BrandInfoShape = M.any();
-
-export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {

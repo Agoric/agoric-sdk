@@ -1,9 +1,8 @@
 /** @file ChainAccount exo */
 import { makeTracer } from '@agoric/internal';
 import { V } from '@agoric/vow/vat.js';
-import { M } from '@endo/patterns';
 
-import { ChainInfoShape } from './orchestrator.js';
+import { ChainFacadeI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -19,12 +18,6 @@ const trace = makeTracer('RemoteChainFacade');
 
 /** @type {any} */
 const anyVal = null;
-
-/** @see {Chain} */
-export const RemoteChainFacadeI = M.interface('RemoteChainFacade', {
-  getChainInfo: M.callWhen().returns(ChainInfoShape),
-  makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccount')),
-});
 
 /**
  * @param {Zone} zone
@@ -43,7 +36,7 @@ export const prepareRemoteChainFacade = (
 ) =>
   zone.exoClass(
     'RemoteChainFacade',
-    RemoteChainFacadeI,
+    ChainFacadeI,
     /**
      * @param {CosmosChainInfo} remoteChainInfo
      * @param {IBCConnectionInfo} connectionInfo
