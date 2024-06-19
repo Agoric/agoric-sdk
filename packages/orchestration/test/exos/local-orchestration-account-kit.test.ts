@@ -1,21 +1,23 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { V as E } from '@agoric/vow/vat.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
-import { commonSetup } from '../supports.js';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
-import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { makeChainHub } from '../../src/utils/chainHub.js';
+import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
+import { commonSetup } from '../supports.js';
 
 test('deposit, withdraw', async t => {
   const { bootstrap, brands, utils } = await commonSetup(t);
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
 
@@ -30,6 +32,7 @@ test('deposit, withdraw', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -51,10 +54,12 @@ test('deposit, withdraw', async t => {
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(oneHundredStakePmt);
+  await E(account).deposit(oneHundredStakePmt);
   // FIXME #9211
   // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
+  // XXX races in the bridge
+  await eventLoopIteration();
   const withdrawal1 = await E(account).withdraw(stake.units(50));
   t.true(
     AmountMath.isEqual(
@@ -84,7 +89,8 @@ test('delegate, undelegate', async t => {
 
   const { bld } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -97,6 +103,7 @@ test('delegate, undelegate', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 
@@ -134,7 +141,8 @@ test('transfer', async t => {
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage } = bootstrap;
+  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
+    bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -147,6 +155,7 @@ test('transfer', async t => {
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
     Far('MockZCF', {}),
     timer,
+    vowTools,
     makeChainHub(bootstrap.agoricNames),
   );
 

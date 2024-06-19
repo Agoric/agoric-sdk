@@ -2,7 +2,7 @@
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
-import { V as E } from '@agoric/vow/vat.js';
+import { V as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -76,9 +76,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 

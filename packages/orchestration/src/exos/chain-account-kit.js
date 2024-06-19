@@ -2,7 +2,7 @@
 import { NonNullish } from '@agoric/assert';
 import { PurseShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
   ChainAddressShape,
@@ -15,7 +15,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -55,11 +55,22 @@ export const ChainAccountI = M.interface('ChainAccount', {
  * }} State
  */
 
-/** @param {Zone} zone */
-export const prepareChainAccountKit = zone =>
+/**
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
+ */
+export const prepareChainAccountKit = (zone, { watch, when }) =>
   zone.exoClassKit(
     'ChainAccountKit',
-    { account: ChainAccountI, connectionHandler: ConnectionHandlerI },
+    {
+      account: ChainAccountI,
+      connectionHandler: ConnectionHandlerI,
+      parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+          .returns(M.string()),
+      }),
+    },
     /**
      * @param {string} chainId
      * @param {Port} port
@@ -76,6 +87,12 @@ export const prepareChainAccountKit = zone =>
         localAddress: undefined,
       }),
     {
+      parseTxPacketWatcher: {
+        /** @param {string} ack */
+        onFulfilled(ack) {
+          return parseTxPacket(ack);
+        },
+      },
       account: {
         /** @returns {ChainAddress} */
         getAddress() {
@@ -120,23 +137,28 @@ export const prepareChainAccountKit = zone =>
          *   decoded using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
          */
-        executeEncodedTx(msgs, opts) {
+        async executeEncodedTx(msgs, opts) {
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          return E.when(
-            E(connection).send(makeTxPacket(msgs, opts)),
-            // if parseTxPacket cannot find a `result` key, it throws
-            ack => parseTxPacket(ack),
+          return when(
+            watch(
+              E(connection).send(makeTxPacket(msgs, opts)),
+              this.facets.parseTxPacketWatcher,
+            ),
           );
         },
         /** Close the remote account */
         async close() {
-          // FIXME what should the behavior be here? and `onClose`?
+          /// TODO #9192 what should the behavior be here? and `onClose`?
           // - retrieve assets?
           // - revoke the port?
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          await E(connection).close();
+          return when(watch(E(connection).close()));
         },
         /**
          * get Purse for a brand to .withdraw() a Payment from the account
@@ -169,7 +191,7 @@ export const prepareChainAccountKit = zone =>
         },
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
-          // FIXME handle connection closing
+          // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
         },
         async onReceive(connection, bytes) {

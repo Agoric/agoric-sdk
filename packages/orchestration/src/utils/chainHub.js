@@ -13,6 +13,13 @@ const { Fail } = assert;
  * @import {Zone} from '@agoric/zone';
  */
 
+/**
+ * @template {string} K
+ * @typedef {K extends keyof KnownChains
+ *   ? Omit<KnownChains[K], 'connections'>
+ *   : ChainInfo} ActualChainInfo
+ */
+
 /** agoricNames key for ChainInfo hub */
 export const CHAIN_KEY = 'chain';
 /** namehub for connection info */
@@ -82,11 +89,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     /**
      * @template {string} K
      * @param {K} chainName
-     * @returns {Promise<
-     *   K extends keyof KnownChains
-     *     ? Omit<KnownChains[K], 'connections'>
-     *     : ChainInfo
-     * >}
+     * @returns {Promise<ActualChainInfo<K>>}
      */
     async getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
@@ -114,11 +117,13 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     },
 
     /**
-     * @param {string} chainId1
-     * @param {string} chainId2
+     * @param {string | { chainId: string }} chain1
+     * @param {string | { chainId: string }} chain2
      * @returns {Promise<IBCConnectionInfo>}
      */
-    async getConnectionInfo(chainId1, chainId2) {
+    async getConnectionInfo(chain1, chain2) {
+      const chainId1 = typeof chain1 === 'string' ? chain1 : chain1.chainId;
+      const chainId2 = typeof chain2 === 'string' ? chain2 : chain2.chainId;
       const key = connectionKey(chainId1, chainId2);
       if (connectionInfos.has(key)) {
         return connectionInfos.get(key);
@@ -174,4 +179,28 @@ export const registerChain = async (
   }
   // Bundle to pipeline IO
   await Promise.all(promises);
+};
+
+/**
+ * @template {string} C1
+ * @template {string} C2
+ * @param {ChainHub} chainHub
+ * @param {C1} chainName1
+ * @param {C2} chainName2
+ * @returns {Promise<
+ *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
+ * >}
+ */
+export const getChainsAndConnection = async (
+  chainHub,
+  chainName1,
+  chainName2,
+) => {
+  const [chain1, chain2] = await Promise.all([
+    chainHub.getChainInfo(chainName1),
+    chainHub.getChainInfo(chainName2),
+  ]);
+  const connectionInfo = await chainHub.getConnectionInfo(chain2, chain1);
+
+  return [chain1, chain2, connectionInfo];
 };

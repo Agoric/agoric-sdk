@@ -1,7 +1,7 @@
 /** @file ICQConnection Exo */
 import { NonNullish } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { ConnectionHandlerI } from '../typeGuards.js';
@@ -9,7 +9,7 @@ import { ConnectionHandlerI } from '../typeGuards.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote, VowTools} from '@agoric/vow';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -52,14 +52,21 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  * sending queries and handling connection events.
  *
  * @param {Zone} zone
+ * @param {VowTools} vowTools
  */
-export const prepareICQConnectionKit = zone =>
+export const prepareICQConnectionKit = (zone, { watch, when }) =>
   zone.exoClassKit(
     'ICQConnectionKit',
-    { connection: ICQConnectionI, connectionHandler: ConnectionHandlerI },
-    /**
-     * @param {Port} port
-     */
+    {
+      connection: ICQConnectionI,
+      connectionHandler: ConnectionHandlerI,
+      parseQueryPacketWatcher: M.interface('ParseQueryPacketWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+          .returns(M.arrayOf(M.record())),
+      }),
+    },
+    /** @param {Port} port */
     port =>
       /** @type {ICQConnectionKitState} */ ({
         port,
@@ -88,12 +95,21 @@ export const prepareICQConnectionKit = zone =>
          */
         query(msgs) {
           const { connection } = this.state;
+          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
+          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
           if (!connection) throw Fail`connection not available`;
-          return E.when(
-            E(connection).send(makeQueryPacket(msgs)),
-            // if parseTxPacket cannot find a `result` key, it throws
-            ack => parseQueryPacket(ack),
+          return when(
+            watch(
+              E(connection).send(makeQueryPacket(msgs)),
+              this.facets.parseQueryPacketWatcher,
+            ),
           );
+        },
+      },
+      parseQueryPacketWatcher: {
+        /** @param {string} ack packet acknowledgement string */
+        onFulfilled(ack) {
+          return parseQueryPacket(ack);
         },
       },
       connectionHandler: {
