@@ -15,7 +15,7 @@ import {
  * @import {Zone} from '@agoric/base-zone';
  * @import {ChainHub} from '../utils/chainHub.js';
  * @import {AsyncFlowTools} from '@agoric/async-flow';
- * @import {Vow} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
@@ -50,12 +50,19 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   orchestrationService: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
+ *   vowTools: VowTools;
  *   zcf: ZCF;
  * }} powers
  */
 export const prepareOrchestrator = (
   zone,
-  { chainHub, localchain, makeLocalChainFacade, makeRemoteChainFacade },
+  {
+    chainHub,
+    localchain,
+    makeLocalChainFacade,
+    makeRemoteChainFacade,
+    vowTools: _vowTools,
+  },
 ) =>
   zone.exoClass(
     'Orchestrator',

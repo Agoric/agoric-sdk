@@ -34,6 +34,7 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  *   makeCosmosOrchestrationAccount: any;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   vowTools: VowTools;
  *   asyncFlowTools: AsyncFlowTools;
  * }} powers
  */
@@ -49,6 +50,7 @@ export const makeOrchestrationFacade = ({
   makeRecorderKit,
   makeLocalChainFacade,
   makeRemoteChainFacade,
+  vowTools,
   asyncFlowTools,
 }) => {
   (zone &&
@@ -75,6 +77,7 @@ export const makeOrchestrationFacade = ({
     orchestrationService,
     storageNode,
     timerService,
+    vowTools,
     zcf,
   });
 

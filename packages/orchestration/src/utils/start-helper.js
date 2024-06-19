@@ -98,6 +98,7 @@ export const provideOrchestration = (
     makeLocalChainFacade,
     makeRemoteChainFacade,
     asyncFlowTools,
+    vowTools,
     ...remotePowers,
   });
   return { ...facade, chainHub, zone };
