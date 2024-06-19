@@ -6,10 +6,12 @@ import { makeQueryClient } from '../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
+const accounts = ['user1', 'user2'];
+
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
   // deleteTestKeys().catch();
-  const wallets = await setupTestKeys();
+  const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
 });
 
@@ -26,6 +28,7 @@ interface Scenario {
   expectedAddressPrefix: string;
   /** path to contract proposal builder. must create a plan.json */
   builder: string;
+  wallet: string;
 }
 
 const stakeScenario = test.macro(async (t, scenario: Scenario) => {
@@ -41,11 +44,11 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   t.log('bundle and install contract');
   await deployBuilder(scenario.builder);
 
-  const wdUser1 = await provisionSmartWallet(wallets.user1, {
+  const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,
   });
-  t.log(`provisioning agoric smart wallet for ${wallets.user1}`);
+  t.log(`provisioning agoric smart wallet for ${wallets[scenario.wallet]}`);
 
   const vstorageClient = makeQueryTool();
 
@@ -71,7 +74,9 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   const { offerToPublicSubscriberPaths: makeAccountPublicSubscriberPaths } =
     await retryUntilCondition(
       () =>
-        vstorageClient.queryData(`published.wallet.${wallets.user1}.current`),
+        vstorageClient.queryData(
+          `published.wallet.${wallets[scenario.wallet]}.current`,
+        ),
       ({ offerToPublicSubscriberPaths }) =>
         !!offerToPublicSubscriberPaths.length,
       'makeAccount offer result is in vstorage',
@@ -166,7 +171,6 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
       invitationArgs: [
         [
           {
-            delegatorAddress: address,
             validatorAddress,
             shares: '50',
           },
@@ -202,6 +206,7 @@ test.serial('send wallet offers stakeAtom contract', stakeScenario, {
   denom: 'uatom',
   expectedAddressPrefix: 'cosmos',
   builder: '../packages/builders/scripts/orchestration/init-stakeAtom.js',
+  wallet: 'user1',
 });
 
 test.serial('send wallet offers to stakeOsmo contract', stakeScenario, {
@@ -211,4 +216,5 @@ test.serial('send wallet offers to stakeOsmo contract', stakeScenario, {
   denom: 'uosmo',
   expectedAddressPrefix: 'osmo',
   builder: '../packages/builders/scripts/orchestration/init-stakeOsmo.js',
+  wallet: 'user2',
 });

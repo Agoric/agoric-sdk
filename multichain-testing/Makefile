@@ -75,7 +75,8 @@ add-address:
 fund-provision-pool:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 
-fix-agoric-names:
+update-chain-registry:
+	node_modules/.bin/tsx scripts/fetch-starship-chain-info.ts && \
 	node_modules/.bin/tsx scripts/deploy-cli.ts src/revise-chain-info.builder.js
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
