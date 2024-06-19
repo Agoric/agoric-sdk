@@ -23,7 +23,7 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
 /**
  * @param {Remote<LocalChain>} localchain
  * @param {ReturnType<
- *   typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
+ *   typeof import('./exos/local-orchestration-account.js').prepareLocalOrchestrationAccountKit
  * >} makeLocalChainAccountKit
  * @param {ChainInfo} localInfo
  * @returns {Chain}
@@ -68,7 +68,7 @@ export const makeLocalChainFacade = (
  *   localchain: Remote<LocalChain>;
  *   chainHub: import('./utils/chainHub.js').ChainHub;
  *   makeLocalChainAccountKit: ReturnType<
- *     typeof import('./exos/local-chain-account-kit.js').prepareLocalChainAccountKit
+ *     typeof import('./exos/local-orchestration-account.js').prepareLocalOrchestrationAccountKit
  *   >;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeCosmosOrchestrationAccount: any;

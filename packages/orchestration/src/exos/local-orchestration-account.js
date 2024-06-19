@@ -21,7 +21,7 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {ChainHub} from '../utils/chainHub.js';
  */
 
-const trace = makeTracer('LCAH');
+const trace = makeTracer('LOA');
 
 const { Fail } = assert;
 /**
@@ -58,7 +58,7 @@ const PUBLIC_TOPICS = {
  * @param {Remote<TimerService>} timerService
  * @param {ChainHub} chainHub
  */
-export const prepareLocalChainAccountKit = (
+export const prepareLocalOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
   zcf,
@@ -67,10 +67,9 @@ export const prepareLocalChainAccountKit = (
 ) => {
   const timestampHelper = makeTimestampHelper(timerService);
 
-  // TODO: rename to makeLocalOrchestrationAccount or the like to distinguish from lca
   /** Make an object wrapping an LCA with Zoe interfaces. */
-  const makeLocalChainAccountKit = zone.exoClassKit(
-    'LCA Kit',
+  const makeLocalOrchestrationAccountKit = zone.exoClassKit(
+    'Local Orchestration Account Kit',
     {
       holder: HolderI,
       invitationMakers: M.interface('invitationMakers', {
@@ -294,7 +293,7 @@ export const prepareLocalChainAccountKit = (
       },
     },
   );
-  return makeLocalChainAccountKit;
+  return makeLocalOrchestrationAccountKit;
 };
-/** @typedef {ReturnType<typeof prepareLocalChainAccountKit>} MakeLocalChainAccountKit */
-/** @typedef {ReturnType<MakeLocalChainAccountKit>} LocalChainAccountKit */
+/** @typedef {ReturnType<typeof prepareLocalOrchestrationAccountKit>} MakeLocalOrchestrationAccountKit */
+/** @typedef {ReturnType<MakeLocalOrchestrationAccountKit>} LocalOrchestrationAccountKit */

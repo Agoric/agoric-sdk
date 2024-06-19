@@ -21,7 +21,7 @@ import { makeLocalChainFacade } from '../facade.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {MakeLocalChainAccountKit} from './local-chain-account-kit.js';
+ * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from '../types.js';
  */
 
@@ -50,7 +50,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   makeLocalChainAccountKit: MakeLocalChainAccountKit;
+ *   makeLocalChainAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeRemoteChainFacade: any;
  *   orchestrationService: Remote<OrchestrationService>;

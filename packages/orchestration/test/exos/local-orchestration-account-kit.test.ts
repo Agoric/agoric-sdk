@@ -5,7 +5,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { V as E } from '@agoric/vow/vat.js';
 import { Far } from '@endo/far';
 import { commonSetup } from '../supports.js';
-import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { makeChainHub } from '../../src/utils/chainHub.js';
@@ -24,7 +24,7 @@ test('deposit, withdraw', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -91,7 +91,7 @@ test('delegate, undelegate', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -141,7 +141,7 @@ test('transfer', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer

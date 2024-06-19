@@ -10,7 +10,7 @@ import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../utils/chainHub.js';
 
 /**
@@ -41,7 +41,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,

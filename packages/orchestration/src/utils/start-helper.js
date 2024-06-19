@@ -2,7 +2,7 @@ import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from './chainHub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
@@ -48,7 +48,7 @@ export const provideOrchestration = (
   const chainHub = makeChainHub(remotePowers.agoricNames);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,

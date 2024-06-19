@@ -10,7 +10,7 @@ import type {
   CosmosValidatorAddress,
   StakingAccountActions,
 } from '../src/types.js';
-import type { LocalChainAccountKit } from '../src/exos/local-chain-account-kit.js';
+import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
 
 const anyVal = null as any;
@@ -36,7 +36,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 }
 
 {
-  const lcak: LocalChainAccountKit = null as any;
+  const lcak: LocalOrchestrationAccountKit = null as any;
   const results = await lcak.holder.executeTx([
     typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
       amount: {
