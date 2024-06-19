@@ -92,26 +92,25 @@ export const prepareProtocolHandler = (
 };
 
 export const fakeNetworkEchoStuff = (zone: Zone) => {
-  const powers = prepareVowTools(zone);
-  const { makeVowKit, when } = powers;
+  const vowTools = prepareVowTools(zone);
+  const { makeVowKit, when } = vowTools;
 
-  const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
+  const makeNetworkProtocol = prepareNetworkProtocol(zone, vowTools);
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
     zone,
     makeEchoConnectionHandler,
-    powers,
+    vowTools,
   );
   const protocol = makeNetworkProtocol(makeProtocolHandler());
 
-  const makePortAllocator = preparePortAllocator(zone, powers);
+  const makePortAllocator = preparePortAllocator(zone, vowTools);
   const portAllocator = makePortAllocator({ protocol });
 
   return {
     makeEchoConnectionHandler,
-    makeVowKit,
     portAllocator,
     protocol,
-    when,
+    vowTools,
   };
 };
