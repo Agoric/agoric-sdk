@@ -54,7 +54,38 @@ export const connectionKey = (chainId1, chainId2) => {
   return [chainId1, chainId2].sort().join(CHAIN_ID_SEPARATOR);
 };
 
+const ChainIdArgShape = M.or(
+  M.string(),
+  M.splitRecord(
+    {
+      chainId: M.string(),
+    },
+    undefined,
+    M.any(),
+  ),
+);
+
+const ChainHubI = M.interface('ChainHub', {
+  registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
+  getChainInfo: M.callWhen(M.string()).returns(CosmosChainInfoShape),
+  registerConnection: M.callWhen(
+    M.string(),
+    M.string(),
+    IBCConnectionInfoShape,
+  ).returns(),
+  getConnectionInfo: M.callWhen(ChainIdArgShape, ChainIdArgShape).returns(
+    IBCConnectionInfoShape,
+  ),
+});
+
 /**
+ * Make a new ChainHub in the zone (or in the heap if no zone is provided).
+ *
+ * The resulting object is an Exo singleton. It has no precious state. It's only
+ * state is a cache of queries to agoricNames and whatever info was provided in
+ * registration calls. When you need a newer version you can simply make a hub
+ * hub and repeat the registrations.
+ *
  * @param {Remote<NameHub>} agoricNames
  * @param {Zone} [zone]
  */
@@ -70,7 +101,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     valueShape: IBCConnectionInfoShape,
   });
 
-  const chainHub = harden({
+  const chainHub = zone.exo('ChainHub', ChainHubI, {
     /**
      * Register a new chain. The name will override a name in well known chain
      * names.

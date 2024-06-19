@@ -11,7 +11,7 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
-import { makeChainHub } from '../utils/chainHub.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
