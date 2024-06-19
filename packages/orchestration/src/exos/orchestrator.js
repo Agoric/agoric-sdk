@@ -62,7 +62,7 @@ export const prepareOrchestrator = (
     localchain,
     makeLocalChainFacade,
     makeRemoteChainFacade,
-    vowTools: { watch, when },
+    vowTools: { watch },
   },
 ) =>
   zone.exoClassKit(
@@ -114,22 +114,20 @@ export const prepareOrchestrator = (
         /** @type {Orchestrator['getChain']} */
         getChain(name) {
           if (name === 'agoric') {
-            return when(
-              watch(
-                chainHub.getChainInfo('agoric'),
-                this.facets.makeLocalChainFacadeWatcher,
-              ),
+            // @ts-expect-error Vow vs Promise
+            return watch(
+              chainHub.getChainInfo('agoric'),
+              this.facets.makeLocalChainFacadeWatcher,
             );
           }
-          return when(
-            watch(
-              getChainsAndConnection(chainHub, 'agoric', name),
-              this.facets.makeRemoteChainFacadeWatcher,
-            ),
+          // @ts-expect-error Vow vs Promise
+          return watch(
+            getChainsAndConnection(chainHub, 'agoric', name),
+            this.facets.makeRemoteChainFacadeWatcher,
           );
         },
         makeLocalAccount() {
-          return when(watch(E(localchain).makeAccount()));
+          return watch(E(localchain).makeAccount());
         },
         getBrandInfo: () => Fail`not yet implemented`,
         asAmount: () => Fail`not yet implemented`,

@@ -94,6 +94,7 @@ export const makeOrchestrationFacade = ({
     orchestrate(durableName, ctx, fn) {
       const orc = makeOrchestrator().orchestrator;
 
+      // @ts-expect-error `orc` Vow vs Promise
       return async (...args) => fn(orc, ctx, ...args);
     },
   };
