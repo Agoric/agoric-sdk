@@ -84,7 +84,7 @@ export const prepareLocalOrchestrationAccountKit = (
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
      * @param {ChainAddress} initState.address
-     * @param {StorageNode} initState.storageNode
+     * @param {Remote<StorageNode>} initState.storageNode
      * @returns {State}
      */
     ({ account, address, storageNode }) => {
