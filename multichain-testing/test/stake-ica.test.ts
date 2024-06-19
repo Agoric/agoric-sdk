@@ -3,7 +3,6 @@ import type { TestFn } from 'ava';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
-import { installStakeContracts } from './install-contracts.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -12,16 +11,11 @@ test.before(async t => {
   // deleteTestKeys().catch();
   const wallets = await setupTestKeys();
   t.context = { ...rest, wallets, deleteTestKeys };
-  installStakeContracts(t.context);
 });
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  try {
-    await deleteTestKeys();
-  } catch (_e) {
-    // ignore
-  }
+  deleteTestKeys().catch();
 });
 
 interface Scenario {
@@ -30,18 +24,22 @@ interface Scenario {
   contractName: string;
   denom: string;
   expectedAddressPrefix: string;
+  /** path to contract proposal builder. must create a plan.json */
+  builder: string;
 }
 
 const stakeScenario = test.macro(async (t, scenario: Scenario) => {
-  // TODO, bundle and install contract
-
   const {
     wallets,
     provisionSmartWallet,
     makeQueryTool,
     retryUntilCondition,
     useChain,
+    deployBuilder,
   } = t.context;
+
+  t.log('bundle and install contract');
+  await deployBuilder(scenario.builder);
 
   const wdUser1 = await provisionSmartWallet(wallets.user1, {
     BLD: 100n,
@@ -197,18 +195,20 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   // 2.a. claim them
 });
 
+test.serial('send wallet offers stakeAtom contract', stakeScenario, {
+  chain: 'cosmoshub',
+  chainId: 'gaialocal',
+  contractName: 'stakeAtom',
+  denom: 'uatom',
+  expectedAddressPrefix: 'cosmos',
+  builder: '../packages/builders/scripts/orchestration/init-stakeAtom.js',
+});
+
 test.serial('send wallet offers to stakeOsmo contract', stakeScenario, {
   chain: 'osmosis',
   chainId: 'osmosislocal',
   contractName: 'stakeOsmo',
   denom: 'uosmo',
   expectedAddressPrefix: 'osmo',
+  builder: '../packages/builders/scripts/orchestration/init-stakeOsmo.js',
 });
-
-// TODO - stakeOsmo install override stakeAtom install?
-// test.serial('send wallet offers stakeAtom contract', stakeScenario, {
-//   chain: 'cosmoshub',
-//   contractName: 'stakeAtom',
-//   denom: 'uatom',
-//   expectedAddressPrefix: 'cosmos',
-// });
