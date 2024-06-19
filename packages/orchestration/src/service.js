@@ -3,8 +3,8 @@
 import { V as E } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { prepareChainAccountKit } from './exos/chainAccountKit.js';
-import { prepareICQConnectionKit } from './exos/icqConnectionKit.js';
+import { prepareChainAccountKit } from './exos/chain-account-kit.js';
+import { prepareICQConnectionKit } from './exos/icq-connection-kit.js';
 import {
   makeICAChannelAddress,
   makeICQChannelAddress,
@@ -133,7 +133,7 @@ const prepareOrchestrationKit = (
             remoteConnAddr,
             chainAccountKit.connectionHandler,
           );
-          // XXX if we fail, should we close the port (if it was created in this flow)?
+          // FIXME if we fail, should we close the port (if it was created in this flow)?
           return chainAccountKit.account;
         },
         /**

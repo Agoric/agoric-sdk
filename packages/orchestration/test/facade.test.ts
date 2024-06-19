@@ -38,7 +38,7 @@ export const mockChainConnection: IBCConnectionInfo = {
   },
 };
 
-const makeLocalChainAccountKit = () => assert.fail(`not used`);
+const makeLocalOrchestrationAccountKit = () => assert.fail(`not used`);
 
 test('chain info', async t => {
   const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);

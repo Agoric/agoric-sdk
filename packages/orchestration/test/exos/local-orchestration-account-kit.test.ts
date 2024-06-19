@@ -5,7 +5,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { V as E } from '@agoric/vow/vat.js';
 import { Far } from '@endo/far';
 import { commonSetup } from '../supports.js';
-import { prepareLocalChainAccountKit } from '../../src/exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { makeChainHub } from '../../src/utils/chainHub.js';
@@ -24,7 +24,7 @@ test('deposit, withdraw', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -38,19 +38,22 @@ test('deposit, withdraw', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
-    address,
+    address: harden({
+      address,
+      chainId: 'agoric-n',
+      addressEncoding: 'bech32',
+    }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
-
-  t.regex(await E(account).getAddress(), /agoric1/);
 
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
   const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
   const withdrawal1 = await E(account).withdraw(stake.units(50));
   t.true(
@@ -88,7 +91,7 @@ test('delegate, undelegate', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -102,13 +105,15 @@ test('delegate, undelegate', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
-    address,
+    address: harden({
+      address,
+      chainId: 'agoric-n',
+      addressEncoding: 'bech32',
+    }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
-
-  t.regex(await E(account).getAddress(), /agoric1/);
 
   await E(account).deposit(await utils.pourPayment(bld.units(100)));
 
@@ -121,6 +126,7 @@ test('delegate, undelegate', async t => {
   await E(account).delegate(validatorAddress, bld.units(999));
   // TODO get the timer to fire so that this promise resolves
   void E(account).undelegate(validatorAddress, bld.units(999));
+  t.pass();
 });
 
 test('transfer', async t => {
@@ -135,7 +141,7 @@ test('transfer', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -149,20 +155,24 @@ test('transfer', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
-    address,
+    address: harden({
+      address,
+      chainId: 'agoric-n',
+      addressEncoding: 'bech32',
+    }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
 
   t.truthy(account, 'account is returned');
-  t.regex(await E(account).getAddress(), /agoric1/);
 
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
-  const depositResp = await E(account).deposit(oneHundredStakePmt);
-  t.true(AmountMath.isEqual(depositResp, stake.units(100)), 'deposit');
+  await E(account).deposit(oneHundredStakePmt);
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',

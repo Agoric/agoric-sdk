@@ -10,7 +10,7 @@ import { V } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../utils/chainHub.js';
 
 /**
@@ -41,7 +41,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
@@ -58,10 +58,14 @@ export const start = async (zcf, privateArgs, baggage) => {
   async function makeLocalAccountKit() {
     const account = await V(privateArgs.localchain).makeAccount();
     const address = await V(account).getAddress();
-    // XXX 'address' is implied by 'account'; use an async maker that get the value itself
-    return makeLocalChainAccountKit({
+    // FIXME 'address' is implied by 'account'; use an async maker that get the value itself
+    return makeLocalOrchestrationAccountKit({
       account,
-      address,
+      address: harden({
+        address,
+        addressEncoding: 'bech32',
+        chainId: 'local',
+      }),
       storageNode: privateArgs.storageNode,
     });
   }

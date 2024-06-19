@@ -2,11 +2,12 @@ import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from './chainHub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
-import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -48,7 +49,7 @@ export const provideOrchestration = (
   const chainHub = makeChainHub(remotePowers.agoricNames);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
@@ -62,7 +63,7 @@ export const provideOrchestration = (
   });
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    // XXX what zone?
+    // FIXME what zone?
     zone,
     makeRecorderKit,
     zcf,
@@ -75,13 +76,23 @@ export const provideOrchestration = (
     timer: remotePowers.timerService,
   });
 
+  const makeLocalChainFacade = prepareLocalChainFacade(zone, {
+    makeLocalOrchestrationAccountKit,
+    localchain: remotePowers.localchain,
+    // FIXME what path?
+    storageNode: remotePowers.storageNode,
+    orchestration: remotePowers.orchestrationService,
+    timer: remotePowers.timerService,
+  });
+
   const facade = makeOrchestrationFacade({
     zcf,
     zone,
     chainHub,
-    makeLocalChainAccountKit,
+    makeLocalOrchestrationAccountKit,
     makeRecorderKit,
     makeCosmosOrchestrationAccount,
+    makeLocalChainFacade,
     makeRemoteChainFacade,
     asyncFlowTools,
     ...remotePowers,
