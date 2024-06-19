@@ -1,16 +1,15 @@
 /** @file ChainAccount exo */
 import { makeTracer } from '@agoric/internal';
 import { V } from '@agoric/vow/vat.js';
-import { M } from '@endo/patterns';
 
-import { ChainInfoShape } from './orchestrator.js';
+import { ChainFacadeI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {prepareCosmosOrchestrationAccount} from './cosmosOrchestrationAccount.js';
+ * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
@@ -19,12 +18,6 @@ const trace = makeTracer('RemoteChainFacade');
 
 /** @type {any} */
 const anyVal = null;
-
-/** @see {Chain} */
-export const RemoteChainFacadeI = M.interface('RemoteChainFacade', {
-  getChainInfo: M.callWhen().returns(ChainInfoShape),
-  makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccount')),
-});
 
 /**
  * @param {Zone} zone
@@ -43,7 +36,7 @@ export const prepareRemoteChainFacade = (
 ) =>
   zone.exoClass(
     'RemoteChainFacade',
-    RemoteChainFacadeI,
+    ChainFacadeI,
     /**
      * @param {CosmosChainInfo} remoteChainInfo
      * @param {IBCConnectionInfo} connectionInfo
@@ -71,15 +64,11 @@ export const prepareRemoteChainFacade = (
 
         const address = await V(icaAccount).getAddress();
 
-        const [{ denom: bondDenom }] = remoteChainInfo.stakingTokens || [
-          {
-            denom: null,
-          },
-        ];
-        if (!bondDenom) {
-          throw Fail`missing bondDenom`;
+        const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
+        if (!stakingDenom) {
+          throw Fail`chain info lacks staking denom`;
         }
-        return makeCosmosOrchestrationAccount(address, bondDenom, {
+        return makeCosmosOrchestrationAccount(address, stakingDenom, {
           account: icaAccount,
           storageNode,
           icqConnection: anyVal,
@@ -89,3 +78,4 @@ export const prepareRemoteChainFacade = (
     },
   );
 harden(prepareRemoteChainFacade);
+/** @typedef {ReturnType<typeof prepareRemoteChainFacade>} MakeRemoteChainFacade */

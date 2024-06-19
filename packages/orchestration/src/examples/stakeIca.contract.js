@@ -10,7 +10,7 @@ import {
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
-import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 
 const trace = makeTracer('StakeAtom');
 /**
