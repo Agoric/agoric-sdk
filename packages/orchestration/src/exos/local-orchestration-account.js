@@ -113,9 +113,7 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(M.record()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.arrayOf(M.record()))
-          .optional(M.arrayOf(M.undefined()))
-          .returns(M.undefined()),
+        onFulfilled: M.call(M.any()).rest(M.any()).returns(M.undefined()),
       }),
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.callWhen(M.string(), AmountShape).returns(InvitationShape),
