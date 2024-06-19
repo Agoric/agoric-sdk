@@ -50,7 +50,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   makeLocalChainAccountKit: MakeLocalOrchestrationAccountKit;
+ *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeRemoteChainFacade: any;
  *   orchestrationService: Remote<OrchestrationService>;
@@ -61,7 +61,12 @@ export const OrchestratorI = M.interface('Orchestrator', {
  */
 export const prepareOrchestrator = (
   zone,
-  { chainHub, localchain, makeLocalChainAccountKit, makeRemoteChainFacade },
+  {
+    chainHub,
+    localchain,
+    makeLocalOrchestrationAccountKit,
+    makeRemoteChainFacade,
+  },
 ) =>
   zone.exoClass(
     'Orchestrator',
@@ -78,7 +83,7 @@ export const prepareOrchestrator = (
         if (name === 'agoric') {
           return makeLocalChainFacade(
             localchain,
-            makeLocalChainAccountKit,
+            makeLocalOrchestrationAccountKit,
             agoricChainInfo,
           );
         }

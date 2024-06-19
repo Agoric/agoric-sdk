@@ -17,20 +17,19 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {MakeLocalOrchestrationAccountKit} from './exos/local-orchestration-account.js';
  */
 
 // FIXME turn this into an Exo
 /**
  * @param {Remote<LocalChain>} localchain
- * @param {ReturnType<
- *   typeof import('./exos/local-orchestration-account.js').prepareLocalOrchestrationAccountKit
- * >} makeLocalChainAccountKit
+ * @param {MakeLocalOrchestrationAccountKit} makeLocalOrchestrationAccountKit
  * @param {ChainInfo} localInfo
  * @returns {Chain}
  */
 export const makeLocalChainFacade = (
   localchain,
-  makeLocalChainAccountKit,
+  makeLocalOrchestrationAccountKit,
   localInfo,
 ) => {
   return Far('LocalChainFacade', {
@@ -42,7 +41,7 @@ export const makeLocalChainFacade = (
     async makeAccount() {
       const lcaP = E(localchain).makeAccount();
       const [lca, address] = await Promise.all([lcaP, E(lcaP).getAddress()]);
-      const { holder: account } = makeLocalChainAccountKit({
+      const { holder: account } = makeLocalOrchestrationAccountKit({
         account: lca,
         address: harden({
           address,
@@ -67,9 +66,7 @@ export const makeLocalChainFacade = (
  *   orchestrationService: Remote<OrchestrationService>;
  *   localchain: Remote<LocalChain>;
  *   chainHub: import('./utils/chainHub.js').ChainHub;
- *   makeLocalChainAccountKit: ReturnType<
- *     typeof import('./exos/local-orchestration-account.js').prepareLocalOrchestrationAccountKit
- *   >;
+ *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeCosmosOrchestrationAccount: any;
  *   makeRemoteChainFacade: any;
@@ -84,7 +81,7 @@ export const makeOrchestrationFacade = ({
   orchestrationService,
   localchain,
   chainHub,
-  makeLocalChainAccountKit,
+  makeLocalOrchestrationAccountKit,
   makeRecorderKit,
   makeRemoteChainFacade,
   asyncFlowTools,
@@ -95,7 +92,7 @@ export const makeOrchestrationFacade = ({
     storageNode &&
     orchestrationService &&
     // @ts-expect-error type says defined but double check
-    makeLocalChainAccountKit &&
+    makeLocalOrchestrationAccountKit &&
     // @ts-expect-error type says defined but double check
     makeRecorderKit &&
     makeRemoteChainFacade &&
@@ -106,7 +103,7 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools,
     chainHub,
     localchain,
-    makeLocalChainAccountKit,
+    makeLocalOrchestrationAccountKit,
     makeRecorderKit,
     makeRemoteChainFacade,
     orchestrationService,

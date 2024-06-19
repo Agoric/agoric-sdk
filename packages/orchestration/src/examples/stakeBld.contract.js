@@ -41,7 +41,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
@@ -59,7 +59,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const account = await V(privateArgs.localchain).makeAccount();
     const address = await V(account).getAddress();
     // FIXME 'address' is implied by 'account'; use an async maker that get the value itself
-    return makeLocalChainAccountKit({
+    return makeLocalOrchestrationAccountKit({
       account,
       address: harden({
         address,

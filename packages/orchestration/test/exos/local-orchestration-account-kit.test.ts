@@ -24,7 +24,7 @@ test('deposit, withdraw', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -38,7 +38,7 @@ test('deposit, withdraw', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
       address,
@@ -91,7 +91,7 @@ test('delegate, undelegate', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -105,7 +105,7 @@ test('delegate, undelegate', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
       address,
@@ -141,7 +141,7 @@ test('transfer', async t => {
     rootZone.mapStore('recorder'),
     marshaller,
   );
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
     makeRecorderKit,
     // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
@@ -155,7 +155,7 @@ test('transfer', async t => {
   const address = await E(lca).getAddress();
 
   t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalChainAccountKit({
+  const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
       address,

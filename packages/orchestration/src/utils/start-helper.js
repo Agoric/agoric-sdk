@@ -48,7 +48,7 @@ export const provideOrchestration = (
   const chainHub = makeChainHub(remotePowers.agoricNames);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
@@ -79,7 +79,7 @@ export const provideOrchestration = (
     zcf,
     zone,
     chainHub,
-    makeLocalChainAccountKit,
+    makeLocalOrchestrationAccountKit,
     makeRecorderKit,
     makeCosmosOrchestrationAccount,
     makeRemoteChainFacade,
