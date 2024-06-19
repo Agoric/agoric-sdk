@@ -67,8 +67,9 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools) ||
     Fail`params missing`;
 
+  const asyncFlow = asyncFlowTools.asyncFlow;
+
   const makeOrchestrator = prepareOrchestrator(zone, {
-    asyncFlowTools,
     chainHub,
     localchain,
     makeRecorderKit,
@@ -88,14 +89,48 @@ export const makeOrchestrationFacade = ({
      * @param {string} durableName - the orchestration flow identity in the zone
      *   (to resume across upgrades)
      * @param {Context} ctx - values to pass through the async flow membrane
-     * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
+     * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} orchFn
      * @returns {(...args: Args) => Promise<unknown>}
      */
-    orchestrate(durableName, ctx, fn) {
-      const orc = makeOrchestrator().orchestrator;
+    orchestrate(durableName, ctx, orchFn) {
+      // This portion happens once to prepare the method/function that gets orchestrated
 
-      // @ts-expect-error `orc` Vow vs Promise
-      return async (...args) => fn(orc, ctx, ...args);
+      const subzone = zone.subZone(durableName);
+      // TODO: create durable exo wrappers for ctx props
+      const ctxKit = harden({}); // makeDurableCtxKit(ctx);
+      const asyncFlowGuestFunc = async (flowSupportKit, ...args) => {
+        // This runs inside the asyncFlow
+        // TODO: Add support for recreating a `this` exo class context
+        const exoContext = undefined;
+        // TODO: Get orc from `flowSupportKit` once it's made durable
+        const orcArg = flowSupportKit.orc;
+        // TODO: build ctx from a durable skeleton using `flowSupportKit`
+        // TODO: make context facade
+        // const ctxArg = makeContextFacade(flowSupportKit.ctxKit);
+        const ctxArg = ctx;
+        return Reflect.apply(orchFn, exoContext, [orcArg, ctxArg, ...args]);
+      };
+      const asyncFlowHostFn = asyncFlow(
+        subzone,
+        'asyncFlow',
+        asyncFlowGuestFunc,
+      );
+      // Make a function that will accept a `this` argument, but that does not allow `construction` (e.g., the `new` operator)
+      // This runs outside the asaync flow. It process those arguments to pass them into the async flow
+      return harden(
+        {
+          [durableName](...args) {
+            // This happens on every invocation
+            // TODO: Build the needed durable objects
+            const orcKit = makeOrchestrator(); // internalMakeOrchestratorKit();
+            // TODO: plumb the necessary ingredients to reconstruct a `this` exo context inside the guest
+            return asyncFlowHostFn(
+              { orc: orcKit.orchestrator, ctxKit },
+              ...args,
+            );
+          },
+        }[durableName],
+      );
     },
   };
 };

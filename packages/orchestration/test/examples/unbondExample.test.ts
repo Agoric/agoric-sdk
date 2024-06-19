@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { V as E } from '@agoric/vow/vat.js';
 import path from 'path';
 import { commonSetup } from '../supports.js';
 

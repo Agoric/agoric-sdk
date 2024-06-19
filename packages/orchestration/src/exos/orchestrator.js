@@ -15,7 +15,6 @@ import { getChainsAndConnection } from '../utils/chainHub.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ChainHub} from '../utils/chainHub.js';
- * @import {AsyncFlowTools} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -42,7 +41,6 @@ export const OrchestratorI = M.interface('Orchestrator', {
 /**
  * @param {Zone} zone
  * @param {{
- *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
  *   makeRecorderKit: MakeRecorderKit;
