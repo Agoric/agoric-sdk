@@ -77,3 +77,18 @@ export const CosmosChainInfoShape = M.splitRecord(
     icqEnabled: M.boolean(),
   },
 );
+
+// FIXME more validation
+export const ChainInfoShape = M.any();
+export const LocalChainAccountShape = M.remotable('LocalChainAccount');
+export const DenomShape = M.string();
+// FIXME more validation
+export const BrandInfoShape = M.any();
+
+export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+
+/** @see {Chain} */
+export const ChainFacadeI = M.interface('ChainFacade', {
+  getChainInfo: M.callWhen().returns(ChainInfoShape),
+  makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccount')),
+});

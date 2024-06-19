@@ -1,10 +1,10 @@
 /** @file Orchestration service */
 
-import { V as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { prepareChainAccountKit } from './exos/chainAccountKit.js';
-import { prepareICQConnectionKit } from './exos/icqConnectionKit.js';
+import { prepareChainAccountKit } from './exos/chain-account-kit.js';
+import { prepareICQConnectionKit } from './exos/icq-connection-kit.js';
 import {
   makeICAChannelAddress,
   makeICQChannelAddress,
@@ -13,9 +13,11 @@ import {
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote} from '@agoric/internal';
- * @import {Port, PortAllocator} from '@agoric/network';
+ * @import {Connection, Port, PortAllocator} from '@agoric/network';
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ICQConnection, IcaAccount, ICQConnectionKit} from './types.js';
+ * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {VowTools} from '@agoric/vow';
+ * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from './types.js';
  */
 
 const { Fail, bare } = assert;
@@ -36,9 +38,9 @@ const { Fail, bare } = assert;
  * >} PowerStore
  */
 
-/**
- * @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore
- */
+/** @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore */
+
+/** @typedef {ChainAccountKit | ICQConnectionKit} ConnectionKit */
 
 /**
  * @template {keyof OrchestrationPowers} K
@@ -50,39 +52,54 @@ const getPower = (powers, name) => {
   return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
 };
 
-export const OrchestrationI = M.interface('Orchestration', {
-  makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
-    M.remotable('ChainAccount'),
-  ),
-  provideICQConnection: M.callWhen(M.string()).returns(
-    M.remotable('Connection'),
-  ),
-});
-
 /** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore }} OrchestrationState */
 
 /**
  * @param {Zone} zone
+ * @param {VowTools} vowTools
  * @param {ReturnType<typeof prepareChainAccountKit>} makeChainAccountKit
  * @param {ReturnType<typeof prepareICQConnectionKit>} makeICQConnectionKit
  */
 const prepareOrchestrationKit = (
   zone,
+  { when, watch },
   makeChainAccountKit,
   makeICQConnectionKit,
 ) =>
   zone.exoClassKit(
     'Orchestration',
     {
-      self: M.interface('OrchestrationSelf', {
-        allocateICAControllerPort: M.callWhen().returns(
-          NetworkShape.Vow$(NetworkShape.Port),
+      requestICAChannelWatcher: M.interface('RequestICAChannelWatcher', {
+        onFulfilled: M.call(M.remotable('Port'))
+          .optional({ chainId: M.string(), remoteConnAddr: M.string() })
+          .returns(NetworkShape.Vow$(NetworkShape.Connection)),
+      }),
+      requestICQChannelWatcher: M.interface('RequestICQChannelWatcher', {
+        onFulfilled: M.call(M.remotable('Port'))
+          .optional({
+            remoteConnAddr: M.string(),
+            controllerConnectionId: M.string(),
+          })
+          .returns(NetworkShape.Vow$(NetworkShape.Connection)),
+      }),
+      channelOpenWatcher: M.interface('ChannelOpenWatcher', {
+        onFulfilled: M.call(M.remotable('Connection'))
+          .optional(
+            M.splitRecord(
+              { connectionKit: M.record(), returnFacet: M.string() },
+              { saveICQConnection: M.string() },
+            ),
+          )
+          .returns(M.remotable('ConnectionKit Holder facet')),
+      }),
+      public: M.interface('OrchestrationService', {
+        makeAccount: M.callWhen(M.string(), M.string(), M.string()).returns(
+          M.remotable('ChainAccountKit'),
         ),
-        allocateICQControllerPort: M.callWhen().returns(
-          NetworkShape.Vow$(NetworkShape.Port),
+        provideICQConnection: M.callWhen(M.string()).returns(
+          M.remotable('ICQConnection'),
         ),
       }),
-      public: OrchestrationI,
     },
     /** @param {Partial<OrchestrationPowers>} [initialPowers] */
     initialPowers => {
@@ -97,15 +114,77 @@ const prepareOrchestrationKit = (
       return /** @type {OrchestrationState} */ ({ powers, icqConnections });
     },
     {
-      self: {
-        async allocateICAControllerPort() {
-          const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return E(portAllocator).allocateICAControllerPort();
+      requestICAChannelWatcher: {
+        /**
+         * @param {Port} port
+         * @param {{
+         *   chainId: string;
+         *   remoteConnAddr: RemoteIbcAddress;
+         * }} watchContext
+         */
+        onFulfilled(port, { chainId, remoteConnAddr }) {
+          const chainAccountKit = makeChainAccountKit(
+            chainId,
+            port,
+            remoteConnAddr,
+          );
+          return watch(
+            E(port).connect(remoteConnAddr, chainAccountKit.connectionHandler),
+            this.facets.channelOpenWatcher,
+            { returnFacet: 'account', connectionKit: chainAccountKit },
+          );
         },
-        async allocateICQControllerPort() {
-          const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return E(portAllocator).allocateICAControllerPort();
+      },
+      requestICQChannelWatcher: {
+        /**
+         * @param {Port} port
+         * @param {{
+         *   remoteConnAddr: RemoteIbcAddress;
+         *   controllerConnectionId: IBCConnectionID;
+         * }} watchContext
+         */
+        onFulfilled(port, { remoteConnAddr, controllerConnectionId }) {
+          const connectionKit = makeICQConnectionKit(port);
+          /** @param {ICQConnectionKit} kit */
+          return watch(
+            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
+            this.facets.channelOpenWatcher,
+            {
+              connectionKit,
+              returnFacet: 'connection',
+              saveICQConnection: controllerConnectionId,
+            },
+          );
         },
+      },
+      /**
+       * Waits for a channel (ICA, ICQ) to open and returns the consumer-facing
+       * facet of the ConnectionKit, specified by `returnFacet`. Saves the
+       * ConnectionKit if `saveICQConnection` is provided.
+       */
+      channelOpenWatcher: {
+        /**
+         * @param {Connection} _connection
+         * @param {{
+         *   connectionKit: ConnectionKit;
+         *   returnFacet: string;
+         *   saveICQConnection?: IBCConnectionID;
+         * }} watchContext
+         */
+        onFulfilled(
+          _connection,
+          { connectionKit, returnFacet, saveICQConnection },
+        ) {
+          if (saveICQConnection) {
+            this.state.icqConnections.init(
+              saveICQConnection,
+              /** @type {ICQConnectionKit} */ (connectionKit),
+            );
+          }
+          return connectionKit[returnFacet];
+        },
+        // TODO #9317 if we fail, should we revoke the port (if it was created in this flow)?
+        // onRejected() {}
       },
       public: {
         /**
@@ -115,65 +194,63 @@ const prepareOrchestrationKit = (
          * @param {IBCConnectionID} controllerConnectionId self connection_id
          * @returns {Promise<IcaAccount>}
          */
-        async makeAccount(chainId, hostConnectionId, controllerConnectionId) {
-          const port = await this.facets.self.allocateICAControllerPort();
-
+        makeAccount(chainId, hostConnectionId, controllerConnectionId) {
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
           );
-          const chainAccountKit = makeChainAccountKit(
-            chainId,
-            port,
-            remoteConnAddr,
+          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          return when(
+            watch(
+              E(portAllocator).allocateICAControllerPort(),
+              this.facets.requestICAChannelWatcher,
+              {
+                chainId,
+                remoteConnAddr,
+              },
+            ),
           );
-
-          // await so we do not return a ChainAccount before it successfully instantiates
-          await E(port).connect(
-            remoteConnAddr,
-            chainAccountKit.connectionHandler,
-          );
-          // XXX if we fail, should we close the port (if it was created in this flow)?
-          return chainAccountKit.account;
         },
         /**
          * @param {IBCConnectionID} controllerConnectionId
          * @returns {Promise<ICQConnection>}
          */
-        async provideICQConnection(controllerConnectionId) {
+        provideICQConnection(controllerConnectionId) {
           if (this.state.icqConnections.has(controllerConnectionId)) {
-            return this.state.icqConnections.get(controllerConnectionId)
-              .connection;
+            // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
+            return when(
+              this.state.icqConnections.get(controllerConnectionId).connection,
+            );
           }
-          // allocate a new Port for every Connection
-          // TODO #9317 optimize ICQ port allocation
-          const port = await this.facets.self.allocateICQControllerPort();
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
-          const icqConnectionKit = makeICQConnectionKit(port);
-
-          // await so we do not return/save a ICQConnection before it successfully instantiates
-          await E(port).connect(
-            remoteConnAddr,
-            icqConnectionKit.connectionHandler,
+          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          return when(
+            watch(
+              // allocate a new Port for every Connection
+              // TODO #9317 optimize ICQ port allocation
+              E(portAllocator).allocateICQControllerPort(),
+              this.facets.requestICQChannelWatcher,
+              {
+                remoteConnAddr,
+                controllerConnectionId,
+              },
+            ),
           );
-
-          this.state.icqConnections.init(
-            controllerConnectionId,
-            icqConnectionKit,
-          );
-
-          return icqConnectionKit.connection;
         },
       },
     },
   );
 
-/** @param {Zone} zone */
-export const prepareOrchestrationTools = zone => {
-  const makeChainAccountKit = prepareChainAccountKit(zone);
-  const makeICQConnectionKit = prepareICQConnectionKit(zone);
+/**
+ * @param {Zone} zone
+ * @param {VowTools} vowTools
+ */
+export const prepareOrchestrationTools = (zone, vowTools) => {
+  const makeChainAccountKit = prepareChainAccountKit(zone, vowTools);
+  const makeICQConnectionKit = prepareICQConnectionKit(zone, vowTools);
   const makeOrchestrationKit = prepareOrchestrationKit(
     zone,
+    vowTools,
     makeChainAccountKit,
     makeICQConnectionKit,
   );

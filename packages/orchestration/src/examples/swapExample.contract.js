@@ -103,7 +103,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
       // deposit funds from user seat to LocalChainAccount
       const payments = await withdrawFromSeat(zcf, seat, give);
-      await deeplyFulfilled(objectMap(payments, localAccount.deposit));
+      await deeplyFulfilled(
+        objectMap(payments, payment =>
+          // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
+          localAccount.deposit(payment),
+        ),
+      );
       seat.exit();
 
       // build swap instructions with orcUtils library

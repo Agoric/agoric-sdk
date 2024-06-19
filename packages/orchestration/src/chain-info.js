@@ -1,4 +1,4 @@
-import { registerChain } from './utils/chainHub.js';
+import { registerChain } from './exos/chain-hub.js';
 
 // Refresh with scripts/refresh-chain-info.ts
 import fetchedChainInfo from './fetched-chain-info.js';
@@ -10,7 +10,7 @@ import fetchedChainInfo from './fetched-chain-info.js';
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden({
     ...fetchedChainInfo,
-    // XXX does not have useful connections
+    // FIXME does not have useful connections
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
     agoriclocal: {
       chainId: 'agoriclocal',
