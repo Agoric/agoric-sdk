@@ -3,6 +3,7 @@ import { makeTracer } from '@agoric/internal';
 import { V } from '@agoric/vow/vat.js';
 
 import { ChainFacadeI } from '../typeGuards.js';
+import { Far } from '@endo/far';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -28,11 +29,18 @@ const anyVal = null;
  *   orchestration: Remote<OrchestrationService>;
  *   storageNode: Remote<StorageNode>;
  *   timer: Remote<TimerService>;
+ *   vowTools: import('@agoric/vow').VowTools;
  * }} powers
  */
 export const prepareRemoteChainFacade = (
   zone,
-  { makeCosmosOrchestrationAccount, orchestration, storageNode, timer },
+  {
+    makeCosmosOrchestrationAccount,
+    orchestration,
+    storageNode,
+    timer,
+    vowTools: { allVows, watch },
+  },
 ) =>
   zone.exoClass(
     'RemoteChainFacade',
@@ -46,34 +54,39 @@ export const prepareRemoteChainFacade = (
       return { remoteChainInfo, connectionInfo };
     },
     {
-      async getChainInfo() {
+      getChainInfo() {
         return this.state.remoteChainInfo;
       },
 
       // FIXME parameterize on the remoteChainInfo to make()
       // That used to work but got lost in the migration to Exo
       /** @returns {Promise<OrchestrationAccount<ChainInfo>>} */
-      async makeAccount() {
+      makeAccount() {
         const { remoteChainInfo, connectionInfo } = this.state;
 
-        const icaAccount = await V(orchestration).makeAccount(
+        const icaP = V(orchestration).makeAccount(
           remoteChainInfo.chainId,
           connectionInfo.id,
           connectionInfo.counterparty.connection_id,
         );
 
-        const address = await V(icaAccount).getAddress();
-
-        const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-        if (!stakingDenom) {
-          throw Fail`chain info lacks staking denom`;
-        }
-        return makeCosmosOrchestrationAccount(address, stakingDenom, {
-          account: icaAccount,
-          storageNode,
-          icqConnection: anyVal,
-          timer,
-        });
+        return watch(
+          allVows([icaP, V(icaP).getAddress()]),
+          Far('makeAccount', {
+            onFulfilled: ([icaAccount, address]) => {
+              const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
+              if (!stakingDenom) {
+                throw Fail`chain info lacks staking denom`;
+              }
+              return makeCosmosOrchestrationAccount(address, stakingDenom, {
+                account: icaAccount,
+                storageNode,
+                icqConnection: anyVal,
+                timer,
+              });
+            },
+          }),
+        );
       },
     },
   );

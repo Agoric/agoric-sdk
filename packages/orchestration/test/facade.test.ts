@@ -73,6 +73,7 @@ test('chain info', async t => {
   });
 
   const result = (await handle()) as Chain<any>;
+  console.log('RESULT', result);
   t.deepEqual(await result.getChainInfo(), mockChainInfo);
 });
 

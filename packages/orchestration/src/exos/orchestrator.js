@@ -1,15 +1,10 @@
 /** @file ChainAccount exo */
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import {
-  ChainInfoShape,
-  LocalChainAccountShape,
-  DenomShape,
-  BrandInfoShape,
-  DenomAmountShape,
-} from '../typeGuards.js';
+import { BrandInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
 import { getChainsAndConnection } from './chain-hub.js';
 
 /**
@@ -32,8 +27,8 @@ const trace = makeTracer('Orchestrator');
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
-  getChain: M.callWhen(M.string()).returns(ChainInfoShape),
-  makeLocalAccount: M.callWhen().returns(LocalChainAccountShape),
+  getChain: M.call(M.string()).returns(VowShape),
+  makeLocalAccount: M.call().returns(VowShape),
   getBrandInfo: M.call(DenomShape).returns(BrandInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });

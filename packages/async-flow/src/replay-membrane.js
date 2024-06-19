@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -324,6 +325,7 @@ export const makeReplayMembrane = (
    * @returns {Promise}
    */
   const makeGuestForHostVow = hVow => {
+    isVow(hVow) || Fail`host vow expected: ${hVow}`;
     const { promise, resolve, reject } = makeGuestPromiseKit();
     guestPromiseMap.set(promise, harden({ resolve, reject }));
 

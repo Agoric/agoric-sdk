@@ -1,7 +1,7 @@
 /** @file Orchestration service */
 
 import { Fail } from '@agoric/assert';
-
+import { V } from '@agoric/vow/vat.js';
 import { prepareOrchestrator } from './exos/orchestrator.js';
 
 /**
@@ -124,9 +124,8 @@ export const makeOrchestrationFacade = ({
             // TODO: Build the needed durable objects
             const orcKit = makeOrchestrator(); // internalMakeOrchestratorKit();
             // TODO: plumb the necessary ingredients to reconstruct a `this` exo context inside the guest
-            return asyncFlowHostFn(
-              { orc: orcKit.orchestrator, ctxKit },
-              ...args,
+            return V.when(
+              asyncFlowHostFn({ orc: orcKit.orchestrator, ctxKit }, ...args),
             );
           },
         }[durableName],
