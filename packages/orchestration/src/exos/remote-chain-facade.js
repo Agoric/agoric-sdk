@@ -10,7 +10,7 @@ import { ChainInfoShape } from './orchestrator.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
- * @import {prepareCosmosOrchestrationAccount} from './cosmosOrchestrationAccount.js';
+ * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 

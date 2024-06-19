@@ -23,7 +23,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import {
   prepareCosmosOrchestrationAccountKit,
   trivialDelegateResponse,
-} from '../src/exos/cosmosOrchestrationAccount.js';
+} from '../src/exos/cosmos-orchestration-account.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
 import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 

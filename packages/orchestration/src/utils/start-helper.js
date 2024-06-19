@@ -6,7 +6,7 @@ import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js'
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from './chainHub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
-import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'

@@ -11,7 +11,7 @@ import type {
   StakingAccountActions,
 } from '../src/types.js';
 import type { LocalChainAccountKit } from '../src/exos/local-chain-account-kit.js';
-import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
 
 const anyVal = null as any;
 
