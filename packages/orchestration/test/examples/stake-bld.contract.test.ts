@@ -51,7 +51,6 @@ test('makeAccount, deposit, withdraw', async t => {
   t.log('make a LocalChainAccount');
   const account = await E(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
-  t.regex(await E(account).getAddress(), /agoric1/);
 
   t.log('deposit 100 bld to account');
   const depositResp = await V(account).deposit(

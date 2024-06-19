@@ -38,7 +38,7 @@ const { Fail } = assert;
  * @typedef {{
  *   topicKit: RecorderKit<LocalChainAccountNotification>;
  *   account: LocalChainAccount;
- *   address: ChainAddress['address'];
+ *   address: ChainAddress;
  * }} State
  */
 
@@ -92,7 +92,7 @@ export const prepareLocalChainAccountKit = (
     /**
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
-     * @param {ChainAddress['address']} initState.address
+     * @param {ChainAddress} initState.address
      * @param {StorageNode} initState.storageNode
      * @returns {State}
      */
@@ -101,7 +101,6 @@ export const prepareLocalChainAccountKit = (
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
 
-      // #9162 use ChainAddress object instead of `address` string
       return { account, address, topicKit };
     },
     {
@@ -220,7 +219,7 @@ export const prepareLocalChainAccountKit = (
           // @ts-expect-error subtype
           return V(this.state.account).executeTx(messages);
         },
-        /** @returns {ChainAddress['address']} */
+        /** @returns {ChainAddress} */
         getAddress() {
           return NonNullish(this.state.address, 'Chain address not available.');
         },
@@ -261,7 +260,7 @@ export const prepareLocalChainAccountKit = (
                 amount: String(amount.value),
                 denom: amount.denom,
               },
-              sender: this.state.address,
+              sender: this.state.address.address,
               receiver: destination.address,
               timeoutHeight: opts?.timeoutHeight ?? {
                 revisionHeight: 0n,

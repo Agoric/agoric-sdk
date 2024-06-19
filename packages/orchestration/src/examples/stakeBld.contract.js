@@ -61,7 +61,11 @@ export const start = async (zcf, privateArgs, baggage) => {
     // FIXME 'address' is implied by 'account'; use an async maker that get the value itself
     return makeLocalChainAccountKit({
       account,
-      address,
+      address: harden({
+        address,
+        addressEncoding: 'bech32',
+        chainId: 'local',
+      }),
       storageNode: privateArgs.storageNode,
     });
   }

@@ -44,7 +44,11 @@ export const makeLocalChainFacade = (
       const [lca, address] = await Promise.all([lcaP, E(lcaP).getAddress()]);
       const { holder: account } = makeLocalChainAccountKit({
         account: lca,
-        address,
+        address: harden({
+          address,
+          chainId: localInfo.chainId,
+          addressEncoding: 'bech32',
+        }),
         // @ts-expect-error TODO: Remote
         storageNode: null,
       });
@@ -56,12 +60,7 @@ export const makeLocalChainFacade = (
           await E(account).deposit(payment);
         },
         getAddress() {
-          const addressStr = account.getAddress();
-          return {
-            address: addressStr,
-            chainId: localInfo.chainId,
-            addressEncoding: 'bech32',
-          };
+          return account.getAddress();
         },
         async getBalance(denomArg) {
           // FIXME look up real values
