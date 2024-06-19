@@ -13,7 +13,38 @@
  * @import {Timestamp} from '@agoric/time'
  * @import {TimestampRecord} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  * @typedef {import('./liquidation.js').VaultData} VaultData
+ *
  * @typedef {import('./proceeds.js').DistributionPlan} DistributionPlan
  */
 
@@ -142,6 +173,7 @@
  *   vaultsInPlan: Array | undefined;
  * }} PostAuctionParams
  *
+ *
  * @typedef {{
  *   plan: DistributionPlan | undefined;
  *   totalCollateral: Amount<'nat'>;
@@ -151,7 +183,6 @@
  */
 
 /**
- *
  * @typedef {object} LiquidationVisibilityWriters
  * @property {(vaultData: VaultData) => Promise<void>} writePreAuction
  * @property {(postAuctionParams: PostAuctionParams) => Promise<void>} writePostAuction

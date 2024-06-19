@@ -276,11 +276,7 @@ export const makeLiquidationTestKit = async ({
     const maxBuy = `10000${collateralBrandKey}`;
 
     for (let i = 0; i < setup.bids.length; i += 1) {
-<<<<<<< HEAD
-      const offerId = `${collateralBrandKey}-bid${i + 1}`;
-=======
       const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
->>>>>>> 69a90400e (# This is a combination of 22 commits.)
       // bids are long-lasting offers so we can't wait here for completion
       await buyer.sendOfferMaker(Offers.auction.Bid, {
         offerId,

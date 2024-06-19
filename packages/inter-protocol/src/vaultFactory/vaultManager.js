@@ -64,7 +64,6 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
-import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
@@ -176,13 +175,13 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 
 /**
  * @typedef {{
- *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>,
- *   debtBrand: Brand<'nat'>,
- *   liquidatingVaults: SetStore<Vault>,
- *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>,
- *   poolIncrementSeat: ZCFSeat,
- *   retainedCollateralSeat: ZCFSeat,
- *   unsettledVaults: MapStore<string, Vault>,
+ *   assetTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AssetState>;
+ *   debtBrand: Brand<'nat'>;
+ *   liquidatingVaults: SetStore<Vault>;
+ *   metricsTopicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>;
+ *   poolIncrementSeat: ZCFSeat;
+ *   retainedCollateralSeat: ZCFSeat;
+ *   unsettledVaults: MapStore<string, Vault>;
  * }} ImmutableState
  */
 
@@ -215,13 +214,14 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 
 /**
  * @typedef {{
- *   error: string
+ *   error: string;
  * }} DistributionError
  *
  * @typedef {(
  *   | string
  *   | { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
  * )[][]} PreAuctionState
+ *
  *
  * @typedef {(string | { phase: string })[][]} PostAuctionState
  *
@@ -237,10 +237,15 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   startTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
  * }} AuctionResultState
  *
+ *
  * @typedef {{
  *   preAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PreAuctionState>;
- *   postAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<PostAuctionState | DistributionError>;
- *   auctionResultRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<AuctionResultState | DistributionError>;
+ *   postAuctionRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<
+ *     PostAuctionState | DistributionError
+ *   >;
+ *   auctionResultRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<
+ *     AuctionResultState | DistributionError
+ *   >;
  * }} LiquidationRecorderKits
  */
 
@@ -431,7 +436,7 @@ export const prepareVaultManagerKit = (
         start() {
           const { state, facets } = this;
           trace(state.collateralBrand, 'helper.start()', state.vaultCounter);
-          const { collateralBrand, unsettledVaults } = state;
+          const { collateralBrand, unsettledVaults, storageNode } = state;
 
           const ephemera = collateralEphemera(collateralBrand);
           ephemera.prioritizedVaults = makePrioritizedVaults(unsettledVaults);
@@ -791,7 +796,6 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         *
          * @param {LiquidationVisibilityWriters} liquidationVisibilityWriters
          * @returns {boolean}
          */
