@@ -31,3 +31,5 @@ export const prepareVowTools = (zone, powers = {}) => {
   return harden({ when, watch, makeVowKit, allVows });
 };
 harden(prepareVowTools);
+
+/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */

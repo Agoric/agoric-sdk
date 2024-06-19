@@ -86,5 +86,3 @@ export {};
  * @property {(value: T, context?: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
-
-/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */
