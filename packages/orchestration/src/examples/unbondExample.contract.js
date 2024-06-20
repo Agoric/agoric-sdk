@@ -49,8 +49,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /** @type {OfferHandler} */
   const unbondAndLiquidStake = orchestrate(
-    'LSTTia',
     { zcf },
+    'LSTTia',
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (/** @type {Orchestrator} */ orch, { zcf }, _seat, _offerArgs) => {
       console.log('zcf within the membrane', zcf);

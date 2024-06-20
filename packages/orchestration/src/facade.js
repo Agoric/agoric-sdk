@@ -80,15 +80,17 @@ export const makeOrchestrationFacade = ({
 
   return {
     /**
+     * Orchestrate the arguments with the given flow function.
+     *
      * @template Context
      * @template {any[]} Args
+     * @param {Context} ctx - values to pass through the async flow membrane
      * @param {string} durableName - the orchestration flow identity in the zone
      *   (to resume across upgrades)
-     * @param {Context} ctx - values to pass through the async flow membrane
      * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
      * @returns {(...args: Args) => Promise<unknown>}
      */
-    orchestrate(durableName, ctx, fn) {
+    orchestrate(ctx, durableName, fn) {
       const orc = makeOrchestrator();
 
       return async (...args) => fn(orc, ctx, ...args);

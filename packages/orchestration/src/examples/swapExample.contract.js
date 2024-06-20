@@ -85,8 +85,8 @@ export const start = async (zcf, privateArgs, baggage) => {
    * >}
    */
   const swapAndStakeHandler = orchestrate(
-    'LSTTia',
     { zcf },
+    'LSTTia',
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
       const { give } = seat.getProposal();

@@ -68,7 +68,7 @@ test('chain info', async t => {
     mockChainConnection,
   );
 
-  const handle = orchestrate('mock', {}, async orc => {
+  const handle = orchestrate({}, 'mock', async orc => {
     return orc.getChain('mock');
   });
 
