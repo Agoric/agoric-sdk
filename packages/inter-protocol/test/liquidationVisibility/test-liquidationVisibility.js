@@ -248,6 +248,9 @@ test('liq-flow-1', async t => {
       collateralRemaining: aeth.makeEmpty(),
       endTime,
       startTime,
+      debtToBurn: run.make(1680n),
+      mintedForReserve: run.makeEmpty(),
+      totalPenalty: aeth.make(42n),
     },
   });
 
@@ -581,6 +584,9 @@ test('liq-flow-1.1', async t => {
       collateralRemaining: aeth.makeEmpty(),
       endTime,
       startTime,
+      debtToBurn: run.make(1680n),
+      mintedForReserve: run.makeEmpty(),
+      totalPenalty: aeth.make(42n),
     },
   });
 
@@ -598,6 +604,9 @@ test('liq-flow-1.1', async t => {
       collateralRemaining: abtc.makeEmpty(),
       endTime,
       startTime,
+      debtToBurn: run.make(1680n),
+      mintedForReserve: run.makeEmpty(),
+      totalPenalty: abtc.make(42n),
     },
   });
 
@@ -846,6 +855,9 @@ test('liq-flow-2a', async t => {
       collateralRemaining: aeth.makeEmpty(),
       endTime,
       startTime: start1,
+      debtToBurn: run.make(3185n),
+      mintedForReserve: run.makeEmpty(),
+      totalPenalty: aeth.make(75n),
     },
   });
 
@@ -1114,6 +1126,9 @@ test('liq-flow-2b', async t => {
       collateralRemaining: aeth.make(5n),
       endTime,
       startTime,
+      debtToBurn: run.make(258n),
+      mintedForReserve: run.makeEmpty(),
+      totalPenalty: aeth.make(7n),
     },
   });
 

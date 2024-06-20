@@ -233,6 +233,9 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   mintedProceeds?: Amount<'nat'>;
  *   collateralSold?: Amount<'nat'>;
  *   collateralRemaining?: Amount<'nat'>;
+ *   debtToBurn?: Amount<'nat'>;
+ *   mintedForReserve?: Amount<'nat'>;
+ *   totalPenalty?: Amount<'nat'>;
  *   endTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
  *   startTime?: import('@agoric/time/src/types.js').TimestampRecord | null;
  * }} AuctionResultState
@@ -777,6 +780,9 @@ export const prepareVaultManagerKit = (
               mintedProceeds: plan.mintedProceeds,
               collateralSold: plan.collateralSold,
               collateralRemaining: plan.collatRemaining,
+              debtToBurn: plan.debtToBurn,
+              mintedForReserve: plan.mintedForReserve,
+              totalPenalty: plan.totalPenalty,
               // @ts-expect-error
               endTime: auctionSchedule?.liveAuctionSchedule.endTime,
               // @ts-expect-error
