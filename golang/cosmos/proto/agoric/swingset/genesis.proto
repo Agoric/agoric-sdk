@@ -17,6 +17,10 @@ message GenesisState {
     repeated SwingStoreExportDataEntry swing_store_export_data = 4 [
         (gogoproto.jsontag)    = "swingStoreExportData"
     ];
+
+    string swing_store_export_data_hash = 5 [
+        (gogoproto.jsontag)    = "swingStoreExportDataHash"
+    ];
 }
 
 // A SwingStore "export data" entry.
