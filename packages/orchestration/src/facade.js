@@ -84,18 +84,23 @@ export const makeOrchestrationFacade = ({
 
   return {
     /**
+     * @template Return
      * @template Context
      * @template {any[]} Args
      * @param {string} durableName - the orchestration flow identity in the zone
      *   (to resume across upgrades)
      * @param {Context} ctx - values to pass through the async flow membrane
-     * @param {(orc: Orchestrator, ctx2: Context, ...args: Args) => object} fn
-     * @returns {(...args: Args) => Promise<unknown>}
+     * @param {(
+     *   orc: Orchestrator,
+     *   ctx2: Context,
+     *   ...args: Args
+     * ) => Promise<Return>} fn
+     * @returns {(...args: Args) => Promise<Return>}
      */
     orchestrate(durableName, ctx, fn) {
       const orc = makeOrchestrator();
 
-      return async (...args) => fn(orc, ctx, ...args);
+      return async (...args) => vowTools.when(fn(orc, ctx, ...args));
     },
   };
 };
