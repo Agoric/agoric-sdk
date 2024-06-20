@@ -6,6 +6,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
 import { orcUtils } from '../utils/orc.js';
 import { provideOrchestration } from '../utils/start-helper.js';
+import { makeOrchestrationFnDef } from '../facade.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -39,6 +40,63 @@ harden(meta);
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+
+const swap = makeOrchestrationFnDef(
+  'swap',
+  async (
+    orch,
+    // XXX types of context not known here, but maybe this is better than the
+    // alternative: putting the fn inside a scope that has `zcf`, which infers the
+    // type as the host version (when it's actually the guest wrapper) and
+    // triggering the no-shadow lint rule (which should be heeded because they
+    // are actually different values)
+    /** @type {{ zcf: ZCF }} */ { zcf },
+    /** @type {ZCFSeat} */ seat,
+    // XXX the OfferHandler was conveying these types when this was inline
+    /** @type {{ staked: Amount<'nat'>; validator: CosmosValidatorAddress }} */ offerArgs,
+  ) => {
+    const { give } = seat.getProposal();
+
+    const omni = await orch.getChain('omniflixhub');
+    const agoric = await orch.getChain('agoric');
+
+    const [omniAccount, localAccount] = await Promise.all([
+      omni.makeAccount(),
+      agoric.makeAccount(),
+    ]);
+
+    const omniAddress = omniAccount.getAddress();
+
+    // deposit funds from user seat to LocalChainAccount
+    const payments = await withdrawFromSeat(zcf, seat, give);
+    await deeplyFulfilled(
+      objectMap(payments, payment =>
+        // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
+        localAccount.deposit(payment),
+      ),
+    );
+    seat.exit();
+
+    // build swap instructions with orcUtils library
+    const transferMsg = orcUtils.makeOsmosisSwap({
+      destChain: 'omniflixhub',
+      destAddress: omniAddress,
+      amountIn: give.Stable,
+      brandOut: /** @type {any} */ ('FIXME'),
+      slippage: 0.03,
+    });
+
+    await localAccount
+      .transferSteps(give.Stable, transferMsg)
+      .then(_txResult =>
+        omniAccount.delegate(offerArgs.validator, offerArgs.staked),
+      )
+      .catch(e => console.error(e));
+
+    // XXX close localAccount?
+    // return continuing inv since this is an offer?
+  },
+);
 
 /**
  * @param {ZCF} zcf
@@ -84,53 +142,7 @@ export const start = async (zcf, privateArgs, baggage) => {
    *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
    * >}
    */
-  const swapAndStakeHandler = orchestrate(
-    { zcf },
-    'LSTTia',
-    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
-      const { give } = seat.getProposal();
-
-      const omni = await orch.getChain('omniflixhub');
-      const agoric = await orch.getChain('agoric');
-
-      const [omniAccount, localAccount] = await Promise.all([
-        omni.makeAccount(),
-        agoric.makeAccount(),
-      ]);
-
-      const omniAddress = omniAccount.getAddress();
-
-      // deposit funds from user seat to LocalChainAccount
-      const payments = await withdrawFromSeat(zcf, seat, give);
-      await deeplyFulfilled(
-        objectMap(payments, payment =>
-          // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
-          localAccount.deposit(payment),
-        ),
-      );
-      seat.exit();
-
-      // build swap instructions with orcUtils library
-      const transferMsg = orcUtils.makeOsmosisSwap({
-        destChain: 'omniflixhub',
-        destAddress: omniAddress,
-        amountIn: give.Stable,
-        brandOut: /** @type {any} */ ('FIXME'),
-        slippage: 0.03,
-      });
-
-      await localAccount
-        .transferSteps(give.Stable, transferMsg)
-        .then(_txResult =>
-          omniAccount.delegate(offerArgs.validator, offerArgs.staked),
-        )
-        .catch(e => console.error(e));
-
-      // XXX close localAccount?
-      // return continuing inv since this is an offer?
-    },
-  );
+  const swapAndStakeHandler = orchestrate({ zcf }, ...swap);
 
   const makeSwapAndStakeInvitation = () =>
     zcf.makeInvitation(

@@ -14,11 +14,21 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from './service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationFnDef, Orchestrator} from './types.js';
  * @import {MakeLocalChainFacade} from './exos/local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './exos/remote-chain-facade.js';
  * @import {MakeLocalOrchestrationAccountKit} from './exos/local-orchestration-account.js';
  */
+
+/**
+ * @type {(
+ *   durableName: OrchestrationFnDef[0],
+ *   fn: OrchestrationFnDef[1],
+ * ) => OrchestrationFnDef}
+ */
+export const makeOrchestrationFnDef = (durableName, fn) => {
+  return [durableName, fn];
+};
 
 /**
  * @param {{
