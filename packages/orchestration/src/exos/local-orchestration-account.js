@@ -3,6 +3,7 @@ import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
+import { VowShape } from '@agoric/vow';
 import { V } from '@agoric/vow/vat.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
@@ -89,7 +90,7 @@ export const prepareLocalOrchestrationAccountKit = (
       getChainInfoWatcher: M.interface('getChainInfoWatcher', {
         onFulfilled: M.call(M.record()) // agoric chain info
           .optional({ destination: ChainAddressShape }) // empty context
-          .returns(M.promise()), // transfer channel
+          .returns(VowShape), // transfer channel
       }),
       getTimeoutTimestampWatcher: M.interface('getTimeoutTimestampWatcher', {
         onFulfilled: M.call(M.bigint())

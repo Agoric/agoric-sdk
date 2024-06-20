@@ -1,7 +1,8 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { getChainsAndConnection, makeChainHub } from '../exos/chain-hub.js';
+import { V } from '@agoric/vow/vat.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
@@ -46,10 +47,8 @@ export const startStakeAtom = async ({
 
   const chainHub = makeChainHub(await agoricNames);
 
-  const [_, cosmoshub, connectionInfo] = await getChainsAndConnection(
-    chainHub,
-    'agoric',
-    'cosmoshub',
+  const [_, cosmoshub, connectionInfo] = await V.when(
+    chainHub.getChainsAndConnection('agoric', 'cosmoshub'),
   );
 
   /** @type {StartUpgradableOpts<StakeIcaSF>} */

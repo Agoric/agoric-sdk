@@ -2,7 +2,7 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-
+import { V } from '@agoric/vow/vat.js';
 import { AmountShape } from '@agoric/ertp';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
@@ -134,7 +134,9 @@ export const start = async (zcf, privateArgs, baggage) => {
        */
       async addChain(chainInfo, connectionInfo) {
         const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
-        const agoricChainInfo = await chainHub.getChainInfo('agoric');
+        // when() because chainHub methods return vows. If this were inside
+        // orchestrate() the membrane would wrap/unwrap automatically.
+        const agoricChainInfo = await V.when(chainHub.getChainInfo('agoric'));
         chainHub.registerChain(chainKey, chainInfo);
         chainHub.registerConnection(
           agoricChainInfo.chainId,
