@@ -571,11 +571,15 @@ test('provisionPool publishes metricsOverride promptly', async t => {
     },
   );
 
+  // FIXME: remove the 'await null',
+  // https://github.com/Agoric/agoric-sdk/issues/9598
+  await null;
   const metrics = E(facets.publicFacet).getMetrics();
 
   const {
     head: { value: initialMetrics },
   } = await E(metrics).subscribeAfter();
+  // FIXME fails when fakeVatAdmin.js fixed for non-promise root. Why?
   t.deepEqual(initialMetrics, {
     totalMintedConverted: minted.make(20_000_000n),
     totalMintedProvided: minted.make(750_000n),
