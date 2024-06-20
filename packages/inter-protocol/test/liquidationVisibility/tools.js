@@ -10,7 +10,7 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
 import { subscribeEach } from '@agoric/notifier';
-import '../../src/vaultFactory/types.js';
+import '../../src/vaultFactory/types-ambient.js';
 import { withAmountUtils } from '../supports.js';
 import { getRunFromFaucet } from '../vaultFactory/vaultFactoryUtils.js';
 import { subscriptionTracker, vaultManagerMetricsTracker } from '../metrics.js';
