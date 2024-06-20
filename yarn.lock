@@ -1096,30 +1096,6 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@chain-registry/client@^1.47.4":
-  version "1.47.4"
-  resolved "https://registry.yarnpkg.com/@chain-registry/client/-/client-1.47.4.tgz#886233b5b718ca34c4ea9143fd3478009cd09f3c"
-  integrity sha512-7e0MEY1xVyRScXTWK2T8u0j0NZn1vXctStdWGZsp9sLee0+2eSvZbW0uYIKdH+7XvwRhx+knkbBtKU29QHKjAA==
-  dependencies:
-    "@chain-registry/types" "^0.44.4"
-    "@chain-registry/utils" "^1.45.4"
-    bfs-path "^1.0.2"
-    cross-fetch "^3.1.5"
-
-"@chain-registry/types@^0.44.4":
-  version "0.44.4"
-  resolved "https://registry.yarnpkg.com/@chain-registry/types/-/types-0.44.4.tgz#d903e9c35477da88026807c5cac4caed2235c4dd"
-  integrity sha512-EHow6xgTM0pe5mfm7kp1ApbJI83Bb0vXaG+LBxLcGXC6VfqCIVcT7Ki5PsdbYfHrfekoH1urXORUJo51F4ihQA==
-
-"@chain-registry/utils@^1.45.4":
-  version "1.45.4"
-  resolved "https://registry.yarnpkg.com/@chain-registry/utils/-/utils-1.45.4.tgz#ab077fa5ee6e204bf7e60adb8f773702330049b9"
-  integrity sha512-N0702U78CkucKA2e/g19/GFn9wEEJAeFvlDuX+vZ2cMmgAUuSCNXpYLV55crPaPq/s4RTeulJL7DVBb+irQQsg==
-  dependencies:
-    "@chain-registry/types" "^0.44.4"
-    bignumber.js "9.1.2"
-    sha.js "^2.4.11"
-
 "@colors/colors@1.5.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
@@ -4350,16 +4326,6 @@ better-sqlite3@^9.1.1:
     bindings "^1.5.0"
     prebuild-install "^7.1.1"
 
-bfs-path@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/bfs-path/-/bfs-path-1.0.2.tgz#9b5fa4b8c4ad226597fc4d2ee15398bdcc644a07"
-  integrity sha512-KTKx2JJtAAAT7C/rJYDXXWA2VLPycAS4kwFktKsxUo0hj4UTtw/Gm5PJuY7Uf3xSlIQNo7HRCSWei2ivncVwbQ==
-
-bignumber.js@9.1.2:
-  version "9.1.2"
-  resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.1.2.tgz#b7c4242259c008903b13707983b5f4bbd31eda0c"
-  integrity sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==
-
 bin-links@^3.0.0:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/bin-links/-/bin-links-3.0.3.tgz#3842711ef3db2cd9f16a5f404a996a12db355a6e"
@@ -5158,13 +5124,6 @@ cosmjs-types@^0.9.0:
   version "0.9.0"
   resolved "https://registry.yarnpkg.com/cosmjs-types/-/cosmjs-types-0.9.0.tgz#c3bc482d28c7dfa25d1445093fdb2d9da1f6cfcc"
   integrity sha512-MN/yUe6mkJwHnCFfsNPeCfXVhyxHYW6c/xDUzrSbBycYzw++XvWDMJArXp2pLdgD6FQ8DW79vkPjeNKVrXaHeQ==
-
-cross-fetch@^3.1.5:
-  version "3.1.8"
-  resolved "https://registry.yarnpkg.com/cross-fetch/-/cross-fetch-3.1.8.tgz#0327eba65fd68a7d119f8fb2bf9334a1a7956f82"
-  integrity sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg==
-  dependencies:
-    node-fetch "^2.6.12"
 
 cross-spawn@^6.0.5:
   version "6.0.5"
@@ -7157,7 +7116,7 @@ inflight@^1.0.4:
     once "^1.3.0"
     wrappy "1"
 
-inherits@2, inherits@2.0.4, inherits@^2.0.1, inherits@^2.0.3, inherits@^2.0.4, inherits@~2.0.3:
+inherits@2, inherits@2.0.4, inherits@^2.0.3, inherits@^2.0.4, inherits@~2.0.3:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/inherits/-/inherits-2.0.4.tgz#0fa2c64f932917c3433a0ded55363aae37416b7c"
   integrity sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==
@@ -9015,13 +8974,6 @@ node-fetch@^2.6.0, node-fetch@^2.6.1, node-fetch@^2.6.7:
   dependencies:
     whatwg-url "^5.0.0"
 
-node-fetch@^2.6.12:
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.7.0.tgz#d0f0fa6e3e2dc1d27efcd8ad99d550bda94d187d"
-  integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
-  dependencies:
-    whatwg-url "^5.0.0"
-
 node-gyp-build@<4.0, node-gyp-build@^3.9.0:
   version "3.9.0"
   resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-3.9.0.tgz#53a350187dd4d5276750da21605d1cb681d09e25"
@@ -9920,11 +9872,6 @@ prettier@^3.0.0, prettier@^3.2.5:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.2.5.tgz#e52bc3090586e824964a8813b09aba6233b28368"
   integrity sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==
 
-prettier@^3.3.2:
-  version "3.3.2"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.3.2.tgz#03ff86dc7c835f2d2559ee76876a3914cec4a90a"
-  integrity sha512-rAVeHYMcv8ATV5d508CFdn+8/pHPpXeIid1DdrPwXnaAdH7cqjVbpJaT5eq4yRAFU/lsbwYwSF/n5iNrdJHPQA==
-
 pretty-format@^29.5.0:
   version "29.5.0"
   resolved "https://registry.yarnpkg.com/pretty-format/-/pretty-format-29.5.0.tgz#283134e74f70e2e3e7229336de0e4fce94ccde5a"
@@ -10603,14 +10550,6 @@ sh-syntax@^0.4.1:
   integrity sha512-/l2UZ5fhGZLVZa16XQM9/Vq/hezGGbdHeVEA01uWjOL1+7Ek/gt6FquW0iKKws4a9AYPYvlz6RyVvjh3JxOteg==
   dependencies:
     tslib "^2.6.2"
-
-sha.js@^2.4.11:
-  version "2.4.11"
-  resolved "https://registry.yarnpkg.com/sha.js/-/sha.js-2.4.11.tgz#37a5cf0b81ecbc6943de109ba2960d1b26584ae7"
-  integrity sha512-QMEp5B7cftE7APOjk5Y6xgrbWu+WkLVQwk8JNjZ8nKRciZaByEW6MubieAiToS7+dwvrjGhH8jRXz3MVd0AYqQ==
-  dependencies:
-    inherits "^2.0.1"
-    safe-buffer "^5.0.1"
 
 shallow-clone@^3.0.0:
   version "3.0.1"
