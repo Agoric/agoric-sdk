@@ -111,14 +111,19 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
    */
   const walletBridgeManager = await (bridgeManager &&
     makeScopedBridge(bridgeManager, BridgeId.WALLET));
+
+  const customTerms = await deeplyFulfilledObject(
+    harden({
+      agoricNames, // may be a promise
+      board: consume.board, // may be a promise
+      assetPublisher,
+    }),
+  );
+
   const walletFactory = await E(zoe).startInstance(
     installation,
     {},
-    {
-      agoricNames,
-      board: consume.board,
-      assetPublisher,
-    },
+    customTerms,
     { storageNode, walletBridgeManager },
   );
 

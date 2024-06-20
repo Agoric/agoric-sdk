@@ -54,8 +54,11 @@ test.before(async t => {
 
 test('customTermsShape', async t => {
   const { consume, bridgeManager, installation, storageNode } = t.context;
-  const { agoricNames, board, zoe } = consume;
+  const { zoe } = consume;
   const privateArgs = { bridgeManager, storageNode };
+
+  const agoricNames = await consume.agoricNames;
+  const board = await consume.board;
 
   // extra term
   await t.throwsAsync(
@@ -73,7 +76,7 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        'customTerms: {"agoricNames":"[Promise]","assetPublisher":{},"board":"[Promise]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
+        'customTerms: {"agoricNames":"[Alleged: NameHubKit nameHub]","assetPublisher":{},"board":"[Alleged: Board board]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
     },
   );
 
@@ -90,14 +93,16 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        'customTerms: {"agoricNames":"[Promise]"} - Must have missing properties ["board","assetPublisher"]',
+        'customTerms: {"agoricNames":"[Alleged: NameHubKit nameHub]"} - Must have missing properties ["board","assetPublisher"]',
     },
   );
 });
 
 test('privateArgsShape', async t => {
   const { consume, bridgeManager, installation } = t.context;
-  const { agoricNames, board, zoe } = consume;
+  const { zoe } = consume;
+  const agoricNames = await consume.agoricNames;
+  const board = await consume.board;
   const terms = {
     agoricNames,
     board,
