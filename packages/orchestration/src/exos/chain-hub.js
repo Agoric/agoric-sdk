@@ -1,6 +1,6 @@
-import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/zone';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -173,44 +173,6 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
   return chainHub;
 };
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
-
-/**
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {string} name
- * @param {CosmosChainInfo} chainInfo
- * @param {(...messages: string[]) => void} log
- */
-export const registerChain = async (
-  agoricNamesAdmin,
-  name,
-  chainInfo,
-  log = () => {},
-) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
-  const { nameAdmin: connAdmin } =
-    await E(agoricNamesAdmin).provideChild('chainConnection');
-
-  mustMatch(chainInfo, CosmosChainInfoShape);
-  const { connections = {}, ...vertex } = chainInfo;
-
-  const promises = [
-    E(nameAdmin)
-      .update(name, vertex)
-      .then(() => log(`registered agoricNames chain.${name}`)),
-  ];
-
-  // FIXME updates redundantly, twice per edge
-  for await (const [counterChainId, connInfo] of Object.entries(connections)) {
-    const key = connectionKey(chainInfo.chainId, counterChainId);
-    promises.push(
-      E(connAdmin)
-        .update(key, connInfo)
-        .then(() => log(`registering agoricNames chainConnection.${key}`)),
-    );
-  }
-  // Bundle to pipeline IO
-  await Promise.all(promises);
-};
 
 /**
  * @template {string} C1
