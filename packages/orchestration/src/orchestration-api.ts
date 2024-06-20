@@ -199,3 +199,12 @@ export type SwapMaxSlippage = {
   brandOut: Brand;
   slippage: number;
 };
+
+export type OrchestrationFnDef = [
+  durableName: string,
+  fn: (
+    orc: Orchestrator,
+    ctx2: Record<string, unknown>,
+    ...args: unknown[]
+  ) => object,
+];

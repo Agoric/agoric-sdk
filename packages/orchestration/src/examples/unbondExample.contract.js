@@ -3,7 +3,7 @@ import { M } from '@endo/patterns';
 import { provideOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, IcaAccount, CosmosValidatorAddress, OrchestrationFnDef} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -11,6 +11,35 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {OrchestrationService} from '../service.js';
  */
+
+/** @type {OrchestrationFnDef} */
+const unbond = [
+  'LSTTia',
+  async (orch, { zcf }) => {
+    console.log('zcf within the membrane', zcf);
+    // We would actually alreaady have the account from the orchestrator
+    // ??? could these be passed in? It would reduce the size of this handler,
+    // keeping it focused on long-running operations.
+    const omni = await orch.getChain('omniflixhub');
+    const omniAccount = await omni.makeAccount();
+
+    // TODO implement these
+    // const delegations = await celestiaAccount.getDelegations();
+    // // wait for the undelegations to be complete (may take weeks)
+    // await celestiaAccount.undelegate(delegations);
+
+    // ??? should this be synchronous? depends on how names are resolved.
+    const stride = await orch.getChain('stride');
+    const strideAccount = await stride.makeAccount();
+
+    // TODO the `TIA` string actually needs to be the Brand from AgoricNames
+    // const tiaAmt = await celestiaAccount.getBalance('TIA');
+    // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
+
+    // await strideAccount.liquidStake(tiaAmt);
+    console.log(omniAccount, strideAccount);
+  },
+];
 
 /**
  * @param {ZCF} zcf
@@ -48,35 +77,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   /** @type {OfferHandler} */
-  const unbondAndLiquidStake = orchestrate(
-    { zcf },
-    'LSTTia',
-    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (/** @type {Orchestrator} */ orch, { zcf }, _seat, _offerArgs) => {
-      console.log('zcf within the membrane', zcf);
-      // We would actually alreaady have the account from the orchestrator
-      // ??? could these be passed in? It would reduce the size of this handler,
-      // keeping it focused on long-running operations.
-      const omni = await orch.getChain('omniflixhub');
-      const omniAccount = await omni.makeAccount();
-
-      // TODO implement these
-      // const delegations = await celestiaAccount.getDelegations();
-      // // wait for the undelegations to be complete (may take weeks)
-      // await celestiaAccount.undelegate(delegations);
-
-      // ??? should this be synchronous? depends on how names are resolved.
-      const stride = await orch.getChain('stride');
-      const strideAccount = await stride.makeAccount();
-
-      // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-      // const tiaAmt = await celestiaAccount.getBalance('TIA');
-      // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
-
-      // await strideAccount.liquidStake(tiaAmt);
-      console.log(omniAccount, strideAccount);
-    },
-  );
+  const unbondAndLiquidStake = orchestrate({ zcf }, ...unbond);
 
   const makeUnbondAndLiquidStakeInvitation = () =>
     zcf.makeInvitation(
