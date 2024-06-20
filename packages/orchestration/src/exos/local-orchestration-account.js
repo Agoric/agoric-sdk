@@ -12,9 +12,8 @@ import {
   ChainAmountShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
-import { maxClockSkew } from '../utils/cosmos.js';
+import { maxClockSkew, dateInSeconds } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
@@ -26,6 +25,7 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TypedJson} from '@agoric/cosmic-proto';
  * @import {ChainHub} from './chain-hub.js';
+ * @import {TimeHelper} from './time-helper.js';
  */
 
 const trace = makeTracer('LOA');
@@ -65,6 +65,7 @@ const PUBLIC_TOPICS = {
  * @param {Remote<TimerService>} timerService
  * @param {VowTools} vowTools
  * @param {ChainHub} chainHub
+ * @param {TimeHelper} timeHelper
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
@@ -73,11 +74,10 @@ export const prepareLocalOrchestrationAccountKit = (
   timerService,
   { watch, when, allVows },
   chainHub,
-) => {
-  const timestampHelper = makeTimestampHelper(timerService);
-
+  timeHelper,
+) =>
   /** Make an object wrapping an LCA with Zoe interfaces. */
-  const makeLocalOrchestrationAccountKit = zone.exoClassKit(
+  zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
       holder: HolderI,
@@ -402,7 +402,7 @@ export const prepareLocalOrchestrationAccountKit = (
           // TODO #9324 what's a reasonable default? currently 5 minutes
           // FIXME: do not call `getTimeoutTimestampNS` if `opts.timeoutTimestamp` or `opts.timeoutHeight` is provided
           const timeoutTimestampV = watch(
-            timestampHelper.getTimeoutTimestampNS(),
+            timeHelper.getTimeoutTimestampNS(),
             this.facets.getTimeoutTimestampWatcher,
             { opts },
           );
@@ -422,7 +422,6 @@ export const prepareLocalOrchestrationAccountKit = (
       },
     },
   );
-  return makeLocalOrchestrationAccountKit;
-};
+
 /** @typedef {ReturnType<typeof prepareLocalOrchestrationAccountKit>} MakeLocalOrchestrationAccountKit */
 /** @typedef {ReturnType<MakeLocalOrchestrationAccountKit>} LocalOrchestrationAccountKit */

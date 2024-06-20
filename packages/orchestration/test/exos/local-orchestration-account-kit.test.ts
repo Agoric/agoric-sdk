@@ -8,7 +8,10 @@ import { Far } from '@endo/far';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
-import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
+import {
+  makeTimeHelper,
+  NANOSECONDS_PER_SECOND,
+} from '../../src/exos/time-helper.js';
 import { commonSetup } from '../supports.js';
 
 test('deposit, withdraw', async t => {
@@ -34,6 +37,7 @@ test('deposit, withdraw', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
+    makeTimeHelper(timer),
   );
 
   t.log('request account from vat-localchain');
@@ -105,6 +109,7 @@ test('delegate, undelegate', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
+    makeTimeHelper(timer),
   );
 
   t.log('request account from vat-localchain');
@@ -157,6 +162,7 @@ test('transfer', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
+    makeTimeHelper(timer),
   );
 
   t.log('request account from vat-localchain');

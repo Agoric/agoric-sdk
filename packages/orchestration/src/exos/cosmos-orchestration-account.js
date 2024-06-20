@@ -28,9 +28,12 @@ import {
   CoinShape,
   DelegationShape,
 } from '../typeGuards.js';
-import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
+import {
+  maxClockSkew,
+  tryDecodeResponse,
+  dateInSeconds,
+} from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds } from '../utils/time.js';
 
 /**
  * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';

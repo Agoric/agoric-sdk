@@ -11,6 +11,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../exos/chain-hub.js';
+import { makeTimeHelper } from '../exos/time-helper.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -48,6 +49,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.timerService,
     vowTools,
     makeChainHub(privateArgs.agoricNames),
+    makeTimeHelper(privateArgs.timerService),
   );
 
   // ----------------
