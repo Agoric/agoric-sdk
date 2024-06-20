@@ -1,5 +1,6 @@
 // @ts-check
 import { M } from '@endo/patterns';
+import { VowShape, OrVow$ } from '@agoric/vow';
 
 const Shape1 = /** @type {const} */ ({
   /**
@@ -9,12 +10,8 @@ const Shape1 = /** @type {const} */ ({
   Data: M.string(),
   Bytes: M.string(),
   Endpoint: M.string(),
-  Vow: M.tagged(
-    'Vow',
-    harden({
-      vowV0: M.remotable('VowV0'),
-    }),
-  ),
+  Vow$: OrVow$,
+  Vow: VowShape,
   ConnectionHandler: M.remotable('ConnectionHandler'),
   Connection: M.remotable('Connection'),
   InboundAttempt: M.remotable('InboundAttempt'),
@@ -27,7 +24,6 @@ const Shape1 = /** @type {const} */ ({
 
 const Shape2 = /** @type {const} */ ({
   ...Shape1,
-  Vow$: shape => M.or(shape, Shape1.Vow),
   AttemptDescription: M.splitRecord(
     { handler: Shape1.ConnectionHandler },
     { remoteAddress: Shape1.Endpoint, localAddress: Shape1.Endpoint },

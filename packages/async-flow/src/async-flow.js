@@ -2,8 +2,12 @@ import { annotateError, Fail, makeError, q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
 import { makeScalarWeakMapStore } from '@agoric/store';
-import { PromiseWatcherI } from '@agoric/base-zone';
-import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
+import {
+  prepareVowTools,
+  toPassableCap,
+  ReactionGuard,
+  VowShape,
+} from '@agoric/vow';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
@@ -33,7 +37,10 @@ const AsyncFlowIKit = harden({
     complete: M.call().returns(),
     panic: M.call(M.error()).returns(M.not(M.any())), // only throws
   }),
-  wakeWatcher: PromiseWatcherI,
+  wakeWatcher: M.interface('WakeWatcher', {
+    onFulfilled: ReactionGuard,
+    onRejected: ReactionGuard,
+  }),
 });
 
 const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {

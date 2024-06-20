@@ -9,6 +9,8 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeE, prepareVowTools as rawPrepareVowTools } from './src/index.js';
 
+export { EVow$, OrVow$ } from './src/index.js';
+
 /** @type {import('./src/types.js').IsRetryableReason} */
 const isRetryableReason = (reason, priorRetryValue) => {
   if (

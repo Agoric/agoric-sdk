@@ -24,7 +24,8 @@ export const VowShape = M.tagged(
   }),
 );
 
-export const Vow$ = shape => M.or(shape, VowShape);
+export const OrVow$ = shape => M.or(shape, VowShape);
+export const EVow$ = shape => M.or(OrVow$(shape), M.promise(/* shape */));
 
 /**
  * @param {unknown} specimen
