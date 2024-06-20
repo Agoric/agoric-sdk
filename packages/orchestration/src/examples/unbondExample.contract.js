@@ -40,6 +40,7 @@ const unbond = [
     console.log(omniAccount, strideAccount);
   },
 ];
+harden(unbond);
 
 /**
  * @param {ZCF} zcf
