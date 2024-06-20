@@ -4,7 +4,7 @@ import '@agoric/time';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import '../../src/vaultFactory/types.js';
+import '../../src/vaultFactory/types-ambient.js';
 import '@agoric/zoe/exported.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';

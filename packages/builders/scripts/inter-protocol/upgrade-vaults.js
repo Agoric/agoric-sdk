@@ -11,14 +11,14 @@ export const vaultsUpgradeProposalBuilder = async ({
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   return harden({
-    sourceSpec: '../src/proposals/vaultsUpgrade.js',
+    sourceSpec: '@agoric/inter-protocol/src/proposals/vaultsUpgrade.js',
     getManifestCall: [
       getManifestVaultsUpgrade.name,
       {
         vaultFactoryRef: publishRef(
           install(
-            '../src/vaultFactory/vaultFactory.js',
-            '../bundles/bundle-vaultFactory.js',
+            '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
+            '@agoric/inter-protocol/bundles/bundle-vaultFactory.js',
           ),
         ),
       },
