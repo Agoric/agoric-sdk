@@ -1,3 +1,5 @@
+import { VowShape } from '@agoric/vow';
+import { allVows, watch } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -7,6 +9,7 @@ const { Fail } = assert;
 
 /**
  * @import {NameHub} from '@agoric/vats';
+ * @import {Vow} from '@agoric/vow';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Remote} from '@agoric/internal';
@@ -67,15 +70,14 @@ const ChainIdArgShape = M.or(
 
 const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
-  getChainInfo: M.callWhen(M.string()).returns(CosmosChainInfoShape),
-  registerConnection: M.callWhen(
+  getChainInfo: M.call(M.string()).returns(VowShape),
+  registerConnection: M.call(
     M.string(),
     M.string(),
     IBCConnectionInfoShape,
   ).returns(),
-  getConnectionInfo: M.callWhen(ChainIdArgShape, ChainIdArgShape).returns(
-    IBCConnectionInfoShape,
-  ),
+  getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
+  getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
 });
 
 /**
@@ -120,22 +122,25 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     /**
      * @template {string} K
      * @param {K} chainName
-     * @returns {Promise<ActualChainInfo<K>>}
+     * @returns {Vow<ActualChainInfo<K>>}
      */
-    async getChainInfo(chainName) {
+    getChainInfo(chainName) {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
-        // @ts-expect-error cast
-        return chainInfos.get(chainName);
+        return /** @type {Vow<ActualChainInfo<K>>} */ (
+          watch(chainInfos.get(chainName))
+        );
       }
 
-      const chainInfo = await E(agoricNames)
-        .lookup(CHAIN_KEY, chainName)
-        .catch(_cause => {
+      return watch(E(agoricNames).lookup(CHAIN_KEY, chainName), {
+        onFulfilled: chainInfo => {
+          chainInfos.init(chainName, chainInfo);
+          return chainInfo;
+        },
+        onRejected: _cause => {
           throw assert.error(`chain not found:${chainName}`);
-        });
-      chainInfos.init(chainName, chainInfo);
-      return chainInfo;
+        },
+      });
     },
     /**
      * @param {string} chainId1
@@ -150,50 +155,55 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     /**
      * @param {string | { chainId: string }} chain1
      * @param {string | { chainId: string }} chain2
-     * @returns {Promise<IBCConnectionInfo>}
+     * @returns {Vow<IBCConnectionInfo>}
      */
-    async getConnectionInfo(chain1, chain2) {
+    getConnectionInfo(chain1, chain2) {
       const chainId1 = typeof chain1 === 'string' ? chain1 : chain1.chainId;
       const chainId2 = typeof chain2 === 'string' ? chain2 : chain2.chainId;
       const key = connectionKey(chainId1, chainId2);
       if (connectionInfos.has(key)) {
-        return connectionInfos.get(key);
+        return watch(connectionInfos.get(key));
       }
 
-      const connectionInfo = await E(agoricNames)
-        .lookup(CONNECTIONS_KEY, key)
-        .catch(_cause => {
+      return watch(E(agoricNames).lookup(CONNECTIONS_KEY, key), {
+        onFulfilled: connectionInfo => {
+          connectionInfos.init(key, connectionInfo);
+          return connectionInfo;
+        },
+        onRejected: _cause => {
           throw assert.error(`connection not found: ${chainId1}<->${chainId2}`);
-        });
-      connectionInfos.init(key, connectionInfo);
-      return connectionInfo;
+        },
+      });
+    },
+
+    /**
+     * @template {string} C1
+     * @template {string} C2
+     * @param {C1} chainName1
+     * @param {C2} chainName2
+     * @returns {Vow<
+     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
+     * >}
+     */
+    getChainsAndConnection(chainName1, chainName2) {
+      return watch(
+        allVows([
+          chainHub.getChainInfo(chainName1),
+          chainHub.getChainInfo(chainName2),
+        ]),
+        {
+          onFulfilled: ([chain1, chain2]) => {
+            return watch(chainHub.getConnectionInfo(chain2, chain1), {
+              onFulfilled: connectionInfo => {
+                return [chain1, chain2, connectionInfo];
+              },
+            });
+          },
+        },
+      );
     },
   });
 
   return chainHub;
 };
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
-
-/**
- * @template {string} C1
- * @template {string} C2
- * @param {ChainHub} chainHub
- * @param {C1} chainName1
- * @param {C2} chainName2
- * @returns {Promise<
- *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
- * >}
- */
-export const getChainsAndConnection = async (
-  chainHub,
-  chainName1,
-  chainName2,
-) => {
-  const [chain1, chain2] = await Promise.all([
-    chainHub.getChainInfo(chainName1),
-    chainHub.getChainInfo(chainName2),
-  ]);
-  const connectionInfo = await chainHub.getConnectionInfo(chain2, chain1);
-
-  return [chain1, chain2, connectionInfo];
-};

@@ -4,13 +4,12 @@ import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
-  ChainInfoShape,
-  LocalChainAccountShape,
-  DenomShape,
   BrandInfoShape,
+  ChainInfoShape,
   DenomAmountShape,
+  DenomShape,
+  LocalChainAccountShape,
 } from '../typeGuards.js';
-import { getChainsAndConnection } from './chain-hub.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -78,7 +77,7 @@ export const prepareOrchestratorKit = (
       makeRemoteChainFacadeWatcher: M.interface(
         'makeRemoteChainFacadeWatcher',
         {
-          onFulfilled: M.call(M.arrayOf(M.record()))
+          onFulfilled: M.call(M.any())
             .optional(M.arrayOf(M.undefined()))
             .returns(M.any()), // FIXME narrow
         },
@@ -115,6 +114,7 @@ export const prepareOrchestratorKit = (
         /** @type {Orchestrator['getChain']} */
         getChain(name) {
           if (name === 'agoric') {
+            // XXX when() until membrane
             return when(
               watch(
                 chainHub.getChainInfo('agoric'),
@@ -122,9 +122,10 @@ export const prepareOrchestratorKit = (
               ),
             );
           }
+          // XXX when() until membrane
           return when(
             watch(
-              getChainsAndConnection(chainHub, 'agoric', name),
+              chainHub.getChainsAndConnection('agoric', name),
               this.facets.makeRemoteChainFacadeWatcher,
             ),
           );
