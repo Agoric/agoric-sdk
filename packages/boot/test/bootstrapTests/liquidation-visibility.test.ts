@@ -264,6 +264,9 @@ const checkVisibility = async ({
         scale6(setup.auction.end.collateral),
     },
     collateralRemaining: { value: 0n },
+    debtToBurn: { value: scale6(setup.auction.start.debt) },
+    mintedForReserve: { value: 0n },
+    totalPenalty: { value: 309850n }, // => istTarget * (penaltyRate * setup.price.starting)
     endTime: { absValue: endTime.absValue },
   });
 
