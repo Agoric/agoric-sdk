@@ -11,12 +11,20 @@ import { M, matches } from '@endo/patterns';
 
 export { basicE };
 
+/**
+ * The least possibly restrictive guard for a `watch` watcher's `onFulfilled` or
+ * `onRejected` reaction
+ */
+export const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
+
 export const VowShape = M.tagged(
   'Vow',
   M.splitRecord({
     vowV0: M.remotable('VowV0'),
   }),
 );
+
+export const Vow$ = shape => M.or(shape, VowShape);
 
 /**
  * @param {unknown} specimen
