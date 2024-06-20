@@ -788,7 +788,8 @@ func (exportsHandler SwingStoreExportsHandler) RestoreExport(provider SwingStore
 // The export manifest filename and overall export format is common with the JS
 // swing-store import/export logic.
 func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportDir string) (err error) {
-	handleDeferError := func(deferError error) {
+	handleDeferError := func(fn func() error) {
+		deferError := fn()
 		if err == nil {
 			err = deferError
 		} else if deferError != nil {
@@ -808,14 +809,14 @@ func WriteSwingStoreExportToDirectory(provider SwingStoreExportProvider, exportD
 	}
 
 	if exportDataReader != nil {
-		defer handleDeferError(exportDataReader.Close())
+		defer handleDeferError(exportDataReader.Close)
 
 		manifest.Data = exportDataFilename
 		exportDataFile, err := os.OpenFile(filepath.Join(exportDir, exportDataFilename), os.O_CREATE|os.O_WRONLY, exportedFilesMode)
 		if err != nil {
 			return err
 		}
-		defer handleDeferError(exportDataFile.Close())
+		defer handleDeferError(exportDataFile.Close)
 
 		err = agoric.EncodeKVEntryReaderToJsonl(exportDataReader, exportDataFile)
 		if err != nil {
