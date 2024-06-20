@@ -102,7 +102,6 @@ export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.vs.$key = string
-// v$NN.meter = m$NN // XXX does this exist?
 // old (v0): v$NN.reapInterval = $NN or 'never'
 // old (v0): v$NN.reapCountdown = $NN or 'never'
 // v$NN.reapDirt = JSON({ deliveries, gcKrefs, computrons }) // missing keys treated as zero
