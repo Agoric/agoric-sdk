@@ -405,7 +405,7 @@ export default makeE;
  *   T extends Callable
  *     ? (...args: Parameters<T>) => ReturnType<T>   // a root callable, no methods
  *     : FilteredKeys<T, Callable> extends never
- *     ? never
+ *     ? any
  *     : Pick<T, FilteredKeys<T, Callable>>          // any callable methods
  * )} PickCallable
  */
