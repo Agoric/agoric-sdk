@@ -27,7 +27,7 @@ import { prepareOrchestrator } from './exos/orchestrator.js';
  * ) => OrchestrationFnDef}
  */
 export const makeOrchestrationFnDef = (durableName, fn) => {
-  return [durableName, fn];
+  return harden([durableName, fn]);
 };
 
 /**
