@@ -1,4 +1,5 @@
 #! /bin/bash
+
 usage() {
   cat << END_USAGE
 Usage:
@@ -30,7 +31,7 @@ npm=npm
 dryrun=
 if test "${1:-}" = "--dry-run"; then
   dryrun=$1
-  npm="echo-to-stderr npm"
+  npm="echo-to-stderr $npm"
   shift
 fi
 echo-to-stderr() { echo "$@"; } 1>&2
@@ -45,9 +46,23 @@ case "${1-}" in
     thisdir=$(cd "$(dirname -- "${BASH_SOURCE[0]}")" > /dev/null && pwd -P)
     thisprog=$(basename -- "${BASH_SOURCE[0]}")
 
+    doit() {
+      npm run -- lerna --loglevel silent exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
+    }
+
     # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
     shift
-    exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
+    if test "${1-}" = "--json"; then
+      shift
+      doit ${1+"$@"} | {
+        echo '{'
+        sed -e '/^$/,/^$/d; s/^\(.*\)@\(.*\)$/  "\1": "\2",/; $s/,$//;'
+        echo '}'
+      }
+    else
+      doit ${1+"$@"}
+    fi
+    exit $?
     ;;
 esac
 
@@ -102,7 +117,8 @@ case "${1-}" in
         # Print the entire pipeline.
         $npm dist-tag ls "$pkg" \| sed -ne "s/^$TAG: //p"
       else
-        $npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+        vsn=$($npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p")
+        test -z "$vsn" || echo "$pkg@$vsn"
       fi
     else
       $npm dist-tag ls "$pkg"
