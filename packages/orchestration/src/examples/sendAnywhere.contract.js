@@ -66,8 +66,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
-    'sendIt',
     { zcf },
+    'sendIt',
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     async (orch, { zcf }, seat, offerArgs) => {
       mustMatch(
