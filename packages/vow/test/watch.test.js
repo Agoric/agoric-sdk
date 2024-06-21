@@ -35,6 +35,28 @@ const prepareAckWatcher = (zone, t) => {
  * @param {Zone} zone
  * @param {ExecutionContext<unknown>} t
  */
+const prepareArityCheckWatcher = (zone, t) => {
+  return zone.exoClass(
+    'ArityCheckWatcher',
+    undefined,
+    expectedArgs => ({ expectedArgs }),
+    {
+      onFulfilled(value, ...args) {
+        t.deepEqual(args, this.state.expectedArgs);
+        return 'fulfilled';
+      },
+      onRejected(reason, ...args) {
+        t.deepEqual(args, this.state.expectedArgs);
+        return 'rejected';
+      },
+    },
+  );
+};
+
+/**
+ * @param {Zone} zone
+ * @param {ExecutionContext<unknown>} t
+ */
 test('ack watcher - shim', async t => {
   const zone = makeHeapZone();
   const { watch, when, makeVowKit } = prepareVowTools(zone);
@@ -79,12 +101,74 @@ test('ack watcher - shim', async t => {
   resolver3.reject(Error('disco2'));
   resolver3.resolve(vow2);
   t.is(
-    await when(
-      // @ts-expect-error intentional extra argument
-      watch(connVow3P, makeAckWatcher(packet), 'watcher context', 'unexpected'),
-    ),
+    await when(watch(connVow3P, makeAckWatcher(packet), 'watcher context')),
     'rejected',
   );
+});
+
+/**
+ * @param {Zone} zone
+ * @param {ExecutionContext<unknown>} t
+ */
+test('watcher args arity - shim', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, makeVowKit } = prepareVowTools(zone);
+  const makeArityCheckWatcher = prepareArityCheckWatcher(zone, t);
+
+  const testCases = /** @type {const} */ ({
+    noArgs: [],
+    'single arg': ['testArg'],
+    'multiple args': ['testArg1', 'testArg2'],
+  });
+
+  for (const [name, args] of Object.entries(testCases)) {
+    const fulfillTesterP = Promise.resolve('test');
+    t.is(
+      await when(watch(fulfillTesterP, makeArityCheckWatcher(args), ...args)),
+      'fulfilled',
+      `fulfilled promise ${name}`,
+    );
+
+    const rejectTesterP = Promise.reject(Error('reason'));
+    t.is(
+      await when(watch(rejectTesterP, makeArityCheckWatcher(args), ...args)),
+      'rejected',
+      `rejected promise ${name}`,
+    );
+
+    const { vow: vow1, resolver: resolver1 } = makeVowKit();
+    const vow1P = Promise.resolve(vow1);
+    resolver1.resolve('test');
+    t.is(
+      await when(watch(vow1, makeArityCheckWatcher(args), ...args)),
+      'fulfilled',
+      `fulfilled vow ${name}`,
+    );
+    t.is(
+      await when(watch(vow1P, makeArityCheckWatcher(args), ...args)),
+      'fulfilled',
+      `promise to fulfilled vow ${name}`,
+    );
+
+    const { vow: vow2, resolver: resolver2 } = makeVowKit();
+    const vow2P = Promise.resolve(vow2);
+    resolver2.resolve(vow1);
+    t.is(
+      await when(watch(vow2P, makeArityCheckWatcher(args), ...args)),
+      'fulfilled',
+      `promise to vow to fulfilled vow ${name}`,
+    );
+
+    const { vow: vow3, resolver: resolver3 } = makeVowKit();
+    const vow3P = Promise.resolve(vow3);
+    resolver3.reject(Error('disco2'));
+    resolver3.resolve(vow2);
+    t.is(
+      await when(watch(vow3P, makeArityCheckWatcher(args), ...args)),
+      'rejected',
+      `promise to rejected vow before also resolving to vow ${name}`,
+    );
+  }
 });
 
 test('disconnection of non-vow informs watcher', async t => {
