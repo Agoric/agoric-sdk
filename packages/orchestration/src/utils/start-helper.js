@@ -45,8 +45,9 @@ export const provideOrchestration = (
   marshaller,
 ) => {
   const zone = makeDurableZone(baggage);
+  const { agoricNames, timerService } = remotePowers;
 
-  const chainHub = makeChainHub(remotePowers.agoricNames);
+  const chainHub = makeChainHub(agoricNames);
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
@@ -55,7 +56,7 @@ export const provideOrchestration = (
     zone,
     makeRecorderKit,
     zcf,
-    remotePowers.timerService,
+    timerService,
     vowTools,
     chainHub,
   );
@@ -103,6 +104,6 @@ export const provideOrchestration = (
     vowTools,
     ...remotePowers,
   });
-  return { ...facade, chainHub, zone };
+  return { ...facade, chainHub, vowTools, zone };
 };
 harden(provideOrchestration);
