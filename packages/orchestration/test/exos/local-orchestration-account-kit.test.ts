@@ -4,6 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/far';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
@@ -37,7 +38,7 @@ test('deposit, withdraw', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
-    makeTimeHelper(timer),
+    makeTimeHelper(makeHeapZone(), { timerService: timer, vowTools }),
   );
 
   t.log('request account from vat-localchain');
@@ -109,7 +110,7 @@ test('delegate, undelegate', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
-    makeTimeHelper(timer),
+    makeTimeHelper(makeHeapZone(), { timerService: timer, vowTools }),
   );
 
   t.log('request account from vat-localchain');
@@ -162,7 +163,7 @@ test('transfer', async t => {
     timer,
     vowTools,
     makeChainHub(bootstrap.agoricNames),
-    makeTimeHelper(timer),
+    makeTimeHelper(makeHeapZone(), { timerService: timer, vowTools }),
   );
 
   t.log('request account from vat-localchain');

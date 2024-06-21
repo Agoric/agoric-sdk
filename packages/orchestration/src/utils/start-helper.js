@@ -2,6 +2,7 @@ import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeHeapZone } from '@agoric/zone';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from '../exos/chain-hub.js';
@@ -46,12 +47,13 @@ export const provideOrchestration = (
   marshaller,
 ) => {
   const zone = makeDurableZone(baggage);
-  const { agoricNames, timerService } = remotePowers;
-
-  const chainHub = makeChainHub(agoricNames);
-  const timeHelper = makeTimeHelper(timerService);
-
   const vowTools = prepareVowTools(zone.subZone('vows'));
+  const { agoricNames, timerService } = remotePowers;
+  const chainHub = makeChainHub(agoricNames);
+  const timeHelper = makeTimeHelper(makeHeapZone(), {
+    timerService,
+    vowTools,
+  });
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(

@@ -1,8 +1,9 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { V } from '@agoric/vow/vat.js';
+import { prepareVowTools, V } from '@agoric/vow/vat.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
+import { makeHeapZone } from '@agoric/zone';
 import {
   makeTimeHelper,
   NANOSECONDS_PER_SECOND,
@@ -11,14 +12,23 @@ import {
 
 test('makeTimeHelper - getCurrentTimestamp', async t => {
   const timer = buildZoeManualTimer(t.log);
+  const vowTools = prepareVowTools(makeHeapZone());
   const timerBrand = timer.getTimerBrand();
   t.is(timer.getCurrentTimestamp().absValue, 0n, 'current time is 0n');
 
-  const timeHelper = makeTimeHelper(timer);
+  const timeHelper = makeTimeHelper(makeHeapZone(), {
+    timerService: timer,
+    vowTools,
+  });
   t.is(
     await V.when(timeHelper.getTimeoutTimestampNS()),
     5n * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND,
     'default timestamp is 5 minutes from current time, in nanoseconds',
+  );
+  t.is(
+    await V.when(timeHelper.getBrand()),
+    timerBrand,
+    'brand retrieved cache equals timerBrand',
   );
 
   t.is(

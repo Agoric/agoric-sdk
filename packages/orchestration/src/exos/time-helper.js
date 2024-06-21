@@ -1,14 +1,12 @@
 import { RelativeTimeRecordShape, TimeMath } from '@agoric/time';
 import { VowShape } from '@agoric/vow';
-import { watch, allVows } from '@agoric/vow/vat.js';
-import { makeHeapZone } from '@agoric/zone';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { M } from '@endo/patterns';
 
 /**
  * @import {Remote} from '@agoric/internal';*
  * @import {RelativeTimeRecord, TimerBrand, TimerService, TimestampRecord} from '@agoric/time';
- * @import {Vow} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  */
 
@@ -16,31 +14,41 @@ export const SECONDS_PER_MINUTE = 60n;
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 
 /**
- * @param {Remote<TimerService>} timerService
- * @param {Zone} [zone]
+ * @param {Zone} zone
+ * @param {{ timerService: Remote<TimerService>; vowTools: VowTools }} powers
  */
-
-export const makeTimeHelper = (timerService, zone = makeHeapZone()) => {
-  /** @type {TimerBrand | undefined} */
-  let brandCache;
-  const getBrand = () => {
-    if (brandCache) return brandCache;
-    return watch(E(timerService).getTimerBrand(), {
-      onFulfilled: timerBrand => {
-        brandCache = timerBrand;
-        return timerBrand;
-      },
-    });
-  };
-
-  return zone.exo(
+export const makeTimeHelper = (
+  zone,
+  { timerService, vowTools: { watch, allVows } },
+) => {
+  const timeHelper = zone.exoClass(
     'Time Helper',
     M.interface('TimeHelperI', {
       getTimeoutTimestampNS: M.call()
         .optional(RelativeTimeRecordShape)
         .returns(VowShape),
+      getBrand: M.call().returns(VowShape),
     }),
+    () =>
+      /** @type {{ brandCache: TimerBrand | undefined }} */ ({
+        brandCache: undefined,
+      }),
     {
+      /** @returns {Vow<TimerBrand>} */
+      getBrand() {
+        // XXX this is a common use case that should have a helper like `provideSingleton`
+        if (this.state.brandCache) return watch(this.state.brandCache);
+        return watch(
+          E(timerService).getTimerBrand(),
+          Far('BrandWatcher', {
+            /** @param {TimerBrand} timerBrand */
+            onFulfilled: timerBrand => {
+              this.state.brandCache = timerBrand;
+              return timerBrand;
+            },
+          }),
+        );
+      },
       /**
        * Takes the current time from ChainTimerService and adds a relative time
        * to determine a timeout timestamp in nanoseconds. Useful for
@@ -52,8 +60,11 @@ export const makeTimeHelper = (timerService, zone = makeHeapZone()) => {
        */
       getTimeoutTimestampNS(relativeTime) {
         return watch(
-          allVows([E(timerService).getCurrentTimestamp(), getBrand()]),
-          {
+          allVows([
+            E(timerService).getCurrentTimestamp(),
+            this.self.getBrand(),
+          ]),
+          Far('TimestampWatcher', {
             /** @param {[TimestampRecord, TimerBrand]} results */
             onFulfilled([currentTime, timerBrand]) {
               const timeout =
@@ -67,11 +78,13 @@ export const makeTimeHelper = (timerService, zone = makeHeapZone()) => {
                 NANOSECONDS_PER_SECOND
               );
             },
-          },
+          }),
         );
       },
     },
   );
+  return timeHelper();
 };
+harden(makeTimeHelper);
 
-/** @typedef {Awaited<ReturnType<typeof makeTimeHelper>>} TimeHelper */
+/** @typedef {ReturnType<typeof makeTimeHelper>} TimeHelper */
