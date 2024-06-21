@@ -2,7 +2,7 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeNameHubKit } from '@agoric/vats';
-import { V } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 const connection = {
@@ -38,11 +38,11 @@ test('getConnectionInfo', async t => {
 
   // Look up by string or info object
   t.deepEqual(
-    await V.when(chainHub.getConnectionInfo(aChain.chainId, bChain.chainId)),
+    await E.when(chainHub.getConnectionInfo(aChain.chainId, bChain.chainId)),
     connection,
   );
   t.deepEqual(
-    await V.when(chainHub.getConnectionInfo(aChain, bChain)),
+    await E.when(chainHub.getConnectionInfo(aChain, bChain)),
     connection,
   );
 });

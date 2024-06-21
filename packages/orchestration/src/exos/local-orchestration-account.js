@@ -4,10 +4,9 @@ import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { V } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/far';
 import {
   ChainAddressShape,
   ChainAmountShape,
@@ -285,7 +284,7 @@ export const prepareLocalOrchestrationAccountKit = (
               ? [/** @type {any} */ (null), denomArg]
               : [denomArg, 'FIXME'];
 
-          const natAmount = await V.when(
+          const natAmount = await E.when(
             E(this.state.account).getBalance(brand),
           );
           return harden({ denom, value: natAmount.value });
