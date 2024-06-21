@@ -1476,7 +1476,7 @@
   resolved "https://registry.yarnpkg.com/@endo/base64/-/base64-1.0.5.tgz#821a5107d1efc988cc630ba92aa31dab9fecfc45"
   integrity sha512-onumize4hsF15ah85C6xPCI3LzvC9NOjf8QUuIhnAKLVR5bnQqhCAjKyt1EUMcsEGcDgJsq5DZFQrbU/tjWJAg==
 
-"@endo/bundle-source@^3.2.3":
+"@endo/bundle-source@3.2.3", "@endo/bundle-source@^3.2.3":
   version "3.2.3"
   resolved "https://registry.yarnpkg.com/@endo/bundle-source/-/bundle-source-3.2.3.tgz#414634151ed78a71b69d4e616be221512c5c6ed2"
   integrity sha512-D/qcyeIQzWw9AP+vdadjGdajGpanLAFCqpjPHewGz/vojEuIo+uFrbkNOSttoxbKc+CfoCRHsOCBWUNANiD/QQ==
@@ -1598,7 +1598,7 @@
     "@endo/eventual-send" "^1.2.2"
     "@endo/pass-style" "^1.4.0"
 
-"@endo/import-bundle@^1.1.2":
+"@endo/import-bundle@1.1.2", "@endo/import-bundle@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@endo/import-bundle/-/import-bundle-1.1.2.tgz#d2a3c70cd17ae9a70eca8c1a3c87a22be3bd74d3"
   integrity sha512-Q0V1z/vU6TOHsU82utt8BIElg3WQIBhWH13G05jeqYv9crYDyaNauEoXfO1DnRxn2LAoahI25TdwUMnt6HXlMQ==
@@ -2775,7 +2775,7 @@
     npmlog "^6.0.2"
     write-file-atomic "^4.0.1"
 
-"@noble/hashes@^1", "@noble/hashes@^1.0.0":
+"@noble/hashes@1.1.2", "@noble/hashes@^1", "@noble/hashes@^1.0.0":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.1.2.tgz#e9e035b9b166ca0af657a7848eb2718f0f22f183"
   integrity sha512-KYRCASVTv6aeUi1tsF8/vpyR7zpfs3FUzy2Jqm+MU+LmUKhQ0y2FpfwqkCcxSg2ua4GALJd8k2R76WxwZGbQpA==
