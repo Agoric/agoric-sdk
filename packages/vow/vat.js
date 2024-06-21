@@ -26,8 +26,7 @@ export const defaultPowers = harden({
 export const prepareVowTools = (zone, powers = {}) =>
   rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
 
-export const vowTools = prepareVowTools(makeHeapZone());
-export const { watch, when, makeVowKit, allVows } = vowTools;
+export const heapVowTools = prepareVowTools(makeHeapZone());
 
 /**
  * A vow-shortening E.  CAVEAT: This produces long-lived ephemeral
@@ -36,6 +35,6 @@ export const { watch, when, makeVowKit, allVows } = vowTools;
  * you need to `watch` its resulting promises.
  */
 export const V = makeE(globalThis.HandledPromise, {
-  unwrap: when,
-  additional: { when },
+  unwrap: heapVowTools.when,
+  additional: { when: heapVowTools.when },
 });
