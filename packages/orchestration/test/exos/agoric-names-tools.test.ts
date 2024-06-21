@@ -1,10 +1,10 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/far';
-import { V } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { makeResumableAgoricNamesHack } from '../../src/exos/agoric-names-tools.js';
 import { commonSetup } from '../supports.js';
 
@@ -20,33 +20,49 @@ test('agoric names tools', async t => {
     vowTools,
   });
 
-  const chainEntry = await V.when(agNamesTools.lookup('chain', 'celestia'));
+  const chainEntry = await E.when(agNamesTools.lookup('chain', 'celestia'));
   t.like(chainEntry, { chainId: 'celestia' });
 
-  const istDenom = await V.when(agNamesTools.findBrandInVBank(ist.brand));
+  const istDenom = await E.when(agNamesTools.findBrandInVBank(ist.brand));
   t.like(istDenom, { denom: 'uist' });
 
   const moolah = withAmountUtils(makeIssuerKit('MOO'));
 
-  await t.throwsAsync(V.when(agNamesTools.findBrandInVBank(moolah.brand)), {
+  await t.throwsAsync(E.when(agNamesTools.findBrandInVBank(moolah.brand)), {
     message: /brand(.*?)not in agoricNames.vbankAsset/,
   });
 
+  const mooToken: AssetInfo = {
+    brand: moolah.brand,
+    issuer: moolah.issuer,
+    issuerName: 'MOO',
+    denom: 'umoo',
+    proposedName: 'MOO',
+    displayInfo: { decimalPlaces: 6, assetKind: 'nat' },
+  };
+
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'umoo',
-    /** @type {AssetInfo} */ harden({
-      brand: moolah.brand,
-      issuer: moolah.issuer,
-      issuerName: 'MOO',
-      denom: 'umoo',
-      proposedName: 'MOO',
-      displayInfo: { decimals: 6, symbol: 'MOO' },
-    }),
+    harden(mooToken),
+  );
+  t.like(
+    await E.when(agNamesTools.findBrandInVBank(moolah.brand)),
+    { denom: 'umoo' },
+    'vbankAssets are refetched if brand is not found',
   );
 
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'umoo',
+    harden({ ...mooToken, denom: 'umoo2' }),
+  );
   t.like(
-    await V.when(agNamesTools.findBrandInVBank(moolah.brand)),
+    await E.when(agNamesTools.findBrandInVBank(moolah.brand)),
     { denom: 'umoo' },
-    'refresh stale cache for new assets',
+    'old AssetInfo is cached',
+  );
+  t.like(
+    await E.when(agNamesTools.findBrandInVBank(moolah.brand, true)),
+    { denom: 'umoo2' },
+    'new AssetInfo is fetched when refetch=true',
   );
 });

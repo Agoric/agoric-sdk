@@ -71,8 +71,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       const { chainName, destAddr } = offerArgs;
       const { give } = seat.getProposal();
       const [[kw, amt]] = entries(give);
-      // TODO remove V.when() when integrating with asyncFlow
-      const { denom } = await V.when(
+      // XXX when() until membrane
+      const { denom } = await E.when(
         agoricNamesTools.findBrandInVBank(amt.brand),
       );
       const chain = await orch.getChain(chainName);
