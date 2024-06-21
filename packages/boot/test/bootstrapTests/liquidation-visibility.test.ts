@@ -18,10 +18,13 @@ export type LiquidationOutcome = {
   reserve: {
     allocations: Record<string, number>;
     shortfall: number;
+    minted: number;
   };
   vaults: {
     locked: number;
   }[];
+  remaining: { collateral: number };
+  penalty: number;
 };
 
 const test = anyTest as TestFn<LiquidationTestContext>;
@@ -85,6 +88,7 @@ const outcome: LiquidationOutcome = {
       STARS: 0.309852,
     },
     shortfall: 0,
+    minted: 0,
   },
   // The order in the setup preserved
   vaults: [
@@ -98,6 +102,10 @@ const outcome: LiquidationOutcome = {
       locked: 3.425146,
     },
   ],
+  remaining: {
+    collateral: 0,
+  },
+  penalty: 0.30985,
 };
 //#endregion
 
@@ -256,17 +264,18 @@ const checkVisibility = async ({
     collateralOffered: { value: scale6(setup.auction.start.collateral) },
     istTarget: { value: scale6(setup.auction.start.debt) },
     collateralForReserve: { value: scale6(outcome.reserve.allocations.ATOM) },
-    shortfallToReserve: { value: 0n },
+    shortfallToReserve: { value: scale6(outcome.reserve.shortfall) },
     mintedProceeds: { value: scale6(setup.auction.start.debt) },
     collateralSold: {
       value:
         scale6(setup.auction.start.collateral) -
         scale6(setup.auction.end.collateral),
     },
-    collateralRemaining: { value: 0n },
+    collateralRemaining: { value: scale6(outcome.remaining.collateral) },
     debtToBurn: { value: scale6(setup.auction.start.debt) },
-    mintedForReserve: { value: 0n },
-    totalPenalty: { value: 309850n }, // => istTarget * (penaltyRate * setup.price.starting)
+    mintedForReserve: { value: scale6(outcome.reserve.minted) },
+    totalPenalty: { value: scale6(outcome.penalty) },
+    startTime: { absValue: startTime.absValue },
     endTime: { absValue: endTime.absValue },
   });
 
