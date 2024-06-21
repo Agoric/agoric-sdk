@@ -206,9 +206,9 @@ export type TransferMsg = {
 };
 
 export type AfterAction = { destChain: string; destAddress: ChainAddress };
-export type SwapExact = { amountIn: Amount; amountOut: Amount };
+export type SwapExact = { amountIn: AmountArg; amountOut: AmountArg };
 export type SwapMaxSlippage = {
-  amountIn: Amount;
-  brandOut: Brand;
+  amountIn: AmountArg;
+  denomOut: DenomArg;
   slippage: number;
 };
