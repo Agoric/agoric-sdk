@@ -1,6 +1,6 @@
 /** @file ChainAccount exo */
 import { makeTracer } from '@agoric/internal';
-import { V, watch } from '@agoric/vow/vat.js';
+import { V, heapVowTools } from '@agoric/vow/vat.js';
 
 import { ChainFacadeI } from '../typeGuards.js';
 
@@ -55,7 +55,7 @@ export const prepareRemoteChainFacade = (
     },
     {
       getChainInfo() {
-        return watch(this.state.remoteChainInfo);
+        return heapVowTools.watch(this.state.remoteChainInfo);
       },
 
       // FIXME parameterize on the remoteChainInfo to make()
@@ -76,7 +76,7 @@ export const prepareRemoteChainFacade = (
         );
 
         // FIXME use watch() from vowTools
-        return watch(allVows([icaP, V(icaP).getAddress()]), {
+        return heapVowTools.watch(allVows([icaP, V(icaP).getAddress()]), {
           onFulfilled: ([account, address]) => {
             return makeCosmosOrchestrationAccount(address, stakingDenom, {
               account,
