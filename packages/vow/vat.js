@@ -53,4 +53,3 @@ export const heapVowE = makeE(globalThis.HandledPromise, {
   unwrap: heapVowTools.when,
   additional: { when: heapVowTools.when },
 });
-export const V = heapVowE;
