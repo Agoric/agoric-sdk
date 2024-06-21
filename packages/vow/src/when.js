@@ -34,11 +34,11 @@ export const makeWhen = (
       if (seenPayloads.has(vowV0)) {
         throw Error('Vow resolution cycle detected');
       }
-      seenPayloads.add(vowV0);
       result = await basicE(vowV0)
         .shorten()
         .then(
           res => {
+            seenPayloads.add(vowV0);
             priorRetryValue = undefined;
             return res;
           },
