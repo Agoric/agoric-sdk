@@ -94,6 +94,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
         const { watcher, watcherArgs, resolver, seenPayloads } = this.state;
         const payload = getVowPayload(value);
         if (payload) {
+          // TODO: rely on endowed helper to get storable cap from payload
           if (seenPayloads?.has(payload.vowV0)) {
             return this.self.onRejected(Error('Vow resolution cycle detected'));
           }

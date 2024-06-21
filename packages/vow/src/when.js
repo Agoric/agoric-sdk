@@ -30,6 +30,8 @@ export const makeWhen = (
     let priorRetryValue;
     const seenPayloads = new WeakSet();
     while (payload) {
+      // TODO: rely on endowed helpers for getting storable cap and performing
+      // shorten "next step"
       const { vowV0 } = payload;
       if (seenPayloads.has(vowV0)) {
         throw Error('Vow resolution cycle detected');
