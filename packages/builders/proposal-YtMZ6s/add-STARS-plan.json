@@ -1,0 +1,17 @@
+{
+  "name": "add-STARS",
+  "script": "add-STARS.js",
+  "permit": "add-STARS-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/zoe/src/contracts/scaledPriceAuthority.js",
+      "bundleID": "b1-615180d849109a02ed85e6fb2238367d04d43dee2a64ba3476a7c290d05918e2a5d3dd40ba758decd9b5edfd37b249b75e5371f1224adada797e65bba78a0114",
+      "fileName": "/Users/michael/.agoric/cache/b1-615180d849109a02ed85e6fb2238367d04d43dee2a64ba3476a7c290d05918e2a5d3dd40ba758decd9b5edfd37b249b75e5371f1224adada797e65bba78a0114.json"
+    },
+    {
+      "entrypoint": "@agoric/inter-protocol/src/proposals/addAssetToVault.js",
+      "bundleID": "b1-0c491bddb95200401ab07cd9ebfbc7d5c814901ec594fa301c98dfb7c926f874e2d0e696c5dbc51e7ecaf8adcdbb1492a684221fd97d3c73ace2161e92ea819d",
+      "fileName": "/Users/michael/.agoric/cache/b1-0c491bddb95200401ab07cd9ebfbc7d5c814901ec594fa301c98dfb7c926f874e2d0e696c5dbc51e7ecaf8adcdbb1492a684221fd97d3c73ace2161e92ea819d.json"
+    }
+  ]
+}
