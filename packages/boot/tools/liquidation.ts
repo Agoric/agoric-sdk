@@ -306,7 +306,7 @@ export const makeLiquidationTestKit = async ({
 };
 
 export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults');
+  const swingsetTestKit = await makeSwingsetTestKit(t.log);
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;
