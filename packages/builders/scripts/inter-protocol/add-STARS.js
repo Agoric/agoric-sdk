@@ -3,7 +3,7 @@ import { defaultProposalBuilder as vaultProposalBuilder } from './add-collateral
 import { defaultProposalBuilder as oraclesProposalBuilder } from './price-feed-core.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const starsVaultProposalBuilder = async powers => {
+const starsVaultProposalBuilder = async powers => {
   return vaultProposalBuilder(powers, {
     interchainAssetOptions: {
       // Values for the Stargaze token on Osmosis
@@ -18,7 +18,7 @@ export const starsVaultProposalBuilder = async powers => {
 };
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const starsOraclesProposalBuilder = async powers => {
+const starsOraclesProposalBuilder = async powers => {
   return oraclesProposalBuilder(powers, {
     AGORIC_INSTANCE_NAME: `STARS-USD price feed`,
     IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'STARS'],
