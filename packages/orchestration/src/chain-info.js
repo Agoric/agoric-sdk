@@ -69,7 +69,7 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
- * @param {(...messages: string[]) => void} log
+ * @param {(...messages: string[]) => void} [log]
  */
 export const registerChain = async (
   agoricNamesAdmin,
@@ -105,7 +105,7 @@ export const registerChain = async (
 
 /**
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {(...messages: string[]) => void} log
+ * @param {(...messages: string[]) => void} [log]
  */
 export const registerChainNamespace = async (agoricNamesAdmin, log) => {
   for await (const [name, info] of Object.entries(knownChains)) {
