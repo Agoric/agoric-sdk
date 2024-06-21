@@ -1,0 +1,35 @@
+{
+  "name": "liquidation-visibility",
+  "agoricProposal": {
+    "type": "/agoric.swingset.CoreEvalProposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/deploy-script-support": "latest",
+    "@agoric/ertp": "^0.16.3-u14.0",
+    "@agoric/inter-protocol": "^0.16.2-u14.1",
+    "@agoric/synthetic-chain": "latest",
+    "@agoric/time": "^0.3.3-u14.0",
+    "@agoric/vats": "latest",
+    "@endo/far": "^1.0.4",
+    "@endo/init": "^1.0.4",
+    "@endo/marshal": "^1.3.0",
+    "@endo/zip": "^0.2.35",
+    "ava": "^5.3.1",
+    "better-sqlite3": "^9.4.0",
+    "execa": "^7.2.0",
+    "tmp": "^0.2.1"
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
+    "test:eval": "yarn ava test-liquidation-visibility.js",
+    "test:post-liq": "yarn ava post.liquidation.js",
+    "test:post": "yarn ava post.test.js",
+    "test:scenario": "yarn ava post.scenario.js"
+  },
+  "ava": {
+    "timeout": "300s"
+  },
+  "packageManager": "yarn@4.1.1"
+}
