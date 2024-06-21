@@ -40,12 +40,17 @@ export const prepareVowTools = (zone, powers = {}) =>
 export const heapVowTools = prepareVowTools(makeHeapZone());
 
 /**
- * A vow-shortening E.  CAVEAT: This produces long-lived ephemeral
- * promises that encapsulate the shortening behaviour, and so provides no way
- * for `watch` to durably shorten.  Use the standard `import('@endo/far').E` if
- * you need to `watch` its resulting promises.
+ * A vow-shortening E, for use in vats that are not durable but receive vows.
+ *
+ * When the vows must be watched durably, use vowTools prepared in a durable zone.
+ *
+ * This produces long-lived ephemeral promises that encapsulate the shortening
+ * behaviour, and so provides no way for `watch` to durably shorten. Use the
+ * standard `import('@endo/far').E` if you need to `watch` its resulting
+ * promises.
  */
-export const V = makeE(globalThis.HandledPromise, {
+export const heapVowE = makeE(globalThis.HandledPromise, {
   unwrap: heapVowTools.when,
   additional: { when: heapVowTools.when },
 });
+export const V = heapVowE;
