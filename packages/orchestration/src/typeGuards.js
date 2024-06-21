@@ -1,4 +1,5 @@
 import { AmountShape } from '@agoric/ertp';
+import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 export const ConnectionHandlerI = M.interface('ConnectionHandler', {
@@ -89,6 +90,6 @@ export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
 /** @see {Chain} */
 export const ChainFacadeI = M.interface('ChainFacade', {
-  getChainInfo: M.callWhen().returns(ChainInfoShape),
-  makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccount')),
+  getChainInfo: M.call().returns(VowShape),
+  makeAccount: M.call().returns(VowShape),
 });
