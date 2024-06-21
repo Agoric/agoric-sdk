@@ -83,11 +83,16 @@ export const start = async (zcf, privateArgs, baggage) => {
       // FIXME ok to use a heap var crossing the membrane scope this way?
       if (!contractAccount) {
         const agoricChain = await orch.getChain('agoric');
-        contractAccount = await agoricChain.makeAccount();
+        // XXX when() until membrane
+        contractAccount = await V.when(agoricChain.makeAccount());
+        console.log('contractAccount', contractAccount);
       }
 
-      const info = await chain.getChainInfo();
+      // XXX when() until membrane
+      const info = await V.when(chain.getChainInfo());
+      console.log('info', info);
       const { chainId } = info;
+      assert(typeof chainId === 'string', 'bad chainId');
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
       await E.when(pmtP, pmt => contractAccount.deposit(pmt));
       await contractAccount.transfer(

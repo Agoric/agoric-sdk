@@ -1,5 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { V } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import type { Chain } from '../src/orchestration-api.js';
@@ -73,7 +74,7 @@ test('chain info', async t => {
   });
 
   const result = (await handle()) as Chain<any>;
-  t.deepEqual(await result.getChainInfo(), mockChainInfo);
+  t.deepEqual(await V.when(result.getChainInfo()), mockChainInfo);
 });
 
 test.todo('contract upgrade');

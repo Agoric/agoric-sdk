@@ -77,6 +77,7 @@ export const provideOrchestration = (
     orchestration: remotePowers.orchestrationService,
     storageNode: remotePowers.storageNode,
     timer: remotePowers.timerService,
+    vowTools,
   });
 
   const makeLocalChainFacade = prepareLocalChainFacade(zone, {
@@ -86,6 +87,7 @@ export const provideOrchestration = (
     storageNode: remotePowers.storageNode,
     orchestration: remotePowers.orchestrationService,
     timer: remotePowers.timerService,
+    vowTools,
   });
 
   const facade = makeOrchestrationFacade({
