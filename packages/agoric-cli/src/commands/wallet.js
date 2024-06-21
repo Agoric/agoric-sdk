@@ -29,19 +29,25 @@ const SLEEP_SECONDS = 3;
  * @returns {Promise<import('commander').Command>}
  */
 export const makeWalletCommand = async command => {
-  const wallet = command('wallet')
-    .description('wallet commands')
-    .option('--home <dir>', 'agd application home directory')
-    .option(
-      '--keyring-backend <os|file|test>',
-      'keyring\'s backend (os|file|test) (default "os")',
-    );
+  /**
+   * @param {import('commander').Command} baseCmd
+   */
+  const withSharedTxOptions = baseCmd =>
+    baseCmd
+      .option('--home <dir>', 'agd application home directory')
+      .option(
+        '--keyring-backend <os|file|test>',
+        'keyring\'s backend (os|file|test) (default "os")',
+      );
+
+  const wallet = withSharedTxOptions(command('wallet')).description(
+    'wallet commands',
+  );
 
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, wallet.opts());
 
-  wallet
-    .command('provision')
+  withSharedTxOptions(wallet.command('provision'))
     .description('provision a Smart Wallet')
     .requiredOption(
       '--account [address]',
@@ -110,8 +116,7 @@ export const makeWalletCommand = async command => {
       console.log(offerObj.offer.id);
     });
 
-  wallet
-    .command('send')
+  withSharedTxOptions(wallet.command('send'))
     .description('send a prepared offer')
     .requiredOption(
       '--from [address]',
