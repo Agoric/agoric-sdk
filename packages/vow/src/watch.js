@@ -81,6 +81,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
       const state = {
         vow: /** @type {unknown} */ (undefined),
         priorRetryValue: /** @type {any} */ (undefined),
+        seenPayloads: zone.detached().weakSetStore('seenPayloads'),
         resolver,
         watcher,
         watcherArgs: harden(watcherArgs),
@@ -90,8 +91,13 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
     {
       /** @type {Required<PromiseWatcher>['onFulfilled']} */
       onFulfilled(value) {
-        const { watcher, watcherArgs, resolver } = this.state;
-        if (getVowPayload(value)) {
+        const { watcher, watcherArgs, resolver, seenPayloads } = this.state;
+        const payload = getVowPayload(value);
+        if (payload) {
+          if (seenPayloads?.has(payload.vowV0)) {
+            return this.self.onRejected(Error('Vow resolution cycle detected'));
+          }
+          seenPayloads?.add(payload.vowV0);
           // We've been shortened, so reflect our state accordingly, and go again.
           this.state.vow = value;
           watchNextStep(value, this.self);

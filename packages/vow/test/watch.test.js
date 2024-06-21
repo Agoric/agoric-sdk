@@ -171,6 +171,59 @@ test('watcher args arity - shim', async t => {
   }
 });
 
+test('vow self resolution', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, makeVowKit } = prepareVowTools(zone);
+
+  // A direct self vow resolution
+  const { vow: vow1, resolver: resolver1 } = makeVowKit();
+  resolver1.resolve(vow1);
+
+  // A self vow resolution through promise
+  const { vow: vow2, resolver: resolver2 } = makeVowKit();
+  const vow2P = Promise.resolve(vow2);
+  resolver2.resolve(vow2P);
+
+  // A 2 vow loop
+  const { vow: vow3, resolver: resolver3 } = makeVowKit();
+  const { vow: vow4, resolver: resolver4 } = makeVowKit();
+  resolver3.resolve(vow4);
+  resolver4.resolve(vow3);
+
+  // A head vow pointing to a 2 vow loop (a lasso?)
+  const { vow: vow5, resolver: resolver5 } = makeVowKit();
+  resolver5.resolve(vow4);
+
+  const turnTimeout = async n => {
+    if (n > 0) {
+      return Promise.resolve(n - 1).then(turnTimeout);
+    }
+
+    return 'timeout';
+  };
+
+  /**
+   * @param {number} n
+   * @param {Promise<any>} promise
+   */
+  const raceTurnTimeout = async (n, promise) =>
+    Promise.race([promise, turnTimeout(n)]);
+
+  const expectedError = {
+    message: 'Vow resolution cycle detected',
+  };
+
+  await t.throwsAsync(raceTurnTimeout(20, when(vow1)), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(vow2)), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(vow3)), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(vow5)), expectedError);
+
+  await t.throwsAsync(raceTurnTimeout(20, when(watch(vow1))), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(watch(vow2))), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(watch(vow3))), expectedError);
+  await t.throwsAsync(raceTurnTimeout(20, when(watch(vow5))), expectedError);
+});
+
 test('disconnection of non-vow informs watcher', async t => {
   const zone = makeHeapZone();
   const { watch, when } = prepareVowTools(zone, {

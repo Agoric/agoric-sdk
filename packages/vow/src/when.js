@@ -28,8 +28,14 @@ export const makeWhen = (
     let result = await specimenP;
     let payload = getVowPayload(result);
     let priorRetryValue;
+    const seenPayloads = new WeakSet();
     while (payload) {
-      result = await basicE(payload.vowV0)
+      const { vowV0 } = payload;
+      if (seenPayloads.has(vowV0)) {
+        throw Error('Vow resolution cycle detected');
+      }
+      seenPayloads.add(vowV0);
+      result = await basicE(vowV0)
         .shorten()
         .then(
           res => {
