@@ -2,7 +2,7 @@
 import test from 'ava';
 import { E, Far } from '@endo/far';
 
-import { V, heapVowTools } from '../vat.js';
+import { heapVowE, heapVowTools } from '../vat.js';
 
 const { makeVowKit } = heapVowTools;
 
@@ -13,7 +13,7 @@ test('heap messages', async t => {
 
   /** @type {ReturnType<typeof makeVowKit<typeof greeter>>} */
   const { vow, resolver } = makeVowKit();
-  const retP = V(vow).hello('World');
+  const retP = heapVowE(vow).hello('World');
   resolver.resolve(greeter);
 
   // Happy path: WE(vow)[method](...args) calls the method.
@@ -29,10 +29,10 @@ test('heap messages', async t => {
   );
 
   // Happy path: await WE.when unwraps the vow.
-  t.is(await V.when(vow), greeter);
+  t.is(await heapVowE.when(vow), greeter);
 
   t.is(
-    await V.when(vow, res => {
+    await heapVowE.when(vow, res => {
       t.is(res, greeter);
       return 'done';
     }),
