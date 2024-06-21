@@ -5,6 +5,7 @@ import { QueryBalanceRequest } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/qu
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { matches } from '@endo/patterns';
+import { heapVowTools } from '@agoric/vow/vat.js';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 
@@ -45,14 +46,16 @@ test('makeICQConnection returns an ICQConnection', async t => {
   t.is(localAddr, localAddr2, 'provideICQConnection is idempotent');
 
   await t.throwsAsync(
-    E(icqConnection).query([
-      toRequestQueryJson(
-        QueryBalanceRequest.toProtoMsg({
-          address: 'cosmos1test',
-          denom: 'uatom',
-        }),
-      ),
-    ]),
+    heapVowTools.when(
+      E(icqConnection).query([
+        toRequestQueryJson(
+          QueryBalanceRequest.toProtoMsg({
+            address: 'cosmos1test',
+            denom: 'uatom',
+          }),
+        ),
+      ]),
+    ),
     { message: /"data":"(.*)"memo":""/ },
     'TODO do not use echo connection',
   );
@@ -114,14 +117,14 @@ test('makeAccount returns a ChainAccount', async t => {
     }),
   );
   await t.throwsAsync(
-    E(account).executeEncodedTx([delegateMsg]),
+    heapVowTools.when(E(account).executeEncodedTx([delegateMsg])),
     { message: /"type":1(.*)"data":"(.*)"memo":""/ },
     'TODO do not use echo connection',
   );
 
   await E(account).close();
   await t.throwsAsync(
-    E(account).executeEncodedTx([delegateMsg]),
+    heapVowTools.when(E(account).executeEncodedTx([delegateMsg])),
     {
       message: 'Connection closed',
     },
