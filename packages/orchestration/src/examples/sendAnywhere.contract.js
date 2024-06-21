@@ -16,6 +16,7 @@ const { Fail } = assert;
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {OrchestrationService} from '../service.js';
  * @import {NameHub} from '@agoric/vats';
+ * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {Remote} from '@agoric/vow';
  */
 
@@ -56,11 +57,15 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const findBrandInVBank = async brand => {
     const assets = await E(
-      E(privateArgs.agoricNames).lookup('vbankAsset'),
-      // @ts-expect-error XXX heapVowE
+      // XXX heapVowE
+      /** @type {Promise<Promise<NameHub<VBankAssetDetail>>>} */ (
+        E(privateArgs.agoricNames).lookup('vbankAsset')
+      ),
     ).values();
     const it = assets.find(a => a.brand === brand);
-    it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
+    if (!it) {
+      throw Fail`brand ${brand} not in agoricNames.vbankAsset`;
+    }
     return it;
   };
 

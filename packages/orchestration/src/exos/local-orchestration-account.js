@@ -337,6 +337,7 @@ export const prepareLocalOrchestrationAccountKit = (
             denom: 'ubld',
           };
           const { account: lca } = this.state;
+          /** @type {any} XXX heapVowE */
           const results = E(lca).executeTx([
             typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
               amount,
@@ -344,7 +345,6 @@ export const prepareLocalOrchestrationAccountKit = (
               delegatorAddress: this.state.address.address,
             }),
           ]);
-          // @ts-expect-error  Type 'JsonSafe<MsgUndelegateResponse & { '@type': "/cosmos.staking.v1beta1.MsgUndelegateResponse"; }>' is not assignable to type 'MsgUndelegateResponse'.
           return when(watch(results, this.facets.undelegateWatcher));
         },
         /**
