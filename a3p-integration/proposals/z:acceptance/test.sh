@@ -13,3 +13,4 @@ yarn ava ./*.test.js
 ./create-kread-item-test.sh
 
 ./state-sync-snapshots-test.sh
+./genesis-test.sh
