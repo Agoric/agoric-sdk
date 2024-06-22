@@ -48,9 +48,6 @@ import {
   validateImporterOptions,
 } from './import-kernel-db.js';
 
-// eslint-disable-next-line no-unused-vars
-let whenHellFreezesOver = null;
-
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
 const PORT_SUFFIX = 'Port';
@@ -181,9 +178,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
   // eslint-disable-next-line no-use-before-define
   const nodePort = registerPortHandler(toSwingSet);
-
-  // Need to keep the process alive until Go exits.
-  whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
   /**
