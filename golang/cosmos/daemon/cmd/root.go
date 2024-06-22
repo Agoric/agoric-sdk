@@ -145,9 +145,19 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	for _, command := range rootCmd.Commands() {
-		if command.Name() == "export" {
+		switch command.Name() {
+		case "export":
+			addAgoricVMFlags(command)
 			extendCosmosExportCommand(command)
-			break
+		case "snapshots":
+			for _, subCommand := range command.Commands() {
+				switch subCommand.Name() {
+				case "restore":
+					addAgoricVMFlags(subCommand)
+				case "export":
+					addAgoricVMFlags(subCommand)
+				}
+			}
 		}
 	}
 
@@ -331,7 +341,6 @@ const (
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
 // genesis export in the specified directory if the VM is running.
 func extendCosmosExportCommand(cmd *cobra.Command) {
-	addAgoricVMFlags(cmd)
 	cmd.Flags().String(FlagExportDir, "", "The directory where to create the genesis export")
 	err := cmd.MarkFlagRequired(FlagExportDir)
 	if err != nil {
