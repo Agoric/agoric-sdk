@@ -65,8 +65,23 @@ const settle = (resolver, watcher, wcb, value, watcherArgs = []) => {
  * @param {IsRetryableReason} isRetryableReason
  * @param {ReturnType<typeof makeWatchNextStep>} watchNextStep
  */
-const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
-  zone.exoClass(
+const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
+  // We use an ephemeral WeakSet for the previously seen vows in a watch operation
+  // While watch is durable, it suffices to detect the cycle in a single incarnation
+  /** @type {WeakMap<PromiseWatcher, WeakSet<any>>} */
+  const watcherSeenPayloads = new WeakMap();
+
+  /** @param {PromiseWatcher} watcher */
+  const getSeenPayloads = watcher => {
+    let seenPayloads = watcherSeenPayloads.get(watcher);
+    if (!seenPayloads) {
+      seenPayloads = new WeakSet();
+      watcherSeenPayloads.set(watcher, seenPayloads);
+    }
+    return seenPayloads;
+  };
+
+  return zone.exoClass(
     'PromiseWatcher',
     PromiseWatcherI,
     /**
@@ -91,12 +106,20 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
       /** @type {Required<PromiseWatcher>['onFulfilled']} */
       onFulfilled(value) {
         const { watcher, watcherArgs, resolver } = this.state;
-        if (getVowPayload(value)) {
+        const payload = getVowPayload(value);
+        if (payload) {
+          const seenPayloads = getSeenPayloads(this.self);
+          // TODO: rely on endowed helper to get storable cap from payload
+          if (seenPayloads.has(payload.vowV0)) {
+            return this.self.onRejected(Error('Vow resolution cycle detected'));
+          }
+          seenPayloads.add(payload.vowV0);
           // We've been shortened, so reflect our state accordingly, and go again.
           this.state.vow = value;
           watchNextStep(value, this.self);
           return;
         }
+        watcherSeenPayloads.delete(this.self);
         this.state.priorRetryValue = undefined;
         this.state.watcher = undefined;
         this.state.resolver = undefined;
@@ -115,6 +138,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
             return;
           }
         }
+        watcherSeenPayloads.delete(this.self);
         this.state.priorRetryValue = undefined;
         this.state.resolver = undefined;
         this.state.watcher = undefined;
@@ -122,6 +146,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
       },
     },
   );
+};
 
 /**
  * @param {Zone} zone
