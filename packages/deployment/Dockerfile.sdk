@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1.4
 
 ###########################
-# The golang build container
-FROM golang:1.20-bullseye as cosmos-go
+# The golang build container.
+# Note this should match golang version in /usr/src/agoric-sdk/golang/cosmos/go.mod
+FROM golang:1.22.4-bullseye as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY golang/cosmos/go.mod golang/cosmos/go.sum ./
