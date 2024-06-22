@@ -2,12 +2,12 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { M, matches } from '@endo/patterns';
 import type { TestFn } from 'ava';
-import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -56,13 +56,14 @@ test.serial('config', async t => {
       'chainConnection',
       'cosmoshub-4_juno-1',
     );
+    t.like(connection, {
+      state: 3,
+      transferChannel: { portId: 'transfer', state: 3 },
+    });
 
-    t.like(
+    t.deepEqual(
       readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
-      {
-        state: 3,
-        transferChannel: { portId: 'transfer', state: 3 },
-      },
+      connection,
     );
 
     await documentStorageSchema(t, storage, {
@@ -70,6 +71,42 @@ test.serial('config', async t => {
       node: 'agoricNames.chainConnection',
     });
   }
+});
+
+test.serial('stakeOsmo - queries', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    runUtils: { EV },
+  } = t.context;
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
+  );
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
+    'instance',
+    'stakeOsmo',
+  );
+  t.truthy(instance, 'stakeOsmo instance is available');
+
+  const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
+  const publicFacet = await EV(zoe).getPublicFacet(instance);
+  t.truthy(publicFacet, 'stakeOsmo publicFacet is available');
+
+  const account = await EV(publicFacet).makeAccount();
+  t.log('account', account);
+  t.truthy(account, 'makeAccount returns an account on OSMO connection');
+
+  const queryRes = await EV(account).getBalance('uatom');
+  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
+
+  const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
+  t.deepEqual(
+    queryUnknownDenom,
+    { value: 0n, denom: 'some-invalid-denom' },
+    'getBalance for unknown denom returns value: 0n',
+  );
 });
 
 test.serial('stakeAtom - repl-style', async t => {
@@ -111,19 +148,13 @@ test.serial('stakeAtom - repl-style', async t => {
   };
   await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
 
-  const queryRes = await EV(account).getBalance('uatom');
-  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
-
-  const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
-  t.deepEqual(
-    queryUnknownDenom,
-    { value: 0n, denom: 'some-invalid-denom' },
-    'getBalance for unknown denom returns value: 0n',
-  );
+  await t.throwsAsync(EV(account).getBalance('uatom'), {
+    message: 'Queries not available for chain "cosmoshub-4"',
+  });
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
-  const { agoricNamesRemotes } = t.context;
+  const { agoricNamesRemotes, readLatest } = t.context;
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
     'agoric1testStakAtom',
@@ -140,12 +171,18 @@ test.serial('stakeAtom - smart wallet', async t => {
   });
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
-      ['request-account', { account: 'published.stakeAtom' }],
+      [
+        'request-account',
+        {
+          account: 'published.stakeAtom.accounts.cosmos1test',
+        },
+      ],
     ],
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
+  t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
@@ -193,4 +230,36 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     'delegate fails with invalid validator',
   );
+});
+
+// XXX rely on .serial to be in sequence, and keep this one last
+test.serial('revise chain info', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    runUtils: { EV },
+  } = t.context;
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+
+  await t.throwsAsync(EV(agoricNames).lookup('chain', 'hot'), {
+    message: '"nameKey" not found: "hot"',
+  });
+
+  // Revise chain info in agoricNames with the fixture in this script
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/append-chain-info.js'),
+  );
+
+  const hotchain = await EV(agoricNames).lookup('chain', 'hot');
+  t.deepEqual(hotchain, { allegedName: 'Hot New Chain', chainId: 'hot-1' });
+
+  const connection = await EV(agoricNames).lookup(
+    'chainConnection',
+    'cosmoshub-4_hot-1',
+  );
+  t.like(connection, {
+    id: 'connection-99',
+    client_id: '07-tendermint-3',
+  });
 });

@@ -1,15 +1,12 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { makeOrchestrationFacade } from '../facade.js';
+import { when } from '@agoric/vow/vat.js';
 import { orcUtils } from '../utils/orc.js';
-import { makeChainHub } from '../utils/chainHub.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { provideOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -57,10 +54,6 @@ export const makeNatAmountShape = (brand, min) =>
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { brands } = zcf.getTerms();
-
-  const zone = makeDurableZone(baggage);
-
   const {
     agoricNames,
     localchain,
@@ -70,26 +63,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   } = privateArgs;
 
-  const chainHub = makeChainHub(agoricNames);
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    zone,
-    makeRecorderKit,
+  const { orchestrate } = provideOrchestration(
     zcf,
-    timerService,
-    chainHub,
+    baggage,
+    {
+      agoricNames,
+      localchain,
+      orchestrationService,
+      storageNode,
+      timerService,
+    },
+    marshaller,
   );
 
-  const { orchestrate } = makeOrchestrationFacade({
-    localchain,
-    orchestrationService,
-    storageNode,
-    timerService,
-    zcf,
-    zone,
-    chainHub,
-    makeLocalChainAccountKit,
-  });
+  const { brands } = zcf.getTerms();
 
   /** deprecated historical example */
   /**
@@ -109,15 +96,22 @@ export const start = async (zcf, privateArgs, baggage) => {
       const agoric = await orch.getChain('agoric');
 
       const [omniAccount, localAccount] = await Promise.all([
-        omni.makeAccount(),
-        agoric.makeAccount(),
+        // XXX when() until membrane
+        when(omni.makeAccount()),
+        // XXX when() until membrane
+        when(agoric.makeAccount()),
       ]);
 
       const omniAddress = omniAccount.getAddress();
 
       // deposit funds from user seat to LocalChainAccount
       const payments = await withdrawFromSeat(zcf, seat, give);
-      await deeplyFulfilled(objectMap(payments, localAccount.deposit));
+      await deeplyFulfilled(
+        objectMap(payments, payment =>
+          // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
+          localAccount.deposit(payment),
+        ),
+      );
       seat.exit();
 
       // build swap instructions with orcUtils library

@@ -19,6 +19,10 @@ import { prepareBijection } from '../src/bijection.js';
 import { makeEquate } from '../src/equate.js';
 
 /**
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
+/**
  * @param {any} t
  * @param {Zone} zone
  * @param {boolean} [showOnConsole]

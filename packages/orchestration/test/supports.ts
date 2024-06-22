@@ -66,13 +66,15 @@ export const commonSetup = async t => {
     }),
   );
 
+  const vowTools = prepareVowTools(rootZone.subZone('vows'));
+
   const transferBridge = makeFakeTransferBridge(rootZone);
   const { makeBridgeTargetKit } = prepareBridgeTargetModule(
     rootZone.subZone('bridge'),
   );
   const { makeTransferMiddlewareKit } = prepareTransferTools(
     rootZone.subZone('transfer'),
-    prepareVowTools(rootZone.subZone('vows')),
+    vowTools,
   );
 
   const { finisher, interceptorFactory, transferMiddleware } =
@@ -90,6 +92,7 @@ export const commonSetup = async t => {
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
+    vowTools,
   ).makeLocalChain({
     bankManager,
     system: localchainBridge,
@@ -101,11 +104,12 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
+  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
+
   const { makeOrchestrationKit } = prepareOrchestrationTools(
     rootZone.subZone('orchestration'),
+    vowTools,
   );
-
-  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
   await registerChainNamespace(agoricNamesAdmin, () => {});
@@ -119,8 +123,10 @@ export const commonSetup = async t => {
       localchain,
       marshaller,
       orchestration,
-      rootZone,
+      // TODO remove; bootstrap doesn't have a zone
+      rootZone: rootZone.subZone('contract'),
       storage,
+      vowTools,
     },
     brands: {
       bld: bldSansMint,

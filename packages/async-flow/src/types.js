@@ -1,5 +1,7 @@
+// Ensure this is a module.
+export {};
+
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Passable} from '@endo/pass-style'
  * @import {Zone} from '@agoric/base-zone'
  * @import {Vow, VowTools} from '@agoric/vow'

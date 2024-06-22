@@ -1,7 +1,8 @@
-import { registerChain } from './utils/chainHub.js';
-
-// Refresh with scripts/refresh-chain-info.ts
-import fetchedChainInfo from './fetched-chain-info.js';
+import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
+import { connectionKey } from './exos/chain-hub.js';
+import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
+import { CosmosChainInfoShape } from './typeGuards.js';
 
 /** @import {CosmosChainInfo, EthChainInfo} from './types.js'; */
 
@@ -10,7 +11,7 @@ import fetchedChainInfo from './fetched-chain-info.js';
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden({
     ...fetchedChainInfo,
-    // XXX does not have useful connections
+    // FIXME does not have useful connections
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
     agoriclocal: {
       chainId: 'agoriclocal',
@@ -66,7 +67,45 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
 
 /**
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
- * @param {(...messages: string[]) => void} log
+ * @param {string} name
+ * @param {CosmosChainInfo} chainInfo
+ * @param {(...messages: string[]) => void} [log]
+ */
+export const registerChain = async (
+  agoricNamesAdmin,
+  name,
+  chainInfo,
+  log = () => {},
+) => {
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
+  const { nameAdmin: connAdmin } =
+    await E(agoricNamesAdmin).provideChild('chainConnection');
+
+  mustMatch(chainInfo, CosmosChainInfoShape);
+  const { connections = {}, ...vertex } = chainInfo;
+
+  const promises = [
+    E(nameAdmin)
+      .update(name, vertex)
+      .then(() => log(`registered agoricNames chain.${name}`)),
+  ];
+
+  // FIXME updates redundantly, twice per edge
+  for (const [counterChainId, connInfo] of Object.entries(connections)) {
+    const key = connectionKey(chainInfo.chainId, counterChainId);
+    promises.push(
+      E(connAdmin)
+        .update(key, connInfo)
+        .then(() => log(`registering agoricNames chainConnection.${key}`)),
+    );
+  }
+  // Bundle to pipeline IO
+  await Promise.all(promises);
+};
+
+/**
+ * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {(...messages: string[]) => void} [log]
  */
 export const registerChainNamespace = async (agoricNamesAdmin, log) => {
   for await (const [name, info] of Object.entries(knownChains)) {

@@ -9,7 +9,11 @@ import { TimeMath } from '@agoric/time';
 export const SECONDS_PER_MINUTE = 60n;
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 
-/** @param {Remote<TimerService>} timer */
+/**
+ * XXX should this be durable? resumable?
+ *
+ * @param {Remote<TimerService>} timer
+ */
 export function makeTimestampHelper(timer) {
   /** @type {TimerBrand | undefined} */
   let brandCache;
@@ -21,6 +25,8 @@ export function makeTimestampHelper(timer) {
 
   return harden({
     /**
+     * XXX do this need to be resumable / use Vows?
+     *
      * Takes the current time from ChainTimerService and adds a relative time to
      * determine a timeout timestamp in nanoseconds. Useful for
      * {@link MsgTransfer.timeoutTimestamp}.

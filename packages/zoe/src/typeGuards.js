@@ -144,17 +144,6 @@ export const ZoeMintI = M.interface('ZoeMint', {
   withdrawAndBurn: M.call(AmountShape).returns(),
 });
 
-export const ZcfMintI = M.interface('ZcfMint', {
-  getIssuerRecord: M.call().returns(IssuerRecordShape),
-  mintGains: M.call(AmountKeywordRecordShape)
-    .optional(M.remotable('zcfSeat'))
-    .returns(M.remotable('zcfSeat')),
-  burnLosses: M.call(
-    AmountKeywordRecordShape,
-    M.remotable('zcfSeat'),
-  ).returns(),
-});
-
 export const FeeMintAccessShape = M.remotable('FeeMintAccess');
 
 export const ExitObjectI = M.interface('Exit Object', {

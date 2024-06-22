@@ -2,11 +2,9 @@
 export {};
 
 /**
- * @import {RemotableBrand} from '@endo/eventual-send'
  * @import {CopyTagged} from '@endo/pass-style'
  * @import {RemotableObject} from '@endo/pass-style';
- * @import {IsPrimitive, Remote} from '@agoric/internal';
- * @import {PromiseVow} from '@agoric/vow';
+ * @import {Remote} from '@agoric/internal';
  * @import {prepareVowTools} from './tools.js'
  */
 
@@ -36,12 +34,10 @@ export {};
  * This is used within E, so we must narrow the type to its remote form.
  * @template T
  * @typedef {(
- *   T extends PromiseLike<infer U> ? Unwrap<U> :
- *   T extends Vow<infer U> ? Unwrap<U> :
- *   IsPrimitive<T> extends true ? T :
- *   T extends RemotableBrand<infer Local, infer Primary> ? Local & T :
+ *   T extends Vow<infer U> ? EUnwrap<U> :
+ *   T extends PromiseLike<infer U> ? EUnwrap<U> :
  *   T
- * )} Unwrap
+ * )} EUnwrap
  */
 
 /**
@@ -90,5 +86,3 @@ export {};
  * @property {(value: T, context?: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
-
-/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */

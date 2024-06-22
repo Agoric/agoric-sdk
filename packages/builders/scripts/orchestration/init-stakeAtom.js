@@ -1,15 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async (
-  { publishRef, install },
-  options = {},
-) => {
-  const {
-    hostConnectionId = 'connection-1',
-    controllerConnectionId = 'connection-0',
-    bondDenom = 'uatom',
-  } = options;
+export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     sourceSpec: '@agoric/orchestration/src/proposals/start-stakeAtom.js',
     getManifestCall: [
@@ -20,9 +12,6 @@ export const defaultProposalBuilder = async (
             install('@agoric/orchestration/src/examples/stakeIca.contract.js'),
           ),
         },
-        hostConnectionId,
-        controllerConnectionId,
-        bondDenom,
       },
     ],
   });

@@ -3,13 +3,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
-
 import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
-import { registerChain } from '../../src/utils/chainHub.js';
+import { registerChain } from '../../src/chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

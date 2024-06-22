@@ -1,4 +1,5 @@
 import { AmountShape } from '@agoric/ertp';
+import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 export const ConnectionHandlerI = M.interface('ConnectionHandler', {
@@ -25,7 +26,6 @@ export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
 export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
 
 export const DelegationShape = harden({
-  delegatorAddress: M.string(),
   validatorAddress: M.string(),
   shares: M.string(), // TODO: bigint?
 });
@@ -78,3 +78,18 @@ export const CosmosChainInfoShape = M.splitRecord(
     icqEnabled: M.boolean(),
   },
 );
+
+// FIXME more validation
+export const ChainInfoShape = M.any();
+export const LocalChainAccountShape = M.remotable('LocalChainAccount');
+export const DenomShape = M.string();
+// FIXME more validation
+export const BrandInfoShape = M.any();
+
+export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+
+/** @see {Chain} */
+export const ChainFacadeI = M.interface('ChainFacade', {
+  getChainInfo: M.call().returns(VowShape),
+  makeAccount: M.call().returns(VowShape),
+});

@@ -1,7 +1,7 @@
 // @ts-check
 import { getVowPayload, basicE } from './vow-utils.js';
 
-/** @import { IsRetryableReason, Unwrap } from './types.js' */
+/** @import { IsRetryableReason, EUnwrap } from './types.js' */
 
 /**
  * @param {IsRetryableReason} [isRetryableReason]
@@ -13,10 +13,10 @@ export const makeWhen = (
    * Shorten `specimenP` until we achieve a final result.
    *
    * @template T
-   * @template [TResult1=Unwrap<T>]
+   * @template [TResult1=EUnwrap<T>]
    * @template [TResult2=never]
    * @param {T} specimenP value to unwrap
-   * @param {(value: Unwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
+   * @param {(value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
    * @param {(reason: any) => TResult2 | PromiseLike<TResult2>} [onRejected]
    * @returns {Promise<TResult1 | TResult2>}
    */
@@ -50,7 +50,7 @@ export const makeWhen = (
       payload = getVowPayload(result);
     }
 
-    const unwrapped = /** @type {Unwrap<T>} */ (result);
+    const unwrapped = /** @type {EUnwrap<T>} */ (result);
 
     // We've extracted the final result.
     if (onFulfilled == null && onRejected == null) {

@@ -7,7 +7,7 @@ test('chain-info', async t => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
 
-  await registerChainNamespace(agoricNamesAdmin, t.log);
+  await registerChainNamespace(agoricNamesAdmin);
   const chainNames = await agoricNames.lookup('chain');
   t.like(await chainNames.lookup('cosmoshub'), {
     chainId: 'cosmoshub-4',
@@ -27,6 +27,7 @@ test('chain-info', async t => {
     'secretnetwork',
     'stargaze',
     'stride',
+    'umee',
   ]);
   t.snapshot(chainNames.entries());
 });

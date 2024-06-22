@@ -11,13 +11,9 @@ export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
 ) => {
-  const swingsetTestKit = await makeSwingsetTestKit(
-    t.log,
-    'bundles/walletFactory',
-    {
-      configSpecifier,
-    },
-  );
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier,
+  });
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

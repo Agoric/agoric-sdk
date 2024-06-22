@@ -1,10 +1,6 @@
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { makeOrchestrationFacade } from '../facade.js';
-import { makeChainHub } from '../utils/chainHub.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
+import { provideOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -37,27 +33,19 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
     timerService,
   } = privateArgs;
-  const zone = makeDurableZone(baggage);
 
-  const chainHub = makeChainHub(agoricNames);
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    zone,
-    makeRecorderKit,
+  const { orchestrate } = provideOrchestration(
     zcf,
-    privateArgs.timerService,
-    chainHub,
+    baggage,
+    {
+      agoricNames,
+      localchain,
+      orchestrationService,
+      storageNode,
+      timerService,
+    },
+    marshaller,
   );
-  const { orchestrate } = makeOrchestrationFacade({
-    localchain,
-    orchestrationService,
-    storageNode,
-    timerService,
-    zcf,
-    zone,
-    chainHub: makeChainHub(agoricNames),
-    makeLocalChainAccountKit,
-  });
 
   /** @type {OfferHandler} */
   const unbondAndLiquidStake = orchestrate(

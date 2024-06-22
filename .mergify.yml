@@ -7,6 +7,19 @@ queue_rules:
       {{ body | trim }}
     queue_conditions:
       - base=master
+      - or:
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
+          - label=bypass:integration
+      - or:
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
+    merge_conditions:
+      - base=master
       # Require integration tests before merging only
       - or:
           - label=bypass:integration
@@ -20,17 +33,6 @@ pull_request_rules:
       - or:
           - '#commits-behind=0'
           - label=bypass:linear-history
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -39,17 +41,6 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:rebase
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main
@@ -59,17 +50,6 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:squash
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main

@@ -1,5 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { AnyJson } from '@agoric/cosmic-proto';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
   MsgBeginRedelegateResponse,
@@ -7,23 +9,28 @@ import {
   MsgDelegateResponse,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { decodeBase64 } from '@endo/base64';
 import { E, Far } from '@endo/far';
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import type { TimestampRecord, TimestampValue } from '@agoric/time';
-import type { AnyJson } from '@agoric/cosmic-proto';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import {
-  prepareCosmosOrchestrationAccountKit,
-  trivialDelegateResponse,
-} from '../src/exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
+import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
-import type { IcaAccount, ChainAddress, ICQConnection } from '../src/types.js';
 
 const { Fail } = assert;
+
+const trivialDelegateResponse = encodeTxResponse(
+  {},
+  MsgDelegateResponse.toProtoMsg,
+);
 
 test('MsgDelegateResponse trivial response', t => {
   t.is(
@@ -174,17 +181,18 @@ const makeScenario = () => {
     return { zcf, zoe };
   };
 
-  const makeRecorderKit = () => harden({}) as any;
-
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
   const { delegations, startTime } = configStaking;
 
-  // TODO: when we write to chainStorage, test it.
-  //   const { rootNode } = makeFakeStorageKit('mockChainStorageRoot');
+  const { rootNode } = makeFakeStorageKit('stakingOpsTest', {
+    sequence: false,
+  });
 
-  const storageNode = Far('StorageNode', {}) as unknown as StorageNode;
+  const vowTools = prepareVowTools(zone.subZone('VowTools'));
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -197,18 +205,54 @@ const makeScenario = () => {
     zone,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
-    storageNode,
+    storageNode: rootNode,
     timer,
     icqConnection,
+    vowTools,
     ...mockZCF(),
   };
 };
 
+test('makeAccount() writes to storage', async t => {
+  const s = makeScenario();
+  const { account, timer } = s;
+  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
+    s;
+  const make = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    vowTools,
+    zcf,
+  );
+
+  const { holder } = make(account.getAddress(), 'uatom', {
+    account,
+    storageNode,
+    icqConnection,
+    timer,
+  });
+  const { publicSubscribers } = holder.asContinuingOffer();
+  const accountNotifier = makeNotifierFromSubscriber(
+    publicSubscribers.account.subscriber,
+  );
+  const storageUpdate = await E(accountNotifier).getUpdateSince();
+  t.deepEqual(storageUpdate, {
+    updateCount: 1n,
+    value: '',
+  });
+});
+
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, icqConnection, zone } = s;
-  const make = prepareCosmosOrchestrationAccountKit(zone, makeRecorderKit, zcf);
+  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
+    s;
+  const make = prepareCosmosOrchestrationAccountKit(
+    zone,
+    makeRecorderKit,
+    vowTools,
+    zcf,
+  );
 
   // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
@@ -230,11 +274,20 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
 test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const aBrand = Far('Token') as Brand<'nat'>;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -248,8 +301,11 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const { validator, delegations } = configStaking;
   {
     const value = BigInt(Object.values(delegations)[0].amount);
-    const anAmount = { brand: aBrand, value };
-    const toDelegate = await E(invitationMakers).Delegate(validator, anAmount);
+    const anAmountArg = { denom: 'uatom', value };
+    const toDelegate = await E(invitationMakers).Delegate(
+      validator,
+      anAmountArg,
+    );
     const seat = E(zoe).offer(toDelegate);
     const result = await E(seat).getOfferResult();
 
@@ -300,10 +356,19 @@ test(`delegate; redelegate using invitationMakers`, async t => {
 test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -330,10 +395,19 @@ test(`withdraw rewards using invitationMakers`, async t => {
 test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, zoe, icqConnection, zone } = s;
+  const {
+    makeRecorderKit,
+    storageNode,
+    zcf,
+    zoe,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 
@@ -349,7 +423,6 @@ test(`undelegate waits for unbonding period`, async t => {
   const value = BigInt(Object.values(delegations)[0].amount);
   const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
   const delegation = {
-    delegatorAddress: account.getAddress().address,
     shares: `${anAmount.value}`,
     validatorAddress: validator.address,
   };

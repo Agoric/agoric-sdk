@@ -1,3 +1,5 @@
+/* global globalThis */
+
 import { assert, Fail } from '@agoric/assert';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
@@ -249,6 +251,7 @@ export default function buildKernel(
    * @param {SwingSetCapData} info
    */
   async function terminateVat(vatID, shouldReject, info) {
+    console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
@@ -816,6 +819,10 @@ export default function buildKernel(
       oldIncarnation,
     );
     const disconnectionCapData = kser(disconnectionObject);
+
+    console.log(
+      `attempting to upgrade vat ${vatID} from incarnation ${oldIncarnation} to source ${bundleID}`,
+    );
 
     /**
      * Terminate the vat and translate internal-delivery results into
@@ -1644,7 +1651,12 @@ export default function buildKernel(
       assert(bundle);
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
-        endowments: harden({ ...vatEndowments, console: devConsole, assert }),
+        endowments: harden({
+          ...vatEndowments,
+          console: devConsole,
+          // See https://github.com/Agoric/agoric-sdk/issues/9515
+          assert: globalThis.assert,
+        }),
       });
 
       if (deviceEndowments[name] || unendowed) {

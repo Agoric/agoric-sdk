@@ -1475,7 +1475,7 @@ export const preparePortAllocator = (zone, { watch }) =>
      */
     ({ protocol }) => ({ protocol, lastICAPortNum: 0n, lastICQPortNum: 0n }),
     {
-      allocateCustomIBCPort(specifiedName = '') {
+      async allocateCustomIBCPort(specifiedName = '') {
         const { state } = this;
         let localAddr = `/ibc-port/`;
 
@@ -1488,7 +1488,7 @@ export const preparePortAllocator = (zone, { watch }) =>
         // Allocate an IBC port with a unique generated name.
         return watch(E(state.protocol).bindPort(localAddr));
       },
-      allocateICAControllerPort() {
+      async allocateICAControllerPort() {
         const { state } = this;
         state.lastICAPortNum += 1n;
         return watch(
@@ -1497,7 +1497,7 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateICQControllerPort() {
+      async allocateICQControllerPort() {
         const { state } = this;
         state.lastICQPortNum += 1n;
         return watch(
@@ -1506,7 +1506,7 @@ export const preparePortAllocator = (zone, { watch }) =>
           ),
         );
       },
-      allocateCustomLocalPort(specifiedName = '') {
+      async allocateCustomLocalPort(specifiedName = '') {
         const { state } = this;
 
         let localAddr = `/local/`;

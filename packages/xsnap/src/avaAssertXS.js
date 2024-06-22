@@ -228,6 +228,8 @@ function makeTester(htest, out) {
     fail(message) {
       assert(false, message);
     },
+    // Not the SES or @endo/errors `assert`
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
     assert,
     truthy,
     /**

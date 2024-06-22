@@ -4,7 +4,7 @@ import { defaultProposalBuilder as vaultProposalBuilder } from '../inter-protoco
 /** @file This is for use in tests in a3p-integration */
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const stars2VaultProposalBuilder = async powers => {
+const stars2VaultProposalBuilder = async powers => {
   return vaultProposalBuilder(powers, {
     interchainAssetOptions: {
       denom: 'ibc/111C0FFEECAFE111',

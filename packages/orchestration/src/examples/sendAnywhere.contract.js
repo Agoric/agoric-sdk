@@ -1,15 +1,11 @@
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { M, mustMatch } from '@endo/patterns';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-
+import { M, mustMatch } from '@endo/patterns';
+import { V } from '@agoric/vow/vat.js';
 import { AmountShape } from '@agoric/ertp';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { CosmosChainInfoShape } from '../typeGuards.js';
-import { makeOrchestrationFacade } from '../facade.js';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
-import { makeChainHub } from '../utils/chainHub.js';
+import { provideOrchestration } from '../utils/start-helper.js';
 
 const { entries } = Object;
 const { Fail } = assert;
@@ -49,28 +45,14 @@ export const SingleAmountRecord = M.and(
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const zone = makeDurableZone(baggage);
-
-  const chainHub = makeChainHub(privateArgs.agoricNames);
-
-  // TODO once durability is settled, provide some helpers to reduce boilerplate
-  const { marshaller, ...orchPowers } = privateArgs;
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
-    zone,
-    makeRecorderKit,
+  const { chainHub, orchestrate, zone } = provideOrchestration(
     zcf,
-    privateArgs.timerService,
-    chainHub,
+    baggage,
+    privateArgs,
+    privateArgs.marshaller,
   );
-  const { orchestrate } = makeOrchestrationFacade({
-    zcf,
-    zone,
-    chainHub,
-    makeLocalChainAccountKit,
-    ...orchPowers,
-  });
 
+  /** @type {import('../orchestration-api.js').OrchestrationAccount<any>} */
   let contractAccount;
 
   const findBrandInVBank = async brand => {
@@ -98,16 +80,21 @@ export const start = async (zcf, privateArgs, baggage) => {
       const { denom } = await findBrandInVBank(amt.brand);
       const chain = await orch.getChain(chainName);
 
-      // XXX ok to use a heap var crossing the membrane scope this way?
+      // FIXME ok to use a heap var crossing the membrane scope this way?
       if (!contractAccount) {
         const agoricChain = await orch.getChain('agoric');
-        contractAccount = await agoricChain.makeAccount();
+        // XXX when() until membrane
+        contractAccount = await V.when(agoricChain.makeAccount());
+        console.log('contractAccount', contractAccount);
       }
 
-      const info = await chain.getChainInfo();
+      // XXX when() until membrane
+      const info = await V.when(chain.getChainInfo());
+      console.log('info', info);
       const { chainId } = info;
+      assert(typeof chainId === 'string', 'bad chainId');
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-      await E.when(pmtP, pmt => contractAccount.deposit(pmt, amt));
+      await E.when(pmtP, pmt => contractAccount.deposit(pmt));
       await contractAccount.transfer(
         { denom, value: amt.value },
         {
@@ -152,7 +139,9 @@ export const start = async (zcf, privateArgs, baggage) => {
        */
       async addChain(chainInfo, connectionInfo) {
         const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
-        const agoricChainInfo = await chainHub.getChainInfo('agoric');
+        // when() because chainHub methods return vows. If this were inside
+        // orchestrate() the membrane would wrap/unwrap automatically.
+        const agoricChainInfo = await V.when(chainHub.getChainInfo('agoric'));
         chainHub.registerChain(chainKey, chainInfo);
         chainHub.registerConnection(
           agoricChainInfo.chainId,

@@ -6,7 +6,8 @@ import { Far } from '@endo/marshal';
 const endowments = {
   VatData,
   console,
-  assert,
+  // See https://github.com/Agoric/agoric-sdk/issues/9515
+  assert: globalThis.assert,
   Base64: globalThis.Base64, // Present only on XSnap
   URL: globalThis.URL, // Absent only on XSnap
 };

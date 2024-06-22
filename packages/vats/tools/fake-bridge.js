@@ -71,6 +71,8 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
         case 'VBANK_GIVE': {
           const { amount, denom } = obj;
           const address = type === 'VBANK_GRAB' ? obj.sender : obj.recipient;
+          (address && typeof address === 'string') ||
+            Fail`invalid address ${address}`;
           balances[address] ||= {};
           balances[address][denom] ||= 0n;
 

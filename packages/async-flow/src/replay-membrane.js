@@ -8,6 +8,12 @@ import { makeConvertKit } from './convert.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {AsyncFlow} from '../src/async-flow.js'
+ * @import {LogStore} from '../src/log-store.js';
+ * @import {Bijection} from '../src/bijection.js';
+ * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
  */
 
 const { fromEntries, defineProperties, assign } = Object;

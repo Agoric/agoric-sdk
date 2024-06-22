@@ -1,11 +1,12 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { makeChainHub } from '../utils/chainHub.js';
+import { V } from '@agoric/vow/vat.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeAtomSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
+ * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
  */
 
 const trace = makeTracer('StartStakeAtom', true);
@@ -43,28 +44,23 @@ export const startStakeAtom = async ({
 
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
-  const atomIssuer = await E(agoricNames).lookup('issuer', 'ATOM');
-  trace('ATOM Issuer', atomIssuer);
 
   const chainHub = makeChainHub(await agoricNames);
 
-  const agoric = await chainHub.getChainInfo('agoric');
-  const cosmoshub = await chainHub.getChainInfo('cosmoshub');
-  const connectionInfo = await chainHub.getConnectionInfo(
-    agoric.chainId,
-    cosmoshub.chainId,
+  const [_, cosmoshub, connectionInfo] = await V.when(
+    chainHub.getChainsAndConnection('agoric', 'cosmoshub'),
   );
 
-  /** @type {StartUpgradableOpts<StakeAtomSF>} */
+  /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeIca,
-    issuerKeywordRecord: harden({ ATOM: atomIssuer }),
     terms: {
       chainId: cosmoshub.chainId,
       hostConnectionId: connectionInfo.id,
       controllerConnectionId: connectionInfo.counterparty.connection_id,
       bondDenom: cosmoshub.stakingTokens[0].denom,
+      icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: {
       orchestration: await orchestration,

@@ -1,5 +1,5 @@
 // @ts-check
-import { E } from '@endo/far';
+import { V as E } from '@agoric/vow/vat.js';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 
 /**
