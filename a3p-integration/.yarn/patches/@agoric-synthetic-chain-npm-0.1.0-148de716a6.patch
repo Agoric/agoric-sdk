@@ -1,0 +1,13 @@
+diff --git a/dist/upgrade-test-scripts/env_setup.sh b/dist/upgrade-test-scripts/env_setup.sh
+index 617a0fbe7efdfa457e28fc52806dba1b323930d8..25f52a6cf133dca830bd0dcd47c91700e6a8effe 100755
+--- a/dist/upgrade-test-scripts/env_setup.sh
++++ b/dist/upgrade-test-scripts/env_setup.sh
+@@ -100,7 +100,7 @@ killAgd() {
+   AGD_PID=$(cat $HOME/.agoric/agd.pid)
+   kill $AGD_PID
+   rm $HOME/.agoric/agd.pid
+-  wait $AGD_PID || true
++  tail --pid=$AGD_PID -f /dev/null || true
+ }
+ 
+ provisionSmartWallet() {

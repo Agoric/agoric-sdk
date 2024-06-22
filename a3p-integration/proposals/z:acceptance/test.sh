@@ -11,3 +11,5 @@ GLOBIGNORE=initial.test.js
 yarn ava ./*.test.js
 
 ./create-kread-item-test.sh
+
+./state-sync-snapshots-test.sh
