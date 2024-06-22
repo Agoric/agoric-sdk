@@ -12,7 +12,7 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.1.0",
+    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.1.0#~/.yarn/patches/@agoric-synthetic-chain-npm-0.1.0-148de716a6.patch",
     "@types/better-sqlite3": "^7.6.9"
   },
   "packageManager": "yarn@4.2.2",
