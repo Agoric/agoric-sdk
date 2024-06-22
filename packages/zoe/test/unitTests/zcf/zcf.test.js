@@ -286,7 +286,8 @@ test(`zcf.makeInvitation - no description`, async t => {
   const { zcf } = await setupZCFTest();
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}), {
-    message: 'invitations must have a description string: "[undefined]"',
+    message:
+      'In "makeInvitation" method of (zcf): Expected at least 2 arguments: ["<redacted raw arg>"]',
   });
 });
 
@@ -296,7 +297,8 @@ test(`zcf.makeInvitation - non-string description`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1704
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.makeInvitation(() => {}, { something: 'a' }), {
-    message: /invitations must have a description string: .*/,
+    message:
+      'In "makeInvitation" method of (zcf): arg 1: copyRecord {"something":"a"} - Must be a string',
   });
 });
 

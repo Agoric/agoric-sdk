@@ -104,11 +104,12 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
+  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
+
   const { makeOrchestrationKit } = prepareOrchestrationTools(
     rootZone.subZone('orchestration'),
+    vowTools,
   );
-
-  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
   const { public: orchestration } = makeOrchestrationKit({ portAllocator });
 
   await registerChainNamespace(agoricNamesAdmin, () => {});
@@ -122,8 +123,10 @@ export const commonSetup = async t => {
       localchain,
       marshaller,
       orchestration,
-      rootZone,
+      // TODO remove; bootstrap doesn't have a zone
+      rootZone: rootZone.subZone('contract'),
       storage,
+      vowTools,
     },
     brands: {
       bld: bldSansMint,

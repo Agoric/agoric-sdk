@@ -8,7 +8,7 @@ export const orcUtils = {
    * @returns {TransferMsg}
    */
   makeTransferMsg: _args => {
-    // XXX mocked, so typescript is happy
+    // FIXME mocked, so typescript is happy
     return {
       toAccount: {
         chainId: 'osmosis-test',
@@ -26,7 +26,7 @@ export const orcUtils = {
    * @returns {TransferMsg}
    */
   makeOsmosisSwap(_args) {
-    // XXX mocked, so typescript is happy
+    // FIXME mocked, so typescript is happy
     return {
       toAccount: {
         chainId: 'osmosis-test',

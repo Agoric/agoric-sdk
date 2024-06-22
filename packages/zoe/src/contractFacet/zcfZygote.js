@@ -10,7 +10,7 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
+import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { objectMap } from '@agoric/internal';
@@ -26,6 +26,7 @@ import { createSeatManager } from './zcfSeat.js';
 
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
+import { ZcfI } from './typeGuards.js';
 
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
@@ -281,11 +282,7 @@ export const makeZCFZygote = async (
     ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability);
 
   /** @type {ZCF} */
-  // Using Remotable rather than Far because there are too many complications
-  // imposing checking wrappers: makeInvitation() and setJig() want to
-  // accept raw functions. assert cannot be a valid passable! (It's a function
-  // and has members.)
-  const zcf = Remotable('Alleged: zcf', undefined, {
+  const zcf = prepareExo(zcfBaggage, 'zcf', ZcfI, {
     atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
     reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),

@@ -90,7 +90,14 @@ jobs:
           REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
 
       - name: run agoric-cli integration-test
-        run: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
+        # These integration tests can be flaky so retry automatically
+        uses: nick-fields/retry@v3
+        with:
+          # This step usually takes <4 minutes (after 6m setup). The
+          # deployment-test running in parallel takes 35 minutes so 20 minutes
+          # won't increase the time for this workflow to complete.
+          timeout_minutes: 20
+          command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
 
       - name: notify on failure
         if: >

@@ -8,8 +8,11 @@ import { makeConvertKit } from './convert.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
- * @import {PassableCap} from '@endo/pass-style'
- * @import {VowKit} from '@agoric/vow'
+ * @import {Passable, PassableCap} from '@endo/pass-style'
+ * @import {Vow, VowTools, VowKit} from '@agoric/vow'
+ * @import {LogStore} from '../src/log-store.js';
+ * @import {Bijection} from '../src/bijection.js';
+ * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
  */
 
 const { fromEntries, defineProperties, assign } = Object;

@@ -27,6 +27,25 @@ const deprecatedTerminology = Object.fromEntries(
   ]),
 );
 
+/**
+ * Rules for code that crosses an asyncFlow membrane.
+ */
+const resumable = [
+  {
+    selector: 'FunctionExpression[async=true]',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: 'ArrowFunctionExpression[async=true]',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: "Identifier[name='callWhen']",
+    message:
+      'callWhen wraps the function in a promise; instead immediately return a vow',
+  },
+];
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -133,6 +152,14 @@ module.exports = {
           'error',
           { paths: ['@endo/eventual-send', '@endo/far'] },
         ],
+      },
+    },
+    {
+      // Modules with exports that must be resumable
+      files: ['packages/orchestration/src/exos/**'],
+      rules: {
+        // TODO tighten to error
+        'no-restricted-syntax': ['warn', ...resumable],
       },
     },
     {

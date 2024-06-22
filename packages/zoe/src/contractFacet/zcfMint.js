@@ -8,7 +8,7 @@ import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../internal-types.js';
-import { ZcfMintI } from '../typeGuards.js';
+import { ZcfMintI } from './typeGuards.js';
 import './internal-types.js';
 import './types-ambient.js';
 
