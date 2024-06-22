@@ -4,7 +4,7 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
-import { when } from '@agoric/vow/vat.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
 import { orcUtils } from '../utils/orc.js';
 import { provideOrchestration } from '../utils/start-helper.js';
 
@@ -97,9 +97,9 @@ export const start = async (zcf, privateArgs, baggage) => {
 
       const [omniAccount, localAccount] = await Promise.all([
         // XXX when() until membrane
-        when(omni.makeAccount()),
+        heapVowTools.when(omni.makeAccount()),
         // XXX when() until membrane
-        when(agoric.makeAccount()),
+        heapVowTools.when(agoric.makeAccount()),
       ]);
 
       const omniAddress = omniAccount.getAddress();

@@ -1,9 +1,12 @@
 import { VowShape } from '@agoric/vow';
-import { allVows, watch } from '@agoric/vow/vat.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
+
+// FIXME test thoroughly whether heap suffices for ChainHub
+const { allVows, watch } = heapVowTools;
 
 const { Fail } = assert;
 

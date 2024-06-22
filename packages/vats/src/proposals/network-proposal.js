@@ -9,7 +9,9 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 // Heap-based vow resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
-import { when } from '@agoric/vow/vat.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
+
+const { when } = heapVowTools;
 
 /**
  * @import {ProtocolHandler} from '@agoric/network';

@@ -6,8 +6,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareVowTools, V } from '@agoric/vow/vat.js';
-import { E } from '@endo/far';
+import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
@@ -58,8 +57,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   const bldAmountShape = await E(BLD).getAmountShape();
 
   async function makeLocalAccountKit() {
-    const account = await V(privateArgs.localchain).makeAccount();
-    const address = await V(account).getAddress();
+    const account = await E(privateArgs.localchain).makeAccount();
+    const address = await E(account).getAddress();
     // FIXME 'address' is implied by 'account'; use an async maker that get the value itself
     return makeLocalOrchestrationAccountKit({
       account,
@@ -92,7 +91,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
-            await V(holder).deposit(In);
+            await E(holder).deposit(In);
             seat.exit();
             return harden({
               publicSubscribers: holder.getPublicTopics(),
