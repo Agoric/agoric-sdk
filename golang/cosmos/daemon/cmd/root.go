@@ -138,8 +138,8 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
-		pruning.Cmd(ac.newApp, gaia.DefaultNodeHome),
-		snapshot.Cmd(ac.newApp),
+		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
+		snapshot.Cmd(ac.newSnapshotsApp),
 	)
 
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
@@ -279,6 +279,33 @@ func (ac appCreator) newApp(
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true, skipUpgradeHeights,
+		homePath,
+		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
+		ac.encCfg,
+		appOpts,
+		baseappOptions...,
+	)
+}
+
+func (ac appCreator) newSnapshotsApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	appOpts servertypes.AppOptions,
+) servertypes.Application {
+	if OnExportHook != nil {
+		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
+			panic(err)
+		}
+	}
+
+	baseappOptions := server.DefaultBaseappOptions(appOpts)
+
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
+	return gaia.NewAgoricApp(
+		ac.sender, ac.agdServer,
+		logger, db, traceStore, true, map[int64]bool{},
 		homePath,
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
