@@ -1,5 +1,5 @@
 // @ts-check
-import { V as E } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { typedJson } from '@agoric/cosmic-proto/vatsafe';
 
 /**

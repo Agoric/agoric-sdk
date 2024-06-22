@@ -2,9 +2,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { V } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
 
@@ -54,7 +53,7 @@ test('makeAccount, deposit, withdraw', async t => {
   t.truthy(account, 'account is returned');
 
   t.log('deposit 100 bld to account');
-  const depositResp = await V(account).deposit(
+  const depositResp = await E(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
   // FIXME #9211
@@ -63,7 +62,7 @@ test('makeAccount, deposit, withdraw', async t => {
   await eventLoopIteration();
 
   t.log('withdraw bld from account');
-  const withdrawResp = await V(account).withdraw(bld.units(100));
+  const withdrawResp = await E(account).withdraw(bld.units(100));
   const withdrawAmt = await bld.issuer.getAmountOf(withdrawResp);
   t.true(AmountMath.isEqual(withdrawAmt, bld.units(100)), 'withdraw');
 
