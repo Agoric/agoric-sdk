@@ -7,7 +7,7 @@ const vats = {
   ibc: { incarnation: 0 },
   localchain: { incarnation: 0 },
   walletFactory: { incarnation: 3 },
-  zoe: { incarnation: 1 },
+  zoe: { incarnation: 2 },
 };
 
 test(`vat details`, async t => {
