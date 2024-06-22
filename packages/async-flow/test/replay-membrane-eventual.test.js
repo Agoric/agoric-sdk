@@ -51,9 +51,15 @@ const testFirstPlay = async (t, zone) => {
   const makePingee = preparePingee(zone);
 
   const log = zone.makeOnce('log', () => makeLogStore());
-  const bij = zone.makeOnce('bij', makeBijection);
+  const bijection = zone.makeOnce('bij', makeBijection);
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   t.deepEqual(log.dump(), []);
 

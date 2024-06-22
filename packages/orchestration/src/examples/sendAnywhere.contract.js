@@ -30,6 +30,44 @@ const { Fail } = assert;
  * }} OrchestrationPowers
  */
 
+const guestFn = async (
+  orch,
+  { zcf, findBrandInVBank, cell },
+  seat,
+  offerArgs,
+) => {
+  mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
+  const { chainName, destAddr } = offerArgs;
+  const { give } = seat.getProposal();
+  const [[kw, amt]] = entries(give);
+  const { denom } = await findBrandInVBank(amt.brand);
+  const chain = await orch.getChain(chainName);
+
+  // FIXME ok to use a heap var crossing the membrane scope this way?
+  if (!cell.contractAccount) {
+    const agoricChain = await orch.getChain('agoric');
+    // XXX when() until membrane
+    cell.contractAccount = await E.when(agoricChain.makeAccount());
+    console.log('contractAccount', cell.contractAccount);
+  }
+
+  // XXX when() until membrane
+  const info = await E.when(chain.getChainInfo());
+  console.log('info', info);
+  const { chainId } = info;
+  assert(typeof chainId === 'string', 'bad chainId');
+  const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
+  await E.when(pmtP, pmt => cell.contractAccount.deposit(pmt));
+  await cell.contractAccount.transfer(
+    { denom, value: amt.value },
+    {
+      address: destAddr,
+      addressEncoding: 'bech32',
+      chainId,
+    },
+  );
+};
+
 export const SingleAmountRecord = M.and(
   M.recordOf(M.string(), AmountShape, {
     numPropertiesLimit: 1,
@@ -54,6 +92,14 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   /** @type {import('../orchestration-api.js').OrchestrationAccount<any>} */
   let contractAccount;
+  const cell = harden({
+    get contractAccount() {
+      return contractAccount;
+    },
+    set contractAccount(newValue) {
+      contractAccount = newValue;
+    },
+  });
 
   const findBrandInVBank = async brand => {
     const assets = await E(
@@ -72,43 +118,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf },
-    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (orch, { zcf }, seat, offerArgs) => {
-      mustMatch(
-        offerArgs,
-        harden({ chainName: M.scalar(), destAddr: M.string() }),
-      );
-      const { chainName, destAddr } = offerArgs;
-      const { give } = seat.getProposal();
-      const [[kw, amt]] = entries(give);
-      const { denom } = await findBrandInVBank(amt.brand);
-      const chain = await orch.getChain(chainName);
-
-      // FIXME ok to use a heap var crossing the membrane scope this way?
-      if (!contractAccount) {
-        const agoricChain = await orch.getChain('agoric');
-        // XXX when() until membrane
-        contractAccount = await E.when(agoricChain.makeAccount());
-        console.log('contractAccount', contractAccount);
-      }
-
-      // XXX when() until membrane
-      const info = await E.when(chain.getChainInfo());
-      console.log('info', info);
-      const { chainId } = info;
-      assert(typeof chainId === 'string', 'bad chainId');
-      const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-      await E.when(pmtP, pmt => contractAccount.deposit(pmt));
-      await contractAccount.transfer(
-        { denom, value: amt.value },
-        {
-          address: destAddr,
-          addressEncoding: 'bech32',
-          chainId,
-        },
-      );
-    },
+    { zcf, findBrandInVBank, cell },
+    guestFn,
   );
 
   const publicFacet = zone.exo(

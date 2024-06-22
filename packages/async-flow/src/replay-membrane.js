@@ -1,16 +1,16 @@
 /* eslint-disable no-use-before-define */
 import { Fail, X, b, makeError, q } from '@endo/errors';
+import { isPromise } from '@endo/promise-kit';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Zone} from '@agoric/base-zone';
  * @import {Vow, VowTools} from '@agoric/vow'
- * @import {AsyncFlow} from '../src/async-flow.js'
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
  * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
@@ -19,20 +19,21 @@ import { makeConvertKit } from './convert.js';
 const { fromEntries, defineProperties, assign } = Object;
 
 /**
- * @param {LogStore} log
- * @param {Bijection} bijection
- * @param {VowTools} vowTools
- * @param {(vowish: Promise | Vow) => void} watchWake
- * @param {(problem: Error) => never} panic
+ * @param {object} arg
+ * @param {LogStore} arg.log
+ * @param {Bijection} arg.bijection
+ * @param {VowTools} arg.vowTools
+ * @param {(vowish: Promise | Vow) => void} arg.watchWake
+ * @param {(problem: Error) => never} arg.panic
  */
-export const makeReplayMembrane = (
+export const makeReplayMembrane = ({
   log,
   bijection,
   vowTools,
   watchWake,
   panic,
-) => {
-  const { when } = vowTools;
+}) => {
+  const { when, watch } = vowTools;
 
   const equate = makeEquate(bijection);
 
@@ -321,9 +322,20 @@ export const makeReplayMembrane = (
 
   /**
    * @param {Vow} hVow
-   * @returns {Promise}
+   * @returns {unknown}
    */
   const makeGuestForHostVow = hVow => {
+    if (isPromise(hVow)) {
+      const e = Error('where warning happened');
+      console.log('Warning for now: vow expected, not promise', hVow, e);
+      // TODO remove this stopgap. Here for now because host-side
+      // promises are everywhere!
+      // Note: A good place to set a breakpoint, or to uncomment the
+      // `debugger;` line, to work around bundling.
+      // debugger;
+      hVow = watch(hVow);
+    }
+    isVow(hVow) || Fail`vow expected ${hVow}`;
     const { promise, resolve, reject } = makeGuestPromiseKit();
     guestPromiseMap.set(promise, harden({ resolve, reject }));
 

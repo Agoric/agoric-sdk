@@ -1,6 +1,7 @@
 /** @file Orchestration service */
 
 import { Fail } from '@agoric/assert';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { pickFacet } from '@agoric/vat-data';
 import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
@@ -82,26 +83,48 @@ export const makeOrchestrationFacade = ({
   });
   const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
 
+  const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
+
   return {
     /**
-     * @template Return
-     * @template Context
-     * @template {any[]} Args
+     * @template GuestReturn
+     * @template HostReturn
+     * @template GuestContext
+     * @template HostContext
+     * @template {any[]} GuestArgs
+     * @template {any[]} HostArgs
      * @param {string} durableName - the orchestration flow identity in the zone
      *   (to resume across upgrades)
-     * @param {Context} ctx - values to pass through the async flow membrane
+     * @param {HostContext} hostCtx - values to pass through the async flow
+     *   membrane
      * @param {(
-     *   orc: Orchestrator,
-     *   ctx2: Context,
-     *   ...args: Args
-     * ) => Promise<Return>} fn
-     * @returns {(...args: Args) => Promise<Return>}
+     *   guestOrc: Orchestrator,
+     *   guestCtx: GuestContext,
+     *   ...args: GuestArgs
+     * ) => Promise<GuestReturn>} guestFn
+     * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
+     *   Promise for now for compat before use of asyncFlow. But really should
+     *   be `Vow<HostReturn>`
      */
-    orchestrate(durableName, ctx, fn) {
-      const orc = makeOrchestrator();
+    orchestrate(durableName, hostCtx, guestFn) {
+      const subZone = zone.subZone(durableName);
 
-      return async (...args) => vowTools.when(fn(orc, ctx, ...args));
+      const hostOrc = makeOrchestrator();
+
+      const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
+        hostOrc,
+        hostCtx,
+      ]);
+
+      const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
+
+      const orcFn = (...args) =>
+        // TODO remove the `heapVowE.when` after fixing the return type
+        // to `Vow<HostReturn>`
+        heapVowE.when(hostFn(wrappedOrc, wrappedCtx, ...args));
+      return harden(orcFn);
     },
+    adminAsyncFlow,
   };
 };
 harden(makeOrchestrationFacade);

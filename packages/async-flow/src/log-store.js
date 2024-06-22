@@ -141,6 +141,7 @@ export const prepareLogStore = zone => {
           Fail`internal: index confusion ${q(eph.index)} vs ${q(
             mapStore.getSize(),
           )}`;
+        // console.log('LOG ENTRY ', eph.index - 1, entry);
         return eph.index;
       },
       dump() {

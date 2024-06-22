@@ -1,24 +1,32 @@
 import { b, Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { Far } from '@endo/pass-style';
+import { Far, isPassable } from '@endo/pass-style';
 import { toPassableCap } from '@agoric/vow';
 import { makeEphemera } from './ephemera.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {PassableCap} from '@endo/pass-style'
  * @import {Zone} from '@agoric/base-zone'
+ * @import {Vow} from '@agoric/vow'
  * @import {Ephemera} from './types.js';
  */
 
 const BijectionI = M.interface('Bijection', {
   reset: M.call().returns(),
-  init: M.call(M.any(), M.any()).returns(),
-  hasGuest: M.call(M.any()).returns(M.boolean()),
+  unwrapInit: M.call(M.raw(), M.any()).returns(M.raw()),
+  hasGuest: M.call(M.raw()).returns(M.boolean()),
   hasHost: M.call(M.any()).returns(M.boolean()),
-  has: M.call(M.any(), M.any()).returns(M.boolean()),
-  guestToHost: M.call(M.any()).returns(M.any()),
-  hostToGuest: M.call(M.any()).returns(M.any()),
+  has: M.call(M.raw(), M.any()).returns(M.boolean()),
+  guestToHost: M.call(M.raw()).returns(M.any()),
+  hostToGuest: M.call(M.any()).returns(M.raw()),
 });
+
+/**
+ * @param {unknown} k
+ */
+const toKey = k =>
+  // @ts-expect-error k specificity
+  isPassable(k) ? toPassableCap(k) : k;
 
 /**
  * Makes a store like a WeakMapStore except that Promises and Vows can also be
@@ -40,15 +48,15 @@ const makeVowishStore = name => {
 
   return Far(name, {
     init: (k, v) => {
-      const k2 = toPassableCap(k);
+      const k2 = toKey(k);
       !map.has(k2) ||
         // separate line so I can set a breakpoint
         Fail`${b(name)} key already bound: ${k} -> ${map.get(k2)} vs ${v}`;
       map.set(k2, v);
     },
-    has: k => map.has(toPassableCap(k)),
+    has: k => map.has(toKey(k)),
     get: k => {
-      const k2 = toPassableCap(k);
+      const k2 = toKey(k);
       map.has(k2) ||
         // separate line so I can set a breakpoint
         Fail`${b(name)} key not found: ${k}`;
@@ -61,13 +69,21 @@ const makeVowishStore = name => {
 
 /**
  * @param {Zone} zone
+ * @param {(hostWrapper: PassableCap | Vow, guestWrapper: PassableCap) => unknown} [unwrap]
+ *  defaults to identity function on `guestWrapper` arg
  */
-export const prepareBijection = zone => {
+export const prepareBijection = (
+  zone,
+  unwrap = (_hostWrapper, guestWrapper) => guestWrapper,
+) => {
   /** @type {Ephemera<Bijection, VowishStore>} */
   const g2h = makeEphemera(() => makeVowishStore('guestToHost'));
   /** @type {Ephemera<Bijection, VowishStore>} */
   const h2g = makeEphemera(() => makeVowishStore('hostToGuest'));
 
+  // Guest arguments are results are now unguarded, i.e., guarded by `M.raw()`,
+  // so that they can be non-passables. Therefore, we need to harden these
+  // here.
   return zone.exoClass('Bijection', BijectionI, () => ({}), {
     reset() {
       const { self } = this;
@@ -75,20 +91,31 @@ export const prepareBijection = zone => {
       g2h.resetFor(self);
       h2g.resetFor(self);
     },
-    init(g, h) {
+    unwrapInit(g, h) {
+      harden(g);
       const { self } = this;
       const guestToHost = g2h.for(self);
       const hostToGuest = h2g.for(self);
 
+      const gUnwrapped = unwrap(h, g);
       !hostToGuest.has(h) ||
-        Fail`hostToGuest key already bound: ${h} -> ${hostToGuest.get(h)} vs ${g}`;
-      guestToHost.init(g, h);
-      hostToGuest.init(h, g);
-      self.has(g, h) ||
+        Fail`hostToGuest key already bound: ${h} -> ${hostToGuest.get(h)} vs ${gUnwrapped}`;
+      guestToHost.init(gUnwrapped, h);
+      hostToGuest.init(h, gUnwrapped);
+      self.has(gUnwrapped, h) ||
         // separate line so I can set a breakpoint
         Fail`internal: ${g} <-> ${h}`;
+      if (g !== gUnwrapped) {
+        // When they are different, also map g to h without mapping h to g
+        !guestToHost.has(g) ||
+          // separate line so I can set a breakpoint
+          Fail`hidden guest wrapper already bound ${g}`;
+        guestToHost.init(g, h);
+      }
+      return gUnwrapped;
     },
     hasGuest(g) {
+      harden(g);
       const { self } = this;
       const guestToHost = g2h.for(self);
 
@@ -101,6 +128,7 @@ export const prepareBijection = zone => {
       return hostToGuest.has(h);
     },
     has(g, h) {
+      harden(g);
       const { self } = this;
       const guestToHost = g2h.for(self);
       const hostToGuest = h2g.for(self);
@@ -118,6 +146,7 @@ export const prepareBijection = zone => {
       }
     },
     guestToHost(g) {
+      harden(g);
       const { self } = this;
       const guestToHost = g2h.for(self);
 
@@ -127,6 +156,9 @@ export const prepareBijection = zone => {
       const { self } = this;
       const hostToGuest = h2g.for(self);
 
+      // Even though result is unguarded, i.e., guarded by `M.raw()`, don't
+      // need to harden here because was already harden when added to
+      // collection.
       return hostToGuest.get(h);
     },
   });
