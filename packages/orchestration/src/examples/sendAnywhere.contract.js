@@ -2,7 +2,7 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-
+import { V } from '@agoric/vow/vat.js';
 import { AmountShape } from '@agoric/ertp';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
@@ -83,11 +83,16 @@ export const start = async (zcf, privateArgs, baggage) => {
       // FIXME ok to use a heap var crossing the membrane scope this way?
       if (!contractAccount) {
         const agoricChain = await orch.getChain('agoric');
-        contractAccount = await agoricChain.makeAccount();
+        // XXX when() until membrane
+        contractAccount = await V.when(agoricChain.makeAccount());
+        console.log('contractAccount', contractAccount);
       }
 
-      const info = await chain.getChainInfo();
+      // XXX when() until membrane
+      const info = await V.when(chain.getChainInfo());
+      console.log('info', info);
       const { chainId } = info;
+      assert(typeof chainId === 'string', 'bad chainId');
       const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
       await E.when(pmtP, pmt => contractAccount.deposit(pmt));
       await contractAccount.transfer(
@@ -134,7 +139,9 @@ export const start = async (zcf, privateArgs, baggage) => {
        */
       async addChain(chainInfo, connectionInfo) {
         const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
-        const agoricChainInfo = await chainHub.getChainInfo('agoric');
+        // when() because chainHub methods return vows. If this were inside
+        // orchestrate() the membrane would wrap/unwrap automatically.
+        const agoricChainInfo = await V.when(chainHub.getChainInfo('agoric'));
         chainHub.registerChain(chainKey, chainInfo);
         chainHub.registerConnection(
           agoricChainInfo.chainId,
