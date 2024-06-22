@@ -39,6 +39,7 @@ export const makeWalletCommand = async command => {
         '--keyring-backend <os|file|test>',
         'keyring\'s backend (os|file|test) (default "os")',
       );
+  /** @typedef {{home?: string, keyringBackend: 'os' | 'file' | 'test'}} SharedTxOptions */
 
   const wallet = withSharedTxOptions(command('wallet')).description(
     'wallet commands',
@@ -57,8 +58,14 @@ export const makeWalletCommand = async command => {
     .option('--spend', 'confirm you want to spend')
     .option('--nickname <string>', 'nickname to use', 'my-wallet')
     .action(function (opts) {
-      const { account, nickname, spend } = opts;
-      const { home, keyringBackend: backend } = wallet.opts();
+      /** @typedef {{account: string, spend?: boolean, nickname: 'my-wallet' | string }} Opts */
+      const {
+        account,
+        nickname,
+        spend,
+        home,
+        keyringBackend: backend,
+      } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
         execSwingsetTransaction(tx, {
@@ -126,8 +133,14 @@ export const makeWalletCommand = async command => {
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function (opts) {
-      const { dryRun, from, offer } = opts;
-      const { home, keyringBackend: backend } = wallet.opts();
+      /** @typedef {{ from: string, offer: string, dryRun: boolean }} Opts */
+      const {
+        dryRun,
+        from,
+        offer,
+        home,
+        keyringBackend: backend,
+      } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
 
       const offerBody = fs.readFileSync(offer).toString();
       execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {
