@@ -863,7 +863,7 @@ func NewAgoricApp(
 	for name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			unreleasedUpgradeHandler(app, name),
+			upgrade16Handler(app, name),
 		)
 	}
 
@@ -908,8 +908,8 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"UNRELEASED_UPGRADE":      true,
-	"UNRELEASED_TEST_UPGRADE": true,
+	"agoric-upgrade-16":     true,
+	"agorictest-upgrade-16": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
@@ -921,8 +921,8 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade16Handler performs standard upgrade actions plus custom actions for upgrade-16.
+func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
