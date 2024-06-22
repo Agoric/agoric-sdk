@@ -35,6 +35,7 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 )
 
 var AppName = "agd"
@@ -156,6 +157,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 					addAgoricVMFlags(subCommand)
 				case "export":
 					addAgoricVMFlags(subCommand)
+					replaceCosmosSnapshotExportCommand(subCommand, ac)
 				}
 			}
 		}
@@ -440,4 +442,63 @@ func (ac appCreator) appExport(
 	}
 
 	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+}
+
+// replaceCosmosSnapshotExportCommand monkey-patches the "snapshots export" command
+// added by cosmos-sdk and replaces its implementation with one suitable for
+// our modifications to the cosmos snapshots process
+func replaceCosmosSnapshotExportCommand(cmd *cobra.Command, ac appCreator) {
+	// Copy of RunE is cosmos-sdk/client/snapshot/export.go
+	replacedRunE := func(cmd *cobra.Command, args []string) error {
+		ctx := server.GetServerContextFromCmd(cmd)
+
+		height, err := cmd.Flags().GetInt64("height")
+		if err != nil {
+			return err
+		}
+
+		home := ctx.Config.RootDir
+		dataDir := filepath.Join(home, "data")
+		db, err := dbm.NewDB("application", server.GetAppDBBackend(ctx.Viper), dataDir)
+		if err != nil {
+			return err
+		}
+
+		app := ac.newSnapshotsApp(ctx.Logger, db, nil, ctx.Viper)
+		gaiaApp := app.(*gaia.GaiaApp)
+
+		if height == 0 {
+			height = app.CommitMultiStore().LastCommitID().Version
+		}
+
+		cmd.Printf("Exporting snapshot for height %d\n", height)
+
+		err = gaiaApp.SwingSetSnapshotter.InitiateSnapshot(height)
+		if err != nil {
+			return err
+		}
+
+		err = swingsetkeeper.WaitUntilSwingStoreExportDone()
+		if err != nil {
+			return err
+		}
+
+		snapshotList, err := app.SnapshotManager().List()
+		if err != nil {
+			return err
+		}
+
+		snapshotHeight := uint64(height)
+
+		for _, snapshot := range snapshotList {
+			if snapshot.Height == snapshotHeight {
+				cmd.Printf("Snapshot created at height %d, format %d, chunks %d\n", snapshot.Height, snapshot.Format, snapshot.Chunks)
+				break
+			}
+		}
+
+		return nil
+	}
+
+	cmd.RunE = replacedRunE
 }
