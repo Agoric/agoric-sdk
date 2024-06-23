@@ -4,3 +4,5 @@
 # The effects of this step are not persisted in further proposal layers.
 
 yarn ava
+
+./state-sync-snapshots-test.sh
