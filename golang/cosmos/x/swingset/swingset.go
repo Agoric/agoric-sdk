@@ -7,6 +7,7 @@ import (
 	"io"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -37,7 +38,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 func (ph portHandler) Receive(cctx context.Context, str string) (string, error) {
 	ctx := sdk.UnwrapSDKContext(cctx)
 	var msg swingsetMessage
-	err := json.Unmarshal([]byte(str), &msg)
+	err := conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return "", err
 	}
@@ -63,11 +64,12 @@ func (ph portHandler) handleSwingStoreUpdateExportData(ctx sdk.Context, entries 
 			return ret, err
 		}
 
-		key := []byte(entry.Key())
+		// The KVStore does not mutate the key and value byte slices
+		key := conv.UnsafeStrToBytes(entry.Key())
 		if !entry.HasValue() {
 			store.Delete(key)
 		} else {
-			store.Set(key, []byte(entry.StringValue()))
+			store.Set(key, conv.UnsafeStrToBytes(entry.StringValue()))
 		}
 	}
 }

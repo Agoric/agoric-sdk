@@ -11,7 +11,6 @@ import "C"
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -21,6 +20,7 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
@@ -130,12 +130,11 @@ func SendToGo(port C.int, msg C.Body) C.Body {
 		errResp := errorWrapper{
 			Error: err.Error(),
 		}
-		respBytes, err := json.Marshal(&errResp)
+		respStr, err = conv.MarshalToJSONString(&errResp)
 		if err != nil {
 			panic(err)
 		}
-		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respBytes)
-		respStr = string(respBytes)
+		// fmt.Fprintln(os.Stderr, "Marshaled", errResp, respStr)
 	}
 	return C.CString(respStr)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 )
@@ -65,7 +66,7 @@ func (cep *CoreEvalProposal) ValidateBasic() error {
 func (ce CoreEval) ValidateBasic() error {
 	// Check the permits.
 	var rm json.RawMessage
-	err := json.Unmarshal([]byte(ce.JsonPermits), &rm)
+	err := conv.UnmarshalJSONString(ce.JsonPermits, &rm)
 	if err != nil {
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid permit.json: %s", err.Error())
 	}

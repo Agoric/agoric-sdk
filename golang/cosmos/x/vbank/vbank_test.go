@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/cosmos/cosmos-sdk/store"
@@ -85,12 +86,12 @@ func validateBalanceUpdate(vbu vbankBalanceUpdate) error {
 
 // decodeBalances unmarshals a JSON-encoded vbankBalanceUpdate into normalized balances.
 // A nil input returns a nil balances.
-func decodeBalances(encoded []byte) (balances, uint64, error) {
-	if encoded == nil {
+func decodeBalances(encoded string) (balances, uint64, error) {
+	if encoded == "" {
 		return nil, 0, nil
 	}
 	balanceUpdate := vbankBalanceUpdate{}
-	err := json.Unmarshal(encoded, &balanceUpdate)
+	err := conv.UnmarshalJSONString(encoded, &balanceUpdate)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -170,7 +171,7 @@ func Test_marshalBalanceUpdate(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			encoded, err := marshal(getBalanceUpdate(ctx, keeper, tt.addressToBalance))
+			encoded, err := marshal(getBalanceUpdate(ctx, keeper, tt.addressToBalance), "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("marshalBalanceUpdate() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -324,7 +325,7 @@ func Test_Receive_Give(t *testing.T) {
 		t.Fatalf("got error = %v", err)
 	}
 	want := newBalances(account(addr1, coin("urun", "1000")))
-	got, gotNonce, err := decodeBalances([]byte(ret))
+	got, gotNonce, err := decodeBalances(ret)
 	if err != nil {
 		t.Fatalf("decode balances error = %v", err)
 	}
@@ -486,7 +487,7 @@ func Test_Receive_Grab(t *testing.T) {
 		t.Fatalf("got error = %v", err)
 	}
 	want := newBalances(account(addr1, coin("ubld", "1000")))
-	got, gotNonce, err := decodeBalances([]byte(ret))
+	got, gotNonce, err := decodeBalances(ret)
 	if err != nil {
 		t.Fatalf("decode balances error = %v", err)
 	}
@@ -603,7 +604,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	if len(msgsSent) != 1 {
 		t.Errorf("got msgs = %v, want one message", msgsSent)
 	}
-	gotMsg, gotNonce, err := decodeBalances([]byte(msgsSent[0]))
+	gotMsg, gotNonce, err := decodeBalances(msgsSent[0])
 	if err != nil {
 		t.Fatalf("decode balances error = %v", err)
 	}

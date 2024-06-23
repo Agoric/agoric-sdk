@@ -2,9 +2,9 @@ package vibc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -70,7 +70,7 @@ func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err e
 	keeper := ch.keeper
 
 	msg := new(portMessage)
-	err = json.Unmarshal([]byte(str), &msg)
+	err = conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return ret, err
 	}
@@ -103,9 +103,9 @@ func (ch IBCModule) Receive(cctx context.Context, str string) (ret string, err e
 				msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
 				msg.Packet.TimeoutHeight, timeoutTimestamp,
 			)
-			bytes, err := json.Marshal(&packet)
+			str, err := conv.MarshalToJSONString(&packet)
 			if err == nil {
-				ret = string(bytes)
+				ret = str
 			}
 		}
 

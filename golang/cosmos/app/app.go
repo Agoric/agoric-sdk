@@ -2,7 +2,6 @@ package gaia
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -108,6 +107,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -473,11 +473,11 @@ func NewAgoricApp(
 				app.CheckControllerInited(false)
 			}
 
-			bz, err := json.Marshal(action)
+			str, err := conv.MarshalToJSONString(action)
 			if err != nil {
 				return "", err
 			}
-			return sendToController(context.Background(), true, string(bz))
+			return sendToController(context.Background(), true, str)
 		},
 	)
 
@@ -971,7 +971,7 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 		panic(errors.Wrap(err, "cannot initialize Controller"))
 	}
 	var res bool
-	err = json.Unmarshal([]byte(out), &res)
+	err = conv.UnmarshalJSONString(out, &res)
 	if err != nil {
 		panic(errors.Wrapf(err, "cannot unmarshal Controller init response: %s", out))
 	}

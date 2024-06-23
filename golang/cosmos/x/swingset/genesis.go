@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -47,7 +48,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 	swingStore := k.GetSwingStore(ctx)
 
 	for _, entry := range swingStoreExportData {
-		swingStore.Set([]byte(entry.Key), []byte(entry.Value))
+		swingStore.Set(conv.UnsafeStrToBytes(entry.Key), conv.UnsafeStrToBytes(entry.Value))
 	}
 
 	snapshotHeight := uint64(ctx.BlockHeight())

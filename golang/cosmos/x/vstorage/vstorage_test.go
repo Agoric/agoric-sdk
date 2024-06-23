@@ -170,7 +170,7 @@ func doTestSet(t *testing.T, method string, expectNotify bool) {
 		return agorictypes.NewStateChangeEvent(
 			keeper.GetStoreName(),
 			keeper.PathToEncodedKey(path),
-			[]byte(value),
+			value,
 		)
 	}
 	// Expect events to be alphabetized by key.

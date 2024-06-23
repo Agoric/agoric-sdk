@@ -21,6 +21,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragekeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/keeper"
@@ -150,7 +151,9 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.A
 		return err
 	}
 
-	return k.vstorageKeeper.PushQueueItem(ctx, inboundQueuePath, string(bz))
+	// The string will immediately be stored
+	itemValue := conv.UnsafeBytesToStr(bz)
+	return k.vstorageKeeper.PushQueueItem(ctx, inboundQueuePath, itemValue)
 }
 
 // PushAction appends an action to the controller's actionQueue.
@@ -250,11 +253,11 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	bz, err := json.Marshal(action)
+	str, err := conv.MarshalToJSONString(action)
 	if err != nil {
 		return "", err
 	}
-	return k.callToController(ctx, string(bz))
+	return k.callToController(ctx, str)
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
@@ -438,7 +441,7 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 	}
 
 	var egress types.Egress
-	err := json.Unmarshal([]byte(entry.StringValue()), &egress)
+	err := conv.UnmarshalJSONString(entry.StringValue(), &egress)
 	if err != nil {
 		panic(err)
 	}
@@ -450,13 +453,13 @@ func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
 func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 	path := StoragePathEgress + "." + egress.Peer.String()
 
-	bz, err := json.Marshal(egress)
+	str, err := conv.MarshalToJSONString(egress)
 	if err != nil {
 		return err
 	}
 
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
-	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, string(bz)))
+	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, str))
 
 	// Now make sure the corresponding account has been initialised.
 	if acc := k.accountKeeper.GetAccount(ctx, egress.Peer); acc != nil {
@@ -497,7 +500,7 @@ func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
 	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
 }
 
-func (k Keeper) PathToEncodedKey(path string) []byte {
+func (k Keeper) PathToEncodedKey(path string) string {
 	return k.vstorageKeeper.PathToEncodedKey(path)
 }
 
