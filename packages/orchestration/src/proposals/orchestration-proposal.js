@@ -79,10 +79,7 @@ const publishChainInfoToChainStorage = async (
   chainStorageP,
 ) => {
   const chainStorage = await chainStorageP;
-  if (!chainStorage) {
-    console.warn('no chain storage, not registering chain info');
-    return;
-  }
+  assert(chainStorage, 'publishChainInfoToChainStorage requires chainStorage');
 
   const agoricNamesNode = await E(chainStorage).makeChildNode('agoricNames');
 

@@ -18,10 +18,7 @@ export const testLocalChain = async (
   console.warn('=== localchain test started (result in', testResultPath, ')!');
   /** @type {null | ERef<StorageNode>} */
   let node = await chainStorage;
-  if (!node) {
-    console.error('testLocalChain no chainStorage');
-    throw new Error('no chainStorage');
-  }
+  assert(node, 'testLocalChain requires chainStorage');
 
   let result;
   try {

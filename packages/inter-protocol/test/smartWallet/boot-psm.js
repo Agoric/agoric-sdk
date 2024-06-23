@@ -24,7 +24,6 @@ import {
   makeChainStorage,
   noProvisioner,
   produceHighPrioritySendersManager,
-  publishAgoricNames,
   startTimerService,
 } from '@agoric/vats/src/core/chain-behaviors.js';
 import { makePromiseSpace } from '@agoric/vats/src/core/promise-space.js';
@@ -35,6 +34,8 @@ import {
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -178,6 +179,49 @@ export const ParametersShape = M.splitRecord(
 );
 
 /**
+ * @deprecated use publishAgoricNamesToChainStorage
+ * @param {BootstrapPowers} powers
+ * @param {{
+ *   options?: {
+ *     agoricNamesOptions?: {
+ *       topLevel?: string[];
+ *     };
+ *   };
+ * }} config
+ */
+export const legacyPublishAgoricNames = async (
+  { consume: { agoricNamesAdmin, board, chainStorage: rootP } },
+  { options: { agoricNamesOptions } = {} } = {},
+) => {
+  const root = await rootP;
+  assert(root, 'legacyPublishAgoricNames requires chainStorage');
+  const nameStorage = E(root).makeChildNode('agoricNames');
+  const marshaller = E(board).getPublishingMarshaller();
+
+  // XXX will fail upon restart, but so would the makeStoredPublishKit this is replacing
+  // Since we expect the bootstrap vat to be replaced instead of upgraded this should be
+  // fine. See {@link ./README.md bootstrap documentation} for details.
+  const fakeBaggage = makeScalarBigMapStore(
+    'fake baggage for AgoricNames kinds',
+  );
+  const makeRecorderKit = prepareRecorderKit(fakeBaggage, marshaller);
+
+  // brand, issuer, ...
+  const { topLevel = Object.keys(agoricNamesReserved) } =
+    agoricNamesOptions || {};
+  await Promise.all(
+    topLevel.map(async kind => {
+      const kindAdmin = await E(agoricNamesAdmin).lookupAdmin(kind);
+
+      const kindNode = await E(nameStorage).makeChildNode(kind);
+      const { recorder } = makeRecorderKit(kindNode);
+      kindAdmin.onUpdate(recorder);
+      return recorder.write([]);
+    }),
+  );
+};
+
+/**
  * Build root object of the PSM-only bootstrap vat.
  *
  * @param {{
@@ -267,7 +311,7 @@ export const buildRootObject = async (vatPowers, vatParameters) => {
       bridgeProvisioner(powersFor('bridgeProvisioner')),
       makeChainStorage(powersFor('makeChainStorage')),
       makeAddressNameHubs(allPowers),
-      publishAgoricNames(allPowers, {
+      legacyPublishAgoricNames(allPowers, {
         options: {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
