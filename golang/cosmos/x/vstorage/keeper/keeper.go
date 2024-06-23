@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -16,6 +15,7 @@ import (
 	db "github.com/tendermint/tm-db"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
@@ -241,7 +241,7 @@ func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
 		agoric.NewStateChangeEvent(
 			k.GetStoreName(),
 			k.PathToEncodedKey(change.Path),
-			[]byte(change.NewValue),
+			change.NewValue,
 		),
 	)
 }
@@ -337,7 +337,7 @@ func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string)
 	// otherwise initialize a blank cell.
 	currentData := k.GetEntry(ctx, path).StringValue()
 	var cell StreamCell
-	_ = json.Unmarshal([]byte(currentData), &cell)
+	_ = conv.UnmarshalJSONString(currentData, &cell)
 	if cell.BlockHeight != blockHeight {
 		cell = StreamCell{BlockHeight: blockHeight, Values: make([]string, 0, 1)}
 	}
@@ -346,11 +346,11 @@ func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string)
 	cell.Values = append(cell.Values, value)
 
 	// Perform the write.
-	bz, err := json.Marshal(cell)
+	str, err := conv.MarshalToJSONString(cell)
 	if err != nil {
 		return err
 	}
-	k.SetStorageAndNotify(ctx, agoric.NewKVEntry(path, string(bz)))
+	k.SetStorageAndNotify(ctx, agoric.NewKVEntry(path, str))
 	return nil
 }
 
@@ -376,7 +376,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 		}
 	} else {
 		// Update the value.
-		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
+		bz := bytes.Join([][]byte{types.EncodedDataPrefix, conv.UnsafeStrToBytes(entry.StringValue())}, []byte{})
 		store.Set(encodedKey, bz)
 	}
 
@@ -405,8 +405,9 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 	}
 }
 
-func (k Keeper) PathToEncodedKey(path string) []byte {
-	return types.PathToEncodedKey(path)
+func (k Keeper) PathToEncodedKey(path string) string {
+	// The returned bytes will not change, safe to convert
+	return conv.UnsafeBytesToStr(types.PathToEncodedKey(path))
 }
 
 func (k Keeper) GetStoreName() string {

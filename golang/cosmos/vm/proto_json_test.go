@@ -1,7 +1,6 @@
 package vm_test
 
 import (
-	"bytes"
 	"strings"
 	"testing"
 
@@ -73,12 +72,12 @@ func TestProtoJSONMarshal(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			val := tc.create()
-			bz, err := vm.ProtoJSONMarshal(val)
+			str, err := vm.ProtoJSONMarshal(val)
 			if err != nil {
 				t.Errorf("ProtoJSONMarshal of %q failed %v", val, err)
 			}
-			if !bytes.Equal(bz, []byte(tc.expected)) {
-				t.Errorf("ProtoJSONMarshal of %q returned %q, expected %q", val, string(bz), tc.expected)
+			if str != tc.expected {
+				t.Errorf("ProtoJSONMarshal of %q returned %q, expected %q", val, str, tc.expected)
 			}
 		})
 	}
@@ -90,14 +89,14 @@ func TestProtoJSONMarshal(t *testing.T) {
 			vals[i] = tc.create()
 			expectedJson[i] = tc.expected
 		}
-		bz, err := vm.ProtoJSONMarshalSlice(vals)
+		str, err := vm.ProtoJSONMarshalSlice(vals)
 		if err != nil {
 			t.Errorf("ProtoJSONMarshalSlice of %q failed %v", vals, err)
 		}
 
 		expected := "[" + strings.Join(expectedJson, ",") + "]"
-		if !bytes.Equal(bz, []byte(expected)) {
-			t.Errorf("ProtoJSONMarshalSlice of %q returned %q, expected %q", vals, string(bz), expected)
+		if str != expected {
+			t.Errorf("ProtoJSONMarshalSlice of %q returned %q, expected %q", vals, str, expected)
 		}
 	})
 }

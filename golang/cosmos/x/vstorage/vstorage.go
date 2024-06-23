@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 )
 
 type vstorageHandler struct {
@@ -45,7 +46,7 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 	ctx := sdk.UnwrapSDKContext(cctx)
 	keeper := sh.keeper
 	msg := new(vstorageMessage)
-	err = json.Unmarshal([]byte(str), &msg)
+	err = conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return
 	}
@@ -132,11 +133,11 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		}
 
 		entry := keeper.GetEntry(ctx, path)
-		bz, err := json.Marshal(entry.Value())
+		str, err := conv.MarshalToJSONString(entry.Value())
 		if err != nil {
 			return "", err
 		}
-		return string(bz), nil
+		return str, nil
 
 	case "getStoreKey":
 		var path string
@@ -146,15 +147,15 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		}
 		value := vstorageStoreKey{
 			StoreName:       keeper.GetStoreName(),
-			StoreSubkey:     string(keeper.PathToEncodedKey(path)),
-			DataPrefixBytes: string(keeper.GetDataPrefix()),
-			NoDataValue:     string(keeper.GetNoDataValue()),
+			StoreSubkey:     keeper.PathToEncodedKey(path),
+			DataPrefixBytes: conv.UnsafeBytesToStr(keeper.GetDataPrefix()),
+			NoDataValue:     conv.UnsafeBytesToStr(keeper.GetNoDataValue()),
 		}
-		bz, err := json.Marshal(value)
+		str, err := conv.MarshalToJSONString(value)
 		if err != nil {
 			return "", err
 		}
-		return string(bz), nil
+		return str, nil
 
 	case "has":
 		var path string
@@ -179,11 +180,11 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if children.Children == nil {
 			return "[]", nil
 		}
-		bytes, err := json.Marshal(children.Children)
+		str, err := conv.MarshalToJSONString(children.Children)
 		if err != nil {
 			return "", err
 		}
-		return string(bytes), nil
+		return str, nil
 
 	case "entries":
 		var path string
@@ -201,11 +202,11 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 				entries[i] = agoric.NewKVEntry(child, entry.StringValue())
 			}
 		}
-		bytes, err := json.Marshal(entries)
+		str, err := conv.MarshalToJSONString(entries)
 		if err != nil {
 			return "", err
 		}
-		return string(bytes), nil
+		return str, nil
 
 	case "values":
 		var path string
@@ -218,11 +219,11 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		for i, child := range children.Children {
 			vals[i] = keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child)).Value()
 		}
-		bytes, err := json.Marshal(vals)
+		str, err := conv.MarshalToJSONString(vals)
 		if err != nil {
 			return "", err
 		}
-		return string(bytes), nil
+		return str, nil
 
 	case "size":
 		var path string

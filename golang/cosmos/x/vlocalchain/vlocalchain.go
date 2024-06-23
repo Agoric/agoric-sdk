@@ -1,18 +1,25 @@
 package vlocalchain
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 )
 
 var _ vm.PortHandler = (*portHandler)(nil)
+
+var (
+	messagesObjStart = []byte(`{"messages":`)
+	objEnd           = []byte(`}`)
+)
 
 type portHandler struct {
 	keeper keeper.Keeper
@@ -30,7 +37,7 @@ func NewReceiver(keeper keeper.Keeper) portHandler {
 
 func (h portHandler) Receive(cctx context.Context, str string) (ret string, err error) {
 	var msg portMessage
-	err = json.Unmarshal([]byte(str), &msg)
+	err = conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return
 	}
@@ -38,16 +45,14 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 	switch msg.Type {
 	case "VLOCALCHAIN_ALLOCATE_ADDRESS":
 		addr := h.keeper.AllocateAddress(cctx)
-		var bz []byte
-		if bz, err = json.Marshal(addr.String()); err != nil {
+		if ret, err = conv.MarshalToJSONString(addr.String()); err != nil {
 			return
 		}
-		ret = string(bz)
 
 	case "VLOCALCHAIN_QUERY_MANY":
 		// Copy the JSON messages string into a CosmosTx object so we can
 		// deserialize it with just proto3 JSON.
-		cosmosTxBz := []byte(`{"messages":` + string(msg.Messages) + `}`)
+		cosmosTxBz := bytes.Join([][]byte{messagesObjStart, msg.Messages, objEnd}, []byte{})
 
 		var qms []types.QueryRequest
 		qms, err = h.keeper.DeserializeRequests(cosmosTxBz)
@@ -69,7 +74,7 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 			}
 		}
 
-		bz, err := vm.ProtoJSONMarshalSlice(resps)
+		str, err := vm.ProtoJSONMarshalSlice(resps)
 		if err != nil {
 			return "", err
 		}
@@ -84,14 +89,14 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		default:
 			// Let them inspect the individual errors manually.
 		}
-		return string(bz), err
+		return str, err
 
 	case "VLOCALCHAIN_EXECUTE_TX":
 		origCtx := sdk.UnwrapSDKContext(cctx)
 
 		// Copy the JSON messages string into a CosmosTx object so we can
 		// deserialize it with just proto3 JSON.
-		cosmosTxBz := []byte(`{"messages":` + string(msg.Messages) + `}`)
+		cosmosTxBz := bytes.Join([][]byte{messagesObjStart, msg.Messages, objEnd}, []byte{})
 
 		var msgs []sdk.Msg
 		if msgs, err = h.keeper.DeserializeTxMessages(cosmosTxBz); err != nil {
@@ -105,8 +110,8 @@ func (h portHandler) Receive(cctx context.Context, str string) (ret string, err 
 		}
 
 		// Marshal the responses to proto3 JSON.
-		bz, e := vm.ProtoJSONMarshalSlice(resps)
-		return string(bz), e
+		str, e := vm.ProtoJSONMarshalSlice(resps)
+		return str, e
 	default:
 		err = fmt.Errorf("unrecognized message type %s", msg.Type)
 	}

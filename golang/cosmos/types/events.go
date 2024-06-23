@@ -1,7 +1,7 @@
 package types
 
 import (
-	"bytes"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -19,23 +19,19 @@ const (
 	AnchoredKeyEnd   = AnchoredKeyStart
 )
 
-func NewStateChangeEvent(storeName string, subkey, value []byte) sdk.Event {
+func NewStateChangeEvent(storeName string, subkey string, value string) sdk.Event {
 	// This is a hack to allow CONTAINS event queries to match the
 	// beginning or end of the subkey, enabling a handy OR of changes to a
 	// vstorage path's immediate children.
 	//
 	// FIXME: add string value ranges to Tendermint event queries instead.
-	anchoredKey := bytes.Join([][]byte{
-		[]byte(AnchoredKeyStart),
-		subkey,
-		[]byte(AnchoredKeyEnd),
-	}, []byte{})
+	anchoredKey := strings.Join([]string{AnchoredKeyStart, subkey, AnchoredKeyEnd}, "")
 
 	return sdk.NewEvent(
 		EventTypeStateChange,
 		sdk.NewAttribute(AttributeKeyStoreName, storeName),
-		sdk.NewAttribute(AttributeKeyStoreSubkey, string(subkey)),
-		sdk.NewAttribute(AttributeKeyAnchoredKey, string(anchoredKey)),
-		sdk.NewAttribute(AttributeKeyUnprovedValue, string(value)),
+		sdk.NewAttribute(AttributeKeyStoreSubkey, subkey),
+		sdk.NewAttribute(AttributeKeyAnchoredKey, anchoredKey),
+		sdk.NewAttribute(AttributeKeyUnprovedValue, value),
 	)
 }

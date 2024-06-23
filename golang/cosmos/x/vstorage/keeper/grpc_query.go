@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/capdata"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -204,7 +205,7 @@ func (k Querier) CapData(c context.Context, req *types.QueryCapDataRequest) (*ty
 	}
 	value := entry.StringValue()
 	var cell StreamCell
-	_ = json.Unmarshal([]byte(value), &cell)
+	_ = conv.UnmarshalJSONString(value, &cell)
 	if cell.BlockHeight == "" {
 		cell = StreamCell{Values: []string{value}}
 	}

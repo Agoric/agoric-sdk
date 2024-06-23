@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -29,7 +30,7 @@ import (
 //   underlying source.
 // - Multiple implementations of the KVEntryReader interface:
 //   - NewKVIteratorReader constructs a reader which consumes an sdk.Iterator.
-//     Keys and values are converted from byte slices to strings, and nil values
+//     Keys and values are casted from byte slices to strings, and nil values
 //     are preserved as KVEntry instances with no value.
 //   - A generic reader which uses a slice of key/value data, and a conversion
 //     function from that data type to a KVEntry. The reader does bounds
@@ -54,6 +55,7 @@ import (
 type KVEntryReader interface {
 	// Read returns the next KVEntry, or an error.
 	// An `io.EOF` error indicates that the previous Read() returned the final KVEntry.
+	// The return KVEntry must be used before the next Read() or Close() is called.
 	Read() (KVEntry, error)
 	// Close frees the underlying resource (such as a slice or file descriptor).
 	Close() error
@@ -91,9 +93,9 @@ func (ir kvIteratorReader) Read() (next KVEntry, err error) {
 	value := ir.iter.Value()
 	ir.iter.Next()
 	if value == nil {
-		return NewKVEntryWithNoValue(string(key)), nil
+		return NewKVEntryWithNoValue(conv.UnsafeBytesToStr(key)), nil
 	} else {
-		return NewKVEntry(string(key), string(value)), nil
+		return NewKVEntry(conv.UnsafeBytesToStr(key), conv.UnsafeBytesToStr(value)), nil
 	}
 }
 

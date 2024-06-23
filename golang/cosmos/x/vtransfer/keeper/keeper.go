@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -13,6 +12,7 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
@@ -261,7 +261,7 @@ type registrationAction struct {
 func (k Keeper) Receive(cctx context.Context, jsonRequest string) (jsonReply string, err error) {
 	ctx := sdk.UnwrapSDKContext(cctx)
 	var msg registrationAction
-	if err := json.Unmarshal([]byte(jsonRequest), &msg); err != nil {
+	if err := conv.UnmarshalJSONString(jsonRequest, &msg); err != nil {
 		return "", err
 	}
 
