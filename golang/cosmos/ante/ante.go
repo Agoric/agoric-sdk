@@ -53,9 +53,9 @@ func NewAnteHandler(opts HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewDeductFeeDecoratorWithName(opts.AccountKeeper, opts.BankKeeper, opts.FeegrantKeeper, nil, opts.FeeCollectorName),
 		// SetPubKeyDecorator must be called before all signature verification decorators
 		ante.NewSetPubKeyDecorator(opts.AccountKeeper),
-		ante.NewValidateSigCountDecorator(opts.AccountKeeper),
+		// ante.NewValidateSigCountDecorator(opts.AccountKeeper),
 		ante.NewSigGasConsumeDecorator(opts.AccountKeeper, sigGasConsumer),
-		ante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
+		// ante.NewSigVerificationDecorator(opts.AccountKeeper, opts.SignModeHandler),
 		NewAdmissionDecorator(opts.AdmissionData),
 		ante.NewIncrementSequenceDecorator(opts.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(opts.IBCKeeper),
