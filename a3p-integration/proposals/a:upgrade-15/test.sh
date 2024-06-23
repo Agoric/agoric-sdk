@@ -6,3 +6,4 @@
 yarn ava
 
 ./state-sync-snapshots-test.sh
+./genesis-test.sh
