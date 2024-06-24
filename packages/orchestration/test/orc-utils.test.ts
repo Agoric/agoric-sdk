@@ -10,7 +10,7 @@ import { connectionKey, makeChainHub } from '../src/utils/chainHub.js';
 import type { VBankAssetInfo } from '../src/utils/chainHub.js';
 import { orcUtils } from '../src/utils/orc.js';
 import { commonSetup } from './supports.js';
-import { denomHash } from './utils/denomHash.js';
+import { denomHash } from '../src/utils/denomHash.js';
 
 const { fromEntries, values } = Object;
 
@@ -176,7 +176,7 @@ test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t
     // now we have enough info to _compute_ the denom on osmosis
     // This `denomHash` implementation uses node:crypto.
     // TODO: provide a vat-safe implementation?
-    const hash = await denomHash({ portId, channelId, denom: baseDenom });
+    const hash = denomHash({ portId, channelId, denom: baseDenom });
     t.is(
       `ibc/${hash}`,
       'ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2',
@@ -210,4 +210,12 @@ test('makeOsmosisSwap', async t => {
   });
 
   t.deepEqual(actual, 'TODO');
+});
+
+test('denomHash', t => {
+  const actual = denomHash({ channelId: 'channel-0', denom: 'uatom' });
+  t.is(
+    `ibc/${actual}`,
+    'ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2',
+  );
 });
