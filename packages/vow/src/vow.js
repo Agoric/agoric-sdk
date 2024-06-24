@@ -157,5 +157,6 @@ export const prepareVowKit = zone => {
 
   return makeVowKit;
 };
+/** @typedef {ReturnType<typeof prepareVowKit>} MakeVowKit */
 
 harden(prepareVowKit);
