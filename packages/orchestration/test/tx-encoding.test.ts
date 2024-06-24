@@ -10,6 +10,7 @@ import { decodeBase64, encodeBase64 } from '@endo/base64';
 import bundleSource from '@endo/bundle-source';
 import { importBundle } from '@endo/import-bundle';
 import { createRequire } from 'node:module';
+import { Decimal } from '@cosmjs/math';
 
 import { tryDecodeResponse } from '../src/exos/stakingAccountKit.js';
 
@@ -101,10 +102,12 @@ test('MsgWithdrawDelegatorRewardResponse encoding', t => {
 const nodeRequire = createRequire(import.meta.url);
 
 test('compartment use of Decimal', async t => {
+  const e18 = 10n ** 18n;
+  const expected = Decimal.fromAtomics(`${e18}`, 18);
   const bundle = await bundleSource(nodeRequire.resolve('./decimalFun.js'));
 
   const { fun } = await importBundle(bundle);
-  t.deepEqual(fun(), 'something');
+  t.deepEqual(fun(), expected);
 });
 
 test('compartment use of getDelegations() response', async t => {
