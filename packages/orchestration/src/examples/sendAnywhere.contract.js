@@ -11,13 +11,15 @@ const { Fail } = assert;
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
- * @import {TimerService, TimerBrand} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {OrchestrationService} from '../service.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {Remote} from '@agoric/vow';
+ * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
+ * @import {OrchestrationService} from '../service.js';
+ * @import {Orchestrator} from '../types.js'
+ * @import {OrchestrationAccount} from '../orchestration-api.js'
  */
 
 /**
@@ -30,9 +32,20 @@ const { Fail } = assert;
  * }} OrchestrationPowers
  */
 
-const guestFn = async (
+/**
+ * @param {Orchestrator} orch
+ * @param {object} ctx
+ * @param {ZCF} ctx.zcf
+ * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
+ * @param {{ account: OrchestrationAccount<any> }} ctx.constractState
+ * @param {ZCFSeat} seat
+ * @param {object} offerArgs
+ * @param {string} offerArgs.chainName
+ * @param {string} offerArgs.destAddr
+ */
+const sendItFn = async (
   orch,
-  { zcf, findBrandInVBank, cell },
+  { zcf, findBrandInVBank, constractState },
   seat,
   offerArgs,
 ) => {
@@ -43,22 +56,19 @@ const guestFn = async (
   const { denom } = await findBrandInVBank(amt.brand);
   const chain = await orch.getChain(chainName);
 
-  // FIXME ok to use a heap var crossing the membrane scope this way?
-  if (!cell.contractAccount) {
+  if (!constractState.account) {
     const agoricChain = await orch.getChain('agoric');
-    // XXX when() until membrane
-    cell.contractAccount = await E.when(agoricChain.makeAccount());
-    console.log('contractAccount', cell.contractAccount);
+    constractState.account = await agoricChain.makeAccount();
+    console.log('account', constractState.account);
   }
 
-  // XXX when() until membrane
-  const info = await E.when(chain.getChainInfo());
+  const info = await chain.getChainInfo();
   console.log('info', info);
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
   const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-  await E.when(pmtP, pmt => cell.contractAccount.deposit(pmt));
-  await cell.contractAccount.transfer(
+  await E.when(pmtP, pmt => constractState.account.deposit(pmt));
+  await constractState.account.transfer(
     { denom, value: amt.value },
     {
       address: destAddr,
@@ -90,14 +100,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {import('../orchestration-api.js').OrchestrationAccount<any>} */
-  let contractAccount;
-  const cell = harden({
-    get contractAccount() {
-      return contractAccount;
+  /** @type {OrchestrationAccount<any> | undefined} */
+  let account;
+  const constractState = harden({
+    get account() {
+      return account;
     },
-    set contractAccount(newValue) {
-      contractAccount = newValue;
+    set account(newValue) {
+      account = newValue;
     },
   });
 
@@ -118,8 +128,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf, findBrandInVBank, cell },
-    guestFn,
+    { zcf, findBrandInVBank, constractState },
+    sendItFn,
   );
 
   const publicFacet = zone.exo(
