@@ -732,7 +732,7 @@ export {};
  * Akin to StartedInstanceKit but designed for the results of starting governed contracts. Used in bootstrap space.
  * @property {AdminFacet} adminFacet of the governed contract
  * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
- * @property {Guarded<GovernorCreatorFacet<SF>>} governorCreatorFacet of the governing contract
+ * @property {Guarded<GovernorCreatorFacet<SF>> | GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
  * @property {AdminFacet} governorAdminFacet of the governing contract
  * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
  * @property {Instance} instance

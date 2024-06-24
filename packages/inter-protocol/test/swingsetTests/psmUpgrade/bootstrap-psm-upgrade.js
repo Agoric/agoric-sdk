@@ -131,7 +131,6 @@ export const buildRootObject = async () => {
      * @param {any} devices
      */
     bootstrap: async (vats, devices) => {
-      // @ts-expect-error XXX adminNode
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       ({ feeMintAccess, zoeService } = await E(vats.zoe).buildZoe(
         vatAdmin,
