@@ -127,12 +127,30 @@ export const makeReplayMembrane = ({
 
   // ///////////// Guest to Host or consume log ////////////////////////////////
 
+  const tolerateHostPromiseToVow = h => {
+    if (isPromise(h)) {
+      const e = Error('where warning happened');
+      console.log('Warning for now: vow expected, not promise', h, e);
+      // TODO remove this stopgap. Here for now because host-side
+      // promises are everywhere!
+      // Note: A good place to set a breakpoint, or to uncomment the
+      // `debugger;` line, to work around bundling.
+      // debugger;
+      return watch(h);
+    } else {
+      return h;
+    }
+  };
+
   const performCall = (hostTarget, optVerb, hostArgs, callIndex) => {
     let hostResult;
     try {
       hostResult = optVerb
         ? hostTarget[optVerb](...hostArgs)
         : hostTarget(...hostArgs);
+      // This is a temporary kludge anyway. But note that it only
+      // catches the case where the promise is at the top of hostResult.
+      hostResult = tolerateHostPromiseToVow(hostResult);
       // Try converting here just to route the error correctly
       hostToGuest(hostResult, `converting ${optVerb || 'host'} result`);
     } catch (hostProblem) {
@@ -325,16 +343,7 @@ export const makeReplayMembrane = ({
    * @returns {unknown}
    */
   const makeGuestForHostVow = hVow => {
-    if (isPromise(hVow)) {
-      const e = Error('where warning happened');
-      console.log('Warning for now: vow expected, not promise', hVow, e);
-      // TODO remove this stopgap. Here for now because host-side
-      // promises are everywhere!
-      // Note: A good place to set a breakpoint, or to uncomment the
-      // `debugger;` line, to work around bundling.
-      // debugger;
-      hVow = watch(hVow);
-    }
+    hVow = tolerateHostPromiseToVow(hVow);
     isVow(hVow) || Fail`vow expected ${hVow}`;
     const { promise, resolve, reject } = makeGuestPromiseKit();
     guestPromiseMap.set(promise, harden({ resolve, reject }));
