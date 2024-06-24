@@ -2,10 +2,13 @@
 
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
-const ORACLE_ADDRESSES = [
+const DEFAULT_ORACLE_ADDRESSES = [
   // XXX These are the oracle addresses. They must be provided before the chain
   // is running, which means they must be known ahead of time.
   // see https://github.com/Agoric/agoric-3-proposals/issues/5
+
+  // XXX really? one of the times we seem to be running this code is
+  // well after the chain has started.
   'agoric1lu9hh5vgx05hmlpfu47hukershgdxctk6l5s05',
   'agoric15lpnq2mjsdhtztf6khp7mrsq66hyrssspy92pd',
   'agoric1mwm224epc4l3pjcz7qsxnudcuktpynwkmnfqfp',
@@ -26,12 +29,14 @@ export const priceFeedProposalBuilder = async (
     IN_BRAND_NAME = IN_BRAND_LOOKUP[IN_BRAND_LOOKUP.length - 1],
   } = options;
 
-  const { GOV1ADDR, GOV2ADDR, GOV3ADDR } = process.env;
+  const { GOV1ADDR, GOV2ADDR, GOV3ADDR, ORACLE_ADDRESSES } = process.env;
   const oracleAddresses =
+    // eslint-disable-next-line no-nested-ternary
     GOV1ADDR || GOV2ADDR || GOV3ADDR
       ? [GOV1ADDR, GOV2ADDR, GOV3ADDR].filter(x => x)
-      : ORACLE_ADDRESSES;
-  assert(Array.isArray(oracleAddresses), 'oracleAddresses array is required');
+      : ORACLE_ADDRESSES
+        ? ORACLE_ADDRESSES.split(',')
+        : DEFAULT_ORACLE_ADDRESSES;
 
   assert(AGORIC_INSTANCE_NAME, 'AGORIC_INSTANCE_NAME is required');
 
