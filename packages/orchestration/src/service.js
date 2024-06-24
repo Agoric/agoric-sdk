@@ -97,7 +97,8 @@ const prepareOrchestrationKit = (
           M.remotable('ChainAccountKit'),
         ),
         provideICQConnection: M.callWhen(M.string()).returns(
-          M.remotable('ICQConnection'),
+          // M.remotable('ICQConnection'),
+          M.any(),
         ),
       }),
     },
@@ -224,17 +225,15 @@ const prepareOrchestrationKit = (
           }
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
           const portAllocator = getPower(this.state.powers, 'portAllocator');
-          return when(
-            watch(
-              // allocate a new Port for every Connection
-              // TODO #9317 optimize ICQ port allocation
-              E(portAllocator).allocateICQControllerPort(),
-              this.facets.requestICQChannelWatcher,
-              {
-                remoteConnAddr,
-                controllerConnectionId,
-              },
-            ),
+          return watch(
+            // allocate a new Port for every Connection
+            // TODO #9317 optimize ICQ port allocation
+            E(portAllocator).allocateICQControllerPort(),
+            this.facets.requestICQChannelWatcher,
+            {
+              remoteConnAddr,
+              controllerConnectionId,
+            },
           );
         },
       },

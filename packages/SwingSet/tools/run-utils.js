@@ -2,7 +2,10 @@ import { Fail, q } from '@agoric/assert';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import { ERef } from '@endo/far';
+ * @import {Vow} from '@agoric/vow';
+ */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
@@ -49,6 +52,7 @@ export const makeRunUtils = controller => {
    * @typedef {import('@endo/eventual-send').EProxy & {
    *  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
    *  vat: (name: string) => Record<string, (...args: any) => Promise<any>>;
+   *  whenVow: (vow: Vow) => Promise<any>;
    * }} EVProxy
    */
 
@@ -141,6 +145,10 @@ export const makeRunUtils = controller => {
               ]),
             ),
         }),
+      whenVow: vow =>
+        queueAndRun(() =>
+          controller.queueToVatRoot('bootstrap', 'whenVow', [vow]),
+        ),
     },
   );
   return harden({ queueAndRun, EV });

@@ -1,5 +1,6 @@
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -72,6 +73,9 @@ export const makeBootstrap = (
   const powerStore = zone.mapStore('Bootstrap Powers');
   const { produce, consume } = makePromiseSpace({ log, store: powerStore });
   produce.powerStore.resolve(powerStore);
+
+  const vowZone = zone.subZone('vow');
+  const vowTools = prepareVowTools(vowZone);
 
   /**
    * Bootstrap vats and devices.
@@ -208,6 +212,9 @@ export const makeBootstrap = (
         value = await value[key];
       }
       return value;
+    },
+    whenVow: async vow => {
+      return vowTools.when(vow);
     },
     /**
      * @template K, V
