@@ -1,6 +1,7 @@
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
@@ -169,6 +170,12 @@ export const makeBootstrap = (
     }
   };
 
+  const unwrapIfVow = async specimenP => {
+    const specimen = await specimenP;
+    if (isVow(specimen)) return vowTools.when(specimen);
+    return specimen;
+  };
+
   // For testing supports
   const vatData = new Map();
 
@@ -207,9 +214,9 @@ export const makeBootstrap = (
 
     //#region testing supports
     awaitVatObject: async (presence, path = []) => {
-      let value = await presence;
+      let value = await unwrapIfVow(presence);
       for (const key of path) {
-        value = await value[key];
+        value = await unwrapIfVow(value[key]);
       }
       return value;
     },

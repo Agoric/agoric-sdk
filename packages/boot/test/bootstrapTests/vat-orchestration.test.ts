@@ -225,8 +225,7 @@ test('Query connection can send a query', async t => {
     const queryConnection =
       await EV(orchestration).provideICQConnection('connection-0');
 
-    const unwrappedQc: ICQConnection = await EV.whenVow(queryConnection);
-    const [result] = await EV(unwrappedQc).query([balanceQuery]);
+    const [result] = await EV(queryConnection).query([balanceQuery]);
     t.is(result.code, 0);
     t.is(result.height, '0'); // bigint
     t.deepEqual(QueryBalanceResponse.decode(decodeBase64(result.key)), {
@@ -236,7 +235,10 @@ test('Query connection can send a query', async t => {
       },
     });
 
-    const results = await EV(unwrappedQc).query([balanceQuery, balanceQuery]);
+    const results = await EV(queryConnection).query([
+      balanceQuery,
+      balanceQuery,
+    ]);
     t.is(results.length, 2);
     for (const { key } of results) {
       t.deepEqual(QueryBalanceResponse.decode(decodeBase64(key)), {
@@ -248,7 +250,7 @@ test('Query connection can send a query', async t => {
     }
 
     await t.throwsAsync(
-      EV(unwrappedQc).query([
+      EV(queryConnection).query([
         { ...balanceQuery, path: '/cosmos.bank.v1beta1.QueryBalanceRequest' },
       ]),
       {
