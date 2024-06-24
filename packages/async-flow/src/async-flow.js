@@ -425,7 +425,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       const asyncFlowKit = internalMakeAsyncFlowKit(activationArgs);
       const { flow } = asyncFlowKit;
 
-      const vow = toPassableCap(flow.getOutcome());
+      const vow = flow.getOutcome();
       flowForOutcomeVowKey.init(toPassableCap(vow), flow);
       flow.restart();
       return asyncFlowKit;
