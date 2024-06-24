@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
+	"text/template"
 	"time"
 
 	sdkioerrors "cosmossdk.io/errors"
@@ -110,6 +112,8 @@ import (
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+
+	// conv "github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
@@ -908,8 +912,10 @@ func NewAgoricApp(
 }
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"UNRELEASED_UPGRADE":      true,
-	"UNRELEASED_TEST_UPGRADE": true,
+	"UNRELEASED_BASIC":           true, // no-frills
+	"UNRELEASED_A3P_INTEGRATION": true,
+	"UNRELEASED_main":            true,
+	"UNRELEASED_devnet":          true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
@@ -919,6 +925,131 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 		}
 	}
 	return true
+}
+
+type BrandInfo struct {
+	Name   string
+	Oracle string
+}
+
+// upgradePriceFeedCoreProposalSteps returns the core proposal steps for the
+// price feed upgrade and associated changes to scaledPriceAuthority and
+// vaultManager.
+func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalStep, error) {
+
+	t := template.Must(template.New("").Parse(`{
+		"module": "@agoric/builders/scripts/vats/priceFeedSupport.js",
+    "entrypoint": {{.entrypointJson}},
+		"args": [{
+			"AGORIC_INSTANCE_NAME": {{.instanceNameJson}},
+			"ORACLE_ADDRESSES": {{.oracleAddressesJson}},
+			"IN_BRAND_LOOKUP": {{.inBrandLookupJson}},
+			"IN_BRAND_DECIMALS": 6,
+			"OUT_BRAND_LOOKUP": ["agoricNames", "oracleBrand", "USD"],
+			"OUT_BRAND_DECIMALS": 4
+		}]
+	}`))
+
+	var oracleAddresses []string
+
+	var entrypoint string
+	switch upgradeName {
+	case "UNRELEASED_A3P_INTEGRATION":
+		entrypoint = "deprecatedPriceFeedProposalBuilder"
+	case "UNRELEASED_main":
+		oracleAddresses = []string{
+			"agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78",   // DSRV
+			"agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p01", // Stakin
+			"agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8",   // node
+			"agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr",   // Simply Staking
+			"agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj",   // P2P
+		}
+		entrypoint = "strictPriceFeedProposalBuilder"
+	case "UNRELEASED_devnet":
+		oracleAddresses = []string{
+			"agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft",   // DSRV
+			"agoric1qj07c7vfk3knqdral0sej7fa6eavkdn8vd8etf01", // Simply Staking
+			"agoric1ra0g6crtsy6r3qnpu7ruvm7qd4wjnznyzg5nu4",   // node
+			"agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82",   // Stakin
+			"agoric10vjkvkmpp9e356xeh6qqlhrny2htyzp8hf88fk",   // P2P
+		}
+		entrypoint = "strictPriceFeedProposalBuilder"
+
+	// No price feed upgrade for this version.
+	case "UNRELEASED_BASIC":
+	}
+
+	if entrypoint == "" {
+		return []vm.CoreProposalStep{}, nil
+	}
+
+	entrypointJson, err := json.Marshal(entrypoint)
+	if err != nil {
+		return nil, err
+	}
+
+	var inBrands []BrandInfo
+	switch upgradeName {
+	case "UNRELEASED_A3P_INTEGRATION", "UNRELEASED_main":
+		inBrands = []BrandInfo{
+			{"ATOM", "ATOM"},
+			{"stATOM", "stAtom"},
+			{"stOSMO", "stOSMO"},
+			{"stTIA", "stTIA"},
+			{"stkATOM", "stkAtom"},
+		}
+	case "UNRELEASED_devnet":
+		inBrands = []BrandInfo{
+			{"ATOM", "ATOM"},
+			{"stTIA", "stTIA"},
+			{"stkATOM", "stkAtom"},
+		}
+	}
+
+	oracleAddressesJson, err := json.Marshal(oracleAddresses)
+	if err != nil {
+		return nil, err
+	}
+
+	proposals := make(vm.CoreProposalStep, 0, len(inBrands))
+	for _, inBrand := range inBrands {
+		instanceName := inBrand.Name + "-USD price feed"
+		instanceNameJson, err := json.Marshal(instanceName)
+		if err != nil {
+			return nil, err
+		}
+		inBrandLookup := []string{"agoricNames", "oracleBrand", inBrand.Oracle}
+		inBrandLookupJson, err := json.Marshal(inBrandLookup)
+		if err != nil {
+			return nil, err
+		}
+
+		var result strings.Builder
+		err = t.Execute(&result, map[string]any{
+			"entrypointJson":      string(entrypointJson),
+			"inBrandLookupJson":   string(inBrandLookupJson),
+			"instanceNameJson":    string(instanceNameJson),
+			"oracleAddressesJson": string(oracleAddressesJson),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		jsonStr := result.String()
+		jsonBz := []byte(jsonStr)
+		if !json.Valid(jsonBz) {
+			return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
+		}
+		proposals = append(proposals, vm.ArbitraryCoreProposal{Json: jsonBz})
+	}
+	return []vm.CoreProposalStep{
+		// Add new vats for price feeds. The existing ones will be retired shortly.
+		vm.CoreProposalStepForModules(proposals...),
+		// Add new auction contract. The old one will be retired shortly.
+		vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
+		// upgrade vaultFactory.
+		vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeVaults.js"),
+	}, nil
 }
 
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
@@ -947,19 +1078,12 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/vats/init-localchain.js",
 					"@agoric/builders/scripts/vats/init-transfer.js",
 				),
-				// Add new vats for price feeds. The existing ones will be retired shortly.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/updateAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStkAtomPriceFeed.js",
-				),
-				// Add new auction contract. The old one will be retired shortly.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
-				// upgrade vaultFactory.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeVaults.js"),
 			}
+			priceFeedSteps, err := upgradePriceFeedCoreProposalSteps(targetUpgrade)
+			if err != nil {
+				return nil, err
+			}
+			CoreProposalSteps = append(CoreProposalSteps, priceFeedSteps...)
 		}
 
 		app.upgradeDetails = &upgradeDetails{
