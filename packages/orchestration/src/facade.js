@@ -1,7 +1,6 @@
 /** @file Orchestration service */
 
 import { Fail } from '@agoric/assert';
-import { heapVowE } from '@agoric/vow/vat.js';
 import { pickFacet } from '@agoric/vat-data';
 import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
@@ -85,6 +84,8 @@ export const makeOrchestrationFacade = ({
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
+  const { when } = vowTools;
+
   return {
     /**
      * @template GuestReturn
@@ -119,9 +120,9 @@ export const makeOrchestrationFacade = ({
       const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
       const orcFn = (...args) =>
-        // TODO remove the `heapVowE.when` after fixing the return type
+        // TODO remove the `when` after fixing the return type
         // to `Vow<HostReturn>`
-        heapVowE.when(hostFn(wrappedOrc, wrappedCtx, ...args));
+        when(hostFn(wrappedOrc, wrappedCtx, ...args));
       return harden(orcFn);
     },
     adminAsyncFlow,
