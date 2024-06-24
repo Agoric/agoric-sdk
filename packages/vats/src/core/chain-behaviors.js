@@ -16,6 +16,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
+import { makeScopedBridge } from '../bridge.js';
 
 const { Fail } = assert;
 const { keys } = Object;
@@ -104,14 +105,12 @@ export const bridgeCoreEval = async allPowers => {
     // Not running with a bridge.
     return;
   }
-  await E(bridgeManager).register(BRIDGE_ID.CORE, handler);
+  await makeScopedBridge(bridgeManager, BRIDGE_ID.CORE, handler);
 };
 harden(bridgeCoreEval);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const makeProvisioner = async ({
   consume: { clientCreator, loadCriticalVat },
@@ -303,10 +302,7 @@ export const startTimerService = async ({
 harden(startTimerService);
 
 /**
- * @param {BootDevices<ChainDevices> &
- *   BootstrapSpace & {
- *     consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- *   }} powers
+ * @param {BootDevices<ChainDevices> & BootstrapSpace} powers
  */
 export const makeBridgeManager = async ({
   consume: { loadCriticalVat },
@@ -332,22 +328,19 @@ export const makeBridgeManager = async ({
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
-    // @ts-expect-error XXX EProxy
-    E(bridgeManager).register(BRIDGE_ID.PROVISION),
+    makeScopedBridge(bridgeManager, BRIDGE_ID.PROVISION),
   );
   provisionWalletBridgeManager.resolve(
-    // @ts-expect-error XXX EProxy
-    E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
+    makeScopedBridge(bridgeManager, BRIDGE_ID.PROVISION_SMART_WALLET),
   );
-  // @ts-expect-error XXX EProxy
-  walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
+  walletBridgeManager.resolve(
+    makeScopedBridge(bridgeManager, BRIDGE_ID.WALLET),
+  );
 };
 harden(makeBridgeManager);
 
 /**
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const makeChainStorage = async ({
   consume: { loadCriticalVat, bridgeManager: bridgeManagerP },
@@ -360,14 +353,14 @@ export const makeChainStorage = async ({
   if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
-    // @ts-expect-error expects value or undefined
-    storageBridgeManagerP.resolve(null);
+    storageBridgeManagerP.resolve(undefined);
     return;
   }
 
-  /** @type {import('../types.js').ScopedBridgeManager<'storage'>} */
-  // @ts-expect-error XXX EProxy
-  const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
+  const storageBridgeManager = makeScopedBridge(
+    bridgeManager,
+    BRIDGE_ID.STORAGE,
+  );
   storageBridgeManagerP.resolve(storageBridgeManager);
 
   const vat = E(loadCriticalVat)('bridge');
@@ -380,9 +373,7 @@ export const makeChainStorage = async ({
 };
 
 /**
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const produceHighPrioritySendersManager = async ({
   consume: { loadCriticalVat, storageBridgeManager: storageBridgeManagerP },
