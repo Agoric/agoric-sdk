@@ -1091,12 +1091,15 @@ test('terminated vat', async t => {
   // we'll watch for this to be deleted when the vat is terminated
   // console.log(`pinKref`, pinKref);
 
-  // find the highest export: doomedExport1 / doomedExport1Presence
+  // find the two highest exports: doomedExport[13] / doomedExport[13]Presence
   let exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
   sortVrefs(exports);
-  const doomedExport1Vref = exports[exports.length - 1];
+  const doomedExport1Vref = exports[exports.length - 2];
+  const doomedExport3Vref = exports[exports.length - 1];
   t.is(doomedExport1Vref, 'o+10'); // arbitrary
+  t.is(doomedExport3Vref, 'o+11'); // arbitrary
   const doomedExport1Kref = vrefs[doomedExport1Vref];
+  const doomedExport3Kref = vrefs[doomedExport3Vref];
   // this should also be deleted
   // console.log(`doomedExport1Kref`, doomedExport1Kref);
 
@@ -1105,6 +1108,8 @@ test('terminated vat', async t => {
   t.is(owners[pinKref], bootstrapVat);
   t.deepEqual(refcounts[doomedExport1Kref], [1, 1]);
   t.is(owners[doomedExport1Kref], doomedVat);
+  t.deepEqual(refcounts[doomedExport3Kref], [0, 1]);
+  t.is(owners[doomedExport3Kref], doomedVat);
 
   // Tell bootstrap to give a promise to the doomed vat. The doomed vat will
   // send a second export in a message to this promise, so the only
@@ -1117,7 +1122,7 @@ test('terminated vat', async t => {
   exports = Object.keys(vrefs).filter(vref => vref.startsWith('o+'));
   sortVrefs(exports);
   const doomedExport2Vref = exports[exports.length - 1];
-  t.is(doomedExport2Vref, 'o+11'); // arbitrary
+  t.is(doomedExport2Vref, 'o+12'); // arbitrary
   const doomedExport2Kref = vrefs[doomedExport2Vref];
   [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[doomedExport2Kref], [1, 1]); // from promise queue
@@ -1137,6 +1142,9 @@ test('terminated vat', async t => {
   t.deepEqual(refcounts[doomedExport2Kref], [1, 1]);
   t.falsy(owners[doomedExport1Kref]);
   t.falsy(owners[doomedExport2Kref]);
+  // but the merely-recognizable export should be deleted
+  t.falsy(owners[doomedExport3Kref]);
+  t.deepEqual(refcounts[doomedExport3Kref], undefined);
 
   // send a message to the orphan, to wiggle refcounts some more
   const r = c.queueToVatRoot('bootstrap', 'callOrphan', [], 'panic');
