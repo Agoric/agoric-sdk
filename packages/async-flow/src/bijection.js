@@ -68,6 +68,43 @@ const makeVowishStore = name => {
 /** @typedef {ReturnType<makeVowishStore>} VowishStore */
 
 /**
+ * As suggested by the name, this *mostly* represents a mathematical bijection,
+ * i.e., a one-to-one mapping. But rather than a general bijection map store
+ * (which would be interesting), this one is specialized to support the
+ * async-flow replay-membrane, where the two sides are "guest" and "host".
+ *
+ * If `unwrap` is omitted, it defaults to an identity function on its
+ * `guestWrapper` argument, in which case this does represent exactly a
+ * mathematical bijection between host and guest.
+ *
+ * If `unwrap` is provided, it supports the unwrapping of guest wrappers, into
+ * so-call unwrapped guests, like state records or functions,
+ * that are not themselves `Passable`. This was motivated to support endowments,
+ * which are often similar non-passables on the host-side.
+ * However, it can support the unwrapping of any guest remotable wrapper.
+ * When `unwrap` returns something `!==` its `guestWrapper` argument,
+ * then we preserve the bijection (one-to-one mapping) between the host
+ * and the unwrapped guest. To support the internal bookkeeping of the
+ * replay-membrane, we also map the guestWrapper to that same host, but
+ * not vice versa. Since the guest wrapper should not be visible outside
+ * the replay-membrane, this extra bookkeeping should be invisible.
+ *
+ * This bijection only grows monotonically until reset, which clears the entire
+ * mapping. Until reset, each pair, once entered, cannot be altered or deleted.
+ * The mapping itself is completely ephemeral, but the bijection object itself
+ * is durable. The mapping is also effectively reset by reincarnation, i.e,
+ * on upgrade.
+ * See also https://github.com/Agoric/agoric-sdk/issues/9365
+ *
+ * To eventually address https://github.com/Agoric/agoric-sdk/issues/9301
+ * the bijection itself persists to support passing guest-created remotables
+ * and promises through the membrane.
+ * The resulting host wrappers must not only survive upgrade, then must
+ * reestablish their mapping to the correct corresponding guest objects that
+ * they are taken to wrap. We plan to do this via `equate` repopulating
+ * the bijection by the time the host wrapper needs to know what
+ * corresponding guest it is now taken to wrap.
+ *
  * @param {Zone} zone
  * @param {(hostWrapper: PassableCap | Vow, guestWrapper: PassableCap) => unknown} [unwrap]
  *  defaults to identity function on `guestWrapper` arg
@@ -81,7 +118,7 @@ export const prepareBijection = (
   /** @type {Ephemera<Bijection, VowishStore>} */
   const h2g = makeEphemera(() => makeVowishStore('hostToGuest'));
 
-  // Guest arguments are results are now unguarded, i.e., guarded by `M.raw()`,
+  // Guest arguments and results are now unguarded, i.e., guarded by `M.raw()`,
   // so that they can be non-passables. Therefore, we need to harden these
   // here.
   return zone.exoClass('Bijection', BijectionI, () => ({}), {

@@ -19,6 +19,12 @@ export {};
  */
 
 /**
+ * `T` defaults to `any`, not `Passable`, because unwrapped guests include
+ * non-passables, like unwrapped functions and unwrapped state records.
+ * (Unwrapped functions could be made into Remotables,
+ * but since they still could not be made durable, in this context
+ * it'd be pointless.)
+ *
  * @template {any} [T=any]
  * @typedef {T} Guest
  */

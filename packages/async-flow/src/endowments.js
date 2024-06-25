@@ -155,8 +155,9 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
       }
       const keys = ownKeys(e);
       keys.length >= 1 || Fail`empty record should be storable ${e}`;
-      const desc = getOwnPropertyDescriptor(e, keys[0]);
-      assert(desc !== undefined); // just for type checker
+      const desc = /** @type {PropertyDescriptor} */ (
+        getOwnPropertyDescriptor(e, keys[0])
+      );
       if ('value' in desc) {
         return 'record';
       } else {
