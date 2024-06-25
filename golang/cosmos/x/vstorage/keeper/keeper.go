@@ -376,7 +376,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 		}
 	} else {
 		// Update the value.
-		bz := bytes.Join([][]byte{types.EncodedDataPrefix, conv.UnsafeStrToBytes(entry.StringValue())}, []byte{})
+		bz := bytes.Join([][]byte{types.EncodedDataPrefix, []byte(entry.StringValue())}, []byte{})
 		store.Set(encodedKey, bz)
 	}
 
@@ -406,8 +406,7 @@ func (k Keeper) SetStorage(ctx sdk.Context, entry agoric.KVEntry) {
 }
 
 func (k Keeper) PathToEncodedKey(path string) string {
-	// The returned bytes will not change, safe to convert
-	return conv.UnsafeBytesToStr(types.PathToEncodedKey(path))
+	return string(types.PathToEncodedKey(path))
 }
 
 func (k Keeper) GetStoreName() string {

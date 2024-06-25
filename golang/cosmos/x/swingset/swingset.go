@@ -64,12 +64,11 @@ func (ph portHandler) handleSwingStoreUpdateExportData(ctx sdk.Context, entries 
 			return ret, err
 		}
 
-		// The KVStore does not mutate the key and value byte slices
-		key := conv.UnsafeStrToBytes(entry.Key())
+		key := []byte(entry.Key())
 		if !entry.HasValue() {
 			store.Delete(key)
 		} else {
-			store.Set(key, conv.UnsafeStrToBytes(entry.StringValue()))
+			store.Set(key, []byte(entry.StringValue()))
 		}
 	}
 }

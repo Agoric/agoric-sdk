@@ -139,9 +139,7 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.A
 		return err
 	}
 
-	// The string will immediately be stored
-	itemValue := conv.UnsafeBytesToStr(bz)
-	return k.vstorageKeeper.PushQueueItem(ctx, inboundQueuePath, itemValue)
+	return k.vstorageKeeper.PushQueueItem(ctx, inboundQueuePath, string(bz))
 }
 
 // PushAction appends an action to the controller's actionQueue.

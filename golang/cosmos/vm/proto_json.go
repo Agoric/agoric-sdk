@@ -31,8 +31,7 @@ func ProtoJSONMarshalSlice(vals []interface{}) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// The slices will be immediately marshalled
-		jsonSlice[i] = conv.UnsafeStrToBytes(slice)
+		jsonSlice[i] = []byte(slice)
 	}
 
 	// Marshal the JSON array to a single JSON string.

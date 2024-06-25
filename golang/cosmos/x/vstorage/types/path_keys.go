@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 )
 
 // - A "path" is a sequence of zero or more dot-separated nonempty segments
@@ -85,8 +83,7 @@ func PathToEncodedKey(path string) []byte {
 		// Increment so that only the empty path is at depth 0.
 		depth += 1
 	}
-	encoded := conv.UnsafeStrToBytes(fmt.Sprintf("%d%s", depth, encodedPath))
-	// returns a copy of encoded
+	encoded := []byte(fmt.Sprintf("%d%s", depth, encodedPath))
 	return bytes.ReplaceAll(encoded, []byte(PathSeparator), EncodedKeySeparator)
 }
 
@@ -101,7 +98,6 @@ func PathToChildrenPrefix(path string) []byte {
 		encodedPrefix += PathSeparator
 	}
 	depth := strings.Count(encodedPrefix, PathSeparator)
-	encoded := conv.UnsafeStrToBytes(fmt.Sprintf("%d%s", depth, encodedPrefix))
-	// returns a copy of encoded
+	encoded := []byte(fmt.Sprintf("%d%s", depth, encodedPrefix))
 	return bytes.ReplaceAll(encoded, []byte(PathSeparator), EncodedKeySeparator)
 }

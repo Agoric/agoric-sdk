@@ -21,7 +21,6 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"
 	daemoncmd "github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 )
@@ -149,7 +148,7 @@ func SendToGo(port C.int, msg C.Body) C.Body {
 	if err != nil {
 		panic(err)
 	}
-	return C.CString(conv.UnsafeBytesToStr(respBytes))
+	return C.CString(string(respBytes))
 }
 
 // Do nothing in main.

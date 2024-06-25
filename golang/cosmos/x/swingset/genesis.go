@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -61,7 +60,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 
 	if len(swingStoreExportData) > 0 {
 		for _, entry := range swingStoreExportData {
-			swingStore.Set(conv.UnsafeStrToBytes(entry.Key), conv.UnsafeStrToBytes(entry.Value))
+			swingStore.Set([]byte(entry.Key), []byte(entry.Value))
 		}
 		getExportDataReader = func() (agoric.KVEntryReader, error) {
 			exportDataIterator := swingStore.Iterator(nil, nil)
@@ -94,13 +93,12 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 			encoder.SetEscapeHTML(false)
 
 			return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
-				// The KVStore does not mutate the key and value byte slices
-				key := conv.UnsafeStrToBytes(entry.Key())
+				key := []byte(entry.Key())
 
 				if !entry.HasValue() {
 					swingStore.Delete(key)
 				} else {
-					swingStore.Set(key, conv.UnsafeStrToBytes(entry.StringValue()))
+					swingStore.Set(key, []byte(entry.StringValue()))
 				}
 
 				return encoder.Encode(entry)

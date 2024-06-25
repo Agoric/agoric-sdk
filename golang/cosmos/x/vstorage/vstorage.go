@@ -148,8 +148,8 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		value := vstorageStoreKey{
 			StoreName:       keeper.GetStoreName(),
 			StoreSubkey:     keeper.PathToEncodedKey(path),
-			DataPrefixBytes: conv.UnsafeBytesToStr(keeper.GetDataPrefix()),
-			NoDataValue:     conv.UnsafeBytesToStr(keeper.GetNoDataValue()),
+			DataPrefixBytes: string(keeper.GetDataPrefix()),
+			NoDataValue:     string(keeper.GetNoDataValue()),
 		}
 		str, err := conv.MarshalToJSONString(value)
 		if err != nil {
