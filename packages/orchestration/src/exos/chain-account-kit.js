@@ -15,7 +15,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {PromiseVow, Remote, Vow, VowTools} from '@agoric/vow';
+ * @import {Remote, Vow, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -103,11 +103,11 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
         },
         getBalance(_denom) {
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          throw new Error('not yet implemented');
+          return asVow(() => Fail`'not yet implemented'`);
         },
         getBalances() {
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          throw new Error('not yet implemented');
+          return asVow(() => Fail`'not yet implemented'`);
         },
         getLocalAddress() {
           return NonNullish(
@@ -125,9 +125,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           return this.state.port;
         },
         executeTx() {
-          return asVow(() => {
-            throw new Error('not yet implemented');
-          });
+          return asVow(() => Fail`'not yet implemented'`);
         },
         /**
          * Submit a transaction on behalf of the remote account for execution on
@@ -142,8 +140,6 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
         executeEncodedTx(msgs, opts) {
           return asVow(() => {
             const { connection } = this.state;
-            // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
-            /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
             if (!connection) throw Fail`connection not available`;
             return watch(
               E(connection).send(makeTxPacket(msgs, opts)),
@@ -163,10 +159,8 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
             // - retrieve assets?
             // - revoke the port?
             const { connection } = this.state;
-            // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
-            /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
             if (!connection) throw Fail`connection not available`;
-            return watch(E(connection).close());
+            return E(connection).close();
           });
         },
         /**
@@ -176,9 +170,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
          */
         getPurse(brand) {
           console.log('getPurse got', brand);
-          return asVow(() => {
-            throw new Error('not yet implemented');
-          });
+          return asVow(() => Fail`'not yet implemented'`);
         },
       },
       connectionHandler: {
@@ -186,9 +178,8 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
          * @param {Remote<Connection>} connection
          * @param {LocalIbcAddress} localAddr
          * @param {RemoteIbcAddress} remoteAddr
-         * @returns {PromiseVow<void>}
          */
-        onOpen(connection, localAddr, remoteAddr) {
+        async onOpen(connection, localAddr, remoteAddr) {
           trace(`ICA Channel Opened for ${localAddr} at ${remoteAddr}`);
           this.state.connection = connection;
           this.state.remoteAddress = remoteAddr;
@@ -200,18 +191,15 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
             chainId: this.state.chainId,
             addressEncoding: 'bech32',
           });
-          return Promise.resolve(watch(undefined));
         },
         /**
          * @param {Remote<Connection>} _connection
          * @param {unknown} reason
-         * @returns {PromiseVow<void>}
          */
-        onClose(_connection, reason) {
+        async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
           // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
-          return Promise.resolve(watch(undefined));
         },
       },
     },
