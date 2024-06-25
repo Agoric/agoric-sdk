@@ -2,6 +2,7 @@ import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 const trace = makeTracer('upgrade Vaults proposal');
 
@@ -150,9 +151,28 @@ export const upgradeVaults = async (powers, { options }) => {
   // Wait for at least one new price feed to be ready before upgrading Vaults
   void E.when(
     any(
-      Object.values(vaultBrands).map(brand =>
-        E(priceAuthority).quoteGiven(AmountMath.make(brand, 10n), istBrand),
-      ),
+      Object.values(vaultBrands).map(async brand => {
+        const getQuote = async lastRejectionReason => {
+          await null;
+          try {
+            return await E(priceAuthority).quoteGiven(
+              AmountMath.make(brand, 10n),
+              istBrand,
+            );
+          } catch (reason) {
+            if (
+              isUpgradeDisconnection(reason) &&
+              (!lastRejectionReason ||
+                reason.incarnationNumber >
+                  lastRejectionReason.incarnationNumber)
+            ) {
+              return getQuote(reason);
+            }
+            throw reason;
+          }
+        };
+        return getQuote(null);
+      }),
     ),
     async price => {
       trace(`upgrading after delay`, price);
