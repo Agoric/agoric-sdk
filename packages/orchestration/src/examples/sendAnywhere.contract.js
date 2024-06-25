@@ -5,9 +5,9 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { AmountShape } from '@agoric/ertp';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
+import { makeResumableAgoricNamesHack } from '../exos/agoric-names-tools.js';
 
 const { entries } = Object;
-const { Fail } = assert;
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
@@ -16,7 +16,6 @@ const { Fail } = assert;
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {OrchestrationService} from '../service.js';
  * @import {NameHub} from '@agoric/vats';
- * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {Remote} from '@agoric/vow';
  */
 
@@ -45,36 +44,26 @@ export const SingleAmountRecord = M.and(
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const { chainHub, orchestrate, zone } = provideOrchestration(
+  const { chainHub, orchestrate, vowTools, zone } = provideOrchestration(
     zcf,
     baggage,
     privateArgs,
     privateArgs.marshaller,
   );
+  const agoricNamesTools = makeResumableAgoricNamesHack(zone, {
+    agoricNames: privateArgs.agoricNames,
+    vowTools,
+  });
 
   /** @type {import('../orchestration-api.js').OrchestrationAccount<any>} */
   let contractAccount;
 
-  const findBrandInVBank = async brand => {
-    const assets = await E(
-      // XXX heapVowE
-      /** @type {Promise<Promise<NameHub<VBankAssetDetail>>>} */ (
-        E(privateArgs.agoricNames).lookup('vbankAsset')
-      ),
-    ).values();
-    const it = assets.find(a => a.brand === brand);
-    if (!it) {
-      throw Fail`brand ${brand} not in agoricNames.vbankAsset`;
-    }
-    return it;
-  };
-
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf },
+    { zcf, agoricNamesTools },
     // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (orch, { zcf }, seat, offerArgs) => {
+    async (orch, { zcf, agoricNamesTools }, seat, offerArgs) => {
       mustMatch(
         offerArgs,
         harden({ chainName: M.scalar(), destAddr: M.string() }),
@@ -82,7 +71,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       const { chainName, destAddr } = offerArgs;
       const { give } = seat.getProposal();
       const [[kw, amt]] = entries(give);
-      const { denom } = await findBrandInVBank(amt.brand);
+      // XXX when() until membrane
+      const { denom } = await E.when(
+        agoricNamesTools.findBrandInVBank(amt.brand),
+      );
       const chain = await orch.getChain(chainName);
 
       // FIXME ok to use a heap var crossing the membrane scope this way?
