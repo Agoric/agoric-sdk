@@ -2,6 +2,7 @@
 
 import { Fail } from '@agoric/assert';
 import { pickFacet } from '@agoric/vat-data';
+import { assertAllDefined } from '@agoric/internal';
 import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
 /**
@@ -53,19 +54,17 @@ export const makeOrchestrationFacade = ({
   vowTools,
   asyncFlowTools,
 }) => {
-  (zone &&
-    timerService &&
-    zcf &&
-    storageNode &&
-    orchestrationService &&
-    // @ts-expect-error type says defined but double check
-    makeLocalOrchestrationAccountKit &&
-    // @ts-expect-error type says defined but double check
-    makeRecorderKit &&
-    // @ts-expect-error type says defined but double check
-    makeRemoteChainFacade &&
-    asyncFlowTools) ||
-    Fail`params missing`;
+  assertAllDefined({
+    zone,
+    timerService,
+    zcf,
+    storageNode,
+    orchestrationService,
+    makeLocalOrchestrationAccountKit,
+    makeRecorderKit,
+    makeRemoteChainFacade,
+    asyncFlowTools,
+  });
 
   const makeOrchestratorKit = prepareOrchestratorKit(zone, {
     asyncFlowTools,
