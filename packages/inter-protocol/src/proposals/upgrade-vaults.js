@@ -6,19 +6,24 @@ import { makeTracer } from '@agoric/internal/src/index.js';
 const trace = makeTracer('upgrade Vaults proposal');
 
 // stand-in for Promise.any() which isn't available at this point.
+/** @param {Promise<any>[]} promises */
 const any = promises =>
   new Promise((resolve, reject) => {
     for (const promise of promises) {
-      promise.then(resolve);
+      void promise.then(resolve, () => {});
     }
     void Promise.allSettled(promises).then(results => {
-      const rejects = results.filter(({ status }) => status === 'rejected');
+      const rejects = /** @type {PromiseRejectedResult[]} */ (
+        results.filter(({ status }) => status === 'rejected')
+      );
       if (rejects.length === results.length) {
-        // @ts-expect-error TypeScript doesn't know enough
-        const messages = rejects.map(({ message }) => message);
+        const messages = rejects.map(
+          ({ reason: { message } }) => message || 'no error message',
+        );
         const aggregate = new Error(messages.join(';'));
-        // @ts-expect-error TypeScript doesn't know enough
-        aggregate.errors = rejects.map(({ reason }) => reason);
+        /** @type {any} */ (aggregate).errors = rejects.map(
+          ({ reason }) => reason,
+        );
         reject(aggregate);
       }
     });
@@ -139,7 +144,7 @@ export const upgradeVaults = async (powers, { options }) => {
       newPrivateArgs,
     );
 
-    console.log('upgraded vaultFactory.', upgradeResult);
+    trace('upgraded vaultFactory.', upgradeResult);
   };
 
   // Wait for at least one new price feed to be ready before upgrading Vaults
@@ -164,6 +169,14 @@ export const upgradeVaults = async (powers, { options }) => {
         'auctioneer',
         // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
         auctioneerKit.instance,
+      );
+      trace(`upgrading complete`, price);
+    },
+    error => {
+      console.error(
+        'Failed to upgrade vaultFactory',
+        error.message,
+        ...(error.errors || []),
       );
     },
   );
