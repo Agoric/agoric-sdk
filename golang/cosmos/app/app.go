@@ -927,11 +927,6 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-type BrandInfo struct {
-	Name   string
-	Oracle string
-}
-
 // upgradePriceFeedCoreProposalSteps returns the core proposal steps for the
 // price feed upgrade and associated changes to scaledPriceAuthority and
 // vaultManager.
@@ -988,21 +983,21 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 		return nil, err
 	}
 
-	var inBrands []BrandInfo
+	var inBrandNames []string
 	switch upgradeName {
 	case "UNRELEASED_A3P_INTEGRATION", "UNRELEASED_main":
-		inBrands = []BrandInfo{
-			{"ATOM", "ATOM"},
-			{"stATOM", "stAtom"},
-			{"stOSMO", "stOSMO"},
-			{"stTIA", "stTIA"},
-			{"stkATOM", "stkAtom"},
+		inBrandNames = []string{
+			"ATOM",
+			"stATOM",
+			"stOSMO",
+			"stTIA",
+			"stkATOM",
 		}
 	case "UNRELEASED_devnet":
-		inBrands = []BrandInfo{
-			{"ATOM", "ATOM"},
-			{"stTIA", "stTIA"},
-			{"stkATOM", "stkAtom"},
+		inBrandNames = []string{
+			"ATOM",
+			"stTIA",
+			"stkATOM",
 		}
 	}
 
@@ -1011,14 +1006,14 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 		return nil, err
 	}
 
-	proposals := make(vm.CoreProposalStep, 0, len(inBrands))
-	for _, inBrand := range inBrands {
-		instanceName := inBrand.Name + "-USD price feed"
+	proposals := make(vm.CoreProposalStep, 0, len(inBrandNames))
+	for _, inBrandName := range inBrandNames {
+		instanceName := inBrandName + "-USD price feed"
 		instanceNameJson, err := json.Marshal(instanceName)
 		if err != nil {
 			return nil, err
 		}
-		inBrandLookup := []string{"agoricNames", "oracleBrand", inBrand.Oracle}
+		inBrandLookup := []string{"agoricNames", "oracleBrand", inBrandName}
 		inBrandLookupJson, err := json.Marshal(inBrandLookup)
 		if err != nil {
 			return nil, err
