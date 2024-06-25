@@ -12,7 +12,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../exos/chain-hub.js';
-import { makeTimeHelper } from '../exos/time-helper.js';
+import { prepareTimeHelper } from '../exos/time-helper.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -40,7 +40,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const vowTools = prepareVowTools(zone.subZone('vows'));
-  const timeHelper = makeTimeHelper(makeHeapZone(), {
+  const timeHelper = prepareTimeHelper(makeHeapZone(), {
     timerService,
     vowTools,
   });

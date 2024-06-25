@@ -9,7 +9,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
-import { makeTimeHelper } from '../exos/time-helper.js';
+import { prepareTimeHelper } from '../exos/time-helper.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -50,7 +50,7 @@ export const provideOrchestration = (
   const vowTools = prepareVowTools(zone.subZone('vows'));
   const { agoricNames, timerService } = remotePowers;
   const chainHub = makeChainHub(agoricNames);
-  const timeHelper = makeTimeHelper(makeHeapZone(), {
+  const timeHelper = prepareTimeHelper(makeHeapZone(), {
     timerService,
     vowTools,
   });
