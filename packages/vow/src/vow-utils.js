@@ -85,12 +85,17 @@ export const makeAsVow = makeVowKit => {
    * @returns {Vow<Awaited<T>>}
    */
   const asVow = fn => {
-    const kit = makeVowKit();
+    let result;
     try {
-      kit.resolver.resolve(fn());
+      result = fn();
     } catch (e) {
-      kit.resolver.reject(e);
+      result = Promise.reject(e);
     }
+    if (isVow(result)) {
+      return result;
+    }
+    const kit = makeVowKit();
+    kit.resolver.resolve(result);
     return kit.vow;
   };
   return harden(asVow);
