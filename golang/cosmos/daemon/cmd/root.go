@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -43,6 +45,50 @@ var AppName = "agd"
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
+// unsafeExporter is implemented by key stores that support unsafe export
+// of private keys' material.
+type unsafeExporter interface {
+	// ExportPrivateKeyObject returns a private key in unarmored format.
+	ExportPrivateKeyObject(uid string) (cryptotypes.PrivKey, error)
+}
+
+type fakeKeystore struct {
+	keyring.Keyring
+}
+
+func (fks fakeKeystore) Sign(uid string, msg []byte) ([]byte, cryptotypes.PubKey, error) {
+	k, err := fks.Keyring.Key(uid)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch {
+	case k.GetOffline() != nil:
+		pub, err := k.GetPubKey()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return []byte{}, pub, nil
+	default:
+		return fks.Keyring.Sign(uid, msg)
+	}
+}
+
+func (fks fakeKeystore) SignByAddress(address sdk.Address, msg []byte) ([]byte, cryptotypes.PubKey, error) {
+	k, err := fks.Keyring.KeyByAddress(address)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return fks.Sign(k.Name, msg)
+}
+
+// ExportPrivateKeyObject exports an armored private key object.
+func (fks fakeKeystore) ExportPrivateKeyObject(uid string) (cryptotypes.PrivKey, error) {
+	return fks.Keyring.(unsafeExporter).ExportPrivateKeyObject(uid)
+}
+
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
 func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
@@ -77,6 +123,16 @@ func NewRootCmd(sender vm.Sender) (*cobra.Command, params.EncodingConfig) {
 
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
+			}
+
+			initClientCtx = client.GetClientContextFromCmd(cmd)
+			initClientCtx = initClientCtx.WithKeyring(fakeKeystore{initClientCtx.Keyring})
+			if err := client.SetCmdClientContext(cmd, initClientCtx); err != nil {
+				return err
+			}
+			keyringFlag := cmd.Flags().Lookup(flags.FlagKeyringBackend)
+			if keyringFlag != nil {
+				keyringFlag.Changed = false
 			}
 
 			customAppTemplate, customAppConfig := initAppConfig()
