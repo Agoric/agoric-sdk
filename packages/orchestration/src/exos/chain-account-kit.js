@@ -6,7 +6,7 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
   ChainAddressShape,
-  ConnectionHandlerI,
+  OutboundConnectionHandlerI,
   Proto3Shape,
 } from '../typeGuards.js';
 import { findAddressField } from '../utils/address.js';
@@ -64,7 +64,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
     'ChainAccountKit',
     {
       account: ChainAccountI,
-      connectionHandler: ConnectionHandlerI,
+      connectionHandler: OutboundConnectionHandlerI,
       parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // does not need watcherContext
@@ -212,15 +212,6 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
           // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
           return Promise.resolve(watch(undefined));
-        },
-        /**
-         * @param {Remote<Connection>} connection
-         * @param bytes
-         * @returns {PromiseVow<string>}
-         */
-        onReceive(connection, bytes) {
-          trace(`ICA Channel onReceive`, connection, bytes);
-          return Promise.resolve(watch(''));
         },
       },
     },
