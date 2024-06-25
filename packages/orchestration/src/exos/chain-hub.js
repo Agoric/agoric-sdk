@@ -67,9 +67,12 @@ const ChainIdArgShape = M.or(
   ),
 );
 
+const AssetInfoShape = M.record(); // XXX refine?
 const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
+  getAssetInfo: M.call(M.string()).returns(AssetInfoShape),
   getChainInfo: M.call(M.string()).returns(VowShape),
+  registerAsset: M.call(M.string(), M.record()).returns(),
   registerConnection: M.call(
     M.string(),
     M.string(),
@@ -77,6 +80,8 @@ const ChainHubI = M.interface('ChainHub', {
   ).returns(),
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
+  recallChainInfo: M.call(M.string()).returns(CosmosChainInfoShape),
+  saveVBankAssets: M.call().returns(VowShape),
 });
 
 /**
@@ -297,11 +302,14 @@ export const makeChainHub = (agoricNames, vowTools) => {
       denomInfos.init(denom, brandInfo);
     },
 
-    async saveVBankAssets() {
-      const todo = await E(E(agoricNames).lookup('vbankAsset')).entries();
-      for await (const [denom, info] of todo) {
-        chainHub.registerAsset(denom, info); // TODO: base chain and such??
-      }
+    saveVBankAssets() {
+      return watch(E(E(agoricNames).lookup('vbankAsset')).entries(), {
+        onFulfilled: todo => {
+          for (const [denom, info] of todo) {
+            chainHub.registerAsset(denom, info); // TODO: base chain and such??
+          }
+        },
+      });
     },
 
     /**
