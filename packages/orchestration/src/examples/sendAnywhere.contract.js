@@ -2,6 +2,7 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M, mustMatch } from '@endo/patterns';
 import { heapVowE as E } from '@agoric/vow/vat.js';
+import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
@@ -37,7 +38,7 @@ const { Fail } = assert;
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
  * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
- * @param {{ account: OrchestrationAccount<any> }} ctx.constractState
+ * @param {{ account: OrchestrationAccount<any> }} ctx.contractState
  * @param {ZCFSeat} seat
  * @param {object} offerArgs
  * @param {string} offerArgs.chainName
@@ -45,7 +46,7 @@ const { Fail } = assert;
  */
 const sendItFn = async (
   orch,
-  { zcf, findBrandInVBank, constractState },
+  { zcf, findBrandInVBank, contractState },
   seat,
   offerArgs,
 ) => {
@@ -56,10 +57,10 @@ const sendItFn = async (
   const { denom } = await findBrandInVBank(amt.brand);
   const chain = await orch.getChain(chainName);
 
-  if (!constractState.account) {
+  if (!contractState.account) {
     const agoricChain = await orch.getChain('agoric');
-    constractState.account = await agoricChain.makeAccount();
-    console.log('account', constractState.account);
+    contractState.account = await agoricChain.makeAccount();
+    console.log('account', contractState.account);
   }
 
   const info = await chain.getChainInfo();
@@ -67,8 +68,8 @@ const sendItFn = async (
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
   const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-  await E.when(pmtP, pmt => constractState.account.deposit(pmt));
-  await constractState.account.transfer(
+  await E.when(pmtP, pmt => contractState.account.deposit(pmt));
+  await contractState.account.transfer(
     { denom, value: amt.value },
     {
       address: destAddr,
@@ -100,16 +101,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {OrchestrationAccount<any> | undefined} */
-  let account;
-  const constractState = harden({
-    get account() {
-      return account;
-    },
-    set account(newValue) {
-      account = newValue;
-    },
-  });
+  /** @type {{ account: OrchestrationAccount<any> | undefined }} */
+  const contractState = makeStateRecord({ account: undefined });
 
   const findBrandInVBank = async brand => {
     const assets = await E(
@@ -128,7 +121,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf, findBrandInVBank, constractState },
+    { zcf, findBrandInVBank, contractState },
     sendItFn,
   );
 
