@@ -4,10 +4,11 @@ import { AmountMath } from '@agoric/ertp';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E, Far } from '@endo/far';
 import type { TestFn } from 'ava';
-import { prepareLocalChainAccountKit } from '../src/exos/local-chain-account-kit.js';
+import { prepareVowTools } from '@agoric/vow';
+import { prepareLocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { makeOrchestrationFacade } from '../src/facade.js';
-import { connectionKey, makeChainHub } from '../src/utils/chainHub.js';
-import type { VBankAssetInfo } from '../src/utils/chainHub.js';
+import { connectionKey, makeChainHub } from '../src/exos/chain-hub.js';
+import type { VBankAssetInfo } from '../src/exos/chain-hub.js';
 import { orcUtils } from '../src/utils/orc.js';
 import { commonSetup } from './supports.js';
 import { denomHash } from '../src/utils/denomHash.js';
@@ -101,13 +102,15 @@ const mockContractStartup = async (t, chainHub) => {
   const zcf = {};
   const { marshaller, timerService } = commonPrivateArgs;
   const zone = bootstrap.rootZone.subZone('orchContractStartup');
+  const vowTools = prepareVowTools(zone.subZone('VowTools'));
   const baggage = zone.mapStore('baggage1');
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     timerService,
+    vowTools,
     chainHub,
   );
   return makeOrchestrationFacade({
