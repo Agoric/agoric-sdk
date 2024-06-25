@@ -5,15 +5,21 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { extractMethod } from '../src/lib/kdebug.js';
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from '../src/kernel/state/kernelKeeper.js';
 import { makeKernelEndowments, buildDispatch } from './util.js';
 import { kser, kunser, kslot } from '@agoric/kmarshal';
 
 const makeKernel = async () => {
   const endowments = makeKernelEndowments();
-  const { kvStore } = endowments.kernelStorage;
-  await initializeKernel({}, endowments.kernelStorage);
+  const { kernelStorage } = endowments;
+  const { kvStore } = kernelStorage;
+  await initializeKernel({}, kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
-  return { kernel, kvStore };
+  const kernelKeeper = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION);
+  kernelKeeper.loadStats();
+  return { kernel, kvStore, kernelKeeper };
 };
 
 /**
@@ -43,7 +49,7 @@ const assertSingleEntryLog = (t, log, type, details = {}) => {
   return entry;
 };
 
-const makeTestVat = async (t, kernel, name) => {
+const makeTestVat = async (kernel, name, kernelKeeper) => {
   const { log, dispatch } = buildDispatch();
   let syscall;
   const setup = providedSyscall => {
@@ -56,21 +62,29 @@ const makeTestVat = async (t, kernel, name) => {
   const kref = kernel.getRootObject(vatID);
   kernel.pinObject(kref);
   const flushDeliveries = async () => {
-    // Make a dummy delivery so the kernel will call processRefcounts().
-    // This isn't normally needed, but we're directly making syscalls
-    // outside of a delivery.
-    // If that ever stops working, we can update `makeTestVat` to return
-    // functions supporting more true-to-production vat behavior like
-    // ```js
-    // enqueueSyscall('send', target, kser([...args]), resultVPID);
-    // enqueueSyscall('subscribe', resultVPID);
-    // flushSyscalls(); // issues queued syscalls inside a dummy delivery
-    // ```
-    kernel.queueToKref(kref, 'flush', []);
+    // This test use a really lazy+sketchy approach to triggering
+    // syscalls and the refcount bookkeeping that we want to exercise.
+    //
+    // The kernel only runs processRefcounts() after a real crank
+    // (i.e. inside processDeliveryMessage and
+    // processAcceptanceMessage) but we want to avoid cluttering
+    // delivery logs of our vats with dummy activity, so we avoid
+    // making dispatches *into* the vat.
+    //
+    // The hack is to grab the vat's `syscall` object and invoke it
+    // directly, from *outside* a crank. Then, to trigger
+    // `processRefcounts()`, we inject a `{ type: 'negated-gc-action'
+    // }` onto the run-queue, which is handled by
+    // processDeliveryMessage but doesn't actually deliver anything.
+    //
+    // A safer approach would be to define the vat's dispatch() to
+    // listen for some messages that trigger each of the syscalls we
+    // want to invoke
+    //
+    kernelKeeper.addToRunQueue({ type: 'negated-gc-action' });
     await kernel.run();
-    assertFirstLogEntry(t, log, 'deliver', { method: 'flush' });
   };
-  return { vatID, kref, dispatch, log, syscall, flushDeliveries };
+  return { vatID, kref, log, syscall, flushDeliveries };
 };
 
 async function doAbandon(t, reachable) {
@@ -78,7 +92,7 @@ async function doAbandon(t, reachable) {
   // vatB abandons it
   // vatA should retain the object
   // sending to the abandoned object should get an error
-  const { kernel, kvStore } = await makeKernel();
+  const { kernel, kvStore, kernelKeeper } = await makeKernel();
   await kernel.start();
 
   const {
@@ -87,13 +101,14 @@ async function doAbandon(t, reachable) {
     log: logA,
     syscall: syscallA,
     flushDeliveries: flushDeliveriesA,
-  } = await makeTestVat(t, kernel, 'vatA');
+  } = await makeTestVat(kernel, 'vatA', kernelKeeper);
   const {
     vatID: vatB,
     kref: bobKref,
     log: logB,
     syscall: syscallB,
-  } = await makeTestVat(t, kernel, 'vatB');
+    flushDeliveries: flushDeliveriesB,
+  } = await makeTestVat(kernel, 'vatB', kernelKeeper);
   await kernel.run();
 
   // introduce B to A, so it can send 'holdThis' later
@@ -142,16 +157,24 @@ async function doAbandon(t, reachable) {
 
   // now have vatB abandon the export
   syscallB.abandonExports([targetForBob]);
-  await flushDeliveriesA();
-
-  // no GC messages for either vat
-  t.deepEqual(logA, []);
-  t.deepEqual(logB, []);
-
+  await flushDeliveriesB();
   targetOwner = kvStore.get(`${targetKref}.owner`);
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
-  t.is(targetOwner, undefined);
-  t.is(targetRefCount, expectedRefCount); // unchanged
+
+  if (reachable) {
+    // no GC messages for either vat
+    t.deepEqual(logA, []);
+    t.deepEqual(logB, []);
+    t.is(targetOwner, undefined);
+    t.is(targetRefCount, expectedRefCount); // unchanged
+  } else {
+    // 'target' was orphaned and unreachable, kernel will delete it,
+    // so A will get a retireImports now
+    assertSingleEntryLog(t, logA, 'retireImports', { vrefs: [targetForAlice] });
+    t.deepEqual(logB, []);
+    t.is(targetOwner, undefined);
+    t.is(targetRefCount, undefined);
+  }
 
   if (reachable) {
     // vatA can send a message, but it will reject
@@ -180,17 +203,11 @@ async function doAbandon(t, reachable) {
     await flushDeliveriesA();
     // vatB should not get a dispatch.dropImports
     t.deepEqual(logB, []);
-    // the object still exists, now only recognizable
-    targetRefCount = kvStore.get(`${targetKref}.refCount`);
-    expectedRefCount = '0,1';
-    t.is(targetRefCount, expectedRefCount); // merely recognizable
+    // the kernel automatically retires the orphaned
+    // now-merely-recognizable object
+    assertSingleEntryLog(t, logA, 'retireImports', { vrefs: [targetForAlice] });
+    // which deletes it
   }
-
-  // now vatA retires the object too
-  syscallA.retireImports([targetForAlice]);
-  await flushDeliveriesA();
-  // vatB should not get a dispatch.retireImports
-  t.deepEqual(logB, []);
   // the object no longer exists
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
   expectedRefCount = undefined;
