@@ -42,13 +42,13 @@ export const LogEntryShape = M.or(
     M.arrayOf(M.any()),
     M.number(),
   ],
-  // [
-  //   'checkSend',
-  //   M.or(M.remotable('host target'), VowShape),
-  //   M.opt(PropertyKeyShape),
-  //   M.arrayOf(M.any()),
-  //   M.number(),
-  // ],
+  [
+    'checkSend',
+    M.or(M.remotable('host target'), VowShape),
+    M.opt(PropertyKeyShape),
+    M.arrayOf(M.any()),
+    M.number(),
+  ],
   // ['checkReturn', M.number(), M.any()],
   // ['checkThrow', M.number(), M.any()],
 );
