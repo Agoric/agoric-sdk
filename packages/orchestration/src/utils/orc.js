@@ -80,7 +80,7 @@ export const orcUtils = {
     /** @type {XCSv2Msg<null>} */
     const it = {
       osmosis_swap: {
-        output_denom, // @@@TODO
+        output_denom: '// @@@TODO',
         slippage: {
           twap: {
             slippage_percentage: `${opts.slippage * 100}`,

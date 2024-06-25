@@ -12,6 +12,7 @@ import type { VBankAssetInfo } from '../src/exos/chain-hub.js';
 import { orcUtils } from '../src/utils/orc.js';
 import { commonSetup } from './supports.js';
 import { denomHash } from '../src/utils/denomHash.js';
+import { provideOrchestration } from '../src/utils/start-helper.js';
 
 const { fromEntries, values } = Object;
 
@@ -99,28 +100,12 @@ test.before(async t => (t.context = await makeTestContext(t)));
 const mockContractStartup = async (t, chainHub) => {
   const { bootstrap, facadeServices, commonPrivateArgs } = t.context;
   //   const { zcf } = await setupZCFTest(t);
-  const zcf = {};
-  const { marshaller, timerService } = commonPrivateArgs;
+  const zcf = {} as ZCF;
+  const { marshaller } = commonPrivateArgs;
   const zone = bootstrap.rootZone.subZone('orchContractStartup');
-  const vowTools = prepareVowTools(zone.subZone('VowTools'));
   const baggage = zone.mapStore('baggage1');
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
-  const makeLocalChainAccountKit = prepareLocalOrchestrationAccountKit(
-    zone,
-    makeRecorderKit,
-    zcf,
-    timerService,
-    vowTools,
-    chainHub,
-  );
-  return makeOrchestrationFacade({
-    ...commonPrivateArgs,
-    zcf,
-    zone: bootstrap.rootZone.subZone('contract1'),
-    chainHub,
-    makeLocalChainAccountKit,
-    ...facadeServices,
-  });
+
+  return provideOrchestration(zcf, baggage, commonPrivateArgs, marshaller);
 };
 
 test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t => {
