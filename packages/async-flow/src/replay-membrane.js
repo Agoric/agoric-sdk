@@ -284,8 +284,6 @@ export const makeReplayMembrane = ({
       if (stopped || !bijection.hasGuest(guestTarget)) {
         Fail`Sent from a previous run: ${guestTarget}`;
       }
-      // TODO FIX BUG this is not quite right. When guestResultP is returned
-      // as the resolution of guestResultP, it create a visious cycle error.
       const hostResultKit = makeVowKit();
       const g = bijection.unwrapInit(guestReturnedP, hostResultKit.vow);
       g === guestReturnedP ||
