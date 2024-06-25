@@ -1,6 +1,6 @@
 /** @file Orchestration facade */
 
-import { Fail } from '@endo/errors';
+import { assertAllDefined } from '@agoric/internal';
 
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
@@ -38,17 +38,17 @@ export const makeOrchestrationFacade = ({
   vowTools,
   asyncFlowTools,
 }) => {
-  (zone &&
-    timerService &&
-    zcf &&
-    storageNode &&
-    orchestrationService &&
-    // @ts-expect-error type says defined but double check
-    makeRecorderKit &&
-    // @ts-expect-error type says defined but double check
-    makeOrchestrator &&
-    asyncFlowTools) ||
-    Fail`params missing`;
+  assertAllDefined({
+    zone,
+    timerService,
+    zcf,
+    storageNode,
+    orchestrationService,
+    makeRecorderKit,
+    makeOrchestrator,
+    vowTools,
+    asyncFlowTools,
+  });
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
