@@ -4,7 +4,7 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
-import { when } from '@agoric/vow/vat.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
 import { orcUtils } from '../utils/orc.js';
 import { provideOrchestration } from '../utils/start-helper.js';
 
@@ -17,6 +17,57 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {NameHub} from '@agoric/vats';
  */
+
+/**
+ * @param {Orchestrator} orch
+ * @param {object} ctx
+ * @param {ZCF} ctx.zcf
+ * @param {ZCFSeat} seat
+ * @param {object} offerArgs
+ * @param {Amount<'nat'>} offerArgs.staked
+ * @param {CosmosValidatorAddress} offerArgs.validator
+ */
+const stackAndSwapFn = async (orch, { zcf }, seat, offerArgs) => {
+  const { give } = seat.getProposal();
+
+  const omni = await orch.getChain('omniflixhub');
+  const agoric = await orch.getChain('agoric');
+
+  const [omniAccount, localAccount] = await Promise.all([
+    // XXX when() until membrane
+    heapVowTools.when(omni.makeAccount()),
+    // XXX when() until membrane
+    heapVowTools.when(agoric.makeAccount()),
+  ]);
+
+  const omniAddress = omniAccount.getAddress();
+
+  // deposit funds from user seat to LocalChainAccount
+  const payments = await withdrawFromSeat(zcf, seat, give);
+  await deeplyFulfilled(
+    objectMap(payments, payment =>
+      // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
+      localAccount.deposit(payment),
+    ),
+  );
+  seat.exit();
+
+  // build swap instructions with orcUtils library
+  const transferMsg = orcUtils.makeOsmosisSwap({
+    destChain: 'omniflixhub',
+    destAddress: omniAddress,
+    amountIn: give.Stable,
+    brandOut: /** @type {any} */ ('FIXME'),
+    slippage: 0.03,
+  });
+
+  await localAccount
+    .transferSteps(give.Stable, transferMsg)
+    .then(_txResult =>
+      omniAccount.delegate(offerArgs.validator, offerArgs.staked),
+    )
+    .catch(e => console.error(e));
+};
 
 /** @type {ContractMeta<typeof start>} */
 export const meta = {
@@ -85,55 +136,7 @@ export const start = async (zcf, privateArgs, baggage) => {
    *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
    * >}
    */
-  const swapAndStakeHandler = orchestrate(
-    'LSTTia',
-    { zcf },
-    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
-    async (/** @type {Orchestrator} */ orch, { zcf }, seat, offerArgs) => {
-      const { give } = seat.getProposal();
-
-      const omni = await orch.getChain('omniflixhub');
-      const agoric = await orch.getChain('agoric');
-
-      const [omniAccount, localAccount] = await Promise.all([
-        // XXX when() until membrane
-        when(omni.makeAccount()),
-        // XXX when() until membrane
-        when(agoric.makeAccount()),
-      ]);
-
-      const omniAddress = omniAccount.getAddress();
-
-      // deposit funds from user seat to LocalChainAccount
-      const payments = await withdrawFromSeat(zcf, seat, give);
-      await deeplyFulfilled(
-        objectMap(payments, payment =>
-          // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
-          localAccount.deposit(payment),
-        ),
-      );
-      seat.exit();
-
-      // build swap instructions with orcUtils library
-      const transferMsg = orcUtils.makeOsmosisSwap({
-        destChain: 'omniflixhub',
-        destAddress: omniAddress,
-        amountIn: give.Stable,
-        brandOut: /** @type {any} */ ('FIXME'),
-        slippage: 0.03,
-      });
-
-      await localAccount
-        .transferSteps(give.Stable, transferMsg)
-        .then(_txResult =>
-          omniAccount.delegate(offerArgs.validator, offerArgs.staked),
-        )
-        .catch(e => console.error(e));
-
-      // XXX close localAccount?
-      // return continuing inv since this is an offer?
-    },
-  );
+  const swapAndStakeHandler = orchestrate('LSTTia', { zcf }, stackAndSwapFn);
 
   const makeSwapAndStakeInvitation = () =>
     zcf.makeInvitation(

@@ -1,7 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { V } from '@agoric/vow/vat.js';
-import { E } from '@endo/far';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
@@ -48,7 +47,7 @@ export const startStakeOsmo = async ({
 
   const chainHub = makeChainHub(await agoricNames);
 
-  const [_, osmosis, connectionInfo] = await V.when(
+  const [_, osmosis, connectionInfo] = await E.when(
     chainHub.getChainsAndConnection('agoric', 'osmosis'),
   );
 

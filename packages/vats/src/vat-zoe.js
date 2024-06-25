@@ -52,3 +52,5 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
     getZoeConfigFacet: () => zoeConfigFacet,
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} ZoeVat */

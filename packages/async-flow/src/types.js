@@ -3,11 +3,10 @@ export {};
 
 /**
  * @import {Passable} from '@endo/pass-style'
- * @import {Zone} from '@agoric/base-zone'
  * @import {Vow, VowTools} from '@agoric/vow'
  * @import {LogStore} from './log-store.js'
  * @import {Bijection} from './bijection.js'
- * @import {ReplayMembrane} from './replay-membrane.js'
+ * @import {EndowmentTools} from './endowments.js'
  */
 
 /**
@@ -20,7 +19,13 @@ export {};
  */
 
 /**
- * @template {Passable} [T=Passable]
+ * `T` defaults to `any`, not `Passable`, because unwrapped guests include
+ * non-passables, like unwrapped functions and unwrapped state records.
+ * (Unwrapped functions could be made into Remotables,
+ * but since they still could not be made durable, in this context
+ * it'd be pointless.)
+ *
+ * @template {any} [T=any]
  * @typedef {T} Guest
  */
 
@@ -50,6 +55,7 @@ export {};
  * @property {VowTools} [vowTools]
  * @property {() => LogStore} [makeLogStore]
  * @property {() => Bijection} [makeBijection]
+ * @property {EndowmentTools} [endowmentTools]
  */
 
 /**

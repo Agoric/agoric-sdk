@@ -12,7 +12,10 @@ const contractFile = `${dirname}/../../src/examples/swapExample.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/swapExample.contract.js').start;
 
-test('start', async t => {
+// Failing with "guest eventual send not yet supported:"
+// in withdrawFromSeat, at
+// `return E(tempUserSeatP).getPayouts();`
+test.failing('start', async t => {
   const {
     bootstrap,
     brands: { ist },

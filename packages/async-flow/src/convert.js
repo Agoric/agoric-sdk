@@ -110,16 +110,14 @@ export const makeConvertKit = (
         return bijection.hostToGuest(hRem);
       }
       const gRem = makeGuestForHostRemotable(hRem);
-      bijection.init(gRem, hRem);
-      return gRem;
+      return bijection.unwrapInit(gRem, hRem);
     },
     hVow => {
       if (bijection.hasHost(hVow)) {
         return bijection.hostToGuest(hVow);
       }
       const gP = makeGuestForHostVow(hVow);
-      bijection.init(gP, hVow);
-      return gP;
+      return bijection.unwrapInit(gP, hVow);
     },
     hErr => {
       const gErr = harden(

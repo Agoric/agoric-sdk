@@ -55,9 +55,15 @@ const testFirstPlay = async (t, zone) => {
   const { vow: _v2, resolver: _r2 } = zone.makeOnce('v2', () => makeVowKit());
 
   const log = zone.makeOnce('log', () => makeLogStore());
-  const bij = zone.makeOnce('bij', makeBijection);
+  const bijection = zone.makeOnce('bij', makeBijection);
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const p1 = mem.hostToGuest(v1);
   t.deepEqual(log.dump(), []);
