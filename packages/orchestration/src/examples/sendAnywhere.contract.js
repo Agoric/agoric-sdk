@@ -108,14 +108,16 @@ export const start = async (zcf, privateArgs, baggage) => {
     vowTools,
   });
 
-  /** @type {{ account: OrchestrationAccount<any> | undefined }} */
-  const contractState = makeStateRecord({ account: undefined });
+  const contractState = makeStateRecord(
+    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
+      account: undefined,
+    },
+  );
 
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
     { zcf, agoricNamesTools, contractState },
-    // eslint-disable-next-line no-shadow -- this `zcf` is enclosed in a membrane
     sendItFn,
   );
 
