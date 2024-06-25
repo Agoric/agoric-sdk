@@ -289,7 +289,9 @@ export const makeReplayMembrane = ({
       // TODO FIX BUG this is not quite right. When guestResultP is returned
       // as the resolution of guestResultP, it create a visious cycle error.
       const hostResultKit = makeVowKit();
-      bijection.init(guestReturnedP, hostResultKit.vow);
+      const g = bijection.unwrapInit(guestReturnedP, hostResultKit.vow);
+      g === guestReturnedP ||
+        Fail`internal: guestReturnedP should not unwrap: ${g} vs ${guestReturnedP}`;
       /** @type {Outcome} */
       let outcome;
       try {

@@ -117,7 +117,7 @@ const testReplay = async (t, zone) => {
   const log = /** @type {LogStore} */ (
     zone.makeOnce('log', () => Fail`need log`)
   );
-  const bij = /** @type {Bijection} */ (
+  const bijection = /** @type {Bijection} */ (
     zone.makeOnce('bij', () => Fail`need bij`)
   );
 
@@ -134,7 +134,13 @@ const testReplay = async (t, zone) => {
     ['doFulfill', v1, 'x'],
   ]);
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
 
