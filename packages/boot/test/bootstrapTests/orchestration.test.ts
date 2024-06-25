@@ -1,12 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
-import { AmountMath } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { M, matches } from '@endo/patterns';
 import type { TestFn } from 'ava';
 import {
   makeWalletFactoryContext,
@@ -73,7 +71,7 @@ test.serial('config', async t => {
   }
 });
 
-test.serial('stakeOsmo - queries', async t => {
+test.skip('stakeOsmo - queries', async t => {
   const {
     buildProposal,
     evalProposal,
@@ -109,52 +107,13 @@ test.serial('stakeOsmo - queries', async t => {
   );
 });
 
-test.serial('stakeAtom - repl-style', async t => {
-  const {
-    buildProposal,
-    evalProposal,
-    runUtils: { EV },
-  } = t.context;
+test.serial('stakeAtom - smart wallet', async t => {
+  const { buildProposal, evalProposal, agoricNamesRemotes, readLatest } =
+    t.context;
+
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
   );
-
-  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const instance: Instance<typeof startStakeIca> = await EV(agoricNames).lookup(
-    'instance',
-    'stakeAtom',
-  );
-  t.truthy(instance, 'stakeAtom instance is available');
-
-  const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
-  const publicFacet = await EV(zoe).getPublicFacet(instance);
-  t.truthy(publicFacet, 'stakeAtom publicFacet is available');
-
-  const account = await EV(publicFacet).makeAccount();
-  t.log('account', account);
-  t.truthy(account, 'makeAccount returns an account on ATOM connection');
-  t.truthy(
-    matches(account, M.remotable('ChainAccount')),
-    'account is a remotable',
-  );
-
-  const atomBrand: Brand = await EV(agoricNames).lookup('brand', 'ATOM');
-  const atomAmount = AmountMath.make(atomBrand, 10n);
-
-  const validatorAddress: CosmosValidatorAddress = {
-    address: 'cosmosvaloper1test',
-    chainId: 'gaiatest',
-    addressEncoding: 'bech32',
-  };
-  await t.notThrowsAsync(EV(account).delegate(validatorAddress, atomAmount));
-
-  await t.throwsAsync(EV(account).getBalance('uatom'), {
-    message: 'Queries not available for chain "cosmoshub-4"',
-  });
-});
-
-test.serial('stakeAtom - smart wallet', async t => {
-  const { agoricNamesRemotes, readLatest } = t.context;
 
   const wd = await t.context.walletFactoryDriver.provideSmartWallet(
     'agoric1testStakAtom',

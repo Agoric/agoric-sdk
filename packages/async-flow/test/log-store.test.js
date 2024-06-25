@@ -96,7 +96,7 @@ const testLogStoreReplay = async (t, zone) => {
   t.is(await log.promiseReplayDone(), undefined);
 };
 
-await test('test heap log-store', async t => {
+await test.serial('test heap log-store', async t => {
   const zone = makeHeapZone('heapRoot');
   return testLogStorePlay(t, zone);
 });

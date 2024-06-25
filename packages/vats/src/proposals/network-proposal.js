@@ -9,7 +9,10 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 // Heap-based vow resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
-import { when } from '@agoric/vow/vat.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
+import { makeScopedBridge } from '../bridge.js';
+
+const { when } = heapVowTools;
 
 /**
  * @import {ProtocolHandler} from '@agoric/network';
@@ -77,15 +80,10 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * - echo port addrees: /ibc-port/custom-echo
  *
  * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: VatLoader<any> };
  *   produce: { portAllocator: Producer<any> };
  * }} powers
  * @param {object} options
  * @param {{ networkRef: VatSourceRef; ibcRef: VatSourceRef }} options.options
- *   // TODO: why doesn't overloading VatLoader work???
- *
- * @typedef {((name: 'network') => NetworkVat) & ((name: 'ibc') => IBCVat)} VatLoader2
- *
  *
  * @typedef {{
  *   network: ERef<NetworkVat>;
@@ -131,10 +129,8 @@ export const setupNetworkProtocols = async (
   const allocator = await portAllocatorP;
 
   const bridgeManager = await bridgeManagerP;
-  /** @type {import('../types.js').ScopedBridgeManager<'dibc'> | undefined} */
-  // @ts-expect-error XXX EProxy
   const dibcBridgeManager =
-    bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
+    bridgeManager && makeScopedBridge(bridgeManager, BRIDGE_ID.DIBC);
 
   // The Interchain Account (ICA) Controller must be bound to a port that starts
   // with 'icacontroller', so we provide one such port to each client.

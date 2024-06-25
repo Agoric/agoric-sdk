@@ -2,7 +2,13 @@ package swingset
 
 import (
 	// "os"
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"hash"
+	"strings"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -35,8 +41,10 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 	k.SetState(ctx, data.GetState())
 
 	swingStoreExportData := data.GetSwingStoreExportData()
-	if len(swingStoreExportData) == 0 {
+	if len(swingStoreExportData) == 0 && data.SwingStoreExportDataHash == "" {
 		return true
+	} else if data.SwingStoreExportDataHash != "" && len(swingStoreExportData) > 0 {
+		panic("Swingset genesis state cannot have both export data and hash of export data")
 	}
 
 	artifactProvider, err := keeper.OpenSwingStoreExportDirectory(swingStoreExportDir)
@@ -46,15 +54,62 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 
 	swingStore := k.GetSwingStore(ctx)
 
-	for _, entry := range swingStoreExportData {
-		swingStore.Set([]byte(entry.Key), []byte(entry.Value))
-	}
-
 	snapshotHeight := uint64(ctx.BlockHeight())
 
-	getExportDataReader := func() (agoric.KVEntryReader, error) {
-		exportDataIterator := swingStore.Iterator(nil, nil)
-		return agoric.NewKVIteratorReader(exportDataIterator), nil
+	var getExportDataReader func() (agoric.KVEntryReader, error)
+
+	if len(swingStoreExportData) > 0 {
+		for _, entry := range swingStoreExportData {
+			swingStore.Set([]byte(entry.Key), []byte(entry.Value))
+		}
+		getExportDataReader = func() (agoric.KVEntryReader, error) {
+			exportDataIterator := swingStore.Iterator(nil, nil)
+			return agoric.NewKVIteratorReader(exportDataIterator), nil
+		}
+	} else {
+		hashParts := strings.SplitN(data.SwingStoreExportDataHash, ":", 2)
+		if len(hashParts) != 2 {
+			panic(fmt.Errorf("invalid swing-store export data hash %s", data.SwingStoreExportDataHash))
+		}
+		if hashParts[0] != "sha256" {
+			panic(fmt.Errorf("invalid swing-store export data hash algorithm %s, expected sha256", hashParts[0]))
+		}
+		sha256Hash, err := hex.DecodeString(hashParts[1])
+		if err != nil {
+			panic(err)
+		}
+		getExportDataReader = func() (agoric.KVEntryReader, error) {
+			kvReader, err := artifactProvider.GetExportDataReader()
+			if err != nil {
+				return nil, err
+			}
+
+			if kvReader == nil {
+				return nil, fmt.Errorf("swing-store export has no export data")
+			}
+
+			hasher := sha256.New()
+			encoder := json.NewEncoder(hasher)
+			encoder.SetEscapeHTML(false)
+
+			return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
+				key := []byte(entry.Key())
+
+				if !entry.HasValue() {
+					swingStore.Delete(key)
+				} else {
+					swingStore.Set(key, []byte(entry.StringValue()))
+				}
+
+				return encoder.Encode(entry)
+			}, func() error {
+				sum := hasher.Sum(nil)
+				if !bytes.Equal(sum, sha256Hash) {
+					return fmt.Errorf("swing-store data sha256sum didn't match. expected %x, got %x", sha256Hash, sum)
+				}
+				return nil
+			}), nil
+		}
 	}
 
 	err = swingStoreExportsHandler.RestoreExport(
@@ -79,25 +134,17 @@ func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingSto
 	gs := &types.GenesisState{
 		Params:               k.GetParams(ctx),
 		State:                k.GetState(ctx),
-		SwingStoreExportData: []*types.SwingStoreExportDataEntry{},
-	}
-
-	exportDataIterator := k.GetSwingStore(ctx).Iterator(nil, nil)
-	defer exportDataIterator.Close()
-	for ; exportDataIterator.Valid(); exportDataIterator.Next() {
-		entry := types.SwingStoreExportDataEntry{
-			Key:   string(exportDataIterator.Key()),
-			Value: string(exportDataIterator.Value()),
-		}
-		gs.SwingStoreExportData = append(gs.SwingStoreExportData, &entry)
+		SwingStoreExportData: nil,
 	}
 
 	snapshotHeight := uint64(ctx.BlockHeight())
 
+	eventHandler := swingStoreGenesisEventHandler{exportDir: swingStoreExportDir, snapshotHeight: snapshotHeight, swingStore: k.GetSwingStore(ctx), hasher: sha256.New()}
+
 	err := swingStoreExportsHandler.InitiateExport(
 		// The export will fail if the export of a historical height was requested
 		snapshotHeight,
-		swingStoreGenesisEventHandler{exportDir: swingStoreExportDir, snapshotHeight: snapshotHeight},
+		eventHandler,
 		keeper.SwingStoreExportOptions{
 			ArtifactMode:   keeper.SwingStoreArtifactModeOperational,
 			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
@@ -112,12 +159,16 @@ func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingSto
 		panic(err)
 	}
 
+	gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", eventHandler.hasher.Sum(nil))
+
 	return gs
 }
 
 type swingStoreGenesisEventHandler struct {
 	exportDir      string
 	snapshotHeight uint64
+	swingStore     sdk.KVStore
+	hasher         hash.Hash
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64, retrieveSwingStoreExport func() error) error {
@@ -131,7 +182,17 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 
 	artifactsProvider := keeper.SwingStoreExportProvider{
 		GetExportDataReader: func() (agoric.KVEntryReader, error) {
-			return nil, nil
+			exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
+			kvReader := agoric.NewKVIteratorReader(exportDataIterator)
+			eventHandler.hasher.Reset()
+			encoder := json.NewEncoder(eventHandler.hasher)
+			encoder.SetEscapeHTML(false)
+
+			return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
+				return encoder.Encode(entry)
+			}, func() error {
+				return nil
+			}), nil
 		},
 		ReadNextArtifact: provider.ReadNextArtifact,
 	}

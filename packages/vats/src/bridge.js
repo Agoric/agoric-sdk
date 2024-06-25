@@ -3,6 +3,27 @@ import { E } from '@endo/far';
 
 const { Fail, details: X } = assert;
 
+/**
+ * Helper to type the registered scoped bridge correctly.
+ *
+ * FIXME: This is needed because `register` is not an async function, so
+ * `E(x).register` needs to reconstruct its return value as a Promise, which
+ * loses the function's genericity. If `register` was async, we could use its
+ * type directly, and it would remain generic.
+ *
+ * @template {import('@agoric/internal').BridgeIdValue} BridgeId
+ * @param {ERef<import('./types.js').BridgeManager>} bridgeManager
+ * @param {BridgeId} bridgeIdValue
+ * @param {import('@agoric/internal').Remote<
+ *   import('./types.js').BridgeHandler
+ * >} [handler]
+ * @returns {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>}
+ */
+export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
+  /** @type {Promise<import('./types.js').ScopedBridgeManager<BridgeId>>} */ (
+    E(bridgeManager).register(bridgeIdValue, handler)
+  );
+
 export const BridgeHandlerI = M.interface('BridgeHandler', {
   fromBridge: M.call(M.any()).returns(M.promise()),
 });
