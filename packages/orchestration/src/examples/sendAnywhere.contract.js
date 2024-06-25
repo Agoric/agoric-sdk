@@ -38,7 +38,7 @@ const { entries } = Object;
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
  * @param {any} ctx.agoricNamesTools TODO Give this a better type
- * @param {{ account: OrchestrationAccount<any> }} ctx.contractState
+ * @param {{ account: OrchestrationAccount<any> | undefined }} ctx.contractState
  * @param {ZCFSeat} seat
  * @param {object} offerArgs
  * @param {string} offerArgs.chainName
@@ -68,8 +68,8 @@ const sendItFn = async (
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
   const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-  await E.when(pmtP, pmt => contractState.account.deposit(pmt));
-  await contractState.account.transfer(
+  await E.when(pmtP, pmt => contractState.account?.deposit(pmt));
+  await contractState.account?.transfer(
     { denom, value: amt.value },
     {
       address: destAddr,
