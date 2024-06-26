@@ -4,7 +4,7 @@ import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
-import { ConnectionHandlerI } from '../typeGuards.js';
+import { OutboundConnectionHandlerI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -59,7 +59,7 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
     'ICQConnectionKit',
     {
       connection: ICQConnectionI,
-      connectionHandler: ConnectionHandlerI,
+      connectionHandler: OutboundConnectionHandlerI,
       parseQueryPacketWatcher: M.interface('ParseQueryPacketWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // does not need watcherContext
@@ -126,10 +126,6 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
         },
         async onClose(_connection, reason) {
           trace(`ICQ Channel closed. Reason: ${reason}`);
-        },
-        async onReceive(connection, bytes) {
-          trace(`ICQ Channel onReceive`, connection, bytes);
-          return '';
         },
       },
     },
