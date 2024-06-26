@@ -56,7 +56,7 @@ test('makeICQConnection returns an ICQConnection', async t => {
         ),
       ]),
     ),
-    { message: /"data":"(.*)"memo":""/ },
+    { message: /\\"data\\":\\"(.*)\\"memo\\":\\"\\"/ },
     'TODO do not use echo connection',
   );
 });
@@ -118,7 +118,7 @@ test('makeAccount returns a ChainAccount', async t => {
   );
   await t.throwsAsync(
     heapVowTools.when(E(account).executeEncodedTx([delegateMsg])),
-    { message: /"type":1(.*)"data":"(.*)"memo":""/ },
+    { message: /\\"type\\":1(.*)\\"data\\":\\"(.*)\\"memo\\":\\"\\"/ },
     'TODO do not use echo connection',
   );
 
