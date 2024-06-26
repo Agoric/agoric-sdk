@@ -6,7 +6,6 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import {
   ChainAddressShape,
@@ -89,17 +88,12 @@ export const prepareLocalOrchestrationAccountKit = (
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.promise()),
+          .returns(VowShape),
       }),
       getChainInfoWatcher: M.interface('getChainInfoWatcher', {
         onFulfilled: M.call(M.record()) // agoric chain info
           .optional({ destination: ChainAddressShape }) // empty context
           .returns(VowShape), // transfer channel
-      }),
-      getTimeoutTimestampWatcher: M.interface('getTimeoutTimestampWatcher', {
-        onFulfilled: M.call(M.bigint())
-          .optional(IBCTransferOptionsShape)
-          .returns(M.bigint()),
       }),
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call(M.any())
@@ -108,12 +102,12 @@ export const prepareLocalOrchestrationAccountKit = (
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             amount: ChainAmountShape,
           })
-          .returns(M.promise()),
+          .returns(VowShape),
       }),
       extractFirstResultWatcher: M.interface('extractFirstResultWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
           .optional(M.arrayOf(M.undefined()))
-          .returns(M.record()),
+          .returns(M.any()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
         onFulfilled: M.call(M.any())
@@ -128,8 +122,8 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(DenomAmountShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(M.string(), AmountShape).returns(InvitationShape),
-        Undelegate: M.call(M.string(), AmountShape).returns(InvitationShape),
+        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
       }),
     },
@@ -208,19 +202,6 @@ export const prepareLocalOrchestrationAccountKit = (
           return chainHub.getConnectionInfo(
             agoricChainInfo.chainId,
             destination.chainId,
-          );
-        },
-      },
-      getTimeoutTimestampWatcher: {
-        /**
-         * @param {bigint} timeoutTimestamp
-         * @param {{ opts: IBCMsgTransferOptions }} ctx
-         */
-        onFulfilled(timeoutTimestamp, { opts }) {
-          // FIXME: do not call `getTimeoutTimestampNS` if `opts.timeoutTimestamp` or `opts.timeoutHeight` is provided
-          return (
-            opts?.timeoutTimestamp ??
-            (opts?.timeoutHeight ? 0n : timeoutTimestamp)
           );
         },
       },
@@ -323,7 +304,7 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
         getBalances() {
-          throw new Error('not yet implemented');
+          return asVow(() => Fail`not yet implemented`);
         },
 
         getPublicTopics() {
@@ -436,15 +417,14 @@ export const prepareLocalOrchestrationAccountKit = (
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
             // TODO #9324 what's a reasonable default? currently 5 minutes
-            // FIXME: do not call `getTimeoutTimestampNS` if `opts.timeoutTimestamp` or `opts.timeoutHeight` is provided
-            const timeoutTimestampV = watch(
-              timestampHelper.getTimeoutTimestampNS(),
-              this.facets.getTimeoutTimestampWatcher,
-              { opts },
-            );
+            const timeoutTimestampVowOrValue =
+              opts?.timeoutTimestamp ??
+              (opts?.timeoutHeight
+                ? 0n
+                : E(timestampHelper).getTimeoutTimestampNS());
 
             const transferV = watch(
-              allVows([connectionInfoV, timeoutTimestampV]),
+              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
               { opts, amount, destination },
             );

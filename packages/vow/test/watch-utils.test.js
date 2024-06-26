@@ -112,3 +112,15 @@ test('allVows - watch promises mixed with vows', async t => {
   t.is(result.length, 2);
   t.like(result, ['vow', 'promise']);
 });
+
+test('allVows can accept passables', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.resolve('vow');
+  const vowA = watch(testPromiseP);
+
+  const result = await when(allVows([vowA, 'string', 1n, { obj: true }]));
+  t.is(result.length, 4);
+  t.deepEqual(result, ['vow', 'string', 1n, { obj: true }]);
+});

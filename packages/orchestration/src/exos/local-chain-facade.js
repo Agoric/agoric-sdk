@@ -1,5 +1,5 @@
 /** @file ChainAccount exo */
-import { heapVowE as E, heapVowTools } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 
 import { ChainFacadeI } from '../typeGuards.js';
 
@@ -31,7 +31,7 @@ export const prepareLocalChainFacade = (
     makeLocalOrchestrationAccountKit,
     localchain,
     storageNode,
-    vowTools: { allVows },
+    vowTools: { allVows, watch },
   },
 ) =>
   zone.exoClass(
@@ -45,7 +45,7 @@ export const prepareLocalChainFacade = (
     },
     {
       getChainInfo() {
-        return heapVowTools.watch(this.state.localChainInfo);
+        return watch(this.state.localChainInfo);
       },
 
       // FIXME parameterize on the remoteChainInfo to make()
@@ -54,8 +54,8 @@ export const prepareLocalChainFacade = (
       makeAccount() {
         const { localChainInfo } = this.state;
         const lcaP = E(localchain).makeAccount();
-        // FIXME use watch() from vowTools
-        return heapVowTools.watch(allVows([lcaP, E(lcaP).getAddress()]), {
+        // @ts-expect-error E does not understand Vow pipelining
+        return watch(allVows([lcaP, E(lcaP).getAddress()]), {
           onFulfilled: ([lca, address]) => {
             const { holder: account } = makeLocalOrchestrationAccountKit({
               account: lca,
