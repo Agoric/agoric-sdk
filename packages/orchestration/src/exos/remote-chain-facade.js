@@ -1,6 +1,6 @@
 /** @file ChainAccount exo */
 import { makeTracer } from '@agoric/internal';
-import { heapVowE as E, heapVowTools } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
 
 import { ChainFacadeI } from '../typeGuards.js';
 
@@ -39,7 +39,7 @@ export const prepareRemoteChainFacade = (
     orchestration,
     storageNode,
     timer,
-    vowTools: { allVows },
+    vowTools: { allVows, watch },
   },
 ) =>
   zone.exoClass(
@@ -55,7 +55,7 @@ export const prepareRemoteChainFacade = (
     },
     {
       getChainInfo() {
-        return heapVowTools.watch(this.state.remoteChainInfo);
+        return watch(this.state.remoteChainInfo);
       },
 
       // FIXME parameterize on the remoteChainInfo to make()
@@ -75,8 +75,8 @@ export const prepareRemoteChainFacade = (
           connectionInfo.counterparty.connection_id,
         );
 
-        // FIXME use watch() from vowTools
-        return heapVowTools.watch(allVows([icaP, E(icaP).getAddress()]), {
+        // @ts-expect-error E does not understand Vow pipelining
+        return watch(allVows([icaP, E(icaP).getAddress()]), {
           onFulfilled: ([account, address]) => {
             return makeCosmosOrchestrationAccount(address, stakingDenom, {
               account,

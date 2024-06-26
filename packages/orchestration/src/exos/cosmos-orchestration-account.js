@@ -39,7 +39,7 @@ import { dateInSeconds } from '../utils/time.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
- * @import {VowTools} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
@@ -105,7 +105,7 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
-  { when, watch },
+  { when, watch, asVow },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
@@ -372,8 +372,8 @@ export const prepareCosmosOrchestrationAccountKit = (
             'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
           );
         },
-        async getBalances() {
-          throw Error('not yet implemented');
+        getBalances() {
+          return asVow(() => Fail`not yet implemented`);
         },
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
@@ -425,25 +425,27 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /**
          * @param {DenomArg} denom
-         * @returns {Promise<DenomAmount>}
+         * @returns {Vow<DenomAmount>}
          */
-        async getBalance(denom) {
-          const { chainAddress, icqConnection } = this.state;
-          if (!icqConnection) {
-            throw Fail`Queries not available for chain ${chainAddress.chainId}`;
-          }
-          // TODO #9211 lookup denom from brand
-          assert.typeof(denom, 'string');
+        getBalance(denom) {
+          return asVow(() => {
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${chainAddress.chainId}`;
+            }
+            // TODO #9211 lookup denom from brand
+            assert.typeof(denom, 'string');
 
-          const results = E(icqConnection).query([
-            toRequestQueryJson(
-              QueryBalanceRequest.toProtoMsg({
-                address: chainAddress.address,
-                denom,
-              }),
-            ),
-          ]);
-          return when(watch(results, this.facets.balanceQueryWatcher));
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryBalanceRequest.toProtoMsg({
+                  address: chainAddress.address,
+                  denom,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.balanceQueryWatcher);
+          });
         },
 
         send(toAccount, amount) {

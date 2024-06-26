@@ -86,26 +86,26 @@ export const prepareLocalOrchestrationAccountKit = (
     {
       holder: HolderI,
       undelegateWatcher: M.interface('undelegateWatcher', {
-        onFulfilled: M.call(M.arrayOf(M.record()))
+        onFulfilled: M.call([M.splitRecord({ completionTime: M.string() })])
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
       getChainInfoWatcher: M.interface('getChainInfoWatcher', {
         onFulfilled: M.call(M.record()) // agoric chain info
-          .optional({ destination: ChainAddressShape }) // empty context
-          .returns(VowShape), // transfer channel
+          .optional({ destination: ChainAddressShape })
+          .returns(NetworkShape.Vow$(M.record())), // connection info
       }),
       transferWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call(M.any())
+        onFulfilled: M.call([M.record(), M.nat()])
           .optional({
             destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             amount: ChainAmountShape,
           })
-          .returns(VowShape),
+          .returns(NetworkShape.Vow$(M.record())),
       }),
       extractFirstResultWatcher: M.interface('extractFirstResultWatcher', {
-        onFulfilled: M.call(M.arrayOf(M.record()))
+        onFulfilled: M.call([M.record()])
           .optional(M.arrayOf(M.undefined()))
           .returns(M.any()),
       }),

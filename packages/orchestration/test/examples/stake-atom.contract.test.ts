@@ -1,7 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import path from 'path';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
@@ -61,9 +61,6 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   // FIXME mock remoteAddress in ibc bridge. Currently UNPARSABLE_CHAIN_ADDRESS
   // t.regex(address.address, /cosmos1/);
   t.like(chainAddress, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
-
-  t.log('deposit 100 bld to account');
-  await E(account).deposit(await utils.pourPayment(ist.units(100)));
 
   await t.throwsAsync(E(account).getBalances(), {
     message: 'not yet implemented',
