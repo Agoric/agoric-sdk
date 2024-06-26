@@ -5,7 +5,7 @@ import { M, matches } from '@endo/patterns';
 
 /**
  * @import {PassableCap} from '@endo/pass-style';
- * @import {VowPayload, Vow} from './types.js';
+ * @import {VowPayload, Vow, PromiseVow} from './types.js';
  * @import {MakeVowKit} from './vow.js';
  */
 
@@ -81,7 +81,7 @@ export const makeAsVow = makeVowKit => {
    * Helper function that coerces the result of a function to a Vow. Helpful
    * for scenarios like a synchronously thrown error.
    * @template {any} T
-   * @param {(...args: any[]) => Vow<Awaited<T>> | Awaited<T>} fn
+   * @param {(...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>} fn
    * @returns {Vow<Awaited<T>>}
    */
   const asVow = fn => {

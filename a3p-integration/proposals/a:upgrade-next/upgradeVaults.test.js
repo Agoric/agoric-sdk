@@ -17,6 +17,7 @@ import {
   generateOracleMap,
   getLiveOffers,
   getPriceQuote,
+  getVaultPrices,
   pushPrices,
 } from './agd-tools.js';
 import { getDetailsMatchingVats } from './vatDetails.js';
@@ -95,6 +96,13 @@ const checkAuctionVat = async t => {
   t.true(Object.keys(details).length > 2);
 };
 
+const verifyVaultPriceUpdate = async t => {
+  const quote = await getVaultPrices(0);
+
+  t.true(quote.value[0].amountIn.brand.includes(' ATOM '));
+  t.is(quote.value[0].amountOut.value, '+5200000');
+};
+
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
 test('liquidation post upgrade', async t => {
   t.log('starting upgrade vaults test');
@@ -114,4 +122,7 @@ test('liquidation post upgrade', async t => {
 
   t.log('make new auction');
   await checkAuctionVat(t);
+
+  t.log('vault price updated');
+  await verifyVaultPriceUpdate(t);
 });

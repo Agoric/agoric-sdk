@@ -162,6 +162,12 @@ export const getAuctionCollateral = async index => {
   return body.collateralAvailable.value;
 };
 
+export const getVaultPrices = async index => {
+  const path = `published.vaultFactory.managers.manager${index}.quotes`;
+  const body = await getQuoteBody(path);
+  return body.quoteAmount;
+};
+
 export const bankSend = (addr, wanted) => {
   const chain = ['--chain-id', CHAINID];
   const from = ['--from', VALIDATORADDR];
