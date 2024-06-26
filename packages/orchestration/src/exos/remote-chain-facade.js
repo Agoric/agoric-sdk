@@ -2,8 +2,8 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-
 import { pickFacet } from '@agoric/vat-data';
+import { VowShape } from '@agoric/vow';
 import { ChainFacadeI } from '../typeGuards.js';
 
 /**
@@ -45,7 +45,7 @@ const prepareRemoteChainFacadeKit = (
     orchestration,
     storageNode,
     timer,
-    vowTools: { allVows, asVow, watch },
+    vowTools: { asVow, watch },
   },
 ) =>
   zone.exoClassKit(
@@ -53,8 +53,13 @@ const prepareRemoteChainFacadeKit = (
     {
       public: ChainFacadeI,
       makeAccountWatcher: M.interface('makeAccountWatcher', {
-        onFulfilled: M.call([M.remotable(), M.record()])
+        onFulfilled: M.call(M.remotable())
           .optional({ stakingDenom: M.string() })
+          .returns(VowShape),
+      }),
+      getAddressWatcher: M.interface('makeAccountWatcher', {
+        onFulfilled: M.call(M.record())
+          .optional({ stakingDenom: M.string(), account: M.remotable() })
           .returns(M.remotable()),
       }),
     },
@@ -82,25 +87,38 @@ const prepareRemoteChainFacadeKit = (
               throw Fail`chain info lacks staking denom`;
             }
 
-            const icaP = E(orchestration).makeAccount(
-              remoteChainInfo.chainId,
-              connectionInfo.id,
-              connectionInfo.counterparty.connection_id,
-            );
             return watch(
-              allVows([icaP, E(icaP).getAddress()]),
+              E(orchestration).makeAccount(
+                remoteChainInfo.chainId,
+                connectionInfo.id,
+                connectionInfo.counterparty.connection_id,
+              ),
               this.facets.makeAccountWatcher,
-              { stakingDenom },
+              {
+                stakingDenom,
+              },
             );
           });
         },
       },
       makeAccountWatcher: {
         /**
-         * @param {[IcaAccount, ChainAddress]} results
+         * @param {IcaAccount} account
          * @param {{ stakingDenom: Denom }} ctx
          */
-        onFulfilled([account, chainAddress], { stakingDenom }) {
+        onFulfilled(account, { stakingDenom }) {
+          return watch(E(account).getAddress(), this.facets.getAddressWatcher, {
+            stakingDenom,
+            account,
+          });
+        },
+      },
+      getAddressWatcher: {
+        /**
+         * @param {ChainAddress} chainAddress
+         * @param {{ stakingDenom: Denom; account: IcaAccount }} ctx
+         */
+        onFulfilled(chainAddress, { account, stakingDenom }) {
           return makeCosmosOrchestrationAccount(chainAddress, stakingDenom, {
             account,
             storageNode,
