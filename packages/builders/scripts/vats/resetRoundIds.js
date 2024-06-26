@@ -9,5 +9,5 @@ export const defaultProposalBuilder = async () =>
 
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval('reest-round-ids', defaultProposalBuilder);
+  await writeCoreEval('reset-round-ids', defaultProposalBuilder);
 };
