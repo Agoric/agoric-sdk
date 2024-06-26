@@ -64,6 +64,10 @@
       "types": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.d.ts",
       "default": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.js"
     },
+    "./ibc/applications/transfer/v1/tx.js": {
+      "types": "./dist/codegen/ibc/applications/transfer/v1/tx.d.ts",
+      "default": "./dist/codegen/ibc/applications/transfer/v1/tx.js"
+    },
     "./ibc/core/channel/v1/channel.js": {
       "types": "./dist/codegen/ibc/core/channel/v1/channel.d.ts",
       "default": "./dist/codegen/ibc/core/channel/v1/channel.js"
