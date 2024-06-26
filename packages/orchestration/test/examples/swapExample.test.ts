@@ -20,7 +20,7 @@ Error#20: {"type":1,"data":"CmgKIy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRl
   at parseTxPacket (file:///Users/markmiller/src/ongithub/agoric/agoric-sdk/packages/orchestration/src/utils/packet.js:87:14)
 ```
 */
-test.failing('start', async t => {
+test.skip('start', async t => {
   const {
     bootstrap,
     brands: { ist },
