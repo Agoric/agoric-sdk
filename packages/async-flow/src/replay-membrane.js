@@ -1,16 +1,24 @@
 /* eslint-disable no-use-before-define */
 import { Fail, X, b, makeError, q } from '@endo/errors';
-import { isPromise } from '@endo/promise-kit';
-import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
+import {
+  Far,
+  Remotable,
+  getInterfaceOf,
+  getTag,
+  makeTagged,
+  passStyleOf,
+} from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { objectMap } from '@endo/common/object-map.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Passable, PassableCap} from '@endo/pass-style'
+ * @import {Passable, PassableCap, CopyTagged} from '@endo/pass-style'
  * @import {Vow, VowTools, VowKit} from '@agoric/vow'
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
@@ -129,17 +137,35 @@ export const makeReplayMembrane = ({
   // ///////////// Guest to Host or consume log ////////////////////////////////
 
   const tolerateHostPromiseToVow = h => {
-    if (isPromise(h)) {
-      const e = Error('where warning happened');
-      console.log('Warning for now: vow expected, not promise', h, e);
-      // TODO remove this stopgap. Here for now because host-side
-      // promises are everywhere!
-      // Note: A good place to set a breakpoint, or to uncomment the
-      // `debugger;` line, to work around bundling.
-      // debugger;
-      return watch(h);
-    } else {
-      return h;
+    const passStyle = passStyleOf(h);
+    switch (passStyle) {
+      case 'promise': {
+        const e = Error('where warning happened');
+        console.log('Warning for now: vow expected, not promise', h, e);
+        // TODO remove this stopgap. Here for now because host-side
+        // promises are everywhere!
+        // Note: A good place to set a breakpoint, or to uncomment the
+        // `debugger;` line, to work around bundling.
+        // debugger;
+        return watch(h);
+      }
+      case 'copyRecord': {
+        return objectMap(h, tolerateHostPromiseToVow);
+      }
+      case 'copyArray': {
+        const a = /** @type {Array} */ (h);
+        return harden(a.map(tolerateHostPromiseToVow));
+      }
+      case 'tagged': {
+        const t = /** @type {CopyTagged} */ (h);
+        if (isVow(t)) {
+          return h;
+        }
+        return makeTagged(getTag(t), tolerateHostPromiseToVow(t.payload));
+      }
+      default: {
+        return h;
+      }
     }
   };
 
@@ -151,6 +177,7 @@ export const makeReplayMembrane = ({
         : hostTarget(...hostArgs);
       // This is a temporary kludge anyway. But note that it only
       // catches the case where the promise is at the top of hostResult.
+      harden(hostResult);
       hostResult = tolerateHostPromiseToVow(hostResult);
       // Try converting here just to route the error correctly
       hostToGuest(hostResult, `converting ${optVerb || 'host'} result`);
@@ -254,8 +281,13 @@ export const makeReplayMembrane = ({
     const { vow, resolver } = hostResultKit;
     try {
       const hostPromise = optVerb
-        ? E(hostTarget)[optVerb](...hostArgs)
-        : E(hostTarget)(...hostArgs);
+        ? heapVowE(hostTarget)[optVerb](...hostArgs)
+        : // @ts-expect-error once we changed this from E to heapVowE,
+          // typescript started complaining that heapVowE(hostTarget)
+          // is not callable. I'm not sure if this is a just a typing bug
+          // in heapVowE or also reflects a runtime deficiency. But this
+          // case it not used yet anyway.
+          heapVowE(hostTarget)(...hostArgs);
       resolver.resolve(hostPromise); // TODO does this always work?
     } catch (hostProblem) {
       throw Fail`internal: eventual send synchrously failed ${hostProblem}`;
