@@ -3,7 +3,6 @@
 export default [
   "@agoric/access-token",
   "@agoric/assert",
-  "@agoric/async-flow",
   "@agoric/base-zone",
   "@agoric/benchmark",
   "@agoric/boot",
@@ -25,7 +24,6 @@ export default [
   "@agoric/kmarshal",
   "@agoric/network",
   "@agoric/notifier",
-  "@agoric/orchestration",
   "@agoric/pegasus",
   "@agoric/smart-wallet",
   "@agoric/solo",

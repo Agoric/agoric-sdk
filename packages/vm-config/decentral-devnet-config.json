@@ -13,9 +13,6 @@
         "@agoric/builders/scripts/vats/init-transfer.js"
       ],
       [
-        "@agoric/builders/scripts/vats/init-orchestration.js"
-      ],
-      [
         {
           "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
           "entrypoint": "defaultProposalBuilder",
@@ -162,19 +159,6 @@
                 "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
                 "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
               }
-            }
-          ]
-        }
-      ],
-      [
-        {
-          "module": "@agoric/builders/scripts/orchestration/init-stakeAtom.js",
-          "entrypoint": "defaultProposalBuilder",
-          "args": [
-            {
-              "hostConnectionId": "connection-1",
-              "controllerConnectionId": "connection-0",
-              "bondDenom": "uatom"
             }
           ]
         }

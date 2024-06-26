@@ -68,6 +68,7 @@
     "@endo/nat": "^5.0.7",
     "@endo/patterns": "^1.4.0",
     "@endo/promise-kit": "^1.1.2",
+    "@endo/zip": "^1.0.5",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
     "chalk": "^5.2.0",

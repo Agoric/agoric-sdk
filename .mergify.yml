@@ -1,7 +1,24 @@
 # Linear queue for the main branch.
 queue_rules:
   - name: main
-    conditions:
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
+
+      {{ body | trim }}
+    queue_conditions:
+      - base=master
+      - or:
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
+          - label=bypass:integration
+      - or:
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
+    merge_conditions:
       - base=master
       # Require integration tests before merging only
       - or:
@@ -16,57 +33,24 @@ pull_request_rules:
       - or:
           - '#commits-behind=0'
           - label=bypass:linear-history
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main
-        method: merge
+        merge_method: merge
   - name: rebase updates then merge to master
     conditions:
       - base=master
       - label=automerge:rebase
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main
-        method: merge
+        merge_method: merge
         update_method: rebase
   - name: squash to master
     conditions:
       - base=master
       - label=automerge:squash
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
     actions:
       queue:
         name: main
-        method: squash
+        merge_method: squash

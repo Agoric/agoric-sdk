@@ -1,6 +1,8 @@
+/* global globalThis */
+
 import { isPromise } from '@endo/promise-kit';
 import { Far } from '@endo/far';
-import { V as E } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import * as vowExports from '@agoric/vow/vat.js';
 import * as farExports from '@endo/far';
 
@@ -194,7 +196,8 @@ export function getReplHandler(replObjects, send) {
     ...farExports,
     ...vowExports,
     E,
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     console: replConsole,
     commands,
     history,

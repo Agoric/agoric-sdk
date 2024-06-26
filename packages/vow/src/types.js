@@ -2,12 +2,20 @@
 export {};
 
 /**
- * @import {RemotableBrand} from '@endo/eventual-send'
  * @import {CopyTagged} from '@endo/pass-style'
  * @import {RemotableObject} from '@endo/pass-style';
- * @import {IsPrimitive, Remote} from '@agoric/internal';
- * @import {PromiseVow} from '@agoric/vow';
+ * @import {Remote} from '@agoric/internal';
  * @import {prepareVowTools} from './tools.js'
+ */
+
+/**
+ * @callback IsRetryableReason
+ * Return truthy if a rejection reason should result in a retry.
+ * @param {any} reason
+ * @param {any} priorRetryValue the previous value returned by this function
+ * when deciding whether to retry the same logical operation
+ * @returns {any} If falsy, the reason is not retryable. If truthy, the
+ * priorRetryValue for the next call.
  */
 
 /**
@@ -26,12 +34,10 @@ export {};
  * This is used within E, so we must narrow the type to its remote form.
  * @template T
  * @typedef {(
- *   T extends PromiseLike<infer U> ? Unwrap<U> :
- *   T extends Vow<infer U> ? Unwrap<U> :
- *   IsPrimitive<T> extends true ? T :
- *   T extends RemotableBrand<infer Local, infer Primary> ? Local & T :
+ *   T extends Vow<infer U> ? EUnwrap<U> :
+ *   T extends PromiseLike<infer U> ? EUnwrap<U> :
  *   T
- * )} Unwrap
+ * )} EUnwrap
  */
 
 /**
@@ -75,10 +81,10 @@ export {};
  * @template [T=any]
  * @template [TResult1=T]
  * @template [TResult2=never]
- * @template [C=any] watcher context
+ * @template {any[]} [C=any[]] watcher args
  * @typedef {object} Watcher
- * @property {(value: T, context?: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
- * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
+ * @property {(value: T, ...args: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
+ * @property {(reason: any, ...args: C) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
 
 /** @typedef {ReturnType<typeof prepareVowTools>} VowTools */

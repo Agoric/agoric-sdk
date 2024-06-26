@@ -69,7 +69,9 @@ export const prepareVowKit = zone => {
     () => ({
       value: undefined,
       // The stepStatus is null if the promise step hasn't settled yet.
-      stepStatus: /** @type {null | 'fulfilled' | 'rejected'} */ (null),
+      stepStatus: /** @type {null | 'pending' | 'fulfilled' | 'rejected'} */ (
+        null
+      ),
     }),
     {
       vowV0: {
@@ -84,6 +86,7 @@ export const prepareVowKit = zone => {
             case 'rejected':
               throw value;
             case null:
+            case 'pending':
               return provideCurrentKit(this.facets.resolver).promise;
             default:
               throw new TypeError(`unexpected stepStatus ${stepStatus}`);
@@ -96,10 +99,17 @@ export const prepareVowKit = zone => {
          */
         resolve(value) {
           const { resolver } = this.facets;
-          const { promise, resolve } = getPromiseKitForResolution(resolver);
+          const { stepStatus } = this.state;
+          const { resolve } = getPromiseKitForResolution(resolver);
           if (resolve) {
             resolve(value);
-            zone.watchPromise(promise, this.facets.watchNextStep);
+          }
+          if (stepStatus === null) {
+            this.state.stepStatus = 'pending';
+            zone.watchPromise(
+              HandledPromise.resolve(value),
+              this.facets.watchNextStep,
+            );
           }
         },
         /**
@@ -107,15 +117,23 @@ export const prepareVowKit = zone => {
          */
         reject(reason) {
           const { resolver, watchNextStep } = this.facets;
+          const { stepStatus } = this.state;
           const { reject } = getPromiseKitForResolution(resolver);
           if (reject) {
             reject(reason);
+          }
+          if (stepStatus === null) {
             watchNextStep.onRejected(reason);
           }
         },
       },
       watchNextStep: {
         onFulfilled(value) {
+          const { resolver } = this.facets;
+          const { resolve } = getPromiseKitForResolution(resolver);
+          if (resolve) {
+            resolve(value);
+          }
           this.state.stepStatus = 'fulfilled';
           this.state.value = value;
         },

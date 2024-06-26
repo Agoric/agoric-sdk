@@ -4,7 +4,6 @@
 /* global globalThis */
 
 import { importBundle } from '@endo/import-bundle';
-import { assert } from '@agoric/assert';
 import { handlePWarning } from '../handleWarning.js';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {
@@ -16,7 +15,8 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
 
   const defaultEndowments = {
     console: louderConsole,
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     VatData: globalThis.VatData,
   };
 

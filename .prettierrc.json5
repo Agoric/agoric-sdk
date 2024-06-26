@@ -7,7 +7,6 @@
         'packages/ERTP/**/*.js',
         'packages/inter-protocol/**/*.js',
         'packages/internal/**/*.js',
-        'packages/orchestration/**/*.js',
         'packages/store/**/*.js',
         'packages/smart-wallet/**/*.js',
         'packages/vats/**/*.js',

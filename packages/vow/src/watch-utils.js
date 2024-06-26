@@ -111,7 +111,7 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
           }
           resolver.resolve(harden(results));
         },
-        onRejected(value, { id }) {
+        onRejected(value, { id, index: _index }) {
           const { idToVowState } = this.state;
           if (!idToVowState.has(id)) {
             // First rejection wins.

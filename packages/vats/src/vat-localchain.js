@@ -1,12 +1,17 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 
 import { prepareLocalChainTools } from './localchain.js';
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
-  const { makeLocalChain } = prepareLocalChainTools(zone.subZone('localchain'));
+  const vowTools = prepareVowTools(zone.subZone('VowTools'));
+  const { makeLocalChain } = prepareLocalChainTools(
+    zone.subZone('localchain'),
+    vowTools,
+  );
 
   return Far('LocalChainVat', {
     /**

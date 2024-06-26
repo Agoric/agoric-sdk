@@ -1,36 +1,55 @@
+/**
+ * @file specialization of the `@agoric/vow` package for the vat disconnection rejections produced by
+ * the SwingSet kernel.
+ */
+
 /* global globalThis */
 // @ts-check
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeE, prepareVowTools as rawPrepareVowTools } from './src/index.js';
 
-/**
- * Return truthy if a rejection reason should result in a retry.
- * @param {any} reason
- * @returns {boolean}
- */
-const isRetryableReason = reason => isUpgradeDisconnection(reason);
+/** @type {import('./src/types.js').IsRetryableReason} */
+const isRetryableReason = (reason, priorRetryValue) => {
+  if (
+    isUpgradeDisconnection(reason) &&
+    (!priorRetryValue ||
+      reason.incarnationNumber > priorRetryValue.incarnationNumber)
+  ) {
+    return reason;
+  }
+  return undefined;
+};
 
 export const defaultPowers = harden({
   isRetryableReason,
 });
 
 /**
+ * Produce SwingSet-compatible vowTools, with an arbitrary Zone type
+ *
  * @type {typeof rawPrepareVowTools}
  */
 export const prepareVowTools = (zone, powers = {}) =>
   rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
 
-export const vowTools = prepareVowTools(makeHeapZone());
-export const { watch, when, makeVowKit, allVows } = vowTools;
+/**
+ * `vowTools` that are not durable, but are useful in non-durable clients that
+ * need to consume vows from other SwingSet vats.
+ */
+export const heapVowTools = prepareVowTools(makeHeapZone());
 
 /**
- * A vow-shortening E.  CAVEAT: This produces long-lived ephemeral
- * promises that encapsulate the shortening behaviour, and so provides no way
- * for `watch` to durably shorten.  Use the standard `import('@endo/far').E` if
- * you need to `watch` its resulting promises.
+ * A vow-shortening E, for use in vats that are not durable but receive vows.
+ *
+ * When the vows must be watched durably, use vowTools prepared in a durable zone.
+ *
+ * This produces long-lived ephemeral promises that encapsulate the shortening
+ * behaviour, and so provides no way for `watch` to durably shorten. Use the
+ * standard `import('@endo/far').E` if you need to `watch` its resulting
+ * promises.
  */
-export const V = makeE(globalThis.HandledPromise, {
-  unwrap: when,
-  additional: { when },
+export const heapVowE = makeE(globalThis.HandledPromise, {
+  unwrap: heapVowTools.when,
+  additional: { when: heapVowTools.when },
 });
