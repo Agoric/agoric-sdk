@@ -133,6 +133,8 @@
     "@agoric/cosmos": "^0.34.1",
     "@ava/typescript": "^4.1.0",
     "@cosmology/telescope": "^1.7.1",
+    "@endo/bundle-source": "^3.2.3",
+    "@endo/import-bundle": "^1.1.2",
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsd": "^0.30.7",
