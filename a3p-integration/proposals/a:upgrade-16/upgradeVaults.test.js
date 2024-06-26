@@ -100,9 +100,7 @@ const verifyVaultPriceUpdate = async t => {
   const quote = await getVaultPrices(0);
 
   t.true(quote.value[0].amountIn.brand.includes(' ATOM '));
-
-  // FAIL, should be +5200000
-  t.is(quote.value[0].amountOut.value, '12010000');
+  t.is(quote.value[0].amountOut.value, '+5200000');
 };
 
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
