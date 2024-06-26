@@ -3,6 +3,58 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.33.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.2...@agoric/swingset-vat@0.33.0-u16.0) (2024-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* add a `reapAllVats` call to the controller ([6ba0af9](https://github.com/Agoric/agoric-sdk/commit/6ba0af935589dd2f8dab5ff51317b45362e5c4d4)), closes [#8626](https://github.com/Agoric/agoric-sdk/issues/8626)
+* cleanup minor issues found during benchmark writeup ([100922b](https://github.com/Agoric/agoric-sdk/commit/100922b4c4f422e159bc4ba28a8bc162412f0a4d)), closes [#8647](https://github.com/Agoric/agoric-sdk/issues/8647)
+* features for node subprocess workers ([fca73a1](https://github.com/Agoric/agoric-sdk/commit/fca73a161f9cca1fddab161dbc31f33defd9dc2f))
+* get basic node subprocess workers working ([6d68c28](https://github.com/Agoric/agoric-sdk/commit/6d68c288932f3c271c9a91bfeadd7dcecb984f68))
+* print path on loadSwingsetConfigFile failure ([d4e8345](https://github.com/Agoric/agoric-sdk/commit/d4e8345ec60e36ee7363d51ea12c989707aa1f91))
+* refresh slogulator to account for smallcaps and improve UX ([73aa6d6](https://github.com/Agoric/agoric-sdk/commit/73aa6d6554651a4897fa19ae223abbe8a8491320)), closes [#8647](https://github.com/Agoric/agoric-sdk/issues/8647)
+* **swing-store:** faster import of swing-store ([0170568](https://github.com/Agoric/agoric-sdk/commit/0170568d66748af76f0bd24a4acdaa34b9c79cca))
+* **swing-store:** prevent SwingSet usage of imported swing-store ([6a833eb](https://github.com/Agoric/agoric-sdk/commit/6a833ebda2b2ff0e72040ca8186f93ae91567add))
+* **SwingSet:** Add a tool for classifying unsettled promises ([feb1f93](https://github.com/Agoric/agoric-sdk/commit/feb1f93c81e68c680e07bdac8c64917ad69af602)), closes [#8336](https://github.com/Agoric/agoric-sdk/issues/8336)
+* **SwingSet:** Add build-mezzanine-db.js ([be372da](https://github.com/Agoric/agoric-sdk/commit/be372da9a73e3203dc66d3619d79f4f0915ac7a1))
+* **SwingSet:** Classify getExitSubscriber promises ([4ad6234](https://github.com/Agoric/agoric-sdk/commit/4ad62348cc2b89d89e2675cc8bbe2c9030c5ceec))
+* **SwingSet:** Classify wallet spend action promises ([c1e4090](https://github.com/Agoric/agoric-sdk/commit/c1e4090b6b5a51d894b95d361d2daccac815d27d))
+* **SwingSet:** Improve classification of PublishKit tail promises ([5fc73c0](https://github.com/Agoric/agoric-sdk/commit/5fc73c0c570152e57df84b1fb872453f73eac3dd))
+* **SwingSet:** Improve promise classification descriptions ([a955006](https://github.com/Agoric/agoric-sdk/commit/a955006eb4e2e8fec84cc509cf80e523ed23a542))
+* **SwingSet:** Indicate the target interface name of getUpdateSince() promises ([948a20d](https://github.com/Agoric/agoric-sdk/commit/948a20d424b0847610fcb875d2346a442d23e304))
+* tool for auditing dangling kindID references ([eeadc46](https://github.com/Agoric/agoric-sdk/commit/eeadc462d8fb09449e4ea6f0118ae8654e0c8e9b)), closes [#7655](https://github.com/Agoric/agoric-sdk/issues/7655)
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* apply limit to correct property ([9e3b539](https://github.com/Agoric/agoric-sdk/commit/9e3b53918ccf26749bdb1f203e22b25ffb791693))
+* deviceManager assertion details ([a91a28d](https://github.com/Agoric/agoric-sdk/commit/a91a28dda119fb862a79ad62e2958148d64417f0))
+* eliminate the `passableEncoding` hack ([87dbbda](https://github.com/Agoric/agoric-sdk/commit/87dbbda8484c6fe3fe542eb847647fd1540c11e6)), closes [#8327](https://github.com/Agoric/agoric-sdk/issues/8327)
+* endow with original unstructured `assert` ([#9514](https://github.com/Agoric/agoric-sdk/issues/9514)) ([ce64840](https://github.com/Agoric/agoric-sdk/commit/ce64840f599ee7b73cbe455cc41eecec3464430a)), closes [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513)
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* expand length limit for bundles ([843155a](https://github.com/Agoric/agoric-sdk/commit/843155a59501dea4da50880218cc10b22f06355d))
+* improved type fussiness ([ba7c079](https://github.com/Agoric/agoric-sdk/commit/ba7c079ae8d5291cf3bd8a4ecfc20b1067e5fe02))
+* minor fixes and cleanups in preparation for benchmark support ([1277176](https://github.com/Agoric/agoric-sdk/commit/127717677287cc825e34b6326be3e11a165dce27))
+* Not as many bundle-source breaking changes ([db49fc5](https://github.com/Agoric/agoric-sdk/commit/db49fc534f0102d70cc3b3cc792c02aa036bbeee))
+* review feedback ([e83286f](https://github.com/Agoric/agoric-sdk/commit/e83286f2dec431881cb35a0e28ee4128dd1ec3d3))
+* **SwingSet:** adapt to promise tagging support ([#8403](https://github.com/Agoric/agoric-sdk/issues/8403)) ([af6e3fd](https://github.com/Agoric/agoric-sdk/commit/af6e3fd0cdc9097fd2a3d9fbf8047184e0d9aa4b))
+* **SwingSet:** explicitly harden prototypes ([24319ab](https://github.com/Agoric/agoric-sdk/commit/24319abf7282a11fe912a7c2adef20e402758a4b))
+* **swingset:** force flaky GC test to use XS only ([a3fe3be](https://github.com/Agoric/agoric-sdk/commit/a3fe3be04268bc16cfa6e15f5211498ecf19ac6b)), closes [#3240](https://github.com/Agoric/agoric-sdk/issues/3240) [#5575](https://github.com/Agoric/agoric-sdk/issues/5575) [#9089](https://github.com/Agoric/agoric-sdk/issues/9089)
+* **swingset:** log vat termination and upgrade better ([#9535](https://github.com/Agoric/agoric-sdk/issues/9535)) ([25522a1](https://github.com/Agoric/agoric-sdk/commit/25522a1a671f52881a6f22e51d3af0a2a6f7f1f8))
+* **SwingSet:** silence vat console output during replay ([5d00dc6](https://github.com/Agoric/agoric-sdk/commit/5d00dc6dd9bfaebdf4c21f78328c3fbbdbe2cabe))
+* **SwingSet:** Undo deviceTools behavioral change from [#9153](https://github.com/Agoric/agoric-sdk/issues/9153) ([#9506](https://github.com/Agoric/agoric-sdk/issues/9506)) ([40c41e2](https://github.com/Agoric/agoric-sdk/commit/40c41e22a69d6d00812b24f8763fa61e46939209))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* upgrade for breaking changes in `@endo/bundle-source` ([e840bb2](https://github.com/Agoric/agoric-sdk/commit/e840bb2385ef38aa2a038b6f21f02cdcd2d7979b))
+* **zone:** no longer getting M from @agoric/zone ([d68bc84](https://github.com/Agoric/agoric-sdk/commit/d68bc8464b0f4df24bd63dd8f5696c6bb6458135))
+
+
+
 ### [0.32.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.1...@agoric/swingset-vat@0.32.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swingset-vat

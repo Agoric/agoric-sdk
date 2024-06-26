@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.14.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.14.2...@agoric/xsnap@0.14.3-u16.0) (2024-06-26)
+
+
+### Features
+
+* **xsnap:** Build sensitivity to presence of build toolchain ([12e1f48](https://github.com/Agoric/agoric-sdk/commit/12e1f48483776f5808cdee40b78f9a7f1575b61b))
+* **xsnap:** Dispense with git when in node_modules ([3e5581b](https://github.com/Agoric/agoric-sdk/commit/3e5581b68307038a4a8ec3078c992d04f9d38ab2))
+
+
+### Bug Fixes
+
+* endow with original unstructured `assert` ([#9514](https://github.com/Agoric/agoric-sdk/issues/9514)) ([ce64840](https://github.com/Agoric/agoric-sdk/commit/ce64840f599ee7b73cbe455cc41eecec3464430a)), closes [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513)
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* **types:** include .cjs ([416818b](https://github.com/Agoric/agoric-sdk/commit/416818bf8ab0d7776f203e18f26629442eb26107))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* **xsnap:** explicitly harden prototypes ([e451d13](https://github.com/Agoric/agoric-sdk/commit/e451d13b7925debf2bfe8f3cf749d225ec0bfe36))
+* **xsnap:** Release snapshot after load to avoid leak ([ca995f6](https://github.com/Agoric/agoric-sdk/commit/ca995f6cd169d835b6b44956674defa8d7b30e40)), closes [#9316](https://github.com/Agoric/agoric-sdk/issues/9316)
+* **xsnap:** Revert failed attempt to expedite xsnap builds ([e37d357](https://github.com/Agoric/agoric-sdk/commit/e37d3575d92cb34f7e7cd012aa0b2f3ee2134fc0))
+
+
+
 ### [0.14.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/xsnap@0.14.1...@agoric/xsnap@0.14.2) (2023-06-02)
 
 

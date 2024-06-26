@@ -3,6 +3,110 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deployment@2.5.0...@agoric/deployment@4.0.0-u16.0) (2024-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cosmos:** add required export-dir export cmd option
+* remove deprecated `ag-cosmos-helper`
+
+### Features
+
+* allow passing tmux flags ([ef92fb5](https://github.com/Agoric/agoric-sdk/commit/ef92fb5cc91210d1469d293bdac1c76b05858136))
+* **cosmos:** add required export-dir export cmd option ([3be2986](https://github.com/Agoric/agoric-sdk/commit/3be2986059c9f007d34518deef68e31956e9b45e))
+* **deployment:** `docker/integration-test.sh` for nested execution ([3d4dd2b](https://github.com/Agoric/agoric-sdk/commit/3d4dd2bc0dc0f032c736358e9bfae49edbfc7697))
+* **deployment:** add genesis export test ([46d3466](https://github.com/Agoric/agoric-sdk/commit/46d34667c4dd66714046c5682b05a5c891bfa8fc))
+* **deployment:** add state-sync to upgrade 11 test ([38ac134](https://github.com/Agoric/agoric-sdk/commit/38ac134e38de491a405e7692d4fa608c6b1775c7))
+* **deployment:** find testnet-load-generator in parent of agoric-sdk ([8161c5e](https://github.com/Agoric/agoric-sdk/commit/8161c5e24bc89776cb0f60b34ff3f85f2600f56b))
+* **deployment:** only include this package in `setup` docker image ([af47842](https://github.com/Agoric/agoric-sdk/commit/af478421688e81b3d337421fe5e2c648f3c53e87))
+* **deployment:** replicate broken state sync in upgrade test ([b06beec](https://github.com/Agoric/agoric-sdk/commit/b06beec9e83794407b060a70db4623b6da0b0db8))
+* **Docker:** make shell ([0ecffd2](https://github.com/Agoric/agoric-sdk/commit/0ecffd275591e56204a5e2794c82d814b3b73dac))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* port bash tests to javascript ([84f2e6f](https://github.com/Agoric/agoric-sdk/commit/84f2e6fe32e7e7650abd725757d21da698ccfb9a))
+* **smart-wallet:** upgrade walletFactory for non-vbank assets ([a0c4ecf](https://github.com/Agoric/agoric-sdk/commit/a0c4ecf5d6f1e3874828f5b2fcf38f87cb0619ba))
+* **upgrade-test:** plumb and use `UPGRADE_INFO` ([5f703d7](https://github.com/Agoric/agoric-sdk/commit/5f703d72c3fe07a73cf8f4204ce316ec08f047e6))
+* vm-config package ([8b1ecad](https://github.com/Agoric/agoric-sdk/commit/8b1ecad8ab50db777bc11c3ee6fcdb37d6cb38b6))
+* **x/swingset:** export swing store in genesis ([598abf7](https://github.com/Agoric/agoric-sdk/commit/598abf73ac555bd7284c8a91a03c205dc62d9b0c))
+
+
+### Bug Fixes
+
+* **ci:** require loadgen in deployment integration test ([a59f162](https://github.com/Agoric/agoric-sdk/commit/a59f16200c6230209e7bb3b3bd7bc819476e02c0))
+* **cosmos:** make agd upgrade work ([1aa1d26](https://github.com/Agoric/agoric-sdk/commit/1aa1d26f05875c91fd47da1ad7386d8979f94b03))
+* **deployment:** Dockerfile syntax ([92190a4](https://github.com/Agoric/agoric-sdk/commit/92190a4af69b9155fa41503666694901ba62ae44))
+* **deployment:** fix upgrade 11 test that were skipped ([16f1b3f](https://github.com/Agoric/agoric-sdk/commit/16f1b3fd0a7ada7142cd13b6dd1c6bd52cf880c2))
+* **deployment:** localize script to upgrade ([371f65a](https://github.com/Agoric/agoric-sdk/commit/371f65ab623c3582129a130b07ce5688e86d3d82))
+* **deployment:** map Debian `bookworm` to Ubuntu `jammy` ([ba2c754](https://github.com/Agoric/agoric-sdk/commit/ba2c754be1cabf3b6198ff6dc62735a2d2fdb2b5))
+* **deployment:** propagate `ag-setup-cosmos` path to faucet script ([ea7e883](https://github.com/Agoric/agoric-sdk/commit/ea7e883f4b59f082be3a7cbb2673d63e4bb6700f))
+* **deployment:** remove dependency on `HELPER_BINARY` ([e7fb9f5](https://github.com/Agoric/agoric-sdk/commit/e7fb9f5abe56a3d8105a7eb16d2da3b9cba6be4b))
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* test upgrade to one-past-vaults ([e088215](https://github.com/Agoric/agoric-sdk/commit/e088215a7561b0bcc0f4c83f7a099c6cc32fb66f))
+* **upgrade-test:** abort if proposal is rejected ([735246a](https://github.com/Agoric/agoric-sdk/commit/735246a6b2dd303116f51538d7a03443fee336c8))
+* **upgrade-test:** update for new file locations ([cd2779e](https://github.com/Agoric/agoric-sdk/commit/cd2779e96012bb3ae8d02ccdfa8671890eab155c))
+* **upgrade-test:** use `agoric-upgrade-10` tag 35 ([1b23d31](https://github.com/Agoric/agoric-sdk/commit/1b23d3112525a84d45804650a38333b4fa563af1))
+* **upgrade-test:** use correct mainnet-1b image ([39558c0](https://github.com/Agoric/agoric-sdk/commit/39558c04b798d4a5edf6e4cdb512d20ee5c48d88))
+* **upgrade-test:** use default `$DEBUG` for docker run ([844556b](https://github.com/Agoric/agoric-sdk/commit/844556ba19d086b478ae01fcad644b548ae0300a))
+* use dev instead of latest ([7bbe44f](https://github.com/Agoric/agoric-sdk/commit/7bbe44fd712172fa302ab87eaeca96e97901e639))
+
+
+### Reverts
+
+* Revert "test(upgrade-test): tolerate running after `a3p:main` zoe upgrade" ([0b3e1a3](https://github.com/Agoric/agoric-sdk/commit/0b3e1a34d65e9ed78ad31f25c9fd7d1e719a45e2))
+
+
+### Build System
+
+* remove deprecated `ag-cosmos-helper` ([6866ebe](https://github.com/Agoric/agoric-sdk/commit/6866ebe670c257b60dfb6951c295e21ce0fe2fcc))
+
+## 0.34.0 (2023-05-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* move swingset state dir
+* **AMM:**  remove the AMM and cleanup bootstrap etc. dependencies (#7074)
+
+### Features
+
+* **AMM:**  remove the AMM and cleanup bootstrap etc. dependencies ([#7074](https://github.com/Agoric/agoric-sdk/issues/7074)) ([ed5ee58](https://github.com/Agoric/agoric-sdk/commit/ed5ee58a276fce3c55f19e4f6f662ed579896c2c)), closes [#7047](https://github.com/Agoric/agoric-sdk/issues/7047)
+* **ci:** Enforce no failures of otel slog sender in integration ([c7227b2](https://github.com/Agoric/agoric-sdk/commit/c7227b2ecdc68617cf2f3cfd5a4623fafd27376a))
+* **ci:** require publishBundle ([aeb3e47](https://github.com/Agoric/agoric-sdk/commit/aeb3e47a20775a6585fc6d375d661018728c5fba))
+* **ci:** Use state-sync in deployment loadgen test ([27b97c1](https://github.com/Agoric/agoric-sdk/commit/27b97c1a6fa6e702fa72f1d215bb4d42f403ed3e))
+* **deployment:** Enable state-sync on validator nodes ([2faa1fb](https://github.com/Agoric/agoric-sdk/commit/2faa1fbd17d5cee552bfec8fd396b96d252bca1c))
+* move swingset state dir ([eddb46b](https://github.com/Agoric/agoric-sdk/commit/eddb46bd0e41340aec7d420adc37074fbca1b177))
+
+
+### Bug Fixes
+
+* accept ec invitations ([8cfc7d4](https://github.com/Agoric/agoric-sdk/commit/8cfc7d47bef9039e1cac1e4e54eea0a9e5ccefc9))
+* address review suggestions ([a011871](https://github.com/Agoric/agoric-sdk/commit/a011871321ca1f57601bc02ccc271ffbc86f7a15))
+* agoric follow lossy everywhere ([306ed4b](https://github.com/Agoric/agoric-sdk/commit/306ed4b3c25d6c51ab77e2111ee1e9fdd6a85349))
+* avoid bash exit attribute, reduce verbosity ([3fe4127](https://github.com/Agoric/agoric-sdk/commit/3fe41271d66b99b0b530bf7963ac4ddd9d1340a3))
+* bump go version ([d91451a](https://github.com/Agoric/agoric-sdk/commit/d91451a56da4a4c08f9ba0a1b56c8836ad4596b5))
+* **deployment:** minor Makefile fixes ([8494a90](https://github.com/Agoric/agoric-sdk/commit/8494a90b8edc767c93dbd4073d2f1b8a4f8044e4))
+* **deployment:** Pass-through SLOGSENDER_AGENT_ env ([#6438](https://github.com/Agoric/agoric-sdk/issues/6438)) ([7818d2d](https://github.com/Agoric/agoric-sdk/commit/7818d2db4e38737e09a0623579160c683f582ec1))
+* **deployment:** put `GOBIN` in `PATH` for `setup.sh` ([42ba2d4](https://github.com/Agoric/agoric-sdk/commit/42ba2d45cc1ee28f5344f1b146135ac10b4b4c5b))
+* **deployment:** remove dependencies on cgroup ([beda83d](https://github.com/Agoric/agoric-sdk/commit/beda83dd060e5f1ce8da0894fce0c145297d9df4))
+* **deployment:** rename `agoric/deployment` to `ssh-node` ([5eadb93](https://github.com/Agoric/agoric-sdk/commit/5eadb9329a689d95c0a5f276267350d9c7dfbd8a))
+* **deployment:** simplify the integration test ([f1db1ec](https://github.com/Agoric/agoric-sdk/commit/f1db1ec69a5d57cbab1c2aae568428820ed576f7))
+* increased timeout for older agoric follow ([66c5939](https://github.com/Agoric/agoric-sdk/commit/66c59396f8a288c6a802e1992febe1cb50822a10))
+* invalidate docker cache for GIT_REVISION too ([38de4a2](https://github.com/Agoric/agoric-sdk/commit/38de4a241db68ba0e62066d519b2f5bf6d804070))
+* Makefile envvar shell compatibility ([1a210db](https://github.com/Agoric/agoric-sdk/commit/1a210dbe2047691a715d2f8ddeb65e3c202e316c))
+* pushPrice prints correct oracle ([af5f1fe](https://github.com/Agoric/agoric-sdk/commit/af5f1feb1f76d17c0275ecc7ca447c9b1c78772f))
+* rename docker image root ([#7186](https://github.com/Agoric/agoric-sdk/issues/7186)) ([ab2efa6](https://github.com/Agoric/agoric-sdk/commit/ab2efa64b44fb410592b6dfa2a992296fd8b51d4))
+* timeout failed push price and emit warning ([0ba57cd](https://github.com/Agoric/agoric-sdk/commit/0ba57cd028ec52e779973c95f121b463d2b134bf))
+* unsaved test and dir replacements ([54dd29a](https://github.com/Agoric/agoric-sdk/commit/54dd29a856b1a9cc74c686ea0aefcf40a862ab85))
+* upgrade-test don't set dest ([a9bace0](https://github.com/Agoric/agoric-sdk/commit/a9bace0aa10d961f5db9cb6c3251a2197ebf7e69))
+* use `ubuntu:latest` for deployment container ([da0251a](https://github.com/Agoric/agoric-sdk/commit/da0251a5af5d8070eefc434a2068b61c28ad02e6))
+
+
+### Reverts
+
+* Revert "test: faketime" ([7a3468c](https://github.com/Agoric/agoric-sdk/commit/7a3468c46a2e61d7f8c4b5f7ce521220551200a2))
+
+
+
 ## 3.0.0 (2023-05-19)
 
 

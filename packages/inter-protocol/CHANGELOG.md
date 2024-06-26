@@ -3,6 +3,74 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.1...@agoric/inter-protocol@0.17.0-u16.0) (2024-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([5ed5107](https://github.com/Agoric/agoric-sdk/commit/5ed51078d39e643d91b572d9c50fad4a276d7ded))
+* a proposal to upgrade scaledPriceAuthorities ([e5ed0ff](https://github.com/Agoric/agoric-sdk/commit/e5ed0ff6abcb83f52b32d49125e21e6e41923ed0))
+* addBrand() for issuers that were already in auctions ([6c78f96](https://github.com/Agoric/agoric-sdk/commit/6c78f96c3608d59e14139ad859d2cca9280ec330))
+* auctioneer detects failing priceAuthority; requests new one ([#8691](https://github.com/Agoric/agoric-sdk/issues/8691)) ([8604b01](https://github.com/Agoric/agoric-sdk/commit/8604b011b072d7bef43df59c075bcff9582b8804)), closes [#8696](https://github.com/Agoric/agoric-sdk/issues/8696)
+* catch all exceptions in auction wakers ([#8438](https://github.com/Agoric/agoric-sdk/issues/8438)) ([d4b32f1](https://github.com/Agoric/agoric-sdk/commit/d4b32f129868ed2faa32f1bcad51b5d2248d4c14))
+* disable recoverSets in priceAuthority and fluxAggregator ([9eb20a4](https://github.com/Agoric/agoric-sdk/commit/9eb20a478f3a59bf7c0fb8ca8923f5825fa82113))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* **guard:** tighten roundsManager ([990a79d](https://github.com/Agoric/agoric-sdk/commit/990a79deaeaf956ea0076dba1c19305677ec8124))
+* **inter:** remove excess authority in price-feed-proposal.js ([e96245e](https://github.com/Agoric/agoric-sdk/commit/e96245ed608a537b4edd54a63b5f5405b87e0e94))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* **proposals:** signal of price feed availability ([10e19d7](https://github.com/Agoric/agoric-sdk/commit/10e19d76e9737e33c5d361f7788b34e92fd094b6))
+* publish scaledPriceAuthority in agoricNames ([083f10e](https://github.com/Agoric/agoric-sdk/commit/083f10e83553f6f664903af49a9fdc6d7651926a))
+* start a new auction in a3p-integration ([969235b](https://github.com/Agoric/agoric-sdk/commit/969235b18abbd15187e343d5f616f12177d224c4))
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric-sdk/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** coreEvalEnv ([3764eee](https://github.com/Agoric/agoric-sdk/commit/3764eeea9a391b5dc6c9c7a21e430f358b8f7476))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* vm-config package ([8b1ecad](https://github.com/Agoric/agoric-sdk/commit/8b1ecad8ab50db777bc11c3ee6fcdb37d6cb38b6))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* **addAssetToVault:** support issuerName separate from keyword ([a670616](https://github.com/Agoric/agoric-sdk/commit/a67061691e1bf845ef9fd16e33c265bdbd944554))
+* **auction!:** don't reset an auction which is already scheduled ([18a32bc](https://github.com/Agoric/agoric-sdk/commit/18a32bcdf52654d302572a9a94f8ebe8cb035913))
+* await price feed offers ([5e2b328](https://github.com/Agoric/agoric-sdk/commit/5e2b328d116777de04525b31ec2c69db6d8cee14))
+* guard for getGovernedParamsq ([03d2e05](https://github.com/Agoric/agoric-sdk/commit/03d2e0553de61940aaff304e79980b618649b820))
+* **inter-protocol:** brands in CLI need not start with A-Z ([#8258](https://github.com/Agoric/agoric-sdk/issues/8258)) ([2ac22d3](https://github.com/Agoric/agoric-sdk/commit/2ac22d3353281e7319adca67a8580024171a8066))
+* **inter-protocol:** Relax rounds manager interface guards ([ce4cc47](https://github.com/Agoric/agoric-sdk/commit/ce4cc4788b04956994d594af9cf46ad4a7f0604f))
+* **inter-protocol:** Satisfy interface guard in mock ([fe8ff26](https://github.com/Agoric/agoric-sdk/commit/fe8ff260f83bc4f2668f3dd24c3ff922b2532e8a))
+* make tests work again after some (bogus) awaits were removed from bootstrap ([ca0a3aa](https://github.com/Agoric/agoric-sdk/commit/ca0a3aab3f31ac0e97e55cd63709000fbb46f2ca))
+* Make the auction schedule robust when adding collateral types ([#8301](https://github.com/Agoric/agoric-sdk/issues/8301)) ([f36ed85](https://github.com/Agoric/agoric-sdk/commit/f36ed8546ba3eb67692195e22065050a500b9064))
+* properly exit floating `ZCFSeat` instances ([bb2edbd](https://github.com/Agoric/agoric-sdk/commit/bb2edbd3d6fb256f05bc63acd58a5539efabbecf))
+* **proposals:** await scaledPriceAuthority when in addAssetToVault ([fb940f8](https://github.com/Agoric/agoric-sdk/commit/fb940f84636c4ac9c984a593ec4b5a8ae5150039))
+* remove infelicitous awaits in proposals ([838ed96](https://github.com/Agoric/agoric-sdk/commit/838ed96268cb7cdba627d6512cbcbf53133c3e7a))
+* remove manifest declarations that things are consumed that aren't ([9e0272c](https://github.com/Agoric/agoric-sdk/commit/9e0272c370b63273f56730557898dbeddd773d75))
+* reset lockedQuote even when nothing will be auctioned ([d8ab5a5](https://github.com/Agoric/agoric-sdk/commit/d8ab5a552601fcb80259984ccae861317d41b918))
+* retry upgrade vaults price quote ([37d1e41](https://github.com/Agoric/agoric-sdk/commit/37d1e415a3b3ed5f9173e1d026f18a6b7e56a778))
+* smartWallet watch ERTP purse balances across zoe upgrades ([3cfe392](https://github.com/Agoric/agoric-sdk/commit/3cfe39245d688509a697a645ae452b92e7136ac1))
+* **time:** Export top-level types ([cffa8c0](https://github.com/Agoric/agoric-sdk/commit/cffa8c0a23726dc3a99802812a461df4e131cfef))
+* tolerate golden error property reorders ([7a32cad](https://github.com/Agoric/agoric-sdk/commit/7a32cad9409c89f0318a88e306473dc51387e17a))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric-sdk/commit/4196da375525fa67382a039a15973810db44ffea))
+* **types:** getAmountAllocated ([208eb76](https://github.com/Agoric/agoric-sdk/commit/208eb7656a2f1a02521b119c826bce2ec47e332c))
+* **types:** Invitation parameters ([178dbfd](https://github.com/Agoric/agoric-sdk/commit/178dbfd4838f7cdadba02f2963fd1e90aad310f3))
+* **types:** misc ([b70765c](https://github.com/Agoric/agoric-sdk/commit/b70765cbae25261be5944f5836d8b4b7ae58fca7))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* **types:** ZoeManualTimer ([991bef1](https://github.com/Agoric/agoric-sdk/commit/991bef12cdcc01d318573b6e50b9eac3b1ae9fd9))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+### Reverts
+
+* Revert "feat(inter-protocol)!: rename interestSnapshot, latestInterestUpdate, and compoundedInterest" ([f0a9fcf](https://github.com/Agoric/agoric-sdk/commit/f0a9fcf3d22a8cd4c9c60b1265b91c7fc77a047e))
+* Revert "feat(inter-protocol)!: rename InterestRate to StabilityFee" ([bd46e78](https://github.com/Agoric/agoric-sdk/commit/bd46e784a940d9a85ac36151b65c443a910d1a21))
+
+
+
 ### [0.16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.0...@agoric/inter-protocol@0.16.1) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/inter-protocol

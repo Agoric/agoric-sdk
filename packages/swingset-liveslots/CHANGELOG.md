@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.2...@agoric/swingset-liveslots@0.10.3-u16.0) (2024-06-26)
+
+
+### Features
+
+* **liveslots:** virtual exo meta-ops ([#8779](https://github.com/Agoric/agoric-sdk/issues/8779)) ([af3ced9](https://github.com/Agoric/agoric-sdk/commit/af3ced91861731353e10a45e4eae63450f74a0ea))
+* **vow:** VowShape, isVow ([#9154](https://github.com/Agoric/agoric-sdk/issues/9154)) ([db4d0ea](https://github.com/Agoric/agoric-sdk/commit/db4d0eab68a1d361ddbb6fe993ff0b9969a348e5))
+
+
+### Bug Fixes
+
+* add test for collection snapshot ([0ea5eb3](https://github.com/Agoric/agoric-sdk/commit/0ea5eb3ae77d5639bda7428e52c4d9c0fa8e4059))
+* correct infelicities in virtual collection API implementation ([af5507b](https://github.com/Agoric/agoric-sdk/commit/af5507bfecaa8f76001c09f6a1a9c8ca2a4c58c1)), closes [#7632](https://github.com/Agoric/agoric-sdk/issues/7632)
+* DEBUG harmony ([#8136](https://github.com/Agoric/agoric-sdk/issues/8136)) ([d2ea4b4](https://github.com/Agoric/agoric-sdk/commit/d2ea4b46b9efa61e97eec8711830d9fdd741ca55))
+* incorporate refactored VRM into fakeVirtualSupport ([5641fb0](https://github.com/Agoric/agoric-sdk/commit/5641fb0effb0045e6ddefa64280ec54730a6b45a))
+* kindlier error diagnostics on addAll ([656514e](https://github.com/Agoric/agoric-sdk/commit/656514e5a6bf5d186f33137b3c9a113e3a232207))
+* **liveslots:** cache.delete() does not return a useful value ([b5d53e8](https://github.com/Agoric/agoric-sdk/commit/b5d53e86c60397589ced0af9b71514ff03a4653f)), closes [#8752](https://github.com/Agoric/agoric-sdk/issues/8752)
+* **liveslots:** promise watcher to cause unhandled rejection if no handler ([#9507](https://github.com/Agoric/agoric-sdk/issues/9507)) ([0de0c62](https://github.com/Agoric/agoric-sdk/commit/0de0c62165635fab1af443858544384f3170862b)), closes [#8596](https://github.com/Agoric/agoric-sdk/issues/8596) [/github.com/Agoric/agoric-sdk/pull/8596#discussion_r1414436455](https://github.com/Agoric//github.com/Agoric/agoric-sdk/pull/8596/issues/discussion_r1414436455)
+* **liveslots:** tolerate old version of vat-data package ([6addca0](https://github.com/Agoric/agoric-sdk/commit/6addca016507be8c6ea350a252a6cb7b27e4ee08))
+* refactor vatstore usage to fix test failures ([886e2fa](https://github.com/Agoric/agoric-sdk/commit/886e2fac16f3b12be732dbde9ffdab9b2354d13d)), closes [#8012](https://github.com/Agoric/agoric-sdk/issues/8012)
+* **swingset-liveslots:** explicitly harden iteration helper prototypes ([aeaa62b](https://github.com/Agoric/agoric-sdk/commit/aeaa62b07d941eb74938bac19c64051d554ae532))
+* **swingset-liveslots:** Throw a "not found" error for store.set(missingRemotable, val) ([7c48d4c](https://github.com/Agoric/agoric-sdk/commit/7c48d4cd0ef32828e691bd65492e9ce8929ac0af)), closes [#8098](https://github.com/Agoric/agoric-sdk/issues/8098)
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* update TS types ([7580805](https://github.com/Agoric/agoric-sdk/commit/75808055afc129c81b7978fb83c33cfed7a4ecbd))
+
+
+
 ### [0.10.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.1...@agoric/swingset-liveslots@0.10.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swingset-liveslots

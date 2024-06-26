@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.4.0-u16.0) (2024-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vstorage:** Enforce path validation
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* **cosmic-swingset:** implement `ENACTED_UPGRADE` blocking send ([3825c17](https://github.com/Agoric/agoric-sdk/commit/3825c171f3528cd3c4e63e8aeb3363a3e88b75fc))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([68235ec](https://github.com/Agoric/agoric-sdk/commit/68235ec3fc78b9973d886e782e03048427b6f93e))
+* documentStorageSchema w FakeStorageKit ([a16e212](https://github.com/Agoric/agoric-sdk/commit/a16e212a35e1956eb6356373ad4cc4c398c4dc91))
+* export types ([34c391a](https://github.com/Agoric/agoric-sdk/commit/34c391a49ded28b780f303f0a5c36d5eef8229ac))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* **internal:** fakeStorage.getBody() supports index other than -1 ([eda89cc](https://github.com/Agoric/agoric-sdk/commit/eda89cc7ec56b44f33f8552811c267d01bbf29b0))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** Tagged ([80d0479](https://github.com/Agoric/agoric-sdk/commit/80d04790429765e81053d45f6f7b17fb7b06b7c6))
+* **vat-transfer:** first cut at working proposal ([2864bd5](https://github.com/Agoric/agoric-sdk/commit/2864bd5c12300c3595df9676bcfde894dbe59b29))
+* **whenable:** first cut ([793f028](https://github.com/Agoric/agoric-sdk/commit/793f028155702e613b1bdf8204af6837cfe5e8a3))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* **internal:** severe override taming for bundle-source ([877c1a1](https://github.com/Agoric/agoric-sdk/commit/877c1a13dfdf03f040d3118416e59e58240090ce))
+* **network:** use new `ERef` and `FarRef` ([55adb2b](https://github.com/Agoric/agoric-sdk/commit/55adb2b1f5b644ef5b7cf40ea8b7d87488218229))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** DataOnly import of Callable ([717a4c9](https://github.com/Agoric/agoric-sdk/commit/717a4c98aeadaa83897567b46d12b654b0a2cc72))
+* **types:** netstring decode ([647afb6](https://github.com/Agoric/agoric-sdk/commit/647afb6b50dd8f77f5fce3199e6e290a1d432fa7))
+* **vow:** correct the typing of `unwrap` ([2af609f](https://github.com/Agoric/agoric-sdk/commit/2af609ff38c928b94ae3864845a471d9a70f6997))
+* **vstorage:** Enforce path validation ([03871e8](https://github.com/Agoric/agoric-sdk/commit/03871e8429b81d8f051cef132968abf3a5590e12)), closes [#8337](https://github.com/Agoric/agoric-sdk/issues/8337)
+* **zone:** fixups before merging to 7891 ([9bbb393](https://github.com/Agoric/agoric-sdk/commit/9bbb393ac2d0af8e2a3b29adfeabf01c42d9b50e))
+* **zone:** no longer getting M from @agoric/zone ([d68bc84](https://github.com/Agoric/agoric-sdk/commit/d68bc8464b0f4df24bd63dd8f5696c6bb6458135))
+* **zone:** suggestions for [#7891](https://github.com/Agoric/agoric-sdk/issues/7891) ([e9e0e21](https://github.com/Agoric/agoric-sdk/commit/e9e0e219618449b532ea6303c58415f591b2b49f))
+
+
+
 ### [0.3.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.1...@agoric/internal@0.3.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/internal
