@@ -1,7 +1,8 @@
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M, mustMatch } from '@endo/patterns';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
+import { heapVowE } from '@agoric/vow/vat.js';
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { CosmosChainInfoShape } from '../typeGuards.js';
@@ -53,20 +54,16 @@ const sendItFn = async (
   const { chainName, destAddr } = offerArgs;
   const { give } = seat.getProposal();
   const [[kw, amt]] = entries(give);
-  // XXX when() until membrane
-  const { denom } = await E.when(agoricNamesTools.findBrandInVBank(amt.brand));
+  const { denom } = await agoricNamesTools.findBrandInVBank(amt.brand);
   const chain = await orch.getChain(chainName);
 
-  // FIXME ok to use a heap var crossing the membrane scope this way?
   if (!contractState.account) {
     const agoricChain = await orch.getChain('agoric');
-    // XXX when() until membrane
-    contractState.account = await E.when(agoricChain.makeAccount());
+    contractState.account = await agoricChain.makeAccount();
     console.log('contractState.account', contractState.account);
   }
 
-  // XXX when() until membrane
-  const info = await E.when(chain.getChainInfo());
+  const info = await chain.getChainInfo();
   console.log('info', info);
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
@@ -156,7 +153,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
         // when() because chainHub methods return vows. If this were inside
         // orchestrate() the membrane would wrap/unwrap automatically.
-        const agoricChainInfo = await E.when(chainHub.getChainInfo('agoric'));
+        const agoricChainInfo = await heapVowE.when(
+          chainHub.getChainInfo('agoric'),
+        );
         chainHub.registerChain(chainKey, chainInfo);
         chainHub.registerConnection(
           agoricChainInfo.chainId,
