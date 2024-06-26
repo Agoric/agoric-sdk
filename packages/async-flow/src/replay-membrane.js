@@ -9,6 +9,7 @@ import {
   passStyleOf,
 } from '@endo/pass-style';
 import { E } from '@endo/eventual-send';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { heapVowE } from '@agoric/vow/vat.js';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { objectMap } from '@endo/common/object-map.js';
@@ -136,6 +137,19 @@ export const makeReplayMembrane = ({
 
   // ///////////// Guest to Host or consume log ////////////////////////////////
 
+  /**
+   * The host is not supposed to expose host-side promises to the membrane,
+   * since they cannot be stored durably or survive upgrade. We cannot just
+   * automatically wrap any such host promises with host vows, because that
+   * would mask upgrade hazards if an upgrade happens before the vow settles.
+   * However, during the transition, the current host APIs called by
+   * orchestration still return many promises. We want to generate diagnostics
+   * when we encounter them, but for now, automatically convert them to
+   * host vow anyway, just so integration testing can proceed to reveal
+   * additional problems beyond these.
+   *
+   * @param {Passable} h
+   */
   const tolerateHostPromiseToVow = h => {
     const passStyle = passStyleOf(h);
     switch (passStyle) {
@@ -150,7 +164,8 @@ export const makeReplayMembrane = ({
         return watch(h);
       }
       case 'copyRecord': {
-        return objectMap(h, tolerateHostPromiseToVow);
+        const o = /** @type {object} */ (h);
+        return objectMap(o, tolerateHostPromiseToVow);
       }
       case 'copyArray': {
         const a = /** @type {Array} */ (h);
@@ -293,7 +308,7 @@ export const makeReplayMembrane = ({
           heapVowE(hostTarget)(...hostArgs);
       resolver.resolve(hostPromise); // TODO does this always work?
     } catch (hostProblem) {
-      throw Fail`internal: eventual send synchrously failed ${hostProblem}`;
+      throw Panic`internal: eventual send synchrously failed ${hostProblem}`;
     }
     try {
       const entry = harden(['doReturn', callIndex, vow]);
@@ -302,8 +317,7 @@ export const makeReplayMembrane = ({
       // Note that `guestPromise` is not registered in the bijection since
       // guestReturnedP is already the guest for vow. Rather, the handler
       // returns guestPromise to resolve guestReturnedP to guestPromise.
-      const { kind } = doReturn(callIndex, vow);
-      kind === 'return' || Fail`internal: "return" kind expected ${q(kind)}`;
+      doReturn(callIndex, vow);
       return harden({
         kind: 'return',
         result: guestPromise,
@@ -335,14 +349,19 @@ export const makeReplayMembrane = ({
         ]);
         if (log.isReplaying()) {
           const entry = log.nextEntry();
-          equate(
-            guestEntry,
-            entry,
-            `replay ${callIndex}:
+          try {
+            equate(guestEntry, entry);
+          } catch (equateErr) {
+            // TODO consider Richard Gibson's suggestion for a better way
+            // to keep track of the error labeling.
+            throwLabeled(
+              equateErr,
+              `replay ${callIndex}:
      ${q(guestEntry)}
   vs ${q(entry)}
     `,
-          );
+            );
+          }
           outcome = /** @type {Outcome} */ (nestInterpreter(callIndex));
         } else {
           const entry = guestToHost(guestEntry);
