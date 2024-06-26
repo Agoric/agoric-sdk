@@ -113,7 +113,7 @@ test('allVows - watch promises mixed with vows', async t => {
   t.like(result, ['vow', 'promise']);
 });
 
-test('allVows can accept passables', async t => {
+test('allVows can accept passable data (PureData)', async t => {
   const zone = makeHeapZone();
   const { watch, when, allVows } = prepareVowTools(zone);
 

@@ -383,7 +383,7 @@ export const prepareLocalOrchestrationAccountKit = (
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @returns {ChainAddress} */
+        /** @type {OrchestrationAccount<any>['getAddress']} */
         getAddress() {
           return this.state.address;
         },
