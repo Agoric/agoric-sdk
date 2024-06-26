@@ -12,6 +12,7 @@ import type {
 } from '../src/types.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
+import type { VowifyAll } from '../src/internal.js';
 
 const anyVal = null as any;
 
@@ -66,5 +67,5 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     anyVal,
     anyVal,
     anyVal,
-  ) satisfies StakingAccountActions;
+  ) satisfies VowifyAll<StakingAccountActions>;
 }
