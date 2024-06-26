@@ -128,10 +128,8 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(DenomAmountShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.callWhen(M.string(), AmountShape).returns(InvitationShape),
-        Undelegate: M.callWhen(M.string(), AmountShape).returns(
-          InvitationShape,
-        ),
+        Delegate: M.call(M.string(), AmountShape).returns(InvitationShape),
+        Undelegate: M.call(M.string(), AmountShape).returns(InvitationShape),
         CloseAccount: M.call().returns(M.promise()),
       }),
     },
@@ -155,27 +153,28 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
-        async Delegate(validatorAddress, ertpAmount) {
+        Delegate(validatorAddress, ertpAmount) {
           trace('Delegate', validatorAddress, ertpAmount);
 
-          return zcf.makeInvitation(async seat => {
-            // TODO should it allow delegating more BLD?
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.delegate(validatorAddress, ertpAmount);
+            return watch(
+              this.facets.holder.delegate(validatorAddress, ertpAmount),
+            );
           }, 'Delegate');
         },
-
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
          */
-        async Undelegate(validatorAddress, ertpAmount) {
+        Undelegate(validatorAddress, ertpAmount) {
           trace('Undelegate', validatorAddress, ertpAmount);
 
-          return zcf.makeInvitation(async seat => {
-            // TODO should it allow delegating more BLD?
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.undelegate(validatorAddress, ertpAmount);
+            return watch(
+              this.facets.holder.undelegate(validatorAddress, ertpAmount),
+            );
           }, 'Undelegate');
         },
         CloseAccount() {
