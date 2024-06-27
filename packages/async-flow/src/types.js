@@ -104,6 +104,12 @@ export {};
  *     args: Host[],
  *     callIndex: number
  *   ] | [
+ *     op: 'checkSendOnly',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
  *     op: 'checkSend',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
@@ -133,6 +139,12 @@ export {};
  *     args: Host[],
  *     callIndex: number
  *   ] | [
+ *     op: 'doSendOnly',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
  *     op: 'doSend',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
@@ -156,6 +168,12 @@ export {};
  *     reason: Host,
  *   ] | [
  *     op: 'checkCall',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'checkSendOnly',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],

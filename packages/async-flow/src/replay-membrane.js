@@ -280,6 +280,29 @@ export const makeReplayMembrane = ({
    * @param {PassableCap} hostTarget
    * @param {string | undefined} optVerb
    * @param {Passable[]} hostArgs
+   */
+  const performSendOnly = (hostTarget, optVerb, hostArgs) => {
+    try {
+      optVerb
+        ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
+        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+          // @ts-ignore once we changed this from E to heapVowE,
+          // typescript started complaining that heapVowE(hostTarget)
+          // is not callable. I'm not sure if this is a just a typing bug
+          // in heapVowE or also reflects a runtime deficiency. But this
+          // case it not used yet anyway. We disable it
+          // with at-ts-ignore rather than at-ts-expect-error because
+          // the dependency-graph tests complains that the latter is unused.
+          heapVowE.sendOnly(hostTarget)(...hostArgs);
+    } catch (hostProblem) {
+      throw Panic`internal: eventual sendOnly synchrously failed ${hostProblem}`;
+    }
+  };
+
+  /**
+   * @param {PassableCap} hostTarget
+   * @param {string | undefined} optVerb
+   * @param {Passable[]} hostArgs
    * @param {number} callIndex
    * @param {VowKit} hostResultKit
    * @param {Promise} guestReturnedP
@@ -328,6 +351,44 @@ export const makeReplayMembrane = ({
   };
 
   const guestHandler = harden({
+    applyMethodSendOnly(guestTarget, optVerb, guestArgs) {
+      const callIndex = log.getIndex();
+      if (stopped || !bijection.hasGuest(guestTarget)) {
+        Fail`Sent from a previous run: ${guestTarget}`;
+      }
+      try {
+        const guestEntry = harden([
+          'checkSendOnly',
+          guestTarget,
+          optVerb,
+          guestArgs,
+          callIndex,
+        ]);
+        if (log.isReplaying()) {
+          const entry = log.nextEntry();
+          try {
+            equate(guestEntry, entry);
+          } catch (equateErr) {
+            // TODO consider Richard Gibson's suggestion for a better way
+            // to keep track of the error labeling.
+            throwLabeled(
+              equateErr,
+              `replay ${callIndex}:
+     ${q(guestEntry)}
+  vs ${q(entry)}
+    `,
+            );
+          }
+        } else {
+          const entry = guestToHost(guestEntry);
+          log.pushEntry(entry);
+          const [_op, hostTarget, _optVerb, hostArgs, _callIndex] = entry;
+          performSendOnly(hostTarget, optVerb, hostArgs);
+        }
+      } catch (fatalError) {
+        throw panic(fatalError);
+      }
+    },
     applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
       const callIndex = log.getIndex();
       if (stopped || !bijection.hasGuest(guestTarget)) {
@@ -395,6 +456,13 @@ export const makeReplayMembrane = ({
         }
       }
     },
+    applyFunctionSendOnly(guestTarget, guestArgs) {
+      return guestHandler.applyMethodSendOnly(
+        guestTarget,
+        undefined,
+        guestArgs,
+      );
+    },
     applyFunction(guestTarget, guestArgs, guestReturnedP) {
       return guestHandler.applyMethod(
         guestTarget,
@@ -402,6 +470,9 @@ export const makeReplayMembrane = ({
         guestArgs,
         guestReturnedP,
       );
+    },
+    getSendOnly(guestTarget, prop) {
+      throw Panic`guest eventual getSendOnly not yet supported: ${guestTarget}.${b(prop)}`;
     },
     get(guestTarget, prop, guestReturnedP) {
       throw Panic`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;

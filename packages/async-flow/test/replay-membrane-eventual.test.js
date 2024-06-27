@@ -75,6 +75,8 @@ const testFirstPlay = async (t, zone) => {
   t.deepEqual(log.dump(), []);
 
   const p = E(guestPingee).ping('send');
+  const pOnly = E.sendOnly(guestPingee).ping('sendOnly');
+  t.is(pOnly, undefined);
 
   guestPingee.ping('call');
 
@@ -86,6 +88,7 @@ const testFirstPlay = async (t, zone) => {
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
+    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
   ]);
 
@@ -97,6 +100,7 @@ const testFirstPlay = async (t, zone) => {
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
+    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
     ['doFulfill', v1, 'x'],
   ]);
@@ -130,6 +134,7 @@ const testReplay = async (t, zone) => {
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
+    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
     ['doFulfill', v1, 'x'],
   ]);
@@ -159,11 +164,16 @@ const testReplay = async (t, zone) => {
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
+    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
     ['doFulfill', v1, 'x'],
   ]);
 
   E(guestPingee).ping('send');
+  // TODO Once https://github.com/endojs/endo/issues/2336 is fixed,
+  // the following `void` should not be needed. But strangely, TS isn't
+  // telling me a `void` is needed above, which is also incorrect.
+  void E.sendOnly(guestPingee).ping('sendOnly');
 
   guestPingee.ping('call');
 
@@ -176,6 +186,7 @@ const testReplay = async (t, zone) => {
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
+    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
     ['doFulfill', v1, 'x'],
     ['doFulfill', v2, 'y'],

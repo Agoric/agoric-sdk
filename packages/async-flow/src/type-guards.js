@@ -23,6 +23,13 @@ export const LogEntryShape = M.or(
   //   M.number(),
   // ],
   // [
+  //   'doSendOnly',
+  //   M.or(M.remotable('host wrapper of guest target'), VowShape),
+  //   M.opt(PropertyKeyShape),
+  //   M.arrayOf(M.any()),
+  //   M.number(),
+  // ],
+  // [
   //   'doSend',
   //   M.or(M.remotable('host wrapper of guest target'), VowShape),
   //   M.opt(PropertyKeyShape),
@@ -38,6 +45,13 @@ export const LogEntryShape = M.or(
   [
     'checkCall',
     M.remotable('host target'),
+    M.opt(PropertyKeyShape),
+    M.arrayOf(M.any()),
+    M.number(),
+  ],
+  [
+    'checkSendOnly',
+    M.or(M.remotable('host target'), VowShape),
     M.opt(PropertyKeyShape),
     M.arrayOf(M.any()),
     M.number(),
