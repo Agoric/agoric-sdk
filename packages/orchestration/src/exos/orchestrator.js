@@ -1,6 +1,7 @@
 /** @file ChainAccount exo */
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
@@ -25,7 +26,7 @@ import {
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from '../types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator, PromiseToVow} from '../types.js';
  */
 
 const { Fail } = assert;
@@ -33,8 +34,8 @@ const trace = makeTracer('Orchestrator');
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
-  getChain: M.callWhen(M.string()).returns(ChainInfoShape),
-  makeLocalAccount: M.callWhen().returns(LocalChainAccountShape),
+  getChain: M.call(M.string()).returns(NetworkShape.Vow$(ChainInfoShape)),
+  makeLocalAccount: M.call().returns(NetworkShape.Vow$(LocalChainAccountShape)),
   getBrandInfo: M.call(DenomShape).returns(BrandInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
@@ -62,7 +63,7 @@ export const prepareOrchestratorKit = (
     localchain,
     makeLocalChainFacade,
     makeRemoteChainFacade,
-    vowTools: { watch, when },
+    vowTools: { watch },
   },
 ) =>
   zone.exoClassKit(
@@ -111,27 +112,23 @@ export const prepareOrchestratorKit = (
         },
       },
       orchestrator: {
-        /** @type {Orchestrator['getChain']} */
+        /** @type {PromiseToVow<Orchestrator['getChain']>} */
         getChain(name) {
           if (name === 'agoric') {
-            // XXX when() until membrane
-            return when(
-              watch(
-                chainHub.getChainInfo('agoric'),
-                this.facets.makeLocalChainFacadeWatcher,
-              ),
+            // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<Chain<any>>'.
+            return watch(
+              chainHub.getChainInfo('agoric'),
+              this.facets.makeLocalChainFacadeWatcher,
             );
           }
-          // XXX when() until membrane
-          return when(
-            watch(
-              chainHub.getChainsAndConnection('agoric', name),
-              this.facets.makeRemoteChainFacadeWatcher,
-            ),
+          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<Chain<any>>'.
+          return watch(
+            chainHub.getChainsAndConnection('agoric', name),
+            this.facets.makeRemoteChainFacadeWatcher,
           );
         },
         makeLocalAccount() {
-          return when(watch(E(localchain).makeAccount()));
+          return watch(E(localchain).makeAccount());
         },
         getBrandInfo: () => Fail`not yet implemented`,
         asAmount: () => Fail`not yet implemented`,
