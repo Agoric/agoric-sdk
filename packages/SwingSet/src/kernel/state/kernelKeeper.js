@@ -591,6 +591,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
+    if (!data) {
+      return { reachable: 0, recognizable: 0 };
+    }
     data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
     const [reachable, recognizable] = commaSplit(data).map(Number);
     reachable <= recognizable ||
@@ -920,6 +923,14 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    *
    */
   function cleanupAfterTerminatedVat(vatID, budget = undefined) {
+    // this is called from terminateVat, which is called from either:
+    // * end of processDeliveryMessage, if crankResults.terminate
+    // * device-vat-admin (when vat-v-a does adminNode.terminateVat)
+    //   (which always happens inside processDeliveryMessage)
+    // so we're always followed by a call to processRefcounts, at
+    // end-of-delivery in processDeliveryMessage, after checking
+    // crankResults.terminate
+
     insistVatID(vatID);
     let cleanups = 0;
     const work = {
@@ -1485,11 +1496,18 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
             deleteKernelPromise(kpid);
           }
         }
+
         if (type === 'object') {
           const { reachable, recognizable } = getObjectRefCount(kref);
           if (reachable === 0) {
-            const ownerVatID = ownerOfKernelObject(kref);
-            if (ownerVatID) {
+            // We avoid ownerOfKernelObject(), which will report
+            // 'undefined' if the owner is dead (and being slowly
+            // deleted). Message delivery should use that, but not us.
+            const ownerKey = `${kref}.owner`;
+            let ownerVatID = kvStore.get(ownerKey);
+            const terminated = terminatedVats.includes(ownerVatID);
+
+            if (ownerVatID && !terminated) {
               const vatKeeper = provideVatKeeper(ownerVatID);
               const isReachable = vatKeeper.getReachableFlag(kref);
               if (isReachable) {
@@ -1497,15 +1515,39 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
                 actions.add(`${ownerVatID} dropExport ${kref}`);
               }
               if (recognizable === 0) {
-                // TODO: rethink this
+                // TODO: rethink this assert
                 // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
                 actions.add(`${ownerVatID} retireExport ${kref}`);
               }
-            } else if (recognizable === 0) {
-              // unreachable, unrecognizable, orphaned: delete the
-              // empty refcount here, since we can't send a GC
-              // action without an ownerVatID
-              deleteKernelObject(kref);
+            }
+            if (ownerVatID && terminated) {
+              // When we're slowly deleting a vat, and one of its
+              // exports becomes unreferenced, we obviously must not
+              // send dropExports or retireExports into the dead vat.
+              // We fast-forward the abandonment that slow-deletion
+              // would have done, then treat the object as orphaned.
+
+              const { vatSlot } = getReachableAndVatSlot(ownerVatID, kref);
+              // delete directly, not abandonKernelObjects(), which
+              // would re-submit to maybeFreeKrefs
+              kvStore.delete(ownerKey);
+              kvStore.delete(`${ownerVatID}.c.${kref}`);
+              kvStore.delete(`${ownerVatID}.c.${vatSlot}`);
+              // now fall through to the orphaned case
+              ownerVatID = undefined;
+            }
+            if (!ownerVatID) {
+              // orphaned and unreachable, so retire it
+              if (recognizable) {
+                // there are importers, tell them about the
+                // retirement. retireKernelObjects will also
+                // deleteKernelObject
+                retireKernelObjects([kref]);
+              } else {
+                // just delete, without scanning for importers (since
+                // we know there are none)
+                deleteKernelObject(kref);
+              }
             }
           }
         }

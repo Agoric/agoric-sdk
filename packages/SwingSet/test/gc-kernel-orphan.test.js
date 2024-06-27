@@ -257,7 +257,7 @@ for (const cause of ['abandon', 'terminate']) {
 // the fix was to change kernelKeeper.getRefCounts to handle a missing
 // koNN.refCounts by just returning 0,0
 
-test('termination plus maybeFreeKrefs', async t => {
+test('termination plus maybeFreeKrefs - dropped', async t => {
   const { kernel, kvStore } = await makeKernel();
   await kernel.start();
 
@@ -266,6 +266,23 @@ test('termination plus maybeFreeKrefs', async t => {
   // vatB exports an object to vatA, vatA sends it a message and drops
   // it (but doesn't retire it), vatB will self-terminate upon
   // receiving that message, creating two places that try to retire it
+
+  // The order of events will be:
+  // * 'terminate' translated, drops reachable to zero, adds to maybeFreeKrefs
+  // * 'terminate' delivered, delivery marks vat for termination
+  // * post-delivery crankResults.terminate check marks vat as terminated
+  //   (but slow-deletion means nothing is deleted on that crank)
+  // * post-delivery does processRefCounts()
+  //   * that processes ko22/billy, sees 0,1, owner=v2, v2 is terminated
+  //     so it orphans ko22 (removes from vatB c-list and clears .owner)
+  //     and falls through to (owner=undefined) case
+  //     which sees recognizable=1 and retires the object
+  //      (i.e. pushes retireImport gcAction and deletes .owner and .refCounts)
+  // * next crank starts cleanup, walks c-list, orphans ko21/bob
+  //   which adds ko21 to maybeFreeKrefs
+  // * post-cleanup processRefCounts() does ko21, sees 1,1, owner=undefined
+  //   does nothing, since vatA still holds an (orphaned) reference
+  // * cleanup finishes
 
   // Our two root objects (alice and bob) are pinned so they don't
   // disappear while the test is talking to them, so vatB exports
@@ -339,4 +356,108 @@ test('termination plus maybeFreeKrefs', async t => {
 
   t.is(kvStore.get(`${billyKref}.owner`), undefined);
   t.is(kvStore.get(`${billyKref}.refCounts`), undefined);
+  t.is(kvStore.get(`${vatA}.c.${billyKref}`), undefined);
+  t.is(kvStore.get(`${vatA}.c.${vrefs.billyForA}`), undefined);
+  t.is(kvStore.get(`${vatB}.c.${billyKref}`), undefined);
+  t.is(kvStore.get(`${vatB}.c.${vrefs.billyForB}`), undefined);
+});
+
+// like above, but the object doesn't remain recognizable
+test('termination plus maybeFreeKrefs - retired', async t => {
+  const { kernel, kvStore } = await makeKernel();
+  await kernel.start();
+
+  const vrefs = {}; // track vrefs within vats
+
+  // vatB exports an object to vatA, vatA sends it a message and drops
+  // and retires it, vatB will self-terminate upon receiving that
+  // message. The order of events will be:
+  // * 'terminate' translated, drops refcount to zero, adds to maybeFreeKrefs
+  // * 'terminate' delivered, delivery marks vat for termination
+  // * post-delivery crankResults.terminate check marks vat as terminated
+  //   (but slow-deletion means nothing is deleted on that crank)
+  // * post-delivery does processRefCounts()
+  //   * that processes ko22/billy, sees 0,0, owner=v2, v2 is terminated
+  //     so it orphans ko22 (removes from vatB c-list and clears .owner)
+  //     and falls through to (owner=undefined) case
+  //     which sees recognizable=0 and deletes the object (just .refCount now)
+  // * next crank starts cleanup, walks c-list, orphans ko21/bob
+  //   which adds ko21 to maybeFreeKrefs
+  // * post-cleanup processRefCounts() does ko21, sees 1,1, owner=undefined
+  //   does nothing, since vatA still holds an (orphaned) reference
+  // * cleanup finishes
+
+  vrefs.aliceForA = 'o+100';
+  vrefs.bobForB = 'o+200';
+  vrefs.billyForB = 'o+201';
+  let billyKref;
+
+  let vatA;
+  function setupA(syscall, _state, _helpers, _vatPowers) {
+    function dispatch(vd) {
+      if (vd[0] === 'startVat') {
+        return; // skip startVat
+      }
+      console.log(`deliverA:`, JSON.stringify(vd));
+      if (vd[0] === 'message') {
+        const methargs = kunser(vd[2].methargs);
+        const [method] = methargs;
+        if (method === 'call-billy') {
+          t.is(vd[2].methargs.slots.length, 1);
+          vrefs.billyForA = vd[2].methargs.slots[0];
+          t.is(vrefs.billyForA, 'o-50'); // probably
+          billyKref = kvStore.get(`${vatA}.c.${vrefs.billyForA}`);
+          syscall.send(
+            vrefs.billyForA,
+            kser(['terminate', [kslot(vrefs.billyForA, 'billy-A')]]),
+          );
+          syscall.dropImports([vrefs.billyForA]);
+          syscall.retireImports([vrefs.billyForA]);
+        }
+      }
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatA', setupA);
+  vatA = kernel.vatNameToID('vatA');
+  const alice = kernel.addExport(vatA, vrefs.aliceForA);
+
+  function setupB(syscall, _state, _helpers, _vatPowers) {
+    function dispatch(vd) {
+      if (vd[0] === 'startVat') {
+        return; // skip startVat
+      }
+      console.log(`deliverB:`, JSON.stringify(vd));
+      if (vd[0] === 'message') {
+        const [method] = kunser(vd[2].methargs);
+        if (method === 'init') {
+          vrefs.aliceForB = vd[2].methargs.slots[0];
+          syscall.send(
+            vrefs.aliceForB,
+            kser(['call-billy', [kslot(vrefs.billyForB, 'billy-B')]]),
+          );
+        }
+        if (method === 'terminate') {
+          t.is(vd[2].methargs.slots.length, 1);
+          assert.equal(vd[2].methargs.slots[0], vrefs.billyForB);
+          syscall.exit(false, kser('reason'));
+        }
+      }
+    }
+    return dispatch;
+  }
+  await kernel.createTestVat('vatB', setupB);
+  const vatB = kernel.vatNameToID('vatB');
+  const bob = kernel.addExport(vatB, vrefs.bobForB);
+
+  // this triggers everything, the bug was a kernel crash
+  kernel.queueToKref(bob, 'init', [kslot(alice, 'alice')], 'none');
+  await kernel.run();
+
+  t.is(kvStore.get(`${billyKref}.owner`), undefined);
+  t.is(kvStore.get(`${billyKref}.refCounts`), undefined);
+  t.is(kvStore.get(`${vatA}.c.${billyKref}`), undefined);
+  t.is(kvStore.get(`${vatA}.c.${vrefs.billyForA}`), undefined);
+  t.is(kvStore.get(`${vatB}.c.${billyKref}`), undefined);
+  t.is(kvStore.get(`${vatB}.c.${vrefs.billyForB}`), undefined);
 });
