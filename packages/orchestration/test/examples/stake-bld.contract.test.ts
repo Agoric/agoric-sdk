@@ -97,18 +97,34 @@ test('makeStakeBldInvitation', async t => {
   t.truthy(invitationMakers, 'received continuing invitation');
 
   t.log('make Delegate offer using invitationMakers');
-  const delegateInv = await E(invitationMakers).Delegate('agoric1validator1', {
-    brand: bld.brand,
-    value: 1_000_000_000n,
-  });
-  const delegateOffer = await E(zoe).offer(
-    delegateInv,
-    { give: { In: hundred } },
-    { In: utils.pourPayment(hundred) },
-  );
-  const res = await E(delegateOffer).getOfferResult();
-  t.deepEqual(res, {});
-  t.log('Successfully delegated');
+  {
+    const delegateInv = await E(invitationMakers).Delegate(
+      'agoric1validator1',
+      {
+        brand: bld.brand,
+        value: 1_000_000_000n,
+      },
+    );
+    const delegateOffer = await E(zoe).offer(delegateInv);
+    const res = await E(delegateOffer).getOfferResult();
+    t.deepEqual(res, {});
+    t.log('Successfully delegated');
+  }
+
+  t.log('example Delegate offer rejection');
+  {
+    const delegateInv = await E(invitationMakers).Delegate(
+      'agoric1validator1',
+      {
+        brand: bld.brand,
+        value: 504n,
+      },
+    );
+    const delegateOffer = await E(zoe).offer(delegateInv);
+    await t.throwsAsync(E(delegateOffer).getOfferResult(), {
+      message: 'simualted packet timeout',
+    });
+  }
 
   await t.throwsAsync(() => E(invitationMakers).CloseAccount(), {
     message: 'not yet implemented',
