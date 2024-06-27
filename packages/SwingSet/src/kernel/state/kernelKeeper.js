@@ -620,7 +620,9 @@ export default function makeKernelKeeper(
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
-    data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
+    if (!data) {
+      return { reachable: 0, recognizable: 0 };
+    }
     const [reachable, recognizable] = commaSplit(data).map(Number);
     reachable <= recognizable ||
       Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
@@ -721,7 +723,7 @@ export default function makeKernelKeeper(
     addGCActions(newActions);
   }
 
-  function abandonKernelObject(kref, oldVat) {
+  function orphanKernelObject(kref, oldVat) {
     // termination orphans all exports, upgrade orphans non-durable
     // exports, and syscall.abandonExports orphans specific ones
     const ownerKey = `${kref}.owner`;
@@ -949,6 +951,14 @@ export default function makeKernelKeeper(
    *
    */
   function cleanupAfterTerminatedVat(vatID, budget = undefined) {
+    // this is called from terminateVat, which is called from either:
+    // * end of processDeliveryMessage, if crankResults.terminate
+    // * device-vat-admin (when vat-v-a does adminNode.terminateVat)
+    //   (which always happens inside processDeliveryMessage)
+    // so we're always followed by a call to processRefcounts, at
+    // end-of-delivery in processDeliveryMessage, after checking
+    // crankResults.terminate
+
     insistVatID(vatID);
     let cleanups = 0;
     const work = {
@@ -1018,7 +1028,7 @@ export default function makeKernelKeeper(
       assert(vref.startsWith('o+'), vref);
       const kref = kvStore.get(k);
       // note: adds to maybeFreeKrefs, deletes c-list and .owner
-      abandonKernelObject(kref, vatID);
+      orphanKernelObject(kref, vatID);
       work.exports += 1;
       if (spend()) {
         logWork();
@@ -1491,14 +1501,43 @@ export default function makeKernelKeeper(
     return false;
   }
 
+  // TODO (#9888): change the processRefcounts maybeFreeKrefs
+  // iteration to handle krefs that get added multiple times (while
+  // we're iterating), because we might do different work the second
+  // time around. The concerning scenario is:
+  //
+  // * kp2 has resolution data which references ko1
+  // * somehow both kp2 and ko1 end up on maybeFreeKrefs, but ko1.reachable=1
+  //   (via kp2)
+  // * our iterator visits ko1 first, sees it is still reachable, ignores it
+  // * then the iterator visits kp2, decrefs its kp.data.slots
+  //   * this pushes ko1 back onto maybeFreeKrefs
+  // * we need to examine ko1 again, so it can be released
+  //
+  // It could also happen if/when we implement #2069 auxdata:
+  //
+  // * ko2 has auxdata that references ko1
+  // * both ko1 and ko2 end up on maybeFreeKrefs, but ko1.reachable = 1
+  //   (via the ko2 auxdata)
+  // * our iterator visits ko1 first, sees it is still reachable, ignores it
+  // * then the iterator visits ko2, does deleteKernelObject
+  //   * this frees the auxdata, which pushes ko1 back onto maybeFreeKrefs
+  // * we need to examine ko1 again, so it can be released
+  //
+  // We should use something like an ordered Set, and a loop that does:
+  // * pop the first kref off
+  // * processes it (maybe adding more krefs)
+  // * repeats until the thing is empty
+  // Or maybe make a copy of maybeFreeKrefs at the start, clear the
+  // original, and wrap this in a loop that keeps going until
+  // maybeFreeKrefs is still empty at the end. Be sure to imagine a
+  // very deep linked list: don't just process it twice, keep
+  // processing until there's nothing left to do, otherwise we'll be
+  // leaving work for the next delivery.
+
   function processRefcounts() {
     if (enableKernelGC) {
       const actions = new Set();
-      // TODO (else buggy): change the iteration to handle krefs that get
-      // added multiple times (while we're iterating), because we might do
-      // different work the second time around. Something like an ordered
-      // Set, and a loop that: pops the first kref off, processes it (maybe
-      // adding more krefs), repeats until the thing is empty.
       for (const kref of maybeFreeKrefs.values()) {
         const { type } = parseKernelSlot(kref);
         if (type === 'promise') {
@@ -1506,6 +1545,7 @@ export default function makeKernelKeeper(
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
+            // TODO (#9889) don't assume promise is settled
             for (const slot of kp.data.slots) {
               // Note: the following decrement can result in an addition to the
               // maybeFreeKrefs set, which we are in the midst of iterating.
@@ -1516,27 +1556,69 @@ export default function makeKernelKeeper(
             deleteKernelPromise(kpid);
           }
         }
+
         if (type === 'object') {
           const { reachable, recognizable } = getObjectRefCount(kref);
           if (reachable === 0) {
-            const ownerVatID = ownerOfKernelObject(kref);
-            if (ownerVatID) {
+            // We avoid ownerOfKernelObject(), which will report
+            // 'undefined' if the owner is dead (and being slowly
+            // deleted). Message delivery should use that, but not us.
+            const ownerKey = `${kref}.owner`;
+            let ownerVatID = kvStore.get(ownerKey);
+            const terminated = terminatedVats.includes(ownerVatID);
+
+            // Some objects that are still owned, but the owning vat
+            // might still alive, or might be terminated and in the
+            // process of being deleted. These two clauses are
+            // mutually exclusive.
+
+            if (ownerVatID && !terminated) {
               const vatKeeper = provideVatKeeper(ownerVatID);
-              const isReachable = vatKeeper.getReachableFlag(kref);
-              if (isReachable) {
+              const vatConsidersReachable = vatKeeper.getReachableFlag(kref);
+              if (vatConsidersReachable) {
                 // the reachable count is zero, but the vat doesn't realize it
                 actions.add(`${ownerVatID} dropExport ${kref}`);
               }
               if (recognizable === 0) {
-                // TODO: rethink this
-                // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
+                // TODO: rethink this assert
+                // assert.equal(vatConsidersReachable, false, `${kref} is reachable but not recognizable`);
                 actions.add(`${ownerVatID} retireExport ${kref}`);
               }
-            } else if (recognizable === 0) {
-              // unreachable, unrecognizable, orphaned: delete the
-              // empty refcount here, since we can't send a GC
-              // action without an ownerVatID
-              deleteKernelObject(kref);
+            } else if (ownerVatID && terminated) {
+              // When we're slowly deleting a vat, and one of its
+              // exports becomes unreferenced, we obviously must not
+              // send dropExports or retireExports into the dead vat.
+              // We fast-forward the abandonment that slow-deletion
+              // would have done, then treat the object as orphaned.
+
+              const { vatSlot } = getReachableAndVatSlot(ownerVatID, kref);
+              // delete directly, not orphanKernelObject(), which
+              // would re-submit to maybeFreeKrefs
+              kvStore.delete(ownerKey);
+              kvStore.delete(`${ownerVatID}.c.${kref}`);
+              kvStore.delete(`${ownerVatID}.c.${vatSlot}`);
+              // now fall through to the orphaned case
+              ownerVatID = undefined;
+            }
+
+            // Now handle objects which were orphaned. NOTE: this
+            // includes objects which were owned by a terminated (but
+            // not fully deleted) vat, where `ownerVatID` was cleared
+            // in the last line of that previous clause (the
+            // fall-through case). Don't try to change this `if
+            // (!ownerVatID)` into an `else if`: the two clauses are
+            // *not* mutually-exclusive.
+
+            if (!ownerVatID) {
+              // orphaned and unreachable, so retire it. If the kref
+              // is recognizable, then we need retireKernelObjects()
+              // to scan for importers and send retireImports (and
+              // delete), else we can call deleteKernelObject directly
+              if (recognizable) {
+                retireKernelObjects([kref]);
+              } else {
+                deleteKernelObject(kref);
+              }
             }
           }
         }
@@ -1830,7 +1912,7 @@ export default function makeKernelKeeper(
     ownerOfKernelDevice,
     kernelObjectExists,
     getImporters,
-    abandonKernelObject,
+    orphanKernelObject,
     retireKernelObjects,
     deleteKernelObject,
     pinObject,
