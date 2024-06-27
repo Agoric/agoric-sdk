@@ -187,7 +187,7 @@ export function makeKernelSyscallHandler(tools) {
     for (const koid of koids) {
       // note that this is effectful and also performed outside of a syscall
       // by processUpgradeVat in {@link ./kernel.js}
-      kernelKeeper.orphanKernelObject(koid, vatID);
+      kernelKeeper.abandonKernelObject(koid, vatID);
     }
     return OKNULL;
   }

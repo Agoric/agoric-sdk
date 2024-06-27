@@ -692,13 +692,19 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     addGCActions(newActions);
   }
 
-  function orphanKernelObject(kref, oldVat) {
+  function abandonKernelObject(kref, oldVat) {
+    // termination orphans all exports, upgrade orphans non-durable
+    // exports, and syscall.abandonExports orphans specific ones
     const ownerKey = `${kref}.owner`;
     const ownerVat = kvStore.get(ownerKey);
     ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
     kvStore.delete(ownerKey);
+    const { vatSlot: vref } = getReachableAndVatSlot(oldVat, kref);
+    kvStore.delete(`${oldVat}.c.${kref}`);
+    kvStore.delete(`${oldVat}.c.${vref}`);
+    addMaybeFreeKref(kref);
     // note that we do not delete the object here: it will be
-    // collected if/when all other references are dropped
+    // retired if/when all other references are dropped
   }
 
   function deleteKernelObject(koid) {
@@ -986,19 +992,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       const vref = k.slice(`${vatID}.c.`.length);
       assert(vref.startsWith('o+'), vref);
       const kref = kvStore.get(k);
-      // we must delete the c-list entry, but we don't need to
-      // manipulate refcounts like the way vatKeeper/deleteCListEntry
-      // does, so just delete the keys directly
-      // vatKeeper.deleteCListEntry(kref, vref);
-      kvStore.delete(`${vatID}.c.${kref}`);
-      kvStore.delete(`${vatID}.c.${vref}`);
-      // if this object became unreferenced, processRefcounts will
-      // delete it, so don't be surprised. TODO: this results in an
-      // extra get() for each delete(), see if there's a way to avoid
-      // this. TODO: think carefully about other such races.
-      if (kvStore.has(`${kref}.owner`)) {
-        orphanKernelObject(kref, vatID);
-      }
+      // note: adds to maybeFreeKrefs, deletes c-list and .owner
+      abandonKernelObject(kref, vatID);
       work.exports += 1;
       if (spend()) {
         logWork();
@@ -1805,7 +1800,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     ownerOfKernelDevice,
     kernelObjectExists,
     getImporters,
-    orphanKernelObject,
+    abandonKernelObject,
     retireKernelObjects,
     deleteKernelObject,
     pinObject,
