@@ -481,9 +481,6 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       assert.equal(allocatedByVat, true); // abandon *exports*, not imports
       // kref must already be in the clist
       const kref = mapVatSlotToKernelSlot(vref, gcSyscallMapOpts);
-      // note that this is effectful and also performed outside of a syscall
-      // by processUpgradeVat in {@link ./kernel.js}
-      vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
     kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
