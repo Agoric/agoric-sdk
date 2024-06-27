@@ -1468,7 +1468,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function processRefcounts() {
     if (enableKernelGC) {
-      const actions = getGCActions(); // local cache
+      const actions = new Set();
       // TODO (else buggy): change the iteration to handle krefs that get
       // added multiple times (while we're iterating), because we might do
       // different work the second time around. Something like an ordered
@@ -1516,7 +1516,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           }
         }
       }
-      setGCActions(actions);
+      addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
   }
