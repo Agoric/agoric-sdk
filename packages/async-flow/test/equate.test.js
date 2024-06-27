@@ -54,7 +54,7 @@ const testEquate = (t, zone, showOnConsole = false) => {
     message:
       'cannot yet send guest remotables to host "[Alleged: g1]" vs "[Alleged: h1]"',
   });
-  bij.init(g1, h1);
+  bij.unwrapInit(g1, h1);
   t.notThrows(() => equate(g1, h1));
   t.throws(() => equate(g1, h2), {
     message: 'internal: g->h "[Alleged: g1]" -> "[Vow]" vs "[Alleged: h1]"',
@@ -62,7 +62,7 @@ const testEquate = (t, zone, showOnConsole = false) => {
   t.throws(() => equate(g2, h1), {
     message: 'internal: unexpected h->g "[Alleged: h1]" -> "[Alleged: g1]"',
   });
-  bij.init(g2, h2);
+  bij.unwrapInit(g2, h2);
   equate(g2, h2);
 
   t.throws(() => equate(g1, h2), {

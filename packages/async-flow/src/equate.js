@@ -46,7 +46,7 @@ export const makeEquate = bijection => {
       // `init` does not yet do enough checking anyway. For this case,
       // we should ensure that h is a host wrapper of a guest promise,
       // which is a wrapping we don't yet support.
-      // bijection.init(g, h);
+      // bijection.unwrapInit(g, h);
       // return;
     }
     const hPassStyle = passStyleOf(h);
@@ -98,7 +98,7 @@ export const makeEquate = bijection => {
         // `init` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest remotable,
         // which is a wrapping we don't yet support.
-        // bijection.init(g, h);
+        // bijection.unwrapInit(g, h);
         // return;
       }
       case 'promise': {
@@ -110,7 +110,7 @@ export const makeEquate = bijection => {
         // `init` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest promise,
         // which is a wrapping we don't yet support.
-        // bijection.init(g, h);
+        // bijection.unwrapInit(g, h);
         // return;
       }
       default: {

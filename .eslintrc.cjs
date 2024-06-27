@@ -32,7 +32,9 @@ const deprecatedTerminology = Object.fromEntries(
  */
 const resumable = [
   {
-    selector: 'FunctionExpression[async=true]',
+    // all async function expressions, except `onOpen` and `onClose` when they are properties of `connectionHandler`
+    selector:
+      'FunctionExpression[async=true]:not(Property[key.name="connectionHandler"] > ObjectExpression > Property[key.name=/^(onOpen|onClose)$/] > FunctionExpression[async=true])',
     message: 'Non-immediate functions must return vows, not promises',
   },
   {

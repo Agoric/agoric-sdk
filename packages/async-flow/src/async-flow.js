@@ -7,17 +7,14 @@ import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
 import { makeReplayMembrane } from './replay-membrane.js';
 import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
+import { prepareEndowmentTools } from './endowments.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**
  * @import {WeakMapStore} from '@agoric/store'
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Zone} from '@agoric/base-zone'
- * @import {MapStore} from '@agoric/store';
- * @import {LogStore} from '../src/log-store.js';
- * @import {Bijection} from '../src/bijection.js';
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, PreparationOptions} from '../src/types.js';
- * @import {ReplayMembrane} from '../src/replay-membrane.js';
+ * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, PreparationOptions} from '../src/types.js'
+ * @import {ReplayMembrane} from '../src/replay-membrane.js'
  */
 
 const { defineProperties } = Object;
@@ -53,7 +50,11 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   const {
     vowTools = prepareVowTools(outerZone),
     makeLogStore = prepareLogStore(outerZone),
-    makeBijection = prepareBijection(outerZone),
+    endowmentTools: { prepareEndowment, unwrap } = prepareEndowmentTools(
+      outerZone,
+      { vowTools },
+    ),
+    makeBijection = prepareBijection(outerZone, unwrap),
   } = outerOptions;
   const { watch, makeVowKit } = vowTools;
 
@@ -177,7 +178,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               eagerWakers.delete(flow);
             }
 
-            const wakeWatch = vowish => {
+            const watchWake = vowish => {
               // Extra paranoid because we're getting
               // "promise watcher must be a virtual object"
               // in the general vicinity.
@@ -188,13 +189,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               watch(vowish, wakeWatcher);
             };
             const panic = err => admin.panic(err);
-            const membrane = makeReplayMembrane(
+            const membrane = makeReplayMembrane({
               log,
               bijection,
               vowTools,
-              wakeWatch,
+              watchWake,
               panic,
-            );
+            });
             initMembrane(flow, membrane);
             const guestArgs = membrane.hostToGuest(activationArgs);
 
@@ -225,7 +226,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               // gating condition, the next line could grow the bijection
               // of a failed flow, subverting other gating checks on bijection
               // membership.
-              bijection.init(guestResultP, outcomeKit.vow);
+              const g = bijection.unwrapInit(guestResultP, outcomeKit.vow);
+              g === guestResultP ||
+                Fail`internal: promises should not be unwrapped ${g}`;
             }
             // log is driven at first by guestAyncFunc interaction through the
             // membrane with the host activationArgs. At the end of its first
@@ -422,7 +425,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       const asyncFlowKit = internalMakeAsyncFlowKit(activationArgs);
       const { flow } = asyncFlowKit;
 
-      const vow = toPassableCap(flow.getOutcome());
+      const vow = flow.getOutcome();
       flowForOutcomeVowKey.init(toPassableCap(vow), flow);
       flow.restart();
       return asyncFlowKit;
@@ -484,6 +487,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     asyncFlow,
     adminAsyncFlow,
     allWokenP,
+    prepareEndowment,
   });
 };
 harden(prepareAsyncFlowTools);

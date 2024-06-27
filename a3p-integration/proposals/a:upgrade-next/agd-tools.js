@@ -48,28 +48,61 @@ export const checkForOracle = async (t, name) => {
   t.truthy(instance);
 };
 
-export const addOraclesForBrand = async (brandIn, oraclesByBrand) => {
+export const registerOraclesForBrand = async (brandIn, oraclesByBrand) => {
   await null;
   const promiseArray = [];
 
-  const oraclesWithID = [];
-  // newOfferId() waits 1 second
-  const offerIdBase = await newOfferId();
-  for (let i = 0; i < ORACLE_ADDRESSES.length; i += 1) {
-    const oracleAddress = ORACLE_ADDRESSES[i];
-    const offerId = `${offerIdBase}.${i}`;
-    oraclesWithID.push({ address: oracleAddress, offerId });
-
+  const oraclesWithID = oraclesByBrand.get(brandIn);
+  for (const oracle of oraclesWithID) {
+    const { address, offerId } = oracle;
     promiseArray.push(
       executeOffer(
-        oracleAddress,
+        address,
         agops.oracle('accept', '--offerId', offerId, `--pair ${brandIn}.USD`),
       ),
     );
   }
-  oraclesByBrand.set(brandIn, oraclesWithID);
 
   return Promise.all(promiseArray);
+};
+
+/**
+ * Generate a consistent map of oracleIDs for a brand that can be used to
+ * register oracles or to push prices. The baseID changes each time new
+ * invitations are sent/accepted, and need to be maintained as constants in
+ * scripts that use the oracles. Each oracleAddress and brand needs a unique
+ * offerId, so we create recoverable IDs using the brandName and oracle id,
+ * mixed with the upgrade at which the invitations were accepted.
+ *
+ * @param {string} baseId
+ * @param {string} brandName
+ */
+const addOraclesForBrand = (baseId, brandName) => {
+  const oraclesWithID = [];
+  for (let i = 0; i < ORACLE_ADDRESSES.length; i += 1) {
+    const oracleAddress = ORACLE_ADDRESSES[i];
+    const offerId = `${brandName}.${baseId}.${i}`;
+    oraclesWithID.push({ address: oracleAddress, offerId });
+  }
+  return oraclesWithID;
+};
+
+/**
+ * Generate a consistent map of oracleIDs and brands that can be used to
+ * register oracles or to push prices. The baseID changes each time new
+ * invitations are sent/accepted, and need to be maintained as constants in
+ * scripts that use these records to push prices.
+ *
+ * @param {string} baseId
+ * @param {string[]} brandNames
+ */
+export const generateOracleMap = (baseId, brandNames) => {
+  const oraclesByBrand = new Map();
+  for (const brandName of brandNames) {
+    const oraclesWithID = addOraclesForBrand(baseId, brandName);
+    oraclesByBrand.set(brandName, oraclesWithID);
+  }
+  return oraclesByBrand;
 };
 
 export const pushPrices = (price, brandIn, oraclesByBrand) => {
@@ -127,6 +160,12 @@ export const getAuctionCollateral = async index => {
   const path = `published.auction.book${index}`;
   const body = await getQuoteBody(path);
   return body.collateralAvailable.value;
+};
+
+export const getVaultPrices = async index => {
+  const path = `published.vaultFactory.managers.manager${index}.quotes`;
+  const body = await getQuoteBody(path);
+  return body.quoteAmount;
 };
 
 export const bankSend = (addr, wanted) => {

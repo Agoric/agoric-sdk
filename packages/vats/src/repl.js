@@ -2,7 +2,7 @@
 
 import { isPromise } from '@endo/promise-kit';
 import { Far } from '@endo/far';
-import { V as E } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import * as vowExports from '@agoric/vow/vat.js';
 import * as farExports from '@endo/far';
 

@@ -110,6 +110,8 @@ import (
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+
+	// conv "github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
@@ -905,86 +907,6 @@ func NewAgoricApp(
 	}
 
 	return app
-}
-
-var upgradeNamesOfThisVersion = map[string]bool{
-	"UNRELEASED_UPGRADE":      true,
-	"UNRELEASED_TEST_UPGRADE": true,
-}
-
-func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
-	for name := range upgradeNamesOfThisVersion {
-		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
-			return false
-		}
-	}
-	return true
-}
-
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
-	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		app.CheckControllerInited(false)
-
-		CoreProposalSteps := []vm.CoreProposalStep{}
-
-		// These CoreProposalSteps are not idempotent and should only be executed
-		// as part of the first upgrade using this handler on any given chain.
-		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
-			// Each CoreProposalStep runs sequentially, and can be constructed from
-			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{
-				// Upgrade ZCF only
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgrade-zcf.js"),
-
-				// upgrade the provisioning vat
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
-				// Enable low-level Orchestration.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/init-network.js",
-					"@agoric/builders/scripts/vats/init-localchain.js",
-					"@agoric/builders/scripts/vats/init-transfer.js",
-				),
-				// Add new vats for price feeds. The existing ones will be retired shortly.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/updateAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStAtomPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStOsmoPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStTiaPriceFeed.js",
-					"@agoric/builders/scripts/vats/updateStkAtomPriceFeed.js",
-				),
-				// Add new auction contract. The old one will be retired shortly.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
-				// upgrade vaultFactory.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeVaults.js"),
-				// upgrade scaledPriceAuthorities.
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgradeScaledPriceAuthorities.js"),
-			}
-		}
-
-		app.upgradeDetails = &upgradeDetails{
-			// Record the plan to send to SwingSet
-			Plan: plan,
-			// Core proposals that should run during the upgrade block
-			// These will be merged with any coreProposals specified in the
-			// upgradeInfo field of the upgrade plan ran as subsequent steps
-			CoreProposals: vm.CoreProposalsFromSteps(CoreProposalSteps...),
-		}
-
-		// Always run module migrations
-		mvm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
-		if err != nil {
-			return mvm, err
-		}
-
-		m := swingsetkeeper.NewMigrator(app.SwingSetKeeper)
-		err = m.MigrateParams(ctx)
-		if err != nil {
-			return mvm, err
-		}
-
-		return mvm, nil
-	}
 }
 
 // normalizeModuleAccount ensures that the given account is a module account,

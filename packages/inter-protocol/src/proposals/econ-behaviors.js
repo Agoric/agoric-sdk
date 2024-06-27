@@ -164,7 +164,6 @@ export const setupReserve = async ({
   ]);
 
   reserveKit.resolve(
-    // @ts-expect-error XXX
     harden({
       label: 'AssetReserve',
       instance,
@@ -349,7 +348,6 @@ export const startVaultFactory = async (
   );
 
   vaultFactoryKit.resolve(
-    // @ts-expect-error XXX
     harden({
       label: 'VaultFactory',
       creatorFacet: vaultFactoryCreator,
@@ -624,7 +622,6 @@ export const startAuctioneer = async (
     ]);
 
   auctioneerKit.resolve(
-    // @ts-expect-error XXX
     harden({
       label: 'auctioneer',
       creatorFacet: governedCreatorFacet,

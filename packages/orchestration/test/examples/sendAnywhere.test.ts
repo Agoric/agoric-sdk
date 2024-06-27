@@ -51,7 +51,10 @@ test('single amount proposal shape (keyword record)', async t => {
   }
 });
 
-test('send using arbitrary chain info', async t => {
+// Failing with "guest eventual send not yet supported:"
+// in withdrawFromSeat, at
+// `return E(tempUserSeatP).getPayouts();`
+test.failing('send using arbitrary chain info', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,

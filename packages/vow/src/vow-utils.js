@@ -4,8 +4,9 @@ import { isPassable } from '@endo/pass-style';
 import { M, matches } from '@endo/patterns';
 
 /**
- * @import {PassableCap} from '@endo/pass-style'
- * @import {VowPayload, Vow} from './types.js'
+ * @import {PassableCap} from '@endo/pass-style';
+ * @import {VowPayload, Vow, PromiseVow} from './types.js';
+ * @import {MakeVowKit} from './vow.js';
  */
 
 export { basicE };
@@ -73,3 +74,30 @@ export const toPassableCap = k => {
   return vowV0;
 };
 harden(toPassableCap);
+
+/** @param {MakeVowKit} makeVowKit */
+export const makeAsVow = makeVowKit => {
+  /**
+   * Helper function that coerces the result of a function to a Vow. Helpful
+   * for scenarios like a synchronously thrown error.
+   * @template {any} T
+   * @param {(...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>} fn
+   * @returns {Vow<Awaited<T>>}
+   */
+  const asVow = fn => {
+    let result;
+    try {
+      result = fn();
+    } catch (e) {
+      result = Promise.reject(e);
+    }
+    if (isVow(result)) {
+      return result;
+    }
+    const kit = makeVowKit();
+    kit.resolver.resolve(result);
+    return kit.vow;
+  };
+  return harden(asVow);
+};
+harden(makeAsVow);
