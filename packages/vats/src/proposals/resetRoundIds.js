@@ -1,17 +1,19 @@
 import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeMarshal } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { chainStorage: any };
+ *   consume: {
+ *     chainStorage: StorageNode;
+ *     chainTimerService: import('@agoric/time').TimerService;
+ *     board: any;
+ *   };
  * }} powers
  * @param {object} options
  * @param {{ tokenName: string }} options.options
  */
 export const resetRoundId = async (
-  { consume: { chainStorage, chainTimerService } },
+  { consume: { chainStorage, chainTimerService, board } },
   options,
 ) => {
   const tokenName = options.options;
@@ -27,7 +29,7 @@ export const resetRoundId = async (
     tokenStorageNode,
     'latestRound',
   );
-  const marshalData = makeMarshal(_val => Fail`data only`);
+  const marshaller = await E(board).getReadonlyMarshaller();
 
   const now = await E(chainTimerService).getCurrentTimestamp();
   const latestRound = harden({
@@ -36,7 +38,7 @@ export const resetRoundId = async (
     startedBy: 'someoneElse',
   });
 
-  const aux = marshalData.toCapData(harden({ latestRound }));
+  const aux = marshaller.toCapData(harden({ latestRound }));
 
   await E(latestRoundStorageNode).setValue(JSON.stringify(aux));
 };
@@ -44,7 +46,7 @@ export const resetRoundId = async (
 export const getManifestForResetRoundIds = _powers => ({
   manifest: {
     [resetRoundId.name]: {
-      consume: { chainStorage: true, chainTimerService: true },
+      consume: { chainStorage: true, chainTimerService: true, board: true },
     },
   },
 });
