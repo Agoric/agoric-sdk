@@ -58,8 +58,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   const account = await E(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
   const chainAddress = await E(account).getAddress();
-  // FIXME mock remoteAddress in ibc bridge. Currently UNPARSABLE_CHAIN_ADDRESS
-  // t.regex(address.address, /cosmos1/);
+  t.regex(chainAddress.address, /cosmos1/);
   t.like(chainAddress, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
 
   await t.throwsAsync(E(account).getBalances(), {
@@ -97,9 +96,7 @@ test('makeAccountInvitationMaker', async t => {
     value: '',
   });
 
-  // FIXME mock remoteAddress in ibc bridge
-  const storagePath =
-    'mockChainStorageRoot.stakeAtom.accounts.UNPARSABLE_CHAIN_ADDRESS';
+  const storagePath = 'mockChainStorageRoot.stakeAtom.accounts.cosmos1test';
   const vstorageEntry = bootstrap.storage.data.get(storagePath);
   t.truthy(vstorageEntry, 'vstorage account entry created');
   t.log(storagePath, vstorageEntry);

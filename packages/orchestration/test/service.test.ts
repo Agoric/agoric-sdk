@@ -1,12 +1,20 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
-import { QueryBalanceRequest } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import {
+  QueryBalanceRequest,
+  QueryBalanceResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import {
+  MsgDelegate,
+  MsgDelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { matches } from '@endo/patterns';
-import { heapVowTools, heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { decodeBase64 } from '@endo/base64';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
+import { tryDecodeResponse } from '../src/utils/cosmos.js';
 
 test('makeICQConnection returns an ICQConnection', async t => {
   const {
@@ -44,20 +52,18 @@ test('makeICQConnection returns an ICQConnection', async t => {
   const localAddr2 = await E(icqConnection2).getLocalAddress();
   t.is(localAddr, localAddr2, 'provideICQConnection is idempotent');
 
-  await t.throwsAsync(
-    heapVowTools.when(
-      E(icqConnection).query([
-        toRequestQueryJson(
-          QueryBalanceRequest.toProtoMsg({
-            address: 'cosmos1test',
-            denom: 'uatom',
-          }),
-        ),
-      ]),
+  const [result] = await E(icqConnection).query([
+    toRequestQueryJson(
+      QueryBalanceRequest.toProtoMsg({
+        address: 'cosmos1test',
+        denom: 'uatom',
+      }),
     ),
-    { message: /\\"data\\":\\"(.*)\\"memo\\":\\"\\"/ },
-    'TODO do not use echo connection',
-  );
+  ]);
+
+  t.like(QueryBalanceResponse.decode(decodeBase64(result.key)), {
+    balance: { amount: '0', denom: 'uatom' },
+  });
 });
 
 test('makeAccount returns a ChainAccount', async t => {
@@ -102,11 +108,7 @@ test('makeAccount returns a ChainAccount', async t => {
   );
 
   t.true(matches(chainAddr, ChainAddressShape));
-  t.regex(
-    chainAddr.address,
-    /UNPARSABLE_CHAIN_ADDRESS/,
-    'TODO use mocked ibc connection instead of echo connection',
-  );
+  t.regex(chainAddr.address, /cosmos1test/);
 
   const delegateMsg = Any.toJSON(
     MsgDelegate.toProtoMsg({
@@ -115,15 +117,16 @@ test('makeAccount returns a ChainAccount', async t => {
       amount: { denom: 'uatom', amount: '10' },
     }),
   );
-  await t.throwsAsync(
-    heapVowTools.when(E(account).executeEncodedTx([delegateMsg])),
-    { message: /\\"type\\":1(.*)\\"data\\":\\"(.*)\\"memo\\":\\"\\"/ },
-    'TODO do not use echo connection',
+
+  const delegateResp = await E(account).executeEncodedTx([delegateMsg]);
+  t.deepEqual(
+    tryDecodeResponse(delegateResp, MsgDelegateResponse.fromProtoMsg),
+    {},
   );
 
   await E(account).close();
   await t.throwsAsync(
-    heapVowTools.when(E(account).executeEncodedTx([delegateMsg])),
+    E(account).executeEncodedTx([delegateMsg]),
     {
       message: 'Connection closed',
     },
