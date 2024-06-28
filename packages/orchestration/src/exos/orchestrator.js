@@ -30,12 +30,13 @@ import {
  */
 
 const { Fail } = assert;
+const { Vow$ } = NetworkShape; // TODO #9611
 const trace = makeTracer('Orchestrator');
 
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
-  getChain: M.call(M.string()).returns(NetworkShape.Vow$(ChainInfoShape)),
-  makeLocalAccount: M.call().returns(NetworkShape.Vow$(LocalChainAccountShape)),
+  getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
+  makeLocalAccount: M.call().returns(Vow$(LocalChainAccountShape)),
   getBrandInfo: M.call(DenomShape).returns(BrandInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });

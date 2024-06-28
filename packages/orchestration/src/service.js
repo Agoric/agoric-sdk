@@ -21,7 +21,7 @@ import {
  */
 
 const { Fail, bare } = assert;
-
+const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @typedef {object} OrchestrationPowers
  * @property {Remote<PortAllocator>} portAllocator
@@ -72,7 +72,7 @@ const prepareOrchestrationKit = (
       requestICAChannelWatcher: M.interface('RequestICAChannelWatcher', {
         onFulfilled: M.call(M.remotable('Port'))
           .optional({ chainId: M.string(), remoteConnAddr: M.string() })
-          .returns(NetworkShape.Vow$(NetworkShape.Connection)),
+          .returns(Vow$(NetworkShape.Connection)),
       }),
       requestICQChannelWatcher: M.interface('RequestICQChannelWatcher', {
         onFulfilled: M.call(M.remotable('Port'))
@@ -80,7 +80,7 @@ const prepareOrchestrationKit = (
             remoteConnAddr: M.string(),
             controllerConnectionId: M.string(),
           })
-          .returns(NetworkShape.Vow$(NetworkShape.Connection)),
+          .returns(Vow$(NetworkShape.Connection)),
       }),
       channelOpenWatcher: M.interface('ChannelOpenWatcher', {
         onFulfilled: M.call(M.remotable('Connection'))
@@ -94,10 +94,10 @@ const prepareOrchestrationKit = (
       }),
       public: M.interface('OrchestrationService', {
         makeAccount: M.call(M.string(), M.string(), M.string()).returns(
-          NetworkShape.Vow$(M.remotable('ChainAccountKit')),
+          Vow$(M.remotable('ChainAccountKit')),
         ),
         provideICQConnection: M.call(M.string()).returns(
-          NetworkShape.Vow$(M.remotable('ICQConnection')),
+          Vow$(M.remotable('ICQConnection')),
         ),
       }),
     },

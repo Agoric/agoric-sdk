@@ -49,6 +49,8 @@ import { dateInSeconds } from '../utils/time.js';
 const trace = makeTracer('ComosOrchestrationAccountHolder');
 
 const { Fail } = assert;
+const { Vow$ } = NetworkShape; // TODO #9611
+
 /**
  * @typedef {object} ComosOrchestrationAccountNotification
  * @property {ChainAddress} chainAddress
@@ -81,11 +83,9 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     AmountArgShape,
   ).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
-    NetworkShape.Vow$(M.arrayOf(ChainAmountShape)),
+    Vow$(M.arrayOf(ChainAmountShape)),
   ),
-  withdrawRewards: M.call().returns(
-    NetworkShape.Vow$(M.arrayOf(ChainAmountShape)),
-  ),
+  withdrawRewards: M.call().returns(Vow$(M.arrayOf(ChainAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
 });
 
@@ -130,7 +130,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(NetworkShape.Vow$(M.promise())),
+          .returns(Vow$(M.promise())),
       }),
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())

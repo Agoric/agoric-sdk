@@ -33,6 +33,8 @@ import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
 const trace = makeTracer('LOA');
 
 const { Fail } = assert;
+const { Vow$ } = NetworkShape; // TODO #9611
+
 /**
  * @typedef {object} LocalChainAccountNotification
  * @property {string} address
@@ -51,10 +53,8 @@ const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(VowShape),
   undelegate: M.call(M.string(), AmountShape).returns(VowShape),
-  withdraw: M.call(AmountShape).returns(NetworkShape.Vow$(PaymentShape)),
-  executeTx: M.call(M.arrayOf(M.record())).returns(
-    NetworkShape.Vow$(M.record()),
-  ),
+  withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
+  executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -93,7 +93,7 @@ export const prepareLocalOrchestrationAccountKit = (
       getChainInfoWatcher: M.interface('getChainInfoWatcher', {
         onFulfilled: M.call(M.record()) // agoric chain info
           .optional({ destination: ChainAddressShape })
-          .returns(NetworkShape.Vow$(M.record())), // connection info
+          .returns(Vow$(M.record())), // connection info
       }),
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
@@ -102,7 +102,7 @@ export const prepareLocalOrchestrationAccountKit = (
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
             amount: ChainAmountShape,
           })
-          .returns(NetworkShape.Vow$(M.record())),
+          .returns(Vow$(M.record())),
       }),
       extractFirstResultWatcher: M.interface('extractFirstResultWatcher', {
         onFulfilled: M.call([M.record()])
