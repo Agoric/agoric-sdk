@@ -80,7 +80,7 @@ const prepareRemoteChainFacadeKit = (
         /** @returns {Vow<PromiseToVow<OrchestrationAccount<ChainInfo>>>} */
         makeAccount() {
           // TODO #9449 fix types
-          // @ts-expect-error 'Vow<Guarded<{...}>> is not assignable to type 'Vow<never>' #9449
+          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<OrchestrationAccountI>'
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
             const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;

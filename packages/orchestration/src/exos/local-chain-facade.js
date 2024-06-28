@@ -68,7 +68,7 @@ const prepareLocalChainFacadeKit = (
         makeAccount() {
           const lcaP = E(localchain).makeAccount();
           // TODO #9449 fix types
-          // @ts-expect-error 'Vow<Guarded<{...}>> is not assignable to type 'Vow<never>'
+          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<OrchestrationAccountI>'.
           return watch(
             // TODO #9449 fix types
             // @ts-expect-error Property 'getAddress' does not exist on type 'EMethods<Required<Guarded<{ getAddress()...
