@@ -6,6 +6,7 @@ import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import type { Chain } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup } from './supports.js';
+import { denomHash } from '../src/utils/denomHash.js';
 
 const test = anyTest;
 
@@ -75,6 +76,22 @@ test('chain info', async t => {
 
   const result = (await handle()) as Chain<any>;
   t.deepEqual(await E.when(result.getChainInfo()), mockChainInfo);
+
+  const handle2 = orchestrate('mock', {}, async orc => {
+    await orc.getChain('mock');
+    await orc.getChain('mock');
+  });
+  await handle2();
+
+  const dh = denomHash({ channelId: 'channel-0', denom: 'uatom' });
+  const handle3 = orchestrate('mock3', {}, async orc => {
+    await orc.getChain('agoric');
+    await orc.getChain('cosmoshub');
+    const amt = orc.asAmount({ denom: `ibc/${dh}`, value: 100n });
+    return amt;
+  });
+  const result3 = await handle3();
+  t.deepEqual(result3, { brand: 1, value: 100n });
 });
 
 test.todo('contract upgrade');
