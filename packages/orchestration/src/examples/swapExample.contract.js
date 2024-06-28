@@ -4,7 +4,6 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
-import { heapVowTools } from '@agoric/vow/vat.js';
 import { orcUtils } from '../utils/orc.js';
 import { provideOrchestration } from '../utils/start-helper.js';
 
@@ -34,10 +33,8 @@ const stackAndSwapFn = async (orch, { zcf }, seat, offerArgs) => {
   const agoric = await orch.getChain('agoric');
 
   const [omniAccount, localAccount] = await Promise.all([
-    // XXX when() until membrane
-    heapVowTools.when(omni.makeAccount()),
-    // XXX when() until membrane
-    heapVowTools.when(agoric.makeAccount()),
+    omni.makeAccount(),
+    agoric.makeAccount(),
   ]);
 
   const omniAddress = omniAccount.getAddress();
