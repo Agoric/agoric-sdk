@@ -318,9 +318,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     noteRunningVat(vatID);
 
     const adminNode = makeAdminNode(vatID);
-    return E.when(pendingP, root => {
-      return { adminNode, root };
-    });
+    return E.when(pendingP, root => harden({ adminNode, root }));
   }
 
   function getCriticalVatKey() {
