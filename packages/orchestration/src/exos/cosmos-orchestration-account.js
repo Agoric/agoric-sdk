@@ -374,6 +374,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           );
         },
         getBalances() {
+          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
         /**
