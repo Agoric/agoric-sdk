@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
@@ -84,7 +85,7 @@ export function parseTxPacket(response) {
   const { result, error } = JSON.parse(response);
   if (result) return result;
   else if (error) throw Error(error);
-  else throw Error(response);
+  else throw Fail`expected either result or error: ${response}`;
 }
 harden(parseTxPacket);
 
