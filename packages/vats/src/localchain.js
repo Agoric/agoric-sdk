@@ -5,7 +5,6 @@ import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
 import { OrVow$ } from '@agoric/vow';
 
 const { Fail } = assert;
-const { Vow$ } = NetworkShape;
 
 /**
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';

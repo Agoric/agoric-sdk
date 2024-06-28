@@ -5,14 +5,13 @@ export {};
  * @import {CopyTagged} from '@endo/pass-style'
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {Remote} from '@agoric/internal';
- * @import {prepareVowTools} from './tools.js'
  */
 
 /**
  * @callback IsRetryableReason
  * Return truthy if a rejection reason should result in a retry.
  * @param {any} reason
- * @param {any} priorRetryValue the previous value returned by this function
+ * @param {any} [priorRetryValue] the previous value returned by this function
  * when deciding whether to retry the same logical operation
  * @returns {any} If falsy, the reason is not retryable. If truthy, the
  * priorRetryValue for the next call.
@@ -22,6 +21,11 @@ export {};
  * @template T
  * @typedef {Promise<T | Vow<T>>} PromiseVow Return type of a function that may
  * return a promise or a vow.
+ */
+
+/**
+ * @typedef {object} EUnwrapOptions
+ * @property {boolean | AnyWatcher | [] | [AnyWatcher, ...args: any[]]} [watch]
  */
 
 /**
@@ -105,4 +109,8 @@ export {};
  * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
  * @param {C} [watcherArgs]
  * @returns {Promise<TResult1 | TResult2>}
+ */
+
+/**
+ * @typedef {Watcher<any, any, any, any[]>} AnyWatcher
  */

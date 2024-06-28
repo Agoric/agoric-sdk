@@ -3,11 +3,10 @@
  * the SwingSet kernel.
  */
 
-/* global globalThis */
 // @ts-check
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import { makeE, prepareVowTools as rawPrepareVowTools } from './src/index.js';
+import { prepareVowTools as rawPrepareVowTools } from './src/index.js';
 
 export { EVow$, OrVow$ } from './src/index.js';
 
@@ -41,17 +40,4 @@ export const prepareVowTools = (zone, powers = {}) =>
  */
 export const heapVowTools = prepareVowTools(makeHeapZone());
 
-/**
- * A vow-shortening E, for use in vats that are not durable but receive vows.
- *
- * When the vows must be watched durably, use vowTools prepared in a durable zone.
- *
- * This produces long-lived ephemeral promises that encapsulate the shortening
- * behaviour, and so provides no way for `watch` to durably shorten. Use the
- * standard `import('@endo/far').E` if you need to `watch` its resulting
- * promises.
- */
-export const heapVowE = makeE(globalThis.HandledPromise, {
-  unwrap: heapVowTools.when,
-  additional: { when: heapVowTools.when },
-});
+export const { E: heapVowE } = heapVowTools;

@@ -25,7 +25,7 @@ const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
 /**
  * @import { HandledPromiseConstructor, RemotableBrand } from '@endo/eventual-send'
- * @import { EUnwrap } from './types.js'
+ * @import { EUnwrap, EUnwrapOptions } from './types.js'
  */
 /** @typedef {(...args: unknown[]) => any} Callable */
 
@@ -59,10 +59,11 @@ const baseFreezableProxyHandler = {
  *
  * @param {any} recipient Any value passed to E(x)
  * @param {HandledPromiseConstructor} HandledPromise
- * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
+ * @param {Unwrapper} unwrap
+ * @param {EOptions} [opts]
  * @returns {ProxyHandler<any>} the Proxy handler
  */
-const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
+const makeEProxyHandler = (recipient, HandledPromise, unwrap, opts) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -95,7 +96,13 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
               // make this eventual-send
             }
             return unwrap(
-              HandledPromise.applyMethod(unwrap(recipient), propertyKey, args),
+              HandledPromise.applyMethod(
+                unwrap(recipient, 'method recipient'),
+                propertyKey,
+                args,
+              ),
+              'method result',
+              opts,
             );
           },
           // @ts-expect-error https://github.com/microsoft/TypeScript/issues/50319
@@ -110,7 +117,13 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
         // so that you can walk back on the stack to see how we came to
         // make this eventual-send
       }
-      return unwrap(HandledPromise.applyFunction(unwrap(recipient), argArray));
+      return unwrap(
+        HandledPromise.applyFunction(
+          unwrap(recipient, 'function recipient'),
+          argArray,
+        ),
+        'function result',
+      );
     },
     has: (_target, _p) => {
       // We just pretend everything exists.
@@ -124,10 +137,11 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
  *
  * @param {any} recipient Any value passed to E.sendOnly(x)
  * @param {HandledPromiseConstructor} HandledPromise
- * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
+ * @param {Unwrapper} unwrap
+ * @param {EOptions} [opts]
  * @returns {ProxyHandler<any>} the Proxy handler
  */
-const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
+const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap, opts) =>
   harden({
     ...baseFreezableProxyHandler,
     get: (_target, propertyKey, receiver) => {
@@ -154,11 +168,11 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
               // make this eventual-send
             }
             HandledPromise.applyMethodSendOnly(
-              unwrap(recipient),
+              unwrap(recipient, 'send-only method recipient', opts),
               propertyKey,
               args,
             );
-            return undefined;
+            return unwrap(undefined, 'send-only method return', opts);
           },
           // @ts-expect-error https://github.com/microsoft/TypeScript/issues/50319
         }[propertyKey],
@@ -172,7 +186,10 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
         // so that you can walk back on the stack to see how we came to
         // make this eventual-send
       }
-      HandledPromise.applyFunctionSendOnly(unwrap(recipient), argsArray);
+      HandledPromise.applyFunctionSendOnly(
+        unwrap(recipient, 'send-only function recipient'),
+        argsArray,
+      );
       return undefined;
     },
     has: (_target, _p) => {
@@ -187,14 +204,20 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
  *
  * @param {any} x Any value passed to E.get(x)
  * @param {HandledPromiseConstructor} HandledPromise
- * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
+ * @param {Unwrapper} unwrap
+ * @param {EOptions} [opts]
  * @returns {ProxyHandler<any>} the Proxy handler
  */
-const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
+const makeEGetProxyHandler = (x, HandledPromise, unwrap, opts) =>
   harden({
     ...baseFreezableProxyHandler,
     has: (_target, _prop) => true,
-    get: (_target, prop) => HandledPromise.get(unwrap(x), prop),
+    get: (_target, prop) =>
+      unwrap(
+        HandledPromise.get(unwrap(x, 'get target'), prop),
+        'get result',
+        opts,
+      ),
   });
 
 /** @param {any} x */
@@ -204,7 +227,7 @@ const resolve = x => HandledPromise.resolve(x);
  * @template [A={}]
  * @param {HandledPromiseConstructor} HandledPromise
  * @param {object} [powers]
- * @param {<T>(x: T) => Promise<EUnwrap<T>>} [powers.unwrap]
+ * @param {Unwrapper} [powers.unwrap]
  * @param {A} [powers.additional]
  */
 const makeE = (HandledPromise, powers = {}) => {
@@ -222,11 +245,15 @@ const makeE = (HandledPromise, powers = {}) => {
        *
        * @template T
        * @param {T} x target for method/function call
+       * @param {EOptions} [opts]
        * @returns {ECallableOrMethods<RemoteFunctions<T>>} method/function call proxy
        */
-      x =>
+      (x, opts) =>
         harden(
-          new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, unwrap)),
+          new Proxy(
+            () => {},
+            makeEProxyHandler(x, HandledPromise, unwrap, opts),
+          ),
         ),
       {
         /**
@@ -237,14 +264,15 @@ const makeE = (HandledPromise, powers = {}) => {
          *
          * @template T
          * @param {T} x target for property get
+         * @param {EOptions} [opts]
          * @returns {EGetters<LocalRecord<T>>} property get proxy
          * @readonly
          */
-        get: x =>
+        get: (x, opts) =>
           harden(
             new Proxy(
               create(null),
-              makeEGetProxyHandler(x, HandledPromise, unwrap),
+              makeEGetProxyHandler(x, HandledPromise, unwrap, opts),
             ),
           ),
 
@@ -254,10 +282,11 @@ const makeE = (HandledPromise, powers = {}) => {
          *
          * @template T
          * @param {T} x value to convert to a handled promise
+         * @param {EOptions} [opts]
          * @returns {Promise<Awaited<T>>} handled promise for x
          * @readonly
          */
-        resolve: x => resolve(unwrap(x)),
+        resolve: (x, opts) => resolve(unwrap(x, 'resolve', opts)),
 
         /**
          * E.sendOnly returns a proxy similar to E, but for which the results
@@ -265,14 +294,15 @@ const makeE = (HandledPromise, powers = {}) => {
          *
          * @template T
          * @param {T} x target for method/function call
+         * @param {EOptions} [opts]
          * @returns {ESendOnlyCallableOrMethods<RemoteFunctions<T>>} method/function call proxy
          * @readonly
          */
-        sendOnly: x =>
+        sendOnly: (x, opts) =>
           harden(
             new Proxy(
               () => {},
-              makeESendOnlyProxyHandler(x, HandledPromise, unwrap),
+              makeESendOnlyProxyHandler(x, HandledPromise, unwrap, opts),
             ),
           ),
 
@@ -286,11 +316,12 @@ const makeE = (HandledPromise, powers = {}) => {
          * @param {ERef<T>} x value to convert to a handled promise
          * @param {(value: EUnwrap<T>) => ERef<TResult1>} [onfulfilled]
          * @param {(reason: any) => ERef<TResult2>} [onrejected]
+         * @param {EOptions} [opts]
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
          */
-        when: (x, onfulfilled, onrejected) => {
-          const unwrapped = resolve(unwrap(x));
+        when: (x, onfulfilled, onrejected, opts) => {
+          const unwrapped = resolve(unwrap(x, 'E.when', opts));
           if (onfulfilled == null && onrejected == null) {
             return unwrapped;
           }
@@ -447,3 +478,7 @@ export default makeE;
  *     : T
  * )} EOnly
  */
+
+/** @typedef {<T>(x: T, retryContext?: string, opts?: EOptions) => Promise<EUnwrap<T>>} Unwrapper */
+
+/** @typedef {EUnwrapOptions} EOptions */
