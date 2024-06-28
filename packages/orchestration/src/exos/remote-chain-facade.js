@@ -54,7 +54,7 @@ const prepareRemoteChainFacadeKit = (
       public: ChainFacadeI,
       makeAccountWatcher: M.interface('makeAccountWatcher', {
         onFulfilled: M.call(M.remotable())
-          .optional({ stakingDenom: M.string() })
+          .optional(M.string())
           .returns(VowShape),
       }),
       getAddressWatcher: M.interface('makeAccountWatcher', {
@@ -95,9 +95,7 @@ const prepareRemoteChainFacadeKit = (
                 connectionInfo.counterparty.connection_id,
               ),
               this.facets.makeAccountWatcher,
-              {
-                stakingDenom,
-              },
+              stakingDenom,
             );
           });
         },
@@ -105,9 +103,9 @@ const prepareRemoteChainFacadeKit = (
       makeAccountWatcher: {
         /**
          * @param {IcaAccount} account
-         * @param {{ stakingDenom: Denom }} ctx
+         * @param {Denom} stakingDenom
          */
-        onFulfilled(account, { stakingDenom }) {
+        onFulfilled(account, stakingDenom) {
           return watch(E(account).getAddress(), this.facets.getAddressWatcher, {
             stakingDenom,
             account,

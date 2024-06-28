@@ -92,7 +92,7 @@ export const prepareLocalOrchestrationAccountKit = (
       }),
       getChainInfoWatcher: M.interface('getChainInfoWatcher', {
         onFulfilled: M.call(M.record()) // agoric chain info
-          .optional({ destination: ChainAddressShape })
+          .optional(ChainAddressShape)
           .returns(Vow$(M.record())), // connection info
       }),
       transferWatcher: M.interface('transferWatcher', {
@@ -116,9 +116,7 @@ export const prepareLocalOrchestrationAccountKit = (
       }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
         onFulfilled: M.call(AmountShape)
-          .optional({
-            denom: DenomShape,
-          })
+          .optional(DenomShape)
           .returns(DenomAmountShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
@@ -196,9 +194,9 @@ export const prepareLocalOrchestrationAccountKit = (
       getChainInfoWatcher: {
         /**
          * @param {ChainInfo} agoricChainInfo
-         * @param {{ destination: ChainAddress }} ctx
+         * @param {ChainAddress} destination
          */
-        onFulfilled(agoricChainInfo, { destination }) {
+        onFulfilled(agoricChainInfo, destination) {
           return chainHub.getConnectionInfo(
             agoricChainInfo.chainId,
             destination.chainId,
@@ -263,7 +261,7 @@ export const prepareLocalOrchestrationAccountKit = (
        */
       returnVoidWatcher: {
         /**
-         * @param {any} _result
+         * @param {unknown} _result
          */
         onFulfilled(_result) {
           return undefined;
@@ -276,10 +274,10 @@ export const prepareLocalOrchestrationAccountKit = (
       getBalanceWatcher: {
         /**
          * @param {Amount<'nat'>} natAmount
-         * @param {{ denom: DenomAmount['denom'] }} ctx
+         * @param {DenomAmount['denom']} denom
          * @returns {DenomAmount}
          */
-        onFulfilled(natAmount, { denom }) {
+        onFulfilled(natAmount, denom) {
           return harden({ denom, value: natAmount.value });
         },
       },
@@ -300,7 +298,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return watch(
             E(this.state.account).getBalance(brand),
             this.facets.getBalanceWatcher,
-            { denom },
+            denom,
           );
         },
         getBalances() {
@@ -413,7 +411,7 @@ export const prepareLocalOrchestrationAccountKit = (
             const connectionInfoV = watch(
               chainHub.getChainInfo('agoric'),
               this.facets.getChainInfoWatcher,
-              { destination },
+              destination,
             );
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
