@@ -85,7 +85,7 @@ test('parseTxPacket', t => {
   t.throws(
     () => parseTxPacket('{"foo":"bar"}'),
     {
-      message: '{"foo":"bar"}',
+      message: 'expected either result or error: "{\\"foo\\":\\"bar\\"}"',
     },
     'returns original string as error if `result` is not found',
   );
@@ -187,7 +187,7 @@ test('parseQueryPacket', t => {
   t.throws(
     () => parseQueryPacket('{"foo":"bar"}'),
     {
-      message: '{"foo":"bar"}',
+      message: 'expected either result or error: "{\\"foo\\":\\"bar\\"}"',
     },
     'throws an error if `result` is not found',
   );
