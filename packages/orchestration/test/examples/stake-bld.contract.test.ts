@@ -122,7 +122,7 @@ test('makeStakeBldInvitation', async t => {
     );
     const delegateOffer = await E(zoe).offer(delegateInv);
     await t.throwsAsync(E(delegateOffer).getOfferResult(), {
-      message: 'simualted packet timeout',
+      message: 'simulated packet timeout',
     });
   }
 

@@ -109,6 +109,8 @@ test.serial('stakeBld', async t => {
         },
       },
     }),
-    // TODO should receive "simulated packet timeout" error
+    // TODO propagate error message through bridge
+    // FIXME should receive "simulated packet timeout" error
+    // { message: 'simulated packet timeout' },
   );
 });

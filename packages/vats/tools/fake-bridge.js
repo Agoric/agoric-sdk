@@ -194,7 +194,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
               }
               case '/cosmos.staking.v1beta1.MsgDelegate': {
                 if (message.amount.amount === '504') {
-                  throw Error('simualted packet timeout');
+                  throw Error('simulated packet timeout');
                 }
                 return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
               }
