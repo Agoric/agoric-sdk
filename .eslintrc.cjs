@@ -170,8 +170,7 @@ module.exports = {
       // Modules with exports that must be resumable
       files: ['packages/orchestration/src/exos/**'],
       rules: {
-        // TODO tighten to error
-        'no-restricted-syntax': ['warn', ...resumable],
+        'no-restricted-syntax': ['error', ...resumable],
       },
     },
     {
