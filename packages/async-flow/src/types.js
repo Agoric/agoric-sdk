@@ -103,6 +103,18 @@ export {};
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
  *     callIndex: number
+ *   ] | [
+ *     op: 'checkSendOnly',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'checkSend',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
  *   ]} LogEntry
  */
 
@@ -122,6 +134,12 @@ export {};
  *     reason: Host,
  *   ] | [
  *     op: 'doCall',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'doSendOnly',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
@@ -150,6 +168,12 @@ export {};
  *     reason: Host,
  *   ] | [
  *     op: 'checkCall',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'checkSendOnly',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
