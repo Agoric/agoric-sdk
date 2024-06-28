@@ -34,3 +34,12 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
     throw assert.error(`bad response: ${ackStr}`, undefined, { cause });
   }
 };
+
+/**
+ * Convert a Date from a Cosmos message, which has millisecond precision, to a
+ * BigInt for number of seconds since epoch, for use in a timer.
+ *
+ * @param {Date} date
+ * @returns {bigint}
+ */
+export const dateInSeconds = date => BigInt(Math.floor(date.getTime() / 1000));

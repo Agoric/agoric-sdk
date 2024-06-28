@@ -7,10 +7,12 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
+import { makeHeapZone } from '@agoric/zone';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../exos/chain-hub.js';
+import { prepareTimeHelper } from '../exos/time-helper.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -34,20 +36,23 @@ const trace = makeTracer('StakeBld');
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
+  const { agoricNames, marshaller, timerService } = privateArgs;
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    baggage,
-    privateArgs.marshaller,
-  );
+  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const vowTools = prepareVowTools(zone.subZone('vows'));
+  const timeHelper = prepareTimeHelper(makeHeapZone(), {
+    timerService,
+    vowTools,
+  });
 
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
-    privateArgs.timerService,
+    timerService,
     vowTools,
-    makeChainHub(privateArgs.agoricNames),
+    makeChainHub(agoricNames),
+    timeHelper,
   );
 
   // ----------------
