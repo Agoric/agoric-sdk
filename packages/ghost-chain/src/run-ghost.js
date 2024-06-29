@@ -2,10 +2,12 @@
 import process from 'process';
 import fs from 'fs';
 import sqlite3 from 'better-sqlite3';
+import { performance } from 'perf_hooks';
+import microtime from 'microtime';
 import '@endo/init';
-import { makeSlogSender } from '@agoric/telemetry';
 
 import { openSwingStore } from '@agoric/swing-store';
+import { upgradeSwingset } from '@agoric/swingset-vat';
 import { makeSwingsetController } from '@agoric/swingset-vat';
 import { kser, kunser, krefOf, kslot } from '@agoric/kmarshal';
 import { makeDummySlogger } from  '@agoric/swingset-vat/src/kernel/slogger.js';
@@ -494,10 +496,107 @@ async function getBundle(bundleFrom) {
   return await bundleSource(bundleFrom, { dev });
 }
 
+function makeRunPolicies() {
+  let didWork = false;
+  let totalComputrons = 0n;
+  //const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
+  const shouldRun = () => true;
+  const remainingBeans = () =>
+    ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
+
+  const runPolicy = harden({
+    allowCleanup: () => false,
+    didCleanup: () => undefined, // ignore
+    vatCreated() {
+      didWork = true;
+      return shouldRun();
+    },
+    crankComplete(details = {}) {
+      didWork = true;
+      if (details.computrons) {
+        totalComputrons += details.computrons;
+      }
+      return shouldRun();
+    },
+    crankFailed() {
+      didWork = true;
+      return shouldRun();
+    },
+    emptyCrank() {
+      didWork = true;
+      return shouldRun();
+    },
+    shouldRun,
+    getTotalComputrons() {
+      return totalComputrons;
+    },
+    didAnyWork() {
+      return didWork;
+    },
+  });
+
+  let cleanups = 5;
+  const stop = () => false;
+
+  const cleanupPolicy = harden({
+    ...runPolicy,
+    allowCleanup() {
+      if (cleanups > 0) {
+        //console.log(`  cleanupPolicy.allowCleanup, ${cleanups}, returning yes`);
+        return { budget: cleanups };
+      } else {
+        //console.log(`  cleanupPolicy.allowCleanup, ${cleanups}, returning no`);
+        return false;
+      }
+    },
+    didCleanup(spent) {
+      //console.log(`   cleanupPolicy.didCleanup(${spent}), now ${cleanups}`);
+      cleanups -= spent.cleanups;
+      didWork = true;
+      //return cleanups > 0;
+      return true;
+    },
+  });
+
+  return { runPolicy, cleanupPolicy };
+}
+
 async function run() {
   const args = process.argv.slice(2);
   const [swingstorefn, ...actionArgs] = args;
   const { kernelStorage, hostStorage } = openSwingStore(swingstorefn);
+
+  async function doCommit() {
+    // I once observed a SQLITE_PROTOCOL (aka "SqliteError#1: locking
+    // protocol"), https://www.sqlite.org/rescode.html says this
+    // connection lost a race with another transaction-starter dozens
+    // of times over multiple seconds, and finally gave up. I was
+    // running four sequential /usr/bin/sqlite3 commands at the same
+    // time, some of which took a long time to execute.
+    //
+    // to ensure my test runs don't fail while I'm inspecting the DB
+    // externally, this wrapper attempts the commit even more times
+    let count = 0;
+    while (1) {
+      try {
+        const start = performance.now() / 1000;
+        await hostStorage.commit();
+        const elapsed = performance.now() / 1000 - start
+        return elapsed;
+      } catch (e) {
+        // note : doesn't work, run-ghost.js crashed without printing anything
+        count += 1;
+        if (count === 1 || count % 10 === 0) {
+          console.log(`doCommit() got error, will retry forever`, e);
+        }
+      }
+    }
+  }
+
+  upgradeSwingset(kernelStorage);
+  //await hostStorage.commit();
+  await doCommit();
+
   const dummySlog = makeDummySlogger({}, console);
   const kernelKeeper = makeKernelKeeper(kernelStorage, dummySlog);
   kernelKeeper.loadStats();
@@ -576,19 +675,22 @@ async function run() {
   const vatstoreSets = new Map(); // ${vatID}.${key} -> new
   const vatstoreDeletes = new Set();
 
-  let slogF;
-  async function changeSlogfile(newFilename) {
-    if (slogF) {
-      //await slogF.flush();
-      await slogF.close();
+  let slogFD;
+  function changeSlogfile(newFilename) {
+    if (slogFD !== undefined) {
+      //await slogF.close();
+      fs.closeSync(slogFD);
     }
-    slogF = await fs.createWriteStream(newFilename);
+    slogFD = fs.openSync(newFilename, 'w');
+    assert(slogFD >= 0);
+    //slogF = await fs.createWriteStream(newFilename, { flush: true });
   }
-  await changeSlogfile('init.slog');
+  changeSlogfile('init.slog');
 
   let latestVatSyscall;
   const slogSender = timedObj => {
     const slogObj = timedObj;
+
     //let { time, monotime, syscallNum, activityhash, ...slogObj } = timedObj; // strip timestamps
     //if (slogObj.dr && slogObj.dr[2] && slogObj.dr[2].timestamps) {
     //  const dr = [...slogObj.dr];
@@ -600,7 +702,8 @@ async function run() {
       return;
     }
     const jsonObj = serializeSlogObj(slogObj);
-    slogF.write(jsonObj + '\n');
+    //slogF.write(jsonObj + '\n');
+    fs.writeSync(slogFD, jsonObj + '\n');
 
     if (slogObj.type === 'syscall') {
       latestVatSyscall = slogObj;
@@ -634,6 +737,12 @@ async function run() {
   //slogSender.forceFlush = async () => stream.flush();
   //slogSender.shutdown = async () => stream.close();
 
+  const timedSlogSender = obj => {
+    const time = microtime.nowDouble();
+    const monotime = performance.now() / 1000;
+    return slogSender({...obj, time, monotime});
+  }
+
   const runtimeOptions = { slogSender };
   const controller = await makeSwingsetController(kernelStorage, deviceEndowments, runtimeOptions);
 
@@ -642,7 +751,7 @@ async function run() {
   await controller.run();
   console.log(`-- kernel loaded, ready for ghost action`);
   console.log(`\n\n\n`);
-  await changeSlogfile('upgrade.slog');
+  changeSlogfile('upgrade.slog');
   slogSender({ type: 'ghost-action' });
   const origWakeup = getNextWakeup();
 
@@ -702,6 +811,11 @@ async function run() {
     const ev = buildVatUpgrade(kernelStorage, vatID, options);
     enqueue(kernelStorage, ev);
 
+  } else if (action === 'terminate-vat') {
+    const vatID = actionArgs.shift();
+    assert(vatID);
+    controller.terminateVat(vatID, kser('ghost terminate-vat'));
+
   } else if (action === 'resubmit') {
     // 10503734 : vaults: sell USDC_axl to buy IST, aka makeWantMintedInvitation
     const blockNum = Number(actionArgs.shift());
@@ -752,17 +866,45 @@ async function run() {
   }
 
   console.log(`-- triggering ghost action`);
-  slogSender({ type: 'ghost-action-start' });
-  await controller.run();
-  slogSender({ type: 'ghost-action-finish' });
-  console.log(`-- ghost action done`);
+  timedSlogSender({ type: 'ghost-action-start' });
+  const { runPolicy } = makeRunPolicies();
+  await controller.run(runPolicy);
+  timedSlogSender({ type: 'ghost-action-finish', didWork: runPolicy.didAnyWork() });
+  console.log(`-- ghost action done, didWork=${runPolicy.didAnyWork()}`);
 
-  console.log(`-- controller.reapAllVats()`);
-  slogSender({ type: 'ghost-reap-all-start' });
-  controller.reapAllVats();
-  await controller.run();
-  slogSender({ type: 'ghost-reap-all-finish' });
-  console.log(`-- reapAllVats done`);
+  //await hostStorage.commit();
+  await doCommit();
+  changeSlogfile('cleanup.slog');
+  //return controller.shutdown();
+  
+  console.log(`-- starting cleanup`);
+  timedSlogSender({ type: 'ghost-cleanup-start' });
+  let run = 0;
+  while (1) {
+    run++;
+    console.log(`  cleanup run ${run}`);
+    timedSlogSender({ type: 'ghost-cleanup-run-start', run });
+    const { cleanupPolicy } = makeRunPolicies();
+    await controller.run(cleanupPolicy);
+    const didWork = cleanupPolicy.didAnyWork();
+    timedSlogSender({ type: 'ghost-cleanup-run-finish', run, didWork });
+    const elapsed = await doCommit();
+    slogSender({type: 'commit', elapsed });
+    if (!didWork) {
+      console.log(`-- ghost cleanup done, runs=${run}`);
+      break;
+    }
+    //await hostStorage.commit();
+  }
+  console.log(`-- cleanup done`);
+  timedSlogSender({ type: 'ghost-cleanup-start', runs: run });
+
+  //console.log(`-- controller.reapAllVats()`);
+  //timedSlogSender({ type: 'ghost-reap-all-start' });
+  //controller.reapAllVats();
+  //await controller.run();
+  //timedSlogSender({ type: 'ghost-reap-all-finish' });
+  //console.log(`-- reapAllVats done`);
 
   const nextWakeup = getNextWakeup();
   if (nextWakeup !== origWakeup) {
