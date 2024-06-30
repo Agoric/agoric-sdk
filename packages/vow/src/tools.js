@@ -6,7 +6,7 @@ import { prepareWatchUtils } from './watch-utils.js';
 import { makeAsVow } from './vow-utils.js';
 
 /** @import {Zone} from '@agoric/base-zone' */
-/** @import {IsRetryableReason} from './types.js' */
+/** @import {IsRetryableReason, AsPromiseFunction} from './types.js' */
 
 /**
  * @param {Zone} zone
@@ -35,6 +35,10 @@ export const prepareVowTools = (zone, powers = {}) => {
    */
   const allVows = vows => watchUtils.all(vows);
 
-  return harden({ when, watch, makeVowKit, allVows, asVow });
+  /** @type {AsPromiseFunction} */
+  const asPromise = (specimenP, ...watcherArgs) =>
+    watchUtils.asPromise(specimenP, ...watcherArgs);
+
+  return harden({ when, watch, makeVowKit, allVows, asVow, asPromise });
 };
 harden(prepareVowTools);
