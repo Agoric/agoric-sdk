@@ -9,17 +9,16 @@ import {
 } from '@agoric/zoe/src/typeGuards.js';
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
-import { heapVowTools } from '@agoric/vow/vat.js';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
 
-const { allVows, asPromise } = heapVowTools;
-
 /**
- * @import {OfferSpec} from "./offers.js";
- * @import {ContinuingOfferResult} from "./types.js";
+ * @import {OfferSpec} from './offers.js';
+ * @import {ContinuingOfferResult} from './types.js';
  * @import {Passable} from '@endo/pass-style';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {VowTools} from '@agoric/vow';
  */
 
 /**
@@ -35,15 +34,18 @@ const { allVows, asPromise } = heapVowTools;
  * }} OutcomeWatchers
  */
 
-/**
- * @param {OutcomeWatchers} watchers
- * @param {UserSeat} seat
- */
-const watchForOfferResult = ({ resultWatcher }, seat) => {
-  // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
-  const p = asPromise(E(seat).getOfferResult());
-  watchPromise(p, resultWatcher, seat);
-  return p;
+/** @param {VowTools} vowTools */
+const makeWatchForOfferResult = ({ asPromise }) => {
+  /**
+   * @param {OutcomeWatchers} watchers
+   * @param {UserSeat} seat
+   */
+  const watchForOfferResult = ({ resultWatcher }, seat) => {
+    const p = asPromise(E(seat).getOfferResult());
+    watchPromise(p, resultWatcher, seat);
+    return p;
+  };
+  return watchForOfferResult;
 };
 
 /**
@@ -66,19 +68,24 @@ const watchForPayout = ({ paymentWatcher }, seat) => {
   return p;
 };
 
-/**
- * @param {OutcomeWatchers} watchers
- * @param {UserSeat} seat
- */
-export const watchOfferOutcomes = (watchers, seat) => {
-  // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
-  return asPromise(
-    allVows([
-      watchForOfferResult(watchers, seat),
-      watchForNumWants(watchers, seat),
-      watchForPayout(watchers, seat),
-    ]),
-  );
+/** @param {VowTools} vowTools */
+export const makeWatchOfferOutcomes = vowTools => {
+  const watchForOfferResult = makeWatchForOfferResult(vowTools);
+  const { asPromise, allVows } = vowTools;
+  /**
+   * @param {OutcomeWatchers} watchers
+   * @param {UserSeat} seat
+   */
+  const watchOfferOutcomes = (watchers, seat) => {
+    return asPromise(
+      allVows([
+        watchForOfferResult(watchers, seat),
+        watchForNumWants(watchers, seat),
+        watchForPayout(watchers, seat),
+      ]),
+    );
+  };
+  return watchOfferOutcomes;
 };
 
 const offerWatcherGuard = harden({
@@ -111,9 +118,11 @@ const offerWatcherGuard = harden({
 });
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
+ * @param {VowTools} vowTools
  */
-export const prepareOfferWatcher = baggage => {
+export const prepareOfferWatcher = (baggage, vowTools) => {
+  const watchForOfferResult = makeWatchForOfferResult(vowTools);
   return prepareExoClassKit(
     baggage,
     'OfferWatcher',
