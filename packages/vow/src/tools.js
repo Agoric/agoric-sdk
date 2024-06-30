@@ -29,6 +29,18 @@ export const prepareVowTools = (zone, powers = {}) => {
   });
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
+  /**
+   * TODO FIXME make this real
+   * Create a function that retries the given function if the underlying
+   * functions rejects due to upgrade disconnection.
+   *
+   * @param {string} name
+   * @param {(...args: unknown[]) => unknown} fn
+   */
+  const retriable =
+    (name, fn) =>
+      (...args) =>
+        watch(fn(...args));
 
   /**
    * Vow-tolerant implementation of Promise.all.
@@ -41,7 +53,15 @@ export const prepareVowTools = (zone, powers = {}) => {
   const asPromise = (specimenP, ...watcherArgs) =>
     watchUtils.asPromise(specimenP, ...watcherArgs);
 
-  return harden({ when, watch, makeVowKit, allVows, asVow, asPromise });
+  return harden({
+    when,
+    watch,
+    makeVowKit,
+    allVows,
+    asVow,
+    asPromise,
+    retriable,
+  });
 };
 harden(prepareVowTools);
 
