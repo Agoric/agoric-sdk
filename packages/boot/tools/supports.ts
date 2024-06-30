@@ -416,9 +416,23 @@ export const makeSwingsetTestKit = async (
         switch (obj.type) {
           case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
             return 'agoric1mockVlocalchainAddress';
-          case 'VLOCALCHAIN_EXECUTE_TX':
-            // returns one empty object per message
-            return obj.messages.map(() => ({}));
+          case 'VLOCALCHAIN_EXECUTE_TX': {
+            return obj.messages.map(message => {
+              switch (message['@type']) {
+                case '/cosmos.staking.v1beta1.MsgDelegate': {
+                  if (message.amount.amount === '504') {
+                    // FIXME - how can we propagate the error?
+                    // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
+                    throw Error('simulated packet timeout');
+                  }
+                  return /** @type {JsonSafe<MsgDelegateResponse>} */ {};
+                }
+                // returns one empty object per message unless specified
+                default:
+                  return {};
+              }
+            });
+          }
           default:
             throw Error(`VLOCALCHAIN message of unknown type ${obj.type}`);
         }

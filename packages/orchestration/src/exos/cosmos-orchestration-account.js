@@ -16,9 +16,10 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
+import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { decodeBase64 } from '@endo/base64';
 import { E } from '@endo/far';
 import {
@@ -39,7 +40,7 @@ import { dateInSeconds } from '../utils/time.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
  * @import {TimerService} from '@agoric/time';
- * @import {VowTools} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
@@ -48,6 +49,8 @@ import { dateInSeconds } from '../utils/time.js';
 const trace = makeTracer('ComosOrchestrationAccountHolder');
 
 const { Fail } = assert;
+const { Vow$ } = NetworkShape; // TODO #9611
+
 /**
  * @typedef {object} ComosOrchestrationAccountNotification
  * @property {ChainAddress} chainAddress
@@ -73,19 +76,17 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     holder: M.any(),
   }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
-  delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
-    M.undefined(),
-  ),
-  redelegate: M.callWhen(
+  delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
+  redelegate: M.call(
     ChainAddressShape,
     ChainAddressShape,
     AmountArgShape,
-  ).returns(M.undefined()),
-  withdrawReward: M.callWhen(ChainAddressShape).returns(
-    M.arrayOf(ChainAmountShape),
+  ).returns(VowShape),
+  withdrawReward: M.call(ChainAddressShape).returns(
+    Vow$(M.arrayOf(ChainAmountShape)),
   ),
-  withdrawRewards: M.callWhen().returns(M.arrayOf(ChainAmountShape)),
-  undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(M.undefined()),
+  withdrawRewards: M.call().returns(Vow$(M.arrayOf(ChainAmountShape))),
+  undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
@@ -105,7 +106,7 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
-  { when, watch },
+  { watch, asVow },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
@@ -129,7 +130,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.promise()),
+          .returns(Vow$(M.promise())),
       }),
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())
@@ -138,20 +139,18 @@ export const prepareCosmosOrchestrationAccountKit = (
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.callWhen(ChainAddressShape, AmountArgShape).returns(
-          InvitationShape,
+        Delegate: M.call(ChainAddressShape, AmountArgShape).returns(
+          M.promise(),
         ),
-        Redelegate: M.callWhen(
+        Redelegate: M.call(
           ChainAddressShape,
           ChainAddressShape,
           AmountArgShape,
-        ).returns(InvitationShape),
-        WithdrawReward: M.callWhen(ChainAddressShape).returns(InvitationShape),
-        Undelegate: M.callWhen(M.arrayOf(DelegationShape)).returns(
-          InvitationShape,
-        ),
-        CloseAccount: M.callWhen().returns(InvitationShape),
-        TransferAccount: M.callWhen().returns(InvitationShape),
+        ).returns(M.promise()),
+        WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+        Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
+        CloseAccount: M.call().returns(M.promise()),
+        TransferAccount: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -230,8 +229,10 @@ export const prepareCosmosOrchestrationAccountKit = (
           trace('undelegate response', response);
           const { completionTime } = response;
           completionTime || Fail`No completion time result ${result}`;
-          return E(this.state.timer).wakeAt(
-            dateInSeconds(completionTime) + maxClockSkew,
+          return watch(
+            E(this.state.timer).wakeAt(
+              dateInSeconds(completionTime) + maxClockSkew,
+            ),
           );
         },
       },
@@ -266,9 +267,9 @@ export const prepareCosmosOrchestrationAccountKit = (
         Delegate(validator, amount) {
           trace('Delegate', validator, amount);
 
-          return zcf.makeInvitation(async seat => {
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.delegate(validator, amount);
+            return watch(this.facets.holder.delegate(validator, amount));
           }, 'Delegate');
         },
         /**
@@ -279,12 +280,10 @@ export const prepareCosmosOrchestrationAccountKit = (
         Redelegate(srcValidator, dstValidator, amount) {
           trace('Redelegate', srcValidator, dstValidator, amount);
 
-          return zcf.makeInvitation(async seat => {
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.redelegate(
-              srcValidator,
-              dstValidator,
-              amount,
+            return watch(
+              this.facets.holder.redelegate(srcValidator, dstValidator, amount),
             );
           }, 'Redelegate');
         },
@@ -292,18 +291,18 @@ export const prepareCosmosOrchestrationAccountKit = (
         WithdrawReward(validator) {
           trace('WithdrawReward', validator);
 
-          return zcf.makeInvitation(async seat => {
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.withdrawReward(validator);
+            return watch(this.facets.holder.withdrawReward(validator));
           }, 'WithdrawReward');
         },
         /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
         Undelegate(delegations) {
           trace('Undelegate', delegations);
 
-          return zcf.makeInvitation(async seat => {
+          return zcf.makeInvitation(seat => {
             seat.exit();
-            return this.facets.holder.undelegate(delegations);
+            return watch(this.facets.holder.undelegate(delegations));
           }, 'Undelegate');
         },
         CloseAccount() {
@@ -350,30 +349,33 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {CosmosValidatorAddress} validator
          * @param {AmountArg} amount
          */
-        async delegate(validator, amount) {
-          trace('delegate', validator, amount);
-          const { helper } = this.facets;
-          const { chainAddress } = this.state;
+        delegate(validator, amount) {
+          return asVow(() => {
+            trace('delegate', validator, amount);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
 
-          const results = E(helper.owned()).executeEncodedTx([
-            Any.toJSON(
-              MsgDelegate.toProtoMsg({
-                delegatorAddress: chainAddress.address,
-                validatorAddress: validator.address,
-                amount: helper.amountToCoin(amount),
-              }),
-            ),
-          ]);
-          return when(watch(results, this.facets.returnVoidWatcher));
+            const results = E(helper.owned()).executeEncodedTx([
+              Any.toJSON(
+                MsgDelegate.toProtoMsg({
+                  delegatorAddress: chainAddress.address,
+                  validatorAddress: validator.address,
+                  amount: helper.amountToCoin(amount),
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.returnVoidWatcher);
+          });
         },
-        async deposit(payment) {
+        deposit(payment) {
           trace('deposit', payment);
           console.error(
             'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
           );
         },
-        async getBalances() {
-          throw Error('not yet implemented');
+        getBalances() {
+          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
+          return asVow(() => Fail`not yet implemented`);
         },
         /**
          * _Assumes users has already sent funds to their ICA, until #9193
@@ -382,110 +384,116 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @param {CosmosValidatorAddress} dstValidator
          * @param {AmountArg} amount
          */
-        async redelegate(srcValidator, dstValidator, amount) {
-          trace('redelegate', srcValidator, dstValidator, amount);
-          const { helper } = this.facets;
-          const { chainAddress } = this.state;
+        redelegate(srcValidator, dstValidator, amount) {
+          return asVow(() => {
+            trace('redelegate', srcValidator, dstValidator, amount);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
 
-          const results = E(helper.owned()).executeEncodedTx([
-            Any.toJSON(
-              MsgBeginRedelegate.toProtoMsg({
-                delegatorAddress: chainAddress.address,
-                validatorSrcAddress: srcValidator.address,
-                validatorDstAddress: dstValidator.address,
-                amount: helper.amountToCoin(amount),
-              }),
-            ),
-          ]);
+            const results = E(helper.owned()).executeEncodedTx([
+              Any.toJSON(
+                MsgBeginRedelegate.toProtoMsg({
+                  delegatorAddress: chainAddress.address,
+                  validatorSrcAddress: srcValidator.address,
+                  validatorDstAddress: dstValidator.address,
+                  amount: helper.amountToCoin(amount),
+                }),
+              ),
+            ]);
 
-          return when(
-            watch(
+            return watch(
               results,
               // NOTE: response, including completionTime, is currently discarded.
               this.facets.returnVoidWatcher,
-            ),
-          );
+            );
+          });
         },
         /**
          * @param {CosmosValidatorAddress} validator
-         * @returns {Promise<DenomAmount[]>}
+         * @returns {Vow<DenomAmount[]>}
          */
-        async withdrawReward(validator) {
-          trace('withdrawReward', validator);
-          const { helper } = this.facets;
-          const { chainAddress } = this.state;
-          const msg = MsgWithdrawDelegatorReward.toProtoMsg({
-            delegatorAddress: chainAddress.address,
-            validatorAddress: validator.address,
-          });
-          const account = helper.owned();
+        withdrawReward(validator) {
+          return asVow(() => {
+            trace('withdrawReward', validator);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+            const msg = MsgWithdrawDelegatorReward.toProtoMsg({
+              delegatorAddress: chainAddress.address,
+              validatorAddress: validator.address,
+            });
+            const account = helper.owned();
 
-          const results = E(account).executeEncodedTx([Any.toJSON(msg)]);
-          return when(watch(results, this.facets.withdrawRewardWatcher));
+            const results = E(account).executeEncodedTx([Any.toJSON(msg)]);
+            return watch(results, this.facets.withdrawRewardWatcher);
+          });
         },
         /**
          * @param {DenomArg} denom
-         * @returns {Promise<DenomAmount>}
+         * @returns {Vow<DenomAmount>}
          */
-        async getBalance(denom) {
-          const { chainAddress, icqConnection } = this.state;
-          if (!icqConnection) {
-            throw Fail`Queries not available for chain ${chainAddress.chainId}`;
-          }
-          // TODO #9211 lookup denom from brand
-          assert.typeof(denom, 'string');
+        getBalance(denom) {
+          return asVow(() => {
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${chainAddress.chainId}`;
+            }
+            // TODO #9211 lookup denom from brand
+            assert.typeof(denom, 'string');
 
-          const results = E(icqConnection).query([
-            toRequestQueryJson(
-              QueryBalanceRequest.toProtoMsg({
-                address: chainAddress.address,
-                denom,
-              }),
-            ),
-          ]);
-          return when(watch(results, this.facets.balanceQueryWatcher));
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryBalanceRequest.toProtoMsg({
+                  address: chainAddress.address,
+                  denom,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.balanceQueryWatcher);
+          });
         },
 
         send(toAccount, amount) {
           console.log('send got', toAccount, amount);
-          throw Error('not yet implemented');
+          return asVow(() => Fail`not yet implemented`);
         },
 
         transfer(amount, msg) {
           console.log('transferSteps got', amount, msg);
-          throw Error('not yet implemented');
+          return asVow(() => Fail`not yet implemented`);
         },
 
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
-          throw Error('not yet implemented');
+          return asVow(() => Fail`not yet implemented`);
         },
 
         withdrawRewards() {
-          throw assert.error('Not implemented');
+          return asVow(() => Fail`Not Implemented. Try using withdrawReward.`);
         },
 
         /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
-        async undelegate(delegations) {
-          trace('undelegate', delegations);
-          const { helper } = this.facets;
-          const { chainAddress, bondDenom } = this.state;
+        undelegate(delegations) {
+          return asVow(() => {
+            trace('undelegate', delegations);
+            const { helper } = this.facets;
+            const { chainAddress, bondDenom } = this.state;
 
-          const undelegateV = watch(
-            E(helper.owned()).executeEncodedTx(
-              delegations.map(d =>
-                Any.toJSON(
-                  MsgUndelegate.toProtoMsg({
-                    delegatorAddress: chainAddress.address,
-                    validatorAddress: d.validatorAddress,
-                    amount: { denom: bondDenom, amount: d.shares },
-                  }),
+            const undelegateV = watch(
+              E(helper.owned()).executeEncodedTx(
+                delegations.map(d =>
+                  Any.toJSON(
+                    MsgUndelegate.toProtoMsg({
+                      delegatorAddress: chainAddress.address,
+                      validatorAddress: d.validatorAddress,
+                      amount: { denom: bondDenom, amount: d.shares },
+                    }),
+                  ),
                 ),
               ),
-            ),
-            this.facets.undelegateWatcher,
-          );
-          return when(watch(undelegateV, this.facets.returnVoidWatcher));
+              this.facets.undelegateWatcher,
+            );
+            return watch(undelegateV, this.facets.returnVoidWatcher);
+          });
         },
       },
     },

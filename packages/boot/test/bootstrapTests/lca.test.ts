@@ -89,4 +89,28 @@ test.serial('stakeBld', async t => {
       },
     },
   });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-delegate', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-delegate-504',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Delegate',
+        invitationArgs: ['agoric1validator1', { brand: BLD, value: 504n }],
+      },
+      proposal: {
+        give: {
+          // @ts-expect-error XXX BoardRemote
+          In: { brand: BLD, value: 504n },
+        },
+      },
+    }),
+    // TODO propagate error message through bridge
+    // FIXME should receive "simulated packet timeout" error
+    // { message: 'simulated packet timeout' },
+  );
 });

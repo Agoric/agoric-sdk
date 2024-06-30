@@ -193,6 +193,9 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
                 };
               }
               case '/cosmos.staking.v1beta1.MsgDelegate': {
+                if (message.amount.amount === '504') {
+                  throw Error('simulated packet timeout');
+                }
                 return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
               }
               case '/cosmos.staking.v1beta1.MsgUndelegate': {

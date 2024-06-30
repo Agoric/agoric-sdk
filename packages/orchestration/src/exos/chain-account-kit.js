@@ -102,12 +102,14 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           );
         },
         getBalance(_denom) {
+          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          return asVow(() => Fail`'not yet implemented'`);
+          return asVow(() => Fail`not yet implemented`);
         },
         getBalances() {
+          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          return asVow(() => Fail`'not yet implemented'`);
+          return asVow(() => Fail`not yet implemented`);
         },
         getLocalAddress() {
           return NonNullish(
@@ -125,7 +127,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           return this.state.port;
         },
         executeTx() {
-          return asVow(() => Fail`'not yet implemented'`);
+          return asVow(() => Fail`not yet implemented`);
         },
         /**
          * Submit a transaction on behalf of the remote account for execution on
@@ -170,7 +172,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
          */
         getPurse(brand) {
           console.log('getPurse got', brand);
-          return asVow(() => Fail`'not yet implemented'`);
+          return asVow(() => Fail`not yet implemented`);
         },
       },
       connectionHandler: {
