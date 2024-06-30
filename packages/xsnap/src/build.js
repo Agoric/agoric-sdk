@@ -220,6 +220,7 @@ const updateSubmodules = async (showEnv, { env, stdout, spawn, fs }) => {
  *     existsSync: typeof import('fs').existsSync,
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
+ *     writeFile: typeof import('fs').promises.writeFile,
  *   },
  *   os: {
  *     type: typeof import('os').type,
@@ -229,6 +230,21 @@ const updateSubmodules = async (showEnv, { env, stdout, spawn, fs }) => {
 const makeXsnap = async ({ spawn, fs, os }) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
+
+  const configEnvs = [
+    `XSNAP_VERSION=${pkg.version}`,
+    `CC=cc "-D__has_builtin(x)=1"`,
+  ];
+
+  const configEnvFile = asset('../build.config.env');
+  const existingConfigEnvs = fs.existsSync(configEnvFile)
+    ? await fs.readFile(configEnvFile, 'utf-8')
+    : '';
+
+  const expectedConfigEnvs = configEnvs.concat('').join('\n');
+  if (existingConfigEnvs.trim() !== expectedConfigEnvs.trim()) {
+    await fs.writeFile(configEnvFile, expectedConfigEnvs);
+  }
 
   const platform = ModdableSDK.platforms[os.type()];
   if (!platform) {
@@ -241,8 +257,10 @@ const makeXsnap = async ({ spawn, fs, os }) => {
       [
         `MODDABLE=${ModdableSDK.MODDABLE}`,
         `GOAL=${goal}`,
-        `XSNAP_VERSION=${pkg.version}`,
-        `CC=cc "-D__has_builtin(x)=1"`,
+        // Any other configuration variables that affect the build output
+        // should be placed in `configEnvs` to force a rebuild if they change
+        ...configEnvs,
+        `EXTRA_DEPS=${configEnvFile}`,
         '-f',
         'xsnap-worker.mk',
       ],
@@ -263,6 +281,7 @@ const makeXsnap = async ({ spawn, fs, os }) => {
  *     existsSync: typeof import('fs').existsSync,
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
+ *     writeFile: typeof import('fs').promises.writeFile,
  *   },
  *   os: {
  *     type: typeof import('os').type,
@@ -344,6 +363,7 @@ const run = () =>
     spawn: childProcessTop.spawn,
     fs: {
       readFile: fsTop.promises.readFile,
+      writeFile: fsTop.promises.writeFile,
       existsSync: fsTop.existsSync,
       rmdirSync: fsTop.rmdirSync,
     },
