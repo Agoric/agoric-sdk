@@ -10,7 +10,7 @@ const { Fail, bare } = assert;
  * @import { Zone } from '@agoric/base-zone'
  * @import { Watch } from './watch.js'
  * @import { When } from './when.js'
- * @import {VowKit} from './types.js'
+ * @import {VowKit, AsPromiseFunction} from './types.js'
  * @import {IsRetryableReason} from './types.js'
  */
 
@@ -96,6 +96,7 @@ export const prepareWatchUtils = (
           }
           return kit.vow;
         },
+        /** @type {AsPromiseFunction} */
         asPromise(specimenP, ...watcherArgs) {
           // Watch the specimen in case it is an ephemeral promise.
           const vow = watch(specimenP, ...watcherArgs);

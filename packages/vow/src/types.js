@@ -86,3 +86,17 @@ export {};
  * @property {(value: T, ...args: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
  * @property {(reason: any, ...args: C) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
  */
+
+/**
+ * Converts a vow or promise to a promise, ensuring proper handling of ephemeral promises.
+ *
+ * @template [T=any]
+ * @template [TResult1=T]
+ * @template [TResult2=never]
+ * @template {any[]} [C=any[]]
+ * @callback AsPromiseFunction
+ * @param {ERef<T | Vow<T>>} specimenP
+ * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
+ * @param {C} [watcherArgs]
+ * @returns {Promise<TResult1 | TResult2>}
+ */
