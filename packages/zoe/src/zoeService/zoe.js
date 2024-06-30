@@ -194,58 +194,62 @@ const makeDurableZoeKit = ({
     },
   });
 
-  /** @type {ZoeService} */
-  const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
-    install(bundleId, bundleLabel) {
-      return dataAccess.installBundle(bundleId, bundleLabel);
-    },
-    installBundleID(bundleId, bundleLabel) {
-      return dataAccess.installBundleID(bundleId, bundleLabel);
-    },
-    startInstance,
-    offer,
+  const zoeService = prepareExo(
+    zoeBaggage,
+    'ZoeService',
+    ZoeServiceI,
+    /** @type {ZoeService} */ ({
+      install(bundleId, bundleLabel) {
+        return dataAccess.installBundle(bundleId, bundleLabel);
+      },
+      installBundleID(bundleId, bundleLabel) {
+        return dataAccess.installBundleID(bundleId, bundleLabel);
+      },
+      startInstance,
+      offer,
 
-    // The functions below are getters only and have no impact on
-    // state within Zoe
-    getOfferFilter(instance) {
-      return dataAccess.getOfferFilter(instance);
-    },
-    async getInvitationIssuer() {
-      return dataAccess.getInvitationIssuer();
-    },
-    async getFeeIssuer() {
-      return feeMintKit.feeMint.getFeeIssuer();
-    },
+      // The functions below are getters only and have no impact on
+      // state within Zoe
+      getOfferFilter(instance) {
+        return dataAccess.getOfferFilter(instance);
+      },
+      async getInvitationIssuer() {
+        return dataAccess.getInvitationIssuer();
+      },
+      async getFeeIssuer() {
+        return feeMintKit.feeMint.getFeeIssuer();
+      },
 
-    getBrands(instance) {
-      return dataAccess.getBrands(instance);
-    },
-    getIssuers(instance) {
-      return dataAccess.getIssuers(instance);
-    },
-    getPublicFacet(instance) {
-      return dataAccess.getPublicFacet(instance);
-    },
-    getTerms(instance) {
-      return dataAccess.getTerms(instance);
-    },
-    getInstallationForInstance(instance) {
-      return dataAccess.getInstallation(instance);
-    },
-    getBundleIDFromInstallation(installation) {
-      return dataAccess.getBundleIDFromInstallation(installation);
-    },
-    getInstallation,
+      getBrands(instance) {
+        return dataAccess.getBrands(instance);
+      },
+      getIssuers(instance) {
+        return dataAccess.getIssuers(instance);
+      },
+      getPublicFacet(instance) {
+        return dataAccess.getPublicFacet(instance);
+      },
+      getTerms(instance) {
+        return dataAccess.getTerms(instance);
+      },
+      getInstallationForInstance(instance) {
+        return dataAccess.getInstallation(instance);
+      },
+      getBundleIDFromInstallation(installation) {
+        return dataAccess.getBundleIDFromInstallation(installation);
+      },
+      getInstallation,
 
-    getInstance(invitation) {
-      return getInstance(invitation);
-    },
-    getConfiguration,
-    getInvitationDetails,
-    getProposalShapeForInvitation(invitation) {
-      return dataAccess.getProposalShapeForInvitation(invitation);
-    },
-  });
+      getInstance(invitation) {
+        return getInstance(invitation);
+      },
+      getConfiguration,
+      getInvitationDetails,
+      getProposalShapeForInvitation(invitation) {
+        return dataAccess.getProposalShapeForInvitation(invitation);
+      },
+    }),
+  );
 
   return harden({
     zoeService,
