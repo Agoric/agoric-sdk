@@ -61,13 +61,13 @@ export const prepareVowKit = zone => {
         shorten: M.call().returns(M.promise()),
       }),
       resolver: M.interface('VowResolver', {
-        resolve: M.call().optional(M.any()).returns(),
-        reject: M.call().optional(M.any()).returns(),
+        resolve: M.call().optional(M.raw()).returns(),
+        reject: M.call().optional(M.raw()).returns(),
       }),
       watchNextStep: PromiseWatcherI,
     },
     () => ({
-      value: undefined,
+      value: /** @type {any} */ (undefined),
       // The stepStatus is null if the promise step hasn't settled yet.
       stepStatus: /** @type {null | 'pending' | 'fulfilled' | 'rejected'} */ (
         null
@@ -131,6 +131,7 @@ export const prepareVowKit = zone => {
         onFulfilled(value) {
           const { resolver } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
+          harden(value);
           if (resolve) {
             resolve(value);
           }
@@ -138,6 +139,12 @@ export const prepareVowKit = zone => {
           this.state.value = value;
         },
         onRejected(reason) {
+          const { resolver } = this.facets;
+          const { reject } = getPromiseKitForResolution(resolver);
+          harden(reason);
+          if (reject) {
+            reject(reason);
+          }
           this.state.stepStatus = 'rejected';
           this.state.value = reason;
         },
