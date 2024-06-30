@@ -65,12 +65,14 @@ const startCounter = async (
 
 /** @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
+  /** @type {[Promise<boolean>, Handle<'Question'>][]} */
   const isOpenPQuestions = [...questionStore.entries()].map(
     ([key, { publicFacet }]) => {
       return [E(publicFacet).isOpen(), key];
     },
   );
 
+  /** @type {[boolean, Handle<'Question'>][]} */
   const isOpenQuestions = await deeplyFulfilled(harden(isOpenPQuestions));
   return isOpenQuestions
     .filter(([open, _key]) => open)
