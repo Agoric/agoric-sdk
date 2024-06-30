@@ -13,7 +13,7 @@ import { heapVowTools } from '@agoric/vow/vat.js';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
 
-const { when, allVows } = heapVowTools;
+const { allVows, asPromise } = heapVowTools;
 
 /**
  * @import {OfferSpec} from "./offers.js";
@@ -38,10 +38,12 @@ const { when, allVows } = heapVowTools;
 /**
  * @param {OutcomeWatchers} watchers
  * @param {UserSeat} seat
+ * @returns {Promise<unknown>} promise for the value of the offer result, or its
+ *   rejection
  */
 const watchForOfferResult = ({ resultWatcher }, seat) => {
   // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
-  const p = when(E(seat).getOfferResult());
+  const p = asPromise(E(seat).getOfferResult());
   watchPromise(p, resultWatcher, seat);
   return p;
 };
@@ -72,7 +74,7 @@ const watchForPayout = ({ paymentWatcher }, seat) => {
  */
 export const watchOfferOutcomes = (watchers, seat) => {
   // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
-  return when(
+  return asPromise(
     allVows([
       watchForOfferResult(watchers, seat),
       watchForNumWants(watchers, seat),
