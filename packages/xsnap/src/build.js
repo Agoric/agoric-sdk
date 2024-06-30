@@ -226,8 +226,10 @@ const updateSubmodules = async (showEnv, { env, stdout, spawn, fs }) => {
  *     type: typeof import('os').type,
  *   }
  * }} io
+ * @param {object} [options]
+ * @param {boolean} [options.forceBuild]
  */
-const makeXsnap = async ({ spawn, fs, os }) => {
+const makeXsnap = async ({ spawn, fs, os }, { forceBuild = false } = {}) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
 
@@ -242,7 +244,7 @@ const makeXsnap = async ({ spawn, fs, os }) => {
     : '';
 
   const expectedConfigEnvs = configEnvs.concat('').join('\n');
-  if (existingConfigEnvs.trim() !== expectedConfigEnvs.trim()) {
+  if (forceBuild || existingConfigEnvs.trim() !== expectedConfigEnvs.trim()) {
     await fs.writeFile(configEnvFile, expectedConfigEnvs);
   }
 
@@ -347,7 +349,18 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   if (!showEnv) {
     if (hasSource) {
-      await makeXsnap({ spawn, fs, os });
+      // Force a rebuild if for some reason the binary is out of date
+      // Since the make checks may not always detect that situation
+      let forceBuild = !hasBin;
+      if (hasBin) {
+        const npm = makeCLI('npm', { spawn });
+        await npm
+          .run(['run', '-s', 'check-version'], { cwd: asset('..') })
+          .catch(() => {
+            forceBuild = true;
+          });
+      }
+      await makeXsnap({ spawn, fs, os }, { forceBuild });
     } else if (!hasBin) {
       throw new Error(
         'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
