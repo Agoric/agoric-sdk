@@ -1,12 +1,17 @@
 // @ts-check
 
 import { M } from '@endo/patterns';
+import { PromiseWatcherI } from '@agoric/base-zone';
+
+const { Fail, bare } = assert;
 
 /**
  * @import {MapStore} from '@agoric/store/src/types.js'
  * @import { Zone } from '@agoric/base-zone'
  * @import { Watch } from './watch.js'
+ * @import { When } from './when.js'
  * @import {VowKit} from './types.js'
+ * @import {IsRetryableReason} from './types.js'
  */
 
 const VowShape = M.tagged(
@@ -18,21 +23,29 @@ const VowShape = M.tagged(
 
 /**
  * @param {Zone} zone
- * @param {Watch} watch
- * @param {() => VowKit<any>} makeVowKit
+ * @param {object} powers
+ * @param {Watch} powers.watch
+ * @param {When} powers.when
+ * @param {() => VowKit<any>} powers.makeVowKit
+ * @param {IsRetryableReason} powers.isRetryableReason
  */
-export const prepareWatchUtils = (zone, watch, makeVowKit) => {
+export const prepareWatchUtils = (
+  zone,
+  { watch, when, makeVowKit, isRetryableReason },
+) => {
   const detached = zone.detached();
   const makeWatchUtilsKit = zone.exoClassKit(
     'WatchUtils',
     {
       utils: M.interface('Utils', {
         all: M.call(M.arrayOf(M.any())).returns(VowShape),
+        asPromise: M.call(M.raw()).rest(M.raw()).returns(M.promise()),
       }),
       watcher: M.interface('Watcher', {
         onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
         onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
       }),
+      retryRejectionPromiseWatcher: PromiseWatcherI,
     },
     () => {
       /**
@@ -83,6 +96,17 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
           }
           return kit.vow;
         },
+        asPromise(specimenP, ...watcherArgs) {
+          // Watch the specimen in case it is an ephemeral promise.
+          const vow = watch(specimenP, ...watcherArgs);
+          const promise = when(vow);
+          // Watch the ephemeral result promise to ensure that if its settlement is
+          // lost due to upgrade of this incarnation, we will at least cause an
+          // unhandled rejection in the new incarnation.
+          zone.watchPromise(promise, this.facets.retryRejectionPromiseWatcher);
+
+          return promise;
+        },
       },
       watcher: {
         onFulfilled(value, { id, index }) {
@@ -120,6 +144,14 @@ export const prepareWatchUtils = (zone, watch, makeVowKit) => {
           const { resolver } = idToVowState.get(id);
           idToVowState.delete(id);
           resolver.reject(value);
+        },
+      },
+      retryRejectionPromiseWatcher: {
+        onFulfilled(_result) {},
+        onRejected(reason, failedOp) {
+          if (isRetryableReason(reason, undefined)) {
+            Fail`Pending ${bare(failedOp)} could not retry; {reason}`;
+          }
         },
       },
     },
