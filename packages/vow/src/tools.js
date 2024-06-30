@@ -19,7 +19,12 @@ export const prepareVowTools = (zone, powers = {}) => {
   const makeVowKit = prepareVowKit(zone);
   const when = makeWhen(isRetryableReason);
   const watch = prepareWatch(zone, makeVowKit, isRetryableReason);
-  const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
+  const makeWatchUtils = prepareWatchUtils(zone, {
+    watch,
+    when,
+    makeVowKit,
+    isRetryableReason,
+  });
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
 
