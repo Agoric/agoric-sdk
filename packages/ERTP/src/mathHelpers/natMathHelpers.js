@@ -1,10 +1,9 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 /** @import {MathHelpers, NatValue} from '../types.js' */
-
-import { Fail } from '@endo/errors';
 
 const empty = 0n;
 

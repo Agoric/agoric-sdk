@@ -8,8 +8,11 @@ import { defineDurableHandle } from '../makeHandle.js';
 
 /**
  * The following should work. But for some reason, @endo/errors does
- * not export the type `Details`. TODO fix.
+ * not export the type `Details`.
+ * See https://github.com/endojs/endo/issues/2339
+ *
  * at-import {Details} from '@endo/errors'
+ *
  * In the meantime...
  *
  * @typedef {string | {}} Details
