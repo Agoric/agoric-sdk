@@ -1,10 +1,10 @@
+import { q, Fail } from '@endo/errors';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { q, Fail } from '@endo/errors';
 import {
   addSubtract,
   allEmpty,

@@ -1,8 +1,8 @@
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { mustMatch, keyEQ } from '@agoric/store';
 
-import { Fail } from '@endo/errors';
 import {
   ChoiceMethod,
   coerceQuestionSpec,

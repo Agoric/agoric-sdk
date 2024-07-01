@@ -1,7 +1,7 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { Fail } from '@endo/errors';
 import { isStreamCell } from './lib-chainStorage.js';
 
 /**

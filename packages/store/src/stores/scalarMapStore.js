@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import {
   Far,
   assertPassable,
@@ -12,7 +13,6 @@ import {
   mustMatch,
   assertPattern,
 } from '@endo/patterns';
-import { q } from '@endo/errors';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

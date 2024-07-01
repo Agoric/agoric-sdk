@@ -1,6 +1,6 @@
+import { Fail } from '@endo/errors';
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/far';
-import { Fail } from '@endo/errors';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;

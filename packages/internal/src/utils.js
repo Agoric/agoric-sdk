@@ -1,12 +1,11 @@
 // @ts-check
 // @jessie-check
 
+import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
-
-import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 
 const { fromEntries, keys, values } = Object;
 

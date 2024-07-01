@@ -1,9 +1,9 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { Fail } from '@endo/errors';
 
 /** @import {TimestampRecord} from '@agoric/time'; */
 

@@ -1,11 +1,11 @@
+import { Fail, makeError } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
 import { VowShape } from '@agoric/vow';
 // eslint-disable-next-line no-restricted-syntax
 import { heapVowTools } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
-import { Fail, makeError } from '@endo/errors';
-
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 // FIXME test thoroughly whether heap suffices for ChainHub

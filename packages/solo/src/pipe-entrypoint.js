@@ -3,13 +3,13 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init/unsafe-fast.js';
 
-import { parse, stringify } from '@endo/marshal';
+import { makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+import { parse, stringify } from '@endo/marshal';
 
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-import { makeError } from '@endo/errors';
 
 const { registerShutdown } = makeShutdown(false);
 registerShutdown(() => process.exit());

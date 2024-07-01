@@ -1,8 +1,9 @@
 // @ts-check
 /* global process setTimeout setInterval clearInterval */
 
-import { E, makeCapTP } from '@endo/captp';
+import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+import { E, makeCapTP } from '@endo/captp';
 import { makeLeaderFromRpcAddresses } from '@agoric/casting';
 import path from 'path';
 import http from 'http';
@@ -12,7 +13,6 @@ import { whileTrue } from '@agoric/internal';
 
 import { getAccessToken } from '@agoric/access-token';
 
-import { X } from '@endo/errors';
 import {
   makeBundlePublisher,
   makeCosmosBundlePublisher,

@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { initEmpty, M } from '@agoric/store';
 import { assert } from '@endo/errors';
+import { initEmpty, M } from '@agoric/store';
 
 import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';

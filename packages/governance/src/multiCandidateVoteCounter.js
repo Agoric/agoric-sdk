@@ -1,7 +1,7 @@
-import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail } from '@endo/errors';
+import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import {
   buildQuestion,
   ChoiceMethod,

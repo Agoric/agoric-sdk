@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/pass-style';
 import {
   getCopySetKeys,
@@ -5,8 +6,6 @@ import {
   assertPattern,
   isCopySet,
 } from '@endo/patterns';
-
-import { q, Fail } from '@endo/errors';
 
 /**
  * @import {Key} from '@endo/patterns';

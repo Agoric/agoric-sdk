@@ -1,8 +1,7 @@
 // @ts-check
 
-import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
-
 import { Fail, q } from '@endo/errors';
+import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
 /** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
 /** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */

@@ -1,7 +1,7 @@
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import { q } from '@endo/errors';
 import {
   assertContractElectorate,
   assertContractGovernance,

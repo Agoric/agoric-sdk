@@ -1,10 +1,10 @@
+import { X, Fail, q, makeError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/time';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 
-import { X, Fail, q, makeError } from '@endo/errors';
 import { AuctionState, makeCancelTokenMaker } from './util.js';
 import {
   computeRoundTiming,

@@ -1,6 +1,7 @@
 // @ts-check
 /// <reference types="ses" />
 
+import { X, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
 import {
@@ -14,10 +15,7 @@ import { defaultRegistryTypes } from '@cosmjs/stargate';
 import { stringToPath } from '@cosmjs/crypto';
 import { Decimal } from '@cosmjs/math';
 import { fromBech32 } from '@cosmjs/encoding';
-
 import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
-
-import { X, q, Fail } from '@endo/errors';
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
 const Agoric = {

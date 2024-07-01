@@ -1,8 +1,8 @@
 // @jessie-check
 
-import { mustMatch } from '@agoric/store';
-import { E } from '@endo/far';
 import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { mustMatch } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 
 /**

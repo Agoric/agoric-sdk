@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { M, matches } from '@endo/patterns';
 
@@ -7,8 +8,6 @@ import { M, matches } from '@endo/patterns';
  * @import {Passable} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns';
  */
-
-import { Fail, q } from '@endo/errors';
 
 // TODO: Undate `@endo/patterns` to export the original, and delete the
 // reimplementation here.

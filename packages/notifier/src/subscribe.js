@@ -1,3 +1,4 @@
+import { X, Fail, annotateError } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { isObject } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
@@ -6,8 +7,6 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {ERef} from '@endo/far';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord, EachTopic, ForkableAsyncIterableIterator} from '../src/types.js';
  */
-
-import { X, Fail, annotateError } from '@endo/errors';
 
 const sink = () => {};
 

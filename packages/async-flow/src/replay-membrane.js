@@ -1,5 +1,9 @@
 /* eslint-disable no-use-before-define */
 import { Fail, X, b, makeError, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
+import { objectMap } from '@endo/common/object-map.js';
 import {
   Far,
   Remotable,
@@ -8,11 +12,7 @@ import {
   makeTagged,
   passStyleOf,
 } from '@endo/pass-style';
-import { E } from '@endo/eventual-send';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { heapVowE } from '@agoric/vow/vat.js';
-import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { objectMap } from '@endo/common/object-map.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeEquate } from './equate.js';
 import { makeConvertKit } from './convert.js';

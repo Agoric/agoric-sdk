@@ -1,5 +1,6 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import {
   makeRatio,
   ratioToNumber,
@@ -7,7 +8,6 @@ import {
 import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
 
-import { Fail } from '@endo/errors';
 import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';
 
 /**

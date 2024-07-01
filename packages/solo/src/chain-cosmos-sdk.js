@@ -8,10 +8,10 @@ import { open as tempOpen } from 'temp';
 import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
-import { makeNotifierKit } from '@agoric/notifier';
+import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { Fail, makeError } from '@endo/errors';
+import { makeNotifierKit } from '@agoric/notifier';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,

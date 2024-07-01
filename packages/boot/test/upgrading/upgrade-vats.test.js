@@ -1,12 +1,12 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { Fail } from '@endo/errors';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
 
 /**

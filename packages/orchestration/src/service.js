@@ -1,9 +1,9 @@
 /** @file Orchestration service */
 
+import { Fail, b } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { Fail, b } from '@endo/errors';
 import { prepareChainAccountKit } from './exos/chain-account-kit.js';
 import { prepareICQConnectionKit } from './exos/icq-connection-kit.js';
 import {

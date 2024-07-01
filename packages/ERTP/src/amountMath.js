@@ -1,7 +1,7 @@
+import { q, Fail } from '@endo/errors';
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import { M, matches } from '@agoric/store';
-import { q, Fail } from '@endo/errors';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';

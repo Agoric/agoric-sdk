@@ -7,10 +7,9 @@ import '@agoric/builders';
 
 import anylogger from 'anylogger';
 
+import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
-
-/** @import {RunPolicy} from '@agoric/swingset-vat' */
 
 import {
   buildMailbox,
@@ -24,7 +23,6 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail } from '@endo/errors';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
@@ -52,6 +50,8 @@ import { parseParams } from './params.js';
 import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
+
+/** @import {RunPolicy} from '@agoric/swingset-vat' */
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');

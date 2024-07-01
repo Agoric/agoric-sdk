@@ -1,10 +1,9 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
-import { E } from '@endo/far';
 
 /** @import {CopyMap} from '@endo/patterns') */
-
-import { Fail } from '@endo/errors';
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin

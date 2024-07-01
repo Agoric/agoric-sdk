@@ -1,8 +1,8 @@
 /** @file ICQConnection Exo */
-import { NonNullish, makeTracer } from '@agoric/internal';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { Fail } from '@endo/errors';
+import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { OutboundConnectionHandlerI } from '../typeGuards.js';
 

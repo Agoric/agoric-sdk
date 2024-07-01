@@ -1,11 +1,12 @@
 // @jessie-check
 
 import { makeMap } from 'jessie.js';
+import { X } from '@endo/errors';
+import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -15,7 +16,6 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
 
-import { X } from '@endo/errors';
 import { reserveThenGetNamePaths } from './utils.js';
 
 import {

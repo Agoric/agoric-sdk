@@ -5,7 +5,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 /**
  * Should be
  * at-import {DetailsToken} from '@endo/errors'
- * but somehow @endo/errors is not exporting that type. TODO fix.
+ * but somehow @endo/errors is not exporting that type.
+ * See https://github.com/endojs/endo/issues/2339
  * In the meantime...
  *
  * @typedef {{}} DetailsToken

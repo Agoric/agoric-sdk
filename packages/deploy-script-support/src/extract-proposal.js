@@ -1,10 +1,10 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
 
-import { Fail } from '@endo/errors';
 import { defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,

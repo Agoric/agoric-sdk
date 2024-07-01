@@ -2,8 +2,8 @@
 /* eslint-disable func-names */
 /* global fetch, setTimeout, process */
 import { Fail } from '@endo/errors';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Nat } from '@endo/nat';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import * as cp from 'child_process';
 import { inspect } from 'util';

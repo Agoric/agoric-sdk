@@ -1,9 +1,9 @@
 /** @file ChainAccount exo */
-import { NonNullish, makeTracer } from '@agoric/internal';
-import { VowShape } from '@agoric/vow';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { Fail } from '@endo/errors';
+import { NonNullish, makeTracer } from '@agoric/internal';
+import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
   OutboundConnectionHandlerI,

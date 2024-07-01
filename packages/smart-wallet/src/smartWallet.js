@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountShape,
@@ -37,7 +38,6 @@ import {
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
 
-import { Fail, q } from '@endo/errors';
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
