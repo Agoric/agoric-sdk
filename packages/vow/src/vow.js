@@ -4,6 +4,8 @@ import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
+const { details: X } = assert;
+
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {Zone} from '@agoric/base-zone';
@@ -138,6 +140,7 @@ export const prepareVowKit = zone => {
         onFulfilled(value) {
           const { resolver, watchNextStep } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
+          harden(value);
           if (resolve) {
             resolve(value);
           }
@@ -146,17 +149,23 @@ export const prepareVowKit = zone => {
             this.state.value = value;
           } else {
             watchNextStep.onRejected(
-              assert.error(`Vow fulfillment value is not storable: ${value}`),
+              assert.error(X`Vow fulfillment value is not storable: ${value}`),
             );
           }
         },
         onRejected(reason) {
+          const { resolver } = this.facets;
+          const { reject } = getPromiseKitForResolution(resolver);
+          harden(reason);
+          if (reject) {
+            reject(reason);
+          }
           this.state.stepStatus = 'rejected';
           if (zone.isStorable(reason)) {
             this.state.value = reason;
           } else {
             this.state.value = assert.error(
-              `Vow rejection reason is not storable: ${reason}`,
+              X`Vow rejection reason is not storable: ${reason}`,
             );
           }
         },

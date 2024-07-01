@@ -3,7 +3,7 @@
 import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
-const { Fail, bare } = assert;
+const { Fail, bare, details: X } = assert;
 
 /**
  * @import {MapStore} from '@agoric/store/src/types.js';
@@ -21,6 +21,8 @@ const VowShape = M.tagged(
 );
 
 /**
+ * Like `provideLazy`, but accepts non-Passable values.
+ *
  * @param {WeakMap} map
  * @param {any} key
  * @param {(key: any) => any} makeValue
@@ -45,7 +47,7 @@ export const prepareWatchUtils = (
   { watch, when, makeVowKit, isRetryableReason },
 ) => {
   const detached = zone.detached();
-  const utilsToEphemeralResults = new WeakMap();
+  const utilsToNonStorableResults = new WeakMap();
 
   const makeWatchUtilsKit = zone.exoClassKit(
     'WatchUtils',
@@ -107,12 +109,12 @@ export const prepareWatchUtils = (
                 resultsMap: detached.mapStore('resultsMap'),
               }),
             );
-            const resultsMap = provideLazyMap(
-              utilsToEphemeralResults,
+            const idToNonStorableResults = provideLazyMap(
+              utilsToNonStorableResults,
               this.facets.utils,
               () => new Map(),
             );
-            resultsMap.set(id, new Map());
+            idToNonStorableResults.set(id, new Map());
           } else {
             // Base case: nothing to wait for.
             kit.resolver.resolve(harden([]));
@@ -140,13 +142,13 @@ export const prepareWatchUtils = (
             return;
           }
           const { remaining, resultsMap, resolver } = idToVowState.get(id);
-          const idToEphemeralResults = provideLazyMap(
-            utilsToEphemeralResults,
+          const idToNonStorableResults = provideLazyMap(
+            utilsToNonStorableResults,
             this.facets.utils,
             () => new Map(),
           );
-          const ephemeralResults = provideLazyMap(
-            idToEphemeralResults,
+          const nonStorableResults = provideLazyMap(
+            idToNonStorableResults,
             id,
             () => new Map(),
           );
@@ -155,7 +157,7 @@ export const prepareWatchUtils = (
           if (zone.isStorable(value)) {
             resultsMap.init(index, value);
           } else {
-            ephemeralResults.set(index, value);
+            nonStorableResults.set(index, value);
           }
           const vowState = harden({
             remaining: remaining - 1,
@@ -171,8 +173,8 @@ export const prepareWatchUtils = (
           const results = new Array(numResults);
           let numLost = 0;
           for (let i = 0; i < numResults; i += 1) {
-            if (ephemeralResults.has(i)) {
-              results[i] = ephemeralResults.get(i);
+            if (nonStorableResults.has(i)) {
+              results[i] = nonStorableResults.get(i);
             } else if (resultsMap.has(i)) {
               results[i] = resultsMap.get(i);
             } else {
@@ -181,7 +183,7 @@ export const prepareWatchUtils = (
           }
           if (numLost > 0) {
             resolver.reject(
-              assert.error(`${numLost} unstorable results were lost.`),
+              assert.error(X`${numLost} unstorable results were lost`),
             );
           } else {
             resolver.resolve(harden(results));
@@ -202,7 +204,7 @@ export const prepareWatchUtils = (
         onFulfilled(_result) {},
         onRejected(reason, failedOp) {
           if (isRetryableReason(reason, undefined)) {
-            Fail`Pending ${bare(failedOp)} could not retry; {reason}`;
+            Fail`Pending ${bare(failedOp)} could not retry; ${reason}`;
           }
         },
       },
