@@ -36,7 +36,7 @@ import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { makeInvitationsHelper } from './invitations.js';

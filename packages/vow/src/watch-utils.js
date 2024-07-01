@@ -21,6 +21,18 @@ const VowShape = M.tagged(
 );
 
 /**
+ * @param {WeakMap} map
+ * @param {any} key
+ * @param {(key: any) => any} makeValue
+ */
+const provideLazyMap = (map, key, makeValue) => {
+  if (!map.has(key)) {
+    map.set(key, makeValue(key));
+  }
+  return map.get(key);
+};
+
+/**
  * @param {Zone} zone
  * @param {object} powers
  * @param {Watch} powers.watch
@@ -33,6 +45,8 @@ export const prepareWatchUtils = (
   { watch, when, makeVowKit, isRetryableReason },
 ) => {
   const detached = zone.detached();
+  const utilsToEphemeralResults = new WeakMap();
+
   const makeWatchUtilsKit = zone.exoClassKit(
     'WatchUtils',
     {
@@ -74,7 +88,11 @@ export const prepareWatchUtils = (
           // Preserve the order of the vow results.
           let index = 0;
           for (const vow of vows) {
-            watch(vow, this.facets.watcher, { id, index });
+            watch(vow, this.facets.watcher, {
+              id,
+              index,
+              numResults: vows.length,
+            });
             index += 1;
           }
 
@@ -89,6 +107,12 @@ export const prepareWatchUtils = (
                 resultsMap: detached.mapStore('resultsMap'),
               }),
             );
+            const resultsMap = provideLazyMap(
+              utilsToEphemeralResults,
+              this.facets.utils,
+              () => new Map(),
+            );
+            resultsMap.set(id, new Map());
           } else {
             // Base case: nothing to wait for.
             kit.resolver.resolve(harden([]));
@@ -109,15 +133,30 @@ export const prepareWatchUtils = (
         },
       },
       watcher: {
-        onFulfilled(value, { id, index }) {
+        onFulfilled(value, { id, index, numResults }) {
           const { idToVowState } = this.state;
           if (!idToVowState.has(id)) {
             // Resolution of the returned vow happened already.
             return;
           }
           const { remaining, resultsMap, resolver } = idToVowState.get(id);
+          const idToEphemeralResults = provideLazyMap(
+            utilsToEphemeralResults,
+            this.facets.utils,
+            () => new Map(),
+          );
+          const ephemeralResults = provideLazyMap(
+            idToEphemeralResults,
+            id,
+            () => new Map(),
+          );
+
           // Capture the fulfilled value.
-          resultsMap.init(index, value);
+          if (zone.isStorable(value)) {
+            resultsMap.init(index, value);
+          } else {
+            ephemeralResults.set(index, value);
+          }
           const vowState = harden({
             remaining: remaining - 1,
             resultsMap,
@@ -129,13 +168,26 @@ export const prepareWatchUtils = (
           }
           // We're done!  Extract the array.
           idToVowState.delete(id);
-          const results = new Array(resultsMap.getSize());
-          for (const [i, val] of resultsMap.entries()) {
-            results[i] = val;
+          const results = new Array(numResults);
+          let numLost = 0;
+          for (let i = 0; i < numResults; i += 1) {
+            if (ephemeralResults.has(i)) {
+              results[i] = ephemeralResults.get(i);
+            } else if (resultsMap.has(i)) {
+              results[i] = resultsMap.get(i);
+            } else {
+              numLost += 1;
+            }
           }
-          resolver.resolve(harden(results));
+          if (numLost > 0) {
+            resolver.reject(
+              assert.error(`${numLost} unstorable results were lost.`),
+            );
+          } else {
+            resolver.resolve(harden(results));
+          }
         },
-        onRejected(value, { id, index: _index }) {
+        onRejected(value, { id, index: _index, numResults: _numResults }) {
           const { idToVowState } = this.state;
           if (!idToVowState.has(id)) {
             // First rejection wins.
