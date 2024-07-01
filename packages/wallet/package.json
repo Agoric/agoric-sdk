@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "lint-fix": "exit 0",
     "lint": "exit 0",
     "test": "exit 0",

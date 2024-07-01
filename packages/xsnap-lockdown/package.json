@@ -10,7 +10,7 @@
     "build:bundle-rollup": "rollup --config rollup.config.js",
     "build:bundle-source": "node scripts/build-bundle.js",
     "build": "yarn build:bundle-rollup && yarn build:bundle-source",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "clean": "rm -rf dist",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",

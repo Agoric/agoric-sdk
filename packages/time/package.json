@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",

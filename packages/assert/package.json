@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "test": "ava",
     "test:nyc": "exit 0",
     "test:xs": "exit 0",

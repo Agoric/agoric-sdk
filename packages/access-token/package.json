@@ -9,7 +9,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",

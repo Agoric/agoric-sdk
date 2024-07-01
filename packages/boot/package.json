@@ -7,7 +7,7 @@
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test/bootstrapTests test/upgrading",
     "lint-fix": "yarn lint:eslint --fix",

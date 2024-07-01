@@ -19,7 +19,7 @@
     "prepack": "git rev-parse --short HEAD > git-revision.txt && rm -rf build",
     "postpack": "git clean -f git-revision.txt",
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "exit 0"
   },

@@ -10,9 +10,8 @@
   },
   "scripts": {
     "build": "exit 0",
-    "postinstall": "patch-package",
     "codegen": "scripts/fetch-chain-info.ts",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",

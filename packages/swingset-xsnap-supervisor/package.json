@@ -13,7 +13,7 @@
   "scripts": {
     "build:bundle": "node scripts/build-bundle.js",
     "build": "yarn build:bundle",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "clean": "rm -rf dist",
     "lint": "run-s --continue-on-error lint:*",
     "lint:js": "eslint 'lib/**/*.js' 'src/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",

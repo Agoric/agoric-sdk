@@ -12,7 +12,7 @@
     "test": "exit 0",
     "test:xs": "exit 0",
     "build": "exit 0",
-    "postinstall": "patch-package",
+    "postinstall": "yarn --cwd=../.. patch-package",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "eslint ."
   },
