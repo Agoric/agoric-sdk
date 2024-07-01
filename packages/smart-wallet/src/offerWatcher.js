@@ -35,14 +35,14 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  */
 
 /** @param {VowTools} vowTools */
-const makeWatchForOfferResult = ({ asPromise }) => {
+const makeWatchForOfferResult = ({ watch }) => {
   /**
    * @param {OutcomeWatchers} watchers
    * @param {UserSeat} seat
    */
   const watchForOfferResult = ({ resultWatcher }, seat) => {
-    const p = asPromise(E(seat).getOfferResult());
-    watchPromise(p, resultWatcher, seat);
+    // Offer result may be anything, including a Vow, so watch it durably.
+    const p = watch(E(seat).getOfferResult(), resultWatcher, seat);
     return p;
   };
   return watchForOfferResult;
