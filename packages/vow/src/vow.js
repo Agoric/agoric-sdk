@@ -27,6 +27,9 @@ export const prepareVowKit = zone => {
   /** @type {WeakMap<VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
 
+  /** @type {WeakMap<VowResolver, any>} */
+  const resolverToNonStoredValue = new WeakMap();
+
   /**
    * Get the current incarnation's promise kit associated with a vowV0.
    *
@@ -74,6 +77,7 @@ export const prepareVowKit = zone => {
       stepStatus: /** @type {null | 'pending' | 'fulfilled' | 'rejected'} */ (
         null
       ),
+      isStoredValue: /** @type {boolean} */ (false),
     }),
     {
       vowV0: {
@@ -81,17 +85,28 @@ export const prepareVowKit = zone => {
          * @returns {Promise<any>}
          */
         async shorten() {
-          const { stepStatus, value } = this.state;
+          const { stepStatus, isStoredValue, value } = this.state;
           const { resolver } = this.facets;
-          const ephemera = resolverToEphemera.get(resolver);
 
           switch (stepStatus) {
             case 'fulfilled': {
-              if (ephemera) return ephemera.promise;
-              return value;
+              if (isStoredValue) {
+                // Always return a stored fulfilled value.
+                return value;
+              } else if (resolverToNonStoredValue.has(resolver)) {
+                // Non-stored value is available.
+                return resolverToNonStoredValue.get(resolver);
+              }
+              // We can't recover the non-stored value, so throw the
+              // explanation.
+              throw value;
             }
             case 'rejected': {
-              if (ephemera) return ephemera.promise;
+              if (!isStoredValue && resolverToNonStoredValue.has(resolver)) {
+                // Non-stored reason is available.
+                throw resolverToNonStoredValue.get(resolver);
+              }
+              // Always throw a stored rejection reason.
               throw value;
             }
             case null:
@@ -138,18 +153,20 @@ export const prepareVowKit = zone => {
       },
       watchNextStep: {
         onFulfilled(value) {
-          const { resolver, watchNextStep } = this.facets;
+          const { resolver } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
           harden(value);
           if (resolve) {
             resolve(value);
           }
           this.state.stepStatus = 'fulfilled';
-          if (zone.isStorable(value)) {
+          this.state.isStoredValue = zone.isStorable(value);
+          if (this.state.isStoredValue) {
             this.state.value = value;
           } else {
-            watchNextStep.onRejected(
-              assert.error(X`Vow fulfillment value is not storable: ${value}`),
+            resolverToNonStoredValue.set(resolver, value);
+            this.state.value = assert.error(
+              X`Vow fulfillment value was not stored: ${value}`,
             );
           }
         },
@@ -161,11 +178,13 @@ export const prepareVowKit = zone => {
             reject(reason);
           }
           this.state.stepStatus = 'rejected';
-          if (zone.isStorable(reason)) {
+          this.state.isStoredValue = zone.isStorable(reason);
+          if (this.state.isStoredValue) {
             this.state.value = reason;
           } else {
+            resolverToNonStoredValue.set(resolver, reason);
             this.state.value = assert.error(
-              X`Vow rejection reason is not storable: ${reason}`,
+              X`Vow rejection reason was not stored: ${reason}`,
             );
           }
         },
