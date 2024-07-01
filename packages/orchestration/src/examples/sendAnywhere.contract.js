@@ -1,4 +1,4 @@
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { withdrawFromSeat as wFS } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M, mustMatch } from '@endo/patterns';
 import { E } from '@endo/far';
@@ -43,10 +43,11 @@ const { entries } = Object;
  * @param {object} offerArgs
  * @param {string} offerArgs.chainName
  * @param {string} offerArgs.destAddr
+ * @param {any} ctx.withdrawFromSeat
  */
 const sendItFn = async (
   orch,
-  { zcf, agoricNamesTools, contractState },
+  { zcf, agoricNamesTools, contractState, withdrawFromSeat },
   seat,
   offerArgs,
 ) => {
@@ -111,10 +112,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   );
 
+  const withdrawFromSeat = vowTools.retriable('withdrawFromSeat', wFS);
+
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf, agoricNamesTools, contractState },
+    { zcf, agoricNamesTools, contractState, withdrawFromSeat },
     sendItFn,
   );
 
