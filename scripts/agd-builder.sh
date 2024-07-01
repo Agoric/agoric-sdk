@@ -106,6 +106,12 @@ if $need_nodejs; then
       } 1>&2
       ;;
   esac
+
+  if nodeversion=$(node --version 2> /dev/null); then
+    noderegexp='v([0-9]+)\.([0-9]+)\.([0-9]+)'
+    [[ "$nodeversion" =~ $noderegexp ]] || fatal "illegible node version '$nodeversion'"
+    nodejs_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" || exit 1
+  fi
 fi
 
 $do_not_build || (
@@ -194,7 +200,9 @@ $do_not_build || (
     test -z "$src" || {
       echo "At least $src is newer than node_modules"
       rm -f "$STAMPS/yarn-built"
-      lazy_yarn install
+      # Ignore engines since we already checked officially supported versions above
+      # UNTIL https://github.com/Agoric/agoric-sdk/issues/9622
+      lazy_yarn install --ignore-engines
     }
 
     stamp=$STAMPS/yarn-built
@@ -219,20 +227,11 @@ $do_not_build || (
       echo "At least $src is newer than gyp bindings"
       (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
     }
+
+    # check the built xsnap version against the package version it should be using
+    (cd "${thisdir}/../packages/xsnap" && npm run -s check-version) || exit 1
   fi
 )
-
-# the xsnap binary lives in a platform-specific directory
-unameOut="$(uname -s)"
-case "${unameOut}" in
-  Linux*) platform=lin ;;
-  Darwin*) platform=mac ;;
-  *) platform=win ;;
-esac
-
-# check the xsnap version against our baked-in notion of what version we should be using
-xsnap_version=$("${thisdir}/../packages/xsnap/xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker" -n)
-[[ "${xsnap_version}" == "${XSNAP_VERSION}" ]] || fatal "xsnap version mismatch; expected ${XSNAP_VERSION}, got ${xsnap_version}"
 
 if $only_build; then
   echo "Build complete." 1>&2

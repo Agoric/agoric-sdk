@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -452,7 +453,7 @@ func replaceCosmosSnapshotExportCommand(cmd *cobra.Command, ac appCreator) {
 	replacedRunE := func(cmd *cobra.Command, args []string) error {
 		ctx := server.GetServerContextFromCmd(cmd)
 
-		height, err := cmd.Flags().GetInt64("height")
+		heightFlag, err := cmd.Flags().GetInt64("height")
 		if err != nil {
 			return err
 		}
@@ -467,13 +468,15 @@ func replaceCosmosSnapshotExportCommand(cmd *cobra.Command, ac appCreator) {
 		app := ac.newSnapshotsApp(ctx.Logger, db, nil, ctx.Viper)
 		gaiaApp := app.(*gaia.GaiaApp)
 
-		if height == 0 {
-			height = app.CommitMultiStore().LastCommitID().Version
+		latestHeight := app.CommitMultiStore().LastCommitID().Version
+
+		if heightFlag != 0 && latestHeight != heightFlag {
+			return fmt.Errorf("cannot export at height %d, only latest height %d is supported", heightFlag, latestHeight)
 		}
 
-		cmd.Printf("Exporting snapshot for height %d\n", height)
+		cmd.Printf("Exporting snapshot for height %d\n", latestHeight)
 
-		err = gaiaApp.SwingSetSnapshotter.InitiateSnapshot(height)
+		err = gaiaApp.SwingSetSnapshotter.InitiateSnapshot(latestHeight)
 		if err != nil {
 			return err
 		}
@@ -488,7 +491,7 @@ func replaceCosmosSnapshotExportCommand(cmd *cobra.Command, ac appCreator) {
 			return err
 		}
 
-		snapshotHeight := uint64(height)
+		snapshotHeight := uint64(latestHeight)
 
 		for _, snapshot := range snapshotList {
 			if snapshot.Height == snapshotHeight {
