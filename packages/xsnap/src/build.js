@@ -220,15 +220,33 @@ const updateSubmodules = async (showEnv, { env, stdout, spawn, fs }) => {
  *     existsSync: typeof import('fs').existsSync,
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
+ *     writeFile: typeof import('fs').promises.writeFile,
  *   },
  *   os: {
  *     type: typeof import('os').type,
  *   }
  * }} io
+ * @param {object} [options]
+ * @param {boolean} [options.forceBuild]
  */
-const makeXsnap = async ({ spawn, fs, os }) => {
+const makeXsnap = async ({ spawn, fs, os }, { forceBuild = false } = {}) => {
   const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
   const pkg = JSON.parse(pjson);
+
+  const configEnvs = [
+    `XSNAP_VERSION=${pkg.version}`,
+    `CC=cc "-D__has_builtin(x)=1"`,
+  ];
+
+  const configEnvFile = asset('../build.config.env');
+  const existingConfigEnvs = fs.existsSync(configEnvFile)
+    ? await fs.readFile(configEnvFile, 'utf-8')
+    : '';
+
+  const expectedConfigEnvs = configEnvs.concat('').join('\n');
+  if (forceBuild || existingConfigEnvs.trim() !== expectedConfigEnvs.trim()) {
+    await fs.writeFile(configEnvFile, expectedConfigEnvs);
+  }
 
   const platform = ModdableSDK.platforms[os.type()];
   if (!platform) {
@@ -241,8 +259,10 @@ const makeXsnap = async ({ spawn, fs, os }) => {
       [
         `MODDABLE=${ModdableSDK.MODDABLE}`,
         `GOAL=${goal}`,
-        `XSNAP_VERSION=${pkg.version}`,
-        `CC=cc "-D__has_builtin(x)=1"`,
+        // Any other configuration variables that affect the build output
+        // should be placed in `configEnvs` to force a rebuild if they change
+        ...configEnvs,
+        `EXTRA_DEPS=${configEnvFile}`,
         '-f',
         'xsnap-worker.mk',
       ],
@@ -263,6 +283,7 @@ const makeXsnap = async ({ spawn, fs, os }) => {
  *     existsSync: typeof import('fs').existsSync,
  *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
+ *     writeFile: typeof import('fs').promises.writeFile,
  *   },
  *   os: {
  *     type: typeof import('os').type,
@@ -328,7 +349,18 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   if (!showEnv) {
     if (hasSource) {
-      await makeXsnap({ spawn, fs, os });
+      // Force a rebuild if for some reason the binary is out of date
+      // Since the make checks may not always detect that situation
+      let forceBuild = !hasBin;
+      if (hasBin) {
+        const npm = makeCLI('npm', { spawn });
+        await npm
+          .run(['run', '-s', 'check-version'], { cwd: asset('..') })
+          .catch(() => {
+            forceBuild = true;
+          });
+      }
+      await makeXsnap({ spawn, fs, os }, { forceBuild });
     } else if (!hasBin) {
       throw new Error(
         'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
@@ -344,6 +376,7 @@ const run = () =>
     spawn: childProcessTop.spawn,
     fs: {
       readFile: fsTop.promises.readFile,
+      writeFile: fsTop.promises.writeFile,
       existsSync: fsTop.existsSync,
       rmdirSync: fsTop.rmdirSync,
     },
