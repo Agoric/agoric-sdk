@@ -156,7 +156,7 @@ export const makeReplayMembrane = ({
       case 'promise': {
         const e = Error('where warning happened');
         console.log('Warning for now: vow expected, not promise', h, e);
-        throw E;
+        throw e;
         // TODO remove this stopgap. Here for now because host-side
         // promises are everywhere!
         // Note: A good place to set a breakpoint, or to uncomment the
