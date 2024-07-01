@@ -34,6 +34,11 @@ export {};
  */
 
 /**
+ * @template T
+ * @typedef {ERef<T | Vow<T>>} EVow
+ */
+
+/**
  * Follow the chain of vow shortening to the end, returning the final value.
  * This is used within E, so we must narrow the type to its remote form.
  * @template T
