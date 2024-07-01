@@ -9,7 +9,7 @@ const { apply } = Reflect;
 /**
  * A PromiseWatcher method guard callable with or more arguments, returning void.
  */
-export const PromiseWatcherHandler = M.call(M.any()).rest(M.any()).returns();
+export const PromiseWatcherHandler = M.call(M.raw()).rest(M.raw()).returns();
 
 /**
  * A PromiseWatcher interface that has both onFulfilled and onRejected handlers.

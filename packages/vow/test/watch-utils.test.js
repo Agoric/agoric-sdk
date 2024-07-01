@@ -199,3 +199,56 @@ test('allVows does NOT support Vow pipelining', async t => {
     message: 'target has no method "getAddress", has []',
   });
 });
+
+test('asPromise converts a vow to a promise', async t => {
+  const zone = makeHeapZone();
+  const { watch, asPromise } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.resolve('test value');
+  const vow = watch(testPromiseP);
+
+  const result = await asPromise(vow);
+  t.is(result, 'test value');
+});
+
+test('asPromise handles vow rejection', async t => {
+  const zone = makeHeapZone();
+  const { watch, asPromise } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.reject(new Error('test error'));
+  const vow = watch(testPromiseP);
+
+  await t.throwsAsync(asPromise(vow), { message: 'test error' });
+});
+
+test('asPromise accepts and resolves promises', async t => {
+  const zone = makeHeapZone();
+  const { asPromise } = prepareVowTools(zone);
+
+  const p = Promise.resolve('a promise');
+  const result = await asPromise(p);
+  t.is(result, 'a promise');
+});
+
+test('asPromise handles watcher arguments', async t => {
+  const zone = makeHeapZone();
+  const { watch, asPromise } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.resolve('watcher test');
+  const vow = watch(testPromiseP);
+
+  let watcherCalled = false;
+  const watcher = {
+    onFulfilled(value, ctx) {
+      watcherCalled = true;
+      t.is(value, 'watcher test');
+      t.deepEqual(ctx, ['ctx']);
+      return value;
+    },
+  };
+
+  // XXX fix type: `watcherContext` doesn't need to be an array
+  const result = await asPromise(vow, watcher, ['ctx']);
+  t.is(result, 'watcher test');
+  t.true(watcherCalled);
+});
