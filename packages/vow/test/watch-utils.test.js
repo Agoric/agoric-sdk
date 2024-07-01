@@ -160,6 +160,7 @@ test('asPromise handles watcher arguments', async t => {
     },
   };
 
+  // XXX fix type: `watcherContext` doesn't need to be an array
   const result = await asPromise(vow, watcher, ['ctx']);
   t.is(result, 'watcher test');
   t.true(watcherCalled);

@@ -7,7 +7,7 @@ import { makeAsVow } from './vow-utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {IsRetryableReason, AsPromiseFunction, Vow, EVow} from './types.js';
+ * @import {IsRetryableReason, AsPromiseFunction, EVow} from './types.js';
  */
 
 /**

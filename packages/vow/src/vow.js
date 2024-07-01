@@ -9,6 +9,7 @@ const { details: X } = assert;
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {Zone} from '@agoric/base-zone';
+ * @import {MapStore} from '@agoric/store';
  * @import {VowResolver, VowKit} from './types.js';
  */
 
@@ -78,6 +79,12 @@ export const prepareVowKit = zone => {
         null
       ),
       isStoredValue: /** @type {boolean} */ (false),
+      /**
+       * Map for future properties that aren't in the schema.
+       * UNTIL https://github.com/Agoric/agoric-sdk/issues/7407
+       * @type {MapStore<any, any> | undefined}
+       */
+      extra: undefined,
     }),
     {
       vowV0: {
