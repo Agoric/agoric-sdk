@@ -78,6 +78,12 @@ export const prepareVowKit = zone => {
         null
       ),
       isStoredValue: /** @type {boolean} */ (false),
+      /**
+       * Map for future properties that aren't in the schema.
+       * UNTIL https://github.com/Agoric/agoric-sdk/issues/7407
+       * @type {MapStore<any, any> | undefined}
+       */
+      extra: undefined,
     }),
     {
       vowV0: {
