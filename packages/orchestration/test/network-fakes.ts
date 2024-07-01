@@ -10,7 +10,7 @@ import type {
   IBCChannelID,
   IBCMethod,
   IBCEvent,
-  ScopedBridgeMangerMethods,
+  ScopedBridgeManagerMethods,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -128,7 +128,7 @@ export const ibcBridgeMocks: {
 export const makeFakeIBCBridge = (
   zone: Zone,
 ): Guarded<
-  ScopedBridgeMangerMethods<'dibc'> & {
+  ScopedBridgeManagerMethods<'dibc'> & {
     setMockAck: (mockAckMap: Record<string, string>) => void;
     setAddressPrefix: (addressPrefix: string) => void;
   }
@@ -138,7 +138,7 @@ export const makeFakeIBCBridge = (
    * Intended to mock an individual account's sequence, but is global for all
    * accounts.
    * XXX teach this about IBCConnections and store sequence on a
-   * per-connection basis.
+   * per-channel basis.
    * @type {number}
    */
   let ibcSequenceNonce = 0;

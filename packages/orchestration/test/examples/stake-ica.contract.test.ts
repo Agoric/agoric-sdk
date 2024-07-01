@@ -11,11 +11,12 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { commonSetup } from '../supports.js';
 import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
-import chainInfo from '../../src/fetched-chain-info.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
+import type { CosmosChainInfo } from '../../src/cosmos-api.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -23,15 +24,21 @@ const contractFile = `${dirname}/../../src/examples/stakeIca.contract.js`;
 type StartFn =
   typeof import('@agoric/orchestration/src/examples/stakeIca.contract.js').start;
 
-const getChainTerms = (chainName: keyof typeof chainInfo): StakeIcaTerms => {
+const getChainTerms = (
+  chainName: keyof typeof fetchedChainInfo,
+  chainInfo: Record<string, CosmosChainInfo> = fetchedChainInfo,
+): StakeIcaTerms => {
   const { chainId, stakingTokens, icqEnabled } = chainInfo[chainName];
-  const agoricConns = chainInfo.agoric.connections;
+  const agoricConns = chainInfo.agoric.connections!;
+  if (!stakingTokens?.[0].denom) {
+    throw Error(`Bond denom not found for chainName: ${chainName}`);
+  }
   return {
     chainId,
     hostConnectionId: agoricConns[chainId].counterparty.connection_id,
     controllerConnectionId: agoricConns[chainId].id,
     bondDenom: stakingTokens[0].denom,
-    icqEnabled,
+    icqEnabled: !!icqEnabled,
   };
 };
 
@@ -104,16 +111,19 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     t.regex(chainAddress.address, /osmo1/);
     t.like(chainAddress, { chainId: 'osmosis-1' });
 
-    await E(ibcBridge).setMockAck({
-      [buildQueryPacketString([
+    const buildMocks = () => {
+      const balanceReq = buildQueryPacketString([
         QueryBalanceRequest.toProtoMsg({
           address: chainAddress.address,
           denom: 'uosmo',
         }),
-      ])]: buildQueryResponseString(QueryBalanceResponse, {
+      ]);
+      const balanceResp = buildQueryResponseString(QueryBalanceResponse, {
         balance: { amount: '0', denom: 'uosmo' },
-      }),
-    });
+      });
+      return { [balanceReq]: balanceResp };
+    };
+    await E(ibcBridge).setMockAck(buildMocks());
 
     const balance = await E(account).getBalance('uosmo');
     t.deepEqual(balance, { denom: 'uosmo', value: 0n });

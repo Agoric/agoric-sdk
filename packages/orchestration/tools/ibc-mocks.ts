@@ -120,8 +120,8 @@ export function buildTxPacketString(
  * @returns {string}
  */
 export function buildQueryPacketString(
-  msgs: { value: Uint8Array; typeUrl: string }[],
+  msgs: Any[],
   opts: Partial<Omit<RequestQuery, 'path' | 'data'>> = {},
 ): string {
-  return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg))));
+  return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg, opts))));
 }

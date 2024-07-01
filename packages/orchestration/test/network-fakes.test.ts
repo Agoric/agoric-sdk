@@ -45,7 +45,7 @@ test('network fakes - port allocator', async t => {
 test('network fakes - ibc connection', async t => {
   const { portAllocator } = t.context;
 
-  // allocate ICA controller port and connection to remote chain
+  // allocate ICA controller port and connect to remote chain
   const icaPort = await E(portAllocator).allocateICAControllerPort();
   const icaConnection = await E(icaPort).connect(
     makeICAChannelAddress('connection-0', 'connection-0'),
