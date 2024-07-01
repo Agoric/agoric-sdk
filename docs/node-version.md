@@ -15,3 +15,4 @@ When a new version becomes Active LTS:
 - [ ] update Node.js test ranges to remove the EOLed version and add the new LTS
 - [ ] update package.json engines to allow the two LTS versions
 - [ ] update README.md to document the new supported versions
+- [ ] update repoconfig.sh to verify against the new supported versions

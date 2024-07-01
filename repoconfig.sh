@@ -7,6 +7,7 @@ GOLANG_DAEMON=$GOLANG_DIR/build/agd
 
 # Args are major, minor and patch version numbers
 golang_version_check() {
+  # Keep synchronized with README.md section "Prerequisites".
   {
     [ "$1" -eq 1 ] && [ "$2" -eq 20 ] && [ "$3" -ge 2 ] && return 0
     [ "$1" -eq 1 ] && [ "$2" -ge 21 ] && return 0
@@ -18,6 +19,7 @@ golang_version_check() {
 
 # Args are major, minor and patch version numbers
 nodejs_version_check() {
+  # Keep synchronized with README.md section "Prerequisites".
   {
     [ "$1" -eq 18 ] && [ "$2" -ge 12 ] && return 0
     [ "$1" -eq 20 ] && [ "$2" -ge 9 ] && return 0
