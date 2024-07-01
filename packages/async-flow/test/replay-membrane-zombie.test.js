@@ -17,6 +17,11 @@ import { prepareLogStore } from '../src/log-store.js';
 import { prepareBijection } from '../src/bijection.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
 const watchWake = _vowish => {};
 const panic = problem => Fail`panic over ${problem}`;
 
@@ -31,14 +36,20 @@ const testMissingStop = async (t, zone) => {
   const makeBijection = prepareBijection(zone);
 
   const log = makeLogStore();
-  const bij = makeBijection();
+  const bijection = makeBijection();
 
-  const memA = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const memA = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const { vow: v1, resolver: r1 } = makeVowKit();
 
   const p1A = memA.hostToGuest(v1);
-  t.true(bij.has(p1A, v1));
+  t.true(bijection.has(p1A, v1));
 
   await eventLoopIteration();
 
@@ -48,12 +59,18 @@ const testMissingStop = async (t, zone) => {
   // except stopping the old membrane,
   // to demonstate why `makeGuestForHostVow` also tests`stopped`.
   log.reset();
-  bij.reset();
-  const memB = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  bijection.reset();
+  const memB = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const p1B = memB.hostToGuest(v1);
-  t.true(bij.has(p1B, v1));
-  t.false(bij.hasGuest(p1A));
+  t.true(bijection.has(p1B, v1));
+  t.false(bijection.hasGuest(p1A));
 
   await eventLoopIteration();
 
@@ -81,14 +98,20 @@ const testProperStop = async (t, zone) => {
   const makeBijection = prepareBijection(zone);
 
   const log = makeLogStore();
-  const bij = makeBijection();
+  const bijection = makeBijection();
 
-  const memA = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const memA = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const { vow: v1, resolver: r1 } = makeVowKit();
 
   const p1A = memA.hostToGuest(v1);
-  t.true(bij.has(p1A, v1));
+  t.true(bijection.has(p1A, v1));
 
   await eventLoopIteration();
 
@@ -98,13 +121,19 @@ const testProperStop = async (t, zone) => {
   // including stopping the old membrane,
   // to demonstate why `makeGuestForHostVow` also tests`stopped`.
   log.reset();
-  bij.reset();
+  bijection.reset();
   memA.stop(); // the point
-  const memB = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const memB = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const p1B = memB.hostToGuest(v1);
-  t.true(bij.has(p1B, v1));
-  t.false(bij.hasGuest(p1A));
+  t.true(bijection.has(p1B, v1));
+  t.false(bijection.hasGuest(p1A));
 
   await eventLoopIteration();
 

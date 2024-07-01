@@ -27,6 +27,37 @@ const deprecatedTerminology = Object.fromEntries(
   ]),
 );
 
+/**
+ * Rules for code that crosses an asyncFlow membrane.
+ */
+const resumable = [
+  {
+    // all async function expressions, except `onOpen` and `onClose` when they are properties of `connectionHandler`
+    selector:
+      'FunctionExpression[async=true]:not(Property[key.name="connectionHandler"] > ObjectExpression > Property[key.name=/^(onOpen|onClose)$/] > FunctionExpression[async=true])',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: 'ArrowFunctionExpression[async=true]',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: "Identifier[name='callWhen']",
+    message:
+      'callWhen wraps the function in a promise; instead immediately return a vow',
+  },
+  {
+    selector: "Identifier[name='heapVowE']",
+    message:
+      'heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools',
+  },
+  {
+    selector: "Identifier[name='heapVowTools']",
+    message:
+      'heapVowTools are not durable; instead use `prepareVowTools` with a durable zone',
+  },
+];
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -133,6 +164,13 @@ module.exports = {
           'error',
           { paths: ['@endo/eventual-send', '@endo/far'] },
         ],
+      },
+    },
+    {
+      // Modules with exports that must be resumable
+      files: ['packages/orchestration/src/exos/**'],
+      rules: {
+        'no-restricted-syntax': ['error', ...resumable],
       },
     },
     {

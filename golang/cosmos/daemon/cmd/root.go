@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
@@ -19,9 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -39,6 +36,7 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 )
 
 var AppName = "agd"
@@ -142,16 +140,27 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		testnetCmd(gaia.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		config.Cmd(),
-		pruning.Cmd(ac.newApp, gaia.DefaultNodeHome),
-		snapshot.Cmd(ac.newApp),
+		pruning.Cmd(ac.newSnapshotsApp, gaia.DefaultNodeHome),
+		snapshot.Cmd(ac.newSnapshotsApp),
 	)
 
 	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
 
 	for _, command := range rootCmd.Commands() {
-		if command.Name() == "export" {
+		switch command.Name() {
+		case "export":
+			addAgoricVMFlags(command)
 			extendCosmosExportCommand(command)
-			break
+		case "snapshots":
+			for _, subCommand := range command.Commands() {
+				switch subCommand.Name() {
+				case "restore":
+					addAgoricVMFlags(subCommand)
+				case "export":
+					addAgoricVMFlags(subCommand)
+					replaceCosmosSnapshotExportCommand(subCommand, ac)
+				}
+			}
 		}
 	}
 
@@ -264,20 +273,11 @@ func (ac appCreator) newApp(
 		}
 	}
 
-	var cache sdk.MultiStorePersistentCache
-
-	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
-		cache = store.NewCommitKVStoreCacheManager()
-	}
+	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
-	}
-
-	pruningOpts, err := server.GetPruningOptionsFromFlags(appOpts)
-	if err != nil {
-		panic(err)
 	}
 
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
@@ -289,20 +289,6 @@ func (ac appCreator) newApp(
 		viper.Set(gaia.FlagSwingStoreExportDir, filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName))
 	}
 
-	snapshotDir := filepath.Join(homePath, "data", "snapshots")
-	snapshotDB, err := dbm.NewDB("metadata", dbm.GoLevelDBBackend, snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotStore, err := snapshots.NewStore(snapshotDB, snapshotDir)
-	if err != nil {
-		panic(err)
-	}
-	snapshotOptions := snapshottypes.NewSnapshotOptions(
-		cast.ToUint64(appOpts.Get(server.FlagStateSyncSnapshotInterval)),
-		cast.ToUint32(appOpts.Get(server.FlagStateSyncSnapshotKeepRecent)),
-	)
-
 	return gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,
 		logger, db, traceStore, true, skipUpgradeHeights,
@@ -310,18 +296,34 @@ func (ac appCreator) newApp(
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		ac.encCfg,
 		appOpts,
-		baseapp.SetPruning(pruningOpts),
-		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
-		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
-		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
-		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
-		baseapp.SetInterBlockCache(cache),
-		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
-		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
-		baseapp.SetSnapshot(snapshotStore, snapshotOptions),
-		baseapp.SetIAVLCacheSize(cast.ToInt(appOpts.Get(server.FlagIAVLCacheSize))),
-		baseapp.SetIAVLDisableFastNode(cast.ToBool(appOpts.Get(server.FlagDisableIAVLFastNode))),
-		baseapp.SetIAVLLazyLoading(cast.ToBool(appOpts.Get(server.FlagIAVLLazyLoading))),
+		baseappOptions...,
+	)
+}
+
+func (ac appCreator) newSnapshotsApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	appOpts servertypes.AppOptions,
+) servertypes.Application {
+	if OnExportHook != nil {
+		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
+			panic(err)
+		}
+	}
+
+	baseappOptions := server.DefaultBaseappOptions(appOpts)
+
+	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
+
+	return gaia.NewAgoricApp(
+		ac.sender, ac.agdServer,
+		logger, db, traceStore, true, map[int64]bool{},
+		homePath,
+		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
+		ac.encCfg,
+		appOpts,
+		baseappOptions...,
 	)
 }
 
@@ -342,7 +344,6 @@ const (
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
 // genesis export in the specified directory if the VM is running.
 func extendCosmosExportCommand(cmd *cobra.Command) {
-	addAgoricVMFlags(cmd)
 	cmd.Flags().String(FlagExportDir, "", "The directory where to create the genesis export")
 	err := cmd.MarkFlagRequired(FlagExportDir)
 	if err != nil {
@@ -442,4 +443,65 @@ func (ac appCreator) appExport(
 	}
 
 	return gaiaApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
+}
+
+// replaceCosmosSnapshotExportCommand monkey-patches the "snapshots export" command
+// added by cosmos-sdk and replaces its implementation with one suitable for
+// our modifications to the cosmos snapshots process
+func replaceCosmosSnapshotExportCommand(cmd *cobra.Command, ac appCreator) {
+	// Copy of RunE is cosmos-sdk/client/snapshot/export.go
+	replacedRunE := func(cmd *cobra.Command, args []string) error {
+		ctx := server.GetServerContextFromCmd(cmd)
+
+		heightFlag, err := cmd.Flags().GetInt64("height")
+		if err != nil {
+			return err
+		}
+
+		home := ctx.Config.RootDir
+		dataDir := filepath.Join(home, "data")
+		db, err := dbm.NewDB("application", server.GetAppDBBackend(ctx.Viper), dataDir)
+		if err != nil {
+			return err
+		}
+
+		app := ac.newSnapshotsApp(ctx.Logger, db, nil, ctx.Viper)
+		gaiaApp := app.(*gaia.GaiaApp)
+
+		latestHeight := app.CommitMultiStore().LastCommitID().Version
+
+		if heightFlag != 0 && latestHeight != heightFlag {
+			return fmt.Errorf("cannot export at height %d, only latest height %d is supported", heightFlag, latestHeight)
+		}
+
+		cmd.Printf("Exporting snapshot for height %d\n", latestHeight)
+
+		err = gaiaApp.SwingSetSnapshotter.InitiateSnapshot(latestHeight)
+		if err != nil {
+			return err
+		}
+
+		err = swingsetkeeper.WaitUntilSwingStoreExportDone()
+		if err != nil {
+			return err
+		}
+
+		snapshotList, err := app.SnapshotManager().List()
+		if err != nil {
+			return err
+		}
+
+		snapshotHeight := uint64(latestHeight)
+
+		for _, snapshot := range snapshotList {
+			if snapshot.Height == snapshotHeight {
+				cmd.Printf("Snapshot created at height %d, format %d, chunks %d\n", snapshot.Height, snapshot.Format, snapshot.Chunks)
+				break
+			}
+		}
+
+		return nil
+	}
+
+	cmd.RunE = replacedRunE
 }

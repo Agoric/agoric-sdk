@@ -1,11 +1,21 @@
 import { AmountShape } from '@agoric/ertp';
+import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
-export const ConnectionHandlerI = M.interface('ConnectionHandler', {
-  onOpen: M.callWhen(M.any(), M.string(), M.string(), M.any()).returns(M.any()),
-  onClose: M.callWhen(M.any(), M.any(), M.any()).returns(M.any()),
-  onReceive: M.callWhen(M.any(), M.string()).returns(M.any()),
-});
+/**
+ * Used for IBC Channel Connections that only send outgoing transactions. If
+ * your channel expects incoming transactions, please extend this interface to
+ * include the `onReceive` handler.
+ */
+export const OutboundConnectionHandlerI = M.interface(
+  'OutboundConnectionHandler',
+  {
+    onOpen: M.callWhen(M.any(), M.string(), M.string(), M.any()).returns(
+      M.any(),
+    ),
+    onClose: M.callWhen(M.any(), M.any(), M.any()).returns(M.any()),
+  },
+);
 
 export const ChainAddressShape = {
   address: M.string(),
@@ -77,3 +87,18 @@ export const CosmosChainInfoShape = M.splitRecord(
     icqEnabled: M.boolean(),
   },
 );
+
+// FIXME more validation
+export const ChainInfoShape = M.any();
+export const LocalChainAccountShape = M.remotable('LocalChainAccount');
+export const DenomShape = M.string();
+// FIXME more validation
+export const BrandInfoShape = M.any();
+
+export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+
+/** @see {Chain} */
+export const ChainFacadeI = M.interface('ChainFacade', {
+  getChainInfo: M.call().returns(VowShape),
+  makeAccount: M.call().returns(VowShape),
+});

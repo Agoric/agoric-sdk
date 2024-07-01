@@ -2,11 +2,13 @@
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "UNRELEASED_UPGRADE",
+    "planName": "UNRELEASED_A3P_INTEGRATION",
     "upgradeInfo": {
       "coreProposals": []
     },
     "sdk-generate": [
+      "vats/probe-zcf-bundle.js probe-submission",
+      "vats/test-localchain.js localchaintest-submission",
       "vats/upgrade-bank.js upgrade-bank",
       "vats/upgrade-provisionPool.js upgrade-provisionPool",
       "testing/add-LEMONS.js add-LEMONS",

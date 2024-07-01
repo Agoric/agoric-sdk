@@ -1,11 +1,11 @@
 // @ts-check
 import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID, VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     loadCriticalVat: VatLoader<any>;
  *     bridgeManager: import('../types').BridgeManager;
  *     vtransferBridgeManager: import('../types').ScopedBridgeManager<'vtransfer'>;
  *   };
@@ -17,10 +17,6 @@ import { BridgeId as BRIDGE_ID, VTRANSFER_IBC_EVENT } from '@agoric/internal';
  * }} powers
  * @param {object} options
  * @param {{ transferRef: VatSourceRef }} options.options
- *
- * @typedef {{
- *   transfer: ERef<import('../vat-transfer.js').TransferVat>;
- * }} TransferVats
  */
 export const setupTransferMiddleware = async (
   {
@@ -44,7 +40,6 @@ export const setupTransferMiddleware = async (
   }
 
   const { transferRef } = options.options;
-  /** @type {TransferVats} */
   const vats = {
     transfer: E(loadCriticalVat)('transfer', transferRef),
   };
@@ -73,7 +68,7 @@ export const setupTransferMiddleware = async (
   /** @type {Awaited<ReturnType<typeof provideBridgeTargetKit>>} */
   let bridgeTargetKit;
   try {
-    const vtransferBridge = await E(bridgeManager).register(vtransferID);
+    const vtransferBridge = await makeScopedBridge(bridgeManager, vtransferID);
     produceVtransferBridgeManager.reset();
     produceVtransferBridgeManager.resolve(vtransferBridge);
     bridgeTargetKit = await provideBridgeTargetKit(vtransferBridge);

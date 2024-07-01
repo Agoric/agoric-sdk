@@ -92,7 +92,7 @@ harden(partialAssign);
  * Unlike `provideLazy`, `provide` should be called at most once
  * within any vat incarnation with a given `baggage`,`key` pair.
  *
- * `provide` should only to be used to populate baggage,
+ * `provide` should only be used to populate baggage,
  * where the total number of calls to `provide` must be
  * low cardinality, since we keep the bookkeeping to detect collisions
  * in normal language-heap memory. All the other baggage-oriented

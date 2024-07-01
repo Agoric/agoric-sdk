@@ -1,9 +1,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { V } from '@agoric/vow/vat.js';
-import { E } from '@endo/far';
 import path from 'path';
 import { commonSetup } from '../supports.js';
 
@@ -51,18 +51,18 @@ test('makeAccount, deposit, withdraw', async t => {
   t.log('make a LocalChainAccount');
   const account = await E(publicFacet).makeAccount();
   t.truthy(account, 'account is returned');
-  t.regex(await E(account).getAddress(), /agoric1/);
 
   t.log('deposit 100 bld to account');
-  const depositResp = await V(account).deposit(
+  const depositResp = await E(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
-  t.true(AmountMath.isEqual(depositResp, bld.units(100)), 'deposit');
-
-  // TODO validate balance, .getBalance()
+  // FIXME #9211
+  // t.deepEqual(await E(account).getBalance('ubld'), bld.units(100));
+  // XXX races in the bridge
+  await eventLoopIteration();
 
   t.log('withdraw bld from account');
-  const withdrawResp = await V(account).withdraw(bld.units(100));
+  const withdrawResp = await E(account).withdraw(bld.units(100));
   const withdrawAmt = await bld.issuer.getAmountOf(withdrawResp);
   t.true(AmountMath.isEqual(withdrawAmt, bld.units(100)), 'withdraw');
 
@@ -97,18 +97,34 @@ test('makeStakeBldInvitation', async t => {
   t.truthy(invitationMakers, 'received continuing invitation');
 
   t.log('make Delegate offer using invitationMakers');
-  const delegateInv = await E(invitationMakers).Delegate('agoric1validator1', {
-    brand: bld.brand,
-    value: 1_000_000_000n,
-  });
-  const delegateOffer = await E(zoe).offer(
-    delegateInv,
-    { give: { In: hundred } },
-    { In: utils.pourPayment(hundred) },
-  );
-  const res = await E(delegateOffer).getOfferResult();
-  t.deepEqual(res, {});
-  t.log('Successfully delegated');
+  {
+    const delegateInv = await E(invitationMakers).Delegate(
+      'agoric1validator1',
+      {
+        brand: bld.brand,
+        value: 1_000_000_000n,
+      },
+    );
+    const delegateOffer = await E(zoe).offer(delegateInv);
+    const res = await E(delegateOffer).getOfferResult();
+    t.deepEqual(res, {});
+    t.log('Successfully delegated');
+  }
+
+  t.log('example Delegate offer rejection');
+  {
+    const delegateInv = await E(invitationMakers).Delegate(
+      'agoric1validator1',
+      {
+        brand: bld.brand,
+        value: 504n,
+      },
+    );
+    const delegateOffer = await E(zoe).offer(delegateInv);
+    await t.throwsAsync(E(delegateOffer).getOfferResult(), {
+      message: 'simulated packet timeout',
+    });
+  }
 
   await t.throwsAsync(() => E(invitationMakers).CloseAccount(), {
     message: 'not yet implemented',

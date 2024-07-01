@@ -3,7 +3,7 @@ import { priceFeedProposalBuilder } from './priceFeedSupport.js';
 
 const OPTIONS = {
   AGORIC_INSTANCE_NAME: 'stATOM-USD price feed',
-  IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'stAtom'],
+  IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'stATOM'],
   OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
 };
 

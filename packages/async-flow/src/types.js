@@ -1,11 +1,12 @@
+// Ensure this is a module.
+export {};
+
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Passable} from '@endo/pass-style'
- * @import {Zone} from '@agoric/base-zone'
  * @import {Vow, VowTools} from '@agoric/vow'
  * @import {LogStore} from './log-store.js'
  * @import {Bijection} from './bijection.js'
- * @import {ReplayMembrane} from './replay-membrane.js'
+ * @import {EndowmentTools} from './endowments.js'
  */
 
 /**
@@ -18,7 +19,13 @@
  */
 
 /**
- * @template {Passable} [T=Passable]
+ * `T` defaults to `any`, not `Passable`, because unwrapped guests include
+ * non-passables, like unwrapped functions and unwrapped state records.
+ * (Unwrapped functions could be made into Remotables,
+ * but since they still could not be made durable, in this context
+ * it'd be pointless.)
+ *
+ * @template {any} [T=any]
  * @typedef {T} Guest
  */
 
@@ -48,6 +55,7 @@
  * @property {VowTools} [vowTools]
  * @property {() => LogStore} [makeLogStore]
  * @property {() => Bijection} [makeBijection]
+ * @property {EndowmentTools} [endowmentTools]
  */
 
 /**
@@ -95,6 +103,18 @@
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
  *     callIndex: number
+ *   ] | [
+ *     op: 'checkSendOnly',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'checkSend',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
  *   ]} LogEntry
  */
 
@@ -114,6 +134,12 @@
  *     reason: Host,
  *   ] | [
  *     op: 'doCall',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'doSendOnly',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],
@@ -142,6 +168,12 @@
  *     reason: Host,
  *   ] | [
  *     op: 'checkCall',
+ *     target: Host,
+ *     optVerb: PropertyKey|undefined,
+ *     args: Host[],
+ *     callIndex: number
+ *   ] | [
+ *     op: 'checkSendOnly',
  *     target: Host,
  *     optVerb: PropertyKey|undefined,
  *     args: Host[],

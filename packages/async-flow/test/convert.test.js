@@ -19,6 +19,11 @@ import { makeConvertKit } from '../src/convert.js';
 import { prepareBijection } from '../src/bijection.js';
 
 /**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
+/**
  * @param {any} t
  * @param {Zone} zone
  * @param {boolean} [showOnConsole]

@@ -16,6 +16,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareBijection } from '../src/bijection.js';
 
 /**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {Ephemera} from './types.js';
+ */
+
+/**
  * @param {any} t
  * @param {Zone} zone
  */
@@ -45,7 +51,7 @@ const testBijection = (t, zone) => {
   t.false(bij.hasGuest(h1));
   t.false(bij.hasHost(g1));
 
-  bij.init(g1, h1);
+  bij.unwrapInit(g1, h1);
 
   t.true(bij.has(g1, h1));
   t.is(toPassableCap(bij.guestToHost(g1)), toPassableCap(h1));
@@ -55,11 +61,11 @@ const testBijection = (t, zone) => {
   t.false(bij.hasGuest(h1));
   t.false(bij.hasHost(g1));
 
-  t.throws(() => bij.init(g1, h2), {
+  t.throws(() => bij.unwrapInit(g1, h2), {
     message:
       'guestToHost key already bound: "[Alleged: g1]" -> "[Alleged: h1]" vs "[Alleged: h2]"',
   });
-  t.throws(() => bij.init(g2, h1), {
+  t.throws(() => bij.unwrapInit(g2, h1), {
     message:
       'hostToGuest key already bound: "[Alleged: h1]" -> "[Alleged: g1]" vs "[Alleged: g2]"',
   });
@@ -68,11 +74,11 @@ const testBijection = (t, zone) => {
       'internal: g->h "[Alleged: g1]" -> "[Alleged: h2]" vs "[Alleged: h1]"',
   });
   t.false(bij.has(g2, h2));
-  bij.init(g2, h2);
+  bij.unwrapInit(g2, h2);
   t.true(bij.has(g2, h2));
 
   t.false(bij.has(g3, h3));
-  bij.init(g3, h3);
+  bij.unwrapInit(g3, h3);
   t.true(bij.has(g3, h3));
   t.false(bij.has(h3, g3));
 };
@@ -111,7 +117,7 @@ test('test heap bijection reset', t => {
   const g1 = Far('g1', {});
 
   t.false(bij.has(g1, h1));
-  bij.init(g1, h1);
+  bij.unwrapInit(g1, h1);
   t.true(bij.has(g1, h1));
   bij.reset();
   t.false(bij.has(g1, h1));

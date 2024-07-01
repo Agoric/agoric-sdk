@@ -6,12 +6,11 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { V } from '@agoric/vow/vat.js';
-import { E } from '@endo/far';
+import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { prepareLocalChainAccountKit } from '../exos/local-chain-account-kit.js';
-import { makeChainHub } from '../utils/chainHub.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -40,12 +39,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     privateArgs.marshaller,
   );
+  const vowTools = prepareVowTools(zone.subZone('vows'));
 
-  const makeLocalChainAccountKit = prepareLocalChainAccountKit(
+  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
+    vowTools,
     makeChainHub(privateArgs.agoricNames),
   );
 
@@ -56,12 +57,16 @@ export const start = async (zcf, privateArgs, baggage) => {
   const bldAmountShape = await E(BLD).getAmountShape();
 
   async function makeLocalAccountKit() {
-    const account = await V(privateArgs.localchain).makeAccount();
-    const address = await V(account).getAddress();
-    // XXX 'address' is implied by 'account'; use an async maker that get the value itself
-    return makeLocalChainAccountKit({
+    const account = await E(privateArgs.localchain).makeAccount();
+    const address = await E(account).getAddress();
+    // FIXME 'address' is implied by 'account'; use an async maker that get the value itself
+    return makeLocalOrchestrationAccountKit({
       account,
-      address,
+      address: harden({
+        address,
+        addressEncoding: 'bech32',
+        chainId: 'local',
+      }),
       storageNode: privateArgs.storageNode,
     });
   }
@@ -86,7 +91,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
-            await V(holder).deposit(In);
+            await E(holder).deposit(In);
             seat.exit();
             return harden({
               publicSubscribers: holder.getPublicTopics(),

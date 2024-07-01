@@ -5,6 +5,7 @@ import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 
 import { Fail } from '@endo/errors';
+const { Vow$ } = NetworkShape;
 
 /**
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
@@ -45,15 +46,17 @@ import { Fail } from '@endo/errors';
  */
 
 export const LocalChainAccountI = M.interface('LocalChainAccount', {
-  getAddress: M.callWhen().returns(M.string()),
-  getBalance: M.callWhen(BrandShape).returns(AmountShape),
+  getAddress: M.callWhen().returns(Vow$(M.string())),
+  getBalance: M.callWhen(BrandShape).returns(Vow$(AmountShape)),
   deposit: M.callWhen(PaymentShape)
     .optional(M.pattern())
-    .returns(NetworkShape.Vow$(AmountShape)),
-  withdraw: M.callWhen(AmountShape).returns(PaymentShape),
-  executeTx: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+    .returns(Vow$(AmountShape)),
+  withdraw: M.callWhen(AmountShape).returns(Vow$(PaymentShape)),
+  executeTx: M.callWhen(M.arrayOf(M.record())).returns(
+    Vow$(M.arrayOf(M.record())),
+  ),
   monitorTransfers: M.callWhen(M.remotable('TransferTap')).returns(
-    M.remotable('TargetRegistration'),
+    Vow$(M.remotable('TargetRegistration')),
   ),
 });
 
@@ -192,9 +195,11 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
 /** @typedef {LocalChainAccountKit['account']} LocalChainAccount */
 
 export const LocalChainI = M.interface('LocalChain', {
-  makeAccount: M.callWhen().returns(M.remotable('LocalChainAccount')),
-  query: M.callWhen(M.record()).returns(M.record()),
-  queryMany: M.callWhen(M.arrayOf(M.record())).returns(M.arrayOf(M.record())),
+  makeAccount: M.callWhen().returns(Vow$(M.remotable('LocalChainAccount'))),
+  query: M.callWhen(M.record()).returns(Vow$(M.record())),
+  queryMany: M.callWhen(M.arrayOf(M.record())).returns(
+    Vow$(M.arrayOf(M.record())),
+  ),
 });
 
 /**

@@ -9,8 +9,11 @@ import {
 } from '@agoric/zoe/src/typeGuards.js';
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
+import { heapVowTools } from '@agoric/vow/vat.js';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
+
+const { when, allVows } = heapVowTools;
 
 /**
  * @import {OfferSpec} from "./offers.js";
@@ -37,7 +40,8 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @param {UserSeat} seat
  */
 const watchForOfferResult = ({ resultWatcher }, seat) => {
-  const p = E(seat).getOfferResult();
+  // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
+  const p = when(E(seat).getOfferResult());
   watchPromise(p, resultWatcher, seat);
   return p;
 };
@@ -67,11 +71,14 @@ const watchForPayout = ({ paymentWatcher }, seat) => {
  * @param {UserSeat} seat
  */
 export const watchOfferOutcomes = (watchers, seat) => {
-  return Promise.all([
-    watchForOfferResult(watchers, seat),
-    watchForNumWants(watchers, seat),
-    watchForPayout(watchers, seat),
-  ]);
+  // NOTE: this enables upgrade of the contract, NOT upgrade of the smart-wallet. See #9308
+  return when(
+    allVows([
+      watchForOfferResult(watchers, seat),
+      watchForNumWants(watchers, seat),
+      watchForPayout(watchers, seat),
+    ]),
+  );
 };
 
 const offerWatcherGuard = harden({

@@ -38,14 +38,14 @@ const makeWatchNextStep =
  * @param {Watcher<unknown, unknown, unknown> | undefined} watcher
  * @param {keyof Required<Watcher>} wcb
  * @param {unknown} value
- * @param {unknown} [watcherContext]
+ * @param {unknown[]} [watcherArgs]
  */
-const settle = (resolver, watcher, wcb, value, watcherContext) => {
+const settle = (resolver, watcher, wcb, value, watcherArgs = []) => {
   try {
     let chainedValue = value;
     const w = watcher && watcher[wcb];
     if (w) {
-      chainedValue = apply(w, watcher, [value, watcherContext]);
+      chainedValue = apply(w, watcher, [value, ...watcherArgs]);
     } else if (wcb === 'onRejected') {
       throw value;
     }
@@ -65,8 +65,23 @@ const settle = (resolver, watcher, wcb, value, watcherContext) => {
  * @param {IsRetryableReason} isRetryableReason
  * @param {ReturnType<typeof makeWatchNextStep>} watchNextStep
  */
-const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
-  zone.exoClass(
+const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
+  // We use an ephemeral WeakSet for the previously seen vows in a watch operation
+  // While watch is durable, it suffices to detect the cycle in a single incarnation
+  /** @type {WeakMap<PromiseWatcher, WeakSet<any>>} */
+  const watcherSeenPayloads = new WeakMap();
+
+  /** @param {PromiseWatcher} watcher */
+  const getSeenPayloads = watcher => {
+    let seenPayloads = watcherSeenPayloads.get(watcher);
+    if (!seenPayloads) {
+      seenPayloads = new WeakSet();
+      watcherSeenPayloads.set(watcher, seenPayloads);
+    }
+    return seenPayloads;
+  };
+
+  return zone.exoClass(
     'PromiseWatcher',
     PromiseWatcherI,
     /**
@@ -75,36 +90,44 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
      * @template [TResult2=never]
      * @param {VowResolver<TResult1 | TResult2>} resolver
      * @param {Watcher<T, TResult1, TResult2>} [watcher]
-     * @param {unknown} [watcherContext]
+     * @param {unknown[]} [watcherArgs]
      */
-    (resolver, watcher, watcherContext) => {
+    (resolver, watcher, watcherArgs) => {
       const state = {
         vow: /** @type {unknown} */ (undefined),
         priorRetryValue: /** @type {any} */ (undefined),
         resolver,
         watcher,
-        watcherContext: harden(watcherContext),
+        watcherArgs: harden(watcherArgs),
       };
       return /** @type {Partial<typeof state>} */ (state);
     },
     {
       /** @type {Required<PromiseWatcher>['onFulfilled']} */
       onFulfilled(value) {
-        const { watcher, watcherContext, resolver } = this.state;
-        if (getVowPayload(value)) {
+        const { watcher, watcherArgs, resolver } = this.state;
+        const payload = getVowPayload(value);
+        if (payload) {
+          const seenPayloads = getSeenPayloads(this.self);
+          // TODO: rely on endowed helper to get storable cap from payload
+          if (seenPayloads.has(payload.vowV0)) {
+            return this.self.onRejected(Error('Vow resolution cycle detected'));
+          }
+          seenPayloads.add(payload.vowV0);
           // We've been shortened, so reflect our state accordingly, and go again.
           this.state.vow = value;
           watchNextStep(value, this.self);
           return;
         }
+        watcherSeenPayloads.delete(this.self);
         this.state.priorRetryValue = undefined;
         this.state.watcher = undefined;
         this.state.resolver = undefined;
-        settle(resolver, watcher, 'onFulfilled', value, watcherContext);
+        settle(resolver, watcher, 'onFulfilled', value, watcherArgs);
       },
       /** @type {Required<PromiseWatcher>['onRejected']} */
       onRejected(reason) {
-        const { vow, watcher, watcherContext, resolver, priorRetryValue } =
+        const { vow, watcher, watcherArgs, resolver, priorRetryValue } =
           this.state;
         if (vow) {
           const retryValue = isRetryableReason(reason, priorRetryValue);
@@ -115,13 +138,15 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) =>
             return;
           }
         }
+        watcherSeenPayloads.delete(this.self);
         this.state.priorRetryValue = undefined;
         this.state.resolver = undefined;
         this.state.watcher = undefined;
-        settle(resolver, watcher, 'onRejected', reason, watcherContext);
+        settle(resolver, watcher, 'onRejected', reason, watcherArgs);
       },
     },
   );
+};
 
 /**
  * @param {Zone} zone
@@ -144,12 +169,12 @@ export const prepareWatch = (
    * @template [T=any]
    * @template [TResult1=T]
    * @template [TResult2=never]
-   * @template [C=any] watcher context
+   * @template {any[]} [C=any[]] watcher args
    * @param {ERef<T | Vow<T>>} specimenP
-   * @param {Watcher<T, TResult1, TResult2>} [watcher]
-   * @param {C} [watcherContext]
+   * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
+   * @param {C} watcherArgs
    */
-  const watch = (specimenP, watcher, watcherContext) => {
+  const watch = (specimenP, watcher, ...watcherArgs) => {
     /** @typedef {Exclude<TResult1, void> | Exclude<TResult2, void>} Voidless */
     /** @typedef {Voidless extends never ? TResult1 : Voidless} Narrowest */
     /** @type {VowKit<Narrowest>} */
@@ -157,11 +182,7 @@ export const prepareWatch = (
 
     // Create a promise watcher to track vows, retrying upon rejection as
     // controlled by `isRetryableReason`.
-    const promiseWatcher = makePromiseWatcher(
-      resolver,
-      watcher,
-      watcherContext,
-    );
+    const promiseWatcher = makePromiseWatcher(resolver, watcher, watcherArgs);
 
     // Coerce the specimen to a promise, and start the watcher cycle.
     zone.watchPromise(basicE.resolve(specimenP), promiseWatcher);

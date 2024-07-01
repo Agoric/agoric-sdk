@@ -17,6 +17,11 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareAsyncFlowTools } from '../src/async-flow.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ */
+
 const nonPassableFunc = () => 'non-passable-function';
 harden(nonPassableFunc);
 const guestCreatedPromise = harden(Promise.resolve('guest-created'));
@@ -136,7 +141,7 @@ const testBadHostReplay1 = async (t, zone) => {
         },
         {
           message:
-            'converting badMethod result: Remotables must be explicitly declared: "[Function nonPassableFunc]"',
+            'Remotables must be explicitly declared: "[Function nonPassableFunc]"',
         },
       );
       t.log('  badHost replay1 guest error caused by host error', gErr);
@@ -172,7 +177,7 @@ const testBadHostReplay1 = async (t, zone) => {
       'doThrow',
       2,
       Error(
-        'converting badMethod result: Remotables must be explicitly declared: "[Function nonPassableFunc]"',
+        'Remotables must be explicitly declared: "[Function nonPassableFunc]"',
       ),
     ],
     ['checkCall', badHost, 'badMethod', [], 4],

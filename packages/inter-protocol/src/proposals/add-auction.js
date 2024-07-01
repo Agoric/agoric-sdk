@@ -129,7 +129,6 @@ export const addAuction = async ({
   );
 
   newAuctioneerKit.resolve(
-    // @ts-expect-error XXX governance types
     harden({
       label: 'auctioneer',
       creatorFacet: governedCreatorFacet,

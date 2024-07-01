@@ -251,6 +251,7 @@ export default function buildKernel(
    * @param {SwingSetCapData} info
    */
   async function terminateVat(vatID, shouldReject, info) {
+    console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
@@ -818,6 +819,10 @@ export default function buildKernel(
       oldIncarnation,
     );
     const disconnectionCapData = kser(disconnectionObject);
+
+    console.log(
+      `attempting to upgrade vat ${vatID} from incarnation ${oldIncarnation} to source ${bundleID}`,
+    );
 
     /**
      * Terminate the vat and translate internal-delivery results into

@@ -17,6 +17,7 @@ import { Fail, X } from '@endo/errors';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
+import { makeScopedBridge } from '../bridge.js';
 
 /** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
 
@@ -49,10 +50,14 @@ const bootMsgEx = {
  */
 
 /** @typedef {MapStore<string, CreateVatResults>} VatStore */
-/** @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat */
 
 /**
- * @param {BootstrapPowers & {}} powers
+ * @param {BootstrapPowers & {
+ *   produce: {
+ *     loadVat: Producer<VatLoader>;
+ *     loadCriticalVat: Producer<VatLoader>;
+ *   };
+ * }} powers
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
  */
@@ -65,7 +70,6 @@ export const makeVatsFromBundles = async ({
   // NOTE: we rely on multiple createVatAdminService calls
   // to return cooperating services.
   const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-  // @ts-expect-error XXX
   vatAdminSvc.resolve(svc);
 
   const durableStore = await vatStore;
@@ -80,7 +84,6 @@ export const makeVatsFromBundles = async ({
         if (bundleName) {
           console.info(`createVatByName(${bundleName})`);
           /** @type {Promise<CreateVatResults>} */
-          // @ts-expect-error XXX
           const vatInfo = E(svc).createVatByName(bundleName, {
             ...defaultVatCreationOptions,
             name: vatName,
@@ -91,7 +94,6 @@ export const makeVatsFromBundles = async ({
         assert(bundleID);
         const bcap = await E(svc).getBundleCap(bundleID);
         /** @type {Promise<CreateVatResults>} */
-        // @ts-expect-error XXX
         const vatInfo = E(svc).createVat(bcap, {
           ...defaultVatCreationOptions,
           name: vatName,
@@ -328,9 +330,7 @@ export const produceStartGovernedUpgradable = async ({
 harden(produceStartGovernedUpgradable);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
@@ -359,9 +359,7 @@ export const buildZoe = async ({
 harden(buildZoe);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
@@ -417,9 +415,7 @@ harden(produceBoard);
 
 /**
  * @deprecated use produceBoard
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const makeBoard = async ({
   consume: { loadCriticalVat, client },
@@ -606,9 +602,7 @@ harden(mintInitialSupply);
 /**
  * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
  *
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const addBankAssets = async ({
   consume: {
@@ -655,10 +649,8 @@ export const addBankAssets = async ({
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
 
   const bridgeManager = await bridgeManagerP;
-  /** @type {import('../types.js').ScopedBridgeManager<'bank'> | undefined} */
-  // @ts-expect-error XXX EProxy
   const bankBridgeManager =
-    bridgeManager && E(bridgeManager).register(BridgeId.BANK);
+    bridgeManager && makeScopedBridge(bridgeManager, BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bankBridgeManager,
     assetAdmin,

@@ -114,7 +114,7 @@ export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
 export type BridgeManager = {
   register: <BridgeId extends BridgeIdValue>(
     bridgeId: BridgeId,
-    handler?: Remote<BridgeHandler | undefined>,
+    handler?: Remote<BridgeHandler>,
   ) => ScopedBridgeManager<BridgeId>;
 };
 

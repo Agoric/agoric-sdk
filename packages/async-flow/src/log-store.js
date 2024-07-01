@@ -5,7 +5,10 @@ import { LogEntryShape } from './type-guards.js';
 import { makeEphemera } from './ephemera.js';
 
 /**
- * @import {MapStore} from '@agoric/store'
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {MapStore} from '@agoric/store';
+ * @import {Ephemera, LogEntry} from './types.js';
  */
 
 const LogStoreI = M.interface('LogStore', {
@@ -138,6 +141,7 @@ export const prepareLogStore = zone => {
           Fail`internal: index confusion ${q(eph.index)} vs ${q(
             mapStore.getSize(),
           )}`;
+        // console.log('LOG ENTRY ', eph.index - 1, entry);
         return eph.index;
       },
       dump() {

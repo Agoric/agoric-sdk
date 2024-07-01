@@ -2,7 +2,7 @@
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
-import { V as E } from '@agoric/vow/vat.js';
+import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -10,7 +10,7 @@ import {
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
-import { prepareCosmosOrchestrationAccount } from '../exos/cosmosOrchestrationAccount.js';
+import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 
 const trace = makeTracer('StakeAtom');
 /**
@@ -76,9 +76,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
+  const vowTools = prepareVowTools(zone.subZone('vows'));
+
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
     makeRecorderKit,
+    vowTools,
     zcf,
   );
 

@@ -363,7 +363,6 @@ export const makeVatSpace = (
     {
       get: (_target, name, _rx) => {
         assert.typeof(name, 'string');
-        // @ts-expect-error XXX
         return provideAsync(name, createVatByName).then(vat => {
           if (!durableStore.has(name)) {
             durableStore.init(name, vat);

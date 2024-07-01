@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@endo/errors';
 import { registerChainNamespace } from '../chain-info.js';
-import { CHAIN_KEY, CONNECTIONS_KEY } from '../utils/chainHub.js';
+import { CHAIN_KEY, CONNECTIONS_KEY } from '../exos/chain-hub.js';
 
 const trace = makeTracer('CoreEvalOrchestration', true);
 
@@ -16,7 +16,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     loadCriticalVat: VatLoader<any>;
  *     portAllocator: PortAllocator;
  *   };
  *   produce: {
@@ -26,10 +25,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
  *   };
  * }} powers
  * @param {{ options: { orchestrationRef: VatSourceRef } }} options
- *
- * @typedef {{
- *   orchestration: ERef<OrchestrationVat>;
- * }} OrchestrationVats
  */
 export const setupOrchestrationVat = async (
   {
@@ -43,7 +38,6 @@ export const setupOrchestrationVat = async (
   options,
 ) => {
   const { orchestrationRef } = options.options;
-  /** @type {OrchestrationVats} */
   const vats = {
     orchestration: E(loadCriticalVat)('orchestration', orchestrationRef),
   };

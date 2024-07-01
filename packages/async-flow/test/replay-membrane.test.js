@@ -18,6 +18,14 @@ import { prepareLogStore } from '../src/log-store.js';
 import { prepareBijection } from '../src/bijection.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
+/**
+ * @import {PromiseKit} from '@endo/promise-kit'
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {MapStore} from '@agoric/store';
+ * @import {LogStore} from '../src/log-store.js';
+ * @import {Bijection} from '../src/bijection.js';
+ */
+
 const watchWake = _vowish => {};
 const panic = problem => Fail`panic over ${problem}`;
 
@@ -61,9 +69,15 @@ const testFirstPlay = async (t, zone, showOnConsole = false) => {
   const { vow: v2, resolver: r2 } = makeVowKit();
 
   const log = zone.makeOnce('log', () => makeLogStore());
-  const bij = zone.makeOnce('bij', makeBijection);
+  const bijection = zone.makeOnce('bij', makeBijection);
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const g1 = mem.hostToGuest(v1);
   t.true(isPromise(g1));
@@ -71,9 +85,9 @@ const testFirstPlay = async (t, zone, showOnConsole = false) => {
   t.is(await g1, 'x');
 
   const hOrch7 = makeOrchestra(7, v2, r2);
-  t.false(bij.hasHost(hOrch7));
+  t.false(bijection.hasHost(hOrch7));
   const gOrch7 = mem.hostToGuest(hOrch7);
-  t.true(bij.has(gOrch7, hOrch7));
+  t.true(bijection.has(gOrch7, hOrch7));
 
   const prod = gOrch7.scale(3);
   t.is(prod, 21);
@@ -126,7 +140,7 @@ const testBadReplay = async (t, zone) => {
   const log = /** @type {LogStore} */ (
     zone.makeOnce('log', () => Fail`need log`)
   );
-  const bij = /** @type {Bijection} */ (
+  const bijection = /** @type {Bijection} */ (
     zone.makeOnce('bij', () => Fail`need bij`)
   );
 
@@ -135,7 +149,7 @@ const testBadReplay = async (t, zone) => {
   const hOrch7 = dump[1][1];
   const hErr = dump[4][2];
 
-  t.false(bij.hasHost(hOrch7));
+  t.false(bijection.hasHost(hOrch7));
 
   t.deepEqual(dump, [
     ['doFulfill', v1, 'x'],
@@ -145,13 +159,19 @@ const testBadReplay = async (t, zone) => {
     ['doThrow', 3, hErr],
   ]);
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const g1 = mem.hostToGuest(v1);
   mem.wake();
   t.is(await g1, 'x');
   const gOrch7 = mem.hostToGuest(hOrch7);
-  t.true(bij.has(gOrch7, hOrch7));
+  t.true(bijection.has(gOrch7, hOrch7));
 
   // failure of guest to reproduce behavior from previous incarnations
   t.throws(() => gOrch7.scale(4), {
@@ -172,7 +192,7 @@ const testGoodReplay = async (t, zone) => {
   const log = /** @type {LogStore} */ (
     zone.makeOnce('log', () => Fail`need log`)
   );
-  const bij = /** @type {Bijection} */ (
+  const bijection = /** @type {Bijection} */ (
     zone.makeOnce('bij', () => Fail`need bij`)
   );
 
@@ -181,7 +201,7 @@ const testGoodReplay = async (t, zone) => {
   const hOrch7 = dump[1][1];
   const hErr = dump[4][2];
 
-  t.false(bij.hasHost(hOrch7));
+  t.false(bijection.hasHost(hOrch7));
 
   t.deepEqual(dump, [
     ['doFulfill', v1, 'x'],
@@ -193,13 +213,19 @@ const testGoodReplay = async (t, zone) => {
 
   const oldLogLen = dump.length;
 
-  const mem = makeReplayMembrane(log, bij, vowTools, watchWake, panic);
+  const mem = makeReplayMembrane({
+    log,
+    bijection,
+    vowTools,
+    watchWake,
+    panic,
+  });
 
   const g1 = mem.hostToGuest(v1);
   mem.wake();
   t.is(await g1, 'x');
   const gOrch7 = mem.hostToGuest(hOrch7);
-  t.true(bij.has(gOrch7, hOrch7));
+  t.true(bijection.has(gOrch7, hOrch7));
 
   // replay
   const prodA = gOrch7.scale(3);

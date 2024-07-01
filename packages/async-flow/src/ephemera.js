@@ -1,4 +1,8 @@
 /**
+ * @import {Ephemera} from './types.js';
+ */
+
+/**
  * Used by a possibly-durable exo to store per-instance ephemeral state.
  * Each ephemera is created at the exo class prepare level, and then
  * used from within the exo class methods to get state `eph.for(self)`.

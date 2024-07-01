@@ -14,6 +14,7 @@
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
@@ -32,7 +33,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@endo/errors": "^1.2.2",
+    "@agoric/async-flow": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
@@ -46,6 +47,7 @@
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
     "@endo/base64": "^1.0.5",
+    "@endo/errors": "^1.2.2",
     "@endo/far": "^1.1.2",
     "@endo/marshal": "^1.5.0",
     "@endo/patterns": "^1.4.0"
@@ -56,6 +58,7 @@
     "@cosmjs/proto-signing": "^0.32.3",
     "@endo/ses-ava": "^1.2.2",
     "ava": "^5.3.1",
+    "c8": "^9.1.0",
     "prettier": "^3.3.2"
   },
   "ava": {
