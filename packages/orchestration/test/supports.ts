@@ -104,7 +104,7 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
-  const { portAllocator, setupIBCProtocol } = setupFakeNetwork(
+  const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
     { vowTools },
   );
@@ -131,6 +131,7 @@ export const commonSetup = async t => {
       rootZone: rootZone.subZone('contract'),
       storage,
       vowTools,
+      ibcBridge,
     },
     brands: {
       bld: bldSansMint,

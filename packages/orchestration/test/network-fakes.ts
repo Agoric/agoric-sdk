@@ -10,7 +10,7 @@ import type {
   IBCChannelID,
   IBCMethod,
   IBCEvent,
-  ScopedBridgeManager,
+  ScopedBridgeMangerMethods,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -18,13 +18,15 @@ import {
 } from '@agoric/vats/src/ibc.js';
 import { BridgeId } from '@agoric/internal';
 import { E, Far } from '@endo/far';
-import { defaultMockAck } from './ibc-mocks.js';
+import type { Guarded } from '@endo/exo';
+import { defaultMockAckMap, protoMsgMocks } from './ibc-mocks.js';
 
 /**
- * Mimic IBC Channel Version Negotation
+ * Mimic IBC Channel version negotation
  *
- * As part of the IBC Channel Initialization, the version field is negotiated
- * with the host. Version fields are strings and can also be a string of JSON.
+ * As part of the IBC Channel initialization, the version field is negotiated
+ * with the host. `version` is a String or JSON string as determined by the IBC
+ * Application protol.
  *
  * @param version requested version string
  * @param params mock parameters to add to version string
@@ -51,23 +53,24 @@ export const ibcBridgeMocks: {
   [T in ImplementedIBCEvents]: T extends 'channelOpenAck'
     ? (
         obj: IBCMethod<'startChannelOpenInit'>,
-        sequence: number,
+        opts: { bech32Prefix: string; sequence: number },
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
       ? (
           obj: IBCMethod<'sendPacket'>,
-          sequence: number,
-          acknowledgement: string,
+          opts: { sequence: number; acknowledgement: string },
         ) => IBCEvent<'acknowledgementPacket'>
       : never;
 } = {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
-    sequence: number,
+    { bech32Prefix, sequence }: { bech32Prefix: string; sequence: number },
   ): IBCEvent<'channelOpenAck'> => {
     const mocklID = Number(obj.packet.source_port.split('-').at(-1));
     const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
     const mockRemoteChannelID: IBCChannelID = `channel-${mocklID}`;
+    const mockChainAddress =
+      sequence > 0 ? `${bech32Prefix}1test${sequence}` : `${bech32Prefix}1test`;
 
     return {
       type: 'IBC_EVENT',
@@ -81,7 +84,7 @@ export const ibcBridgeMocks: {
         channel_id: mockRemoteChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
-        address: sequence === 0 ? 'cosmos1test' : `cosmos1test${sequence}`,
+        address: mockChainAddress,
       }),
       connectionHops: obj.hops,
       order: obj.order,
@@ -91,9 +94,9 @@ export const ibcBridgeMocks: {
 
   acknowledgementPacket: (
     obj: IBCMethod<'sendPacket'>,
-    sequence: number,
-    acknowledgement: string,
+    opts: { sequence: number; acknowledgement: string },
   ): IBCEvent<'acknowledgementPacket'> => {
+    const { sequence, acknowledgement } = opts;
     return {
       acknowledgement,
       blockHeight: 289,
@@ -115,13 +118,43 @@ export const ibcBridgeMocks: {
   },
 };
 
-export const makeFakeIBCBridge = (zone: Zone): ScopedBridgeManager<'dibc'> => {
+/**
+ * Make a fake IBC Bridge, extended from the dibc ScopedBridgeManager.
+ *
+ * Has extra `setMockAck` and `setAddressPrefix` met
+ *
+ * @param zone
+ */
+export const makeFakeIBCBridge = (
+  zone: Zone,
+): Guarded<
+  ScopedBridgeMangerMethods<'dibc'> & {
+    setMockAck: (mockAckMap: Record<string, string>) => void;
+    setAddressPrefix: (addressPrefix: string) => void;
+  }
+> => {
   let bridgeHandler: any;
-  // TODO teach this about IBCConnections and store sequence on a
-  // per-connection basis
-  // Intended to mock a sequence
+  /**
+   * Intended to mock an individual account's sequence, but is global for all
+   * accounts.
+   * XXX teach this about IBCConnections and store sequence on a
+   * per-connection basis.
+   * @type {number}
+   */
   let ibcSequenceNonce = 0;
+  /**
+   * The number of channels created. Currently used as a proxy to increment
+   * fake account addresses.
+   * @type {nubmer}
+   */
   let channelCount = 0;
+  let bech32Prefix = 'cosmos';
+
+  /**
+   * Packet byte string map of requests to responses
+   * @type {Record<string, string>}
+   */
+  let mockAckMap = defaultMockAckMap;
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
@@ -130,16 +163,19 @@ export const makeFakeIBCBridge = (zone: Zone): ScopedBridgeManager<'dibc'> => {
         switch (obj.method) {
           case 'startChannelOpenInit':
             bridgeHandler?.fromBridge(
-              ibcBridgeMocks.channelOpenAck(obj, channelCount),
+              ibcBridgeMocks.channelOpenAck(obj, {
+                bech32Prefix,
+                sequence: channelCount,
+              }),
             );
             channelCount += 1;
             return undefined;
           case 'sendPacket': {
-            const ackEvent = ibcBridgeMocks.acknowledgementPacket(
-              obj,
-              ibcSequenceNonce,
-              defaultMockAck(obj.packet.data),
-            );
+            const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
+              sequence: ibcSequenceNonce,
+              acknowledgement:
+                mockAckMap?.[obj.packet.data] || protoMsgMocks.error.ack,
+            });
             ibcSequenceNonce += 1;
             bridgeHandler?.fromBridge(ackEvent);
             return ackEvent.packet;
@@ -161,6 +197,23 @@ export const makeFakeIBCBridge = (zone: Zone): ScopedBridgeManager<'dibc'> => {
     setHandler: handler => {
       if (!bridgeHandler) throw Error('must init first');
       bridgeHandler = handler;
+    },
+    /**
+     * Set a map of requests to responses to simulate different scenarios. Defaults to `defaultMockAckMap`.
+     * See `@agoric/orchestration/tools/ibc-mocks.js` for helpers to build this map.
+     *
+     * @param ackMap
+     */
+    setMockAck: (ackMap: typeof mockAckMap) => {
+      mockAckMap = ackMap;
+    },
+    /**
+     * Set a new bech32 prefix for the mocked ICA channel. Defaults to `cosmos`.
+     *
+     * @param newPrefix
+     */
+    setAddressPrefix: (newPrefix: typeof bech32Prefix) => {
+      bech32Prefix = newPrefix;
     },
   });
 };

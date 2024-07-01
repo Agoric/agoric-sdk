@@ -54,13 +54,7 @@ export const protoMsgMocks = {
   },
 };
 
-export function defaultMockAck(packetData: string): string {
-  switch (packetData) {
-    case protoMsgMocks.delegate.msg:
-      return protoMsgMocks.delegate.ack;
-    case protoMsgMocks.queryBalance.msg:
-      return protoMsgMocks.queryBalance.ack;
-    default:
-      return protoMsgMocks.error.ack;
-  }
-}
+export const defaultMockAckMap: Record<string, string> = {
+  [protoMsgMocks.delegate.msg]: protoMsgMocks.delegate.ack,
+  [protoMsgMocks.queryBalance.msg]: protoMsgMocks.queryBalance.ack,
+};
