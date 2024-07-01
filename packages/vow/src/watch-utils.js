@@ -88,24 +88,22 @@ export const prepareWatchUtils = (
           const kit = makeVowKit();
 
           // Preserve the order of the vow results.
-          let index = 0;
-          for (const vow of vows) {
-            watch(vow, this.facets.watcher, {
+          for (let index = 0; index < vows.length; index += 1) {
+            watch(vows[index], this.facets.watcher, {
               id,
               index,
               numResults: vows.length,
             });
-            index += 1;
           }
 
-          if (index > 0) {
+          if (vows.length > 0) {
             // Save the state until rejection or all fulfilled.
             this.state.nextId += 1n;
             idToVowState.init(
               id,
               harden({
                 resolver: kit.resolver,
-                remaining: index,
+                remaining: vows.length,
                 resultsMap: detached.mapStore('resultsMap'),
               }),
             );
