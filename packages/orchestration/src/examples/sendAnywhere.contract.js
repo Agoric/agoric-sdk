@@ -5,9 +5,9 @@ import { E } from '@endo/far';
 import { heapVowE } from '@agoric/vow/vat.js';
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
+import { Fail } from '@agoric/assert';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
-import { makeResumableAgoricNamesHack } from '../exos/agoric-names-tools.js';
 
 const { entries } = Object;
 
@@ -39,15 +39,16 @@ const { entries } = Object;
  * @param {ZCF} ctx.zcf
  * @param {any} ctx.agoricNamesTools TODO Give this a better type
  * @param {{ account: OrchestrationAccount<any> | undefined }} ctx.contractState
+ * @param {any} ctx.withdrawFromSeat
+ * @param {any} ctx.findBrandInVBank
  * @param {ZCFSeat} seat
  * @param {object} offerArgs
  * @param {string} offerArgs.chainName
  * @param {string} offerArgs.destAddr
- * @param {any} ctx.withdrawFromSeat
  */
 const sendItFn = async (
   orch,
-  { zcf, agoricNamesTools, contractState, withdrawFromSeat },
+  { zcf, contractState, withdrawFromSeat, findBrandInVBank },
   seat,
   offerArgs,
 ) => {
@@ -55,7 +56,7 @@ const sendItFn = async (
   const { chainName, destAddr } = offerArgs;
   const { give } = seat.getProposal();
   const [[kw, amt]] = entries(give);
-  const { denom } = await agoricNamesTools.findBrandInVBank(amt.brand);
+  const { denom } = await findBrandInVBank(amt.brand);
   const chain = await orch.getChain(chainName);
 
   if (!contractState.account) {
@@ -103,10 +104,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs,
     privateArgs.marshaller,
   );
-  const agoricNamesTools = makeResumableAgoricNamesHack(zone, {
-    agoricNames: privateArgs.agoricNames,
-    vowTools,
-  });
 
   const contractState = makeStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
@@ -116,10 +113,26 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const withdrawFromSeat = vowTools.retriable('withdrawFromSeat', wFS);
 
+  const findBrandInVBank = vowTools.retriable(
+    'findBrandInVBank',
+    async brand => {
+      const agoricNames = privateArgs.agoricNames;
+      const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
+      const it = assets.find(a => a.brand === brand);
+      it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
+      return it;
+    },
+  );
+
   /** @type {OfferHandler} */
   const sendIt = orchestrate(
     'sendIt',
-    { zcf, agoricNamesTools, contractState, withdrawFromSeat },
+    {
+      zcf,
+      contractState,
+      withdrawFromSeat,
+      findBrandInVBank,
+    },
     sendItFn,
   );
 
