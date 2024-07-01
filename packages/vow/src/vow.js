@@ -5,9 +5,9 @@ import { makeTagged } from '@endo/pass-style';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Zone} from '@agoric/base-zone'
- * @import {VowResolver, VowKit} from './types.js'
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {VowResolver, VowKit} from './types.js';
  */
 
 const sink = () => {};
@@ -80,11 +80,18 @@ export const prepareVowKit = zone => {
          */
         async shorten() {
           const { stepStatus, value } = this.state;
+          const { resolver } = this.facets;
+          const ephemera = resolverToEphemera.get(resolver);
+
           switch (stepStatus) {
-            case 'fulfilled':
+            case 'fulfilled': {
+              if (ephemera) return ephemera.promise;
               return value;
-            case 'rejected':
+            }
+            case 'rejected': {
+              if (ephemera) return ephemera.promise;
               throw value;
+            }
             case null:
             case 'pending':
               return provideCurrentKit(this.facets.resolver).promise;
@@ -129,14 +136,20 @@ export const prepareVowKit = zone => {
       },
       watchNextStep: {
         onFulfilled(value) {
-          const { resolver } = this.facets;
+          const { resolver, watchNextStep } = this.facets;
           const { resolve } = getPromiseKitForResolution(resolver);
           harden(value);
           if (resolve) {
             resolve(value);
           }
           this.state.stepStatus = 'fulfilled';
-          this.state.value = value;
+          if (zone.isStorable(value)) {
+            this.state.value = value;
+          } else {
+            watchNextStep.onRejected(
+              assert.error(`Vow fulfillment value is not storable: ${value}`),
+            );
+          }
         },
         onRejected(reason) {
           const { resolver } = this.facets;
@@ -146,7 +159,13 @@ export const prepareVowKit = zone => {
             reject(reason);
           }
           this.state.stepStatus = 'rejected';
-          this.state.value = reason;
+          if (zone.isStorable(reason)) {
+            this.state.value = reason;
+          } else {
+            this.state.value = assert.error(
+              `Vow rejection reason is not storable: ${reason}`,
+            );
+          }
         },
       },
     },

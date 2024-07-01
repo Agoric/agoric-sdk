@@ -6,8 +6,10 @@ import { prepareWatchUtils } from './watch-utils.js';
 import { makeAsVow } from './vow-utils.js';
 import { makeVowE } from './vow-e.js';
 
-/** @import {Zone} from '@agoric/base-zone' */
-/** @import {IsRetryableReason} from './types.js' */
+/**
+ * @import {Zone} from '@agoric/base-zone'
+ * @import {IsRetryableReason} from './types.js'
+ */
 
 /**
  * @param {Zone} zone
