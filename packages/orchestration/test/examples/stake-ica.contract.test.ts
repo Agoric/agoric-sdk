@@ -47,11 +47,7 @@ const startContract = async ({
 };
 
 test('makeAccount, getAddress, getBalances, getBalance', async t => {
-  const {
-    bootstrap,
-    brands: { ist },
-    utils,
-  } = await commonSetup(t);
+  const { bootstrap } = await commonSetup(t);
   const { publicFacet } = await startContract(bootstrap);
 
   t.log('make an ICA account');
@@ -68,6 +64,12 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   await t.throwsAsync(E(account).getBalance('uatom'), {
     message: 'Queries not available for chain "cosmoshub-4"',
   });
+
+  const accountP = E(publicFacet).makeAccount();
+  const { address: address2 } = await E(accountP).getAddress();
+  t.regex(address2, /cosmos1/);
+  t.not(chainAddress.address, address2, 'account addresses are unique');
+  t.snapshot(bootstrap.storage.data.entries(), 'accounts in vstorage');
 });
 
 test('makeAccountInvitationMaker', async t => {
@@ -96,9 +98,9 @@ test('makeAccountInvitationMaker', async t => {
     value: '',
   });
 
-  const storagePath = 'mockChainStorageRoot.stakeAtom.accounts.cosmos1test';
-  const vstorageEntry = bootstrap.storage.data.get(storagePath);
+  const vstorageEntry = bootstrap.storage.data.get(
+    'mockChainStorageRoot.stakeAtom.accounts.cosmos1test',
+  );
   t.truthy(vstorageEntry, 'vstorage account entry created');
-  t.log(storagePath, vstorageEntry);
   t.is(bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)), '');
 });

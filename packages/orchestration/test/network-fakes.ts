@@ -49,7 +49,10 @@ type ImplementedIBCEvents = 'channelOpenAck' | 'acknowledgementPacket';
 
 export const ibcBridgeMocks: {
   [T in ImplementedIBCEvents]: T extends 'channelOpenAck'
-    ? (obj: IBCMethod<'startChannelOpenInit'>) => IBCEvent<'channelOpenAck'>
+    ? (
+        obj: IBCMethod<'startChannelOpenInit'>,
+        sequence: number,
+      ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
       ? (
           obj: IBCMethod<'sendPacket'>,
@@ -60,6 +63,7 @@ export const ibcBridgeMocks: {
 } = {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
+    sequence: number,
   ): IBCEvent<'channelOpenAck'> => {
     const mocklID = Number(obj.packet.source_port.split('-').at(-1));
     const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
@@ -77,8 +81,7 @@ export const ibcBridgeMocks: {
         channel_id: mockRemoteChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
-        // XXX consider making this dynamic / unique
-        address: 'cosmos1test',
+        address: sequence === 0 ? 'cosmos1test' : `cosmos1test${sequence}`,
       }),
       connectionHops: obj.hops,
       order: obj.order,
@@ -116,7 +119,9 @@ export const makeFakeIBCBridge = (zone: Zone): ScopedBridgeManager<'dibc'> => {
   let bridgeHandler: any;
   // TODO teach this about IBCConnections and store sequence on a
   // per-connection basis
+  // Intended to mock a sequence
   let ibcSequenceNonce = 0;
+  let channelCount = 0;
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
@@ -124,15 +129,18 @@ export const makeFakeIBCBridge = (zone: Zone): ScopedBridgeManager<'dibc'> => {
       if (obj.type === 'IBC_METHOD') {
         switch (obj.method) {
           case 'startChannelOpenInit':
-            bridgeHandler?.fromBridge(ibcBridgeMocks.channelOpenAck(obj));
+            bridgeHandler?.fromBridge(
+              ibcBridgeMocks.channelOpenAck(obj, channelCount),
+            );
+            channelCount += 1;
             return undefined;
           case 'sendPacket': {
-            ibcSequenceNonce += 1;
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(
               obj,
               ibcSequenceNonce,
               defaultMockAck(obj.packet.data),
             );
+            ibcSequenceNonce += 1;
             bridgeHandler?.fromBridge(ackEvent);
             return ackEvent.packet;
           }
