@@ -38,8 +38,7 @@ const styles = {
  * }} GraphNode
  */
 function* fmtGraph(nodes, neighbors) {
-  // TODO Why is this distinct from `q`?
-  const q2 = txt => JSON.stringify(txt.replace(/\./g, '_'));
+  const quote = txt => JSON.stringify(txt.replace(/\./g, '_'));
   yield 'digraph G {\n';
   yield 'rankdir = LR;\n';
   const clusters = new Set(
@@ -53,7 +52,7 @@ function* fmtGraph(nodes, neighbors) {
     }
     for (const { id, cluster, label, style } of nodes) {
       if (subgraph && cluster !== subgraph) continue;
-      yield `${q2(id)} [label=${q2(label)}${style ? `, ${style}` : ''}];\n`;
+      yield `${quote(id)} [label=${quote(label)}${style ? `, ${style}` : ''}];\n`;
     }
     if (subgraph) {
       yield `}\n`;
@@ -61,7 +60,7 @@ function* fmtGraph(nodes, neighbors) {
   }
   for (const [src, arcs] of neighbors.entries()) {
     for (const { id, style } of arcs) {
-      yield `${q2(src)} -> ${q2(id)} [${style}]\n`;
+      yield `${quote(src)} -> ${quote(id)} [${style}]\n`;
     }
   }
   yield '}\n';
