@@ -156,7 +156,7 @@ Install supported versions of Go, Node.js, and a compiler such as gcc or clang a
 cd agoric-sdk
 git fetch --all
 git checkout $TAG
-git clean -xdf
+git clean -xdf && git submodule foreach --recursive git clean -xdf
 yarn install
 yarn build
 (cd packages/cosmic-swingset && make)
