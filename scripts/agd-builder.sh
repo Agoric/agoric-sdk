@@ -219,20 +219,11 @@ $do_not_build || (
       echo "At least $src is newer than gyp bindings"
       (cd "$GOLANG_DIR" && lazy_yarn build:gyp)
     }
+
+    # check the built xsnap version against the package version it should be using
+    (cd "${thisdir}/../packages/xsnap" && npm run -s check-version) || exit 1
   fi
 )
-
-# the xsnap binary lives in a platform-specific directory
-unameOut="$(uname -s)"
-case "${unameOut}" in
-  Linux*) platform=lin ;;
-  Darwin*) platform=mac ;;
-  *) platform=win ;;
-esac
-
-# check the xsnap version against our baked-in notion of what version we should be using
-xsnap_version=$("${thisdir}/../packages/xsnap/xsnap-native/xsnap/build/bin/${platform}/release/xsnap-worker" -n)
-[[ "${xsnap_version}" == "${XSNAP_VERSION}" ]] || fatal "xsnap version mismatch; expected ${XSNAP_VERSION}, got ${xsnap_version}"
 
 if $only_build; then
   echo "Build complete." 1>&2
