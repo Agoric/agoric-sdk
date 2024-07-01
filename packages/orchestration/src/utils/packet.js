@@ -108,7 +108,7 @@ export function parseQueryPacket(response) {
   return harden(
     responses.map(resp => ({
       ...resp,
-      height: String(resp.index),
+      height: String(resp.height),
       index: String(resp.index),
       key: encodeBase64(resp.key),
       value: encodeBase64(resp.value),
