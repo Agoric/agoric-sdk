@@ -7,7 +7,7 @@ import { makeAsVow } from './vow-utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {IsRetryableReason, AsPromiseFunction} from './types.js';
+ * @import {IsRetryableReason, AsPromiseFunction, Vow, EVow} from './types.js';
  */
 
 /**
@@ -33,9 +33,9 @@ export const prepareVowTools = (zone, powers = {}) => {
   /**
    * Vow-tolerant implementation of Promise.all.
    *
-   * @param {unknown[]} vows
+   * @param {EVow<unknown>[]} maybeVows
    */
-  const allVows = vows => watchUtils.all(vows);
+  const allVows = maybeVows => watchUtils.all(maybeVows);
 
   /** @type {AsPromiseFunction} */
   const asPromise = (specimenP, ...watcherArgs) =>

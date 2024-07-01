@@ -6,7 +6,7 @@ const { apply } = Reflect;
 
 /**
  * @import { PromiseWatcher, Zone } from '@agoric/base-zone';
- * @import { ERef, IsRetryableReason, Vow, VowKit, VowResolver, Watcher } from './types.js';
+ * @import { ERef, EVow, IsRetryableReason, Vow, VowKit, VowResolver, Watcher } from './types.js';
  */
 
 /**
@@ -170,7 +170,7 @@ export const prepareWatch = (
    * @template [TResult1=T]
    * @template [TResult2=never]
    * @template {any[]} [C=any[]] watcher args
-   * @param {ERef<T | Vow<T>>} specimenP
+   * @param {EVow<T>} specimenP
    * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
    * @param {C} watcherArgs
    */
