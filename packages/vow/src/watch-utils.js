@@ -6,12 +6,11 @@ import { PromiseWatcherI } from '@agoric/base-zone';
 const { Fail, bare, details: X } = assert;
 
 /**
- * @import {MapStore} from '@agoric/store/src/types.js'
- * @import { Zone } from '@agoric/base-zone'
- * @import { Watch } from './watch.js'
- * @import { When } from './when.js'
- * @import {VowKit, AsPromiseFunction} from './types.js'
- * @import {IsRetryableReason} from './types.js'
+ * @import {MapStore} from '@agoric/store/src/types.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Watch} from './watch.js';
+ * @import {When} from './when.js';
+ * @import {VowKit, AsPromiseFunction, IsRetryableReason, Vow, EVow} from './types.js';
  */
 
 const VowShape = M.tagged(
@@ -81,7 +80,7 @@ export const prepareWatchUtils = (
     {
       utils: {
         /**
-         * @param {unknown[]} vows
+         * @param {EVow<unknown>[]} vows
          */
         all(vows) {
           const { nextId: id, idToVowState } = this.state;
