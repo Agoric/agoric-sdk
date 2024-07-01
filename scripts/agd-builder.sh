@@ -106,6 +106,12 @@ if $need_nodejs; then
       } 1>&2
       ;;
   esac
+
+  if nodeversion=$(node --version 2> /dev/null); then
+    noderegexp='v([0-9]+)\.([0-9]+)\.([0-9]+)'
+    [[ "$nodeversion" =~ $noderegexp ]] || fatal "illegible node version '$nodeversion'"
+    nodejs_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" || exit 1
+  fi
 fi
 
 $do_not_build || (
@@ -194,7 +200,9 @@ $do_not_build || (
     test -z "$src" || {
       echo "At least $src is newer than node_modules"
       rm -f "$STAMPS/yarn-built"
-      lazy_yarn install
+      # Ignore engines since we already checked officially supported versions above
+      # UNTIL https://github.com/Agoric/agoric-sdk/issues/9622
+      lazy_yarn install --ignore-engines
     }
 
     stamp=$STAMPS/yarn-built
