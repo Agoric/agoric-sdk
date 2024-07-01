@@ -12,11 +12,12 @@
     ]
   },
   "scripts": {
+    "build": "exit 0",
+    "postinstall": "patch-package",
     "lint-fix": "exit 0",
     "lint": "exit 0",
     "test": "exit 0",
-    "test:xs": "exit 0",
-    "build": "exit 0"
+    "test:xs": "exit 0"
   },
   "dependencies": {
     "@agoric/wallet-ui": "0.1.3-solo.0",

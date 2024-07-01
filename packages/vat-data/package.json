@@ -7,6 +7,7 @@
   "main": "./src/index.js",
   "scripts": {
     "build": "exit 0",
+    "postinstall": "patch-package",
     "test": "ava",
     "test:c8": "exit 0",
     "test:xs": "exit 0",

@@ -10,6 +10,7 @@
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node scripts/build-bundles.js",
+    "postinstall": "patch-package",
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava --verbose",

@@ -12,6 +12,7 @@
   },
   "scripts": {
     "build": "exit 0",
+    "postinstall": "patch-package",
     "test": "ava",
     "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava",
     "test:xs-worker": "ava test/workers -m 'xsnap vat manager'",

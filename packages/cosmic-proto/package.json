@@ -119,6 +119,7 @@
     "build": "tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
     "codegen": "./update-protos.sh && node scripts/codegen.cjs",
+    "postinstall": "patch-package",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "tsc",

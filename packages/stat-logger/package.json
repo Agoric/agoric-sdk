@@ -9,6 +9,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "exit 0",
+    "postinstall": "patch-package",
     "test": "exit 0",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",

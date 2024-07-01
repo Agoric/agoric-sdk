@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "exit 0",
+    "postinstall": "patch-package",
     "test": "ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
