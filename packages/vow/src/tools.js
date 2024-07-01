@@ -5,8 +5,10 @@ import { prepareWatch } from './watch.js';
 import { prepareWatchUtils } from './watch-utils.js';
 import { makeAsVow } from './vow-utils.js';
 
-/** @import {Zone} from '@agoric/base-zone' */
-/** @import {IsRetryableReason, AsPromiseFunction} from './types.js' */
+/**
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {IsRetryableReason, AsPromiseFunction} from './types.js';
+ */
 
 /**
  * @param {Zone} zone
