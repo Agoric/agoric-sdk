@@ -2,6 +2,7 @@
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { E, getInterfaceOf } from '@endo/far';
 
 import { prepareVowTools } from '../src/tools.js';
 
@@ -111,4 +112,90 @@ test('allVows - watch promises mixed with vows', async t => {
   const result = await when(allVows([vowA, Promise.resolve('promise')]));
   t.is(result.length, 2);
   t.like(result, ['vow', 'promise']);
+});
+
+test('allVows can accept passable data (PureData)', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareVowTools(zone);
+
+  const testPromiseP = Promise.resolve('vow');
+  const vowA = watch(testPromiseP);
+
+  const result = await when(allVows([vowA, 'string', 1n, { obj: true }]));
+  t.is(result.length, 4);
+  t.deepEqual(result, ['vow', 'string', 1n, { obj: true }]);
+});
+
+const prepareAccount = zone =>
+  zone.exoClass('Account', undefined, address => ({ address }), {
+    getAddress() {
+      return Promise.resolve(this.state.address);
+    },
+  });
+
+test('allVows supports Promise pipelining', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareVowTools(zone);
+
+  // makeAccount returns a Promise
+  const prepareLocalChain = makeAccount => {
+    const localchainMock = zone.exoClass(
+      'Localchain',
+      undefined,
+      () => ({ accountIndex: 0 }),
+      {
+        makeAccount() {
+          this.state.accountIndex += 1;
+          return Promise.resolve(
+            makeAccount(`agoric1foo${this.state.accountIndex}`),
+          );
+        },
+      },
+    );
+    return localchainMock();
+  };
+
+  const Localchain = prepareLocalChain(prepareAccount(zone));
+  const lcaP = E(Localchain).makeAccount();
+  const results = await when(watch(allVows([lcaP, E(lcaP).getAddress()])));
+  t.is(results.length, 2);
+  const [acct, address] = results;
+  t.is(getInterfaceOf(acct), 'Alleged: Account');
+  t.is(
+    address,
+    'agoric1foo1',
+    'pipelining does not result in multiple instantiations',
+  );
+});
+
+test('allVows does NOT support Vow pipelining', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareVowTools(zone);
+
+  // makeAccount returns a Vow
+  const prepareLocalChainVowish = makeAccount => {
+    const localchainMock = zone.exoClass(
+      'Localchain',
+      undefined,
+      () => ({ accountIndex: 0 }),
+      {
+        makeAccount() {
+          this.state.accountIndex += 1;
+          return watch(
+            Promise.resolve(
+              makeAccount(`agoric1foo${this.state.accountIndex}`),
+            ),
+          );
+        },
+      },
+    );
+    return localchainMock();
+  };
+  const Localchain = prepareLocalChainVowish(prepareAccount(zone));
+  const lcaP = E(Localchain).makeAccount();
+  // @ts-expect-error Property 'getAddress' does not exist on type
+  // 'EMethods<Required<PassStyled<"tagged", "Vow"> & { payload: VowPayload<any>; }>>'.
+  await t.throwsAsync(when(watch(allVows([lcaP, E(lcaP).getAddress()]))), {
+    message: 'target has no method "getAddress", has []',
+  });
 });

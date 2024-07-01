@@ -41,7 +41,7 @@ export const makeResumableAgoricNamesHack = (
       }),
       vbankAssetEntriesWatcher: M.interface('vbankAssetEntriesWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
-          .optional({ brand: BrandShape })
+          .optional(BrandShape)
           .returns(VowShape),
       }),
     },
@@ -55,9 +55,9 @@ export const makeResumableAgoricNamesHack = (
       vbankAssetEntriesWatcher: {
         /**
          * @param {AssetInfo[]} assets
-         * @param {{ brand: Brand<'nat'> }} ctx
+         * @param {Brand<'nat'>} brand
          */
-        onFulfilled(assets, { brand }) {
+        onFulfilled(assets, brand) {
           return asVow(() => {
             const { vbankAssetsByBrand } = this.state;
             vbankAssetsByBrand.addAll(
@@ -96,7 +96,7 @@ export const makeResumableAgoricNamesHack = (
             return watch(
               vbankAssetEntriesP,
               this.facets.vbankAssetEntriesWatcher,
-              { brand },
+              brand,
             );
           });
         },

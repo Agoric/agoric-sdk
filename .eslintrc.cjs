@@ -46,6 +46,16 @@ const resumable = [
     message:
       'callWhen wraps the function in a promise; instead immediately return a vow',
   },
+  {
+    selector: "Identifier[name='heapVowE']",
+    message:
+      'heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools',
+  },
+  {
+    selector: "Identifier[name='heapVowTools']",
+    message:
+      'heapVowTools are not durable; instead use `prepareVowTools` with a durable zone',
+  },
 ];
 
 module.exports = {
@@ -160,8 +170,7 @@ module.exports = {
       // Modules with exports that must be resumable
       files: ['packages/orchestration/src/exos/**'],
       rules: {
-        // TODO tighten to error
-        'no-restricted-syntax': ['warn', ...resumable],
+        'no-restricted-syntax': ['error', ...resumable],
       },
     },
     {

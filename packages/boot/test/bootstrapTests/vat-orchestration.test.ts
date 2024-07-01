@@ -1,5 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { ExecutionContext, TestFn } from 'ava';
+import type { TestFn } from 'ava';
 
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
@@ -11,10 +11,7 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type {
-  OrchestrationService,
-  ICQConnection,
-} from '@agoric/orchestration';
+import type { OrchestrationService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
 import {
@@ -75,8 +72,7 @@ test.skip('makeAccount returns an ICA connection', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration: OrchestrationService =
-    await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
     'somechain-1',
@@ -112,8 +108,7 @@ test.skip('ICA connection can be closed', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration: OrchestrationService =
-    await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
     'somechain-1',
@@ -134,8 +129,7 @@ test.skip('ICA connection can send msg with proto3', async t => {
     runUtils: { EV },
   } = t.context;
 
-  const orchestration: OrchestrationService =
-    await EV.vat('bootstrap').consumeItem('orchestration');
+  const orchestration = await EV.vat('bootstrap').consumeItem('orchestration');
 
   const account = await EV(orchestration).makeAccount(
     'somechain-1',
@@ -144,7 +138,6 @@ test.skip('ICA connection can send msg with proto3', async t => {
   );
   t.truthy(account, 'makeAccount returns an account');
 
-  // @ts-expect-error intentional
   await t.throwsAsync(EV(account).executeEncodedTx('malformed'), {
     message:
       'In "executeEncodedTx" method of (ChainAccountKit account): arg 0: string "malformed" - Must be a copyArray',
@@ -195,7 +188,7 @@ test.skip('Query connection can be created', async t => {
   } = t.context;
 
   type Powers = { orchestration: OrchestrationService };
-  const contract = async ({ orchestration }: Powers) => {
+  const contract = async ({ orchestration }) => {
     const connection =
       await EV(orchestration).provideICQConnection('connection-0');
     t.log('Query Connection', connection);
@@ -221,8 +214,8 @@ test.skip('Query connection can send a query', async t => {
   } = t.context;
 
   type Powers = { orchestration: OrchestrationService };
-  const contract = async ({ orchestration }: Powers) => {
-    const queryConnection: ICQConnection =
+  const contract = async ({ orchestration }) => {
+    const queryConnection =
       await EV(orchestration).provideICQConnection('connection-0');
 
     const [result] = await EV(queryConnection).query([balanceQuery]);

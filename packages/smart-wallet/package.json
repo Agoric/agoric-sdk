@@ -34,6 +34,7 @@
     "@agoric/store": "^0.9.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/vats": "^0.15.1",
+    "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@endo/eventual-send": "^1.2.2",
     "@endo/far": "^1.1.2",
