@@ -10,7 +10,7 @@ const { Fail, bare, details: X } = assert;
  * @import {Zone} from '@agoric/base-zone';
  * @import {Watch} from './watch.js';
  * @import {When} from './when.js';
- * @import {VowKit, AsPromiseFunction, IsRetryableReason, Vow, EVow} from './types.js';
+ * @import {VowKit, AsPromiseFunction, IsRetryableReason, EVow} from './types.js';
  */
 
 const VowShape = M.tagged(
