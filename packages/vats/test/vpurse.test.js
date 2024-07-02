@@ -1,3 +1,4 @@
+import { M } from '@endo/patterns';
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
@@ -170,7 +171,7 @@ test('makeVirtualPurse', async t => {
 
   expected.pushAmount(fungible837);
   await E(vpurse)
-    .deposit(payment, fungible837)
+    .deposit(payment, M.and(fungible837))
     .then(checkDeposit)
     .then(performWithdrawal)
     .then(checkWithdrawal);

@@ -3,12 +3,13 @@ import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';
 
 import {
+  AmountPatternShape,
   AmountShape,
   BrandShape,
   DepositFacetShape,
   NotifierShape,
   PaymentShape,
-} from '@agoric/ertp/src/typeGuards.js';
+} from '@agoric/ertp';
 
 import { getInterfaceGuardPayload } from '@endo/patterns';
 
@@ -37,7 +38,7 @@ export const makeVirtualPurseKitIKit = (
     // to this raw method to validate that this remotable is actually
     // a live payment of the correct brand with sufficient funds.
     deposit: M.callWhen(PaymentShape)
-      .optional(M.pattern())
+      .optional(AmountPatternShape)
       .returns(amountShape),
     getDepositFacet: M.callWhen().returns(DepositFacetShape),
     withdraw: M.callWhen(amountShape).returns(PaymentShape),
@@ -50,7 +51,9 @@ export const makeVirtualPurseKitIKit = (
   });
 
   const RetainRedeemI = M.interface('RetainRedeem', {
-    retain: M.callWhen(PaymentShape).optional(amountShape).returns(amountShape),
+    retain: M.callWhen(PaymentShape)
+      .optional(AmountPatternShape)
+      .returns(amountShape),
     redeem: M.callWhen(amountShape).returns(PaymentShape),
   });
 
@@ -58,7 +61,7 @@ export const makeVirtualPurseKitIKit = (
     retain: getInterfaceGuardPayload(RetainRedeemI).methodGuards.retain,
     redeem: getInterfaceGuardPayload(RetainRedeemI).methodGuards.redeem,
     recoverableClaim: M.callWhen(M.await(PaymentShape))
-      .optional(amountShape)
+      .optional(AmountPatternShape)
       .returns(PaymentShape),
   });
 
