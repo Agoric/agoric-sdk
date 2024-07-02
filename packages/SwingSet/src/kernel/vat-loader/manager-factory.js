@@ -45,7 +45,6 @@ export function makeVatManagerFactory({
       'enableSetup',
       'useTranscript',
       'critical',
-      'reapInterval',
       'sourcedConsole',
       'name',
     ]);
