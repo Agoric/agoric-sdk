@@ -61,7 +61,7 @@
     ],
     "concurrency": 1,
     "serial": true,
-    "timeout": "30s"
+    "timeout": "125s"
   },
   "prettier": {
     "arrowParens": "avoid",

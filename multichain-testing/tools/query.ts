@@ -1,8 +1,11 @@
 import type {
-  QueryAllBalancesResponse,
-  QueryBalanceResponse,
+  QueryAllBalancesResponseSDKType,
+  QueryBalanceResponseSDKType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { QueryValidatorsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import type { QueryDelegationTotalRewardsResponseSDKType } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+import type { QueryValidatorsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import type { QueryDelegatorDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import type { QueryDelegatorUnbondingDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 
 // TODO use telescope generated query client from @agoric/cosmic-proto
 export function makeQueryClient(apiUrl: string) {
@@ -20,51 +23,28 @@ export function makeQueryClient(apiUrl: string) {
   return {
     query,
     queryBalances: (address: string) =>
-      query<QueryAllBalancesResponse>(
+      query<QueryAllBalancesResponseSDKType>(
         `/cosmos/bank/v1beta1/balances/${address}`,
       ),
     queryBalance: (address: string, denom: string) =>
-      query<QueryBalanceResponse>(
+      query<QueryBalanceResponseSDKType>(
         `/cosmos/bank/v1beta1/balances/${address}/by_denom?denom=${denom}`,
       ),
     queryValidators: () =>
-      query<QueryValidatorsResponse>('/cosmos/staking/v1beta1/validators'),
+      query<QueryValidatorsResponseSDKType>(
+        '/cosmos/staking/v1beta1/validators',
+      ),
     queryDelegations: (delegatorAddr: string) =>
-      query<{
-        delegation_responses: {
-          delegation: {
-            delegator_address: string;
-            validator_address: string;
-            shares: string;
-          };
-          balance: {
-            denom: string;
-            amount: string;
-          };
-        }[];
-      }>(`/cosmos/staking/v1beta1/delegations/${delegatorAddr}`),
+      query<QueryDelegatorDelegationsResponseSDKType>(
+        `/cosmos/staking/v1beta1/delegations/${delegatorAddr}`,
+      ),
     queryUnbonding: (delegatorAddr: string) =>
-      query<{
-        unbonding_responses: {
-          entries: {
-            balance: string;
-            completion_time: string;
-            initial_balance: string;
-            validator_address: string;
-          }[];
-        }[];
-      }>(
+      query<QueryDelegatorUnbondingDelegationsResponseSDKType>(
         `/cosmos/staking/v1beta1/delegators/${delegatorAddr}/unbonding_delegations`,
       ),
     queryRewards: (delegatorAdddr: string) =>
-      query<{
-        rewards: {
-          validator_address: string;
-          rewards: {
-            denom: string;
-            amount: string;
-          };
-        }[];
-      }>(`/cosmos/distribution/v1beta1/delegators/${delegatorAdddr}/rewards`),
+      query<QueryDelegationTotalRewardsResponseSDKType>(
+        `/cosmos/distribution/v1beta1/delegators/${delegatorAdddr}/rewards`,
+      ),
   };
 }

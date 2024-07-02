@@ -3,6 +3,7 @@ import type { TestFn } from 'ava';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
+import { sleep } from '../tools/sleep.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -10,17 +11,21 @@ const accounts = ['user1', 'user2'];
 
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  // deleteTestKeys().catch();
+  // XXX not necessary for CI, but helpful for unexpected failures in
+  // active development (test.after cleanup doesn't run).
+  deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
 });
 
+const FAUCET_POUR = 10000000000n;
+
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys().catch();
+  deleteTestKeys(accounts);
 });
 
-interface Scenario {
+interface StakeIcaScenario {
   chain: string;
   chainId: string;
   contractName: string;
@@ -31,7 +36,7 @@ interface Scenario {
   wallet: string;
 }
 
-const stakeScenario = test.macro(async (t, scenario: Scenario) => {
+const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
     wallets,
     provisionSmartWallet,
@@ -41,16 +46,19 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
     deployBuilder,
   } = t.context;
 
-  t.log('bundle and install contract');
+  t.log('bundle and install contract', scenario);
   await deployBuilder(scenario.builder);
-
+  const vstorageClient = makeQueryTool();
+  await retryUntilCondition(
+    () => vstorageClient.queryData(`published.agoricNames.instance`),
+    res => scenario.contractName in Object.fromEntries(res),
+    `${scenario.contractName} instance is available`,
+  );
   const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,
   });
   t.log(`provisioning agoric smart wallet for ${wallets[scenario.wallet]}`);
-
-  const vstorageClient = makeQueryTool();
 
   const doOffer = makeDoOffer(wdUser1);
   t.log(`${scenario.contractName} makeAccountInvitationMaker offer`);
@@ -106,6 +114,7 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   const queryClient = makeQueryClient(getRestEndpoint());
 
   t.log('Requesting faucet funds');
+  // XXX fails intermitently until https://github.com/cosmology-tech/starship/issues/417
   await creditFromFaucet(address);
 
   const { balances } = await retryUntilCondition(
@@ -116,17 +125,21 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   t.log('Updated balances:', balances);
   t.like(
     balances,
-    [{ denom: scenario.denom, amount: '10000000000' }],
+    [{ denom: scenario.denom, amount: String(FAUCET_POUR) }],
     'faucet balances available',
   );
 
-  t.log('Delegate offer with continuing inv');
+  t.log('Delegate offer from continuing inv');
   const delegateOfferId = `delegate-${Date.now()}`;
   const { validators } = await queryClient.queryValidators();
-  // @ts-expect-error using snake_case, not camelCase
   const validatorAddress = validators[0]?.operator_address;
   t.truthy(validatorAddress, 'found a validator to delegate to');
   t.log({ validatorAddress }, 'found a validator to delegate to');
+  const validatorChainAddress = {
+    address: validatorAddress,
+    chainId: scenario.chainId,
+    addressEncoding: 'bech32',
+  };
   const _delegateOfferResult = await doOffer({
     id: delegateOfferId,
     invitationSpec: {
@@ -134,33 +147,63 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
       previousOffer: makeAccountofferId,
       invitationMakerName: 'Delegate',
       invitationArgs: [
-        {
-          address: validatorAddress,
-          chainId: scenario.chainId,
-          addressEncoding: 'bech32',
-        },
-        { denom: scenario.denom, value: 100n },
+        validatorChainAddress,
+        { denom: scenario.denom, value: FAUCET_POUR },
       ],
     },
     proposal: {},
   });
-  t.log('@@@_delegateOfferResult', _delegateOfferResult);
-  t.true(_delegateOfferResult, 'delegate payouts returned');
+  t.true(_delegateOfferResult, 'delegate payouts (none) returned');
 
+  // query remote chain to verify delegations
   const { delegation_responses } = await retryUntilCondition(
     () => queryClient.queryDelegations(address),
     ({ delegation_responses }) => !!delegation_responses.length,
     `delegations visible on ${scenario.chain}`,
   );
-  t.log('delegation_responses:', delegation_responses);
   t.log('delegation balance', delegation_responses[0]?.balance);
   t.like(
     delegation_responses[0].balance,
-    { denom: scenario.denom, amount: '100' },
+    { denom: scenario.denom, amount: String(FAUCET_POUR) },
     'delegations balance',
   );
 
-  t.log('Undelegate offer with continuing inv');
+  t.log('querying available rewards');
+  const { total } = await retryUntilCondition(
+    () => queryClient.queryRewards(address),
+    ({ total }) => {
+      return Number(total?.[0]?.amount) > 0;
+    },
+    `rewards available on ${scenario.chain}`,
+  );
+  t.log('reward:', total[0]);
+  t.log('WithrawReward offer from continuing inv');
+  const withdrawRewardOfferId = `reward-${Date.now()}`;
+  const _withdrawRewardOfferResult = await doOffer({
+    id: withdrawRewardOfferId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: makeAccountofferId,
+      invitationMakerName: 'WithdrawReward',
+      invitationArgs: [validatorChainAddress],
+    },
+    proposal: {},
+  });
+  // funds are withdrawn to ICA, not the seat
+  t.true(
+    _withdrawRewardOfferResult,
+    'withdraw rewards (empty) payouts returned',
+  );
+  const { balances: rewards } = await retryUntilCondition(
+    () => queryClient.queryBalances(address),
+    ({ balances }) =>
+      Number(balances?.[0]?.amount) >= Math.floor(Number(total?.[0]?.amount)),
+    'claimed rewards available',
+  );
+  t.log('Balance after claiming rewards:', rewards);
+
+  const SHARES = 50;
+  t.log('Undelegate offer from continuing inv');
   const undelegateOfferId = `undelegate-${Date.now()}`;
   const _undelegateOfferResult = await doOffer({
     id: undelegateOfferId,
@@ -172,14 +215,13 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
         [
           {
             validatorAddress,
-            shares: '50',
+            shares: String(SHARES),
           },
         ],
       ],
     },
     proposal: {},
   });
-  t.log('@@@_undelegateOfferResult', _undelegateOfferResult);
   t.true(_undelegateOfferResult, 'undelegate payouts returned');
 
   const { unbonding_responses } = await retryUntilCondition(
@@ -190,13 +232,26 @@ const stakeScenario = test.macro(async (t, scenario: Scenario) => {
   t.log('unbonding_responses:', unbonding_responses[0].entries);
   t.is(
     unbonding_responses[0].entries[0].balance,
-    '50',
+    String(SHARES),
     'undelegating 50 shares in progress',
   );
 
-  // TO DO CLAIM REWARDS
-  // 1.a. query available
-  // 2.a. claim them
+  // might be greater than `rewards`, due to delay between query and claim rewards tx
+  const { balances: currentBalances } =
+    await queryClient.queryBalances(address);
+  t.log('Current Balance:', currentBalances[0]);
+
+  console.log('waiting for unbonding period');
+  await sleep(120000);
+  const { balances: rewardsWithUndelegations } = await retryUntilCondition(
+    () => queryClient.queryBalances(address),
+    ({ balances }) => {
+      const expectedBalance = Number(currentBalances[0].amount) + SHARES;
+      return Number(balances?.[0]?.amount) >= expectedBalance;
+    },
+    'claimed rewards available',
+  );
+  t.log('Final Balance:', rewardsWithUndelegations[0]);
 });
 
 test.serial('send wallet offers stakeAtom contract', stakeScenario, {

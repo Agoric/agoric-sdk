@@ -27,8 +27,12 @@ const makeKeyring = async (
     return wallets;
   };
 
-  const deleteTestKeys = () =>
-    Promise.all(_keys.map(key => e2eTools.deleteKey(key).catch())).catch();
+  const deleteTestKeys = (keys: string[] = []) =>
+    Promise.allSettled(
+      Array.from(new Set([...keys, ..._keys])).map(key =>
+        e2eTools.deleteKey(key).catch(),
+      ),
+    ).catch();
 
   return { setupTestKeys, deleteTestKeys };
 };
