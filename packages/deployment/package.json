@@ -1,6 +1,6 @@
 {
   "name": "@agoric/deployment",
-  "version": "3.0.0",
+  "version": "4.0.0-u16.0",
   "description": "Set up Agoric public chain nodes",
   "type": "module",
   "private": true,
@@ -19,7 +19,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@agoric/assert": "^0.6.1-u16.0",
     "@endo/init": "^1.1.2",
     "@endo/marshal": "^1.5.0",
     "better-sqlite3": "^9.1.1",

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/benchmark",
-  "version": "0.1.0",
+  "version": "0.1.1-u16.0",
   "private": true,
   "description": "Benchmark support",
   "type": "module",
@@ -22,16 +22,15 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
-    "@agoric/boot": "^0.1.0",
-    "@agoric/cosmic-swingset": "^0.41.3",
-    "@agoric/internal": "^0.3.2",
-    "@agoric/inter-protocol": "^0.16.1",
-    "@agoric/vats": "^0.15.1",
-    "@agoric/zoe": "^0.26.2",
+    "@agoric/assert": "^0.6.1-u16.0",
+    "@agoric/boot": "^0.2.0-u16.0",
+    "@agoric/cosmic-swingset": "^0.42.0-u16.0",
+    "@agoric/inter-protocol": "^0.17.0-u16.0",
+    "@agoric/internal": "^0.4.0-u16.0",
+    "@agoric/vats": "^0.16.0-u16.0",
+    "@agoric/zoe": "^0.26.3-u16.0",
     "@endo/init": "^1.1.2"
   },
-  "devDependencies": {},
   "files": [
     "CHANGELOG.md",
     "src/",

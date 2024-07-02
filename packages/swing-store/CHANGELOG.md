@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.2-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.1...@agoric/swing-store@0.9.2-u16.0) (2024-07-02)
+
+
+### Features
+
+* add exporter.getHostKV() API ([eb564f9](https://github.com/Agoric/agoric-sdk/commit/eb564f9635397c0706e1f8255b3e125681e2d031)), closes [#8523](https://github.com/Agoric/agoric-sdk/issues/8523)
+* **swing-store:** faster import of swing-store ([0170568](https://github.com/Agoric/agoric-sdk/commit/0170568d66748af76f0bd24a4acdaa34b9c79cca))
+* **swing-store:** prevent SwingSet usage of imported swing-store ([6a833eb](https://github.com/Agoric/agoric-sdk/commit/6a833ebda2b2ff0e72040ca8186f93ae91567add))
+* **swingstore:** add repairMetadata() ([33b5c1c](https://github.com/Agoric/agoric-sdk/commit/33b5c1c1fefd5278a24cd5f06630b238439e2891)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025) [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* tool for auditing dangling kindID references ([eeadc46](https://github.com/Agoric/agoric-sdk/commit/eeadc462d8fb09449e4ea6f0118ae8654e0c8e9b)), closes [#7655](https://github.com/Agoric/agoric-sdk/issues/7655)
+
+
+### Bug Fixes
+
+* misc runtime robustness found by typecheck ([a033f26](https://github.com/Agoric/agoric-sdk/commit/a033f2638f9f11e19d94d7931e4e0614773b1f60))
+* performance.now() binding ([4a3b59b](https://github.com/Agoric/agoric-sdk/commit/4a3b59b486c0cb916e531d5de390fbf90e4421ad))
+* rewrite importSwingStore to preserve metadata properly ([38c9efc](https://github.com/Agoric/agoric-sdk/commit/38c9efce10957e0eb245e25ae5f9f45792eb58ad)), closes [#8025](https://github.com/Agoric/agoric-sdk/issues/8025)
+* **swing-store:** add 'replay' artifactMode, make export more strict ([9939ea6](https://github.com/Agoric/agoric-sdk/commit/9939ea699bb1fd0b711f950679b432eef9054fda)), closes [#8105](https://github.com/Agoric/agoric-sdk/issues/8105)
+* **swing-store:** ensure crank savepoint is wrapped in transaction ([9d2dd3f](https://github.com/Agoric/agoric-sdk/commit/9d2dd3f9966940961a4c21351d256fa3615715d7))
+* **swing-store:** explicitly harden prototypes ([86c128a](https://github.com/Agoric/agoric-sdk/commit/86c128a29b5ed61764a67644c3734b0c05df2993))
+* **swing-store:** no completeness check when creating exporter ([d4df073](https://github.com/Agoric/agoric-sdk/commit/d4df073ffcc48b0f0e62bac107ee8edf21150ad9))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.9.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.0...@agoric/swing-store@0.9.1) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swing-store

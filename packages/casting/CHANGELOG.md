@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.2...@agoric/casting@0.4.3-u16.0) (2024-07-02)
+
+
+### Features
+
+* **casting:** makeHttpClient for explicit net access with cosmjs ([5bc5138](https://github.com/Agoric/agoric-sdk/commit/5bc513853d144f2967d9c2fc5b21fa2c4e284982))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric-sdk/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+
+
+### Bug Fixes
+
+* **casting:** dont crash on bad capdata ([8f4ba3a](https://github.com/Agoric/agoric-sdk/commit/8f4ba3a2f56174161d88f57280513ee5a0f5d4d9))
+* **casting:** explicitly harden prototypes ([833c9b3](https://github.com/Agoric/agoric-sdk/commit/833c9b3f63bb83362789bc1261eabf71a8e88ea2))
+* **casting:** properly follow an unpopulated state entry ([97be818](https://github.com/Agoric/agoric-sdk/commit/97be818c4f5c507830f70392f334fa60dd6d7f94))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.4.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.1...@agoric/casting@0.4.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/casting

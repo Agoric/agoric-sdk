@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.18.3...@agoric/wallet@0.19.0-u16.0) (2024-07-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* promise handling ([c9219ad](https://github.com/Agoric/agoric-sdk/commit/c9219adef68914e44f0daa24122086dc3cb19c16))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric-sdk/commit/4196da375525fa67382a039a15973810db44ffea))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* **wallet:** don't assume node_modules layout ([1ac063e](https://github.com/Agoric/agoric-sdk/commit/1ac063e79992a0b0cd2f7780964ce7bca3e9a467))
+* **wallet:** explicitly harden iteration helper prototype ([c561a12](https://github.com/Agoric/agoric-sdk/commit/c561a127523e8d5d1a58db7fe02e777bc66f885d))
+
+
+
 ### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.18.2...@agoric/wallet@0.18.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/wallet

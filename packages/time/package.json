@@ -1,6 +1,6 @@
 {
   "name": "@agoric/time",
-  "version": "0.3.2",
+  "version": "0.3.3-u16.0",
   "description": "Timestamps, time math, timer service API definition",
   "type": "module",
   "main": "index.js",
@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@agoric/assert": "^0.6.1-u16.0",
     "@endo/nat": "^5.0.7",
     "@endo/patterns": "^1.4.0"
   },
