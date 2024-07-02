@@ -23,8 +23,6 @@ corepack enable
 yarn install 1>&2
 yarn build 1>&2
 
-yarn lerna run build:types 1>&2
-
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   echo "dir=$dir" 1>&2
