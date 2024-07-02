@@ -1,3 +1,7 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
+
 import { BrandShape } from '@agoric/ertp';
 import {
   M,
@@ -6,16 +10,12 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
 import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
-
-const { Fail } = assert;
 
 /**
  * @typedef {object} Deleter

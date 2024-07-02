@@ -7,14 +7,13 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
 
 import '../internal-types.js';
 
 import { makeZCFZygote } from './zcfZygote.js';
-
-const { Fail } = assert;
 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers

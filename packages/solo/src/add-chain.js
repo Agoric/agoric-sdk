@@ -5,7 +5,7 @@ import djson from 'deterministic-json';
 import path from 'path';
 import fs from 'fs';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import setGCIIngress from './set-gci-ingress.js';
 
 const DEFAULT_CHAIN_CONFIG = 'https://testnet.agoric.com/network-config';

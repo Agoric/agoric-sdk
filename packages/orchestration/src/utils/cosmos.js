@@ -1,6 +1,6 @@
-import { assert } from '@agoric/assert';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { makeError } from '@endo/errors';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /** maximum clock skew, in seconds, for unbonding time reported from other chain */
 export const maxClockSkew = 10n * 60n;
@@ -31,6 +31,6 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
     const msg = fromProtoMsg(protoMsg);
     return msg;
   } catch (cause) {
-    throw assert.error(`bad response: ${ackStr}`, undefined, { cause });
+    throw makeError(`bad response: ${ackStr}`, undefined, { cause });
   }
 };

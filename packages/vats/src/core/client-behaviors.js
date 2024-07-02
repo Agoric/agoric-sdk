@@ -1,11 +1,10 @@
+import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { observeNotifier } from '@agoric/notifier';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
-
-const { Fail } = assert;
 
 const PROVISIONER_INDEX = 1;
 

@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { provideLazy } from '@agoric/store';
 
 /** @import {Baggage, PickFacet, VatData} from '@agoric/swingset-liveslots' */

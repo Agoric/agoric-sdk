@@ -1,6 +1,7 @@
-import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import {
   buildQuestion,
   ChoiceMethod,
@@ -20,8 +21,6 @@ import { breakTie } from './breakTie.js';
 /**
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
  */
-
-const { Fail } = assert;
 
 const validateQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);

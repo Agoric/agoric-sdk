@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { provide, prepareExoClass, M } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
@@ -11,8 +12,6 @@ import {
 } from './typeGuards.js';
 
 const { ownKeys } = Reflect;
-
-const { quote: q, Fail } = assert;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,

@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@agoric/assert';
+import { q, Fail } from '@endo/errors';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 

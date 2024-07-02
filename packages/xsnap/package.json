@@ -28,7 +28,7 @@
     "test:xs": "exit 0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/xsnap-lockdown": "^0.14.0",
     "@endo/bundle-source": "^3.2.3",

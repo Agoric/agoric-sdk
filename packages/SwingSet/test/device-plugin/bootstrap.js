@@ -1,5 +1,5 @@
 import { Far, E } from '@endo/far';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { makePluginManager } from '../../src/vats/plugin-manager.js';
 
 export function buildRootObject(vatPowers, vatParameters) {

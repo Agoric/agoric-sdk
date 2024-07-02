@@ -1,5 +1,6 @@
 // @ts-nocheck
 
+import { X, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
@@ -9,8 +10,6 @@ import {
   assertProposalShape,
   assertNatAssetKind,
 } from '../../../src/contractSupport/index.js';
-
-const { details: X, quote: q } = assert;
 
 /**
  * This contract implements coin voting. There are two roles: the

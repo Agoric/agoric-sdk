@@ -1,10 +1,10 @@
 // @jessie-check
 
 import { Nat } from '@endo/nat';
+import { Fail } from '@endo/errors';
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
-const { Fail } = assert;
 
 const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
 

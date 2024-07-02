@@ -4,6 +4,7 @@
  *   integrates multiple bundles so should move to a bootstrap-style test.
  */
 // @ts-check
+import { Fail } from '@endo/errors';
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
@@ -13,8 +14,6 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
 import { bundles, devices } from './devices.js';
-
-const { Fail } = assert;
 
 export const noop = () => {};
 

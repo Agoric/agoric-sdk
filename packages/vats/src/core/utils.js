@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
@@ -10,7 +11,6 @@ import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 import './types-ambient.js';
 
 const { entries, fromEntries, keys } = Object;
-const { Fail, quote: q } = assert;
 
 /**
  * Used in bootstrap to reserve names in the agoricNames namespace before any

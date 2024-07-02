@@ -1,6 +1,5 @@
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
-
-const { Fail, quote: q } = assert;
 
 const PRIORITY_SENDERS_NAMESPACE_RE = /^[a-zA-Z0-9_-]{1,50}$/;
 

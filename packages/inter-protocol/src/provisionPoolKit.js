@@ -1,4 +1,8 @@
 // @ts-check
+import { X, q, Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
+
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -19,11 +23,7 @@ import {
   makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
-
-const { details: X, quote: q, Fail } = assert;
 
 const trace = makeTracer('ProvPool');
 

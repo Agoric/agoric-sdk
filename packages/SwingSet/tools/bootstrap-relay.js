@@ -1,10 +1,8 @@
-import { assert } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from './manual-timer.js';
-
-const { Fail, quote: q } = assert;
 
 export const buildRootObject = () => {
   const timer = buildManualTimer();

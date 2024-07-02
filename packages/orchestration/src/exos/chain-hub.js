@@ -1,16 +1,16 @@
+import { Fail, makeError } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
 import { VowShape } from '@agoric/vow';
 // eslint-disable-next-line no-restricted-syntax
 import { heapVowTools } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 // FIXME test thoroughly whether heap suffices for ChainHub
 // eslint-disable-next-line no-restricted-syntax
 const { allVows, watch } = heapVowTools;
-
-const { Fail } = assert;
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -143,7 +143,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
           return chainInfo;
         },
         onRejected: _cause => {
-          throw assert.error(`chain not found:${chainName}`);
+          throw makeError(`chain not found:${chainName}`);
         },
       });
     },
@@ -176,7 +176,7 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
           return connectionInfo;
         },
         onRejected: _cause => {
-          throw assert.error(`connection not found: ${chainId1}<->${chainId2}`);
+          throw makeError(`connection not found: ${chainId1}<->${chainId2}`);
         },
       });
     },

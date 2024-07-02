@@ -1,3 +1,4 @@
+import { X, Fail, makeError } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
@@ -7,8 +8,6 @@ import { BridgeHandlerI } from './bridge.js';
  * @typedef {any} MostlyPureData ideally should be PureData, but that type is
  *   too restrictive to work out-of-the-box.
  */
-
-const { details: X, Fail } = assert;
 
 /**
  * @typedef {object} TargetApp an object representing the app that receives
@@ -232,11 +231,9 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           try {
             targetToApp.init(target, wrappedApp);
           } catch (cause) {
-            throw assert.error(
-              X`Target ${target} already registered`,
-              undefined,
-              { cause },
-            );
+            throw makeError(X`Target ${target} already registered`, undefined, {
+              cause,
+            });
           }
 
           await E(targetHost).sendDowncall({
@@ -274,7 +271,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           try {
             targetToApp.set(target, wrappedApp);
           } catch (cause) {
-            throw assert.error(
+            throw makeError(
               X`Target ${target} is already unregistered`,
               undefined,
               { cause },

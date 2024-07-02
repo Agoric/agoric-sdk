@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 

@@ -1,7 +1,7 @@
 import test from 'ava';
 
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
 import { M, provideLazy as provide } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.

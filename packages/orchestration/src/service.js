@@ -1,5 +1,6 @@
 /** @file Orchestration service */
 
+import { Fail, b } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
@@ -20,7 +21,6 @@ import {
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from './types.js';
  */
 
-const { Fail, bare } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @typedef {object} OrchestrationPowers
@@ -48,7 +48,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * @param {K} name
  */
 const getPower = (powers, name) => {
-  powers.has(name) || Fail`need powers.${bare(name)} for this method`;
+  powers.has(name) || Fail`need powers.${b(name)} for this method`;
   return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
 };
 

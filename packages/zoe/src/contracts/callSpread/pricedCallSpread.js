@@ -1,6 +1,7 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 /// <reference path="./types-ambient.js" />
 
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -18,8 +19,6 @@ import { Position } from './position.js';
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
-
-const { Fail } = assert;
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;

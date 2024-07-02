@@ -19,7 +19,7 @@
     "ci:autobench": "./autobench.js"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",

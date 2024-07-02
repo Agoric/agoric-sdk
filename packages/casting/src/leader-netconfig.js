@@ -1,4 +1,5 @@
 /* global fetch */
+import { Fail } from '@endo/errors';
 import { makeRoundRobinLeader } from './leader.js';
 import {
   DEFAULT_BOOTSTRAP,
@@ -6,8 +7,6 @@ import {
   DEFAULT_RETRY_CALLBACK,
 } from './defaults.js';
 import { assertNetworkConfig } from './netconfig.js';
-
-const { Fail } = assert;
 
 /**
  * @param {string[]} rpcAddrs

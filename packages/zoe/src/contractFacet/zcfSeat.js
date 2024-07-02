@@ -1,4 +1,6 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -7,7 +9,6 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 
@@ -22,8 +23,6 @@ import {
 } from '../typeGuards.js';
 import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
-
-const { Fail } = assert;
 
 /**
  * The SeatManager holds the active zcfSeats and can reallocate and
@@ -181,7 +180,7 @@ export const createSeatManager = (
         const { self } = this;
         if (typeof reason === 'string') {
           reason = Error(reason);
-          assert.note(
+          annotateError(
             reason,
             'ZCFSeat.fail was called with a string reason, but requires an Error argument.',
           );

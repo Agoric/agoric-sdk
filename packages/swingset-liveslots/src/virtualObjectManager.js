@@ -2,12 +2,7 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { environmentOptionsListHas } from '@endo/env-options';
-import {
-  assert,
-  throwRedacted as Fail,
-  quote as q,
-  bare as b,
-} from '@endo/errors';
+import { assert, Fail, q, b } from '@endo/errors';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';

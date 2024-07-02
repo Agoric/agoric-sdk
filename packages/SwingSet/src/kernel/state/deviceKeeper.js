@@ -3,7 +3,7 @@
  */
 
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistDeviceID } from '../../lib/id.js';

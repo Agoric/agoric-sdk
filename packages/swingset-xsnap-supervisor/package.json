@@ -23,7 +23,7 @@
     "test:xs": "exit 0"
   },
   "devDependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@endo/bundle-source": "^3.2.3",
     "@endo/import-bundle": "^1.1.2",

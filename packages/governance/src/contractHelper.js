@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { getMethodNames, objectMap } from '@agoric/internal';
@@ -13,8 +14,6 @@ import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 /**
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, GovernedApis, GovernedCreatorFacet, GovernedPublicFacet} from './types.js';
  */
-
-const { Fail } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 

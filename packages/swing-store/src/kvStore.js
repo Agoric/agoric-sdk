@@ -1,5 +1,5 @@
 // @ts-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * @typedef {{

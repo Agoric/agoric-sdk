@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/base-zone": "^0.1.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",

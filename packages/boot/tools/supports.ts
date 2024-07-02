@@ -7,9 +7,14 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
+import {
+  BridgeId,
+  NonNullish,
+  VBankAccount,
+  makeTracer,
+} from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';

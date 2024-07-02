@@ -1,5 +1,5 @@
 // @jessie-check
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * Put together information about the issuer in a standard format that

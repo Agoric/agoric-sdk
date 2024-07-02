@@ -20,6 +20,7 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 
+import { Fail } from '@endo/errors';
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
@@ -29,8 +30,6 @@ import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
 /** @import {Baggage} from '@agoric/vat-data' */
-
-const { Fail } = assert;
 
 /**
  * Create a durable instance of Zoe.

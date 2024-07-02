@@ -5,8 +5,10 @@ import {
   environmentOptionsListHas,
 } from '@endo/env-options';
 
-// NOTE: We can't import these because they're not in scope before lockdown.
-// import { assert, details as X, Fail } from '@agoric/assert';
+// Note that in the original track-turns.js in @endo/eventual-send we
+// can't simply import these because `assert` is not in scope before lockdown.
+// But this copy in @agoric/vow the import is fine.
+import { annotateError, X } from '@endo/errors';
 
 // WARNING: Global Mutable State!
 // This state is communicated to `assert` that makes it available to the
@@ -34,7 +36,7 @@ const ENABLED =
 
 const addRejectionNote = detailsNote => reason => {
   if (reason instanceof Error) {
-    assert.note(reason, detailsNote);
+    annotateError(reason, detailsNote);
   }
   if (VERBOSE) {
     console.log('REJECTED at top of event loop', reason);
@@ -42,7 +44,7 @@ const addRejectionNote = detailsNote => reason => {
 };
 
 const wrapFunction =
-  (func, sendingError, X) =>
+  (func, sendingError) =>
   (...args) => {
     hiddenPriorError = sendingError;
     hiddenCurrentTurn += 1;
@@ -53,7 +55,7 @@ const wrapFunction =
         result = func(...args);
       } catch (err) {
         if (err instanceof Error) {
-          assert.note(
+          annotateError(
             err,
             X`Thrown from: ${hiddenPriorError}:${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
           );
@@ -91,18 +93,17 @@ export const trackTurns = funcs => {
   if (!ENABLED || typeof globalThis === 'undefined' || !globalThis.assert) {
     return funcs;
   }
-  const { details: X } = assert;
 
   hiddenCurrentEvent += 1;
   const sendingError = Error(
     `Event: ${hiddenCurrentTurn}.${hiddenCurrentEvent}`,
   );
   if (hiddenPriorError !== undefined) {
-    assert.note(sendingError, X`Caused by: ${hiddenPriorError}`);
+    annotateError(sendingError, X`Caused by: ${hiddenPriorError}`);
   }
 
   return /** @type {T} */ (
-    funcs.map(func => func && wrapFunction(func, sendingError, X))
+    funcs.map(func => func && wrapFunction(func, sendingError))
   );
 };
 

@@ -1,5 +1,5 @@
 import { Nat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 
 // Local object/promise references (in the comms vat) contain a two-tuple of
 // (type, index).  All object references point to entries in the Local Object

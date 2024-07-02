@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 
 export function makeDummyMeterControl() {
   let meteringDisabled = 0;

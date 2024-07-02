@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { kser, kslot } from '@agoric/kmarshal';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';

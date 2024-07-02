@@ -21,7 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/internal": "^0.3.2",
     "@endo/base64": "^1.0.5",
     "@endo/bundle-source": "^3.2.3",

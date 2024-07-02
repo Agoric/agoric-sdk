@@ -1,6 +1,6 @@
 /// <reference types="ses" />
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 
 import { makePublishKit } from './publish-kit.js';

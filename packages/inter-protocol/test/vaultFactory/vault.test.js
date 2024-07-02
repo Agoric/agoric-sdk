@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { assert } from '@endo/errors';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -7,7 +8,6 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
-import { assert } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 
 const vaultRoot = './vault-contract-wrapper.js';

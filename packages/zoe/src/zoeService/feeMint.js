@@ -11,9 +11,8 @@ import {
   provide,
   prepareExoClassKit,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 /** @deprecated Redundant. Just omit it. */
 const FEE_MINT_KIT = 'FeeMintKit';

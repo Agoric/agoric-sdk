@@ -1,4 +1,7 @@
 /** @file Use-object for the owner of a staking account */
+import { Fail } from '@endo/errors';
+import { decodeBase64 } from '@endo/base64';
+import { E } from '@endo/far';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -20,8 +23,6 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { decodeBase64 } from '@endo/base64';
-import { E } from '@endo/far';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -48,7 +49,6 @@ import { dateInSeconds } from '../utils/time.js';
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
