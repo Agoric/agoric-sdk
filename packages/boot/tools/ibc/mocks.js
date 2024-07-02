@@ -89,7 +89,7 @@ export const addParamsIfJsonVersion = (version, params) => {
 export const icaMocks = {
   /**
    * ICA Channel Creation
-   * @param {IBCMethod<'initOpenExecuted'>} obj
+   * @param {IBCMethod<'startChannelOpenInit'>} obj
    * @returns {IBCEvent<'channelOpenAck'>}
    */
   channelOpenAck: obj => {

@@ -5,8 +5,10 @@ import { prepareWatch } from './watch.js';
 import { prepareWatchUtils } from './watch-utils.js';
 import { makeAsVow } from './vow-utils.js';
 
-/** @import {Zone} from '@agoric/base-zone' */
-/** @import {IsRetryableReason} from './types.js' */
+/**
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {IsRetryableReason, AsPromiseFunction, EVow} from './types.js';
+ */
 
 /**
  * @param {Zone} zone
@@ -19,18 +21,27 @@ export const prepareVowTools = (zone, powers = {}) => {
   const makeVowKit = prepareVowKit(zone);
   const when = makeWhen(isRetryableReason);
   const watch = prepareWatch(zone, makeVowKit, isRetryableReason);
-  const makeWatchUtils = prepareWatchUtils(zone, watch, makeVowKit);
+  const makeWatchUtils = prepareWatchUtils(zone, {
+    watch,
+    when,
+    makeVowKit,
+    isRetryableReason,
+  });
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
 
   /**
    * Vow-tolerant implementation of Promise.all.
    *
-   * @param {unknown[]} vows
+   * @param {EVow<unknown>[]} maybeVows
    */
-  const allVows = vows => watchUtils.all(vows);
+  const allVows = maybeVows => watchUtils.all(maybeVows);
 
-  return harden({ when, watch, makeVowKit, allVows, asVow });
+  /** @type {AsPromiseFunction} */
+  const asPromise = (specimenP, ...watcherArgs) =>
+    watchUtils.asPromise(specimenP, ...watcherArgs);
+
+  return harden({ when, watch, makeVowKit, allVows, asVow, asPromise });
 };
 harden(prepareVowTools);
 

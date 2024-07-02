@@ -12,7 +12,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 
-const trace = makeTracer('StakeAtom');
+const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IBCConnectionID} from '@agoric/vats';

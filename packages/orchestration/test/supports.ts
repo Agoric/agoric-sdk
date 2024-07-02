@@ -18,7 +18,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import { fakeNetworkEchoStuff } from './network-fakes.js';
+import { setupFakeNetwork } from './network-fakes.js';
 import { prepareOrchestrationTools } from '../src/service.js';
 import { registerChainNamespace } from '../src/chain-info.js';
 
@@ -104,7 +104,11 @@ export const commonSetup = async t => {
     sequence: false,
   });
 
-  const { portAllocator } = fakeNetworkEchoStuff(rootZone.subZone('network'));
+  const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
+    rootZone.subZone('network'),
+    { vowTools },
+  );
+  await setupIBCProtocol();
 
   const { makeOrchestrationKit } = prepareOrchestrationTools(
     rootZone.subZone('orchestration'),
@@ -127,6 +131,7 @@ export const commonSetup = async t => {
       rootZone: rootZone.subZone('contract'),
       storage,
       vowTools,
+      ibcBridge,
     },
     brands: {
       bld: bldSansMint,

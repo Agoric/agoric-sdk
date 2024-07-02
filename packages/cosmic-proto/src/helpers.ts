@@ -103,7 +103,7 @@ export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
 type RequestQueryOpts = Partial<Omit<RequestQuery, 'path' | 'data'>>;
 
 export const toRequestQueryJson = (
-  msg: QueryBalanceRequestProtoMsg,
+  msg: Any | QueryBalanceRequestProtoMsg,
   opts: RequestQueryOpts = {},
 ) =>
   RequestQuery.toJSON(
