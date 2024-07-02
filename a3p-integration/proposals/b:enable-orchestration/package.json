@@ -3,6 +3,7 @@
     "type": "/agoric.swingset.CoreEvalProposal",
     "source": "subdir",
     "sdk-generate": [
+      "smart-wallet/build-wallet-factory2-upgrade.js",
       "vats/init-orchestration.js"
     ]
   },
