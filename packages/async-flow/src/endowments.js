@@ -59,8 +59,10 @@ export const forwardingMethods = rem => {
  * gets and sets, but is implemented using accessors, so it will be recognized
  * as a state record.
  *
- * @param {object} dataRecord
- * @returns {object}
+ * @template { string | number | symbol } K
+ * @template {Record<K, any>} R
+ * @param {R} dataRecord
+ * @returns {R}
  */
 export const makeStateRecord = dataRecord =>
   harden(
