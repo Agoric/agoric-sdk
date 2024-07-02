@@ -5,7 +5,10 @@ import {
 } from '../../../../google/protobuf/duration.js';
 import { Height, HeightSDKType } from '../../../core/client/v1/client.js';
 import { ProofSpec, ProofSpecSDKType } from '../../../../proofs.js';
-import { Timestamp } from '../../../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../../../google/protobuf/timestamp.js';
 import {
   MerkleRoot,
   MerkleRootSDKType,
@@ -21,10 +24,9 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
-  toTimestamp,
-  fromTimestamp,
   fromJsonTimestamp,
   bytesFromBase64,
+  fromTimestamp,
   base64FromBytes,
 } from '../../../../helpers.js';
 import { JsonSafe } from '../../../../json-safe.js';
@@ -96,7 +98,7 @@ export interface ConsensusState {
    * timestamp that corresponds to the block height in which the ConsensusState
    * was stored.
    */
-  timestamp: Date;
+  timestamp: Timestamp;
   /** commitment root (i.e app hash) */
   root: MerkleRoot;
   nextValidatorsHash: Uint8Array;
@@ -107,7 +109,7 @@ export interface ConsensusStateProtoMsg {
 }
 /** ConsensusState defines the consensus state from Tendermint. */
 export interface ConsensusStateSDKType {
-  timestamp: Date;
+  timestamp: TimestampSDKType;
   root: MerkleRootSDKType;
   next_validators_hash: Uint8Array;
 }
@@ -437,7 +439,7 @@ export const ClientState = {
 };
 function createBaseConsensusState(): ConsensusState {
   return {
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
     root: MerkleRoot.fromPartial({}),
     nextValidatorsHash: new Uint8Array(),
   };
@@ -449,10 +451,7 @@ export const ConsensusState = {
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(10).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(10).fork()).ldelim();
     }
     if (message.root !== undefined) {
       MerkleRoot.encode(message.root, writer.uint32(18).fork()).ldelim();
@@ -471,9 +470,7 @@ export const ConsensusState = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         case 2:
           message.root = MerkleRoot.decode(reader, reader.uint32());
@@ -502,7 +499,7 @@ export const ConsensusState = {
   toJSON(message: ConsensusState): JsonSafe<ConsensusState> {
     const obj: any = {};
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     message.root !== undefined &&
       (obj.root = message.root ? MerkleRoot.toJSON(message.root) : undefined);
     message.nextValidatorsHash !== undefined &&
@@ -515,7 +512,10 @@ export const ConsensusState = {
   },
   fromPartial(object: Partial<ConsensusState>): ConsensusState {
     const message = createBaseConsensusState();
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     message.root =
       object.root !== undefined && object.root !== null
         ? MerkleRoot.fromPartial(object.root)
