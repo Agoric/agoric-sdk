@@ -1,10 +1,10 @@
+import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
 import {
   Remotable,
   passStyleOf,
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';

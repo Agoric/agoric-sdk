@@ -1,7 +1,6 @@
+import { Fail, X } from '@endo/errors';
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
-
-import { Fail, X } from '@endo/errors';
 
 /**
  * Helper to type the registered scoped bridge correctly.

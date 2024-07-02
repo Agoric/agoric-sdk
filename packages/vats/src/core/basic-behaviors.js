@@ -1,3 +1,7 @@
+import { Nat } from '@endo/nat';
+import { Fail, X } from '@endo/errors';
+import { E, getInterfaceOf } from '@endo/far';
+
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
@@ -10,10 +14,6 @@ import {
 } from '@agoric/internal';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
-import { E, getInterfaceOf } from '@endo/far';
-import { Nat } from '@endo/nat';
-
-import { Fail, X } from '@endo/errors';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';

@@ -1,7 +1,7 @@
+import { X, Fail, makeError } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { X, Fail, makeError } from '@endo/errors';
 import { BridgeHandlerI } from './bridge.js';
 
 /**

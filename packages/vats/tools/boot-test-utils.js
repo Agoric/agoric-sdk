@@ -1,11 +1,12 @@
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
+
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { Fail } from '@endo/errors';
 import { bundles, devices } from '../test/devices.js';
 
 import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
