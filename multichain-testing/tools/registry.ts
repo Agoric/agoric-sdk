@@ -1,13 +1,13 @@
 import { useRegistry, useChain, ConfigContext } from 'starshipjs';
 
-export const makeGetConfigFile =
+export const makeGetFile =
   (path: Pick<typeof import('path'), 'dirname' | 'join'>) =>
   (filePath: string) =>
     path.join(path.dirname(new URL(import.meta.url).pathname), filePath);
 
-type GetConfigFilePathFn = ReturnType<typeof makeGetConfigFile>;
+type GetFilePathFn = ReturnType<typeof makeGetFile>;
 
-export const makeSetupRegistry = (getConfigFile: GetConfigFilePathFn) => {
+export const makeSetupRegistry = (getFile: GetFilePathFn) => {
   /**
    * @param {Object} opts
    * @param {string} [opts.config='../config.yaml'] - The path to the starship configuration file.
@@ -20,7 +20,7 @@ export const makeSetupRegistry = (getConfigFile: GetConfigFilePathFn) => {
    * ```
    */
   const setupRegistry = async ({ config = '../config.yaml' } = {}) => {
-    ConfigContext.setConfigFile(getConfigFile(config));
+    ConfigContext.setConfigFile(getFile(config));
     ConfigContext.setRegistry(await useRegistry(ConfigContext.configFile!));
     return { useChain };
   };
