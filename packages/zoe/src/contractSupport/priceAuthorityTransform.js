@@ -1,6 +1,6 @@
+import { Fail, assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { Fail, assert } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 

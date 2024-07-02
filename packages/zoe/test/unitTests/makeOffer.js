@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { assert } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 /**
  * @param {ERef<ZoeService>} zoe

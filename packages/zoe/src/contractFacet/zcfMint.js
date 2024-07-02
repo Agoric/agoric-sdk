@@ -1,9 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 
-import { Fail } from '@endo/errors';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';

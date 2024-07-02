@@ -1,4 +1,6 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -7,11 +9,9 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 
-import { annotateError, Fail } from '@endo/errors';
 import { isOfferSafe } from './offerSafety.js';
 import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';

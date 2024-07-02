@@ -1,11 +1,11 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { mustMatch } from '@endo/patterns';
 import { Far } from '@endo/marshal';
 import { TimeMath, RelativeTimeShape } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
-import { Fail } from '@endo/errors';
 import {
   defaultAcceptanceMsg,
   assertIssuerKeywords,

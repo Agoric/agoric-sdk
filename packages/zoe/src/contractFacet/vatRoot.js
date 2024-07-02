@@ -7,12 +7,12 @@
 // time this file is edited, the bundle must be manually rebuilt with
 // `yarn build-zcfBundle`.
 
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
 
 import '../internal-types.js';
 
-import { Fail } from '@endo/errors';
 import { makeZCFZygote } from './zcfZygote.js';
 
 /**

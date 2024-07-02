@@ -1,11 +1,11 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 /// <reference path="./types-ambient.js" />
 
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
-import { Fail } from '@endo/errors';
 import {
   assertProposalShape,
   depositToSeat,

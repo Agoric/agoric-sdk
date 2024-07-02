@@ -1,4 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { AssetKind } from '@agoric/ertp';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {
@@ -9,12 +14,8 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
-
 import { objectMap } from '@agoric/internal';
-import { Fail } from '@endo/errors';
+
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
