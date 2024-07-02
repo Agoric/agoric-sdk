@@ -666,11 +666,44 @@ export function makeVatKeeper(
     });
   }
 
-  function deleteSnapshotsAndTranscript() {
+  /**
+   * Perform some (possibly-limited) cleanup work for a vat. Returns
+   * 'done' (where false means "please call me again", and true means
+   * "you can delete the vatID now"), and a count of how much work was
+   * done (so the runPolicy can decide when to stop).
+   *
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number,
+   *             work: { snapshots: number, transcripts: number } }}
+   *
+   */
+  function deleteSnapshotsAndTranscripts(budget = undefined) {
+    // Each budget=1 allows us to delete one snapshot entry, or one
+    // transcript span and any transcript items associated with that
+    // span. Some nodes will have historical transcript items, some
+    // will not. Using budget=5 and snapshotInterval=200 means we
+    // delete 5 snapshot (probably only-hash) records, or 5 span
+    // records and maybe 1000 span items.
+
+    let cleanups = 0;
+    const work = { snapshots: 0, transcripts: 0 };
     if (snapStore) {
-      snapStore.deleteVatSnapshots(vatID);
+      const dc = snapStore.deleteVatSnapshots(vatID, budget);
+      // initially uses 2+2*budget DB statements, then just 1 when done
+      cleanups += dc.cleanups;
+      if (budget !== undefined) {
+        budget -= dc.cleanups;
+      }
+      work.snapshots += dc.cleanups;
+      if (!dc.done) {
+        return { done: false, cleanups, work };
+      }
     }
-    transcriptStore.deleteVatTranscripts(vatID);
+    const dc = transcriptStore.deleteVatTranscripts(vatID, budget);
+    // initially uses 2+3*budget DB statements, then just 1 when done
+    cleanups += dc.cleanups;
+    work.transcripts += dc.cleanups;
+    return { done: dc.done, cleanups, work };
   }
 
   function beginNewIncarnation() {
@@ -752,7 +785,7 @@ export function makeVatKeeper(
     dumpState,
     saveSnapshot,
     getSnapshotInfo,
-    deleteSnapshotsAndTranscript,
+    deleteSnapshotsAndTranscripts,
     beginNewIncarnation,
   });
 }
