@@ -367,12 +367,6 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.returnVoidWatcher);
           });
         },
-        deposit(payment) {
-          trace('deposit', payment);
-          console.error(
-            'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
-          );
-        },
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);

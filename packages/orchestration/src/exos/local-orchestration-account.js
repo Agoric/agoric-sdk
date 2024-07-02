@@ -53,6 +53,7 @@ const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(VowShape),
   undelegate: M.call(M.string(), AmountShape).returns(VowShape),
+  deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
@@ -367,7 +368,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {PromiseToVow<OrchestrationAccount<any>['deposit']>} */
+        /** @type {PromiseToVow<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),

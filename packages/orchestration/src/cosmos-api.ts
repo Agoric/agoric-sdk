@@ -212,6 +212,13 @@ export type LiquidStakingMethods = {
   liquidStake: (amount: AmountArg) => Promise<void>;
 };
 
+export type LocalAccountMethods = {
+  /** deposit payment (from zoe, for example) to the account */
+  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  /** withdraw a Payment from the account */
+  withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
+};
+
 export type IBCMsgTransferOptions = {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];

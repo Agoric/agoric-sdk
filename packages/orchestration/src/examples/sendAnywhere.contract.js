@@ -68,6 +68,8 @@ const sendItFn = async (
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
   const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
+  // #9212 types for chain account helpers
+  // @ts-expect-error LCA should have .deposit() method
   await E.when(pmtP, pmt => contractState.account?.deposit(pmt));
   await contractState.account?.transfer(
     { denom, value: amt.value },
