@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.2...@agoric/telemetry@0.6.3-u16.0) (2024-07-02)
+
+
+### Features
+
+* **cosmic-swingset:** add JS upgrade plan handler stub ([655133e](https://github.com/Agoric/agoric-sdk/commit/655133ed909b5d632dc033e992214a7b6a1b5ab1))
+* simple CircularBuffer with fs offsets ([8d9cb7a](https://github.com/Agoric/agoric-sdk/commit/8d9cb7abe96e8905f5aaa0927e02914ef09279c4))
+* use writeSync slogSender ([47a2add](https://github.com/Agoric/agoric-sdk/commit/47a2adda72a5377eda181a425130cdc5a7fd7ff5))
+
+
+### Bug Fixes
+
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+
+
+
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.1...@agoric/telemetry@0.6.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/telemetry

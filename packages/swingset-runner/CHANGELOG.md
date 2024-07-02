@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.22.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.22.2...@agoric/swingset-runner@0.22.3-u16.0) (2024-07-02)
+
+
+### Features
+
+* a couple of tweaks to swingset-runner in preparation for benchmark stuff ([ee623da](https://github.com/Agoric/agoric-sdk/commit/ee623da72a5089a503ff2e0d4de75d9d6424ed34))
+* add an ersatz Cosmos chain emulation mode to swingset-runner ([5c08637](https://github.com/Agoric/agoric-sdk/commit/5c086377e2b0d586a2aa6638191b3250a0ed9260))
+* add whole-swingset benchmark mode, enabled via --sbench ([13f39b8](https://github.com/Agoric/agoric-sdk/commit/13f39b848bd61ee2ccdd4d0f51476c85e0ffc519))
+* enable swingset config file to be anywhere relative to execution context ([9777c3a](https://github.com/Agoric/agoric-sdk/commit/9777c3a13a855d1ab87920613719db77fc799781))
+* implement swingset-runner based version of the vaults benchmark ([6593570](https://github.com/Agoric/agoric-sdk/commit/659357022f339d8aae32e6600a2bf00e5a30d474))
+* refresh slogulator to account for smallcaps and improve UX ([73aa6d6](https://github.com/Agoric/agoric-sdk/commit/73aa6d6554651a4897fa19ae223abbe8a8491320)), closes [#8647](https://github.com/Agoric/agoric-sdk/issues/8647)
+* support `coreProposals.steps` ([80fa3d1](https://github.com/Agoric/agoric-sdk/commit/80fa3d14494706d825f51ac22e1bbf4ec68ce404))
+
+
+### Bug Fixes
+
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.22.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.22.1...@agoric/swingset-runner@0.22.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/swingset-runner

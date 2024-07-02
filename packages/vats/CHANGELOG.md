@@ -3,6 +3,97 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.1...@agoric/vats@0.16.0-u16.0) (2024-07-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **network:** improve naming and data coercion
+* **localchain:** make `localchain.query` and `queryMany` useful
+* make Network and IBC vats durable (#8721)
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* add upgrade zcf only proposal ([73e0bb8](https://github.com/Agoric/agoric-sdk/commit/73e0bb830e7612e74c8fb510b909db154d2b2219))
+* **cosmos:** wire new swingset port handler ([ea582bf](https://github.com/Agoric/agoric-sdk/commit/ea582bf7738f82d0abe5529ee1ac9f2e117c957a))
+* fake bank bridge ([9abd093](https://github.com/Agoric/agoric-sdk/commit/9abd0931182993545504f9f264440052128756e8))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* **ibc:** add types for IBCEvent, IBCMethod, IBCDowncall, and IBCDowncallPacket ([54fc93c](https://github.com/Agoric/agoric-sdk/commit/54fc93c1362d9131ec0803abea785ad303757e43))
+* **ibc:** export validateRemoteIbcAddress address ([2c29c08](https://github.com/Agoric/agoric-sdk/commit/2c29c088a788785c95d651777f6431bcc47d501c))
+* **ibc:** support async IBC version negotiation when present ([6efe80a](https://github.com/Agoric/agoric-sdk/commit/6efe80ac79a579003afd8704616c3d6abe94e225))
+* initChainInfo in orchestration setup eval ([5913d8f](https://github.com/Agoric/agoric-sdk/commit/5913d8f85831cda6cabcff2aa4304c7b42ade70e))
+* **internal:** fakeStorage.getBody() supports index other than -1 ([eda89cc](https://github.com/Agoric/agoric-sdk/commit/eda89cc7ec56b44f33f8552811c267d01bbf29b0))
+* **lca:** getBalance ([bd0708b](https://github.com/Agoric/agoric-sdk/commit/bd0708b3fbe1d9917223c6b43124f13150046e92))
+* **lca:** undelegate ([a18d21c](https://github.com/Agoric/agoric-sdk/commit/a18d21ce5bf539099171f2e8da3bbab6d33a352e))
+* **localchain:** add `.transfer()` helper to LocalChainAccount ([fd11145](https://github.com/Agoric/agoric-sdk/commit/fd111458355c46cf34536991e37b4a316ad09898))
+* **localchain:** add bankManager powers if present ([5b789c5](https://github.com/Agoric/agoric-sdk/commit/5b789c5e340f8920111ca6685a9eb53f75924673))
+* **localchain:** add withdraw facet to localChainAccount ([da20cb6](https://github.com/Agoric/agoric-sdk/commit/da20cb66244d0ce21009ba62f44f7ed3eedec16c))
+* **localchain:** make `localchain.query` and `queryMany` useful ([41209d5](https://github.com/Agoric/agoric-sdk/commit/41209d5b7c1de478d3f2ae709558e3e535c4ad8d))
+* **localchain:** per-account interception of `vtransfer` ([07e6d87](https://github.com/Agoric/agoric-sdk/commit/07e6d876548bdc5a11078b30f22dc88df28c649f))
+* make Network and IBC vats durable ([#8721](https://github.com/Agoric/agoric-sdk/issues/8721)) ([3d13c09](https://github.com/Agoric/agoric-sdk/commit/3d13c09363013e23726c2ac5fa299a8e5344fd8c))
+* make vat-localchain resumable ([6bd6938](https://github.com/Agoric/agoric-sdk/commit/6bd69389b8d45b2eb94bee93ef58e103ddb7687e))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* **orchestration:** add stakeAtom example contract ([82f1901](https://github.com/Agoric/agoric-sdk/commit/82f1901ec6ecf5a802a72023d033609deeb053e1))
+* repair KREAd contract on zoe upgrade ([14040d4](https://github.com/Agoric/agoric-sdk/commit/14040d4fb2a1fcc8687e26ed9208d9824c579876))
+* **repl:** deal with Vows ([6991c7b](https://github.com/Agoric/agoric-sdk/commit/6991c7bad9d97900c91d6783049352e361369159))
+* stakeBld contract ([a7e30a4](https://github.com/Agoric/agoric-sdk/commit/a7e30a4e43c00b2916d2d57c70063650e726321f))
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric-sdk/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* support `coreProposals.steps` ([80fa3d1](https://github.com/Agoric/agoric-sdk/commit/80fa3d14494706d825f51ac22e1bbf4ec68ce404))
+* typedJson ([cd151b7](https://github.com/Agoric/agoric-sdk/commit/cd151b71d5a66d4a86e04a1af104fca277058836))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** coreEvalEnv ([3764eee](https://github.com/Agoric/agoric-sdk/commit/3764eeea9a391b5dc6c9c7a21e430f358b8f7476))
+* **types:** explicit exports from network ([65c2075](https://github.com/Agoric/agoric-sdk/commit/65c2075021dfb0ecf62a6009f7c411c7c49eb624))
+* **types:** generic return for executeTx ([dfc830b](https://github.com/Agoric/agoric-sdk/commit/dfc830bcf5f1997a5aebd23c407aa8f1a7d52083))
+* **types:** parameterize NameHub ([6110c6a](https://github.com/Agoric/agoric-sdk/commit/6110c6a544ec8a37de86d462c032611651f8e459))
+* **types:** WellKnownSpaces['instance'] ([72b3b76](https://github.com/Agoric/agoric-sdk/commit/72b3b763b2f1fdf0c4608d0601a19fd2f3a16709))
+* **vat-transfer:** first cut at working proposal ([2864bd5](https://github.com/Agoric/agoric-sdk/commit/2864bd5c12300c3595df9676bcfde894dbe59b29))
+* **vats:** `BRIDGE_TARGET_REGISTER` and `BRIDGE_TARGET_UNREGISTER` ([badf695](https://github.com/Agoric/agoric-sdk/commit/badf6958dcfb602cf5992afd4ba1f0dc602fccd5))
+* **vats:** provide init-localchain ([19e5aed](https://github.com/Agoric/agoric-sdk/commit/19e5aed4e8a2aad667c04023e0aea01712ff9b9c))
+* vault performance benchmark ([57cea7d](https://github.com/Agoric/agoric-sdk/commit/57cea7da3773b038683b1ceced27428afe948561))
+* **vlocalchain:** generalise tx and query implementation ([1bffe84](https://github.com/Agoric/agoric-sdk/commit/1bffe84890f1d159301f9facea2eed13cf6cdf34))
+* Zoe use watchPromise() to wait for contract finish ([#8453](https://github.com/Agoric/agoric-sdk/issues/8453)) ([6388a00](https://github.com/Agoric/agoric-sdk/commit/6388a002b53593f17a8d936d4e937efb7d065d97))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+
+### Bug Fixes
+
+* eliminate the `passableEncoding` hack ([87dbbda](https://github.com/Agoric/agoric-sdk/commit/87dbbda8484c6fe3fe542eb847647fd1540c11e6)), closes [#8327](https://github.com/Agoric/agoric-sdk/issues/8327)
+* endow with original unstructured `assert` ([#9514](https://github.com/Agoric/agoric-sdk/issues/9514)) ([ce64840](https://github.com/Agoric/agoric-sdk/commit/ce64840f599ee7b73cbe455cc41eecec3464430a)), closes [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#8332](https://github.com/Agoric/agoric-sdk/issues/8332) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9515](https://github.com/Agoric/agoric-sdk/issues/9515) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#5672](https://github.com/Agoric/agoric-sdk/issues/5672) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513) [#9513](https://github.com/Agoric/agoric-sdk/issues/9513)
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* **fake-bridge:** use when to handle vows ([8907806](https://github.com/Agoric/agoric-sdk/commit/89078060abeece36ad23edcdc9067be49e463139))
+* **localchain:** `callWhen`s return `PromiseVow` ([59f2de0](https://github.com/Agoric/agoric-sdk/commit/59f2de0245102178754c7f10dd67f3e675bcd7a7))
+* **localchain:** work around TypeScript mapped tuple bug ([fa64af9](https://github.com/Agoric/agoric-sdk/commit/fa64af9ef23b4d7f76f0b8e9051c7190a1d9839f))
+* **nameHub:** void some floating promises ([70aa007](https://github.com/Agoric/agoric-sdk/commit/70aa00797ca9ee3a5544ddaf703fda986f8a9a58))
+* **network:** Connection should have negotiated remoteAddress and localAddress ([2184ea3](https://github.com/Agoric/agoric-sdk/commit/2184ea3d655c1334653e27d163a09ceb5f61fd50)), closes [#9064](https://github.com/Agoric/agoric-sdk/issues/9064)
+* **network:** create and use `coerceToData` ([39beecb](https://github.com/Agoric/agoric-sdk/commit/39beecba84ef6dfafca902a28a651dbba77cdb1e))
+* **network:** improve naming and data coercion ([8bcd9e2](https://github.com/Agoric/agoric-sdk/commit/8bcd9e2100f4973fd788a6edf42c144d916c173d))
+* **network:** use vow types, correct revealed problems ([d1c1240](https://github.com/Agoric/agoric-sdk/commit/d1c1240bcf534a316533d4c203f45f01fdfc825d))
+* **provisioning:** don't use disconnected namesByAddress ([84d74dd](https://github.com/Agoric/agoric-sdk/commit/84d74dd22a8fb2ec274c293d5de0078e0a9359a0))
+* repair storage of zcfBundleCap and add a3p test ([72c7574](https://github.com/Agoric/agoric-sdk/commit/72c75740aff920ffb53231441d0f00a8747400f1))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** board values ([4196da3](https://github.com/Agoric/agoric-sdk/commit/4196da375525fa67382a039a15973810db44ffea))
+* **types:** errors detected with libcheck ([077240b](https://github.com/Agoric/agoric-sdk/commit/077240b3f205151b97afc61a4615cf3a83d6f9a3))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* **types:** Zoe utils hidden by skipLibCheck ([2f17f89](https://github.com/Agoric/agoric-sdk/commit/2f17f8917c9084930968303c0b832d56bbf8333a))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* **vats:** `vat-transfer` and `bridge-target` rework ([1be5003](https://github.com/Agoric/agoric-sdk/commit/1be500353e47e307c693c092b611edbc56d72fb6))
+* **vats:** `vtransfer` code cleanup ([8ac8197](https://github.com/Agoric/agoric-sdk/commit/8ac819709ef9ced0badee25e6715a5847b1e3f4c))
+* **vats:** don't give all of bankManager to 1 account ([d1f1630](https://github.com/Agoric/agoric-sdk/commit/d1f1630794e790a109b93c8de0c5b4b5077b77d3))
+* **vats:** explicitly harden iteration helper prototype ([5c00e86](https://github.com/Agoric/agoric-sdk/commit/5c00e863fe494a9c34e99d36c809d0a1a35aabe1))
+* **vats:** include index.js in NPM package ([#8815](https://github.com/Agoric/agoric-sdk/issues/8815)) ([c132a31](https://github.com/Agoric/agoric-sdk/commit/c132a3157a735d1e4d5c0c06dae3ed95e260dd79))
+* **vats:** Shape of NameHub lookupAdmin rest args ([ad575b0](https://github.com/Agoric/agoric-sdk/commit/ad575b0f32c5fea30f73c28e729663a660a53f02))
+* **vats:** update error message test ([37bae13](https://github.com/Agoric/agoric-sdk/commit/37bae13150b30ea823f9d61b6f763a8a2dd188d7))
+* **vats:** update vlocalchain API ([6ef27ab](https://github.com/Agoric/agoric-sdk/commit/6ef27abb02432df7b6ab600d5955c9d6ac145697))
+
+
+### Reverts
+
+* Revert "feat(inter-protocol)!: rename InterestRate to StabilityFee" ([bd46e78](https://github.com/Agoric/agoric-sdk/commit/bd46e784a940d9a85ac36151b65c443a910d1a21))
+
+
+
 ### [0.15.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.15.0...@agoric/vats@0.15.1) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/vats

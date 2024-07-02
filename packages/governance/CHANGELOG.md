@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.3...@agoric/governance@0.10.4-u16.0) (2024-07-02)
+
+
+### Features
+
+* guard ContractGovernorKit ([f0654e0](https://github.com/Agoric/agoric-sdk/commit/f0654e0ea84e94316bbdca2fe55cc5bb6f57752d))
+* puppetGovernor pass the Issuerkeywordrecord through ([#8351](https://github.com/Agoric/agoric-sdk/issues/8351)) ([9f89f97](https://github.com/Agoric/agoric-sdk/commit/9f89f97d4930676c2e74ba4d37d8be934ec3f1b6)), closes [#8350](https://github.com/Agoric/agoric-sdk/issues/8350)
+* start fn upgradability by meta ([5ae46e4](https://github.com/Agoric/agoric-sdk/commit/5ae46e485b8f3b643cb57c45abdb75a94657d60c))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* **types:** no package imports for ambient types ([cc182de](https://github.com/Agoric/agoric-sdk/commit/cc182de9b8b02a81210768b2602085534aa38a75))
+
+
+### Bug Fixes
+
+* **governance:** some governance invitations use proposal patterns ([0f794cb](https://github.com/Agoric/agoric-sdk/commit/0f794cb7cddac5cd5fc263427815440acde805f9))
+* properly exit floating `ZCFSeat` instances ([bb2edbd](https://github.com/Agoric/agoric-sdk/commit/bb2edbd3d6fb256f05bc63acd58a5539efabbecf))
+* **types:** emit .d.ts again ([0ca5db3](https://github.com/Agoric/agoric-sdk/commit/0ca5db30c0567867fd634279c2c0b50b5101b0d4))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+
+
+
 ### [0.10.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.2...@agoric/governance@0.10.3) (2023-06-09)
 
 **Note:** Version bump only for package @agoric/governance

@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.16.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.16.2...@agoric/ertp@0.16.3-u16.0) (2024-07-02)
+
+
+### Features
+
+* allow creators/revivors of Issuers to decline recoverySets ([26bbc2f](https://github.com/Agoric/agoric-sdk/commit/26bbc2ff40771ac2d554d9efdde2d21260ccab7d))
+* **ERTP:** allow issuers to upgrade from recoverySets to none ([b14941b](https://github.com/Agoric/agoric-sdk/commit/b14941bb781244730cad402b7a2303ac49d30d0b))
+* **ertp:** purse amountStore abstraction ([#8861](https://github.com/Agoric/agoric-sdk/issues/8861)) ([73fe0af](https://github.com/Agoric/agoric-sdk/commit/73fe0af5273281ab2b4e13dece5d6d5f35af7575))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric-sdk/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+* **types:** explicit types exports ([1f8b759](https://github.com/Agoric/agoric-sdk/commit/1f8b759d3ab735fdb665f4b6f3004cb5aee9fa28))
+
+
+### Bug Fixes
+
+* **types:** Zoe startInstance ([649956a](https://github.com/Agoric/agoric-sdk/commit/649956afec6dedd4285c6e27260d657445e09057))
+
+
+
 ### [0.16.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.16.1...@agoric/ertp@0.16.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/ertp
