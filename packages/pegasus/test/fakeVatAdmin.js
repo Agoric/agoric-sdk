@@ -7,15 +7,18 @@ export default harden({
   createMeter: () => {},
   createUnlimitedMeter: () => {},
   createVat: bundle => {
-    return harden({
-      root: E(evalContractBundle(bundle)).buildRootObject(),
-      adminNode: {
-        done: () => {
-          return makePromiseKit().promise;
+    const rootP = E(evalContractBundle(bundle)).buildRootObject();
+    return E.when(rootP, root =>
+      harden({
+        root,
+        adminNode: {
+          done: () => {
+            return makePromiseKit().promise;
+          },
+          terminate: () => {},
         },
-        terminate: () => {},
-      },
-    });
+      }),
+    );
   },
   createVatByName: _name => {
     throw Error(`createVatByName not supported in fake mode`);

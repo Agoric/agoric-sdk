@@ -262,7 +262,7 @@ async function runDurabilityCheckTest(t, relaxDurabilityRules) {
     passVal(() => virtualMap.init('non-scalar key', aNonScalarKey));
     passVal(() => virtualMap.init('non-scalar non-key', aNonScalarNonKey));
 
-    condVal(() => durableMap.init('promise', aPassablePromise));
+    failVal(() => durableMap.init('promise', aPassablePromise));
     passVal(() => durableMap.init('error', aPassableError));
     passVal(() => durableMap.init('non-scalar key', aNonScalarKey));
     passVal(() => durableMap.init('non-scalar non-key', aNonScalarNonKey));

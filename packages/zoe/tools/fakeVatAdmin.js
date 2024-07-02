@@ -103,15 +103,16 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
       //   }),
       // );
-      return Promise.resolve(
+      const rootP = makeRemote(
+        E(evalContractBundle(zcfBundle)).buildRootObject(
+          vpow,
+          vatParameters,
+          vatBaggage,
+        ),
+      );
+      return E.when(rootP, root =>
         harden({
-          root: makeRemote(
-            E(evalContractBundle(zcfBundle)).buildRootObject(
-              vpow,
-              vatParameters,
-              vatBaggage,
-            ),
-          ),
+          root,
           adminNode: Far('adminNode', {
             done: () => {
               return exitKit.promise;
