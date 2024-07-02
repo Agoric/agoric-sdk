@@ -36,11 +36,13 @@ import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
+import { prepareVowTools } from '@agoric/vow';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { makeInvitationsHelper } from './invitations.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
-import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
+import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /** @import {OfferId, OfferStatus} from './offers.js'; */
 
@@ -286,7 +288,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       secretWalletFactoryKey: M.any(),
     }),
   );
-
+  const zone = makeDurableZone(baggage);
   const makeRecorderKit = prepareRecorderKit(baggage, shared.publicMarshaller);
 
   const walletPurses = provide(baggage, BRAND_TO_PURSES_KEY, () => {
@@ -298,7 +300,10 @@ export const prepareSmartWallet = (baggage, shared) => {
     return store;
   });
 
-  const makeOfferWatcher = prepareOfferWatcher(baggage);
+  const vowTools = prepareVowTools(zone.subZone('vow'));
+
+  const makeOfferWatcher = prepareOfferWatcher(baggage, vowTools);
+  const watchOfferOutcomes = makeWatchOfferOutcomes(vowTools);
 
   const updateShape = {
     value: AmountShape,
