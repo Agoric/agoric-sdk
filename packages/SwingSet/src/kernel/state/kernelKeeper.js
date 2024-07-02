@@ -102,7 +102,6 @@ export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.vs.$key = string
-// v$NN.meter = m$NN // XXX does this exist?
 // old (v0): v$NN.reapInterval = $NN or 'never'
 // old (v0): v$NN.reapCountdown = $NN or 'never'
 // v$NN.reapDirt = JSON({ deliveries, gcKrefs, computrons }) // missing keys treated as zero
@@ -592,6 +591,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
+    if (!data) {
+      return { reachable: 0, recognizable: 0 };
+    }
     data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
     const [reachable, recognizable] = commaSplit(data).map(Number);
     reachable <= recognizable ||
@@ -680,13 +682,32 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return owner;
   }
 
-  function orphanKernelObject(kref, oldVat) {
+  function retireKernelObjects(koids) {
+    Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
+    const newActions = [];
+    for (const koid of koids) {
+      const importers = getImporters(koid);
+      for (const vatID of importers) {
+        newActions.push(`${vatID} retireImport ${koid}`);
+      }
+      deleteKernelObject(koid);
+    }
+    addGCActions(newActions);
+  }
+
+  function abandonKernelObject(kref, oldVat) {
+    // termination orphans all exports, upgrade orphans non-durable
+    // exports, and syscall.abandonExports orphans specific ones
     const ownerKey = `${kref}.owner`;
     const ownerVat = kvStore.get(ownerKey);
     ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
     kvStore.delete(ownerKey);
+    const { vatSlot: vref } = getReachableAndVatSlot(oldVat, kref);
+    kvStore.delete(`${oldVat}.c.${kref}`);
+    kvStore.delete(`${oldVat}.c.${vref}`);
+    addMaybeFreeKref(kref);
     // note that we do not delete the object here: it will be
-    // collected if/when all other references are dropped
+    // retired if/when all other references are dropped
   }
 
   function deleteKernelObject(koid) {
@@ -902,6 +923,14 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    *
    */
   function cleanupAfterTerminatedVat(vatID, budget = undefined) {
+    // this is called from terminateVat, which is called from either:
+    // * end of processDeliveryMessage, if crankResults.terminate
+    // * device-vat-admin (when vat-v-a does adminNode.terminateVat)
+    //   (which always happens inside processDeliveryMessage)
+    // so we're always followed by a call to processRefcounts, at
+    // end-of-delivery in processDeliveryMessage, after checking
+    // crankResults.terminate
+
     insistVatID(vatID);
     let cleanups = 0;
     const work = {
@@ -974,19 +1003,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       const vref = k.slice(`${vatID}.c.`.length);
       assert(vref.startsWith('o+'), vref);
       const kref = kvStore.get(k);
-      // we must delete the c-list entry, but we don't need to
-      // manipulate refcounts like the way vatKeeper/deleteCListEntry
-      // does, so just delete the keys directly
-      // vatKeeper.deleteCListEntry(kref, vref);
-      kvStore.delete(`${vatID}.c.${kref}`);
-      kvStore.delete(`${vatID}.c.${vref}`);
-      // if this object became unreferenced, processRefcounts will
-      // delete it, so don't be surprised. TODO: this results in an
-      // extra get() for each delete(), see if there's a way to avoid
-      // this. TODO: think carefully about other such races.
-      if (kvStore.has(`${kref}.owner`)) {
-        orphanKernelObject(kref, vatID);
-      }
+      // note: adds to maybeFreeKrefs, deletes c-list and .owner
+      abandonKernelObject(kref, vatID);
       work.exports += 1;
       if (spend()) {
         logWork();
@@ -1455,7 +1473,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function processRefcounts() {
     if (enableKernelGC) {
-      const actions = getGCActions(); // local cache
+      const actions = new Set();
       // TODO (else buggy): change the iteration to handle krefs that get
       // added multiple times (while we're iterating), because we might do
       // different work the second time around. Something like an ordered
@@ -1478,11 +1496,18 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
             deleteKernelPromise(kpid);
           }
         }
+
         if (type === 'object') {
           const { reachable, recognizable } = getObjectRefCount(kref);
           if (reachable === 0) {
-            const ownerVatID = ownerOfKernelObject(kref);
-            if (ownerVatID) {
+            // We avoid ownerOfKernelObject(), which will report
+            // 'undefined' if the owner is dead (and being slowly
+            // deleted). Message delivery should use that, but not us.
+            const ownerKey = `${kref}.owner`;
+            let ownerVatID = kvStore.get(ownerKey);
+            const terminated = terminatedVats.includes(ownerVatID);
+
+            if (ownerVatID && !terminated) {
               const vatKeeper = provideVatKeeper(ownerVatID);
               const isReachable = vatKeeper.getReachableFlag(kref);
               if (isReachable) {
@@ -1490,20 +1515,44 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
                 actions.add(`${ownerVatID} dropExport ${kref}`);
               }
               if (recognizable === 0) {
-                // TODO: rethink this
+                // TODO: rethink this assert
                 // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
                 actions.add(`${ownerVatID} retireExport ${kref}`);
               }
-            } else if (recognizable === 0) {
-              // unreachable, unrecognizable, orphaned: delete the
-              // empty refcount here, since we can't send a GC
-              // action without an ownerVatID
-              deleteKernelObject(kref);
+            }
+            if (ownerVatID && terminated) {
+              // When we're slowly deleting a vat, and one of its
+              // exports becomes unreferenced, we obviously must not
+              // send dropExports or retireExports into the dead vat.
+              // We fast-forward the abandonment that slow-deletion
+              // would have done, then treat the object as orphaned.
+
+              const { vatSlot } = getReachableAndVatSlot(ownerVatID, kref);
+              // delete directly, not abandonKernelObjects(), which
+              // would re-submit to maybeFreeKrefs
+              kvStore.delete(ownerKey);
+              kvStore.delete(`${ownerVatID}.c.${kref}`);
+              kvStore.delete(`${ownerVatID}.c.${vatSlot}`);
+              // now fall through to the orphaned case
+              ownerVatID = undefined;
+            }
+            if (!ownerVatID) {
+              // orphaned and unreachable, so retire it
+              if (recognizable) {
+                // there are importers, tell them about the
+                // retirement. retireKernelObjects will also
+                // deleteKernelObject
+                retireKernelObjects([kref]);
+              } else {
+                // just delete, without scanning for importers (since
+                // we know there are none)
+                deleteKernelObject(kref);
+              }
             }
           }
         }
       }
-      setGCActions(actions);
+      addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
   }
@@ -1793,7 +1842,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     ownerOfKernelDevice,
     kernelObjectExists,
     getImporters,
-    orphanKernelObject,
+    abandonKernelObject,
+    retireKernelObjects,
     deleteKernelObject,
     pinObject,
 
