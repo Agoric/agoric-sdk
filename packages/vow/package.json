@@ -22,6 +22,7 @@
   "dependencies": {
     "@agoric/base-zone": "^0.1.0",
     "@agoric/internal": "^0.3.2",
+    "@endo/errors": "^1.2.2",
     "@endo/env-options": "^1.1.4",
     "@endo/eventual-send": "^1.2.2",
     "@endo/pass-style": "^1.4.0",
@@ -30,8 +31,11 @@
   },
   "devDependencies": {
     "@agoric/internal": "^0.3.2",
+    "@agoric/swingset-liveslots": "^0.10.2",
+    "@agoric/zone": "^0.2.2",
     "@endo/far": "^1.1.2",
     "@endo/init": "^1.1.2",
+    "@endo/ses-ava": "^1.2.2",
     "ava": "^5.3.0"
   },
   "ava": {
