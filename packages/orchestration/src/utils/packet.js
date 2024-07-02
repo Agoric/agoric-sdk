@@ -1,7 +1,10 @@
 import { Fail } from '@endo/errors';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { RequestQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
+import {
+  RequestQuery,
+  ResponseQuery,
+} from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { atob, decodeBase64, encodeBase64 } from '@endo/base64';
 import {
   CosmosQuery,
@@ -11,7 +14,6 @@ import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interc
 
 /**
  * @import {AnyJson, JsonSafe} from '@agoric/cosmic-proto';
- * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {InterchainAccountPacketData} from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
  * @import {InterchainQueryPacketData} from '@agoric/cosmic-proto/icq/v1/packet.js';
  */
@@ -105,14 +107,6 @@ export function parseQueryPacket(response) {
   const result = parseTxPacket(response);
   const { data } = JSON.parse(atob(result));
   const { responses = [] } = CosmosResponse.decode(decodeBase64(data));
-  return harden(
-    responses.map(resp => ({
-      ...resp,
-      height: String(resp.index),
-      index: String(resp.index),
-      key: encodeBase64(resp.key),
-      value: encodeBase64(resp.value),
-    })),
-  );
+  return harden(responses.map(ResponseQuery.toJSON));
 }
 harden(parseQueryPacket);
