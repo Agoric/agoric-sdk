@@ -21,6 +21,7 @@ import {
   makeSwingsetController,
   loadBasedir,
   loadSwingsetConfigFile,
+  upgradeSwingset,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
@@ -218,6 +219,7 @@ export async function buildSwingset(
   }
 
   const coreProposals = await ensureSwingsetInitialized();
+  upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
