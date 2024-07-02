@@ -1,0 +1,19 @@
+{
+  "consume": {
+    "contractKits": true,
+    "agoricNames": true,
+    "namesByAddressAdmin": true,
+    "agoricNamesAdmin": "makeCoreProposalBehavior",
+    "vatAdminSvc": "makeCoreProposalBehavior",
+    "zoe": "makeCoreProposalBehavior"
+  },
+  "evaluateBundleCap": "makeCoreProposalBehavior",
+  "installation": {
+    "produce": "makeCoreProposalBehavior"
+  },
+  "modules": {
+    "utils": {
+      "runModuleBehaviors": "makeCoreProposalBehavior"
+    }
+  }
+}
