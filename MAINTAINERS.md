@@ -322,7 +322,7 @@ to pass and for reviewer approval.
 
   Generate a template:
   ```sh
-  ./scripts/gen-github-release <release-label> > release.md
+  ./scripts/gen-github-release.sh <release-label> > release.md
   ```
   Then replace the remaining `$`-prefixed placeholders, filling in
   the [_**validator oriented release description**_](#describe-the-release) and using
