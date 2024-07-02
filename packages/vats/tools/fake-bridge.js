@@ -159,10 +159,17 @@ export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {(obj) => void} [onToBridge]
+ * @param {(obj: any) => void} [onToBridge]
+ * @param {object} [opts]
+ * @param {(obj: any) => string} [opts.allocateAddress]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
-export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
+export const makeFakeLocalchainBridge = (
+  zone,
+  onToBridge = () => {},
+  opts = {},
+) => {
+  const { allocateAddress = () => LOCALCHAIN_DEFAULT_ADDRESS } = opts;
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
@@ -174,7 +181,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
       trace('toBridge', type, method, params);
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return LOCALCHAIN_DEFAULT_ADDRESS;
+          return allocateAddress(obj);
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
           return obj.messages.map(message => {
