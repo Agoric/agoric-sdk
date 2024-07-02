@@ -109,8 +109,8 @@ if $need_nodejs; then
 
   if nodeversion=$(node --version 2> /dev/null); then
     noderegexp='v([0-9]+)\.([0-9]+)\.([0-9]+)'
-    [[ "$nodeversion" =~ $noderegexp ]] || fatal "illegible node version '$nodeversion'"
-    nodejs_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" || exit 1
+    [[ "$nodeversion" =~ $noderegexp ]] || fatal "illegible Node.js version '$nodeversion'"
+    nodejs_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "$nodeversion"
   fi
 fi
 
@@ -160,9 +160,9 @@ $do_not_build || (
     # Ensure minimum patch versions of Go environment
     cd "$GOLANG_DIR"
     if goversion=$(go version 2> /dev/null); then
-      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)? '
-      [[ "$goversion" =~ $goregexp ]] || fatal "illegible go version '$goversion'"
-      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}"
+      goregexp='go version go([0-9]+)(.([0-9]+)(.([0-9]+))?)?( |$)'
+      [[ "$goversion" =~ $goregexp ]] || fatal "illegible Go version '$goversion'"
+      golang_version_check "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[5]}" "$goversion"
       make compile-go
     fi
   )
