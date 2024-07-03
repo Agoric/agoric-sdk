@@ -150,7 +150,6 @@ test('parseQueryPacket', t => {
       index: '0',
       key: 'CgoKBXVhdG9tEgEw', // base64 encoded Uint8Array
       value: '',
-      proofOps: undefined,
       height: '0',
       codespace: '',
     },

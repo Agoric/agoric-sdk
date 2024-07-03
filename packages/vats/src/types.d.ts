@@ -94,8 +94,7 @@ export type BridgeHandler = {
   fromBridge: (obj: any) => Promise<unknown>;
 };
 
-/** An object which handles messages for a specific bridge */
-export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
+export type ScopedBridgeManagerMethods<BridgeId extends BridgeIdValue> = {
   /**
    * Optional bridge ID getter. Not part of the production bridge vat but
    * available in fake bridges as a means for test reflection and for the type
@@ -108,7 +107,12 @@ export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<{
   fromBridge: (obj: any) => Promise<unknown>;
   initHandler: (handler: Remote<BridgeHandler>) => void;
   setHandler: (handler: Remote<BridgeHandler>) => void;
-}>;
+};
+
+/** An object which handles messages for a specific bridge */
+export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<
+  ScopedBridgeManagerMethods<BridgeId>
+>;
 
 /** The object to manage this bridge */
 export type BridgeManager = {

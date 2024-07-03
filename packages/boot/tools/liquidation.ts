@@ -256,6 +256,7 @@ export const makeLiquidationTestKit = async ({
     collateralBrandKey: string,
     buyerWalletAddress: string,
     setup: LiquidationSetup,
+    base = 0, // number of bids made before
   ) => {
     const buyer =
       await walletFactoryDriver.provideSmartWallet(buyerWalletAddress);
@@ -275,7 +276,7 @@ export const makeLiquidationTestKit = async ({
     const maxBuy = `10000${collateralBrandKey}`;
 
     for (let i = 0; i < setup.bids.length; i += 1) {
-      const offerId = `${collateralBrandKey}-bid${i + 1}`;
+      const offerId = `${collateralBrandKey}-bid${i + 1 + base}`;
       // bids are long-lasting offers so we can't wait here for completion
       await buyer.sendOfferMaker(Offers.auction.Bid, {
         offerId,
