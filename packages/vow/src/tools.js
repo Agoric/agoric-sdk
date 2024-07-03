@@ -11,6 +11,9 @@ import { makeAsVow } from './vow-utils.js';
  */
 
 /**
+ * NB: Not to be used in a Vat. It doesn't know what an upgrade is. For that you
+ * need `prepareVowTools` from `vat.js`.
+ *
  * @param {Zone} zone
  * @param {object} [powers]
  * @param {IsRetryableReason} [powers.isRetryableReason]
