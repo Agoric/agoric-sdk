@@ -5,13 +5,6 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/assert@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "@agoric/assert@npm:0.6.0"
-  checksum: 10c0/7892925b4568809b26408a33033af85547b2a9378ddc325c4c44196f0b757ec86dde9a5aef75de44345145b4bad4402b74c71060c47a1e0b9eeaae77bc223748
-  languageName: node
-  linkType: hard
-
 "@agoric/cosmic-proto@npm:0.4.1-dev-08f8549.0":
   version: 0.4.1-dev-08f8549.0
   resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-08f8549.0"
@@ -3876,11 +3869,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/assert": "npm:^0.6.0"
     "@agoric/cosmic-proto": "npm:0.4.1-dev-08f8549.0"
     "@cosmjs/crypto": "npm:^0.32.2"
     "@cosmjs/proto-signing": "npm:^0.32.2"
     "@cosmjs/stargate": "npm:^0.32.2"
+    "@endo/errors": "npm:^1.2.2"
     "@endo/far": "npm:^1.1.2"
     "@endo/nat": "npm:^5.0.7"
     "@endo/ses-ava": "npm:^1.2.2"

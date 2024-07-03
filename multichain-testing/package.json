@@ -17,11 +17,11 @@
   },
   "packageManager": "yarn@4.1.1",
   "devDependencies": {
-    "@endo/errors": "^1.2.2",
     "@agoric/cosmic-proto": "0.4.1-dev-08f8549.0",
     "@cosmjs/crypto": "^0.32.2",
     "@cosmjs/proto-signing": "^0.32.2",
     "@cosmjs/stargate": "^0.32.2",
+    "@endo/errors": "^1.2.2",
     "@endo/far": "^1.1.2",
     "@endo/nat": "^5.0.7",
     "@endo/ses-ava": "^1.2.2",
