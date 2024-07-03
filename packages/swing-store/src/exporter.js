@@ -163,23 +163,23 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   harden(getExportData);
 
   /** @yields {string} */
-  async function* artifactNames() {
+  async function* generateArtifactNames() {
     yield* snapStore.getArtifactNames(artifactMode);
     yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
   }
-  harden(artifactNames);
+  harden(generateArtifactNames);
 
   /**
    * @returns {AsyncIterableIterator<string>}
    */
   function getArtifactNames() {
     if (artifactMode !== 'debug') {
-      // throw if this DB will not be able to yield all the desired artifacts
+      // synchronously throw if this DB will not be able to yield all the desired artifacts
       const internal = { snapStore, bundleStore, transcriptStore };
       assertComplete(internal, artifactMode);
     }
-    return artifactNames();
+    return generateArtifactNames();
   }
 
   /**
