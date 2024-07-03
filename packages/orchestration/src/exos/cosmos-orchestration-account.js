@@ -32,7 +32,6 @@ import {
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds } from '../utils/time.js';
 
 /**
  * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
@@ -230,9 +229,8 @@ export const prepareCosmosOrchestrationAccountKit = (
           const { completionTime } = response;
           completionTime || Fail`No completion time result ${result}`;
           return watch(
-            E(this.state.timer).wakeAt(
-              dateInSeconds(completionTime) + maxClockSkew,
-            ),
+            // ignore nanoseconds and just use seconds from Timestamp
+            E(this.state.timer).wakeAt(completionTime.seconds + maxClockSkew),
           );
         },
       },

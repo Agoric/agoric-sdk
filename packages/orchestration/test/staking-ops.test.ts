@@ -22,9 +22,11 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { decodeBase64 } from '@endo/base64';
 import { Far } from '@endo/far';
+import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
+import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 
 const trivialDelegateResponse = encodeTxResponse(
   {},
@@ -77,6 +79,11 @@ const time = {
     new Date(Number(ts.absValue) * 1000).toISOString(),
 };
 
+const dateToTimestamp = (date: Date): Timestamp => ({
+  seconds: BigInt(date.getTime()) / MILLISECONDS_PER_SECOND,
+  nanos: 0,
+});
+
 const makeScenario = () => {
   const mockAccount = (
     addr = 'agoric1234',
@@ -92,7 +99,7 @@ const makeScenario = () => {
 
       '/cosmos.staking.v1beta1.MsgBeginRedelegate': _m => {
         const response = MsgBeginRedelegateResponse.fromPartial({
-          completionTime: new Date('2025-12-17T03:24:00Z'),
+          completionTime: dateToTimestamp(new Date('2025-12-17T03:24:00Z')),
         });
         return encodeTxResponse(
           response,
@@ -119,7 +126,7 @@ const makeScenario = () => {
       '/cosmos.staking.v1beta1.MsgUndelegate': _m => {
         const { completionTime } = configStaking;
         const response = MsgUndelegateResponse.fromPartial({
-          completionTime: new Date(completionTime),
+          completionTime: dateToTimestamp(new Date(completionTime)),
         });
         return encodeTxResponse(response, MsgUndelegateResponse.toProtoMsg);
       },
@@ -453,6 +460,4 @@ test(`undelegate waits for unbonding period`, async t => {
   t.deepEqual(calls, [{ msgs: [msg] }]);
 });
 
-test.todo(`delegate; undelegate; collect rewards`);
-test.todo('undelegate uses a timer: begin; how long? wait; resolve');
 test.todo('undelegate is cancellable - cosmos cancelUnbonding');

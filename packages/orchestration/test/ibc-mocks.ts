@@ -14,6 +14,7 @@ import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
+import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import {
   buildMsgResponseString,
   buildQueryResponseString,
@@ -21,7 +22,6 @@ import {
   buildTxPacketString,
   buildQueryPacketString,
 } from '../tools/ibc-mocks.js';
-import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)
@@ -54,10 +54,10 @@ const redelegation = {
 
 export const UNBOND_PERIOD_SECONDS = 5n;
 
-const getCompletionTime = () => {
-  // 5 seconds fron unix epoch
-  return new Date(0 + Number(UNBOND_PERIOD_SECONDS * MILLISECONDS_PER_SECOND));
-};
+const getUnbondingTime = (): Timestamp => ({
+  seconds: UNBOND_PERIOD_SECONDS,
+  nanos: 0,
+});
 
 export const protoMsgMocks = {
   delegate: {
@@ -67,13 +67,13 @@ export const protoMsgMocks = {
   undelegate: {
     msg: buildTxPacketString([MsgUndelegate.toProtoMsg(delegation)]),
     ack: buildMsgResponseString(MsgUndelegateResponse, {
-      completionTime: getCompletionTime(),
+      completionTime: getUnbondingTime(),
     }),
   },
   redelegate: {
     msg: buildTxPacketString([MsgBeginRedelegate.toProtoMsg(redelegation)]),
     ack: buildMsgResponseString(MsgBeginRedelegateResponse, {
-      completionTime: getCompletionTime(),
+      completionTime: getUnbondingTime(),
     }),
   },
   withdrawReward: {

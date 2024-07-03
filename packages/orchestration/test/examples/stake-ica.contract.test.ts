@@ -9,6 +9,7 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { TimeMath } from '@agoric/time';
 import { commonSetup } from '../supports.js';
 import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -22,6 +23,8 @@ import {
   ChainAddress,
   DenomAmount,
 } from '../../src/orchestration-api.js';
+import { maxClockSkew } from '../../src/utils/cosmos.js';
+import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -139,6 +142,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
 
 test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const { bootstrap } = await commonSetup(t);
+  const { timer } = bootstrap;
   const { publicFacet } = await startContract(bootstrap);
   const account = await E(publicFacet).makeAccount();
 
@@ -155,20 +159,26 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   });
   t.is(delegation, undefined, 'delegation returns void');
 
-  // TODO, fixme!
-  await t.throwsAsync(
-    E(account).undelegate([
-      {
-        shares: '10',
-        validatorAddress: validatorAddr.address,
-      },
-    ]),
+  const undelegatationP = E(account).undelegate([
     {
-      message: /bad response/,
+      shares: '10',
+      validatorAddress: validatorAddr.address,
     },
+  ]);
+  const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
+  const notTooSoon = Promise.race([
+    timer.wakeAt(completionTime - 1n).then(() => true),
+    undelegatationP,
+  ]);
+  timer.advanceTo(completionTime, 'end of unbonding period');
+  t.true(await notTooSoon, "undelegate doesn't resolve before completion_time");
+  t.is(
+    await undelegatationP,
+    undefined,
+    'undelegation returns void after completion_time',
   );
 
-  const redelgation = await E(account).redelegate(
+  const redelegation = await E(account).redelegate(
     validatorAddr,
     {
       ...validatorAddr,
@@ -176,7 +186,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     },
     { denom: 'uatom', value: 10n },
   );
-  t.is(redelgation, undefined, 'redelegation returns void');
+  t.is(redelegation, undefined, 'redelegation returns void');
 
   const expectedRewards: DenomAmount = { value: 1n, denom: 'uatom' };
   const rewards = await E(account).withdrawReward(validatorAddr);
@@ -186,6 +196,8 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     'withdraw reward returns description of rewards',
   );
 });
+
+test.todo('undelegate multiple delegations');
 
 test('makeAccountInvitationMaker', async t => {
   const { bootstrap } = await commonSetup(t);
