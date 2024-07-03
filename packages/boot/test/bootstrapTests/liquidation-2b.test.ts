@@ -8,7 +8,7 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { TestFn } from 'ava';
 import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';

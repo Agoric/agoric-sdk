@@ -5,7 +5,8 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
+
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 

@@ -1,4 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
@@ -14,8 +15,6 @@ import {
   ZoeUserSeatShape,
   coreUserSeatMethods,
 } from './originalZoeSeat.js';
-
-const { Fail } = assert;
 
 // ZoeSeatAdmin has the implementation of coreUserSeatMethods, but ZoeUserSeat
 // is the facet shared with users. The latter transparently forwards to the

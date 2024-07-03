@@ -3,12 +3,12 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
+import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
 
-import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 

@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
   let zcfBundleCapP;

@@ -1,4 +1,4 @@
-import { assert, NonNullish } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
@@ -9,9 +9,7 @@ import {
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
 import { makeHeapZone } from '@agoric/zone';
-import { deeplyFulfilledObject } from '@agoric/internal';
-
-const { Fail, quote: q } = assert;
+import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);

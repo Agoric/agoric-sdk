@@ -1,9 +1,8 @@
+import { q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer.js';
-
-const { quote: q, details: X } = assert;
 
 const mintInto = (kit, purse, value) =>
   E(kit.mint)

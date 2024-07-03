@@ -1,13 +1,13 @@
 /** @file illustrates using non-vbank assets */
 
 // deep import to avoid dependency on all of ERTP, vat-data
+import { Fail, q } from '@endo/errors';
+import { E, Far } from '@endo/far';
+
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { AmountMath, AssetKind } from '@agoric/ertp/src/amountMath.js';
 import { makeTracer } from '@agoric/internal';
 import { M, getCopyBagEntries } from '@agoric/store';
-import { E, Far } from '@endo/far';
-
-const { Fail, quote: q } = assert;
 
 const trace = makeTracer('Game', true);
 

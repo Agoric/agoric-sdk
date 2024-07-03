@@ -1,7 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { q, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
@@ -11,8 +13,6 @@ import { M } from '@agoric/store';
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
  */
-
-const { quote: q, Fail } = assert;
 
 const trace = makeTracer('PA', false);
 

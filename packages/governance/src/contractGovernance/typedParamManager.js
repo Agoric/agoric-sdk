@@ -1,9 +1,8 @@
 import { E } from '@endo/eventual-send';
+import { Fail, q } from '@endo/errors';
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
-
-const { Fail, quote: q } = assert;
 
 /**
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';

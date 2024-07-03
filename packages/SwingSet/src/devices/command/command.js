@@ -1,7 +1,6 @@
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
-
-import { Fail } from '@agoric/assert';
 
 export default function buildCommand(broadcastCallback) {
   broadcastCallback || Fail`broadcastCallback must be provided.`;

@@ -1,11 +1,10 @@
+import { Fail } from '@endo/errors';
 import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
-
-const { Fail } = assert;
 
 export const makeWalletFactoryContext = async (
   t,

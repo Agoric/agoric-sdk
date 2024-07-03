@@ -3,7 +3,7 @@ import process from 'process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /* eslint-disable no-use-before-define */
 

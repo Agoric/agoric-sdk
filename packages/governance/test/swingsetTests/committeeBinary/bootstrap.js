@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
@@ -14,8 +15,6 @@ import { remoteNullMarshaller } from '../utils.js';
 /**
  * @import {QuestionDetails} from '../../../src/types.js';
  */
-
-const { quote: q } = assert;
 
 const makeVoterVat = async (log, vats, zoe) => {
   const voterCreator = E(vats.voter).build(zoe);

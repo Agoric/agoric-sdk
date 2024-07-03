@@ -1,10 +1,9 @@
 /** @file Use-object for the owner of a vault */
+import { Fail } from '@endo/errors';
 import { AmountShape } from '@agoric/ertp';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
-
-const { Fail } = assert;
 
 /**
  * @typedef {{

@@ -1,10 +1,10 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape;
 
 /**

@@ -1,7 +1,7 @@
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
+import { Fail, q } from '@endo/errors';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { Fail, q } from '@agoric/assert';
 
 import { makeLegacyMap } from '@agoric/store';
 import {

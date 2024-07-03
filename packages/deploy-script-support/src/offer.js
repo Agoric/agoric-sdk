@@ -1,6 +1,6 @@
 // @ts-check
+import { assert } from '@endo/errors';
 import { E } from '@endo/far';
-import { assert } from '@agoric/assert';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 

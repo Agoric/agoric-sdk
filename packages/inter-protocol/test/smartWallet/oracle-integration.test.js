@@ -1,8 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { NonNullish } from '@agoric/assert';
+import { NonNullish, zip } from '@agoric/internal';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { zip } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { TimeMath } from '@agoric/time';

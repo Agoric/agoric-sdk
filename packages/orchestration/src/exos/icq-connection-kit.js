@@ -1,8 +1,8 @@
 /** @file ICQConnection Exo */
-import { NonNullish } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { OutboundConnectionHandlerI } from '../typeGuards.js';
 
@@ -15,7 +15,6 @@ import { OutboundConnectionHandlerI } from '../typeGuards.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
-const { Fail } = assert;
 const trace = makeTracer('Orchestration:ICQConnection');
 
 export const ICQMsgShape = M.splitRecord(

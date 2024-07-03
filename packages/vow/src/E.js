@@ -15,10 +15,10 @@
  * designed to be a drop-in replacement for the version in
  * `@endo/eventual-send/src/E.js` which contained no concept of "unwrap",
  */
+import { X, q, Fail, makeError } from '@endo/errors';
 import { trackTurns } from './track-turns.js';
 import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
-const { details: X, quote: q, Fail } = assert;
 const { assign, create } = Object;
 
 const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
@@ -79,7 +79,7 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
             if (this !== receiver) {
               // Reject the async function call
               return HandledPromise.reject(
-                assert.error(
+                makeError(
                   X`Unexpected receiver for "${q(propertyKey)}" method of E(${q(
                     recipient,
                   )})`,

@@ -10,6 +10,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmpfs from 'tmp';
 import { fork } from 'node:child_process';
 
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -18,7 +19,6 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { Fail, q } from '@agoric/assert';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
 import {

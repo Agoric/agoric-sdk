@@ -1,6 +1,6 @@
 /** @file Orchestration service */
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { pickFacet } from '@agoric/vat-data';
 import { prepareOrchestratorKit } from './exos/orchestrator.js';
 

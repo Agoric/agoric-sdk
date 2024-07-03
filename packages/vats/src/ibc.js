@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
 import { byteSourceToBase64, base64ToBytes } from '@agoric/network';

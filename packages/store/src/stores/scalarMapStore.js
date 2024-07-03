@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import {
   Far,
   assertPassable,
@@ -20,8 +21,6 @@ import { makeCurrentKeysKit } from './store-utils.js';
  * @import {Key, Pattern} from '@endo/patterns');
  * @import {MapStore, MapStoreMethods, StoreOptions} from '../types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @template {Key} K

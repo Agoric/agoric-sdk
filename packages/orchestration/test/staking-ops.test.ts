@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { Fail } from '@endo/errors';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
@@ -24,8 +25,6 @@ import { Far } from '@endo/far';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
-
-const { Fail } = assert;
 
 const trivialDelegateResponse = encodeTxResponse(
   {},

@@ -1,5 +1,5 @@
 /// <reference path="./types-ambient.js" />
-import { q, Fail } from '@agoric/assert';
+import { q, Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@endo/nat';

@@ -1,12 +1,11 @@
 // @ts-check
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { isObject, isPassableSymbol } from '@endo/marshal';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
 /** @import {ERef} from '@endo/far' */
 /** @import {Callback, SyncCallback} from './types.js' */
-
-const { Fail, quote: q } = assert;
 
 const { fromEntries } = Object;
 
@@ -223,9 +222,7 @@ export const prepareAttenuator = (
             // Support both synchronous and async callbacks.
             const cb = this.state.cbs[key];
             if (!cb) {
-              const err = assert.error(
-                `unimplemented ${q(tag)} method ${q(key)}`,
-              );
+              const err = makeError(`unimplemented ${q(tag)} method ${q(key)}`);
               if (this.state.isSync) {
                 throw err;
               }

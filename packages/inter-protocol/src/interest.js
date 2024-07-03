@@ -1,5 +1,6 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import {
@@ -7,7 +8,6 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Fail } from '@agoric/assert';
 import { TimeMath } from '@agoric/time';
 
 /**

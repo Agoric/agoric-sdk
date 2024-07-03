@@ -1,9 +1,9 @@
 /** @file ChainAccount exo */
-import { NonNullish } from '@agoric/assert';
-import { makeTracer } from '@agoric/internal';
-import { VowShape } from '@agoric/vow';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { NonNullish, makeTracer } from '@agoric/internal';
+import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
   OutboundConnectionHandlerI,
@@ -22,7 +22,6 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  * @import {ChainAddress} from '../types.js';
  */
 
-const { Fail } = assert;
 const trace = makeTracer('ChainAccountKit');
 
 /** @typedef {'UNPARSABLE_CHAIN_ADDRESS'} UnparsableChainAddress */

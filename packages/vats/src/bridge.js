@@ -1,7 +1,6 @@
+import { Fail, X } from '@endo/errors';
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
-
-const { Fail, details: X } = assert;
 
 /**
  * Helper to type the registered scoped bridge correctly.

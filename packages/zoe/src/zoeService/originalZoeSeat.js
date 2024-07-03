@@ -1,4 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
@@ -14,8 +15,6 @@ import {
   ExitObjectShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
-
-const { Fail } = assert;
 
 export const coreUserSeatMethods = harden({
   getProposal: M.call().returns(M.promise()),

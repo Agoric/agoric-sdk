@@ -2,6 +2,8 @@
 
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
+
+import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   buildKernelBundles,
@@ -25,7 +27,6 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
  */
 
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

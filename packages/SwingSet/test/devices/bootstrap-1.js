@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { extractMessage } from '../vat-util.js';
 

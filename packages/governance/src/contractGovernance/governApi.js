@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { keyEQ } from '@agoric/store';
@@ -13,8 +14,6 @@ import {
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation} from '../types.js';
  */
-
-const { Fail, quote: q } = assert;
 
 /**
  * Make a pair of positions for a question about whether to invoke an API. If

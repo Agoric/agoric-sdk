@@ -29,6 +29,7 @@
   "dependencies": {
     "@agoric/base-zone": "^0.1.0",
     "@agoric/vat-data": "^0.5.2",
+    "@endo/errors": "^1.2.2",
     "@endo/far": "^1.1.2",
     "@endo/pass-style": "^1.4.0"
   },

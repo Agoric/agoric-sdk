@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 function scanMax(filePath, fields) {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');

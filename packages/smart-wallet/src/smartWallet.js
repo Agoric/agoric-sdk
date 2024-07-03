@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountShape,
@@ -43,8 +44,6 @@ import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, watchOfferOutcomes } from './offerWatcher.js';
 
 /** @import {OfferId, OfferStatus} from './offers.js'; */
-
-const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SmrtWlt');
 
