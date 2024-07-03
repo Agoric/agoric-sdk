@@ -9,6 +9,7 @@ import {
   provide,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import { q, Fail } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,
@@ -17,8 +18,6 @@ import {
   IssuerKeywordRecordShape,
 } from '../typeGuards.js';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
-
-const { quote: q, Fail } = assert;
 
 /**
  * @file Two objects are defined here, both called InstanceAdminSomething.

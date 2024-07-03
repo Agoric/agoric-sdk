@@ -1,4 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
@@ -13,8 +14,6 @@ import {
   assertProposalShape,
   assertNatAssetKind,
 } from '../contractSupport/index.js';
-
-const { Fail } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or

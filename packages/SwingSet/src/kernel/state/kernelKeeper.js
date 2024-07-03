@@ -1,5 +1,5 @@
 import { Nat, isNat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';

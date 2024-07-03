@@ -1,7 +1,9 @@
-import { M } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';
+import { getInterfaceGuardPayload } from '@endo/patterns';
 
+import { M } from '@agoric/store';
 import {
   AmountShape,
   BrandShape,
@@ -9,10 +11,6 @@ import {
   NotifierShape,
   PaymentShape,
 } from '@agoric/ertp/src/typeGuards.js';
-
-import { getInterfaceGuardPayload } from '@endo/patterns';
-
-const { Fail } = assert;
 
 /**
  * @param {Pattern} [brandShape]

@@ -10,8 +10,8 @@ import fsPower from 'fs/promises';
 import pathPower from 'path';
 import { fileURLToPath } from 'url';
 
+import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail, q } from '@agoric/assert';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';

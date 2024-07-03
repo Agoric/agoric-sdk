@@ -1,3 +1,4 @@
+import { X } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
@@ -6,8 +7,6 @@ import {
   assertIssuerKeywords,
   assertProposalShape,
 } from '../../../src/contractSupport/index.js';
-
-const { details: X } = assert;
 
 /**
  * Give a use object when a payment is escrowed

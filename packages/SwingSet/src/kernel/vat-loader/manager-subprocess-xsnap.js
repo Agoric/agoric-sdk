@@ -1,5 +1,5 @@
 import { synchronizedTee } from '@agoric/internal';
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
 

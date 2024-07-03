@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
 import { M, initEmpty } from '@agoric/store';
@@ -8,8 +9,6 @@ import {
   isAfterDeadlineExitRule,
   isWaivedExitRule,
 } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 const ExitObjectI = M.interface('ExitObject', { exit: M.call().returns() });
 const WakerI = M.interface('Waker', {

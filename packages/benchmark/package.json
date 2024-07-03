@@ -22,7 +22,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/boot": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/internal": "^0.3.2",

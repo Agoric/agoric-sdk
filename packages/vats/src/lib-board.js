@@ -3,7 +3,7 @@
  * @see prepareBoardKit()
  */
 
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {

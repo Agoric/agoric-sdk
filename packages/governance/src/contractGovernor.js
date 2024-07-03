@@ -1,5 +1,6 @@
-import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { mustMatch } from '@agoric/store';
 
 import { makeTracer } from '@agoric/internal';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -10,8 +11,6 @@ import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 /**
  * @import {GovernableStartFn, GovernorCreatorFacet, GovernorPublic, ParamChangeIssueDetails} from './types.js';
  */
-
-const { Fail } = assert;
 
 const trace = makeTracer('CGov', false);
 

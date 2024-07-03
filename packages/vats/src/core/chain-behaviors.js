@@ -1,4 +1,10 @@
 /* global globalThis */
+import { Fail } from '@endo/errors';
+import * as farExports from '@endo/far';
+import { E, Far } from '@endo/far';
+import { importBundle } from '@endo/import-bundle';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '@agoric/internal/src/priority-senders.js';
@@ -9,16 +15,11 @@ import {
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
-import * as farExports from '@endo/far';
-import { E, Far } from '@endo/far';
-import { importBundle } from '@endo/import-bundle';
-import { makePromiseKit } from '@endo/promise-kit';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
 
-const { Fail } = assert;
 const { keys } = Object;
 
 /**

@@ -1,7 +1,7 @@
 /* global globalThis */
 /* eslint-disable max-classes-per-file */
+import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 import { isPromise } from '@endo/promise-kit';
 
 import { parseVatSlot } from '../src/parseVatSlots.js';
@@ -9,8 +9,6 @@ import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
-
-const { Fail } = assert;
 
 const {
   WeakRef: RealWeakRef,

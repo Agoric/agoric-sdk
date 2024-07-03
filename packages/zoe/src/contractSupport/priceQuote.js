@@ -1,14 +1,13 @@
 // @jessie-check
 
-import { AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
-
-const { Fail } = assert;
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
 // with the same value. The underlying amount wraps amountIn, amountOut, timer

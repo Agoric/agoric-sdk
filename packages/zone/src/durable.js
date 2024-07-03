@@ -1,7 +1,9 @@
 // @ts-check
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { Far, isPassable } from '@endo/pass-style';
+
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -16,8 +18,6 @@ import {
 } from '@agoric/vat-data';
 
 import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
-
-const { Fail } = assert;
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.

@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import fs from 'fs';
 import bundleSource from '@endo/bundle-source';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';

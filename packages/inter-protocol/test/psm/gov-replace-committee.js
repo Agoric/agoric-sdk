@@ -6,7 +6,7 @@
  *   (aka big hammer)
  */
 
-const { Fail } = assert;
+import { Fail } from '@endo/errors';
 
 const runConfig = {
   committeeName: 'Economic Committee',

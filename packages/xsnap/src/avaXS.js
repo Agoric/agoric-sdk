@@ -11,7 +11,7 @@ import '@endo/init';
 import fs from 'fs';
 import { tmpName } from 'tmp';
 
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
 

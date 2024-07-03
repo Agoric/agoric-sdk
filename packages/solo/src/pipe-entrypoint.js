@@ -3,8 +3,9 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init/unsafe-fast.js';
 
-import { parse, stringify } from '@endo/marshal';
+import { makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+import { parse, stringify } from '@endo/marshal';
 
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
 import { connectToFakeChain } from '@agoric/cosmic-swingset/src/sim-chain.js';
@@ -52,7 +53,7 @@ const main = async () => {
       break;
     }
     default: {
-      assert.error(`unknown method ${method}`);
+      makeError(`unknown method ${method}`);
     }
   }
 

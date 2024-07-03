@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 import { makeSwingStore } from './swingStore.js';
 import { buffer } from './util.js';

@@ -1,7 +1,7 @@
 /// <reference path="./types-ambient.js" />
 
+import { assert } from '@endo/errors';
 import { AmountMath, isNatValue } from '@agoric/ertp';
-import { assert } from '@agoric/assert';
 import { makeRatio, oneMinus } from '../../contractSupport/index.js';
 import { make100Percent, make0Percent } from './percent.js';
 

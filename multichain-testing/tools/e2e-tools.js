@@ -1,5 +1,5 @@
 /** global harden */
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';

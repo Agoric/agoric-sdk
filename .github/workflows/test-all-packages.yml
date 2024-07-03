@@ -152,9 +152,6 @@ jobs:
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (assert)
-        if: (success() || failure())
-        run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (benchmark)
         if: (success() || failure())
         run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

@@ -1,5 +1,5 @@
 // @ts-check
-import { details, Fail } from '@agoric/assert';
+import { X, Fail } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { isObject } from '@endo/pass-style';
 
@@ -23,14 +23,11 @@ export function coerceToByteSource(specimen) {
   }
 
   isObject(specimen) ||
-    assert.fail(details`non-object ${specimen} is not a ByteSource`, TypeError);
+    assert.fail(X`non-object ${specimen} is not a ByteSource`, TypeError);
 
   const obj = /** @type {{}} */ (specimen);
   typeof obj[Symbol.iterator] === 'function' ||
-    assert.fail(
-      details`non-iterable ${specimen} is not a ByteSource`,
-      TypeError,
-    );
+    assert.fail(X`non-iterable ${specimen} is not a ByteSource`, TypeError);
 
   // Good enough... it's iterable and can be converted later.
   return /** @type {ByteSource} */ (specimen);

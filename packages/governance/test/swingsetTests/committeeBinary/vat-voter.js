@@ -1,13 +1,13 @@
-import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
-import { keyEQ } from '@agoric/store';
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+
+import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
+import { keyEQ } from '@agoric/store';
 
 /**
  * @import {CommitteeElectoratePublic, Issue} from '../../../src/types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @param {(msg: any)=> void} log

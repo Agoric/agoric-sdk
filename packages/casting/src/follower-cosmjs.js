@@ -1,11 +1,11 @@
 /// <reference types="ses" />
 
+import { X, q, Fail, makeError } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import * as tendermint34 from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
 
 import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
@@ -21,7 +21,6 @@ harden({
 
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
-const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
@@ -264,7 +263,7 @@ export const makeCosmjsFollower = (
           return;
         }
         crash(
-          assert.error(
+          makeError(
             X`Alleged value ${alleged.value} did not match proof ${proven.value}`,
           ),
         );

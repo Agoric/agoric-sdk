@@ -5,7 +5,7 @@ import * as path from 'path';
 
 import sqlite3 from 'better-sqlite3';
 
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
 import { makeKVStore, getKeyType } from './kvStore.js';

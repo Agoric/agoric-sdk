@@ -20,7 +20,7 @@
     "lint:types": "tsc"
   },
   "dependencies": {
-    "@agoric/assert": "^0.6.0",
+    "@endo/errors": "^1.2.2",
     "@agoric/base-zone": "^0.1.0",
     "@endo/common": "^1.2.2",
     "@endo/far": "^1.1.2",

@@ -1,6 +1,6 @@
+import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { showPurseBalance, setupIssuers } from './helpers.js';

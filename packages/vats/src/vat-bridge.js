@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import * as cb from '@agoric/internal/src/callback.js';

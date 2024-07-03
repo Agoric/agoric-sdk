@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
@@ -8,8 +9,6 @@ import { TimeMath } from '@agoric/time';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {RemotableBrand} from '@endo/eventual-send';
  */
-
-const { Fail } = assert;
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
 // zoe's tests

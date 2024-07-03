@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -20,8 +21,6 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 /**
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
  */
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager

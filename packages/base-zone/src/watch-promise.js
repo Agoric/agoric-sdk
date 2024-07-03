@@ -1,8 +1,7 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
-
-const { Fail } = assert;
 
 const { apply } = Reflect;
 

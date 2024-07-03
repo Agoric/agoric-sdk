@@ -1,4 +1,4 @@
-import { quote } from '@agoric/assert';
+import { q } from '@endo/errors';
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -66,7 +66,7 @@ function makeCallbackRegistry(callbacks) {
       if (!cbNames.length) {
         return;
       }
-      console.warn(errorUnusedMsg, cbNames.map(quote).sort().join(', '));
+      console.warn(errorUnusedMsg, cbNames.map(q).sort().join(', '));
     },
   });
 }

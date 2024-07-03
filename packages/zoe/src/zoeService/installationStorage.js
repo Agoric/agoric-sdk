@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,
@@ -10,8 +10,6 @@ import {
   InstanceHandleShape,
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */

@@ -1,4 +1,4 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { assertRecord } from '@endo/marshal';

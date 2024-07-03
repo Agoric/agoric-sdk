@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { parseVatSlot } from '../../lib/parseVatSlots.js';
 import { parseRemoteSlot } from './parseRemoteSlot.js';
 

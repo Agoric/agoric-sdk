@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -12,8 +13,6 @@ import {
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { calculateDebtCosts } from './math.js';
 import { prepareVaultKit } from './vaultKit.js';
-
-const { quote: q, Fail } = assert;
 
 const trace = makeTracer('Vault', true);
 

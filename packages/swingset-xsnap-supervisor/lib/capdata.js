@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * Assert function to ensure that something expected to be a capdata object

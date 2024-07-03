@@ -1,11 +1,13 @@
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+
+import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import {
   makeNotifierKit,
   makeNotifierFromAsyncIterable,
 } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
@@ -14,7 +16,6 @@ import { natSafeMath } from '../src/contractSupport/index.js';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
-const { Fail } = assert;
 const { coerceRelativeTimeRecord } = TimeMath;
 
 // 'if (a >= b)' becomes 'if (timestampGTE(a,b))'
