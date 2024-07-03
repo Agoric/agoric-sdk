@@ -14,6 +14,7 @@ import * as _11 from './vlocalchain/vlocalchain.js';
 import * as _12 from './vstorage/genesis.js';
 import * as _13 from './vstorage/query.js';
 import * as _14 from './vstorage/vstorage.js';
+import * as _15 from './vtransfer/genesis.js';
 export namespace agoric {
   export const lien = {
     ..._0,
@@ -41,5 +42,8 @@ export namespace agoric {
     ..._12,
     ..._13,
     ..._14,
+  };
+  export const vtransfer = {
+    ..._15,
   };
 }

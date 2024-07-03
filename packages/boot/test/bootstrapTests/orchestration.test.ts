@@ -191,6 +191,11 @@ test.serial('stakeAtom - smart wallet', async t => {
   );
 });
 
+test.todo('undelegate wallet offer');
+test.todo('undelegate with multiple undelegations wallet offer');
+test.todo('redelegate wallet offer');
+test.todo('withdraw reward wallet offer');
+
 // XXX rely on .serial to be in sequence, and keep this one last
 test.serial('revise chain info', async t => {
   const {

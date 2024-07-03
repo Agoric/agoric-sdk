@@ -1,5 +1,8 @@
 //@ts-nocheck
-import { Timestamp } from '../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../google/protobuf/timestamp.js';
 import { Header, HeaderSDKType } from '../types/types.js';
 import { ProofOps, ProofOpsSDKType } from '../crypto/proof.js';
 import {
@@ -14,10 +17,9 @@ import { PublicKey, PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
   isSet,
-  toTimestamp,
-  fromTimestamp,
   fromJsonTimestamp,
   bytesFromBase64,
+  fromTimestamp,
   base64FromBytes,
 } from '../../helpers.js';
 import { JsonSafe } from '../../json-safe.js';
@@ -303,7 +305,7 @@ export interface RequestSetOptionSDKType {
   value: string;
 }
 export interface RequestInitChain {
-  time: Date;
+  time: Timestamp;
   chainId: string;
   consensusParams?: ConsensusParams;
   validators: ValidatorUpdate[];
@@ -315,7 +317,7 @@ export interface RequestInitChainProtoMsg {
   value: Uint8Array;
 }
 export interface RequestInitChainSDKType {
-  time: Date;
+  time: TimestampSDKType;
   chain_id: string;
   consensus_params?: ConsensusParamsSDKType;
   validators: ValidatorUpdateSDKType[];
@@ -899,7 +901,7 @@ export interface Evidence {
   /** The height when the offense occurred */
   height: bigint;
   /** The corresponding time where the offense occurred */
-  time: Date;
+  time: Timestamp;
   /**
    * Total voting power of the validator set in case the ABCI application does
    * not store historical validators.
@@ -915,7 +917,7 @@ export interface EvidenceSDKType {
   type: EvidenceType;
   validator: ValidatorSDKType;
   height: bigint;
-  time: Date;
+  time: TimestampSDKType;
   total_voting_power: bigint;
 }
 export interface Snapshot {
@@ -1579,7 +1581,7 @@ export const RequestSetOption = {
 };
 function createBaseRequestInitChain(): RequestInitChain {
   return {
-    time: new Date(),
+    time: Timestamp.fromPartial({}),
     chainId: '',
     consensusParams: undefined,
     validators: [],
@@ -1594,10 +1596,7 @@ export const RequestInitChain = {
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.time !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.time),
-        writer.uint32(10).fork(),
-      ).ldelim();
+      Timestamp.encode(message.time, writer.uint32(10).fork()).ldelim();
     }
     if (message.chainId !== '') {
       writer.uint32(18).string(message.chainId);
@@ -1628,9 +1627,7 @@ export const RequestInitChain = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.time = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.time = Timestamp.decode(reader, reader.uint32());
           break;
         case 2:
           message.chainId = reader.string();
@@ -1679,7 +1676,8 @@ export const RequestInitChain = {
   },
   toJSON(message: RequestInitChain): JsonSafe<RequestInitChain> {
     const obj: any = {};
-    message.time !== undefined && (obj.time = message.time.toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     message.chainId !== undefined && (obj.chainId = message.chainId);
     message.consensusParams !== undefined &&
       (obj.consensusParams = message.consensusParams
@@ -1704,7 +1702,10 @@ export const RequestInitChain = {
   },
   fromPartial(object: Partial<RequestInitChain>): RequestInitChain {
     const message = createBaseRequestInitChain();
-    message.time = object.time ?? undefined;
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     message.chainId = object.chainId ?? '';
     message.consensusParams =
       object.consensusParams !== undefined && object.consensusParams !== null
@@ -5341,7 +5342,7 @@ function createBaseEvidence(): Evidence {
     type: 0,
     validator: Validator.fromPartial({}),
     height: BigInt(0),
-    time: new Date(),
+    time: Timestamp.fromPartial({}),
     totalVotingPower: BigInt(0),
   };
 }
@@ -5361,10 +5362,7 @@ export const Evidence = {
       writer.uint32(24).int64(message.height);
     }
     if (message.time !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.time),
-        writer.uint32(34).fork(),
-      ).ldelim();
+      Timestamp.encode(message.time, writer.uint32(34).fork()).ldelim();
     }
     if (message.totalVotingPower !== BigInt(0)) {
       writer.uint32(40).int64(message.totalVotingPower);
@@ -5389,9 +5387,7 @@ export const Evidence = {
           message.height = reader.int64();
           break;
         case 4:
-          message.time = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.time = Timestamp.decode(reader, reader.uint32());
           break;
         case 5:
           message.totalVotingPower = reader.int64();
@@ -5427,7 +5423,8 @@ export const Evidence = {
         : undefined);
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
-    message.time !== undefined && (obj.time = message.time.toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     message.totalVotingPower !== undefined &&
       (obj.totalVotingPower = (
         message.totalVotingPower || BigInt(0)
@@ -5445,7 +5442,10 @@ export const Evidence = {
       object.height !== undefined && object.height !== null
         ? BigInt(object.height.toString())
         : BigInt(0);
-    message.time = object.time ?? undefined;
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     message.totalVotingPower =
       object.totalVotingPower !== undefined && object.totalVotingPower !== null
         ? BigInt(object.totalVotingPower.toString())

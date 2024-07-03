@@ -36,6 +36,14 @@
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"
     },
+    "./cosmos/bank/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/bank/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/bank/v1beta1/tx.js"
+    },
+    "./cosmos/base/v1beta1/coin.js": {
+      "types": "./dist/codegen/cosmos/base/v1beta1/coin.d.ts",
+      "default": "./dist/codegen/cosmos/base/v1beta1/coin.js"
+    },
     "./cosmos/distribution/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
@@ -83,6 +91,14 @@
     "./icq/v1/packet.js": {
       "types": "./dist/codegen/icq/v1/packet.d.ts",
       "default": "./dist/codegen/icq/v1/packet.js"
+    },
+    "./osmosis/*.js": {
+      "types": "./dist/codegen/osmosis/*.d.ts",
+      "default": "./dist/codegen/osmosis/*.js"
+    },
+    "./osmosis/gamm/v1beta1/tx.js": {
+      "types": "./dist/codegen/osmosis/gamm/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/osmosis/gamm/v1beta1/tx.js"
     },
     "./swingset/msgs.js": {
       "types": "./dist/codegen/agoric/swingset/msgs.d.ts",

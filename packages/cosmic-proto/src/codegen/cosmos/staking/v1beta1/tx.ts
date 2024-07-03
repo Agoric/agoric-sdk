@@ -7,14 +7,12 @@ import {
 } from './staking.js';
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
-import { Timestamp } from '../../../google/protobuf/timestamp.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import {
-  isSet,
-  toTimestamp,
-  fromTimestamp,
-  fromJsonTimestamp,
-} from '../../../helpers.js';
+  Timestamp,
+  TimestampSDKType,
+} from '../../../google/protobuf/timestamp.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
 import { Decimal } from '@cosmjs/math';
 /** MsgCreateValidator defines a SDK message for creating a new validator. */
@@ -137,7 +135,7 @@ export interface MsgBeginRedelegateSDKType {
 }
 /** MsgBeginRedelegateResponse defines the Msg/BeginRedelegate response type. */
 export interface MsgBeginRedelegateResponse {
-  completionTime: Date;
+  completionTime: Timestamp;
 }
 export interface MsgBeginRedelegateResponseProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegateResponse';
@@ -145,7 +143,7 @@ export interface MsgBeginRedelegateResponseProtoMsg {
 }
 /** MsgBeginRedelegateResponse defines the Msg/BeginRedelegate response type. */
 export interface MsgBeginRedelegateResponseSDKType {
-  completion_time: Date;
+  completion_time: TimestampSDKType;
 }
 /**
  * MsgUndelegate defines a SDK message for performing an undelegation from a
@@ -171,7 +169,7 @@ export interface MsgUndelegateSDKType {
 }
 /** MsgUndelegateResponse defines the Msg/Undelegate response type. */
 export interface MsgUndelegateResponse {
-  completionTime: Date;
+  completionTime: Timestamp;
 }
 export interface MsgUndelegateResponseProtoMsg {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse';
@@ -179,7 +177,7 @@ export interface MsgUndelegateResponseProtoMsg {
 }
 /** MsgUndelegateResponse defines the Msg/Undelegate response type. */
 export interface MsgUndelegateResponseSDKType {
-  completion_time: Date;
+  completion_time: TimestampSDKType;
 }
 /**
  * MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
@@ -877,7 +875,7 @@ export const MsgBeginRedelegate = {
 };
 function createBaseMsgBeginRedelegateResponse(): MsgBeginRedelegateResponse {
   return {
-    completionTime: new Date(),
+    completionTime: Timestamp.fromPartial({}),
   };
 }
 export const MsgBeginRedelegateResponse = {
@@ -888,7 +886,7 @@ export const MsgBeginRedelegateResponse = {
   ): BinaryWriter {
     if (message.completionTime !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.completionTime),
+        message.completionTime,
         writer.uint32(10).fork(),
       ).ldelim();
     }
@@ -906,9 +904,7 @@ export const MsgBeginRedelegateResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.completionTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.completionTime = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -929,14 +925,19 @@ export const MsgBeginRedelegateResponse = {
   ): JsonSafe<MsgBeginRedelegateResponse> {
     const obj: any = {};
     message.completionTime !== undefined &&
-      (obj.completionTime = message.completionTime.toISOString());
+      (obj.completionTime = fromTimestamp(
+        message.completionTime,
+      ).toISOString());
     return obj;
   },
   fromPartial(
     object: Partial<MsgBeginRedelegateResponse>,
   ): MsgBeginRedelegateResponse {
     const message = createBaseMsgBeginRedelegateResponse();
-    message.completionTime = object.completionTime ?? undefined;
+    message.completionTime =
+      object.completionTime !== undefined && object.completionTime !== null
+        ? Timestamp.fromPartial(object.completionTime)
+        : undefined;
     return message;
   },
   fromProtoMsg(
@@ -1050,7 +1051,7 @@ export const MsgUndelegate = {
 };
 function createBaseMsgUndelegateResponse(): MsgUndelegateResponse {
   return {
-    completionTime: new Date(),
+    completionTime: Timestamp.fromPartial({}),
   };
 }
 export const MsgUndelegateResponse = {
@@ -1061,7 +1062,7 @@ export const MsgUndelegateResponse = {
   ): BinaryWriter {
     if (message.completionTime !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.completionTime),
+        message.completionTime,
         writer.uint32(10).fork(),
       ).ldelim();
     }
@@ -1079,9 +1080,7 @@ export const MsgUndelegateResponse = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.completionTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.completionTime = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -1100,12 +1099,17 @@ export const MsgUndelegateResponse = {
   toJSON(message: MsgUndelegateResponse): JsonSafe<MsgUndelegateResponse> {
     const obj: any = {};
     message.completionTime !== undefined &&
-      (obj.completionTime = message.completionTime.toISOString());
+      (obj.completionTime = fromTimestamp(
+        message.completionTime,
+      ).toISOString());
     return obj;
   },
   fromPartial(object: Partial<MsgUndelegateResponse>): MsgUndelegateResponse {
     const message = createBaseMsgUndelegateResponse();
-    message.completionTime = object.completionTime ?? undefined;
+    message.completionTime =
+      object.completionTime !== undefined && object.completionTime !== null
+        ? Timestamp.fromPartial(object.completionTime)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: MsgUndelegateResponseProtoMsg): MsgUndelegateResponse {
