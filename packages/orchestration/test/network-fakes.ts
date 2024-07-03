@@ -19,7 +19,7 @@ import {
 import { BridgeId } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import type { Guarded } from '@endo/exo';
-import { defaultMockAckMap, protoMsgMocks } from './ibc-mocks.js';
+import { defaultMockAckMap, errorAcknowledgments } from './ibc-mocks.js';
 
 /**
  * Mimic IBC Channel version negotation
@@ -174,7 +174,7 @@ export const makeFakeIBCBridge = (
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
               sequence: ibcSequenceNonce,
               acknowledgement:
-                mockAckMap?.[obj.packet.data] || protoMsgMocks.error.ack,
+                mockAckMap?.[obj.packet.data] || errorAcknowledgments.error5,
             });
             ibcSequenceNonce += 1;
             bridgeHandler?.fromBridge(ackEvent);

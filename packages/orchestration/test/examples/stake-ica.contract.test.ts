@@ -9,6 +9,7 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { TimeMath } from '@agoric/time';
 import { commonSetup } from '../supports.js';
 import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -17,6 +18,13 @@ import {
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
+import {
+  AmountArg,
+  ChainAddress,
+  DenomAmount,
+} from '../../src/orchestration-api.js';
+import { maxClockSkew } from '../../src/utils/cosmos.js';
+import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -132,6 +140,65 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   t.snapshot(bootstrap.storage.data.entries(), 'accounts in vstorage');
 });
 
+test('delegate, undelegate, redelegate, withdrawReward', async t => {
+  const { bootstrap } = await commonSetup(t);
+  const { timer } = bootstrap;
+  const { publicFacet } = await startContract(bootstrap);
+  const account = await E(publicFacet).makeAccount();
+
+  // XXX consider building a mock bank into remote chains. for now, assume
+  // newly created accounts magically have tokens.
+  const validatorAddr = {
+    address: 'cosmosvaloper1test' as const,
+    chainId: 'cosmoshub-4',
+    addressEncoding: 'bech32' as const,
+  };
+  const delegation = await E(account).delegate(validatorAddr, {
+    denom: 'uatom',
+    value: 10n,
+  });
+  t.is(delegation, undefined, 'delegation returns void');
+
+  const undelegatationP = E(account).undelegate([
+    {
+      shares: '10',
+      validatorAddress: validatorAddr.address,
+    },
+  ]);
+  const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
+  const notTooSoon = Promise.race([
+    timer.wakeAt(completionTime - 1n).then(() => true),
+    undelegatationP,
+  ]);
+  timer.advanceTo(completionTime, 'end of unbonding period');
+  t.true(await notTooSoon, "undelegate doesn't resolve before completion_time");
+  t.is(
+    await undelegatationP,
+    undefined,
+    'undelegation returns void after completion_time',
+  );
+
+  const redelegation = await E(account).redelegate(
+    validatorAddr,
+    {
+      ...validatorAddr,
+      address: 'cosmosvaloper2test',
+    },
+    { denom: 'uatom', value: 10n },
+  );
+  t.is(redelegation, undefined, 'redelegation returns void');
+
+  const expectedRewards: DenomAmount = { value: 1n, denom: 'uatom' };
+  const rewards = await E(account).withdrawReward(validatorAddr);
+  t.deepEqual(
+    rewards,
+    [expectedRewards], // XXX consider returning just the first entry since this is a single reward
+    'withdraw reward returns description of rewards',
+  );
+});
+
+test.todo('undelegate multiple delegations');
+
 test('makeAccountInvitationMaker', async t => {
   const { bootstrap } = await commonSetup(t);
   const { publicFacet, zoe } = await startContract(bootstrap);
@@ -163,4 +230,33 @@ test('makeAccountInvitationMaker', async t => {
   );
   t.truthy(vstorageEntry, 'vstorage account entry created');
   t.is(bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)), '');
+});
+
+test('CosmosOrchestrationAccount - not yet implemented', async t => {
+  const { bootstrap } = await commonSetup(t);
+  const { publicFacet } = await startContract(bootstrap);
+  const account = await E(publicFacet).makeAccount();
+  const mockChainAddress: ChainAddress = {
+    address: 'cosmos1test',
+    chainId: 'cosmoshub-4',
+    addressEncoding: 'bech32',
+  };
+  const mockAmountArg: AmountArg = { value: 10n, denom: 'uatom' };
+
+  await t.throwsAsync(E(account).getBalances(), {
+    message: 'not yet implemented',
+  });
+  await t.throwsAsync(E(account).send(mockChainAddress, mockAmountArg), {
+    message: 'not yet implemented',
+  });
+  // XXX consider, positioning amount + address args the same for .send and .transfer
+  await t.throwsAsync(E(account).transfer(mockAmountArg, mockChainAddress), {
+    message: 'not yet implemented',
+  });
+  await t.throwsAsync(E(account).transferSteps(mockAmountArg, []), {
+    message: 'not yet implemented',
+  });
+  await t.throwsAsync(E(account).withdrawRewards(), {
+    message: 'Not Implemented. Try using withdrawReward.',
+  });
 });

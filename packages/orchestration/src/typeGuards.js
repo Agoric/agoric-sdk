@@ -102,3 +102,9 @@ export const ChainFacadeI = M.interface('ChainFacade', {
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
 });
+
+/**
+ * for google/protobuf/timestamp.proto, not to be confused with TimestampShape
+ * from `@agoric/time`
+ */
+export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };

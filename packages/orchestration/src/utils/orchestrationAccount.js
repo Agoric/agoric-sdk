@@ -1,5 +1,4 @@
 import { M } from '@endo/patterns';
-import { PaymentShape } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
 import { AmountArgShape, ChainAddressShape, CoinShape } from '../typeGuards.js';
@@ -18,5 +17,4 @@ export const orchestrationAccountMethods = {
     .optional(M.record())
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
-  deposit: M.call(PaymentShape).returns(VowShape),
 };

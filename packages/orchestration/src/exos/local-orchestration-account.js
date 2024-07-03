@@ -13,10 +13,11 @@ import {
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
+  TimestampProtoShape,
 } from '../typeGuards.js';
 import { maxClockSkew } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
+import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
@@ -53,6 +54,7 @@ const HolderI = M.interface('holder', {
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(VowShape),
   undelegate: M.call(M.string(), AmountShape).returns(VowShape),
+  deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
@@ -86,7 +88,9 @@ export const prepareLocalOrchestrationAccountKit = (
     {
       holder: HolderI,
       undelegateWatcher: M.interface('undelegateWatcher', {
-        onFulfilled: M.call([M.splitRecord({ completionTime: M.string() })])
+        onFulfilled: M.call([
+          M.splitRecord({ completionTime: TimestampProtoShape }),
+        ])
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
@@ -185,9 +189,10 @@ export const prepareLocalOrchestrationAccountKit = (
           const { completionTime } = response[0];
           return watch(
             E(timerService).wakeAt(
-              // TODO clean up date handling once we have real data
-              dateInSeconds(new Date(completionTime)) + maxClockSkew,
+              // ignore nanoseconds and just use seconds from Timestamp
+              BigInt(completionTime.seconds) + maxClockSkew,
             ),
+            this.facets.returnVoidWatcher,
           );
         },
       },
@@ -367,7 +372,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {PromiseToVow<OrchestrationAccount<any>['deposit']>} */
+        /** @type {PromiseToVow<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),

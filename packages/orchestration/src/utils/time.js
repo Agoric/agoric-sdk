@@ -7,6 +7,7 @@ import { TimeMath } from '@agoric/time';
  */
 
 export const SECONDS_PER_MINUTE = 60n;
+export const MILLISECONDS_PER_SECOND = 1000n;
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 
 /**
@@ -52,12 +53,3 @@ export function makeTimestampHelper(timer) {
 }
 
 /** @typedef {Awaited<ReturnType<typeof makeTimestampHelper>>} TimestampHelper */
-
-/**
- * Convert a Date from a Cosmos message, which has millisecond precision, to a
- * BigInt for number of seconds since epoch, for use in a timer.
- *
- * @param {Date} date
- * @returns {bigint}
- */
-export const dateInSeconds = date => BigInt(Math.floor(date.getTime() / 1000));
