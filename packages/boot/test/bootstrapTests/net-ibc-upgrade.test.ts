@@ -1,7 +1,4 @@
 /** @file upgrade network / IBC vat at many points in state machine */
-import { BridgeId } from '@agoric/internal';
-import type { BridgeHandler } from '@agoric/vats';
-import { makeFakeIbcBridge } from '@agoric/vats/tools/fake-bridge.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import type { TestFn } from 'ava';
