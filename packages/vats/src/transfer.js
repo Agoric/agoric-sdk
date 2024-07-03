@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { ReactionGuard } from '@agoric/vow';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
 import { TargetAppI, AppTransformerI } from './bridge-target.js';
@@ -10,12 +11,6 @@ import { TargetAppI, AppTransformerI } from './bridge-target.js';
  */
 
 const { Fail, bare } = assert;
-
-/**
- * The least possibly restrictive guard for a `watch` watcher's `onFulfilled` or
- * `onRejected` reaction
- */
-const ReactionGuard = M.call(M.any()).optional(M.any()).returns(M.any());
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone

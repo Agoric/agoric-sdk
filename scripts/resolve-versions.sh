@@ -1,14 +1,9 @@
 #!/bin/bash
 set -ueo pipefail
 
-# Accepts a dependency version map on stdin and updates the current
-# package.json's resolutions section to use the packages and versions from
-# the map.
-# This is useful for temporary bulk updates over all packages.
-
-DIR=$(dirname -- "${BASH_SOURCE[0]}")
-
-cd -- "$DIR/.."
+# Accepts a dependency version map on stdin and updates the current directory's
+# package.json resolutions section to use the packages and versions from the
+# map.  This is useful for temporary bulk updates over all packages.
 
 override=$(jq 'to_entries | map({ key: ("**/" + .key), value: .value }) | from_entries')
 

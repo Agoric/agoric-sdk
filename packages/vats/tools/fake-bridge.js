@@ -120,6 +120,17 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
   });
 };
 
+/** @param {any} obj */
+const toBridgeIbcMethod = obj => {
+  const { type, method, ...params } = obj;
+  assert.equal(type, 'IBC_METHOD');
+  if (method === 'sendPacket') {
+    const { packet } = params;
+    return harden({ ...packet, sequence: '39' });
+  }
+  return undefined;
+};
+
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} onToBridge
@@ -132,13 +143,7 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
     getBridgeId: () => 'dibc',
     toBridge: async obj => {
       onToBridge(obj);
-      const { method, type, ...params } = obj;
-      assert.equal(type, 'IBC_METHOD');
-      if (method === 'sendPacket') {
-        const { packet } = params;
-        return { ...packet, sequence: '39' };
-      }
-      return undefined;
+      return toBridgeIbcMethod(obj);
     },
     fromBridge: async obj => {
       if (!hndlr) throw Error('no handler!');
@@ -159,10 +164,17 @@ export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {(obj) => void} [onToBridge]
+ * @param {(obj: any) => void} [onToBridge]
+ * @param {object} [opts]
+ * @param {(obj: any) => string} [opts.allocateAddress]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
-export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
+export const makeFakeLocalchainBridge = (
+  zone,
+  onToBridge = () => {},
+  opts = {},
+) => {
+  const { allocateAddress = () => LOCALCHAIN_DEFAULT_ADDRESS } = opts;
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
@@ -174,7 +186,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
       trace('toBridge', type, method, params);
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return LOCALCHAIN_DEFAULT_ADDRESS;
+          return allocateAddress(obj);
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
           return obj.messages.map(message => {
@@ -252,6 +264,9 @@ export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
         case 'BRIDGE_TARGET_UNREGISTER': {
           registered.delete(params.target);
           return undefined;
+        }
+        case 'IBC_METHOD': {
+          return toBridgeIbcMethod(obj);
         }
         default:
           Fail`unknown type ${type}`;
