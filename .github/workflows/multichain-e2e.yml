@@ -25,6 +25,12 @@ jobs:
           node-version: 18.x
           path: ./agoric-sdk
 
+      - name: yarn link
+        run: |
+          yarn link-cli ~/bin/agoric
+          echo "/home/runner/bin" >> $GITHUB_PATH
+        working-directory: ./agoric-sdk
+
       - name: Enable Corepack
         run: corepack enable
         working-directory: ./agoric-sdk/multichain-testing
@@ -61,6 +67,10 @@ jobs:
           curl --fail --retry 3 --retry-delay 10 http://localhost:8081/chains/agoriclocal || (echo "agoriclocal URL check failed")
           curl --fail --retry 3 --retry-delay 10 http://localhost:8081/chains/osmosislocal || (echo "osmosislocal URL check failed")
           curl --fail --retry 3 --retry-delay 10 http://localhost:8081/chains/gaialocal || (echo "gaialocal URL check failed")
+
+      - name: Override Chain Registry
+        run: make override-chain-registry
+        working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
         run: yarn test

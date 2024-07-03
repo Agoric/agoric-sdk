@@ -1,32 +1,21 @@
 import type { ExecutionContext } from 'ava';
 import { dirname, join } from 'path';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import * as ambientChildProcess from 'node:child_process';
-import * as ambientFsp from 'node:fs/promises';
-import { type E2ETools, makeE2ETools } from '../tools/e2e-tools.js';
-import { makeGetConfigFile, makeSetupRegistry } from '../tools/registry.js';
+import { execa } from 'execa';
+import fse from 'fs-extra';
+import childProcess from 'node:child_process';
+import { makeAgdTools } from '../tools/agd-tools.js';
+import { type E2ETools } from '../tools/e2e-tools.js';
+import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
+import { makeRetryUntilCondition } from '../tools/sleep.js';
+import { makeDeployBuilder } from '../tools/deploy.js';
 
-const setupRegistry = makeSetupRegistry(makeGetConfigFile({ dirname, join }));
-
-const makeAgdTools = async (t: ExecutionContext) => {
-  const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
-  const { writeFile } = ambientFsp;
-  const { execFileSync, execFile } = ambientChildProcess;
-  const tools = await makeE2ETools(t, bundleCache, {
-    execFileSync,
-    execFile,
-    fetch,
-    setTimeout,
-    writeFile,
-  });
-  return tools;
-};
+const setupRegistry = makeSetupRegistry(makeGetFile({ dirname, join }));
 
 const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
 ) => {
-  let _keys: string[];
+  let _keys = ['user1'];
   const setupTestKeys = async (keys = ['user1']) => {
     _keys = keys;
     const wallets: Record<string, string> = {};
@@ -38,18 +27,24 @@ const makeKeyring = async (
     return wallets;
   };
 
-  const deleteTestKeys = () =>
-    Promise.all(_keys.map(key => e2eTools.deleteKey(key)));
+  const deleteTestKeys = (keys: string[] = []) =>
+    Promise.allSettled(
+      Array.from(new Set([...keys, ..._keys])).map(key =>
+        e2eTools.deleteKey(key).catch(),
+      ),
+    ).catch();
 
   return { setupTestKeys, deleteTestKeys };
 };
 
 export const commonSetup = async (t: ExecutionContext) => {
   const { useChain } = await setupRegistry();
-  const tools = await makeAgdTools(t);
+  const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
+  const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
+  const retryUntilCondition = makeRetryUntilCondition(t.log);
 
-  return { useChain, ...tools, ...keyring };
+  return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
 };
 
 export type SetupContext = Awaited<ReturnType<typeof commonSetup>>;

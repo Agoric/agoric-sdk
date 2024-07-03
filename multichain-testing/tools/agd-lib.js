@@ -62,8 +62,10 @@ export const makeAgd = ({ execFileSync }) => {
      * @param {string[]} args
      * @param {*} [opts]
      */
-    const exec = (args, opts = { encoding: 'utf-8' }) =>
-      execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
+    const exec = (
+      args,
+      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
+    ) => execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -130,7 +132,7 @@ export const makeAgd = ({ execFileSync }) => {
           ...outJson,
         ];
         console.log('$$$ agd', ...args);
-        const out = exec(args, { stdio: ['pipe', 'pipe', 'ignore'] });
+        const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
         try {
           const detail = JSON.parse(out);
           if (detail.code !== 0) {
@@ -180,3 +182,40 @@ export const makeAgd = ({ execFileSync }) => {
 };
 
 /** @typedef {ReturnType<makeAgd>} Agd */
+
+/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
+export const makeCopyFiles = (
+  { execFileSync, log },
+  {
+    podName = 'agoriclocal-genesis-0',
+    containerName = 'validator',
+    destDir = '/tmp/contracts',
+  } = {},
+) => {
+  /** @param {string[]} paths } */
+  return paths => {
+    // Create the destination directory if it doesn't exist
+    execFileSync(
+      kubectlBinary,
+      `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
+        ' ',
+      ),
+      { stdio: ['ignore', 'pipe', 'ignore'] },
+    );
+    for (const path of paths) {
+      execFileSync(
+        kubectlBinary,
+        `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
+        { stdio: ['ignore', 'pipe', 'ignore'] },
+      );
+      log(`Copied ${path} to ${destDir} in pod ${podName}`);
+    }
+    const lsOutput = execFileSync(
+      kubectlBinary,
+      `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
+      { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' },
+    );
+    log(`ls ${destDir}:\n${lsOutput}`);
+    return lsOutput;
+  };
+};
