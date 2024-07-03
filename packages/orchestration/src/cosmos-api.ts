@@ -11,7 +11,7 @@ import type {
   Order,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
-import type { Brand, Purse } from '@agoric/ertp/src/types.js';
+import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
 import type {

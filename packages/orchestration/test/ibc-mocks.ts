@@ -24,6 +24,8 @@ const responses = {
   ),
 };
 
+export const UNBOND_PERIOD_SECONDS = 5n;
+
 export const protoMsgMocks = {
   delegate: {
     // delegate 10 uatom from cosmos1test to cosmosvaloper1test

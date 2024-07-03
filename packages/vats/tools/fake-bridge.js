@@ -212,7 +212,8 @@ export const makeFakeLocalchainBridge = (
               }
               case '/cosmos.staking.v1beta1.MsgUndelegate': {
                 return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
-                  completionTime: new Date().toJSON(),
+                  // 5 seconds from unix epoch
+                  completionTime: { seconds: 5n, nanos: 0 },
                 });
               }
               // returns one empty object per message unless specified
