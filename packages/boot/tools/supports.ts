@@ -1406,6 +1406,7 @@ export const makeSwingsetTestKit = async <
         configPath || resolvedConfigPath,
         [],
         {
+          DEBUG: 'label-instances',
           SWINGSET_STARTUP_PROFILE: process.env.SWINGSET_STARTUP_PROFILE,
           XSNAP_DEBUG: process.env.XSNAP_DEBUG,
           XSNAP_TEST_RECORD: process.env.XSNAP_TEST_RECORD,
