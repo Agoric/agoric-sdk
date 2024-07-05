@@ -64,7 +64,8 @@ const body = {
       give: {
         Price: {
           brand: smallCaps.ref(brand.IST),
-          value: smallCaps.Nat(5n * ISTunit) }
+          value: smallCaps.Nat(5n * ISTunit),
+        },
       },
     },
   },

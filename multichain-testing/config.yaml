@@ -10,10 +10,10 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "2m"
+            unbonding_time: '2m'
         swingset:
           params:
-            bootstrap_vat_config: "@agoric/vm-config/decentral-itest-orchestration-config.json"
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
     scripts:
       updateConfig:
         file: scripts/update-config.sh
@@ -34,17 +34,17 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "2m"
+            unbonding_time: '2m'
         interchain_accounts:
           host_genesis_state:
             params:
               host_enabled: true
-              allow_messages: ["*"]
+              allow_messages: ['*']
         interchainquery:
-          host_port: "icqhost"
+          host_port: 'icqhost'
           params:
             host_enabled: true
-            allow_queries: ["*"]
+            allow_queries: ['*']
     faucet:
       enabled: true
       type: starship
@@ -63,12 +63,12 @@ chains:
       app_state:
         staking:
           params:
-            unbonding_time: "2m"
+            unbonding_time: '2m'
         interchain_accounts:
           host_genesis_state:
             params:
               host_enabled: true
-              allow_messages: ["*"]
+              allow_messages: ['*']
     faucet:
       enabled: true
     ports:

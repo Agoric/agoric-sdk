@@ -10,14 +10,13 @@ set -eux
 
 ls $CHAIN_DIR
 
-
 echo "Update config.toml file"
 sed -i -e 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:26657"#g' $CHAIN_DIR/config/config.toml
 sed -i -e 's/index_all_keys = false/index_all_keys = true/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's/seeds = ".*"/seeds = ""/g' $CHAIN_DIR/config/config.toml
 sed -i -e 's#cors_allowed_origins = \[\]#cors_allowed_origins = \["*"\]#g' $CHAIN_DIR/config/config.toml
 
-echo "Increase `*_bytes` parameters for MsgInstallBundle"
+echo "Increase $(*_bytes) parameters for MsgInstallBundle"
 # See https://github.com/Agoric/agoric-sdk/blob/7b684a6268c999b082a326fdb22f63e4575bac4f/packages/agoric-cli/src/chain-config.js#L66
 RPC_MAX_BODY_BYTES=15000000
 MAX_HEADER_BYTES=$((RPC_MAX_BODY_BYTES / 10))
@@ -40,7 +39,6 @@ sed -i -e 's#enabled-unsafe-cors = false#enabled-unsafe-cors = true#g' $CHAIN_DI
 sed -i -e 's#swagger = false#swagger = true#g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enable-unsafe-cors = false/enable-unsafe-cors = true/g' $CHAIN_DIR/config/app.toml
 sed -i -e 's/enabled-unsafe-cors = false/enabled-unsafe-cors = true/g' $CHAIN_DIR/config/app.toml
-
 
 function get_next_line_number() {
   local txt=$1

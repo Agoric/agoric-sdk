@@ -38,16 +38,16 @@ MONITORING_GRAFANA_PORT=8080
 
 for i in "$@"; do
   case $i in
-    -c=*|--config=*)
+    -c=* | --config=*)
       CONFIGFILE="${i#*=}"
       shift # past argument=value
       ;;
-    -*|--*)
+    -* | --*)
       echo "Unknown option $i"
       exit 1
       ;;
-    *)
-      ;;
+    *) ;;
+
   esac
 done
 
@@ -60,16 +60,15 @@ if [[ $num_chains -gt -1 ]]; then
   for i in $(seq 0 $num_chains); do
     # derive chain pod name from chain id
     # https://github.com/cosmology-tech/starship/blob/main/charts/devnet/templates/_helpers.tpl#L56
-    chain=$(yq -r ".chains[$i].id" ${CONFIGFILE} )
+    chain=$(yq -r ".chains[$i].id" ${CONFIGFILE})
     chain=${chain/_/"-"}
-    localrpc=$(yq -r ".chains[$i].ports.rpc" ${CONFIGFILE} )
-    localgrpc=$(yq -r ".chains[$i].ports.grpc" ${CONFIGFILE} )
-    locallcd=$(yq -r ".chains[$i].ports.rest" ${CONFIGFILE} )
+    localrpc=$(yq -r ".chains[$i].ports.rpc" ${CONFIGFILE})
+    localgrpc=$(yq -r ".chains[$i].ports.grpc" ${CONFIGFILE})
+    locallcd=$(yq -r ".chains[$i].ports.rest" ${CONFIGFILE})
     localexp=$(yq -r ".chains[$i].ports.exposer" ${CONFIGFILE})
     localfaucet=$(yq -r ".chains[$i].ports.faucet" ${CONFIGFILE})
     color yellow "chains: forwarded $chain"
-    if [[ $(yq -r ".chains[$i].cometmock.enabled" $CONFIGFILE) == "true" ]];
-    then
+    if [[ $(yq -r ".chains[$i].cometmock.enabled" $CONFIGFILE) == "true" ]]; then
       [[ "$localrpc" != "null" ]] && color yellow "    cometmock rpc to http://localhost:$localrpc" && kubectl port-forward pods/$chain-cometmock-0 $localrpc:$CHAIN_COMETMOCK_PORT > /dev/null 2>&1 &
     else
       [[ "$localrpc" != "null" ]] && color yellow "    rpc to http://localhost:$localrpc" && kubectl port-forward pods/$chain-genesis-0 $localrpc:$CHAIN_RPC_PORT > /dev/null 2>&1 &
@@ -84,17 +83,16 @@ else
   echo "No chains to port-forward: num: $num_chains"
 fi
 
-
 echo "Port forward relayers"
 num_relayers=$(yq -r ".relayers | length - 1" ${CONFIGFILE})
 if [[ $num_relayers -gt -1 ]]; then
   for i in $(seq 0 $num_relayers); do
     # derive chain pod name from chain id
     # https://github.com/cosmology-tech/starship/blob/main/charts/devnet/templates/_helpers.tpl#L56
-    relayer=$(yq -r ".relayers[$i].name" ${CONFIGFILE} )
-    relayer=$(yq -r ".relayers[$i].type" ${CONFIGFILE} )-${relayer/_/"-"}
-    localrest=$(yq -r ".relayers[$i].ports.rest" ${CONFIGFILE} )
-    localexposer=$(yq -r ".relayers[$i].ports.exposer" ${CONFIGFILE} )
+    relayer=$(yq -r ".relayers[$i].name" ${CONFIGFILE})
+    relayer=$(yq -r ".relayers[$i].type" ${CONFIGFILE})-${relayer/_/"-"}
+    localrest=$(yq -r ".relayers[$i].ports.rest" ${CONFIGFILE})
+    localexposer=$(yq -r ".relayers[$i].ports.exposer" ${CONFIGFILE})
     color yellow "relayers: forwarded $relayer"
     [[ "$localrest" != "null" ]] && color yellow "    rpc to http://localhost:$localrest" && kubectl port-forward pods/$relayer-0 $localrest:$RELAYER_REST_PORT > /dev/null 2>&1 &
     [[ "$localexposer" != "null" ]] && color yellow "    rpc to http://localhost:$localexposer" && kubectl port-forward pods/$relayer-0 $localexposer:$RELAYER_EXPOSER_PORT > /dev/null 2>&1 &
@@ -104,26 +102,22 @@ else
   echo "No relayer to port-forward: num: $num_relayers"
 fi
 
-
 echo "Port forward services"
 
-if [[ $(yq -r ".registry.enabled" $CONFIGFILE) == "true" ]];
-then
+if [[ $(yq -r ".registry.enabled" $CONFIGFILE) == "true" ]]; then
   kubectl port-forward service/registry 8081:$REGISTRY_LCD_PORT > /dev/null 2>&1 &
   kubectl port-forward service/registry 9091:$REGISTRY_GRPC_PORT > /dev/null 2>&1 &
   sleep 1
   color yellow "registry: forwarded registry lcd to grpc http://localhost:8081, to http://localhost:9091"
 fi
 
-if [[ $(yq -r ".explorer.enabled" $CONFIGFILE) == "true" ]];
-then
+if [[ $(yq -r ".explorer.enabled" $CONFIGFILE) == "true" ]]; then
   kubectl port-forward service/explorer 8080:$EXPLORER_LCD_PORT > /dev/null 2>&1 &
   sleep 1
   color green "Open the explorer to get started.... http://localhost:8080"
 fi
 
-if [[ $(yq -r ".monitoring.enabled" $CONFIGFILE) == "true" ]];
-then
+if [[ $(yq -r ".monitoring.enabled" $CONFIGFILE) == "true" ]]; then
   color yellow "monitoring port forward:"
   localgrafana=$(yq -r ".monitoring.ports.grafana" ${CONFIGFILE})
   localprometheus=$(yq -r ".monitoring.ports.prometheus" ${CONFIGFILE})
