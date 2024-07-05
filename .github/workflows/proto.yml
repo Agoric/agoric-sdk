@@ -54,4 +54,4 @@ jobs:
         run: |
           cd packages/cosmic-proto
           ./update-protos.sh
-          git diff-files --quiet
+          test -z "$(git status --porcelain)"
