@@ -285,14 +285,7 @@ export const makeReplayMembrane = ({
     try {
       optVerb
         ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
+        : // @ts-expect-error XXX heapVowE
           heapVowE.sendOnly(hostTarget)(...hostArgs);
     } catch (hostProblem) {
       throw Panic`internal: eventual sendOnly synchrously failed ${hostProblem}`;
@@ -320,14 +313,7 @@ export const makeReplayMembrane = ({
     try {
       const hostPromise = optVerb
         ? heapVowE(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
+        : // @ts-expect-error XXX heapVowE
           heapVowE(hostTarget)(...hostArgs);
       resolver.resolve(hostPromise); // TODO does this always work?
     } catch (hostProblem) {
