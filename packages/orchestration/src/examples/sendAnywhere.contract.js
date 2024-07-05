@@ -7,9 +7,8 @@ import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { Fail } from '@agoric/assert';
 import { CosmosChainInfoShape } from '../typeGuards.js';
-import { provideOrchestration } from '../utils/start-helper.js';
-
-const { entries } = Object;
+import { withOrchestration } from '../utils/start-helper.js';
+import { orchestrationFns } from './sendAnywhereOrchestration.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
@@ -33,56 +32,6 @@ const { entries } = Object;
  * }} OrchestrationPowers
  */
 
-/**
- * @param {Orchestrator} orch
- * @param {object} ctx
- * @param {ZCF} ctx.zcf
- * @param {any} ctx.agoricNamesTools TODO Give this a better type
- * @param {{ account: OrchestrationAccount<any> | undefined }} ctx.contractState
- * @param {any} ctx.withdrawFromSeat
- * @param {any} ctx.findBrandInVBank
- * @param {ZCFSeat} seat
- * @param {object} offerArgs
- * @param {string} offerArgs.chainName
- * @param {string} offerArgs.destAddr
- */
-const sendItFn = async (
-  orch,
-  { zcf, contractState, withdrawFromSeat, findBrandInVBank },
-  seat,
-  offerArgs,
-) => {
-  mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
-  const { chainName, destAddr } = offerArgs;
-  const { give } = seat.getProposal();
-  const [[kw, amt]] = entries(give);
-  const { denom } = await findBrandInVBank(amt.brand);
-  const chain = await orch.getChain(chainName);
-
-  if (!contractState.account) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.account = await agoricChain.makeAccount();
-    console.log('contractState.account', contractState.account);
-  }
-
-  const info = await chain.getChainInfo();
-  console.log('info', info);
-  const { chainId } = info;
-  assert(typeof chainId === 'string', 'bad chainId');
-  const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-  // #9212 types for chain account helpers
-  // @ts-expect-error LCA should have .deposit() method
-  await E.when(pmtP, pmt => contractState.account?.deposit(pmt));
-  await contractState.account?.transfer(
-    { denom, value: amt.value },
-    {
-      address: destAddr,
-      addressEncoding: 'bech32',
-      chainId,
-    },
-  );
-};
-
 export const SingleAmountRecord = M.and(
   M.recordOf(M.string(), AmountShape, {
     numPropertiesLimit: 1,
@@ -90,100 +39,90 @@ export const SingleAmountRecord = M.and(
   M.not(harden({})),
 );
 
-/**
- * @param {ZCF} zcf
- * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
- * }} privateArgs
- * @param {Baggage} baggage
- */
-export const start = async (zcf, privateArgs, baggage) => {
-  const { chainHub, orchestrate, vowTools, zone } = provideOrchestration(
+export const start = withOrchestration(
+  async (
     zcf,
-    baggage,
     privateArgs,
-    privateArgs.marshaller,
-  );
+    zone,
+    { vowTools, orchestrateAll, chainHub, zoeTools },
+  ) => {
+    const contractState = makeStateRecord(
+      /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
+        account: undefined,
+      },
+    );
 
-  const contractState = makeStateRecord(
-    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
-      account: undefined,
-    },
-  );
+    const findBrandInVBank = vowTools.retriable(
+      zone,
+      'findBrandInVBank',
+      async brand => {
+        const agoricNames = privateArgs.agoricNames;
+        const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
+        const it = assets.find(a => a.brand === brand);
+        it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
+        return it;
+      },
+    );
 
-  const withdrawFromSeat = vowTools.retriable('withdrawFromSeat', wFS);
-
-  const findBrandInVBank = vowTools.retriable(
-    'findBrandInVBank',
-    async brand => {
-      const agoricNames = privateArgs.agoricNames;
-      const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
-      const it = assets.find(a => a.brand === brand);
-      it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
-      return it;
-    },
-  );
-
-  /** @type {OfferHandler} */
-  const sendIt = orchestrate(
-    'sendIt',
-    {
+    // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
+    // TODO should orchestrateAll have `zone` passed in?  how does that relate to
+    // the zone passed to orchestrationFns?
+    const orchFns = orchestrateAll(/* zone,*/ orchestrationFns, {
       zcf,
       contractState,
-      withdrawFromSeat,
+      localTransfer: zoeTools.localTransfer,
       findBrandInVBank,
-    },
-    sendItFn,
-  );
+    });
 
-  const publicFacet = zone.exo(
-    'Send PF',
-    M.interface('Send PF', {
-      makeSendInvitation: M.callWhen().returns(InvitationShape),
-    }),
-    {
-      makeSendInvitation() {
-        return zcf.makeInvitation(
-          sendIt,
-          'send',
-          undefined,
-          M.splitRecord({ give: SingleAmountRecord }),
-        );
+    const publicFacet = zone.exo(
+      'Send PF',
+      M.interface('Send PF', {
+        makeSendInvitation: M.callWhen().returns(InvitationShape),
+      }),
+      {
+        makeSendInvitation() {
+          return zcf.makeInvitation(
+            orchFns.sendIt,
+            'send',
+            undefined,
+            M.splitRecord({ give: SingleAmountRecord }),
+          );
+        },
       },
-    },
-  );
+    );
 
-  let nonce = 0n;
-  const ConnectionInfoShape = M.record(); // TODO
-  const creatorFacet = zone.exo(
-    'Send CF',
-    M.interface('Send CF', {
-      addChain: M.callWhen(CosmosChainInfoShape, ConnectionInfoShape).returns(
-        M.scalar(),
-      ),
-    }),
-    {
-      /**
-       * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo
-       */
-      async addChain(chainInfo, connectionInfo) {
-        const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
-        // when() because chainHub methods return vows. If this were inside
-        // orchestrate() the membrane would wrap/unwrap automatically.
-        const agoricChainInfo = await heapVowE.when(
-          chainHub.getChainInfo('agoric'),
-        );
-        chainHub.registerChain(chainKey, chainInfo);
-        chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainInfo.chainId,
-          connectionInfo,
-        );
-        return chainKey;
+    let nonce = 0n;
+    const ConnectionInfoShape = M.record(); // TODO
+    const creatorFacet = zone.exo(
+      'Send CF',
+      M.interface('Send CF', {
+        addChain: M.callWhen(CosmosChainInfoShape, ConnectionInfoShape).returns(
+          M.scalar(),
+        ),
+      }),
+      {
+        /**
+         * @param {CosmosChainInfo} chainInfo
+         * @param {IBCConnectionInfo} connectionInfo
+         */
+        async addChain(chainInfo, connectionInfo) {
+          const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
+          // when() because chainHub methods return vows. If this were inside
+          // orchestrate() the membrane would wrap/unwrap automatically.
+          const agoricChainInfo = await heapVowE.when(
+            chainHub.getChainInfo('agoric'),
+          );
+          chainHub.registerChain(chainKey, chainInfo);
+          chainHub.registerConnection(
+            agoricChainInfo.chainId,
+            chainInfo.chainId,
+            connectionInfo,
+          );
+          return chainKey;
+        },
       },
-    },
-  );
+    );
 
-  return { publicFacet, creatorFacet };
-};
+    return { publicFacet, creatorFacet };
+  },
+);

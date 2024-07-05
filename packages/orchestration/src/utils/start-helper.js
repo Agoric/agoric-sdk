@@ -8,6 +8,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
+import { makeZoeUtils } from './zoeutils.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -33,6 +34,8 @@ import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
  * Helper that a contract start function can use to set up the objects needed
  * for orchestration.
  *
+ * TODO strip problematic operations from ZCF (e.g., getPayouts)
+ *
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
@@ -51,6 +54,8 @@ export const provideOrchestration = (
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const zoeTools = makeZoeUtils(zone.subZone('zoe'), { zcf, vowTools });
+
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
@@ -65,15 +70,16 @@ export const provideOrchestration = (
     vowTools,
   });
 
+  const orchZone = zone.subZone('orchestration');
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     // FIXME what zone?
-    zone,
+    orchZone,
     makeRecorderKit,
     vowTools,
     zcf,
   );
 
-  const makeRemoteChainFacade = prepareRemoteChainFacade(zone, {
+  const makeRemoteChainFacade = prepareRemoteChainFacade(orchZone, {
     makeCosmosOrchestrationAccount,
     orchestration: remotePowers.orchestrationService,
     storageNode: remotePowers.storageNode,
@@ -81,7 +87,7 @@ export const provideOrchestration = (
     vowTools,
   });
 
-  const makeLocalChainFacade = prepareLocalChainFacade(zone, {
+  const makeLocalChainFacade = prepareLocalChainFacade(orchZone, {
     makeLocalOrchestrationAccountKit,
     localchain: remotePowers.localchain,
     // FIXME what path?
@@ -93,7 +99,7 @@ export const provideOrchestration = (
 
   const facade = makeOrchestrationFacade({
     zcf,
-    zone,
+    zone: orchZone.subZone('orchestrationFunctions'),
     chainHub,
     makeLocalOrchestrationAccountKit,
     makeRecorderKit,
@@ -104,6 +110,31 @@ export const provideOrchestration = (
     vowTools,
     ...remotePowers,
   });
-  return { ...facade, chainHub, vowTools, zone };
+  return { ...facade, chainHub, vowTools, zone, zoeTools };
 };
 harden(provideOrchestration);
+
+/**
+ * @template {unknown} CT
+ * @template {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ * }} PA
+ * @template {any} R
+ * @param {(
+ *   zcf: ZCF<CT>,
+ *   privateArgs: PA,
+ *   zone: Zone,
+ *   rest: Omit<ReturnType<typeof provideOrchestration>, 'zone'>,
+ * ) => Promise<R>} fn
+ * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>}
+ */
+export const withOrchestration = fn => async (zcf, privateArgs, baggage) => {
+  const { zone, ...rest } = provideOrchestration(
+    zcf,
+    baggage,
+    privateArgs,
+    privateArgs.marshaller,
+  );
+  return fn(zcf, privateArgs, zone, rest);
+};
+harden(withOrchestration);
