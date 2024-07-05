@@ -37,7 +37,7 @@
     "execa": "^9.2.0",
     "fs-extra": "^11.2.0",
     "patch-package": "^8.0.0",
-    "prettier": "^3.2.4",
+    "prettier": "^3.3.2",
     "starshipjs": "2.0.0",
     "tsimp": "^2.0.10",
     "tsx": "^4.15.6",
