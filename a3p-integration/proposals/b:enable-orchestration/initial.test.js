@@ -8,7 +8,7 @@ const vats = {
   localchain: { incarnation: 0 },
   orchestration: { incarnation: 0 },
   transfer: { incarnation: 0 },
-  walletFactory: { incarnation: 3 },
+  walletFactory: { incarnation: 4 },
   zoe: { incarnation: 2 },
 };
 

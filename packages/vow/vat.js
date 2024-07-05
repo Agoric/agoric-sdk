@@ -30,14 +30,17 @@ export const defaultPowers = harden({
  *
  * @type {typeof rawPrepareVowTools}
  */
-export const prepareVowTools = (zone, powers = {}) =>
+export const prepareSwingsetVowTools = (zone, powers = {}) =>
   rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
+
+/** @deprecated */
+export const prepareVowTools = prepareSwingsetVowTools;
 
 /**
  * `vowTools` that are not durable, but are useful in non-durable clients that
  * need to consume vows from other SwingSet vats.
  */
-export const heapVowTools = prepareVowTools(makeHeapZone());
+export const heapVowTools = prepareSwingsetVowTools(makeHeapZone());
 
 /**
  * A vow-shortening E, for use in vats that are not durable but receive vows.
