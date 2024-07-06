@@ -21,6 +21,10 @@ harden(meta);
  * @param {Baggage} baggage
  */
 export const start = (zcf, _privateArgs, baggage) => {
+  zcf.setTestJig(() => ({
+    baggage,
+  }));
+
   const zone = makeDurableZone(baggage);
 
   const vowTools = prepareVowTools(zone);

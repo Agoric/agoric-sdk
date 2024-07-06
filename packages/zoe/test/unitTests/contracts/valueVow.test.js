@@ -6,7 +6,8 @@ import { heapVowTools } from '@agoric/vow/vat.js';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/eventual-send';
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {start as startValueVow} from '../../../src/contracts/valueVow.contract.js';
@@ -15,7 +16,7 @@ import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractRoot = `${dirname}/../../../src/contracts/valueVow.contract.js`;
+const contractFile = `${dirname}/../../../src/contracts/valueVow.contract.js`;
 
 /** @type {import('ava').TestFn<{ installation: Installation<typeof startValueVow>, zoe: ReturnType<typeof makeZoeForTest> }>} */
 const test = anyTest;
@@ -24,7 +25,7 @@ test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles');
   const zoe = makeZoeForTest();
   const installation = await E(zoe).install(
-    await bundleCache.load(contractRoot),
+    await bundleCache.load(contractFile),
   );
 
   t.context = {
@@ -57,4 +58,24 @@ test('invitations', async t => {
   );
 
   t.is(await heapVowTools.asPromise(vow), 'hello');
+});
+
+test('baggage', async t => {
+  /** @type {import('@agoric/swingset-liveslots').Baggage} */
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+  const { bundleAndInstall, zoe } = await setUpZoeForTest({
+    setJig,
+  });
+
+  await E(zoe).startInstance(
+    /** @type {Installation<startValueVow>} */
+    (await bundleAndInstall(contractFile)),
+  );
+
+  // @ts-expect-error setJig may not have been called
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });
