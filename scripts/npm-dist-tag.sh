@@ -77,10 +77,13 @@ case ${3-} in
     # "add <tag> -<pre-release>" scans published versions for an exact match of
     # the specified pre-release suffix and applies the new dist-tag to that
     # version rather than to the version read from package.json.
+
+    # cf. https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+    semver_prefix="^((^|[.])(0|[1-9][0-9]*)){3}"
+
     version=$(npm view "$pkg" versions --json \
-      |
-      # cf. https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
-      jq --arg s "$3" -r '.[] | select(sub("^((^|[.])(0|[1-9][0-9]*)){3}"; "") == $s)' || true)
+      | jq --arg p "$semver_prefix" --arg suffix "$3" -r '.[] | select(sub($p; "") == $suffix)' \
+      | tail -n 1)
     ;;
   *)
     test "$#" -le 2 || fail "Invalid pre-release suffix!"
