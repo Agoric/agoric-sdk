@@ -1,6 +1,6 @@
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -54,52 +54,32 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    agoricNames,
-    localchain,
-    orchestrationService,
-    storageNode,
-    marshaller,
-    timerService,
-  } = privateArgs;
-
-  const { orchestrate } = provideOrchestration(
-    zcf,
-    baggage,
-    {
-      agoricNames,
-      localchain,
-      orchestrationService,
-      storageNode,
-      timerService,
-    },
-    marshaller,
-  );
-
-  /** @type {OfferHandler} */
-  const unbondAndLiquidStake = orchestrate(
-    'LSTTia',
-    { zcf },
-    unbondAndLiquidStakeFn,
-  );
-
-  const makeUnbondAndLiquidStakeInvitation = () =>
-    zcf.makeInvitation(
-      unbondAndLiquidStake,
-      'Unbond and liquid stake',
-      undefined,
-      harden({
-        // Nothing to give; the funds come from undelegating
-        give: {},
-        want: {}, // XXX ChainAccount Ownable?
-        exit: M.any(),
-      }),
+export const start = withOrchestration(
+  async (zcf, privateArgs, zone, { orchestrate }) => {
+    /** @type {OfferHandler} */
+    const unbondAndLiquidStake = orchestrate(
+      'LSTTia',
+      { zcf },
+      unbondAndLiquidStakeFn,
     );
 
-  const publicFacet = Far('SwapAndStake Public Facet', {
-    makeUnbondAndLiquidStakeInvitation,
-  });
+    const makeUnbondAndLiquidStakeInvitation = () =>
+      zcf.makeInvitation(
+        unbondAndLiquidStake,
+        'Unbond and liquid stake',
+        undefined,
+        harden({
+          // Nothing to give; the funds come from undelegating
+          give: {},
+          want: {}, // XXX ChainAccount Ownable?
+          exit: M.any(),
+        }),
+      );
 
-  return harden({ publicFacet });
-};
+    const publicFacet = Far('SwapAndStake Public Facet', {
+      makeUnbondAndLiquidStakeInvitation,
+    });
+
+    return harden({ publicFacet });
+  },
+);
