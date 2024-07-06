@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 import { heapVowE } from '@agoric/vow/vat.js';
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { orchestrationFns } from './sendAnywhereOrchestration.js';

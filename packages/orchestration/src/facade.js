@@ -1,8 +1,6 @@
 /** @file Orchestration service */
 
 import { Fail } from '@endo/errors';
-import { pickFacet } from '@agoric/vat-data';
-import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
