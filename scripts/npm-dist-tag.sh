@@ -48,10 +48,11 @@ case "${1-}" in
     # Find the absolute path to this script.
     thisdir=$(cd "$(dirname -- "${BASH_SOURCE[0]}")" > /dev/null && pwd -P)
     thisprog=$(basename -- "${BASH_SOURCE[0]}")
+    cd "$thisdir"
 
     # Strip the first argument (`lerna`), so that `$@` gives us remaining args.
     shift
-    exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
+    exec npm run -- lerna exec --concurrency=1 --no-bail -- "$thisdir/$thisprog" "$dryrun" "$@"
     ;;
 esac
 CMD="${1-"--help"}"
