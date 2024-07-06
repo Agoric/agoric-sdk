@@ -54,6 +54,7 @@ case "${1-}" in
     exec npm run -- lerna exec --concurrency=1 --no-bail "$thisdir/$thisprog" -- $dryrun ${1+"$@"}
     ;;
 esac
+CMD="${1-"--help"}"
 
 # Read current-directory package.json data into shell variables: pkg, version, priv.
 eval "$(jq < package.json -r --arg Q "'" '
@@ -66,13 +67,12 @@ eval "$(jq < package.json -r --arg Q "'" '
 ')"
 
 # dist-tags are only applicable to published packages.
-if test "$priv" = true; then
+if test "$priv" = true -a "$CMD" != "--help"; then
   echo 1>&2 "Skipping private package $pkg"
   exit 0
 fi
 
-# Process remaining arguments: <command> [<tag> [-<pre-release>]].
-CMD="${1-}"
+# Process command arguments: [<tag> [-<pre-release>]].
 TAG="${2-}"
 case ${3-} in
   -*)
