@@ -1,4 +1,5 @@
 // @ts-check
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeWhen } from './when.js';
 import { prepareVowKit } from './vow.js';
 import { prepareWatch } from './watch.js';
@@ -32,18 +33,26 @@ export const prepareVowTools = (zone, powers = {}) => {
   });
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
+
   /**
    * TODO FIXME make this real
    * Create a function that retries the given function if the underlying
    * functions rejects due to upgrade disconnection.
    *
+   * The internal functions
+   *
+   * @param {Zone} fnZone - the zone for the named function
    * @param {string} name
    * @param {(...args: unknown[]) => unknown} fn
    */
   const retriable =
-    (name, fn) =>
-      (...args) =>
-        watch(fn(...args));
+    (fnZone, name, fn) =>
+    (...args) => {
+      // TODO this needs to be an anonymous durable zone for the watched function
+      // Ideally, it should be a lazy one that only allocates the subzone if it gets used
+      const fnSubzone = makeHeapZone(`${name} hack subzone`);
+      return watch(fn(fnSubzone, ...args));
+    };
 
   /**
    * Vow-tolerant implementation of Promise.all.

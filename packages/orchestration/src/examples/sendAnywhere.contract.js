@@ -52,10 +52,11 @@ export const start = withOrchestration(
       },
     );
 
+    // TODO should be a provided helper
     const findBrandInVBank = vowTools.retriable(
       zone,
       'findBrandInVBank',
-      async brand => {
+      async (_subzone, brand) => {
         const agoricNames = privateArgs.agoricNames;
         const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
         const it = assets.find(a => a.brand === brand);

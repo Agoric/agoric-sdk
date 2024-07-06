@@ -27,13 +27,9 @@ import { prepareOrchestratorKit } from './exos/orchestrator.js';
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<OrchestrationService>;
- *   localchain: Remote<LocalChain>;
  *   chainHub: import('./exos/chain-hub.js').ChainHub;
- *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
- *   makeCosmosOrchestrationAccount: any;
- *   makeLocalChainFacade: MakeLocalChainFacade;
- *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   makeOrchestrator: () => Orchestrator;
  *   vowTools: VowTools;
  *   asyncFlowTools: AsyncFlowTools;
  * }} powers
@@ -44,12 +40,8 @@ export const makeOrchestrationFacade = ({
   zcf,
   storageNode,
   orchestrationService,
-  localchain,
-  chainHub,
-  makeLocalOrchestrationAccountKit,
   makeRecorderKit,
-  makeLocalChainFacade,
-  makeRemoteChainFacade,
+  makeOrchestrator,
   vowTools,
   asyncFlowTools,
 }) => {
@@ -59,28 +51,11 @@ export const makeOrchestrationFacade = ({
     storageNode &&
     orchestrationService &&
     // @ts-expect-error type says defined but double check
-    makeLocalOrchestrationAccountKit &&
-    // @ts-expect-error type says defined but double check
     makeRecorderKit &&
     // @ts-expect-error type says defined but double check
-    makeRemoteChainFacade &&
+    makeOrchestrator &&
     asyncFlowTools) ||
     Fail`params missing`;
-
-  const makeOrchestratorKit = prepareOrchestratorKit(zone, {
-    asyncFlowTools,
-    chainHub,
-    localchain,
-    makeRecorderKit,
-    makeLocalChainFacade,
-    makeRemoteChainFacade,
-    orchestrationService,
-    storageNode,
-    timerService,
-    vowTools,
-    zcf,
-  });
-  const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
