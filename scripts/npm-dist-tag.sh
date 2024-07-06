@@ -112,9 +112,9 @@ case "$CMD" in
     if test -n "$TAG"; then
       if test -n "$dryrun"; then
         # Print the entire pipeline.
-        $npm dist-tag ls "$pkg" \| sed -ne "s/^$TAG: //p"
+        $npm dist-tag ls "$pkg" \| awk -vP="$TAG" -F: '$1==P'
       else
-        $npm dist-tag ls "$pkg" | sed -ne "s/^$TAG: //p"
+        $npm dist-tag ls "$pkg" | awk -vP="$TAG" -F: '$1==P'
       fi
     else
       $npm dist-tag ls "$pkg"
