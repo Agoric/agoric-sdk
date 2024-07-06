@@ -55,19 +55,21 @@ case "${1-}" in
     ;;
 esac
 
-# If the package.json says it's private, we don't have a published version whose
-# tags we can manipulate.
-priv=$(jq -r .private package.json)
-case "$priv" in
-  true)
-    echo 1>&2 "Skipping $(basename "$0") for private package $(jq .name package.json)"
-    exit 0
-    ;;
-esac
+# Read current-directory package.json data into shell variables: pkg, version, priv.
+eval "$(jq < package.json -r --arg Q "'" '
+  pick(.name, .version, .private)
+  | to_entries
+  | .[]
+  | ({ name: "pkg", private: "priv" }[.key] // .key) as $key
+  | ((.value // "") | tostring | gsub($Q; $Q + "\\" + $Q + $Q)) as $value
+  | ($key + "=" + $Q + $value + $Q)
+')"
 
-# Read package.json for the package name and current version.
-pkg=$(jq -r .name package.json)
-version=$(jq -r .version package.json)
+# dist-tags are only applicable to published packages.
+if test "$priv" = true; then
+  echo 1>&2 "Skipping private package $pkg"
+  exit 0
+fi
 
 # Process remaining arguments: <command> [<tag> [-<pre-release>]].
 CMD="${1-}"
