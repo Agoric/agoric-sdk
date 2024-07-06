@@ -1,5 +1,5 @@
 import { q, Fail } from '@endo/errors';
-import { provide, prepareExoClass, M } from '@agoric/vat-data';
+import { prepareExoClass, M } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,
@@ -28,8 +28,6 @@ const { ownKeys } = Reflect;
  * @returns {(ir: InstanceRecord) => InstanceState}
  */
 export const makeInstanceRecordStorage = baggage => {
-  provide(baggage, 'instanceRecord', () => undefined);
-
   const assertInstantiated = instanceRecord => {
     instanceRecord !== 'undefined' ||
       Fail`instanceRecord has not been instantiated`;
