@@ -79,14 +79,14 @@ const prepareLocalChainFacadeKit = (
       },
       makeAccountWatcher: {
         /**
-         * @param {[LocalChainAccount, ChainAddress['address']]} results
+         * @param {[LocalChainAccount, ChainAddress['value']]} results
          */
         onFulfilled([account, address]) {
           const { localChainInfo } = this.state;
           const { holder } = makeLocalOrchestrationAccountKit({
             account,
             address: harden({
-              address,
+              value: address,
               addressEncoding: 'bech32',
               chainId: localChainInfo.chainId,
             }),

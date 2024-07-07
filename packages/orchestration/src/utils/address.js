@@ -64,7 +64,7 @@ harden(makeICQChannelAddress);
  *
  * @param {RemoteIbcAddress} remoteAddressString - remote address string,
  *   including version
- * @returns {ChainAddress['address'] | undefined} returns undefined on error
+ * @returns {ChainAddress['value'] | undefined} returns undefined on error
  */
 export const findAddressField = remoteAddressString => {
   try {

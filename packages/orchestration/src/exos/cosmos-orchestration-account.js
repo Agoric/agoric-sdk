@@ -356,8 +356,8 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgDelegate.toProtoMsg({
-                  delegatorAddress: chainAddress.address,
-                  validatorAddress: validator.address,
+                  delegatorAddress: chainAddress.value,
+                  validatorAddress: validator.value,
                   amount: helper.amountToCoin(amount),
                 }),
               ),
@@ -385,9 +385,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgBeginRedelegate.toProtoMsg({
-                  delegatorAddress: chainAddress.address,
-                  validatorSrcAddress: srcValidator.address,
-                  validatorDstAddress: dstValidator.address,
+                  delegatorAddress: chainAddress.value,
+                  validatorSrcAddress: srcValidator.value,
+                  validatorDstAddress: dstValidator.value,
                   amount: helper.amountToCoin(amount),
                 }),
               ),
@@ -410,8 +410,8 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const { chainAddress } = this.state;
             const msg = MsgWithdrawDelegatorReward.toProtoMsg({
-              delegatorAddress: chainAddress.address,
-              validatorAddress: validator.address,
+              delegatorAddress: chainAddress.value,
+              validatorAddress: validator.value,
             });
             const account = helper.owned();
 
@@ -435,7 +435,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(icqConnection).query([
               toRequestQueryJson(
                 QueryBalanceRequest.toProtoMsg({
-                  address: chainAddress.address,
+                  address: chainAddress.value,
                   denom,
                 }),
               ),
@@ -475,7 +475,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                 delegations.map(d =>
                   Any.toJSON(
                     MsgUndelegate.toProtoMsg({
-                      delegatorAddress: chainAddress.address,
+                      delegatorAddress: chainAddress.value,
                       validatorAddress: d.validatorAddress,
                       amount: { denom: bondDenom, amount: d.shares },
                     }),

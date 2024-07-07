@@ -188,7 +188,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           this.state.chainAddress = harden({
             // FIXME need a fallback value like icacontroller-1-connection-1 if this fails
             // https://github.com/Agoric/agoric-sdk/issues/9066
-            address: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
+            value: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
             chainId: this.state.chainId,
             addressEncoding: 'bech32',
           });

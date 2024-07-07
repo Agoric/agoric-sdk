@@ -63,7 +63,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     return makeLocalOrchestrationAccountKit({
       account,
       address: harden({
-        address,
+        value: address,
         addressEncoding: 'bech32',
         chainId: 'local',
       }),

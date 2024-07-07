@@ -108,7 +108,7 @@ test('makeAccount returns a ChainAccount', async t => {
   );
 
   t.true(matches(chainAddr, ChainAddressShape));
-  t.regex(chainAddr.address, /cosmos1test/);
+  t.regex(chainAddr.value, /cosmos1test/);
 
   const delegateMsg = Any.toJSON(
     MsgDelegate.toProtoMsg({

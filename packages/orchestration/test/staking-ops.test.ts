@@ -42,10 +42,10 @@ test('MsgDelegateResponse trivial response', t => {
 
 const configStaking = {
   acct1: {
-    address: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
+    value: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
   },
   validator: {
-    address: 'agoric1valoper234',
+    value: 'agoric1valoper234',
     addressEncoding: 'bech32',
     chainId: 'agoriclocal',
   },
@@ -58,7 +58,7 @@ const configStaking = {
 
 const configRedelegate = {
   validator: {
-    address: 'agoric1valoper444',
+    value: 'agoric1valoper444',
     addressEncoding: 'bech32',
     chainId: 'atom-test',
   },
@@ -133,7 +133,7 @@ const makeScenario = () => {
     };
 
     const chainAddress: ChainAddress = harden({
-      address: addr,
+      value: addr,
       addressEncoding: 'bech32',
       chainId: 'mock-1',
     });
@@ -430,7 +430,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
   const delegation = {
     shares: `${anAmount.value}`,
-    validatorAddress: validator.address,
+    validatorAddress: validator.value,
   };
   const toUndelegate = await E(invitationMakers).Undelegate([delegation]);
   const current = () => E(timer).getCurrentTimestamp().then(time.format);

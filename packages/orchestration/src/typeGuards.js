@@ -18,9 +18,9 @@ export const OutboundConnectionHandlerI = M.interface(
 );
 
 export const ChainAddressShape = {
-  address: M.string(),
   chainId: M.string(),
   addressEncoding: M.string(),
+  value: M.string(),
 };
 
 export const Proto3Shape = {

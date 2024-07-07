@@ -233,8 +233,8 @@ export const prepareLocalOrchestrationAccountKit = (
                   amount: String(amount.value),
                   denom: amount.denom,
                 },
-                sender: this.state.address.address,
-                receiver: destination.address,
+                sender: this.state.address.value,
+                receiver: destination.value,
                 timeoutHeight: opts?.timeoutHeight ?? {
                   revisionHeight: 0n,
                   revisionNumber: 0n,
@@ -338,7 +338,7 @@ export const prepareLocalOrchestrationAccountKit = (
               typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
                 amount,
                 validatorAddress,
-                delegatorAddress: this.state.address.address,
+                delegatorAddress: this.state.address.value,
               }),
             ]),
             this.facets.extractFirstResultWatcher,
@@ -361,7 +361,7 @@ export const prepareLocalOrchestrationAccountKit = (
               typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
                 amount,
                 validatorAddress,
-                delegatorAddress: this.state.address.address,
+                delegatorAddress: this.state.address.value,
               }),
             ]),
             this.facets.undelegateWatcher,

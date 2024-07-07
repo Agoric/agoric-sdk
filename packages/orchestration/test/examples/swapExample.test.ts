@@ -63,7 +63,7 @@ test.skip('start', async t => {
       staked: ten,
       validator: {
         chainId: 'agoric-3',
-        address: 'agoric1valoperfufu',
+        value: 'agoric1valoperfufu',
         addressEncoding: 'bech32',
       } as const,
     },

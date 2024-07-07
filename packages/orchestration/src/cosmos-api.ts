@@ -32,7 +32,7 @@ export type Proto3JSONMsg = {
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
   // TODO document why this is the format
-  address: `${string}valoper${string}`;
+  value: `${string}valoper${string}`;
   addressEncoding: 'bech32';
 };
 

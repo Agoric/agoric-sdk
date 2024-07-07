@@ -47,7 +47,7 @@ test('deposit, withdraw', async t => {
   const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
-      address,
+      value: address,
       chainId: 'agoric-n',
       addressEncoding: 'bech32',
     }),
@@ -118,7 +118,7 @@ test('delegate, undelegate', async t => {
   const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
-      address,
+      value: address,
       chainId: 'agoric-n',
       addressEncoding: 'bech32',
     }),
@@ -181,7 +181,7 @@ test('transfer', async t => {
   const { holder: account } = makeLocalOrchestrationAccountKit({
     account: lca,
     address: harden({
-      address,
+      value: address,
       chainId: 'agoric-n',
       addressEncoding: 'bech32',
     }),
@@ -199,7 +199,7 @@ test('transfer', async t => {
 
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',
-    address: 'cosmos1pleab',
+    value: 'cosmos1pleab',
     addressEncoding: 'bech32',
   };
 
@@ -225,7 +225,7 @@ test('transfer', async t => {
 
   const unknownDestination: ChainAddress = {
     chainId: 'fakenet',
-    address: 'fakenet1pleab',
+    value: 'fakenet1pleab',
     addressEncoding: 'bech32',
   };
   await t.throwsAsync(

@@ -74,7 +74,7 @@ const sendItFn = async (
   await contractState.account?.transfer(
     { denom, value: amt.value },
     {
-      address: destAddr,
+      value: destAddr,
       addressEncoding: 'bech32',
       chainId,
     },

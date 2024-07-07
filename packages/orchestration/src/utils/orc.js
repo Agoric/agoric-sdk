@@ -12,7 +12,7 @@ export const orcUtils = {
     return {
       toAccount: {
         chainId: 'osmosis-test',
-        address: 'osmo1234',
+        value: 'osmo1234',
         addressEncoding: 'bech32',
       },
     };
@@ -30,7 +30,7 @@ export const orcUtils = {
     return {
       toAccount: {
         chainId: 'osmosis-test',
-        address: 'osmo1234',
+        value: 'osmo1234',
         addressEncoding: 'bech32',
       },
     };

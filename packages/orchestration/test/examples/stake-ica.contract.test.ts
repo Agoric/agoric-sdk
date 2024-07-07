@@ -87,7 +87,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     const account = await E(publicFacet).makeAccount();
     t.truthy(account, 'account is returned');
     const chainAddress = await E(account).getAddress();
-    t.regex(chainAddress.address, /cosmos1/);
+    t.regex(chainAddress.value, /cosmos1/);
     t.like(chainAddress, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
 
     await t.throwsAsync(E(account).getBalances(), {
@@ -99,9 +99,9 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     });
 
     const accountP = E(publicFacet).makeAccount();
-    const { address: address2 } = await E(accountP).getAddress();
+    const { value: address2 } = await E(accountP).getAddress();
     t.regex(address2, /cosmos1/);
-    t.not(chainAddress.address, address2, 'account addresses are unique');
+    t.not(chainAddress.value, address2, 'account addresses are unique');
   }
   {
     // stakeOsmo
@@ -116,13 +116,13 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     const account = await E(publicFacet).makeAccount();
     t.truthy(account, 'account is returned');
     const chainAddress = await E(account).getAddress();
-    t.regex(chainAddress.address, /osmo1/);
+    t.regex(chainAddress.value, /osmo1/);
     t.like(chainAddress, { chainId: 'osmosis-1' });
 
     const buildMocks = () => {
       const balanceReq = buildQueryPacketString([
         QueryBalanceRequest.toProtoMsg({
-          address: chainAddress.address,
+          address: chainAddress.value,
           denom: 'uosmo',
         }),
       ]);
@@ -149,7 +149,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   // XXX consider building a mock bank into remote chains. for now, assume
   // newly created accounts magically have tokens.
   const validatorAddr = {
-    address: 'cosmosvaloper1test' as const,
+    value: 'cosmosvaloper1test' as const,
     chainId: 'cosmoshub-4',
     addressEncoding: 'bech32' as const,
   };
@@ -162,7 +162,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const undelegatationP = E(account).undelegate([
     {
       shares: '10',
-      validatorAddress: validatorAddr.address,
+      validatorAddress: validatorAddr.value,
     },
   ]);
   const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
@@ -182,7 +182,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     validatorAddr,
     {
       ...validatorAddr,
-      address: 'cosmosvaloper2test',
+      value: 'cosmosvaloper2test',
     },
     { denom: 'uatom', value: 10n },
   );
@@ -237,7 +237,7 @@ test('CosmosOrchestrationAccount - not yet implemented', async t => {
   const { publicFacet } = await startContract(bootstrap);
   const account = await E(publicFacet).makeAccount();
   const mockChainAddress: ChainAddress = {
-    address: 'cosmos1test',
+    value: 'cosmos1test',
     chainId: 'cosmoshub-4',
     addressEncoding: 'bech32',
   };
