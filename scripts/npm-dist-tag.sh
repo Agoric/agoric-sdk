@@ -82,19 +82,18 @@ case "${1-}" in
 esac
 CMD="${1-"--help"}"
 
-# Read current-directory package.json data into shell variables: pkg, version, priv.
+# Read current-directory package.json fields "name"/"version"/"private" into shell variables.
 eval "$(jq < package.json -r --arg Q "'" '
   pick(.name, .version, .private)
   | to_entries
   | .[]
-  | ({ name: "pkg", private: "priv" }[.key] // .key) as $key
   | ((.value // "") | tostring | gsub($Q; $Q + "\\" + $Q + $Q)) as $value
-  | ($key + "=" + $Q + $value + $Q)
+  | (.key + "=" + $Q + $value + $Q)
 ')"
 
 # dist-tags are only applicable to published packages.
-if test "$priv" = true -a "$CMD" != "--help"; then
-  echo 1>&2 "Skipping private package $pkg"
+if test "$private" = true -a "$CMD" != "--help"; then
+  echo 1>&2 "Skipping private package $name"
   exit 0
 fi
 
@@ -109,7 +108,7 @@ case ${3-} in
     # cf. https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
     semver_prefix="^((^|[.])(0|[1-9][0-9]*)){3}"
 
-    version=$(npm view "$pkg" versions --json \
+    version=$(npm view "$name" versions --json \
       | jq --arg p "$semver_prefix" --arg suffix "$3" -r '.[] | select(sub($p; "") == $suffix)' \
       | tail -n 1)
     ;;
@@ -124,7 +123,7 @@ case "$CMD" in
     test -n "$TAG" || fail "Missing tag!"
     test "$#" -le 3 || fail "Too many arguments!"
     while true; do
-      $npm dist-tag add "$pkg@$version" "$TAG" && break || ret=$?
+      $npm dist-tag add "$name@$version" "$TAG" && break || ret=$?
       [[ "$style" =~ --otp-stream ]] || exit $ret
       [ $ret -ne 66 ] && continue
       echo Aborting
@@ -136,7 +135,7 @@ case "$CMD" in
     test -n "$TAG" || fail "Missing tag!"
     test "$#" -le 2 || fail "Too many arguments!"
     while true; do
-      $npm dist-tag rm "$pkg" "$TAG" && break || ret=$?
+      $npm dist-tag rm "$name" "$TAG" && break || ret=$?
       [[ "$style" =~ --otp-stream ]] || exit $ret
       [ $ret -ne 66 ] && continue
       echo Aborting
@@ -149,12 +148,12 @@ case "$CMD" in
     if test -n "$TAG"; then
       if test "$style" = "--dry-run"; then
         # Print the entire pipeline.
-        $npm dist-tag ls "$pkg" \| awk -vP="$TAG" -F: '$1==P'
+        $npm dist-tag ls "$name" \| awk -vP="$TAG" -F: '$1==P'
       else
-        $npm dist-tag ls "$pkg" | awk -vP="$TAG" -F: '$1==P'
+        $npm dist-tag ls "$name" | awk -vP="$TAG" -F: '$1==P'
       fi
     else
-      $npm dist-tag ls "$pkg"
+      $npm dist-tag ls "$name"
     fi
     ;;
   *)
