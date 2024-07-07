@@ -1,4 +1,4 @@
-import type { AnyJson } from '@agoric/cosmic-proto';
+import type { AnyJson, TypedJson } from '@agoric/cosmic-proto';
 import type {
   Delegation,
   Redelegation,
@@ -19,15 +19,6 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
-
-/** A helper type for type extensions. */
-export type TypeUrl = string;
-
-// TODO move into cosmic-proto
-export type Proto3JSONMsg = {
-  '@type': TypeUrl;
-  value: Record<string, unknown>;
-};
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
@@ -183,7 +174,7 @@ export interface IcaAccount {
    * @param msgs - records for the transaction
    * @returns acknowledgement string
    */
-  executeTx: (msgs: Proto3JSONMsg[]) => Promise<string>;
+  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction

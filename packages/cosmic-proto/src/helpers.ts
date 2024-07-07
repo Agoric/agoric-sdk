@@ -1,3 +1,5 @@
+import { RequestQuery } from './codegen/tendermint/abci/types.js';
+
 import type {
   Bech32PrefixRequest,
   Bech32PrefixResponse,
@@ -18,12 +20,11 @@ import type {
   MsgUndelegateResponse,
 } from './codegen/cosmos/staking/v1beta1/tx.js';
 import type { Any } from './codegen/google/protobuf/any.js';
-import {
+import type {
   MsgTransfer,
   MsgTransferResponse,
 } from './codegen/ibc/applications/transfer/v1/tx.js';
 import type { JsonSafe } from './codegen/index.js';
-import { RequestQuery } from './codegen/tendermint/abci/types.js';
 
 /**
  * The result of Any.toJSON(). Exported at top level as a convenience
