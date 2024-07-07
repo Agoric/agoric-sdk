@@ -82,13 +82,18 @@ case "${1-}" in
 esac
 CMD="${1-"--help"}"
 
-# Read current-directory package.json fields "name"/"version"/"private" into shell variables.
+# Read current-directory package.json fields "name"/"version"/"private" into shell variables
+# by evaluating single-quoted assignments like `<name>='...'`.
 eval "$(jq < package.json -r --arg Q "'" '
   pick(.name, .version, .private)
   | to_entries
   | .[]
-  | ((.value // "") | tostring | gsub($Q; $Q + "\\" + $Q + $Q)) as $value
-  | (.key + "=" + $Q + $value + $Q)
+  # Replace a null/false value with empty string.
+  | ((.value // "") | tostring) as $str_value
+  # Enclosing single-quote `$Q`s preserve the literal value of each character
+  # except actual single-quotes, which are replaced with an escape sequence by
+  # the `gsub`.
+  | (.key + "=" + $Q + ($str_value | gsub($Q; $Q + "\\" + $Q + $Q)) + $Q)
 ')"
 
 # dist-tags are only applicable to published packages.
