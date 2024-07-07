@@ -5,7 +5,7 @@ import type {
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type {
   State as IBCChannelState,
   Order,
@@ -13,7 +13,7 @@ import type {
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
+import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
@@ -22,7 +22,7 @@ import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
-  // TODO document why this is the format
+  // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
   value: `${string}valoper${string}`;
   encoding: 'bech32';
 };
