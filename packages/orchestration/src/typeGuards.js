@@ -19,7 +19,7 @@ export const OutboundConnectionHandlerI = M.interface(
 
 export const ChainAddressShape = {
   chainId: M.string(),
-  addressEncoding: M.string(),
+  encoding: M.string(),
   value: M.string(),
 };
 

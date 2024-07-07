@@ -87,7 +87,7 @@ const prepareLocalChainFacadeKit = (
             account,
             address: harden({
               value: address,
-              addressEncoding: 'bech32',
+              encoding: 'bech32',
               chainId: localChainInfo.chainId,
             }),
             // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066

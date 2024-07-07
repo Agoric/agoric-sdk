@@ -49,7 +49,7 @@ test('deposit, withdraw', async t => {
     address: harden({
       value: address,
       chainId: 'agoric-n',
-      addressEncoding: 'bech32',
+      encoding: 'bech32',
     }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
@@ -120,7 +120,7 @@ test('delegate, undelegate', async t => {
     address: harden({
       value: address,
       chainId: 'agoric-n',
-      addressEncoding: 'bech32',
+      encoding: 'bech32',
     }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
@@ -183,7 +183,7 @@ test('transfer', async t => {
     address: harden({
       value: address,
       chainId: 'agoric-n',
-      addressEncoding: 'bech32',
+      encoding: 'bech32',
     }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
@@ -200,7 +200,7 @@ test('transfer', async t => {
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',
     value: 'cosmos1pleab',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
   // TODO #9211, support ERTP amounts
@@ -226,7 +226,7 @@ test('transfer', async t => {
   const unknownDestination: ChainAddress = {
     chainId: 'fakenet',
     value: 'fakenet1pleab',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
   await t.throwsAsync(
     () => E(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),

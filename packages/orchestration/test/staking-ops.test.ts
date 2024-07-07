@@ -46,7 +46,7 @@ const configStaking = {
   },
   validator: {
     value: 'agoric1valoper234',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
     chainId: 'agoriclocal',
   },
   delegations: {
@@ -59,7 +59,7 @@ const configStaking = {
 const configRedelegate = {
   validator: {
     value: 'agoric1valoper444',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
     chainId: 'atom-test',
   },
   delegations: {
@@ -134,7 +134,7 @@ const makeScenario = () => {
 
     const chainAddress: ChainAddress = harden({
       value: addr,
-      addressEncoding: 'bech32',
+      encoding: 'bech32',
       chainId: 'mock-1',
     });
 

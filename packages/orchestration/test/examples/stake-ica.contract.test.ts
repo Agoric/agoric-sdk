@@ -88,7 +88,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     t.truthy(account, 'account is returned');
     const chainAddress = await E(account).getAddress();
     t.regex(chainAddress.value, /cosmos1/);
-    t.like(chainAddress, { chainId: 'cosmoshub-4', addressEncoding: 'bech32' });
+    t.like(chainAddress, { chainId: 'cosmoshub-4', encoding: 'bech32' });
 
     await t.throwsAsync(E(account).getBalances(), {
       message: 'not yet implemented',
@@ -151,7 +151,7 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const validatorAddr = {
     value: 'cosmosvaloper1test' as const,
     chainId: 'cosmoshub-4',
-    addressEncoding: 'bech32' as const,
+    encoding: 'bech32' as const,
   };
   const delegation = await E(account).delegate(validatorAddr, {
     denom: 'uatom',
@@ -239,7 +239,7 @@ test('CosmosOrchestrationAccount - not yet implemented', async t => {
   const mockChainAddress: ChainAddress = {
     value: 'cosmos1test',
     chainId: 'cosmoshub-4',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
   const mockAmountArg: AmountArg = { value: 10n, denom: 'uatom' };
 

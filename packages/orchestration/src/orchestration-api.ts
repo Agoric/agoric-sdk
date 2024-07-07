@@ -60,8 +60,7 @@ export type ChainAddress = {
   chainId: string;
   /** The address value used on-chain */
   value: string;
-  // TODO what's the right way to scope the address? it's not chainId
-  addressEncoding: 'bech32' | 'ethereum';
+  encoding: 'bech32' | 'ethereum';
 };
 
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &

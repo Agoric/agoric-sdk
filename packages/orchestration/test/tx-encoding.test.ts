@@ -15,7 +15,7 @@ const scenario1 = {
   acct1: {
     address: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
   },
-  validator: { address: 'agoric1valoper234', addressEncoding: 'bech32' },
+  validator: { address: 'agoric1valoper234', encoding: 'bech32' },
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '200' },
   },

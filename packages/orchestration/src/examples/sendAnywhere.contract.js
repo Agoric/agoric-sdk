@@ -75,7 +75,7 @@ const sendItFn = async (
     { denom, value: amt.value },
     {
       value: destAddr,
-      addressEncoding: 'bech32',
+      encoding: 'bech32',
       chainId,
     },
   );

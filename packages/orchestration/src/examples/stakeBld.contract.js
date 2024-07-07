@@ -64,7 +64,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       account,
       address: harden({
         value: address,
-        addressEncoding: 'bech32',
+        encoding: 'bech32',
         chainId: 'local',
       }),
       storageNode: privateArgs.storageNode,

@@ -13,7 +13,7 @@ export const orcUtils = {
       toAccount: {
         chainId: 'osmosis-test',
         value: 'osmo1234',
-        addressEncoding: 'bech32',
+        encoding: 'bech32',
       },
     };
   },
@@ -31,7 +31,7 @@ export const orcUtils = {
       toAccount: {
         chainId: 'osmosis-test',
         value: 'osmo1234',
-        addressEncoding: 'bech32',
+        encoding: 'bech32',
       },
     };
   },

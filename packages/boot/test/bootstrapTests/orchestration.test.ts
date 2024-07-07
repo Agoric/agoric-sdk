@@ -148,7 +148,7 @@ test.serial('stakeAtom - smart wallet', async t => {
   const validatorAddress: CosmosValidatorAddress = {
     value: 'cosmosvaloper1test',
     chainId: 'gaiatest',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
   await t.notThrowsAsync(
@@ -170,7 +170,7 @@ test.serial('stakeAtom - smart wallet', async t => {
   const validatorAddressFail: CosmosValidatorAddress = {
     value: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
   await t.throwsAsync(

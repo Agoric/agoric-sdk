@@ -33,7 +33,7 @@ export type Proto3JSONMsg = {
 export type CosmosValidatorAddress = ChainAddress & {
   // TODO document why this is the format
   value: `${string}valoper${string}`;
-  addressEncoding: 'bech32';
+  encoding: 'bech32';
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */

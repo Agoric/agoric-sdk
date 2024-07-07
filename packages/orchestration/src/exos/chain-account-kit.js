@@ -190,7 +190,7 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
             // https://github.com/Agoric/agoric-sdk/issues/9066
             value: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
             chainId: this.state.chainId,
-            addressEncoding: 'bech32',
+            encoding: 'bech32',
           });
         },
         /**
