@@ -16,6 +16,7 @@ import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
+ * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  */
 
@@ -121,3 +122,35 @@ export const provideOrchestration = (
   return { ...facade, chainHub, vowTools, zone: zones.contract };
 };
 harden(provideOrchestration);
+
+/** @typedef {Omit<ReturnType<typeof provideOrchestration>, 'zone'>} OrchestrationTools */
+
+/**
+ * Simplifies contract functions for Orchestration by wrapping a simpler
+ * function with all the tools it needs in order to use Orchestration.
+ *
+ * @template {Record<string, unknown>} CT
+ * @template {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ * }} PA
+ * @template R
+ * @param {(
+ *   zcf: ZCF<CT>,
+ *   privateArgs: PA,
+ *   zone: Zone,
+ *   tools: OrchestrationTools,
+ * ) => Promise<R>} contractFn
+ * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>} a
+ *   Zoe start function
+ */
+export const withOrchestration =
+  contractFn => async (zcf, privateArgs, baggage) => {
+    const { zone, ...tools } = provideOrchestration(
+      zcf,
+      baggage,
+      privateArgs,
+      privateArgs.marshaller,
+    );
+    return contractFn(zcf, privateArgs, zone, tools);
+  };
+harden(withOrchestration);

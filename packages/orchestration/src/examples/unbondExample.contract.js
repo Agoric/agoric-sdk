@@ -1,6 +1,6 @@
 import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -9,7 +9,9 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
+ * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**
@@ -43,6 +45,8 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
 };
 
 /**
+ * Orchestration contract to be wrapped by withOrchestration for Zoe
+ *
  * @param {ZCF} zcf
  * @param {{
  *   agoricNames: Remote<NameHub>;
@@ -52,31 +56,10 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
  *   marshaller: Marshaller;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Zone} zone
+ * @param {OrchestrationTools} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    agoricNames,
-    localchain,
-    orchestrationService,
-    storageNode,
-    marshaller,
-    timerService,
-  } = privateArgs;
-
-  const { orchestrate } = provideOrchestration(
-    zcf,
-    baggage,
-    {
-      agoricNames,
-      localchain,
-      orchestrationService,
-      storageNode,
-      timerService,
-    },
-    marshaller,
-  );
-
+const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
   /** @type {OfferHandler} */
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
@@ -103,3 +86,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return harden({ publicFacet });
 };
+
+export const start = withOrchestration(contract);

@@ -5,7 +5,7 @@ import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
 import { orcUtils } from '../utils/orc.js';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -13,8 +13,9 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
- * @import {Baggage} from '@agoric/vat-data'
  * @import {NameHub} from '@agoric/vats';
+ * @import {Zone} from '@agoric/zone';
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**
@@ -90,6 +91,8 @@ export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 
 /**
+ * Orchestration contract to be wrapped by withOrchestration for Zoe
+ *
  * @param {ZCF} zcf
  * @param {{
  *   agoricNames: Remote<NameHub>;
@@ -99,31 +102,10 @@ export const makeNatAmountShape = (brand, min) =>
  *   timerService: Remote<TimerService>;
  *   marshaller: Marshaller;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Zone} zone
+ * @param {OrchestrationTools} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    agoricNames,
-    localchain,
-    orchestrationService,
-    storageNode,
-    timerService,
-    marshaller,
-  } = privateArgs;
-
-  const { orchestrate } = provideOrchestration(
-    zcf,
-    baggage,
-    {
-      agoricNames,
-      localchain,
-      orchestrationService,
-      storageNode,
-      timerService,
-    },
-    marshaller,
-  );
-
+const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
   const { brands } = zcf.getTerms();
 
   /** deprecated historical example */
@@ -153,3 +135,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return harden({ publicFacet });
 };
+
+export const start = withOrchestration(contract);
