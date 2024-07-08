@@ -1,0 +1,27 @@
+Zone architecture
+
+Guide
+  - raw names are the name of the node
+  - <names> are developer-supplied names for some purposes
+
+
+- top level
+  - vows - system zone for vowtools
+  - asyncflow - system zone for asyncflow
+  - orchestration - system zone for orch
+  - retriable - TODO - system zone for `retriable` infra
+
+  - contract - TODO - system zone under which developer-controlled data is stored
+    - orchestration - MISSING intermediary to have a function namespace. should they be a separate top-level in `contract`
+      - <durableOrchestrationName> - name of dev-supplied orchFn
+        - endowments - 
+          - <endowmentname> - ??
+        - asyncflow
+    - <contract zones> - ???
+    - <name of retriablefn> -- TODO should this be under `retriable` above?
+
+
+
+TODO
+  - offers - TODO
+    - <offerID> - TODO

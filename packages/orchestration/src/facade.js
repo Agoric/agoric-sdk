@@ -1,8 +1,6 @@
 /** @file Orchestration service */
 
 import { Fail } from '@endo/errors';
-import { pickFacet } from '@agoric/vat-data';
-import { prepareOrchestratorKit } from './exos/orchestrator.js';
 
 /**
  * @import {AsyncFlowTools} from '@agoric/async-flow';
@@ -27,13 +25,9 @@ import { prepareOrchestratorKit } from './exos/orchestrator.js';
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
  *   orchestrationService: Remote<OrchestrationService>;
- *   localchain: Remote<LocalChain>;
  *   chainHub: import('./exos/chain-hub.js').ChainHub;
- *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   makeRecorderKit: MakeRecorderKit;
- *   makeCosmosOrchestrationAccount: any;
- *   makeLocalChainFacade: MakeLocalChainFacade;
- *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   makeOrchestrator: () => Orchestrator;
  *   vowTools: VowTools;
  *   asyncFlowTools: AsyncFlowTools;
  * }} powers
@@ -44,12 +38,8 @@ export const makeOrchestrationFacade = ({
   zcf,
   storageNode,
   orchestrationService,
-  localchain,
-  chainHub,
-  makeLocalOrchestrationAccountKit,
   makeRecorderKit,
-  makeLocalChainFacade,
-  makeRemoteChainFacade,
+  makeOrchestrator,
   vowTools,
   asyncFlowTools,
 }) => {
@@ -59,72 +49,67 @@ export const makeOrchestrationFacade = ({
     storageNode &&
     orchestrationService &&
     // @ts-expect-error type says defined but double check
-    makeLocalOrchestrationAccountKit &&
-    // @ts-expect-error type says defined but double check
     makeRecorderKit &&
     // @ts-expect-error type says defined but double check
-    makeRemoteChainFacade &&
+    makeOrchestrator &&
     asyncFlowTools) ||
     Fail`params missing`;
-
-  const makeOrchestratorKit = prepareOrchestratorKit(zone, {
-    asyncFlowTools,
-    chainHub,
-    localchain,
-    makeRecorderKit,
-    makeLocalChainFacade,
-    makeRemoteChainFacade,
-    orchestrationService,
-    storageNode,
-    timerService,
-    vowTools,
-    zcf,
-  });
-  const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
   const { when } = vowTools;
 
+  /**
+   * @template GuestReturn
+   * @template HostReturn
+   * @template GuestContext
+   * @template HostContext
+   * @template {any[]} GuestArgs
+   * @template {any[]} HostArgs
+   * @param {string} durableName - the orchestration flow identity in the zone
+   *   (to resume across upgrades)
+   * @param {HostContext} hostCtx - values to pass through the async flow
+   *   membrane
+   * @param {(
+   *   guestOrc: Orchestrator,
+   *   guestCtx: GuestContext,
+   *   ...args: GuestArgs
+   * ) => Promise<GuestReturn>} guestFn
+   * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
+   *   Promise for now for compat before use of asyncFlow. But really should be
+   *   `Vow<HostReturn>`
+   */
+  const orchestrate = (durableName, hostCtx, guestFn) => {
+    const subZone = zone.subZone(durableName);
+
+    const hostOrc = makeOrchestrator();
+
+    const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
+      hostOrc,
+      hostCtx,
+    ]);
+
+    const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
+
+    const orcFn = (...args) =>
+      // TODO remove the `when` after fixing the return type
+      // to `Vow<HostReturn>`
+      when(hostFn(wrappedOrc, wrappedCtx, ...args));
+    return harden(orcFn);
+  };
+
+  // NOTE multiple calls to this with the same guestFn name will fail
+  const orchestrateAll = (guestFns, hostCtx) =>
+    Object.fromEntries(
+      Object.entries(guestFns).map(([name, guestFn]) => [
+        name,
+        orchestrate(name, hostCtx, guestFn),
+      ]),
+    );
+
   return {
-    /**
-     * @template GuestReturn
-     * @template HostReturn
-     * @template GuestContext
-     * @template HostContext
-     * @template {any[]} GuestArgs
-     * @template {any[]} HostArgs
-     * @param {string} durableName - the orchestration flow identity in the zone
-     *   (to resume across upgrades)
-     * @param {HostContext} hostCtx - values to pass through the async flow
-     *   membrane
-     * @param {(
-     *   guestOrc: Orchestrator,
-     *   guestCtx: GuestContext,
-     *   ...args: GuestArgs
-     * ) => Promise<GuestReturn>} guestFn
-     * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
-     *   Promise for now for compat before use of asyncFlow. But really should
-     *   be `Vow<HostReturn>`
-     */
-    orchestrate(durableName, hostCtx, guestFn) {
-      const subZone = zone.subZone(durableName);
-
-      const hostOrc = makeOrchestrator();
-
-      const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
-        hostOrc,
-        hostCtx,
-      ]);
-
-      const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
-
-      const orcFn = (...args) =>
-        // TODO remove the `when` after fixing the return type
-        // to `Vow<HostReturn>`
-        when(hostFn(wrappedOrc, wrappedCtx, ...args));
-      return harden(orcFn);
-    },
+    orchestrate,
+    orchestrateAll,
     adminAsyncFlow,
   };
 };

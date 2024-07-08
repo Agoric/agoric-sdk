@@ -5,7 +5,7 @@ import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
 import { orcUtils } from '../utils/orc.js';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
@@ -101,55 +101,40 @@ export const makeNatAmountShape = (brand, min) =>
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    agoricNames,
-    localchain,
-    orchestrationService,
-    storageNode,
-    timerService,
-    marshaller,
-  } = privateArgs;
-
-  const { orchestrate } = provideOrchestration(
+export const start = withOrchestration(
+  async (
     zcf,
-    baggage,
-    {
-      agoricNames,
-      localchain,
-      orchestrationService,
-      storageNode,
-      timerService,
-    },
-    marshaller,
-  );
+    privateArgs,
+    zone,
+    { vowTools, orchestrate, chainHub, zoeTools },
+  ) => {
+    const { brands } = zcf.getTerms();
 
-  const { brands } = zcf.getTerms();
+    /** deprecated historical example */
+    /**
+     * @type {OfferHandler<
+     *   unknown,
+     *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
+     * >}
+     */
+    const swapAndStakeHandler = orchestrate('LSTTia', { zcf }, stackAndSwapFn);
 
-  /** deprecated historical example */
-  /**
-   * @type {OfferHandler<
-   *   unknown,
-   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
-   * >}
-   */
-  const swapAndStakeHandler = orchestrate('LSTTia', { zcf }, stackAndSwapFn);
+    const makeSwapAndStakeInvitation = () =>
+      zcf.makeInvitation(
+        swapAndStakeHandler,
+        'Swap for TIA and stake',
+        undefined,
+        harden({
+          give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
+          want: {}, // XXX ChainAccount Ownable?
+          exit: M.any(),
+        }),
+      );
 
-  const makeSwapAndStakeInvitation = () =>
-    zcf.makeInvitation(
-      swapAndStakeHandler,
-      'Swap for TIA and stake',
-      undefined,
-      harden({
-        give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
-        want: {}, // XXX ChainAccount Ownable?
-        exit: M.any(),
-      }),
-    );
+    const publicFacet = Far('SwapAndStake Public Facet', {
+      makeSwapAndStakeInvitation,
+    });
 
-  const publicFacet = Far('SwapAndStake Public Facet', {
-    makeSwapAndStakeInvitation,
-  });
-
-  return harden({ publicFacet });
-};
+    return harden({ publicFacet });
+  },
+);
