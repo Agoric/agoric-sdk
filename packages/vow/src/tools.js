@@ -7,7 +7,7 @@ import { makeWhen } from './when.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {IsRetryableReason, AsPromiseFunction, EVow} from './types.js';
+ * @import {IsRetryableReason, AsPromiseFunction, EVow, Vow, ERef} from './types.js';
  */
 
 /**
@@ -40,9 +40,11 @@ export const prepareVowTools = (zone, powers = {}) => {
    *
    * The internal functions
    *
+   * @template T
    * @param {Zone} fnZone - the zone for the named function
    * @param {string} name
-   * @param {(...args: unknown[]) => unknown} fn
+   * @param {(...args: unknown[]) => ERef<T>} fn
+   * @returns {(...args: unknown[]) => Vow<T>}
    */
   const retriable =
     (fnZone, name, fn) =>

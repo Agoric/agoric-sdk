@@ -36,7 +36,7 @@ test('deposit, withdraw', async t => {
     Far('MockZCF', {}),
     timer,
     vowTools,
-    makeChainHub(bootstrap.agoricNames),
+    makeChainHub(bootstrap.agoricNames, vowTools),
   );
 
   t.log('request account from vat-localchain');
@@ -107,7 +107,7 @@ test('delegate, undelegate', async t => {
     Far('MockZCF', {}),
     timer,
     vowTools,
-    makeChainHub(bootstrap.agoricNames),
+    makeChainHub(bootstrap.agoricNames, vowTools),
   );
 
   t.log('request account from vat-localchain');
@@ -170,7 +170,7 @@ test('transfer', async t => {
     Far('MockZCF', {}),
     timer,
     vowTools,
-    makeChainHub(bootstrap.agoricNames),
+    makeChainHub(bootstrap.agoricNames, vowTools),
   );
 
   t.log('request account from vat-localchain');
