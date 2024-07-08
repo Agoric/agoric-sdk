@@ -20,7 +20,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
  *   };
  *   produce: {
  *     orchestration: Producer<any>;
- *     orchestrationKit: Producer<any>;
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
@@ -29,11 +28,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 export const setupOrchestrationVat = async (
   {
     consume: { loadCriticalVat, portAllocator: portAllocatorP },
-    produce: {
-      orchestrationVat,
-      orchestration,
-      orchestrationKit: orchestrationKitP,
-    },
+    produce: { orchestrationVat, orchestration },
   },
   options,
 ) => {
@@ -55,8 +50,6 @@ export const setupOrchestrationVat = async (
 
   orchestration.reset();
   orchestration.resolve(newOrchestrationKit.public);
-  orchestrationKitP.reset();
-  orchestrationKitP.resolve(newOrchestrationKit);
 };
 
 /**
@@ -162,7 +155,6 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
       },
       produce: {
         orchestration: 'orchestration',
-        orchestrationKit: 'orchestrationKit',
         orchestrationVat: 'orchestrationVat',
       },
     },
