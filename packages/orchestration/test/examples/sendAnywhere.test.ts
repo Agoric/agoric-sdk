@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 import path from 'path';
 import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
@@ -213,4 +214,31 @@ test('send using arbitrary chain info', async t => {
       token: { amount: '4250000', denom: 'uist' },
     });
   }
+});
+
+test('baggage', async t => {
+  const {
+    bootstrap,
+    commonPrivateArgs,
+    brands: { ist },
+    utils: { inspectLocalBridge, pourPayment },
+  } = await commonSetup(t);
+
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+  const { bundleAndInstall, zoe } = await setUpZoeForTest({
+    setJig,
+  });
+
+  await E(zoe).startInstance(
+    await bundleAndInstall(contractFile),
+    { Stable: ist.issuer },
+    {},
+    commonPrivateArgs,
+  );
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });

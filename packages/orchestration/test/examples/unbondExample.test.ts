@@ -3,6 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -17,7 +18,12 @@ test('start', async t => {
     commonPrivateArgs,
   } = await commonSetup(t);
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let contractBaggage;
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({
+    setJig: ({ baggage }) => {
+      contractBaggage = baggage;
+    },
+  });
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
@@ -43,4 +49,7 @@ test('start', async t => {
   );
   const result = await E(userSeat).getOfferResult();
   t.is(result, undefined);
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });
