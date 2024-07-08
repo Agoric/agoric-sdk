@@ -352,7 +352,6 @@ export const makeZoeStorageManager = (
 
   /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
-    instanceBaggage,
     installation,
     customTerms,
     uncleanIssuerKeywordRecord,

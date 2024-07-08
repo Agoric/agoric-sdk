@@ -23,6 +23,7 @@ export const makeZoeForTest = vatAdminSvc =>
 
 /**
  * Returns promises for `zoe` and the `feeMintAccess`.
+ * Provide testing versions of capabilities for Zoe contracts.
  *
  * @template {object} [T=unknown]
  * @param {object} options
