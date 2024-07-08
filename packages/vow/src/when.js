@@ -12,6 +12,10 @@ export const makeWhen = (
   /**
    * Shorten `specimenP` until we achieve a final result.
    *
+   * Does not survive upgrade (even if specimenP is a durable Vow).
+   *
+   * @see {@link ../../README.md}
+   *
    * @template T
    * @template [TResult1=EUnwrap<T>]
    * @template [TResult2=never]

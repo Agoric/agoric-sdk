@@ -296,7 +296,6 @@ export const ZoeStorageManagerIKit = harden({
   }),
   startInstanceAccess: M.interface('ZoeStorage startInstance access', {
     makeZoeInstanceStorageManager: M.call(
-      M.any(),
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,

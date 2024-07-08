@@ -285,7 +285,7 @@ export const makeReplayMembrane = ({
     try {
       optVerb
         ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)
           // is not callable. I'm not sure if this is a just a typing bug
@@ -320,7 +320,7 @@ export const makeReplayMembrane = ({
     try {
       const hostPromise = optVerb
         ? heapVowE(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)
           // is not callable. I'm not sure if this is a just a typing bug

@@ -3,7 +3,6 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import {
   M,
-  makeScalarBigMapStore,
   provideDurableWeakMapStore,
   prepareExoClass,
   prepareExo,
@@ -301,14 +300,9 @@ export const makeStartInstance = (
 
     const instanceHandle = makeInstanceHandle();
 
-    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
-      durable: true,
-    });
-
     const zoeInstanceStorageManager = await E(
       startInstanceAccess,
     ).makeZoeInstanceStorageManager(
-      instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,
