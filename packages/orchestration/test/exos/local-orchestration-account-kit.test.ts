@@ -5,7 +5,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
-import { TimeMath } from '@agoric/time';
+import { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
@@ -14,15 +14,12 @@ import { commonSetup } from '../supports.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 
-test('deposit, withdraw', async t => {
-  const { bootstrap, brands, utils } = await commonSetup(t);
-
-  const { bld: stake } = brands;
-
+const setupLCAKit = async (
+  t: ExecutionContext,
+  { bootstrap, brands }: Awaited<ReturnType<typeof commonSetup>>,
+) => {
   const { timer, localchain, marshaller, rootZone, storage, vowTools } =
     bootstrap;
-
-  t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -53,6 +50,17 @@ test('deposit, withdraw', async t => {
     }),
     storageNode: storage.rootNode.makeChildNode('lcaKit'),
   });
+  return account;
+};
+
+test('deposit, withdraw', async t => {
+  const common = await commonSetup(t);
+  const account = await setupLCAKit(t, common);
+
+  const {
+    brands: { bld: stake },
+    utils,
+  } = common;
 
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
@@ -88,42 +96,14 @@ test('deposit, withdraw', async t => {
 });
 
 test('delegate, undelegate', async t => {
-  const { bootstrap, brands, utils } = await commonSetup(t);
+  const common = await commonSetup(t);
+  const account = await setupLCAKit(t, common);
 
-  const { bld } = brands;
-
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
-
-  t.log('exo setup - prepareLocalChainAccountKit');
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    rootZone.mapStore('recorder'),
-    marshaller,
-  );
-  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
-    rootZone,
-    makeRecorderKit,
-    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
-    Far('MockZCF', {}),
-    timer,
-    vowTools,
-    makeChainHub(bootstrap.agoricNames),
-  );
-
-  t.log('request account from vat-localchain');
-  const lca = await E(localchain).makeAccount();
-  const address = await E(lca).getAddress();
-
-  t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalOrchestrationAccountKit({
-    account: lca,
-    address: harden({
-      address,
-      chainId: 'agoric-n',
-      addressEncoding: 'bech32',
-    }),
-    storageNode: storage.rootNode.makeChildNode('lcaKit'),
-  });
+  const {
+    bootstrap: { timer },
+    brands: { bld },
+    utils,
+  } = common;
 
   await E(account).deposit(await utils.pourPayment(bld.units(100)));
 
@@ -151,42 +131,13 @@ test('delegate, undelegate', async t => {
 });
 
 test('transfer', async t => {
-  const { bootstrap, brands, utils } = await commonSetup(t);
+  const common = await commonSetup(t);
+  const account = await setupLCAKit(t, common);
 
-  const { bld: stake } = brands;
-
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
-
-  t.log('exo setup - prepareLocalChainAccountKit');
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    rootZone.mapStore('recorder'),
-    marshaller,
-  );
-  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
-    rootZone,
-    makeRecorderKit,
-    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
-    Far('MockZCF', {}),
-    timer,
-    vowTools,
-    makeChainHub(bootstrap.agoricNames),
-  );
-
-  t.log('request account from vat-localchain');
-  const lca = await E(localchain).makeAccount();
-  const address = await E(lca).getAddress();
-
-  t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalOrchestrationAccountKit({
-    account: lca,
-    address: harden({
-      address,
-      chainId: 'agoric-n',
-      addressEncoding: 'bech32',
-    }),
-    storageNode: storage.rootNode.makeChildNode('lcaKit'),
-  });
+  const {
+    brands: { bld: stake },
+    utils,
+  } = common;
 
   t.truthy(account, 'account is returned');
 
