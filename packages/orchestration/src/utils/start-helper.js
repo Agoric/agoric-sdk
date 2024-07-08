@@ -44,6 +44,10 @@ export const provideOrchestration = (
   remotePowers,
   marshaller,
 ) => {
+  zcf.setTestJig(() => ({
+    baggage,
+  }));
+
   const zone = makeDurableZone(baggage);
   const { agoricNames, timerService } = remotePowers;
 
