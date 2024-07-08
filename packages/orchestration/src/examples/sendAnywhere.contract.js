@@ -18,7 +18,7 @@ const { entries } = Object;
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  * @import {Orchestrator} from '../types.js'
  * @import {OrchestrationAccount} from '../orchestration-api.js'
  */
@@ -26,7 +26,7 @@ const { entries } = Object;
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;

@@ -12,7 +12,7 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  * @import {Baggage} from '@agoric/vat-data'
  * @import {NameHub} from '@agoric/vats';
  */
@@ -94,7 +94,7 @@ export const makeNatAmountShape = (brand, min) =>
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   marshaller: Marshaller;

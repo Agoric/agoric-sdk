@@ -22,7 +22,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { registerChainNamespace } from '../src/chain-info.js';
-import { prepareOrchestrationTools } from '../src/service.js';
+import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
 
 export {
@@ -113,11 +113,11 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
   await setupIBCProtocol();
 
-  const { makeOrchestrationKit } = prepareOrchestrationTools(
+  const makeOrchestrationKit = prepareCosmosInterchainService(
     rootZone.subZone('orchestration'),
     vowTools,
   );
-  const { public: orchestration } = makeOrchestrationKit({ portAllocator });
+  const orchestration = makeOrchestrationKit({ portAllocator });
 
   await registerChainNamespace(agoricNamesAdmin, () => {});
 

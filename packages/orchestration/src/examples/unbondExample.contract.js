@@ -9,7 +9,7 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  */
 
 /**
@@ -47,7 +47,7 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Marshaller;
  *   timerService: Remote<TimerService>;

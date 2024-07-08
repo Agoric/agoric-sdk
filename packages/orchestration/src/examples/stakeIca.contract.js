@@ -17,7 +17,7 @@ const trace = makeTracer('StakeIca');
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
- * @import {ICQConnection, OrchestrationService} from '../types.js';
+ * @import {ICQConnection, CosmosInterchainService} from '../types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -51,7 +51,7 @@ export const privateArgsShape = meta.privateArgsShape;
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
- *   orchestration: OrchestrationService;
+ *   orchestration: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
  *   timer: TimerService;

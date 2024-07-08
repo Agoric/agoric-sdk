@@ -4,12 +4,12 @@ import { Fail, b } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { prepareChainAccountKit } from './exos/chain-account-kit.js';
-import { prepareICQConnectionKit } from './exos/icq-connection-kit.js';
+import { prepareChainAccountKit } from './chain-account-kit.js';
+import { prepareICQConnectionKit } from './icq-connection-kit.js';
 import {
   makeICAChannelAddress,
   makeICQChannelAddress,
-} from './utils/address.js';
+} from '../utils/address.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -18,7 +18,7 @@ import {
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from './types.js';
+ * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from '../types.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -60,7 +60,7 @@ const getPower = (powers, name) => {
  * @param {ReturnType<typeof prepareChainAccountKit>} makeChainAccountKit
  * @param {ReturnType<typeof prepareICQConnectionKit>} makeICQConnectionKit
  */
-const prepareOrchestrationKit = (
+const prepareCosmosOrchestrationServiceKit = (
   zone,
   { watch },
   makeChainAccountKit,
@@ -92,7 +92,7 @@ const prepareOrchestrationKit = (
           )
           .returns(M.remotable('ConnectionKit Holder facet')),
       }),
-      public: M.interface('OrchestrationService', {
+      public: M.interface('CosmosInterchainService', {
         makeAccount: M.call(M.string(), M.string(), M.string()).returns(
           Vow$(M.remotable('ChainAccountKit')),
         ),
@@ -240,20 +240,23 @@ const prepareOrchestrationKit = (
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-export const prepareOrchestrationTools = (zone, vowTools) => {
+export const prepareCosmosInterchainService = (zone, vowTools) => {
   const makeChainAccountKit = prepareChainAccountKit(zone, vowTools);
   const makeICQConnectionKit = prepareICQConnectionKit(zone, vowTools);
-  const makeOrchestrationKit = prepareOrchestrationKit(
-    zone,
-    vowTools,
-    makeChainAccountKit,
-    makeICQConnectionKit,
-  );
+  const makeCosmosOrchestrationServiceKit =
+    prepareCosmosOrchestrationServiceKit(
+      zone,
+      vowTools,
+      makeChainAccountKit,
+      makeICQConnectionKit,
+    );
 
-  return harden({ makeOrchestrationKit });
+  const makeCosmosInterchainService = initialPowers =>
+    makeCosmosOrchestrationServiceKit(initialPowers).public;
+
+  return makeCosmosInterchainService;
 };
-harden(prepareOrchestrationTools);
+harden(prepareCosmosInterchainService);
 
-/** @typedef {ReturnType<typeof prepareOrchestrationTools>} OrchestrationTools */
-/** @typedef {ReturnType<OrchestrationTools['makeOrchestrationKit']>} OrchestrationKit */
-/** @typedef {OrchestrationKit['public']} OrchestrationService */
+/** @typedef {ReturnType<typeof prepareCosmosInterchainService>} MakeCosmosInterchainService */
+/** @typedef {ReturnType<MakeCosmosInterchainService>} CosmosInterchainService */

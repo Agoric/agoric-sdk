@@ -13,7 +13,7 @@ import { prepareOrchestratorKit } from './exos/orchestrator.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
- * @import {OrchestrationService} from './service.js';
+ * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
  * @import {MakeLocalChainFacade} from './exos/local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './exos/remote-chain-facade.js';
@@ -26,7 +26,7 @@ import { prepareOrchestratorKit } from './exos/orchestrator.js';
  *   timerService: Remote<TimerService>;
  *   zcf: ZCF;
  *   storageNode: Remote<StorageNode>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   localchain: Remote<LocalChain>;
  *   chainHub: import('./exos/chain-hub.js').ChainHub;
  *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;

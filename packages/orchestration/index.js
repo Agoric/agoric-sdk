@@ -3,5 +3,5 @@
 /// <reference types="@agoric/zoe/exported" />
 
 export * from './src/types.js';
-export * from './src/service.js';
+export * from './src/exos/cosmos-interchain-service.js';
 export * from './src/typeGuards.js';

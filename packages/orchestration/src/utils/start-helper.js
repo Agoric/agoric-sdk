@@ -16,13 +16,13 @@ import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  */
 
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;

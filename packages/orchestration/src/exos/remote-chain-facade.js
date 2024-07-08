@@ -11,7 +11,7 @@ import { ChainFacadeI } from '../typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, PromiseToVow, Denom} from '../types.js';
  */
@@ -27,7 +27,7 @@ const anyVal = null;
  *   makeCosmosOrchestrationAccount: ReturnType<
  *     typeof prepareCosmosOrchestrationAccount
  *   >;
- *   orchestration: Remote<OrchestrationService>;
+ *   orchestration: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timer: Remote<TimerService>;
  *   vowTools: VowTools;

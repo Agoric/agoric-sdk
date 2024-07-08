@@ -9,7 +9,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
- * @import {OrchestrationService} from '../service.js'
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js'
  * @import {OrchestrationVat} from '../vat-orchestration.js'
  */
 
@@ -141,7 +141,7 @@ harden(initChainInfo);
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     orchestration: OrchestrationService;
+ *     orchestration: CosmosInterchainService;
  *   };
  * }} powers
  * @param {object} _options
