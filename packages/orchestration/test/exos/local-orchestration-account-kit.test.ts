@@ -6,6 +6,8 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
 import { ExecutionContext } from 'ava';
+import { TargetApp } from '@agoric/vats/src/bridge-target.js';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
@@ -16,7 +18,7 @@ import { maxClockSkew } from '../../src/utils/cosmos.js';
 
 const setupLCAKit = async (
   t: ExecutionContext,
-  { bootstrap, brands }: Awaited<ReturnType<typeof commonSetup>>,
+  { bootstrap }: Awaited<ReturnType<typeof commonSetup>>,
 ) => {
   const { timer, localchain, marshaller, rootZone, storage, vowTools } =
     bootstrap;
@@ -210,4 +212,38 @@ test('transfer', async t => {
       }),
     'accepts custom timeoutHeight',
   );
+});
+
+test('monitor transfers', async t => {
+  const common = await commonSetup(t);
+  const account = await setupLCAKit(t, common);
+  const {
+    mocks: { transferBridge },
+    bootstrap: { rootZone },
+  } = common;
+
+  let upcallReceived = false;
+  const zone = rootZone.subZone('tap');
+  const tap: TargetApp = zone.exo('tap', undefined, {
+    receiveUpcall: (obj: unknown) => {
+      upcallReceived = true;
+      t.log('receiveUpcall', obj);
+      return Promise.resolve();
+    },
+  });
+
+  const { address: target } = await E(account).getAddress();
+  await E(account).monitorTransfers(tap);
+
+  // simulate upcall from golang to VM
+  await E(transferBridge).fromBridge({
+    event: 'writeAcknowledgement',
+    /// XXX this should be /ibc.core.channel.v1.MsgRecvPacket containing
+    // a MsgTransfer msg
+    packet: 'a packet',
+    target,
+    type: VTRANSFER_IBC_EVENT,
+  });
+
+  t.true(upcallReceived, 'upcall received');
 });

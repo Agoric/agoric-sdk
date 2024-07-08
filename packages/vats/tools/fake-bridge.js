@@ -254,6 +254,9 @@ export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
           registered.delete(params.target);
           return undefined;
         }
+        case 'IBC_METHOD': {
+          return undefined;
+        }
         default:
           Fail`unknown type ${type}`;
       }

@@ -9,7 +9,6 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { TimeMath } from '@agoric/time';
 import { commonSetup } from '../supports.js';
 import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -78,7 +77,7 @@ const startContract = async ({
 };
 
 test('makeAccount, getAddress, getBalances, getBalance', async t => {
-  const { bootstrap } = await commonSetup(t);
+  const { bootstrap, mocks } = await commonSetup(t);
   {
     // stakeAtom
     const { publicFacet } = await startContract(bootstrap);
@@ -105,7 +104,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   }
   {
     // stakeOsmo
-    const { ibcBridge } = bootstrap;
+    const { ibcBridge } = mocks;
     await E(ibcBridge).setAddressPrefix('osmo');
     const { publicFacet } = await startContract({
       ...bootstrap,
