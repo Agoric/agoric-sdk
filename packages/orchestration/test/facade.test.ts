@@ -5,7 +5,7 @@ import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import type { Chain } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
-import { commonSetup } from './supports.js';
+import { commonSetup, provideDurableZone } from './supports.js';
 
 const test = anyTest;
 
@@ -44,8 +44,11 @@ const makeLocalOrchestrationAccountKit = () => assert.fail(`not used`);
 test('chain info', async t => {
   const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  const zone = bootstrap.rootZone;
   const { zcf } = await setupZCFTest();
+
+  // After setupZCFTest because this disables relaxDurabilityRules
+  // which breaks Zoe test setup's fakeVatAdmin
+  const zone = provideDurableZone('test');
 
   const orchKit = provideOrchestration(
     zcf,
