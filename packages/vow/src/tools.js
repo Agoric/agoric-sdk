@@ -1,9 +1,9 @@
 // @ts-check
-import { makeWhen } from './when.js';
-import { prepareVowKit } from './vow.js';
-import { prepareWatch } from './watch.js';
-import { prepareWatchUtils } from './watch-utils.js';
 import { makeAsVow } from './vow-utils.js';
+import { prepareVowKit } from './vow.js';
+import { prepareWatchUtils } from './watch-utils.js';
+import { prepareWatch } from './watch.js';
+import { makeWhen } from './when.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -34,6 +34,23 @@ export const prepareVowTools = (zone, powers = {}) => {
   const asVow = makeAsVow(makeVowKit);
 
   /**
+   * TODO FIXME make this real
+   * Create a function that retries the given function if the underlying
+   * functions rejects due to upgrade disconnection.
+   *
+   * The internal functions
+   *
+   * @param {Zone} fnZone - the zone for the named function
+   * @param {string} name
+   * @param {(...args: unknown[]) => unknown} fn
+   */
+  const retriable =
+    (fnZone, name, fn) =>
+    (...args) => {
+      return watch(fn(...args));
+    };
+
+  /**
    * Vow-tolerant implementation of Promise.all.
    *
    * @param {EVow<unknown>[]} maybeVows
@@ -44,7 +61,15 @@ export const prepareVowTools = (zone, powers = {}) => {
   const asPromise = (specimenP, ...watcherArgs) =>
     watchUtils.asPromise(specimenP, ...watcherArgs);
 
-  return harden({ when, watch, makeVowKit, allVows, asVow, asPromise });
+  return harden({
+    when,
+    watch,
+    makeVowKit,
+    allVows,
+    asVow,
+    asPromise,
+    retriable,
+  });
 };
 harden(prepareVowTools);
 
