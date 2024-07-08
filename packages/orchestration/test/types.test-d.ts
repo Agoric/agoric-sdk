@@ -20,15 +20,15 @@ const anyVal = null as any;
 
 const validatorAddr = {
   chainId: 'agoric3',
-  address: 'agoric1valoperhello',
-  addressEncoding: 'bech32',
+  value: 'agoric1valoperhello',
+  encoding: 'bech32',
 } as const;
 expectType<CosmosValidatorAddress>(validatorAddr);
 
 const chainAddr = {
   chainId: 'agoric-3',
-  address: 'agoric1pleab',
-  addressEncoding: 'bech32',
+  value: 'agoric1pleab',
+  encoding: 'bech32',
 } as const;
 expectType<ChainAddress>(chainAddr);
 expectNotType<CosmosValidatorAddress>(chainAddr);

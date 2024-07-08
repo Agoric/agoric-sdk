@@ -99,7 +99,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
     const accountNode = await E(accountsStorageNode).makeChildNode(
-      accountAddress.address,
+      accountAddress.value,
     );
     const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
       account,

@@ -79,15 +79,15 @@ const prepareLocalChainFacadeKit = (
       },
       makeAccountWatcher: {
         /**
-         * @param {[LocalChainAccount, ChainAddress['address']]} results
+         * @param {[LocalChainAccount, ChainAddress['value']]} results
          */
         onFulfilled([account, address]) {
           const { localChainInfo } = this.state;
           const { holder } = makeLocalOrchestrationAccountKit({
             account,
             address: harden({
-              address,
-              addressEncoding: 'bech32',
+              value: address,
+              encoding: 'bech32',
               chainId: localChainInfo.chainId,
             }),
             // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066

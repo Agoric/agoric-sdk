@@ -1,11 +1,11 @@
-import type { AnyJson } from '@agoric/cosmic-proto';
+import type { AnyJson, TypedJson } from '@agoric/cosmic-proto';
 import type {
   Delegation,
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type {
   State as IBCChannelState,
   Order,
@@ -13,27 +13,18 @@ import type {
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
+import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
 
-/** A helper type for type extensions. */
-export type TypeUrl = string;
-
-// TODO move into cosmic-proto
-export type Proto3JSONMsg = {
-  '@type': TypeUrl;
-  value: Record<string, unknown>;
-};
-
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
-  // TODO document why this is the format
-  address: `${string}valoper${string}`;
-  addressEncoding: 'bech32';
+  // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
+  value: `${string}valoper${string}`;
+  encoding: 'bech32';
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
@@ -183,7 +174,7 @@ export interface IcaAccount {
    * @param msgs - records for the transaction
    * @returns acknowledgement string
    */
-  executeTx: (msgs: Proto3JSONMsg[]) => Promise<string>;
+  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction

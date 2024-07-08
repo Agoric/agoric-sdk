@@ -146,9 +146,9 @@ test.serial('stakeAtom - smart wallet', async t => {
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
   const validatorAddress: CosmosValidatorAddress = {
-    address: 'cosmosvaloper1test',
+    value: 'cosmosvaloper1test',
     chainId: 'gaiatest',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
   await t.notThrowsAsync(
@@ -168,9 +168,9 @@ test.serial('stakeAtom - smart wallet', async t => {
   });
 
   const validatorAddressFail: CosmosValidatorAddress = {
-    address: 'cosmosvaloper1fail',
+    value: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
   await t.throwsAsync(

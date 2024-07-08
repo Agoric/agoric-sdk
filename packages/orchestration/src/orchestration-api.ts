@@ -58,9 +58,9 @@ export type AmountArg = DenomAmount | Amount;
 export type ChainAddress = {
   /** e.g. 1 for Ethereum, agoric-3 for Agoric, cosmoshub-4 for Cosmos */
   chainId: string;
-  address: string;
-  // TODO what's the right way to scope the address? it's not chainId
-  addressEncoding: 'bech32' | 'ethereum';
+  /** The address value used on-chain */
+  value: string;
+  encoding: 'bech32' | 'ethereum';
 };
 
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
