@@ -15,8 +15,8 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
 
   return Far('OrchestrationVat', {
     /** @param {Partial<OrchestrationPowers>} [initialPowers] */
-    makeOrchestrationKit(initialPowers = {}) {
-      return { public: makeCosmosInterchainService(initialPowers) };
+    makeCosmosInterchainService(initialPowers = {}) {
+      return makeCosmosInterchainService(initialPowers);
     },
   });
 };

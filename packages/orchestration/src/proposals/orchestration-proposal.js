@@ -10,7 +10,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 /**
  * @import {PortAllocator} from '@agoric/network';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js'
- * @import {OrchestrationVat} from '../vat-orchestration.js'
  */
 
 /**
@@ -44,12 +43,14 @@ export const setupOrchestrationVat = async (
 
   const portAllocator = await portAllocatorP;
 
-  const newOrchestrationKit = await E(vats.orchestration).makeOrchestrationKit({
+  const cosmosInterchainService = await E(
+    vats.orchestration,
+  ).makeCosmosInterchainService({
     portAllocator,
   });
 
   orchestration.reset();
-  orchestration.resolve(newOrchestrationKit.public);
+  orchestration.resolve(cosmosInterchainService);
 };
 
 /**
