@@ -11,7 +11,7 @@ import { ZipReader } from '@endo/zip';
 /** @import {Bundle} from '@agoric/swingset-vat'; */
 /** @import {CoreEvalPlan} from '@agoric/deploy-script-support/src/writeCoreEvalParts.js' */
 
-const PACKAGE_NAME_RE = /(?<packageName>.*-v[\d.]+)\//;
+const PACKAGE_NAME_RE = /(?<packageName>.*-v[\d.]+(?:-n\d+)?)\//;
 
 /**
  * @typedef {{ name: string, label: string, location: string, modules: Record<string, {compartment: string, module: string}>}} Compartment
