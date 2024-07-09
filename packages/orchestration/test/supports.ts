@@ -113,11 +113,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
   await setupIBCProtocol();
 
-  const makeOrchestrationKit = prepareCosmosInterchainService(
+  const makeCosmosInterchainService = prepareCosmosInterchainService(
     rootZone.subZone('orchestration'),
     vowTools,
   );
-  const orchestration = makeOrchestrationKit({ portAllocator });
+  const cosmosInterchainService = makeCosmosInterchainService({
+    portAllocator,
+  });
 
   await registerChainNamespace(agoricNamesAdmin, () => {});
 
@@ -129,7 +131,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       timer,
       localchain,
       marshaller,
-      orchestration,
+      cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
@@ -143,7 +145,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     commonPrivateArgs: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
@@ -151,7 +153,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     facadeServices: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       timerService: timer,
     },
     utils: {

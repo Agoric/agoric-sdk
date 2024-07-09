@@ -51,7 +51,7 @@ const getChainTerms = (
 };
 
 const startContract = async ({
-  orchestration,
+  cosmosInterchainService,
   timer,
   marshaller,
   storage,
@@ -69,7 +69,7 @@ const startContract = async ({
     terms,
     {
       marshaller,
-      cosmosInterchainService: orchestration,
+      cosmosInterchainService,
       storageNode: storage.rootNode.makeChildNode(storagePath),
       timer,
     },
