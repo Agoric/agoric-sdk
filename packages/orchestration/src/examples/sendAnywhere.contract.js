@@ -2,12 +2,11 @@ import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js'
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M, mustMatch } from '@endo/patterns';
 import { E } from '@endo/far';
-import { heapVowE } from '@agoric/vow/vat.js';
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
-import { CosmosChainInfoShape } from '../typeGuards.js';
 import { provideOrchestration } from '../utils/start-helper.js';
 import { makeResumableAgoricNamesHack } from '../exos/agoric-names-tools.js';
+import { prepareChainHubCreatorFacet } from './shared/chain-hub-cf.js';
 
 const { entries } = Object;
 
@@ -17,7 +16,6 @@ const { entries } = Object;
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
  * @import {OrchestrationService} from '../service.js';
  * @import {Orchestrator} from '../types.js'
  * @import {OrchestrationAccount} from '../orchestration-api.js'
@@ -106,6 +104,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     agoricNames: privateArgs.agoricNames,
     vowTools,
   });
+  const makeCreatorFacet = prepareChainHubCreatorFacet(zone, chainHub);
 
   const contractState = makeStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
@@ -137,37 +136,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   );
 
-  let nonce = 0n;
-  const ConnectionInfoShape = M.record(); // TODO
-  const creatorFacet = zone.exo(
-    'Send CF',
-    M.interface('Send CF', {
-      addChain: M.callWhen(CosmosChainInfoShape, ConnectionInfoShape).returns(
-        M.scalar(),
-      ),
-    }),
-    {
-      /**
-       * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo
-       */
-      async addChain(chainInfo, connectionInfo) {
-        const chainKey = `${chainInfo.chainId}-${(nonce += 1n)}`;
-        // when() because chainHub methods return vows. If this were inside
-        // orchestrate() the membrane would wrap/unwrap automatically.
-        const agoricChainInfo = await heapVowE.when(
-          chainHub.getChainInfo('agoric'),
-        );
-        chainHub.registerChain(chainKey, chainInfo);
-        chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainInfo.chainId,
-          connectionInfo,
-        );
-        return chainKey;
-      },
-    },
-  );
+  const creatorFacet = makeCreatorFacet();
 
   return { publicFacet, creatorFacet };
 };
