@@ -1,5 +1,5 @@
 import { makeIssuerKit } from '@agoric/ertp';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
