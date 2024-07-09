@@ -69,11 +69,6 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...orchestrationAccountMethods,
-  asContinuingOffer: M.call().returns({
-    publicSubscribers: M.any(),
-    invitationMakers: M.any(),
-    holder: M.any(),
-  }),
   getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(

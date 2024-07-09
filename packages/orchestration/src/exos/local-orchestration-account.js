@@ -287,6 +287,14 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        asContinuingOffer() {
+          const { holder, invitationMakers } = this.facets;
+          return harden({
+            publicSubscribers: holder.getPublicTopics(),
+            invitationMakers,
+            holder,
+          });
+        },
         /**
          * TODO: balance lookups for non-vbank assets
          *
