@@ -53,7 +53,7 @@ test('portfolio holder kit behaviors', async t => {
   };
   const accountMap = makeCopyMap(Object.entries(accounts));
 
-  const makePortfolioHolderKit = preparePortfolioHolder(
+  const makePortfolioHolder = preparePortfolioHolder(
     rootZone.subZone('portfolio'),
     vowTools,
   );
@@ -64,7 +64,7 @@ test('portfolio holder kit behaviors', async t => {
     }),
   );
   // @ts-expect-error type mismatch between kit and OrchestrationAccountI
-  const holder = makePortfolioHolderKit(accountMap, publicTopics);
+  const holder = makePortfolioHolder(accountMap, publicTopics);
 
   const cosmosAccount = await E(holder).getAccount('cosmoshub');
   t.is(

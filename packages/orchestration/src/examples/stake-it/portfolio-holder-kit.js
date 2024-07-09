@@ -71,8 +71,8 @@ const preparePortfolioHolderKit = (zone, { watch }) => {
       }),
     },
     /**
-     * @param {Map<string, OrchestrationAccount<any>>} accountMap
-     * @param {Map<string, PublicTopic<unknown>>} publicTopicMap
+     * @param {Iterable<[string, OrchestrationAccount<any>]>} accountMap
+     * @param {Iterable<[string, PublicTopic<unknown>]>} publicTopicMap
      */
     (accountMap, publicTopicMap) => {
       const accounts = harden(zone.mapStore('accounts'));
@@ -117,7 +117,7 @@ const preparePortfolioHolderKit = (zone, { watch }) => {
         /** @returns {TopicsRecord} */
         getPublicTopics() {
           const { publicTopics } = this.state;
-          return fromEntries(publicTopics.entries());
+          return harden(fromEntries(publicTopics.entries()));
         },
         /**
          * @param {string} chainName key where the account is stored
